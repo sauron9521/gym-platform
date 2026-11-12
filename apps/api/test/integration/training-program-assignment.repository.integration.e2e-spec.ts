@@ -254,7 +254,7 @@ describe('TrainingProgramAssignmentRepository integration (e2e)', () => {
 
           // Transaction B attempts assignment creation.
           creationPromise = repository.createAssignmentForActiveRelationship({
-            programId,
+            programId: program.id,
             versionId: versionId,
             trainerAthleteId: relationship.id,
             trainerId: trainer.id,
@@ -439,6 +439,7 @@ describe('TrainingProgramAssignmentRepository integration (e2e)', () => {
           terminationPromise = terminationService.terminateWithExerciseCopies({
             id: relationship.id,
             actorId: trainer.id,
+            redactForTrainer: true,
             reason: 'Concurrent termination test',
           });
 
@@ -636,6 +637,7 @@ describe('TrainingProgramAssignmentRepository integration (e2e)', () => {
         terminationService.terminateWithExerciseCopies({
           id: relationship.id,
           actorId: trainer.id,
+          redactForTrainer: true,
           reason: 'Concurrent termination',
         }),
       ]);
@@ -1023,6 +1025,7 @@ describe('TrainingProgramAssignmentRepository integration (e2e)', () => {
         failingService.terminateWithExerciseCopies({
           id: relationship.id,
           actorId: trainer.id,
+          redactForTrainer: true,
           reason: 'Rollback test',
         }),
       ).rejects.toBe(injectedError);
@@ -1193,6 +1196,7 @@ describe('TrainingProgramAssignmentRepository integration (e2e)', () => {
       const firstResult = await terminationService.terminateWithExerciseCopies({
         id: relationship.id,
         actorId: trainer.id,
+        redactForTrainer: true,
         reason: 'First termination',
       });
 
@@ -1227,6 +1231,7 @@ describe('TrainingProgramAssignmentRepository integration (e2e)', () => {
       const secondResult = await terminationService.terminateWithExerciseCopies({
         id: relationship.id,
         actorId: trainer.id,
+        redactForTrainer: true,
         reason: 'Second termination',
       });
 
@@ -1351,6 +1356,7 @@ describe('TrainingProgramAssignmentRepository integration (e2e)', () => {
       const firstTermination = await terminationService.terminateWithExerciseCopies({
         id: firstRelationship.id,
         actorId: trainer.id,
+        redactForTrainer: true,
         reason: 'First collaboration ended',
       });
 
@@ -1407,6 +1413,7 @@ describe('TrainingProgramAssignmentRepository integration (e2e)', () => {
       const secondTermination = await terminationService.terminateWithExerciseCopies({
         id: secondRelationship.id,
         actorId: athlete.id,
+        redactForTrainer: false,
         reason: 'Second collaboration ended',
       });
 
@@ -1555,7 +1562,7 @@ describe('TrainingProgramAssignmentRepository integration (e2e)', () => {
 
       const createAssignment = () =>
         repository.createAssignmentForActiveRelationship({
-          programId,
+          programId: program.id,
           versionId: versionId,
           trainerAthleteId: relationship.id,
           trainerId: trainer.id,
@@ -1682,7 +1689,7 @@ describe('TrainingProgramAssignmentRepository integration (e2e)', () => {
 
       const createAssignment = () =>
         repository.createAssignmentForActiveRelationship({
-          programId,
+          programId: program.id,
           versionId: versionId,
           trainerAthleteId: relationship.id,
           trainerId: trainer.id,

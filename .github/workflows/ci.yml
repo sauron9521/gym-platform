@@ -135,6 +135,9 @@ jobs:
       - name: Generate Prisma Client
         run: pnpm --filter @gym/api db:generate
 
+      - name: Typecheck integration and HTTP e2e tests
+        run: pnpm --filter @gym/api typecheck:e2e
+
       - name: Apply test database migrations
         run: pnpm --filter @gym/api db:migrate:deploy
 
