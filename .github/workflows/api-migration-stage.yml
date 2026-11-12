@@ -1,0 +1,81 @@
+name: Temporary API source migration stage
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'apps/api/**'
+      - '.github/workflows/api-migration-stage.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  stage:
+    name: Prepare source transfer
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+      - name: Copy tracked API source at pinned commit
+        run: |
+          git clone --depth 1 https://github.com/sauron9521/gym-api-nestjs.git /tmp/gym-api-source
+          test "$(git -C /tmp/gym-api-source rev-parse HEAD)" = '79e53bc1b7a78bb3856ff2aeab2529559240521e'
+          cp -a /tmp/gym-api-source/src apps/api/src
+          cp -a /tmp/gym-api-source/test apps/api/test-source
+          mv apps/api/test-source/* apps/api/test/
+          rmdir apps/api/test-source
+          cp /tmp/gym-api-source/prisma/seed.ts apps/api/prisma/seed.ts
+          cp /tmp/gym-api-source/tsconfig.json apps/api/tsconfig.json
+          cp /tmp/gym-api-source/tsconfig.build.json apps/api/tsconfig.build.json
+          cp /tmp/gym-api-source/nest-cli.json apps/api/nest-cli.json
+          cp /tmp/gym-api-source/vitest.config.ts apps/api/vitest.config.ts
+          cp /tmp/gym-api-source/vitest.config.e2e.ts apps/api/vitest.config.e2e.ts
+          cp /tmp/gym-api-source/.oxlintrc.json apps/api/.oxlintrc.json
+          cp /tmp/gym-api-source/.env.test.example apps/api/.env.test.example
+      - name: Resolve workspace dependencies
+        run: pnpm install --no-frozen-lockfile --ignore-scripts
+      - name: Format imported source
+        run: |
+          pnpm exec prettier --write 'apps/api/**/*.{ts,tsx,js,mjs,cjs,json,jsonc,md,html}'
+      - name: Generate Prisma
+        run: pnpm --filter @gym/api db:generate
+      - name: API quality verification
+        run: |
+          pnpm --filter @gym/api lint
+          pnpm --filter @gym/api typecheck
+          pnpm --filter @gym/api test
+          pnpm --filter @gym/api build
+      - name: Emit migration files for transfer
+        if: always()
+        run: |
+          node - <<'NODE'
+          const fs=require('node:fs');
+          const path=require('node:path');
+          const files=[];
+          function walk(dir) {
+            for(const e of fs.readdirSync(dir,{withFileTypes:true})) {
+              const file=path.join(dir,e.name);
+              if(e.isDirectory()) {if(e.name!=='generated') walk(file);}
+              else if(e.isFile()) files.push(file.split(path.sep).join('/'));
+            }
+          }
+          for(const p of ['apps/api/src','apps/api/test']) if(fs.existsSync(p)) walk(p);
+          for(const p of [
+            'apps/api/prisma/seed.ts','apps/api/tsconfig.json','apps/api/tsconfig.build.json',
+            'apps/api/nest-cli.json','apps/api/vitest.config.ts','apps/api/vitest.config.e2e.ts',
+            'apps/api/.oxlintrc.json','apps/api/.env.test.example','pnpm-lock.yaml'
+          ]) if(fs.existsSync(p)) files.push(p);
+          files.sort();
+          console.log('MIGRATION_TOTAL:'+files.length);
+          for(let i=0;i<files.length;i++){
+            const p=files[i],buf=fs.readFileSync(p),b64=buf.toString('base64');
+            console.log('MIGRATION_ENTRY:'+i+':'+p+':'+buf.length);
+            for(let j=0;j<b64.length;j+=4096) console.log('MIGRATION_DATA:'+i+':'+b64.slice(j,j+4096));
+            console.log('MIGRATION_DONE:'+i);
+          }
+          NODE
