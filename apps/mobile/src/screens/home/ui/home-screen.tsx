@@ -13,8 +13,8 @@ export function HomeScreen() {
       <Text style={styles.eyebrow}>GYM PLATFORM</Text>
       <Text style={styles.title}>Your training starts here.</Text>
       <Text style={styles.description}>
-        Mobile is ready for development. Next: authentication, training plans, workouts and
-        progress tracking.
+        Mobile is ready for development. Next: authentication, training plans, workouts and progress
+        tracking.
       </Text>
 
       <View style={styles.tiles}>
