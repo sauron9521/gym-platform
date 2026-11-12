@@ -9,7 +9,7 @@
     "start:prod": "node dist/main.js",
     "build": "nest build",
     "lint": "oxlint --type-aware --deny-warnings src/ test/",
-    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "typecheck": "tsc --noEmit -p tsconfig.build.json",
     "test": "vitest run",
     "test:cov": "vitest run --coverage",
     "test:e2e": "vitest run --config ./vitest.config.e2e.ts",
