@@ -1,26 +1,39 @@
-# Gym Platform API — migration foundation
+# Gym Platform API
 
-This folder stages the existing NestJS API from https://github.com/sauron9521/gym-api-nestjs
-for a gradual move into the pnpm/Turborepo monorepo.
+NestJS 12 / Prisma 7 API, migrated from the existing standalone repository.
 
-## PR #5: Prisma baseline
+## Migration status
 
-- Imported all existing Prisma schema files and historical migrations without editing them.
-- Kept the original Prisma 7 configuration and placeholder-only environment example.
-- Recorded original Git blob hashes in migration-baseline.json.
-- Added Node tests to ensure that the historical migrations stay unchanged.
+- Prisma multi-file schemas and **all original SQL migrations** are preserved.
+- NestJS `src/`, unit tests, and e2e/integration test files have been imported.
+- API configuration, Prisma seed, ESM package aliases, and pnpm dependencies are restored.
+- The root monorepo CI generates Prisma, then runs format, lint, typecheck, unit tests and build.
+- Database-backed integration/e2e tests and production deployment are **not enabled yet**.
 
-Run: pnpm --filter @gym/api test
+## Local development
 
-**This is not a running NestJS application yet.** Prisma generate, seed,
-API build, and migration deployment are deliberately disabled in this phase.
-The old standalone API remains the owner of production database changes.
+From the monorepo root:
 
-## Next migration PRs
+```sh
+pnpm install --frozen-lockfile
+pnpm --filter @gym/api db:generate
+pnpm --filter @gym/api build
+pnpm --filter @gym/api test
+```
 
-1. Move src, NestJS dependencies, Nest CLI, TypeScript, unit tests, and seed.
-2. Restore Prisma generation, build, lint, typecheck and unit tests.
-3. Add dedicated test PostgreSQL and HTTP/e2e CI.
-4. Migrate Docker, monitoring, and deployment after staging validation.
+Start PostgreSQL separately, and create `apps/api/.env` based on `apps/api/.env.example`.
+The sample environment sets API port `3001`, leaving port `3000` for Next.js.
+Then run `pnpm --filter @gym/api dev`.
 
-Never reset or migrate the production database as part of this bootstrap PR.
+## Safety
+
+Do not deploy this API or apply schema migrations against production until staging
+has validated API parity, database configuration, and rollback procedures.
+The standalone `gym-api-nestjs` repository remains the operational source of truth.
+
+## Migration provenance
+
+The API source and tests were imported from commit
+`79e53bc1b7a78bb3856ff2aeab2529559240521e` of
+`sauron9521/gym-api-nestjs`. The Prisma migration history baseline is tested
+separately by `test/migration-baseline.test.mjs`.

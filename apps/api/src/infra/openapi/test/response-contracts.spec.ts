@@ -1,0 +1,202 @@
+import {
+  archivedExerciseResponseSchema,
+  registrationResponseSchema,
+  exerciseListResponseSchema,
+  exerciseResponseSchema,
+  exerciseTrainerAccessListResponseSchema,
+  exerciseTrainerAccessResponseSchema,
+  trainerAthleteHistoricalResponseSchema,
+  trainerAthleteListResponseSchema,
+  trainerAthleteResponseSchema,
+  trainingAssignmentDetailsResponseSchema,
+  trainingAssignmentHistoricalResponseSchema,
+  trainingAssignmentListResponseSchema,
+  trainingAssignmentResponseSchema,
+  trainingAssignmentSummaryResponseSchema,
+  trainingProgramListResponseSchema,
+  trainingProgramResponseSchema,
+  trainingProgramSetResponseSchema,
+  trainingProgramVersionResponseSchema,
+  workoutListResponseSchema,
+  workoutSummaryListResponseSchema,
+  workoutSummaryResponseSchema,
+  workoutResponseSchema,
+  workoutSetResponseSchema,
+  type ResponseSchema,
+} from '../response-contracts.js';
+import { exerciseSelect } from '#src/modules/exercises/selects/exercise.select';
+import { userSelect } from '#src/modules/users/selects/user.select';
+import {
+  workoutSelect,
+  workoutSetSelect,
+  workoutSummarySelect,
+} from '#src/modules/workouts/selects/workout.select';
+import {
+  trainerAthleteHistoricalSelect,
+  trainerAthleteSelect,
+} from '#src/modules/trainer-athletes/selects/trainer-athlete.select';
+import { trainingProgramSelect } from '#src/modules/training-programs/selects/training-program.select';
+import { trainingProgramVersionSelect } from '#src/modules/training-programs/selects/training-program-version.select';
+import {
+  trainingProgramAssignmentDetailsSelect,
+  trainingProgramAssignmentHistoricalSelect,
+  trainingProgramAssignmentSelect,
+  trainingProgramAssignmentSummarySelect,
+} from '#src/modules/training-programs/selects/training-program-assignment.select';
+
+function assertMatchesSelect(schema: ResponseSchema, select: Record<string, unknown>) {
+  expect(schema.type).toBe('object');
+  const keys = Object.entries(select)
+    .filter(([, value]) => value !== false)
+    .map(([key]) => key)
+    .sort();
+  expect(Object.keys(schema.properties ?? {}).sort()).toEqual(keys);
+  for (const [key, value] of Object.entries(select)) {
+    if (value === false) continue;
+    if (!value || typeof value !== 'object' || !('select' in value)) continue;
+    const nested = value.select;
+    if (!nested || typeof nested !== 'object') continue;
+    const field = schema.properties?.[key];
+    expect(field, `Missing nested field: ${key}`).toBeDefined();
+    const child = field?.type === 'array' ? field.items : field;
+    expect(child).toBeDefined();
+    assertMatchesSelect(child!, nested as Record<string, unknown>);
+  }
+}
+
+describe('OpenAPI response projections vs Prisma selects', () => {
+  it('documents the signup delivery outcome without credential fields', () => {
+    const keys = [...Object.keys(userSelect), 'verificationEmailStatus'].sort();
+    expect(Object.keys(registrationResponseSchema.properties ?? {}).sort()).toEqual(keys);
+    expect(registrationResponseSchema.properties?.verificationEmailStatus?.enum).toEqual([
+      'SUBMITTED',
+      'RETRY_REQUIRED',
+    ]);
+    expect(registrationResponseSchema.properties).not.toHaveProperty('passwordHash');
+    expect(registrationResponseSchema.properties).not.toHaveProperty('deletedAt');
+  });
+
+  it('covers the exercise select without leaking unrelated fields', () => {
+    assertMatchesSelect(exerciseResponseSchema, exerciseSelect);
+    expect(Object.keys(archivedExerciseResponseSchema.properties ?? {}).sort()).toEqual([
+      'id',
+      'isArchived',
+      'updatedAt',
+    ]);
+    expect(exerciseListResponseSchema.properties?.data?.items).toEqual(exerciseResponseSchema);
+  });
+
+  it('keeps trainer access responses minimal and safe', () => {
+    expect(Object.keys(exerciseTrainerAccessResponseSchema.properties ?? {}).sort()).toEqual([
+      'exerciseId',
+      'grantedAt',
+      'id',
+      'revokedAt',
+      'trainerId',
+    ]);
+    expect(exerciseTrainerAccessResponseSchema.properties).not.toHaveProperty('trainer');
+    expect(exerciseTrainerAccessResponseSchema.properties).not.toHaveProperty('email');
+    expect(exerciseTrainerAccessListResponseSchema).toEqual({
+      type: 'array',
+      items: exerciseTrainerAccessResponseSchema,
+    });
+  });
+
+  it('covers complete workout and set projections', () => {
+    assertMatchesSelect(workoutResponseSchema, workoutSelect);
+    assertMatchesSelect(workoutSetResponseSchema, workoutSetSelect);
+    expect(workoutListResponseSchema.properties?.data?.items).toEqual(workoutResponseSchema);
+    expect(workoutSetResponseSchema.properties?.actualWeightKg).toMatchObject({
+      type: 'string',
+      nullable: true,
+    });
+    expect(workoutResponseSchema.properties).not.toHaveProperty('idempotencyFingerprint');
+  });
+
+  it('documents the opt-in compact workout list without nested arrays', () => {
+    const expected = Object.keys(workoutSummarySelect)
+      .filter((key) => key !== '_count')
+      .concat('exerciseCount')
+      .sort();
+    expect(Object.keys(workoutSummaryResponseSchema.properties ?? {}).sort()).toEqual(expected);
+    expect(workoutSummaryResponseSchema.properties).not.toHaveProperty('exercises');
+    expect(workoutSummaryResponseSchema.properties?.exerciseCount).toEqual({ type: 'integer' });
+    expect(workoutSummaryListResponseSchema.properties?.data?.items).toEqual(
+      workoutSummaryResponseSchema,
+    );
+  });
+
+  it('documents normal and historical trainer-athlete responses separately', () => {
+    assertMatchesSelect(trainerAthleteResponseSchema, trainerAthleteSelect);
+    assertMatchesSelect(trainerAthleteHistoricalResponseSchema, trainerAthleteHistoricalSelect);
+    expect(
+      trainerAthleteHistoricalResponseSchema.properties?.trainer?.properties,
+    ).not.toHaveProperty('email');
+    expect(
+      trainerAthleteHistoricalResponseSchema.properties?.athlete?.properties,
+    ).not.toHaveProperty('email');
+    expect(trainerAthleteListResponseSchema.properties?.data?.items?.oneOf).toHaveLength(2);
+  });
+
+  it('matches nested training program/version projections', () => {
+    assertMatchesSelect(trainingProgramResponseSchema, trainingProgramSelect);
+    assertMatchesSelect(trainingProgramVersionResponseSchema, trainingProgramVersionSelect);
+    expect(trainingProgramListResponseSchema.properties?.data?.items).toEqual(
+      trainingProgramResponseSchema,
+    );
+    expect(trainingProgramSetResponseSchema.properties?.plannedWeightKg).toEqual({
+      type: 'string',
+      nullable: true,
+      description: expect.any(String),
+    });
+  });
+
+  it('matches full, summary, detailed and historical assignments', () => {
+    assertMatchesSelect(trainingAssignmentResponseSchema, trainingProgramAssignmentSelect);
+    assertMatchesSelect(
+      trainingAssignmentSummaryResponseSchema,
+      trainingProgramAssignmentSummarySelect,
+    );
+    assertMatchesSelect(
+      trainingAssignmentDetailsResponseSchema,
+      trainingProgramAssignmentDetailsSelect,
+    );
+    assertMatchesSelect(
+      trainingAssignmentHistoricalResponseSchema,
+      trainingProgramAssignmentHistoricalSelect,
+    );
+    expect(trainingAssignmentHistoricalResponseSchema.properties).not.toHaveProperty('workouts');
+    expect(trainingAssignmentHistoricalResponseSchema.properties).not.toHaveProperty('assignedBy');
+    expect(
+      trainingAssignmentHistoricalResponseSchema.properties?.athlete?.properties,
+    ).not.toHaveProperty('email');
+    expect(trainingAssignmentListResponseSchema.properties?.data?.items?.oneOf).toHaveLength(3);
+  });
+
+  it('keeps nullable dates, decimals and paginated metadata correctly typed', () => {
+    expect(workoutResponseSchema.properties?.completedAt).toMatchObject({
+      type: 'string',
+      format: 'date-time',
+      nullable: true,
+    });
+    expect(workoutSetResponseSchema.properties?.plannedReps).toEqual({
+      type: 'integer',
+      nullable: true,
+    });
+    for (const schema of [
+      workoutListResponseSchema,
+      exerciseListResponseSchema,
+      trainerAthleteListResponseSchema,
+      trainingProgramListResponseSchema,
+      trainingAssignmentListResponseSchema,
+    ]) {
+      expect(Object.keys(schema.properties?.meta?.properties ?? {}).sort()).toEqual([
+        'skip',
+        'take',
+        'total',
+        'totalPages',
+      ]);
+      expect(schema.properties?.meta?.required).toEqual(['total', 'skip', 'take', 'totalPages']);
+    }
+  });
+});
