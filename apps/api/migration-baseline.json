@@ -1,0 +1,43 @@
+{
+  "source_repository": "sauron9521/gym-api-nestjs",
+  "source_tree_sha": "79e53bc1b7a78bb3856ff2aeab2529559240521e",
+  "migration_files": {
+    "prisma/migrations/20261020171252_init/migration.sql": "69cf90bda422443b044bc99e76111cb0cacfb727",
+    "prisma/migrations/20261020195526_v0_1/migration.sql": "f0d0e747a5179fa82ff7455eebaee26747dd30f7",
+    "prisma/migrations/20261027195610_update_schema/migration.sql": "3569cb9a2147945a8e7e79d73eccc1f0f037f893",
+    "prisma/migrations/20261028200151_fix_user_add_profile/migration.sql": "9b3bf84eefcfe738c2094918bdfca695e0da90a3",
+    "prisma/migrations/20261029173347_v0_2/migration.sql": "0f594aa18e110c98a9409bc8743f9e6653fa779f",
+    "prisma/migrations/20261029183150_add_sessions/migration.sql": "2902994c229860eceeb60928ce37b11b31c7de00",
+    "prisma/migrations/20261029213544_asd/migration.sql": "e4a1ff94742caedcb7c260f6fb2c218136eb9612",
+    "prisma/migrations/20261030195045_fix_token_revork/migration.sql": "5904bc4ba38ae21daa1c60549b4d339a1f8c4a6d",
+    "prisma/migrations/20261031193205_add_exercises/migration.sql": "b9109f560224419ddf75d152eb78475dcad6a315",
+    "prisma/migrations/20261031194109_add_exercises/migration.sql": "34409796f76959734c538f7d0c23610e786e0705",
+    "prisma/migrations/20261101181427_add_workouts/migration.sql": "cab4e0ed9dd69ee99dd72a942a38a656c0c98d6c",
+    "prisma/migrations/20261101191337_add_trainer_athletes/migration.sql": "e73549b868e247c691949750e29b126c4c71f43f",
+    "prisma/migrations/20261102163629_add_training_programs/migration.sql": "1120d6a74966a5b234bec8edbdbf9ecc2f4eb904",
+    "prisma/migrations/20261103164935_add_workout_set_targets/migration.sql": "fb677b7e90f369a1910358d48d08449cfc1c44a8",
+    "prisma/migrations/20261107170826_prevent_duplicate_active_program_assignments/migration.sql": "c45cc98507d533e4961419eb87d33dcc46ce7228",
+    "prisma/migrations/20261108180000_workout_idempotency/migration.sql": "f56b7ee97d65824f6ea53ff1269fbdc9a4697ddd",
+    "prisma/migrations/20261108183000_profile_fractional_weight/migration.sql": "0b375f9d22ff34c0c6d8ed3e902955e7b7c0c28e",
+    "prisma/migrations/20261108190000_extend_user_profile/migration.sql": "741719bb90bed298295d866fa6aea3129783d759",
+    "prisma/migrations/20261108194500_managed_avatar_key/migration.sql": "7d19f523a5f5c00a18c786be172c4750d5fe43a7",
+    "prisma/migrations/20261108210000_body_measurements/migration.sql": "ff37b660c28dd8a95d6b57bda23ff11c7d3e00e2",
+    "prisma/migrations/20261110000000_workout_analytics_completed_at_index/migration.sql": "a901f63e0c70be19a98175d7bb4d1c4df196cbe0",
+    "prisma/migrations/20261112080000_add_workout_list_sort_index/migration.sql": "118f9ed18c28ce5b66d68015769cbdf681e6600c",
+    "prisma/migrations/20261112080100_add_assignment_list_sort_index/migration.sql": "f2d81fa1eb6ef965a9070f1953a0745b85453eec",
+    "prisma/migrations/20261112080200_remove_duplicate_program_workout_index/migration.sql": "73be5242372b794905f2a436f2ffa59a402f31d8",
+    "prisma/migrations/migration_lock.toml": "044d57cdb0d5b5bff3475112359a4ee70439bf78"
+  },
+  "schema_files": [
+    "auth-token.prisma",
+    "body-measurements.prisma",
+    "exercises.prisma",
+    "profiles.prisma",
+    "schema.prisma",
+    "session.prisma",
+    "trainer-athletes.prisma",
+    "training-programs.prisma",
+    "users.prisma",
+    "workouts.prisma"
+  ]
+}
