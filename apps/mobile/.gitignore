@@ -1,0 +1,7 @@
+# Generated Expo and native projects (Continuous Native Generation)
+.expo/
+expo-env.d.ts
+android/
+ios/
+dist/
+web-build/
