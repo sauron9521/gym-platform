@@ -1,0 +1,49 @@
+enum Role {
+  ATHLETE
+  TRAINER
+  ADMIN
+}
+
+model User {
+  id            String    @id @default(uuid(4))
+  email         String    @unique()
+  emailVerified Boolean   @default(false) @map("email_verified")
+  passwordHash  String    @map("password_hash")
+  role          Role      @default(ATHLETE)
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt     DateTime  @updatedAt() @map("updated_at") @db.Timestamptz(3)
+  deletedAt     DateTime? @map("deleted_at") @db.Timestamptz(3)
+
+  // Relation
+  profile              Profile?
+  bodyMeasurements     BodyMeasurement[]
+  sessions             Session[]
+  refreshTokens        RefreshToken[]
+  refreshTokenFamilies RefreshTokenFamily[]
+  emailTokens          EmailToken[]
+
+  // Exercises
+  createdExercises            Exercise[]                  @relation("ExerciseCreator")
+  exerciseTrainerAccess       ExerciseTrainerAccess[]     @relation("ExerciseAccessTrainer")
+  receivedExerciseAssignments ExerciseAthleteAssignment[] @relation("ExerciseAssignedAthlete")
+  createdExerciseAssignments  ExerciseAthleteAssignment[] @relation("ExerciseAssignedBy")
+
+  // Workouts
+  athleteWorkouts Workout[] @relation("WorkoutAthlete")
+  createdWorkouts Workout[] @relation("WorkoutCreator")
+
+  // Trainer - Athlete relationships
+  trainerRelationships             TrainerAthlete[] @relation("TrainerAthleteTrainer")
+  athleteRelationships             TrainerAthlete[] @relation("TrainerAthleteAthlete")
+  initiatedTrainerAthleteRequests  TrainerAthlete[] @relation("TrainerAthleteInitiator")
+  endedTrainerAthleteRelationships TrainerAthlete[] @relation("TrainerAthleteEndedBy")
+
+  // Training Programs
+  createdTrainingPrograms TrainingProgram[] @relation("TrainingProgramTrainer")
+
+  receivedProgramAssignments TrainingProgramAssignment[] @relation("ProgramAssignmentAthlete")
+  createdProgramAssignments  TrainingProgramAssignment[] @relation("ProgramAssignmentAssignedBy")
+  endedProgramAssignments    TrainingProgramAssignment[] @relation("ProgramAssignmentEndedBy")
+
+  @@map("users")
+}

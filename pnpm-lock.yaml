@@ -179,6 +179,8 @@ importers:
         specifier: ^2.11.11
         version: 2.11.11
 
+  apps/api: {}
+
   apps/mobile:
     dependencies:
       expo:
