@@ -34,7 +34,10 @@ export function HomeScreen() {
         </div>
         <section aria-label="Application status" className="mt-14 grid gap-4 sm:grid-cols-3">
           {applications.map((application) => (
-            <div key={application.name} className="rounded-xl border bg-card p-5 text-card-foreground">
+            <div
+              key={application.name}
+              className="rounded-xl border bg-card p-5 text-card-foreground"
+            >
               <p className="text-sm text-muted-foreground">{application.name}</p>
               <h2 className="mt-2 font-semibold">{application.detail}</h2>
               <p className="mt-4 text-xs font-medium text-muted-foreground">{application.state}</p>
