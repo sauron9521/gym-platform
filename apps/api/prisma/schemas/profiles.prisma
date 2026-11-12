@@ -1,0 +1,24 @@
+model Profile {
+  id       String    @id @default(uuid(4))
+  // Legacy alias retained for existing clients; updates mirror displayName.
+  name        String?
+  firstName   String?   @map("first_name")
+  lastName    String?   @map("last_name")
+  displayName String?   @map("display_name")
+  avatarUrl   String?   @map("avatar_url") @db.VarChar(2048)
+  // Managed uploads only; null for legacy/external HTTPS avatar URLs.
+  avatarKey   String?   @unique @map("avatar_key") @db.VarChar(48)
+  timezone    String    @default("UTC") @db.VarChar(64)
+  birthday    DateTime? @db.Date
+  height      Int?
+  weight      Decimal?  @db.Decimal(5, 2)
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt() @map("updated_at") @db.Timestamptz(3)
+
+  // Relation
+  user   User   @relation(fields: [userId], references: [id])
+  userId String @unique @map("user_id")
+
+  @@map("profiles")
+}

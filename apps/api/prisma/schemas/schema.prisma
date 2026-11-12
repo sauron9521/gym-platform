@@ -1,0 +1,9 @@
+generator client {
+  provider        = "prisma-client"
+  output          = "../../src/infra/database/generated/prisma"
+  previewFeatures = ["partialIndexes"]
+}
+
+datasource db {
+  provider = "postgresql"
+}
