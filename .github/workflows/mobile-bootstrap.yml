@@ -1,4 +1,4 @@
-name: Temporary mobile formatting extraction
+name: Temporary mobile lockfile and formatting
 
 on:
   pull_request:
@@ -10,24 +10,33 @@ permissions:
   contents: read
 
 jobs:
-  format-and-emit:
+  prepare:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v6
       - uses: pnpm/action-setup@v6
       - uses: actions/setup-node@v7
         with:
           node-version: '24'
-      - name: Install locked dependencies
-        run: pnpm install --frozen-lockfile
-      - name: Format mobile config and home screen
+      - name: Resolve secure lockfile
+        run: pnpm install --no-frozen-lockfile --ignore-scripts
+      - name: Reformat mobile source
+        run: pnpm exec prettier --write 'apps/mobile/**/*.{json,js,ts,tsx,md}'
+      - name: Verify mobile
         run: |
-          pnpm exec prettier --write apps/mobile/app.json apps/mobile/src/screens/home/ui/home-screen.tsx
+          pnpm --filter @gym/mobile lint
+          pnpm --filter @gym/mobile typecheck
+          pnpm --filter @gym/mobile test
+          pnpm --filter @gym/mobile build
+      - name: Emit formatted files and lock
+        if: always()
+        run: |
           node - <<'NODE'
           const fs = require('node:fs');
-          const paths = ['apps/mobile/app.json','apps/mobile/src/screens/home/ui/home-screen.tsx'];
-          for (const [i,p] of paths.entries()) {
-            console.log('FORMATTED_MOBILE_' + i + ':' + fs.readFileSync(p).toString('base64'));
+          const files = ['pnpm-lock.yaml','apps/mobile/package.json','apps/mobile/app.json','apps/mobile/src/screens/home/ui/home-screen.tsx'];
+          for (const [idx,path] of files.entries()) {
+            const b64 = fs.readFileSync(path).toString('base64');
+            for (let j=0;j<b64.length;j+=4096) console.log('EXTRACT_MOBILE_' + idx + ':' + b64.slice(j,j+4096));
           }
           NODE
