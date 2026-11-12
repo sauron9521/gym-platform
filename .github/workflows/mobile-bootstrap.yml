@@ -20,7 +20,9 @@ jobs:
         with:
           node-version: '24'
       - name: Resolve secure lockfile
-        run: pnpm install --no-frozen-lockfile --ignore-scripts
+        run: |
+          pnpm clean --lockfile
+          pnpm install --no-frozen-lockfile --ignore-scripts
       - name: Reformat mobile source
         run: pnpm exec prettier --write 'apps/mobile/**/*.{json,js,ts,tsx,md}'
       - name: Verify mobile
