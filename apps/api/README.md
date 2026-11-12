@@ -22,6 +22,7 @@ pnpm --filter @gym/api test
 ```
 
 Start PostgreSQL separately, and create `apps/api/.env` based on `apps/api/.env.example`.
+The sample environment sets API port `3001`, leaving port `3000` for Next.js.
 Then run `pnpm --filter @gym/api dev`.
 
 ## Safety
