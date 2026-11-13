@@ -6,9 +6,9 @@ import { ThrottlerGuard } from '@nestjs/throttler';
 import request from 'supertest';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
-import { PrismaService } from '../../src/infra/database/index.js';
-import { PrismaSessionStore } from '../../src/modules/auth/stores/index.js';
-import { useTestDatabase } from '../utility/test-db-helper.js';
+import { PrismaService } from '../../../src/infra/database/index.js';
+import { PrismaSessionStore } from '../../../src/modules/auth/stores/index.js';
+import { useTestDatabase } from '../../utility/test-db-helper.js';
 
 type VisibleSession = {
   id: string;
@@ -71,7 +71,7 @@ describe('Auth session management isolation (HTTP + PostgreSQL)', () => {
       process.env.JWT_SECRET = randomUUID() + randomUUID();
     }
 
-    const { AppModule } = await import('../../src/app.module.js');
+    const { AppModule } = await import('../../../src/app.module.js');
     const moduleRef = await Test.createTestingModule({
       imports: [AppModule],
     })

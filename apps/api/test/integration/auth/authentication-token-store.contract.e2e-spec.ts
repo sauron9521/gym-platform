@@ -10,9 +10,9 @@ import {
 import { authenticationStoreContract } from '@nestjs/authentication/testing';
 import { afterAll, beforeAll, describe, it } from 'vitest';
 
-import { PrismaService } from '../../src/infra/database/index.js';
-import { PrismaTokenStore } from '../../src/modules/auth/stores/index.js';
-import { useTestDatabase } from '../utility/test-db-helper.js';
+import { PrismaService } from '../../../src/infra/database/index.js';
+import { PrismaTokenStore } from '../../../src/modules/auth/stores/index.js';
+import { useTestDatabase } from '../../utility/test-db-helper.js';
 
 const contractNamespace = randomUUID();
 const contractEmailDomain = `contract-${contractNamespace}.test`;
@@ -77,7 +77,7 @@ async function createTokenStores() {
 beforeAll(async () => {
   useTestDatabase();
 
-  const { AppModule } = await import('../../src/app.module.js');
+  const { AppModule } = await import('../../../src/app.module.js');
 
   const moduleFixture = await Test.createTestingModule({
     imports: [AppModule],

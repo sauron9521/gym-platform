@@ -1,6 +1,6 @@
 import pg from 'pg';
 
-import { useTestDatabase } from '../utility/test-db-helper.js';
+import { useTestDatabase } from '../../utility/test-db-helper.js';
 
 const workoutIndex = 'workouts_athlete_id_created_at_id_idx';
 const assignmentIndex = 'training_program_assignments_athlete_id_assigned_at_id_idx';
