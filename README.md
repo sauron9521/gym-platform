@@ -50,7 +50,6 @@ or `pnpm dev:mobile`.
 Open a pull request against `main`. CI verifies formatting and workspace quality tasks.
 Only the repository owner merges approved changes.
 
-
 ## Typed API contract
 
 Both frontends depend on `@gym/api-client` in `packages/api-client`.
