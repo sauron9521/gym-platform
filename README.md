@@ -73,3 +73,10 @@ The monorepo includes opt-in PostgreSQL/avatar backup, guarded restore rehearsal
 and backup-health alert templates. These are not enabled on merge and require
 operator-controlled credentials, storage and independent off-host replication.
 See [backup, restore and monitoring](docs/backup-restore-operations.md).
+
+## Opt-in API observability
+
+The API includes optional host collectors for sanitized HTTP/Redis logs,
+Docker container resources, readiness and provisional Prometheus SLI views.
+These do not start automatically. See [observability operator guide](docs/production-observability.md)
+for host privileges, environment templates, alerts and manual activation.
