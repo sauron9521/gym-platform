@@ -61,6 +61,14 @@ jobs:
       - name: Validate release and GHCR safety contracts (offline)
         run: node --test scripts/release-bundle.test.mjs scripts/ghcr-promotion.test.mjs scripts/release-supply-chain.test.mjs scripts/release-ci-gate.test.mjs
 
+      - name: Temporary canonical Prettier output for email verification
+        run: |
+          for file in apps/web/src/features/auth/lib/email-verification-flow.ts apps/web/src/features/auth/ui/sign-up-form.tsx apps/web/src/features/auth/ui/verify-email-form.tsx apps/web/test/email-verification-flow.test.mjs; do
+            echo "FORMATTED_START:$file"
+            pnpm exec prettier "$file" | node -e 'let s="";process.stdin.on("data",c=>s+=c);process.stdin.on("end",()=>console.log(JSON.stringify(s)))'
+            echo "FORMATTED_END:$file"
+          done
+
       - name: Check formatting
         run: pnpm format:check
 
