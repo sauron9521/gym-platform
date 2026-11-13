@@ -3,8 +3,11 @@ import { readFile } from 'node:fs/promises';
 import { test } from 'node:test';
 import { PHASES } from './staging-upgrade-rollback.mjs';
 import {
-  validateReadOnlyRequest, verifyReleaseEvidence, evaluateOperatorApproval,
-  selectSuccessfulSourceCI, verifySourceCI,
+  validateReadOnlyRequest,
+  verifyReleaseEvidence,
+  evaluateOperatorApproval,
+  selectSuccessfulSourceCI,
+  verifySourceCI,
 } from './production-readiness.mjs';
 
 const runtime = 'ghcr.io/sauron9521/gym-platform@sha256:' + 'a'.repeat(64);
@@ -18,63 +21,93 @@ const olderPublisher = '2'.repeat(40);
 const request = { publisherRunId: '43280626086', stagingRunId: '43285235000' };
 const repository = { full_name: 'sauron9521/gym-platform' };
 const run = {
-  repository, event: 'workflow_dispatch', head_branch: 'main',
-  status: 'completed', conclusion: 'success',
+  repository,
+  event: 'workflow_dispatch',
+  head_branch: 'main',
+  status: 'completed',
+  conclusion: 'success',
 };
 const publisher = {
-  ...run, id: Number(request.publisherRunId), head_sha: publisherSha,
+  ...run,
+  id: Number(request.publisherRunId),
+  head_sha: publisherSha,
   path: '.github/workflows/publish-ghcr.yml',
   created_at: '2026-11-12T18:30:58Z',
 };
 const staging = {
-  ...run, id: Number(request.stagingRunId), head_sha: sourceSha,
+  ...run,
+  id: Number(request.stagingRunId),
+  head_sha: sourceSha,
   path: '.github/workflows/staging-upgrade-rollback.yml',
   created_at: '2026-11-12T18:57:51Z',
 };
 const ciRun = {
-  ...run, id: 43278936773, event: 'push',
-  path: '.github/workflows/ci.yml', head_sha: sourceSha,
+  ...run,
+  id: 43278936773,
+  event: 'push',
+  path: '.github/workflows/ci.yml',
+  head_sha: sourceSha,
   created_at: '2026-11-12T18:21:15Z',
 };
-const ciJobs = { total_count: 9, jobs: [
-  'Quality / Node 24',
-  'API Coverage / Critical modules',
-  'Dependency vulnerability audit',
-  'API Docker / Node 24',
-  'API e2e / PostgreSQL 17',
-  'API Staging / Signed GHCR offline contracts',
-  'API Migration / Source inventory and cutover NO-GO',
-  'API Operations / Backup and monitoring',
-  'API Observability / HTTP, Redis and Docker',
-].map(name => ({
-  name, run_id: ciRun.id,
-  // Real GitHub returned an inconsistent status for this successful job:
-  // "in_progress" while its conclusion and parent run were "success".
-  status: name === 'Dependency vulnerability audit' ? 'in_progress' : 'completed',
-  conclusion: 'success',
-})) };
+const ciJobs = {
+  total_count: 9,
+  jobs: [
+    'Quality / Node 24',
+    'API Coverage / Critical modules',
+    'Dependency vulnerability audit',
+    'API Docker / Node 24',
+    'API e2e / PostgreSQL 17',
+    'API Staging / Signed GHCR offline contracts',
+    'API Migration / Source inventory and cutover NO-GO',
+    'API Operations / Backup and monitoring',
+    'API Observability / HTTP, Redis and Docker',
+  ].map((name) => ({
+    name,
+    run_id: ciRun.id,
+    // Real GitHub returned an inconsistent status for this successful job:
+    // "in_progress" while its conclusion and parent run were "success".
+    status: name === 'Dependency vulnerability audit' ? 'in_progress' : 'completed',
+    conclusion: 'success',
+  })),
+};
 const previous = {
-  sourceSha: olderSha, publishSha: olderPublisher,
-  runtime: previousRuntime, migrate: previousMigrate,
+  sourceSha: olderSha,
+  publishSha: olderPublisher,
+  runtime: previousRuntime,
+  migrate: previousMigrate,
 };
 const target = { sourceSha, publishSha: publisherSha, runtime, migrate };
 const stagingReceipt = {
-  schemaVersion: 1, kind: 'disposable-two-signed-release-upgrade-rollback',
-  result: 'passed', runId: request.stagingRunId, previous, target,
-  checks: PHASES.map(stage => ({ stage, result: 'passed' })),
+  schemaVersion: 1,
+  kind: 'disposable-two-signed-release-upgrade-rollback',
+  result: 'passed',
+  runId: request.stagingRunId,
+  previous,
+  target,
+  checks: PHASES.map((stage) => ({ stage, result: 'passed' })),
   rollback: 'previous-runtime-on-target-schema',
   databaseBackup: 'test-only-verified',
   databaseDowngradePerformed: false,
-  productionContacted: false, deployedToPersistentHost: false,
-  productionReleaseApproval: false, authenticatedFunctionalChecks: true,
+  productionContacted: false,
+  deployedToPersistentHost: false,
+  productionReleaseApproval: false,
+  authenticatedFunctionalChecks: true,
 };
-const candidate = { request, publisher, staging, ciRun, ciJobs,
-  publishDigests: { runtime, migrate }, stagingReceipt };
-const clone = value => structuredClone(value);
+const candidate = {
+  request,
+  publisher,
+  staging,
+  ciRun,
+  ciJobs,
+  publishDigests: { runtime, migrate },
+  stagingReceipt,
+};
+const clone = (value) => structuredClone(value);
 
 test('manual review must be explicit on main with distinct run IDs', () => {
   const env = {
-    GITHUB_REF: 'refs/heads/main', CONFIRM_REVIEW: 'REVIEW_RELEASE_EVIDENCE',
+    GITHUB_REF: 'refs/heads/main',
+    CONFIRM_REVIEW: 'REVIEW_RELEASE_EVIDENCE',
     PUBLISH_RUN_ID: request.publisherRunId,
     STAGING_RUN_ID: request.stagingRunId,
   };
@@ -85,7 +118,8 @@ test('manual review must be explicit on main with distinct run IDs', () => {
     { PUBLISH_RUN_ID: 'latest' },
     { PUBLISH_RUN_ID: request.stagingRunId },
     { STAGING_RUN_ID: '0' },
-  ]) assert.throws(() => validateReadOnlyRequest({ ...env, ...change }));
+  ])
+    assert.throws(() => validateReadOnlyRequest({ ...env, ...change }));
 });
 
 test('verified release evidence is always production NO-GO before private host approval', () => {
@@ -111,40 +145,108 @@ test('verified release evidence is always production NO-GO before private host a
 
 test('fail closed for wrong digest, stale/failed stage or untrusted publisher', () => {
   const mutation = [
-    x => { x.publisher.conclusion = 'failure'; },
-    x => { x.publisher.event = 'pull_request'; },
-    x => { x.publisher.path = '.github/workflows/malicious.yml'; },
-    x => { x.publisher.head_branch = 'feature'; },
-    x => { x.publisher.repository.full_name = 'other/repo'; },
-    x => { x.publisher.head_sha = 'f'.repeat(39) + '0'; },
-    x => { x.publishDigests.runtime = previousRuntime; },
-    x => { x.publishDigests.migrate = previousMigrate; },
-    x => { x.staging.conclusion = 'failure'; },
-    x => { x.staging.path = '.github/workflows/staging-ghcr.yml'; },
-    x => { x.staging.created_at = '2026-11-12T12:00:00Z'; },
-    x => { x.stagingReceipt.runId = '43281859866'; },
-    x => { x.stagingReceipt.result = 'failed'; },
-    x => { x.stagingReceipt.target.runtime = previousRuntime; },
-    x => { x.stagingReceipt.checks.pop(); },
-    x => { x.stagingReceipt.checks[3].result = 'failed'; },
-    x => { x.stagingReceipt.checks.reverse(); },
-    x => { x.stagingReceipt.databaseBackup = 'unknown'; },
-    x => { x.stagingReceipt.rollback = 'not-confirmed'; },
-    x => { x.stagingReceipt.databaseDowngradePerformed = true; },
-    x => { x.stagingReceipt.productionContacted = true; },
-    x => { x.stagingReceipt.authenticatedFunctionalChecks = false; },
-    x => { x.ciRun.conclusion = 'failure'; },
-    x => { x.ciRun.status = 'in_progress'; },
-    x => { x.ciRun.path = '.github/workflows/fake-ci.yml'; },
-    x => { x.ciRun.event = 'workflow_dispatch'; },
-    x => { x.ciRun.head_sha = olderSha; },
-    x => { x.ciRun.head_branch = 'feature'; },
-    x => { x.ciRun.repository.full_name = 'another/repo'; },
-    x => { x.ciRun.created_at = '2026-11-12T19:00:00Z'; },
-    x => { x.ciJobs.jobs[0].conclusion = 'failure'; },
-    x => { x.ciJobs.jobs[2].run_id = 1; },
-    x => { x.ciJobs.jobs.splice(1, 1); },
-    x => { x.ciJobs.jobs.push(structuredClone(x.ciJobs.jobs[0])); },
+    (x) => {
+      x.publisher.conclusion = 'failure';
+    },
+    (x) => {
+      x.publisher.event = 'pull_request';
+    },
+    (x) => {
+      x.publisher.path = '.github/workflows/malicious.yml';
+    },
+    (x) => {
+      x.publisher.head_branch = 'feature';
+    },
+    (x) => {
+      x.publisher.repository.full_name = 'other/repo';
+    },
+    (x) => {
+      x.publisher.head_sha = 'f'.repeat(39) + '0';
+    },
+    (x) => {
+      x.publishDigests.runtime = previousRuntime;
+    },
+    (x) => {
+      x.publishDigests.migrate = previousMigrate;
+    },
+    (x) => {
+      x.staging.conclusion = 'failure';
+    },
+    (x) => {
+      x.staging.path = '.github/workflows/staging-ghcr.yml';
+    },
+    (x) => {
+      x.staging.created_at = '2026-11-12T12:00:00Z';
+    },
+    (x) => {
+      x.stagingReceipt.runId = '43281859866';
+    },
+    (x) => {
+      x.stagingReceipt.result = 'failed';
+    },
+    (x) => {
+      x.stagingReceipt.target.runtime = previousRuntime;
+    },
+    (x) => {
+      x.stagingReceipt.checks.pop();
+    },
+    (x) => {
+      x.stagingReceipt.checks[3].result = 'failed';
+    },
+    (x) => {
+      x.stagingReceipt.checks.reverse();
+    },
+    (x) => {
+      x.stagingReceipt.databaseBackup = 'unknown';
+    },
+    (x) => {
+      x.stagingReceipt.rollback = 'not-confirmed';
+    },
+    (x) => {
+      x.stagingReceipt.databaseDowngradePerformed = true;
+    },
+    (x) => {
+      x.stagingReceipt.productionContacted = true;
+    },
+    (x) => {
+      x.stagingReceipt.authenticatedFunctionalChecks = false;
+    },
+    (x) => {
+      x.ciRun.conclusion = 'failure';
+    },
+    (x) => {
+      x.ciRun.status = 'in_progress';
+    },
+    (x) => {
+      x.ciRun.path = '.github/workflows/fake-ci.yml';
+    },
+    (x) => {
+      x.ciRun.event = 'workflow_dispatch';
+    },
+    (x) => {
+      x.ciRun.head_sha = olderSha;
+    },
+    (x) => {
+      x.ciRun.head_branch = 'feature';
+    },
+    (x) => {
+      x.ciRun.repository.full_name = 'another/repo';
+    },
+    (x) => {
+      x.ciRun.created_at = '2026-11-12T19:00:00Z';
+    },
+    (x) => {
+      x.ciJobs.jobs[0].conclusion = 'failure';
+    },
+    (x) => {
+      x.ciJobs.jobs[2].run_id = 1;
+    },
+    (x) => {
+      x.ciJobs.jobs.splice(1, 1);
+    },
+    (x) => {
+      x.ciJobs.jobs.push(structuredClone(x.ciJobs.jobs[0]));
+    },
   ];
   for (const tamper of mutation) {
     const x = clone(candidate);
@@ -165,12 +267,12 @@ test('choose only completed successful main-push CI for the correct source SHA',
     { ...valid, id: 7, path: '.github/workflows/untrusted.yml' },
     { ...valid, id: 8, repository: { full_name: 'wrong/repo' } },
   ];
-  assert.equal(selectSuccessfulSourceCI({ workflow_runs: [...invalid, valid] },
-    sourceSha, publisher).id, valid.id);
-  assert.throws(() => selectSuccessfulSourceCI({ workflow_runs: invalid },
-    sourceSha, publisher));
-  assert.throws(() => selectSuccessfulSourceCI({ workflow_runs: [valid] },
-    olderSha, publisher));
+  assert.equal(
+    selectSuccessfulSourceCI({ workflow_runs: [...invalid, valid] }, sourceSha, publisher).id,
+    valid.id,
+  );
+  assert.throws(() => selectSuccessfulSourceCI({ workflow_runs: invalid }, sourceSha, publisher));
+  assert.throws(() => selectSuccessfulSourceCI({ workflow_runs: [valid] }, olderSha, publisher));
 });
 
 test('inconsistent job status is allowed only when the parent CI workflow concluded successfully', () => {
@@ -178,27 +280,40 @@ test('inconsistent job status is allowed only when the parent CI workflow conclu
   // completed, successful parent run and all four successful conclusions win.
   assert.equal(verifySourceCI(ciRun, ciJobs, sourceSha, publisher), true);
   assert.equal(verifyReleaseEvidence(candidate).releaseEvidence, 'VERIFIED');
-  assert.throws(() => verifySourceCI({ ...ciRun, status: 'in_progress' },
-    ciJobs, sourceSha, publisher));
-  assert.throws(() => verifySourceCI({ ...ciRun, conclusion: 'failure' },
-    ciJobs, sourceSha, publisher));
-  assert.throws(() => verifySourceCI(ciRun, {
-    jobs: ciJobs.jobs.map(x => x.name === 'Dependency vulnerability audit'
-      ? { ...x, conclusion: null } : x),
-  }, sourceSha, publisher));
+  assert.throws(() =>
+    verifySourceCI({ ...ciRun, status: 'in_progress' }, ciJobs, sourceSha, publisher),
+  );
+  assert.throws(() =>
+    verifySourceCI({ ...ciRun, conclusion: 'failure' }, ciJobs, sourceSha, publisher),
+  );
+  assert.throws(() =>
+    verifySourceCI(
+      ciRun,
+      {
+        jobs: ciJobs.jobs.map((x) =>
+          x.name === 'Dependency vulnerability audit' ? { ...x, conclusion: null } : x,
+        ),
+      },
+      sourceSha,
+      publisher,
+    ),
+  );
 });
 
 const time = new Date('2026-11-12T19:00:00Z');
 const env = {
-  DEPLOY_RUNTIME_IMAGE: runtime, DEPLOY_MIGRATE_IMAGE: migrate,
-  SOURCE_SHA: sourceSha, PUBLISH_SHA: publisherSha,
+  DEPLOY_RUNTIME_IMAGE: runtime,
+  DEPLOY_MIGRATE_IMAGE: migrate,
+  SOURCE_SHA: sourceSha,
+  PUBLISH_SHA: publisherSha,
   EXPECTED_CURRENT_IMAGE: previousRuntime,
   BACKUP_DIR: '/srv/private/backups/release-456',
   CONFIRM_DEPLOY: 'DEPLOY_VERIFIED_DIGEST',
   RUN_DB_MIGRATIONS: 'yes',
 };
 const approval = {
-  schemaVersion: 1, kind: 'private-production-change-approval',
+  schemaVersion: 1,
+  kind: 'private-production-change-approval',
   changeTicket: 'CHANGE-2026-000245',
   approvedBy: 'release-manager-01',
   operatorOnCall: 'oncall-secondary-02',
@@ -210,7 +325,10 @@ const approval = {
   release: {
     publisherRunId: request.publisherRunId,
     stagingRunId: request.stagingRunId,
-    runtime, migrate, sourceSha, publisherSha,
+    runtime,
+    migrate,
+    sourceSha,
+    publisherSha,
   },
   evidence: {
     restoredBackupEvidenceId: 'restore-postgres-456',
@@ -231,8 +349,7 @@ test('local operator approval GO is possible only for separately confirmed apply
   assert.equal(ok.decision, 'GO');
   assert.equal(ok.decisionScope, 'MANUAL_SINGLE_HOST_APPLY');
   assert.equal(ok.automaticDeployment, false);
-  assert.equal(ok.hostEvidenceVerification,
-    'OPERATOR_ATTESTED_NOT_AUTOMATICALLY_VERIFIED');
+  assert.equal(ok.hostEvidenceVerification, 'OPERATOR_ATTESTED_NOT_AUTOMATICALLY_VERIFIED');
   assert.deepEqual(ok.reasons, []);
 });
 
@@ -251,15 +368,42 @@ test('local operator gate defaults NO-GO on missing proofs, drift and expiry', (
     [report, { ...approval, maintenanceWindowEnd: '2026-11-13T20:00:00Z' }, env, time],
     [report, { ...approval, expectedCurrentImage: 'none' }, env, time],
     [report, { ...approval, backupDirectory: '/srv/elsewhere' }, env, time],
-    [report, { ...approval, evidence: {
-      ...approval.evidence, restoredBackupEvidenceId: '',
-    } }, env, time],
-    [report, { ...approval, evidence: {
-      ...approval.evidence, onCallAcknowledgementId: 'unknown',
-    } }, env, time],
-    [report, { ...approval, release: {
-      ...approval.release, stagingRunId: '43281859866',
-    } }, env, time],
+    [
+      report,
+      {
+        ...approval,
+        evidence: {
+          ...approval.evidence,
+          restoredBackupEvidenceId: '',
+        },
+      },
+      env,
+      time,
+    ],
+    [
+      report,
+      {
+        ...approval,
+        evidence: {
+          ...approval.evidence,
+          onCallAcknowledgementId: 'unknown',
+        },
+      },
+      env,
+      time,
+    ],
+    [
+      report,
+      {
+        ...approval,
+        release: {
+          ...approval.release,
+          stagingRunId: '43281859866',
+        },
+      },
+      env,
+      time,
+    ],
     [report, approval, { ...env, SOURCE_SHA: olderSha }, time],
     [report, approval, { ...env, DEPLOY_RUNTIME_IMAGE: previousRuntime }, time],
     [report, approval, { ...env, EXPECTED_CURRENT_IMAGE: 'wrong' }, time],
@@ -268,8 +412,7 @@ test('local operator gate defaults NO-GO on missing proofs, drift and expiry', (
     [report, approval, env, new Date('2026-11-13T19:00:00Z')],
   ];
   for (const [source, signoff, operatorEnv, now] of cases) {
-    assert.equal(evaluateOperatorApproval(source, signoff, operatorEnv, now).decision,
-      'NO-GO');
+    assert.equal(evaluateOperatorApproval(source, signoff, operatorEnv, now).decision, 'NO-GO');
   }
 });
 
@@ -285,7 +428,10 @@ test('read-only GitHub review can verify releases but never operate on a host', 
   assert.match(workflow, /if: github\.ref == 'refs\/heads\/main'/);
   assert.match(workflow, /--source-digest "\$publisher_sha"/);
   assert.match(workflow, /--predicate-type "\$predicate"/);
-  assert.match(workflow, /--signer-workflow "\$GITHUB_REPOSITORY\/\.github\/workflows\/publish-ghcr\.yml"/);
+  assert.match(
+    workflow,
+    /--signer-workflow "\$GITHUB_REPOSITORY\/\.github\/workflows\/publish-ghcr\.yml"/,
+  );
   assert.match(workflow, /node scripts\/production-readiness\.mjs assess/);
   assert.match(workflow, /staging-two-release-\$STAGING_RUN_ID-\$attempt/);
   assert.match(workflow, /actions\/runs\?head_sha=\$source_sha/);
@@ -302,9 +448,7 @@ test('read-only GitHub review can verify releases but never operate on a host', 
 });
 
 test('exact CI gate list reflects nine blocking monorepo jobs, not standalone CI', async () => {
-  const workflow = await readFile(
-    new URL('../.github/workflows/ci.yml', import.meta.url), 'utf8',
-  );
+  const workflow = await readFile(new URL('../.github/workflows/ci.yml', import.meta.url), 'utf8');
   for (const name of [
     'Quality / Node 24',
     'API e2e / PostgreSQL 17',

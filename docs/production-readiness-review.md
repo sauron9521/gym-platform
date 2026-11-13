@@ -31,11 +31,11 @@ been executed. **Do not invent publisher/staging run IDs or OCI digests.**
 Open **GitHub → Actions → Review signed release evidence for production
 readiness → Run workflow**, select `main` and enter:
 
-| Input | Description |
-| --- | --- |
+| Input              | Description                                            |
+| ------------------ | ------------------------------------------------------ |
 | `publisher_run_id` | Successful target GHCR publisher GitHub Actions run ID |
-| `staging_run_id` | Successful signed two-release upgrade/rollback run ID |
-| `confirm_review` | Explicitly select `REVIEW_RELEASE_EVIDENCE` |
+| `staging_run_id`   | Successful signed two-release upgrade/rollback run ID  |
+| `confirm_review`   | Explicitly select `REVIEW_RELEASE_EVIDENCE`            |
 
 The review obtains workflow metadata from GitHub, downloads only the
 matching `ghcr-digests.json` and
@@ -54,7 +54,7 @@ the test never contacted production or rolled back the database.
 
 ## Output and interpretation
 
-A successful workflow produces a *limited* receipt at
+A successful workflow produces a _limited_ receipt at
 `readiness/output/release-evidence.json` (artifact retention: 30
 days), with status fields:
 

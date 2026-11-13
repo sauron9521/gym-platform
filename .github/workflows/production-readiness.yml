@@ -4,15 +4,15 @@ on:
   workflow_dispatch:
     inputs:
       publisher_run_id:
-        description: "Successful verified GHCR publisher workflow run ID"
+        description: 'Successful verified GHCR publisher workflow run ID'
         required: true
         type: string
       staging_run_id:
-        description: "Successful two-release staging upgrade and rollback run ID"
+        description: 'Successful two-release staging upgrade and rollback run ID'
         required: true
         type: string
       confirm_review:
-        description: "Explicit consent to a read-only release evidence review"
+        description: 'Explicit consent to a read-only release evidence review'
         required: true
         type: choice
         default: NO_REVIEW
