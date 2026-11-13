@@ -33,7 +33,6 @@ export class EmailDto {
   @Transform(({ value }: { value: unknown }) =>
     typeof value === 'string' ? normalizeRecoveryEmail(value) : value,
   )
-  @ApiProperty({ type: String, format: 'email' })
   @IsEmail()
   email: string;
 }
