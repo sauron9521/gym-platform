@@ -8,10 +8,7 @@ const keyIdParts = [
   '[89ab][0-9a-f]{3}',
   '[0-9a-f]{12}',
 ];
-const avatarPath = new RegExp(`^/avatars/${keyIdParts.join('-')}\\.(png|jpg|webp)export const MAX_AVATAR_BYTES = 2 * 1024 * 1024;
-
-const acceptedTypes = new Set(['image/png', 'image/jpeg', 'image/webp']);
-);
+const avatarPath = new RegExp(`^/avatars/${keyIdParts.join('-')}\\.(png|jpg|webp)$`);
 
 export function validateAvatarFile(file: Pick<File, 'size' | 'type'>): string | null {
   if (file.size === 0) return 'Оберіть непорожній файл.';
