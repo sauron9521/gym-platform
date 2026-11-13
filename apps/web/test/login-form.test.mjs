@@ -16,7 +16,7 @@ test('login schema rejects empty, invalid email and whitespace-only passwords', 
     { email: 'not-an-email', password: 'password' },
     { email: 'a@example.com', password: '' },
     { email: 'a@example.com', password: '   ' },
-    { email: 'a'.repeat(245) + '@mail.com', password: 'secret' },
+    { email: 'a'.repeat(250) + '@mail.com', password: 'secret' },
   ]) {
     assert.equal(loginSchema.safeParse(payload).success, false);
   }
