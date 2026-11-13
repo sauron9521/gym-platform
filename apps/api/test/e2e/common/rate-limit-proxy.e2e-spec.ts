@@ -5,7 +5,7 @@ import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import request from 'supertest';
 import { afterAll, beforeAll, describe, it } from 'vitest';
 
-import { getTrustedProxies } from '../src/common/config/proxy.config.js';
+import { getTrustedProxies } from '../../../src/common/config/proxy.config.js';
 
 @Controller('rate-test')
 class RateTestController {

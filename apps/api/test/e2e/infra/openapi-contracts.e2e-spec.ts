@@ -8,10 +8,10 @@ import { ThrottlerGuard } from '@nestjs/throttler';
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
-import { AppModule } from '../src/app.module.js';
-import { PrismaService } from '../src/infra/database/index.js';
-import { createOpenApiDocument } from '../src/infra/openapi/openapi.js';
-import { useTestDatabase } from './utility/test-db-helper.js';
+import { AppModule } from '../../../src/app.module.js';
+import { PrismaService } from '../../../src/infra/database/index.js';
+import { createOpenApiDocument } from '../../../src/infra/openapi/openapi.js';
+import { useTestDatabase } from '../../utility/test-db-helper.js';
 
 /**
  * Validate the response as an API consumer receives it, against the schema

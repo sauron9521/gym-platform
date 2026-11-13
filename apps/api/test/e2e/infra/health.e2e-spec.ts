@@ -3,9 +3,9 @@ import { Test } from '@nestjs/testing';
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
-import { AppModule } from '../src/app.module.js';
-import { DistributedThrottlerStorage } from '../src/common/rate-limit/distributed-throttler.storage.js';
-import { useTestDatabase } from './utility/test-db-helper.js';
+import { AppModule } from '../../../src/app.module.js';
+import { DistributedThrottlerStorage } from '../../../src/common/rate-limit/distributed-throttler.storage.js';
+import { useTestDatabase } from '../../utility/test-db-helper.js';
 
 describe('Health and request correlation (HTTP + PostgreSQL)', () => {
   let app: INestApplication;

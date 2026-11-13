@@ -3,7 +3,7 @@ import { Controller, HttpCode, type INestApplication, Post } from '@nestjs/commo
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
 
-import { getWebAppOrigin } from '../src/common/config/http.config.js';
+import { getWebAppOrigin } from '../../../src/common/config/http.config.js';
 
 @Controller('csrf-probe')
 class CsrfProbeController {

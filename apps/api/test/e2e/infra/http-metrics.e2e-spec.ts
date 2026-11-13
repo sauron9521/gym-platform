@@ -4,14 +4,14 @@ import { createServer, get } from 'node:http';
 import type { INestApplication } from '@nestjs/common';
 import type { Request, Response } from 'express';
 
-import { HttpMetricsRegistry } from '../src/common/http-metrics/http-metrics.registry.js';
-import { RequestContextMiddleware } from '../src/common/request-context/request-context.middleware.js';
+import { HttpMetricsRegistry } from '../../../src/common/http-metrics/http-metrics.registry.js';
+import { RequestContextMiddleware } from '../../../src/common/request-context/request-context.middleware.js';
 import { Test } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
-import { useTestDatabase } from './utility/test-db-helper.js';
+import { useTestDatabase } from '../../utility/test-db-helper.js';
 
 const TOKEN = 'm'.repeat(43);
 const savedEnabled = process.env.HTTP_METRICS_ENABLED;
@@ -26,7 +26,7 @@ describe('HTTP metrics (real Nest middleware, controller and test DB)', () => {
     process.env.HTTP_METRICS_TOKEN = TOKEN;
     // AppModule evaluates ConfigModule.forRoot() at import time, not at
     // Test.createTestingModule().compile(). Import only after configuring env.
-    const { AppModule } = await import('../src/app.module.js');
+    const { AppModule } = await import('../../../src/app.module.js');
     const moduleRef = await Test.createTestingModule({
       imports: [AppModule],
     }).compile();

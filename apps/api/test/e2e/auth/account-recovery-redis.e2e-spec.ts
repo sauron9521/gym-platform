@@ -6,9 +6,9 @@ import { Test } from '@nestjs/testing';
 import request from 'supertest';
 import { afterAll, describe, expect, it } from 'vitest';
 
-import { DistributedThrottlerStorage } from '../src/common/rate-limit/distributed-throttler.storage.js';
-import { AccountRecoveryRateLimitGuard } from '../src/modules/auth/guards/account-recovery-rate-limit.guard.js';
-import { AuthAccountThrottleService } from '../src/modules/auth/services/auth-account-throttle.service.js';
+import { DistributedThrottlerStorage } from '../../../src/common/rate-limit/distributed-throttler.storage.js';
+import { AccountRecoveryRateLimitGuard } from '../../../src/modules/auth/guards/account-recovery-rate-limit.guard.js';
+import { AuthAccountThrottleService } from '../../../src/modules/auth/services/auth-account-throttle.service.js';
 
 const redisUrl = process.env.TEST_REDIS_URL;
 const redisDescribe = redisUrl ? describe : describe.skip;
