@@ -166,7 +166,11 @@ export function ProfileEditor() {
         />
       )}
       {!unauthenticated && account && (
-        <form onSubmit={handleSubmit(submit)} noValidate className="space-y-5 rounded-xl border p-6">
+        <form
+          onSubmit={handleSubmit(submit)}
+          noValidate
+          className="space-y-5 rounded-xl border p-6"
+        >
           <p className="text-sm text-muted-foreground">Пошта: {account.email}</p>
           <div className="grid gap-4 sm:grid-cols-2">
             {fields.map(({ key, label, type = 'text', placeholder }) => (

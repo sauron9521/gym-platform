@@ -38,11 +38,7 @@ jobs:
           cache-dependency-path: pnpm-lock.yaml
 
       - name: Install dependencies
-        run: |
-          pnpm install --no-frozen-lockfile
-          pnpm exec prettier --write apps/web/src/features/profile/lib/profile-form.ts apps/web/src/features/profile/ui/profile-editor.tsx apps/web/test/profile-form.test.mjs CONTRIBUTING.md apps/web/README.md
-          git diff -- pnpm-lock.yaml apps/web/src/features/profile/lib/profile-form.ts apps/web/src/features/profile/ui/profile-editor.tsx apps/web/test/profile-form.test.mjs CONTRIBUTING.md apps/web/README.md
-          exit 1
+        run: pnpm install --frozen-lockfile
 
       - name: Validate local Docker Compose
         run: |
