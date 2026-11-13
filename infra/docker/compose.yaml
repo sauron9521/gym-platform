@@ -5,16 +5,16 @@ services:
     image: postgres:17-alpine
     restart: unless-stopped
     environment:
-      POSTGRES_USER: ${D}{POSTGRES_USER:?Set POSTGRES_USER in infra/docker/.env}
-      POSTGRES_PASSWORD: ${D}{POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in infra/docker/.env}
-      POSTGRES_DB: ${D}{POSTGRES_DB:-gym_app_dev}
+      POSTGRES_USER: ${POSTGRES_USER:?Set POSTGRES_USER in infra/docker/.env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in infra/docker/.env}
+      POSTGRES_DB: ${POSTGRES_DB:-gym_app_dev}
     ports:
-      - "127.0.0.1:${D}{POSTGRES_PORT:-5432}:5432"
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./init/01-create-test-db.sh:/docker-entrypoint-initdb.d/01-create-test-db.sh:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U \"${D}${D}{POSTGRES_USER}\" -d \"${D}${D}{POSTGRES_DB}\""]
+      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
       interval: 5s
       timeout: 5s
       retries: 12
@@ -24,7 +24,7 @@ services:
     restart: unless-stopped
     command: ["redis-server", "--appendonly", "yes"]
     ports:
-      - "127.0.0.1:${D}{REDIS_PORT:-6379}:6379"
+      - "127.0.0.1:${REDIS_PORT:-6379}:6379"
     volumes:
       - redis_data:/data
     healthcheck:
