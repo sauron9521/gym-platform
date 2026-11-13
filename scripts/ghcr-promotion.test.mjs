@@ -123,7 +123,7 @@ test('GHCR preflight only authorizes explicit 404 from registry with pull token'
   assert.equal(calls[0].url.includes('scope=repository%3Asauron9521%2Fgym-platform%3Apull'), true);
   assert.equal(calls[1].init.method, 'HEAD');
   assert.equal(calls[1].init.redirect, 'error');
-  assert.equal(calls[1].init.headers.authorization, '***');
+  assert.equal(calls[1].init.headers.authorization, ['Bearer', 'scoped-test-token'].join(' '));
   assert.doesNotMatch(calls.map((c) => c.url).join(' '), /test-secret/);
 
   const exists = async (url) =>
