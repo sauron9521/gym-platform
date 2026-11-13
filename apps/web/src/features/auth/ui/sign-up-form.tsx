@@ -118,7 +118,9 @@ export function SignUpForm() {
           disabled={isSubmitting}
           aria-invalid={Boolean(errors.password)}
           aria-describedby={
-            errors.password ? 'register-password-hint register-password-error' : 'register-password-hint'
+            errors.password
+              ? 'register-password-hint register-password-error'
+              : 'register-password-hint'
           }
           {...register('password', { onChange: () => setError(null) })}
           className="h-11 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"

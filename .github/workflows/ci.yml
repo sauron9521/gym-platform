@@ -62,10 +62,7 @@ jobs:
         run: node --test scripts/release-bundle.test.mjs scripts/ghcr-promotion.test.mjs scripts/release-supply-chain.test.mjs scripts/release-ci-gate.test.mjs
 
       - name: Check formatting
-        run: |
-          pnpm exec prettier --write apps/web/src/features/auth/ui/sign-up-form.tsx
-          git diff -- apps/web/src/features/auth/ui/sign-up-form.tsx
-          git diff --exit-code -- apps/web/src/features/auth/ui/sign-up-form.tsx
+        run: pnpm format:check
 
       - name: Lint workspaces
         run: pnpm lint
