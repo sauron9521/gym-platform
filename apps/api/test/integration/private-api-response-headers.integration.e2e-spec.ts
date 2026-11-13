@@ -1,4 +1,4 @@
-import { StandardSchemaValidationPipe, ValidationPipe } from '@nestjs/common';
+import { StandardSchemaValidationPipe } from '@nestjs/common';
 import type { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
@@ -17,14 +17,7 @@ describe('Private API response headers (AppModule + PostgreSQL)', () => {
     }).compile();
     app = moduleRef.createNestApplication();
     // Match main.ts: schema-backed query DTO defaults need the global pipes.
-    app.useGlobalPipes(
-      new ValidationPipe({
-        whitelist: true,
-        transform: true,
-        forbidNonWhitelisted: true,
-      }),
-      new StandardSchemaValidationPipe(),
-    );
+    app.useGlobalPipes(new StandardSchemaValidationPipe());
     await app.init();
   }, 30_000);
 

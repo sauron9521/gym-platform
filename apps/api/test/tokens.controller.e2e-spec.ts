@@ -4,7 +4,6 @@ import type { INestApplication } from '@nestjs/common';
 import {
   StandardSchemaValidationPipe,
   UnauthorizedException,
-  ValidationPipe,
 } from '@nestjs/common';
 import { TokenService } from '@nestjs/authentication';
 import request from 'supertest';
@@ -33,14 +32,7 @@ describe('TokensController (HTTP)', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
-    app.useGlobalPipes(
-      new ValidationPipe({
-        whitelist: true,
-        transform: true,
-        forbidNonWhitelisted: true,
-      }),
-      new StandardSchemaValidationPipe(),
-    );
+    app.useGlobalPipes(new StandardSchemaValidationPipe());
     await app.init();
   });
 
