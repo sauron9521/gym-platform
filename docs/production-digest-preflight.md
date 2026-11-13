@@ -73,8 +73,10 @@ connect the guard to live Docker operations. No GitHub Actions workflow
 has permissions to push images, SSH into production, run SQL migrations
 or change routing as a consequence of merging this PR.
 
-A later, separate operator-reviewed PR may add manual production
-`preflight`/`apply`/`rollback` commands. Those commands will
+PR #24 adds a separately reviewed, strictly read-only
+[operator-host preflight](production-host-preflight.md); it is not a
+deployment tool. A later operator-reviewed PR may consider manual
+`apply`/`rollback` commands only after real staging and approval. Those commands will
 require proof of a real signed publication, successful two-release
 staging, private off-host restored PostgreSQL **and** avatar backups,
 exact currently running digest, safety checks on reverse proxy/TLS,

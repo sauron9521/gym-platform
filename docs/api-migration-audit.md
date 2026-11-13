@@ -155,3 +155,12 @@ build-free override for both signed GHCR images, the original Compose
 hardening and expected current runtime identity. No automatic deployment,
 migration or host contact is added. Production cutover is still **NO-GO**
 until real signed staging, off-host restore and human approval are proven.
+
+## Operator-host read-only checks (PR #24)
+
+The [operator-only host preflight](production-host-preflight.md) validates
+real local backup archive hashes, a private release receipt, signed GHCR
+attestations, cached Docker image identity and the existing API container
+in the exact Compose project. It **does not perform a full restore** or
+establish independently that a copied JSON receipt came from GitHub.
+No production mutation or cutover is authorized. **NO-GO** remains.
