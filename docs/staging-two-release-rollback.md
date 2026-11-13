@@ -3,7 +3,7 @@
 This is a **manual** GitHub Actions rehearsal for **two distinct releases**
 of Gym Platform API. It creates all data and Docker resources on a disposable
 GitHub-hosted runner, verifies four published signed GHCR image digests, then
-tests whether the *previous runtime* can still serve requests **after the
+tests whether the _previous runtime_ can still serve requests **after the
 target release's forward Prisma migrations**. It never touches production.
 
 ## Preparation: two published signed releases required
@@ -16,17 +16,17 @@ runtime and migration image digests.
 In GitHub Actions select **Manual two-release staging upgrade and runtime
 rollback**, choose `main` and enter:
 
-| Input | Meaning |
-| --- | --- |
-| `previous_runtime_digest` | Earlier `ghcr.io/sauron9521/gym-platform@sha256:...` |
+| Input                     | Meaning                                                      |
+| ------------------------- | ------------------------------------------------------------ |
+| `previous_runtime_digest` | Earlier `ghcr.io/sauron9521/gym-platform@sha256:...`         |
 | `previous_migrate_digest` | Earlier `ghcr.io/sauron9521/gym-platform-migrate@sha256:...` |
-| `previous_source_sha` | Full SHA of the earlier source commit |
-| `previous_publish_sha` | Full SHA of the earlier GHCR publish signer |
-| `target_runtime_digest` | Later runtime immutable digest |
-| `target_migrate_digest` | Later migration immutable digest |
-| `target_source_sha` | Full SHA of the later source commit |
-| `target_publish_sha` | Full SHA of the later publisher signer |
-| `confirm_upgrade` | Explicitly select `REHEARSE_SIGNED_UPGRADE_ROLLBACK` |
+| `previous_source_sha`     | Full SHA of the earlier source commit                        |
+| `previous_publish_sha`    | Full SHA of the earlier GHCR publish signer                  |
+| `target_runtime_digest`   | Later runtime immutable digest                               |
+| `target_migrate_digest`   | Later migration immutable digest                             |
+| `target_source_sha`       | Full SHA of the later source commit                          |
+| `target_publish_sha`      | Full SHA of the later publisher signer                       |
+| `confirm_upgrade`         | Explicitly select `REHEARSE_SIGNED_UPGRADE_ROLLBACK`         |
 
 Use **only new Gym Platform GHCR packages** and digest receipts from
 successful manual publications. Do not reuse standalone

@@ -27,8 +27,11 @@ export const PHASES = Object.freeze([
 
 export function validateUpgradeRequest(env) {
   assert.equal(env?.GITHUB_REF, 'refs/heads/main', 'Only main can run the rehearsal');
-  assert.equal(env?.CONFIRM_UPGRADE, 'REHEARSE_SIGNED_UPGRADE_ROLLBACK',
-    'Manual upgrade/rollback approval required');
+  assert.equal(
+    env?.CONFIRM_UPGRADE,
+    'REHEARSE_SIGNED_UPGRADE_ROLLBACK',
+    'Manual upgrade/rollback approval required',
+  );
   assert.match(String(env?.GITHUB_RUN_ID ?? ''), RUN_ID, 'Missing run identity');
 
   function pair(prefix) {
@@ -45,40 +48,58 @@ export function validateUpgradeRequest(env) {
 
   const previous = pair('PREVIOUS');
   const target = pair('TARGET');
-  assert.notEqual(previous.sourceSha, target.sourceSha,
-    'Upgrade must use two distinct signed source commits');
-  assert.notEqual(previous.runtime, target.runtime,
-    'Upgrade must use two different runtime digests');
-  assert.notEqual(previous.migrate, target.migrate,
-    'Upgrade must use two different migration digests');
+  assert.notEqual(
+    previous.sourceSha,
+    target.sourceSha,
+    'Upgrade must use two distinct signed source commits',
+  );
+  assert.notEqual(
+    previous.runtime,
+    target.runtime,
+    'Upgrade must use two different runtime digests',
+  );
+  assert.notEqual(
+    previous.migrate,
+    target.migrate,
+    'Upgrade must use two different migration digests',
+  );
   return {
     runId: String(env.GITHUB_RUN_ID),
-    previous, target,
+    previous,
+    target,
   };
 }
 
 export function validateProgress(progress, request) {
   assert.equal(progress?.runId, request.runId, 'Receipt from another run');
-  assert.deepEqual(progress?.previous, request.previous,
-    'Previous signed image identity changed');
-  assert.deepEqual(progress?.target, request.target,
-    'Target signed image identity changed');
+  assert.deepEqual(progress?.previous, request.previous, 'Previous signed image identity changed');
+  assert.deepEqual(progress?.target, request.target, 'Target signed image identity changed');
   assert.ok(Array.isArray(progress?.completed), 'Missing completed stages');
   assert.ok(progress.completed.length <= PHASES.length);
   for (let i = 0; i < progress.completed.length; i++) {
-    assert.equal(progress.completed[i], PHASES[i],
-      'Rehearsal stages must execute in approved order');
+    assert.equal(
+      progress.completed[i],
+      PHASES[i],
+      'Rehearsal stages must execute in approved order',
+    );
   }
   return progress;
 }
 
 export function advanceProgress(progress, phase, request) {
-  const current = progress ? validateProgress(progress, request) : {
-    runId: request.runId, previous: request.previous, target: request.target,
-    completed: [],
-  };
-  assert.equal(phase, PHASES[current.completed.length],
-    'Cannot skip, repeat or reorder upgrade/rollback stages');
+  const current = progress
+    ? validateProgress(progress, request)
+    : {
+        runId: request.runId,
+        previous: request.previous,
+        target: request.target,
+        completed: [],
+      };
+  assert.equal(
+    phase,
+    PHASES[current.completed.length],
+    'Cannot skip, repeat or reorder upgrade/rollback stages',
+  );
   return { ...current, completed: [...current.completed, phase] };
 }
 
@@ -86,8 +107,11 @@ export function createUpgradeReceipt(request, progress, status) {
   assert.ok(['passed', 'failed'].includes(status), 'Unknown result');
   if (progress) validateProgress(progress, request);
   if (status === 'passed') {
-    assert.deepEqual(progress?.completed, PHASES,
-      'A successful rehearsal requires all seven stages');
+    assert.deepEqual(
+      progress?.completed,
+      PHASES,
+      'A successful rehearsal requires all seven stages',
+    );
   }
   return {
     schemaVersion: 1,
@@ -96,12 +120,12 @@ export function createUpgradeReceipt(request, progress, status) {
     runId: request.runId,
     previous: request.previous,
     target: request.target,
-    checks: (progress?.completed ?? []).map(stage => ({
-      stage, result: 'passed',
+    checks: (progress?.completed ?? []).map((stage) => ({
+      stage,
+      result: 'passed',
     })),
     databaseBackup: status === 'passed' ? 'test-only-verified' : 'unknown',
-    rollback: status === 'passed'
-      ? 'previous-runtime-on-target-schema' : 'not-confirmed',
+    rollback: status === 'passed' ? 'previous-runtime-on-target-schema' : 'not-confirmed',
     databaseDowngradePerformed: false,
     productionContacted: false,
     deployedToPersistentHost: false,
@@ -111,10 +135,13 @@ export function createUpgradeReceipt(request, progress, status) {
 }
 
 function inspect(ref) {
-  return JSON.parse(execFileSync('docker', [
-    'image', 'inspect', '--format', '{{json .}}', ref,
-  ], { encoding: 'utf8', timeout: 30_000,
-    stdio: ['ignore', 'pipe', 'ignore'] }));
+  return JSON.parse(
+    execFileSync('docker', ['image', 'inspect', '--format', '{{json .}}', ref], {
+      encoding: 'utf8',
+      timeout: 30_000,
+      stdio: ['ignore', 'pipe', 'ignore'],
+    }),
+  );
 }
 
 async function readProgress(request, optional = false) {
@@ -130,17 +157,26 @@ async function readProgress(request, optional = false) {
 
 async function writeReceipt(receipt) {
   await mkdir('staging', { recursive: true, mode: 0o700 });
-  await writeFile(EVIDENCE, JSON.stringify(receipt, null, 2) + '\n',
-    { flag: 'wx', mode: 0o600 });
+  await writeFile(EVIDENCE, JSON.stringify(receipt, null, 2) + '\n', { flag: 'wx', mode: 0o600 });
   if (process.env.GITHUB_STEP_SUMMARY) {
     const { appendFile } = await import('node:fs/promises');
-    await appendFile(process.env.GITHUB_STEP_SUMMARY,
+    await appendFile(
+      process.env.GITHUB_STEP_SUMMARY,
       '### Two signed GHCR releases — isolated staging upgrade/rollback\n' +
-      'Status: ' + receipt.result + '\n' +
-      'Previous runtime: ' + receipt.previous.runtime + '\n' +
-      'Target runtime: ' + receipt.target.runtime + '\n' +
-      'Completed stages: ' + receipt.checks.length + '/7\n' +
-      'No production deployment, database downgrade or launch approval.\n');
+        'Status: ' +
+        receipt.result +
+        '\n' +
+        'Previous runtime: ' +
+        receipt.previous.runtime +
+        '\n' +
+        'Target runtime: ' +
+        receipt.target.runtime +
+        '\n' +
+        'Completed stages: ' +
+        receipt.checks.length +
+        '/7\n' +
+        'No production deployment, database downgrade or launch approval.\n',
+    );
   }
 }
 
@@ -157,31 +193,31 @@ async function main() {
         [request.target.runtime, request.target.sourceSha],
         [request.target.migrate, request.target.sourceSha],
       ];
-      const IDs = images.map(([ref, sha]) =>
-        verifyPulledImage(inspect(ref), ref, sha).imageId);
+      const IDs = images.map(([ref, sha]) => verifyPulledImage(inspect(ref), ref, sha).imageId);
       assert.notEqual(IDs[0], IDs[2], 'Identical runtime image config IDs');
       assert.notEqual(IDs[1], IDs[3], 'Identical migration image config IDs');
       process.stdout.write('Four exact OCI digests and source labels verified\n');
     } else if (mode === 'probe') {
-      assert.ok(['previous', 'target'].includes(phase),
-        'Invalid staging image phase');
+      assert.ok(['previous', 'target'].includes(phase), 'Invalid staging image phase');
       const ref = request[phase].runtime;
-      const inspectRaw = execFileSync('docker', [
-        'inspect', '--format', '{{json .}}', process.env.STAGING_API,
-      ], { encoding: 'utf8', timeout: 20_000,
-        stdio: ['ignore', 'pipe', 'ignore'] });
+      const inspectRaw = execFileSync(
+        'docker',
+        ['inspect', '--format', '{{json .}}', process.env.STAGING_API],
+        { encoding: 'utf8', timeout: 20_000, stdio: ['ignore', 'pipe', 'ignore'] },
+      );
       const container = JSON.parse(inspectRaw);
-      assert.equal(container?.Config?.Image, ref,
-        'Active container is not the signed expected digest');
-      assert.equal(container?.State?.Running, true,
-        'API container is not running');
-      assert.equal(container?.State?.Health?.Status, 'healthy',
-        'Docker healthcheck not ready');
+      assert.equal(
+        container?.Config?.Image,
+        ref,
+        'Active container is not the signed expected digest',
+      );
+      assert.equal(container?.State?.Running, true, 'API container is not running');
+      assert.equal(container?.State?.Health?.Status, 'healthy', 'Docker healthcheck not ready');
       for (const endpoint of ['live', 'ready']) {
-        const response = await fetch(
-          'http://127.0.0.1:31848/health/' + endpoint, {
-            signal: AbortSignal.timeout(5_000), redirect: 'error',
-          });
+        const response = await fetch('http://127.0.0.1:31848/health/' + endpoint, {
+          signal: AbortSignal.timeout(5_000),
+          redirect: 'error',
+        });
         const body = await response.json();
         verifyHealthResponse(endpoint, response.status, body);
       }
@@ -198,8 +234,12 @@ async function main() {
       process.stdout.write('Two-release staging upgrade/rollback rehearsal passed\n');
     } else if (mode === 'failed') {
       let exists = false;
-      try { await readFile(EVIDENCE, 'utf8'); exists = true; }
-      catch (error) { if (error?.code !== 'ENOENT') throw error; }
+      try {
+        await readFile(EVIDENCE, 'utf8');
+        exists = true;
+      } catch (error) {
+        if (error?.code !== 'ENOENT') throw error;
+      }
       if (!exists) {
         const progress = await readProgress(request, true);
         await writeReceipt(createUpgradeReceipt(request, progress, 'failed'));

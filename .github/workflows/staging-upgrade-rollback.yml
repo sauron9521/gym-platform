@@ -4,39 +4,39 @@ on:
   workflow_dispatch:
     inputs:
       previous_runtime_digest:
-        description: "Previous signed API runtime @sha256 digest"
+        description: 'Previous signed API runtime @sha256 digest'
         required: true
         type: string
       previous_migrate_digest:
-        description: "Previous signed migration @sha256 digest"
+        description: 'Previous signed migration @sha256 digest'
         required: true
         type: string
       previous_source_sha:
-        description: "Previous release source SHA (40 characters)"
+        description: 'Previous release source SHA (40 characters)'
         required: true
         type: string
       previous_publish_sha:
-        description: "Previous publisher signer main SHA"
+        description: 'Previous publisher signer main SHA'
         required: true
         type: string
       target_runtime_digest:
-        description: "New signed API runtime @sha256 digest"
+        description: 'New signed API runtime @sha256 digest'
         required: true
         type: string
       target_migrate_digest:
-        description: "New signed migration @sha256 digest"
+        description: 'New signed migration @sha256 digest'
         required: true
         type: string
       target_source_sha:
-        description: "New release source SHA (40 characters)"
+        description: 'New release source SHA (40 characters)'
         required: true
         type: string
       target_publish_sha:
-        description: "New publisher signer main SHA"
+        description: 'New publisher signer main SHA'
         required: true
         type: string
       confirm_upgrade:
-        description: "Explicit authorization for runner-only two-release rehearsal"
+        description: 'Explicit authorization for runner-only two-release rehearsal'
         required: true
         type: choice
         default: NO_REHEARSAL
@@ -79,7 +79,7 @@ jobs:
       STAGING_REDIS: gym-upgrade-redis-${{ github.run_id }}-${{ github.run_attempt }}
       STAGING_API: gym-upgrade-api-${{ github.run_id }}-${{ github.run_attempt }}
       STAGING_AVATARS: gym-upgrade-avatars-${{ github.run_id }}-${{ github.run_attempt }}
-      STAGING_DATABASE_URL: postgresql://postgres:staging_only_ephemeral@staging-postgres:5432/gym_app_staging_test?schema=public
+      STAGING_DATABASE_URL: ***staging-postgres:5432/gym_app_staging_test?schema=public
       STAGING_REDIS_URL: redis://staging-redis:6379
 
     steps:

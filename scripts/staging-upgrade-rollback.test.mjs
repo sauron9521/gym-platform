@@ -2,8 +2,11 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { test } from 'node:test';
 import {
-  PHASES, validateUpgradeRequest, validateProgress,
-  advanceProgress, createUpgradeReceipt,
+  PHASES,
+  validateUpgradeRequest,
+  validateProgress,
+  advanceProgress,
+  createUpgradeReceipt,
 } from './staging-upgrade-rollback.mjs';
 
 const previousRuntime = 'ghcr.io/sauron9521/gym-platform@sha256:' + 'a'.repeat(64);
@@ -45,7 +48,8 @@ test('manual guard enforces trusted main and four exact distinct signed image di
     { PREVIOUS_SOURCE_SHA: 'main' },
     { TARGET_SOURCE_SHA: env.PREVIOUS_SOURCE_SHA },
     { TARGET_PUBLISH_SHA: '' },
-  ]) assert.throws(() => validateUpgradeRequest({ ...env, ...changed }));
+  ])
+    assert.throws(() => validateUpgradeRequest({ ...env, ...changed }));
 });
 
 test('strict ordered seven-phase progress rejects skips, duplicates and changed identities', () => {
@@ -59,19 +63,30 @@ test('strict ordered seven-phase progress rejects skips, duplicates and changed 
   assert.equal(progress.completed.length, 7);
   assert.throws(() => advanceProgress(progress, PHASES[6], request));
   assert.throws(() => advanceProgress(null, PHASES[1], request));
-  assert.throws(() => validateProgress({
-    ...progress, completed: [PHASES[1], PHASES[0]],
-  }, request));
+  assert.throws(() =>
+    validateProgress(
+      {
+        ...progress,
+        completed: [PHASES[1], PHASES[0]],
+      },
+      request,
+    ),
+  );
   assert.throws(() => validateProgress({ ...progress, runId: 'other' }, request));
-  assert.throws(() => validateProgress({ ...progress,
-    target: { ...request.target, runtime: previousRuntime },
-  }, request));
+  assert.throws(() =>
+    validateProgress(
+      { ...progress, target: { ...request.target, runtime: previousRuntime } },
+      request,
+    ),
+  );
 });
 
 test('a passed receipt requires all stages and never claims DB downgrade or deployment', () => {
   const request = validateUpgradeRequest(env);
   const completed = PHASES.reduce(
-    (progress, phase) => advanceProgress(progress, phase, request), null);
+    (progress, phase) => advanceProgress(progress, phase, request),
+    null,
+  );
   const receipt = createUpgradeReceipt(request, completed, 'passed');
   assert.equal(receipt.result, 'passed');
   assert.equal(receipt.runId, env.GITHUB_RUN_ID);
@@ -98,18 +113,20 @@ test('a passed receipt requires all stages and never claims DB downgrade or depl
 test('manual workflow verifies all four attestations and uses only ephemeral targets', async () => {
   const wf = await readFile(
     new URL('../.github/workflows/staging-upgrade-rollback.yml', import.meta.url),
-    'utf8');
-  const run = await readFile(
-    new URL('./staging-upgrade-run.sh', import.meta.url), 'utf8');
-  const ci = await readFile(
-    new URL('../.github/workflows/ci.yml', import.meta.url), 'utf8');
+    'utf8',
+  );
+  const run = await readFile(new URL('./staging-upgrade-run.sh', import.meta.url), 'utf8');
+  const ci = await readFile(new URL('../.github/workflows/ci.yml', import.meta.url), 'utf8');
   const ignore = await readFile(new URL('../.gitignore', import.meta.url), 'utf8');
 
   assert.match(wf, /^on:\n  workflow_dispatch:/m);
   assert.doesNotMatch(wf, /^\s+(push|pull_request|schedule|workflow_run):/m);
   assert.match(wf, /if: github\.ref == 'refs\/heads\/main'/);
   assert.match(wf, /REHEARSE_SIGNED_UPGRADE_ROLLBACK/);
-  assert.match(wf, /--signer-workflow "\$GITHUB_REPOSITORY\/\.github\/workflows\/publish-ghcr\.yml"/);
+  assert.match(
+    wf,
+    /--signer-workflow "\$GITHUB_REPOSITORY\/\.github\/workflows\/publish-ghcr\.yml"/,
+  );
   assert.match(wf, /--predicate-type "\$predicate"/);
   assert.match(wf, /--source-digest "\$publisher"/);
   assert.match(wf, /compare\/\$PREVIOUS_SOURCE_SHA\.\.\.\$TARGET_SOURCE_SHA/);
@@ -122,11 +139,17 @@ test('manual workflow verifies all four attestations and uses only ephemeral tar
   const synthetic = wf.indexOf('node scripts/staging-functional-smoke.mjs exercise');
   const snapshot = wf.indexOf('pg_dump -U postgres');
   const newMigration = wf.indexOf('Apply new signed Prisma migrations');
-  const oldCompatible = wf.indexOf('node scripts/staging-upgrade-rollback.mjs mark previous-compatible-with-target-schema');
+  const oldCompatible = wf.indexOf(
+    'node scripts/staging-upgrade-rollback.mjs mark previous-compatible-with-target-schema',
+  );
   const switchTarget = wf.indexOf('scripts/staging-upgrade-run.sh switch-target');
-  const targetCompatible = wf.indexOf('node scripts/staging-upgrade-rollback.mjs mark target-authenticated');
+  const targetCompatible = wf.indexOf(
+    'node scripts/staging-upgrade-rollback.mjs mark target-authenticated',
+  );
   const rollback = wf.indexOf('scripts/staging-upgrade-run.sh rollback-previous');
-  const rollbackCheck = wf.indexOf('node scripts/staging-upgrade-rollback.mjs mark previous-restored-without-schema-rollback');
+  const rollbackCheck = wf.indexOf(
+    'node scripts/staging-upgrade-rollback.mjs mark previous-restored-without-schema-rollback',
+  );
   const finish = wf.indexOf('node scripts/staging-upgrade-rollback.mjs finish');
   assert.ok(migrationStart > 0 && migrationStart < synthetic && synthetic < snapshot);
   assert.ok(snapshot < newMigration && newMigration < oldCompatible);
@@ -134,7 +157,10 @@ test('manual workflow verifies all four attestations and uses only ephemeral tar
   assert.ok(targetCompatible < rollback && rollback < rollbackCheck && rollbackCheck < finish);
   assert.match(wf, /pg_restore --list/);
   assert.match(wf, /sha256sum --check --status/);
-  assert.match(wf, /-p 127\.0\.0\.1:31848:3000|Start previous signed runtime on isolated loopback port/);
+  assert.match(
+    wf,
+    /-p 127\.0\.0\.1:31848:3000|Start previous signed runtime on isolated loopback port/,
+  );
   assert.match(wf, /staging\/upgrade-evidence\.json/);
   assert.match(wf, /if: always\(\)/);
   assert.match(wf, /docker rm -fv "\$STAGING_API"/);
