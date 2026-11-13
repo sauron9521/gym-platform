@@ -114,6 +114,7 @@ release rollout and real staging evidence are still required.
 
 The [read-only host preflight](docs/production-host-preflight.md) verifies
 trusted signed GHCR images, exact deployed image identity, private backup
-archive hashes and the release evidence receipt. It never runs a migration,
+archive hashes and the original GitHub Actions release-evidence artifact
+for an explicitly supplied successful review run ID. It never runs a migration,
 starts a container or authorizes production; human restore and operational
 approval remain required.

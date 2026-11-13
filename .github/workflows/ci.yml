@@ -61,6 +61,16 @@ jobs:
       - name: Validate release and GHCR safety contracts (offline)
         run: node --test scripts/release-bundle.test.mjs scripts/ghcr-promotion.test.mjs scripts/release-supply-chain.test.mjs scripts/release-ci-gate.test.mjs
 
+      - name: Temporary Prettier canonical output for readiness provenance
+        run: |
+          for file in scripts/production-release-origin*.mjs docs/production-host-preflight.md docs/production-readiness-review.md README.md; do
+            if ! pnpm exec prettier --check "$file" >/dev/null 2>&1; then
+              echo "FORMATTED_START:$file"
+              pnpm exec prettier "$file" | node -e 'let s="";process.stdin.on("data",c=>s+=c);process.stdin.on("end",()=>console.log(JSON.stringify(s)))'
+              echo "FORMATTED_END:$file"
+            fi
+          done
+
       - name: Check formatting
         run: pnpm format:check
 
@@ -204,6 +214,7 @@ jobs:
         run: |
           bash -n scripts/production-host-preflight.sh
           node --test scripts/production-host-preflight.test.mjs
+          node --test scripts/production-release-origin.test.mjs
 
       - name: Check opt-in systemd service and timer units
         run: |

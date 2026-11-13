@@ -93,8 +93,10 @@ Its exported offline function can **structurally evaluate** private
 approval references, but it cannot independently prove external
 operator evidence exists; no monorepo deployment action invokes it.
 A separate [operator-only read-only preflight](production-host-preflight.md)
-can check private backup archive integrity, exact cached images and a supplied
-release receipt, but it cannot grant deployment approval or substitute for an
+now requires an explicit successful GitHub Actions review run ID and compares
+the local release receipt byte-for-byte (SHA-256) against that run's original
+latest-attempt artifact. It also checks private backup archive integrity and
+cached images, but cannot grant deployment approval or substitute for an
 external restore drill. There is **no automatic or authorized production
 deployment** wired to the monorepo. Do not interpret a test fixture with a synthetic `GO` as
 actual authorization.
