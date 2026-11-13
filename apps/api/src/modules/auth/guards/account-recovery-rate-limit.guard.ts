@@ -1,8 +1,7 @@
 import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
-import { isEmail } from 'class-validator';
 import type { Request } from 'express';
 
-import { normalizeRecoveryEmail } from '../utils/normalize-recovery-email.js';
+import { emailSchema } from '../dto/auth.schemas.js';
 import {
   AuthAccountThrottleService,
   AUTH_ACCOUNT_THROTTLE_POLICIES,
@@ -30,15 +29,16 @@ export class AccountRecoveryRateLimitGuard implements CanActivate {
       return true;
     }
 
-    // Normalize first: a padded but otherwise valid address must not bypass
-    // the quota simply because its raw input exceeds 254 characters.
-    const email = normalizeRecoveryEmail(rawEmail);
-    if (email.length > 254 || !isEmail(email)) {
+    // Use the same normalization and email validation as the HTTP request
+    // schema. Guards run before pipes, so input is still the raw request body.
+    // Padded but valid addresses must not bypass the quota.
+    const parsed = emailSchema.safeParse({ email: rawEmail });
+    if (!parsed.success || parsed.data.email.length > 254) {
       return true;
     }
 
     await this.accountThrottle.assertAllowed(
-      email,
+      parsed.data.email,
       AUTH_ACCOUNT_THROTTLE_POLICIES.passwordRecovery,
     );
 

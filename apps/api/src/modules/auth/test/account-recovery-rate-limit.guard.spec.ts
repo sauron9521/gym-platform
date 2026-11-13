@@ -1,11 +1,9 @@
 import type { ExecutionContext } from '@nestjs/common';
 import { ServiceUnavailableException } from '@nestjs/common';
-import { plainToInstance } from 'class-transformer';
-import { validateSync } from 'class-validator';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { DistributedThrottlerStorage } from '#src/common/rate-limit/distributed-throttler.storage';
-import { EmailDto } from '../dto/auth.dto.js';
+import { emailSchema } from '../dto/auth.schemas.js';
 import { AuthAccountThrottleService } from '../services/auth-account-throttle.service.js';
 import {
   AccountRecoveryRateLimitGuard,
@@ -68,9 +66,7 @@ describe('AccountRecoveryRateLimitGuard', () => {
     expect(increment).toHaveBeenCalledTimes(1);
     const key = increment.mock.calls[0]?.[0] as string;
     expect(key).toMatch(/^account-recovery:[a-f0-9]{64}$/);
-    const dto = plainToInstance(EmailDto, { email: padded });
-    expect(dto.email).toBe('member@example.test');
-    expect(validateSync(dto)).toHaveLength(0);
+    expect(emailSchema.parse({ email: padded })).toEqual({ email: 'member@example.test' });
   });
 
   it('rejects a blocked identity with a standard 429 before calling the controller', async () => {
@@ -98,11 +94,9 @@ describe('AccountRecoveryRateLimitGuard', () => {
     );
   });
 
-  it('validates the normalized forgot-password email through the existing DTO', () => {
-    const dto = plainToInstance(EmailDto, {
-      email: '  MemBer@Example.Test  ',
+  it('validates the normalized forgot-password email through the Zod request schema', () => {
+    expect(emailSchema.parse({ email: '  MemBer@Example.Test  ' })).toEqual({
+      email: 'member@example.test',
     });
-    expect(dto.email).toBe('member@example.test');
-    expect(validateSync(dto)).toHaveLength(0);
   });
 });
