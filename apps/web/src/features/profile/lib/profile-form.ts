@@ -41,8 +41,9 @@ export function buildProfilePatch(draft: ProfileDraft): { data?: ProfilePatch; e
   const optionalNumber = (value: string, label: string, min: number, max: number) => {
     if (!value.trim()) return { value: null };
     const number = Number(value);
-    if (!Number.isFinite(number) || number < min || number > max)
+    if (!Number.isFinite(number) || number < min || number > max) {
       return { error: `Некоректне значення: ${label}.` };
+    }
     return { value: number };
   };
   const height = optionalNumber(draft.height, 'зріст', 1, 300);
