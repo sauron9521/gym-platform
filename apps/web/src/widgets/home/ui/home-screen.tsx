@@ -3,9 +3,9 @@ import Link from 'next/link';
 import { Button } from '@/shared/ui/button';
 
 const applications = [
-  { name: 'API', detail: 'NestJS migration', state: 'Planned' },
-  { name: 'Web', detail: 'Next.js App Router', state: 'Ready' },
-  { name: 'Mobile', detail: 'Expo + React Native', state: 'Planned' },
+  { name: 'API', detail: 'NestJS + OpenAPI', state: 'Integrated' },
+  { name: 'Web', detail: 'Next.js App Router', state: 'In development' },
+  { name: 'Mobile', detail: 'Expo + React Native', state: 'Foundation ready' },
 ];
 
 export function HomeScreen() {
@@ -19,17 +19,15 @@ export function HomeScreen() {
           One platform. Every workout.
         </h1>
         <p className="mt-6 max-w-2xl text-lg leading-8 text-muted-foreground">
-          The web application is running. Next steps: authentication, athlete profiles, training
-          programs, and workouts.
+          Створіть обліковий запис або увійдіть. Зараз доступні базові можливості авторизації;
+          профіль, тренування та програми поступово з’являтимуться в кабінеті.
         </p>
         <div className="mt-8 flex flex-wrap gap-3">
           <Button asChild>
             <Link href="/login">Увійти</Link>
           </Button>
           <Button asChild variant="outline">
-            <a href="https://github.com/sauron9521/gym-platform" target="_blank" rel="noreferrer">
-              View repository
-            </a>
+            <Link href="/register">Створити обліковий запис</Link>
           </Button>
         </div>
         <section aria-label="Application status" className="mt-14 grid gap-4 sm:grid-cols-3">

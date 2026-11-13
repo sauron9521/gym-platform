@@ -69,4 +69,22 @@ CORS_ORIGINS=http://localhost:3000 in the API environment.
   flags and host-only Domain, and keep the internal API origin trusted.
   Configure NestJS APP_URL to the public web origin for session/CSRF validation.
 - Do not call the backend directly from browser code or persist access tokens.
-  MFA challenge UI, registration and password recovery are separate PRs.
+  MFA challenge UI and password recovery are separate PRs.
+
+## Registration flow
+
+The public `/register` route uses the existing generated OpenAPI contract
+(`POST /auth/register`) and sends only email and password to NestJS.
+The browser never stores bearer tokens. The backend enforces password strength,
+uniqueness, rate limits and email verification policy; frontend checks only
+basic input completeness and matching passwords. HTTP 409 (existing email),
+400 (invalid input), 403 (origin security), 429 (rate limit) and network errors
+have distinct user-facing messages without exposing backend internals.
+
+Registration creates a session server-side. On HTTP 201 the screen shows
+whether verification email submission was `SUBMITTED` or
+`RETRY_REQUIRED`; neither status guarantees that the email is verified.
+The screen does **not** assume a verified email or automatically redirect
+past an authentication check. The existing `/dashboard` route verifies the
+session independently via `GET /users/me`. Email confirmation, resend and
+password recovery UI will follow in separate small PRs.
