@@ -19,6 +19,12 @@ export default function LoginPage() {
           Увійдіть за допомогою електронної пошти та пароля.
         </p>
         <SignInForm />
+        <p className="mt-6 text-center text-sm text-muted-foreground">
+          Ще немає облікового запису?{' '}
+          <Link href="/register" className="font-medium text-foreground hover:underline">
+            Зареєструватися
+          </Link>
+        </p>
       </div>
     </main>
   );
