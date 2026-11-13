@@ -58,6 +58,14 @@ jobs:
           pnpm --filter @gym/api test:architecture
           pnpm --filter @gym/api test:coverage-tools
 
+      - name: Temporary formatting diagnostics for migrated scripts
+        run: |
+          for file in apps/api/scripts/*.mjs; do
+            echo "FORMATTED_START:$file"
+            pnpm exec prettier "$file" | node -e 'let s="";process.stdin.on("data",c=>s+=c);process.stdin.on("end",()=>console.log(JSON.stringify(s)))'
+            echo "FORMATTED_END:$file"
+          done
+
       - name: Check formatting
         run: pnpm format:check
 
