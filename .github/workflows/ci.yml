@@ -39,6 +39,11 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Validate local Docker Compose
+        run: |
+          docker compose --env-file infra/docker/.env.example -f infra/docker/compose.yaml config --quiet
+          bash -n infra/docker/init/01-create-test-db.sh
+
       - name: Generate Prisma client
         run: pnpm --filter @gym/api db:generate
 

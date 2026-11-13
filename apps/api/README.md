@@ -22,9 +22,10 @@ pnpm --filter @gym/api build
 pnpm --filter @gym/api test
 ```
 
-Start PostgreSQL separately, and create `apps/api/.env` based on `apps/api/.env.example`.
-The sample environment sets API port `3001`, leaving port `3000` for Next.js.
-Then run `pnpm --filter @gym/api dev`.
+For a local PostgreSQL/Redis stack, follow [infra/docker/README.md](../../infra/docker/README.md).
+Copy `apps/api/.env.local.example` to the ignored `apps/api/.env` and keep its
+PostgreSQL password aligned with `infra/docker/.env`. Development API uses port
+`3001`; Next.js uses `3000`. Start the API with `pnpm dev:api`.
 
 ## Integration / e2e tests
 
