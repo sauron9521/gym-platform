@@ -9,13 +9,19 @@ import {
 } from '../src/features/auth/lib/registration-flow.ts';
 
 test('registration checks basics without changing the password', () => {
-  assert.equal(validateRegistrationInput(' ', 'Password1!', 'Password1!'), 'Вкажіть електронну пошту.');
+  assert.equal(
+    validateRegistrationInput(' ', 'Password1!', 'Password1!'),
+    'Вкажіть електронну пошту.',
+  );
   assert.match(validateRegistrationInput('user@example.test', 'short', 'short'), /8 символів/);
   assert.match(
     validateRegistrationInput('user@example.test', 'Password1!', 'Password1?'),
     /не збігаються/,
   );
-  assert.equal(validateRegistrationInput('  user@example.test  ', 'Password1!', 'Password1!'), null);
+  assert.equal(
+    validateRegistrationInput('  user@example.test  ', 'Password1!', 'Password1!'),
+    null,
+  );
 });
 
 test('registration errors distinguish duplicate email, rate limiting and CSRF', () => {
