@@ -1,12 +1,28 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { readFile } from 'node:fs/promises';
-import { buildProfilePatch, getProfileErrorMessage, toProfileDraft } from '../src/features/profile/lib/profile-form.ts';
+import {
+  buildProfilePatch,
+  getProfileErrorMessage,
+  toProfileDraft,
+} from '../src/features/profile/lib/profile-form.ts';
 
 const account = {
-  id: 'user-1', email: 'test@example.com', role: 'ATHLETE', emailVerified: true,
-  createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z',
-  profile: { firstName: 'Test', lastName: null, displayName: null, birthday: null, height: 193, weight: 81.5, timezone: 'Europe/Kyiv' },
+  id: 'user-1',
+  email: 'test@example.com',
+  role: 'ATHLETE',
+  emailVerified: true,
+  createdAt: '2026-01-01T00:00:00Z',
+  updatedAt: '2026-01-01T00:00:00Z',
+  profile: {
+    firstName: 'Test',
+    lastName: null,
+    displayName: null,
+    birthday: null,
+    height: 193,
+    weight: 81.5,
+    timezone: 'Europe/Kyiv',
+  },
 };
 test('profile maps nullable fields and preserves decimal weight', () => {
   const draft = toProfileDraft(account);
@@ -29,8 +45,14 @@ test('profile errors do not disclose raw backend body', () => {
   assert.match(getProfileErrorMessage(500), /Спробуйте/);
 });
 test('profile route is protected and patch refreshes from GET, not PATCH body', async () => {
-  const page = await readFile(new URL('../src/app/(protected)/profile/page.tsx', import.meta.url), 'utf8');
-  const ui = await readFile(new URL('../src/features/profile/ui/profile-editor.tsx', import.meta.url), 'utf8');
+  const page = await readFile(
+    new URL('../src/app/(protected)/profile/page.tsx', import.meta.url),
+    'utf8',
+  );
+  const ui = await readFile(
+    new URL('../src/features/profile/ui/profile-editor.tsx', import.meta.url),
+    'utf8',
+  );
   assert.match(page, /verifyServerSession/);
   assert.match(page, /force-dynamic/);
   assert.match(ui, /webApi.GET\('\/users\/me'\)/);

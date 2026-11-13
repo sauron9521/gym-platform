@@ -1,7 +1,8 @@
 import type { operations } from '@gym/api-client';
 
 export type Account = operations['UsersController_me']['responses'][200]['content']['application/json'];
-export type ProfilePatch = operations['UsersController_updateMe']['requestBody']['content']['application/json'];
+export type ProfilePatch =
+  operations['UsersController_updateMe']['requestBody']['content']['application/json'];
 
 export type ProfileDraft = {
   firstName: string;
@@ -40,13 +41,19 @@ export function buildProfilePatch(draft: ProfileDraft): { data?: ProfilePatch; e
   const optionalNumber = (value: string, label: string, min: number, max: number) => {
     if (!value.trim()) return { value: null };
     const number = Number(value);
-    if (!Number.isFinite(number) || number < min || number > max) return { error: `Некоректне значення: ${label}.` };
+    if (!Number.isFinite(number) || number < min || number > max)
+      return { error: `Некоректне значення: ${label}.` };
     return { value: number };
   };
   const height = optionalNumber(draft.height, 'зріст', 1, 300);
   const weight = optionalNumber(draft.weight, 'вага', 1, 700);
   if (height.error || weight.error) return { error: height.error ?? weight.error };
-  if (draft.birthday && (!/^\d{4}-\d{2}-\d{2}$/.test(draft.birthday) || !Number.isFinite(Date.parse(draft.birthday)) || draft.birthday > new Date().toISOString().slice(0, 10))) {
+  if (
+    draft.birthday &&
+    (!/^\d{4}-\d{2}-\d{2}$/.test(draft.birthday) ||
+      !Number.isFinite(Date.parse(draft.birthday)) ||
+      draft.birthday > new Date().toISOString().slice(0, 10))
+  ) {
     return { error: 'Перевірте дату народження.' };
   }
   return {
