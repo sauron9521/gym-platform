@@ -161,3 +161,15 @@ Both mutations re-read GET /users/me; on failure the UI does not claim success.
 Client-side guards allow PNG/JPEG/WebP up to 2 MiB, while the API remains
 authoritative for image content validation and dimensions. No bearer tokens,
 image blobs, or arbitrary upstream errors are stored or logged. No new packages.
+
+## Profile forms (React Hook Form + Zod)
+
+The profile editor uses React Hook Form for field lifecycle, dirty state,
+submit handling and accessible inline errors. Zod 4 validates the input via
+`zodResolver(profileSchema)` and the same schema is rechecked before building
+the typed `PATCH /users/me` payload. Height is an integer between 50 and 300
+centimeters, weight has up to two decimal places between 1 and 600 kg and
+timezones use IANA names. The API remains authoritative.
+
+Authentication, session verification and avatar upload remain unchanged.
+Avoid rewriting other forms in this PR; migrate them in focused follow-ups.

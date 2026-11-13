@@ -1,7 +1,9 @@
 'use client';
 
-import { useEffect, useState, type FormEvent } from 'react';
 import Link from 'next/link';
+import { useEffect, useState } from 'react';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useForm } from 'react-hook-form';
 
 import { webApi } from '@/shared/api/client';
 import { Button } from '@/shared/ui/button';
@@ -9,6 +11,7 @@ import { ProfileAvatar } from './profile-avatar';
 import {
   buildProfilePatch,
   getProfileErrorMessage,
+  profileSchema,
   toProfileDraft,
   type Account,
   type ProfileDraft,
@@ -24,14 +27,34 @@ const fields: { key: keyof ProfileDraft; label: string; type?: string; placehold
   { key: 'timezone', label: 'Часовий пояс', placeholder: 'Europe/Kyiv' },
 ];
 
+const emptyProfile: ProfileDraft = {
+  firstName: '',
+  lastName: '',
+  displayName: '',
+  birthday: '',
+  height: '',
+  weight: '',
+  timezone: 'Europe/Kyiv',
+};
+
 export function ProfileEditor() {
   const [account, setAccount] = useState<Account | null>(null);
-  const [draft, setDraft] = useState<ProfileDraft | null>(null);
-  const [busy, setBusy] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [unauthenticated, setUnauthenticated] = useState(false);
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors, isDirty, isSubmitting },
+  } = useForm<ProfileDraft>({
+    resolver: zodResolver(profileSchema),
+    defaultValues: emptyProfile,
+    mode: 'onBlur',
+    reValidateMode: 'onChange',
+  });
 
   async function loadProfile(): Promise<boolean> {
     try {
@@ -45,7 +68,7 @@ export function ProfileEditor() {
         return false;
       }
       setAccount(data);
-      setDraft(toProfileDraft(data));
+      reset(toProfileDraft(data), { keepDirtyValues: true });
       setError(null);
       return true;
     } catch {
@@ -68,7 +91,7 @@ export function ProfileEditor() {
           setError(getProfileErrorMessage(response.status));
         } else {
           setAccount(data);
-          setDraft(toProfileDraft(data));
+          reset(toProfileDraft(data));
           setError(null);
         }
       })
@@ -81,17 +104,15 @@ export function ProfileEditor() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [reset]);
 
-  async function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (busy || !draft || !account) return;
-    const result = buildProfilePatch(draft);
+  async function submit(values: ProfileDraft) {
+    if (!account) return;
+    const result = buildProfilePatch(values);
     if (!result.data) {
       setError(result.error ?? 'Некоректні дані.');
       return;
     }
-    setBusy(true);
     setSuccess(false);
     setError(null);
     try {
@@ -104,12 +125,12 @@ export function ProfileEditor() {
         setError(getProfileErrorMessage(response.status));
         return;
       }
-      // PATCH has no response body in OpenAPI. Re-read from the authoritative API.
-      if (await loadProfile()) setSuccess(true);
+      if (await loadProfile()) {
+        reset(values);
+        setSuccess(true);
+      }
     } catch {
       setError('Немає з’єднання з API. Спробуйте пізніше.');
-    } finally {
-      setBusy(false);
     }
   }
 
@@ -136,7 +157,7 @@ export function ProfileEditor() {
           Профіль оновлено.
         </p>
       )}
-      {!unauthenticated && account && draft && (
+      {!unauthenticated && account && (
         <ProfileAvatar
           avatarUrl={account.profile?.avatarUrl}
           displayName={account.profile?.displayName || account.profile?.firstName || ''}
@@ -144,8 +165,12 @@ export function ProfileEditor() {
           onChanged={loadProfile}
         />
       )}
-      {!unauthenticated && account && draft && (
-        <form onSubmit={submit} className="space-y-5 rounded-xl border p-6">
+      {!unauthenticated && account && (
+        <form
+          onSubmit={handleSubmit(submit)}
+          noValidate
+          className="space-y-5 rounded-xl border p-6"
+        >
           <p className="text-sm text-muted-foreground">Пошта: {account.email}</p>
           <div className="grid gap-4 sm:grid-cols-2">
             {fields.map(({ key, label, type = 'text', placeholder }) => (
@@ -155,28 +180,28 @@ export function ProfileEditor() {
                 </label>
                 <input
                   id={key}
-                  name={key}
                   type={type}
                   placeholder={placeholder}
                   step={type === 'number' ? '0.01' : undefined}
-                  min={key === 'height' || key === 'weight' ? 1 : undefined}
-                  max={key === 'height' ? 300 : key === 'weight' ? 700 : undefined}
+                  min={key === 'height' ? 50 : key === 'weight' ? 1 : undefined}
+                  max={key === 'height' ? 300 : key === 'weight' ? 600 : undefined}
                   maxLength={type === 'text' ? 100 : undefined}
-                  disabled={busy}
-                  value={draft[key]}
-                  onChange={(event) => {
-                    setSuccess(false);
-                    setDraft((previous) =>
-                      previous ? { ...previous, [key]: event.target.value } : previous,
-                    );
-                  }}
+                  disabled={isSubmitting}
+                  aria-invalid={Boolean(errors[key])}
+                  aria-describedby={errors[key] ? `${key}-error` : undefined}
+                  {...register(key, { onChange: () => setSuccess(false) })}
                   className="h-11 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
                 />
+                {errors[key] && (
+                  <p id={`${key}-error`} role="alert" className="text-xs text-destructive">
+                    {errors[key].message}
+                  </p>
+                )}
               </div>
             ))}
           </div>
-          <Button disabled={busy} type="submit">
-            {busy ? 'Зберігаємо…' : 'Зберегти зміни'}
+          <Button disabled={isSubmitting || !isDirty} type="submit">
+            {isSubmitting ? 'Зберігаємо…' : 'Зберегти зміни'}
           </Button>
         </form>
       )}

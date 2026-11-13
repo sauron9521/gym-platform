@@ -1,19 +1,60 @@
 import type { operations } from '@gym/api-client';
+import { z } from 'zod';
 
 type MeResponse = operations['UsersController_me']['responses'][200];
 export type Account = MeResponse['content']['application/json'];
 type UpdateMe = operations['UsersController_updateMe'];
 export type ProfilePatch = UpdateMe['requestBody']['content']['application/json'];
 
-export type ProfileDraft = {
-  firstName: string;
-  lastName: string;
-  displayName: string;
-  birthday: string;
-  height: string;
-  weight: string;
-  timezone: string;
-};
+const personName = z.string().trim().max(100, 'Максимум 100 символів.');
+
+const measurement = (label: string, min: number, max: number, integer = false) =>
+  z.string().refine((input) => {
+    if (!input.trim()) return true;
+    const value = Number(input);
+    if (!Number.isFinite(value) || value < min || value > max) return false;
+    if (integer) return Number.isInteger(value);
+    return /^[0-9]+(?:\.[0-9]{1,2})?$/.test(input.trim());
+  }, `Некоректне значення: ${label}.`);
+
+const birthday = z.string().refine((input) => {
+  if (!input) return true;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(input)) return false;
+  if (input < '1900-01-01' || input > new Date().toISOString().slice(0, 10)) {
+    return false;
+  }
+  const date = new Date(`${input}T00:00:00.000Z`);
+  return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === input;
+}, 'Перевірте дату народження.');
+
+const timezonePattern = /^(?:UTC|[A-Za-z_]+\/[A-Za-z0-9_+.-]+(?:\/[A-Za-z0-9_+.-]+)?)$/;
+
+const timezone = z
+  .string()
+  .trim()
+  .min(1, 'Вкажіть часовий пояс.')
+  .max(64, 'Часовий пояс занадто довгий.')
+  .refine((value) => {
+    if (!timezonePattern.test(value)) return false;
+    try {
+      new Intl.DateTimeFormat('en-US', { timeZone: value });
+      return true;
+    } catch {
+      return false;
+    }
+  }, 'Вкажіть коректний часовий пояс, наприклад Europe/Kyiv.');
+
+export const profileSchema = z.object({
+  firstName: personName,
+  lastName: personName,
+  displayName: personName,
+  birthday,
+  height: measurement('зріст', 50, 300, true),
+  weight: measurement('вага', 1, 600),
+  timezone,
+});
+
+export type ProfileDraft = z.infer<typeof profileSchema>;
 
 export function toProfileDraft(account: Account): ProfileDraft {
   const profile = account.profile;
@@ -28,59 +69,21 @@ export function toProfileDraft(account: Account): ProfileDraft {
   };
 }
 
-function parseMeasurement(
-  input: string,
-  label: string,
-  min: number,
-  max: number,
-): { value: number | null; error?: string } {
-  if (!input.trim()) return { value: null };
-  const value = Number(input);
-  const valid = Number.isFinite(value) && value >= min && value <= max;
-  if (!valid) return { value: null, error: `Некоректне значення: ${label}.` };
-  return { value };
-}
-
-function validBirthday(input: string): boolean {
-  if (!input) return true;
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(input)) return false;
-  const timestamp = Date.parse(input);
-  if (!Number.isFinite(timestamp)) return false;
-  return input <= new Date().toISOString().slice(0, 10);
-}
-
 export function buildProfilePatch(draft: ProfileDraft): { data?: ProfilePatch; error?: string } {
-  const firstName = draft.firstName.trim();
-  const lastName = draft.lastName.trim();
-  const displayName = draft.displayName.trim();
-  const timezone = draft.timezone.trim();
-  const names = [firstName, lastName, displayName];
-
-  if (names.some((value) => value.length > 100)) {
-    return { error: 'Ім’я, прізвище та відображуване ім’я мають містити не більше 100 символів.' };
+  const parsed = profileSchema.safeParse(draft);
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? 'Перевірте дані профілю.' };
   }
-  const timezonePattern = /^[A-Za-z0-9_+./-]+$/;
-  if (!timezone || timezone.length > 100 || !timezonePattern.test(timezone)) {
-    return { error: 'Вкажіть коректний часовий пояс, наприклад Europe/Kyiv.' };
-  }
-
-  const height = parseMeasurement(draft.height, 'зріст', 1, 300);
-  const weight = parseMeasurement(draft.weight, 'вага', 1, 700);
-  if (height.error) return { error: height.error };
-  if (weight.error) return { error: weight.error };
-  if (!validBirthday(draft.birthday)) {
-    return { error: 'Перевірте дату народження.' };
-  }
-
+  const values = parsed.data;
   return {
     data: {
-      firstName: firstName || null,
-      lastName: lastName || null,
-      displayName: displayName || null,
-      birthday: draft.birthday || null,
-      height: height.value,
-      weight: weight.value,
-      timezone,
+      firstName: values.firstName || null,
+      lastName: values.lastName || null,
+      displayName: values.displayName || null,
+      birthday: values.birthday || null,
+      height: values.height ? Number(values.height) : null,
+      weight: values.weight ? Number(values.weight) : null,
+      timezone: values.timezone,
     },
   };
 }

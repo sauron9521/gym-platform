@@ -1,0 +1,6 @@
+#!/bin/sh
+# Never rewrite committed files at push time. Pre-commit applies Prettier
+# through lint-staged; pre-push prevents bypassing its result.
+pnpm format:check
+pnpm --filter @gym/web lint
+pnpm --filter @gym/web typecheck
