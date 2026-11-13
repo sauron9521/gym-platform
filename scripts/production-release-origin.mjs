@@ -40,7 +40,11 @@ export function verifyOriginMetadata(run, listing, report, requestedRunId, now =
   assert.ok(Number.isSafeInteger(attempt) && attempt >= 1 && attempt <= 999_999);
   assert.ok(listing?.total_count >= 1 && listing.total_count <= 100);
   assert.ok(Array.isArray(listing?.artifacts));
-  assert.equal(listing.artifacts.length, listing.total_count, 'Partial artifact listing is untrusted');
+  assert.equal(
+    listing.artifacts.length,
+    listing.total_count,
+    'Partial artifact listing is untrusted',
+  );
 
   const artifactName = 'release-readiness-' + id + '-' + attempt;
   const matching = listing.artifacts.filter((value) => value?.name === artifactName);
@@ -75,7 +79,10 @@ export function assertSameArtifact(localBytes, downloadedBytes) {
   assert.ok(downloadedBytes.length > 0 && downloadedBytes.length <= MAX_BYTES);
   const localHash = createHash('sha256').update(localBytes).digest();
   const sourceHash = createHash('sha256').update(downloadedBytes).digest();
-  assert.ok(timingSafeEqual(localHash, sourceHash), 'Local release receipt differs from GitHub artifact');
+  assert.ok(
+    timingSafeEqual(localHash, sourceHash),
+    'Local release receipt differs from GitHub artifact',
+  );
   return true;
 }
 
@@ -92,8 +99,10 @@ function gh(args) {
 
 export async function checkGithubOrigin(env, now = new Date()) {
   const runId = validateRunId(env?.RELEASE_REVIEW_RUN_ID);
-  assert.ok(!process.env.GH_HOST || process.env.GH_HOST === 'github.com',
-    'GitHub CLI must use github.com, not an alternate host');
+  assert.ok(
+    !process.env.GH_HOST || process.env.GH_HOST === 'github.com',
+    'GitHub CLI must use github.com, not an alternate host',
+  );
   await validatePrivateFile(env?.PRODUCTION_RELEASE_REPORT, MAX_BYTES);
   const local = readFileSync(env.PRODUCTION_RELEASE_REPORT);
   const report = JSON.parse(local.toString('utf8'));
@@ -108,8 +117,15 @@ export async function checkGithubOrigin(env, now = new Date()) {
   const scratch = mkdtempSync(join(tmpdir(), 'gym-release-origin-'));
   try {
     gh([
-      'run', 'download', String(meta.runId), '--repo', REPO,
-      '--name', meta.artifactName, '--dir', scratch,
+      'run',
+      'download',
+      String(meta.runId),
+      '--repo',
+      REPO,
+      '--name',
+      meta.artifactName,
+      '--dir',
+      scratch,
     ]);
     const files = readdirSync(scratch);
     assert.deepEqual(files, ['release-evidence.json'], 'Unexpected readiness artifact contents');
@@ -131,7 +147,7 @@ async function main() {
     await checkGithubOrigin(process.env);
     process.stdout.write(
       'Original successful GitHub Actions release-evidence artifact matches; ' +
-      'production NO-GO without host restore and explicit operator approval.\n',
+        'production NO-GO without host restore and explicit operator approval.\n',
     );
   } catch {
     process.stderr.write(
