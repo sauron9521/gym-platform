@@ -1,5 +1,13 @@
 import assert from 'node:assert/strict';
-import { mkdtempSync, writeFileSync, chmodSync, rmSync, symlinkSync, truncateSync, utimesSync } from 'node:fs';
+import {
+  mkdtempSync,
+  writeFileSync,
+  chmodSync,
+  rmSync,
+  symlinkSync,
+  truncateSync,
+  utimesSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test } from 'node:test';
@@ -30,26 +38,46 @@ function makeFixture() {
 test('strictly selects last five minutes and emits only approved event fields', () => {
   const inWindow = selectWindowLine(record(fixedNow - 5000), fixedNow);
   assert.deepEqual(JSON.parse(inWindow), {
-    event: 'http.request.completed', statusCode: 429,
+    event: 'http.request.completed',
+    statusCode: 429,
   });
   for (const sensitive of ['private@example.test', 'sensitive-token', 'timestamp']) {
     assert.equal(inWindow.includes(sensitive), false);
   }
   assert.equal(selectWindowLine(record(fixedNow - WINDOW_MS - 1), fixedNow), null);
   assert.equal(selectWindowLine(record(fixedNow + 1000), fixedNow), null);
-  assert.deepEqual(JSON.parse(selectWindowLine(JSON.stringify({
-    time: new Date(fixedNow).toISOString(),
-    message: { event: 'RATE_LIMIT_REDIS_UNAVAILABLE', redisUrl: 'redis://secret' },
-  }), fixedNow)), { event: 'RATE_LIMIT_REDIS_UNAVAILABLE' });
-  assert.equal(selectWindowLine(JSON.stringify({
-    timestamp: new Date(fixedNow).toISOString(),
-    event: 'unknown.event', credentials: 'private',
-  }), fixedNow), null);
+  assert.deepEqual(
+    JSON.parse(
+      selectWindowLine(
+        JSON.stringify({
+          time: new Date(fixedNow).toISOString(),
+          message: { event: 'RATE_LIMIT_REDIS_UNAVAILABLE', redisUrl: 'redis://secret' },
+        }),
+        fixedNow,
+      ),
+    ),
+    { event: 'RATE_LIMIT_REDIS_UNAVAILABLE' },
+  );
+  assert.equal(
+    selectWindowLine(
+      JSON.stringify({
+        timestamp: new Date(fixedNow).toISOString(),
+        event: 'unknown.event',
+        credentials: 'private',
+      }),
+      fixedNow,
+    ),
+    null,
+  );
 });
 
 test('rejects malformed, unbounded and clock-skewed records without exposing input', () => {
   const invalid = [
-    '{ not json', '', '[]', 'null', '{}',
+    '{ not json',
+    '',
+    '[]',
+    'null',
+    '{}',
     JSON.stringify({ event: 'http.request.completed', statusCode: 200 }),
     JSON.stringify({ timestamp: 'invalid', event: 'http.request.completed' }),
     record(fixedNow + 10000),
@@ -57,7 +85,8 @@ test('rejects malformed, unbounded and clock-skewed records without exposing inp
   ];
   for (const item of invalid) {
     assert.throws(() => selectWindowLine(item, fixedNow), {
-      message: /^(Invalid log entry|Missing ISO timestamp|Invalid timestamp|Clock-skewed log entry)$/,
+      message:
+        /^(Invalid log entry|Missing ISO timestamp|Invalid timestamp|Clock-skewed log entry)$/,
     });
   }
   assert.throws(() => parseLogFileArg(['--file', 'relative.jsonl']));
@@ -69,24 +98,29 @@ test('reads regular group-readable log file and rejects world access, symlinks a
   const dir = makeFixture();
   try {
     const source = join(dir, 'events.jsonl');
-    const payload = [
-      record(fixedNow - WINDOW_MS - 10),
-      record(fixedNow - 1000),
-      JSON.stringify({
-        timestamp: new Date(fixedNow - 1000).toISOString(),
-        event: 'RATE_LIMIT_REDIS_RECOVERED', value: 'private',
-      }),
-    ].join('\n') + '\n';
+    const payload =
+      [
+        record(fixedNow - WINDOW_MS - 10),
+        record(fixedNow - 1000),
+        JSON.stringify({
+          timestamp: new Date(fixedNow - 1000).toISOString(),
+          event: 'RATE_LIMIT_REDIS_RECOVERED',
+          value: 'private',
+        }),
+      ].join('\n') + '\n';
     writeFileSync(source, payload);
     chmodSync(source, 0o640);
     utimesSync(source, new Date(fixedNow), new Date(fixedNow));
 
     const output = [];
     await filterLogFile(source, (line) => output.push(line), fixedNow);
-    assert.deepEqual(output.map((line) => JSON.parse(line)), [
-      { event: 'http.request.completed', statusCode: 429 },
-      { event: 'RATE_LIMIT_REDIS_RECOVERED' },
-    ]);
+    assert.deepEqual(
+      output.map((line) => JSON.parse(line)),
+      [
+        { event: 'http.request.completed', statusCode: 429 },
+        { event: 'RATE_LIMIT_REDIS_RECOVERED' },
+      ],
+    );
 
     chmodSync(source, 0o666);
     await assert.rejects(filterLogFile(source, () => undefined, fixedNow));
@@ -116,9 +150,12 @@ test('an outdated forwarder snapshot is rejected even if event timestamps look h
     writeFileSync(source, record(fixedNow - 1000) + '\n');
     chmodSync(source, 0o640);
     utimesSync(source, new Date(fixedNow - 200_000), new Date(fixedNow - 200_000));
-    await assert.rejects(filterLogFile(source, () => undefined, fixedNow), {
-      message: 'Stale log source',
-    });
+    await assert.rejects(
+      filterLogFile(source, () => undefined, fixedNow),
+      {
+        message: 'Stale log source',
+      },
+    );
 
     utimesSync(source, new Date(fixedNow), new Date(fixedNow));
     const collected = [];

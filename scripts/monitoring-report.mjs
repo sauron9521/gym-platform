@@ -24,8 +24,7 @@ export function emptySummary() {
 }
 
 function object(value) {
-  return value !== null && typeof value === 'object' &&
-    !Array.isArray(value) ? value : null;
+  return value !== null && typeof value === 'object' && !Array.isArray(value) ? value : null;
 }
 
 function findEvent(record) {
@@ -67,9 +66,12 @@ export function addLogLine(summary, line) {
     summary.ignoredLines += 1;
     return;
   }
-  if (data.event === HTTP_COMPLETED &&
-      Number.isInteger(data.statusCode) &&
-      data.statusCode >= 100 && data.statusCode <= 599) {
+  if (
+    data.event === HTTP_COMPLETED &&
+    Number.isInteger(data.statusCode) &&
+    data.statusCode >= 100 &&
+    data.statusCode <= 599
+  ) {
     summary.httpRequests += 1;
     if (data.statusCode === 429) summary.http429 += 1;
     if (data.statusCode === 503) summary.http503 += 1;
@@ -132,8 +134,14 @@ export function buildReport(summary, health = null) {
 /** GET only the two public health endpoints; never return URLs or bodies. */
 export async function probeHealth(baseUrl, fetchFn = fetch) {
   const base = new URL(baseUrl);
-  if (!['http:', 'https:'].includes(base.protocol) || base.username ||
-      base.password || base.pathname !== '/' || base.search || base.hash) {
+  if (
+    !['http:', 'https:'].includes(base.protocol) ||
+    base.username ||
+    base.password ||
+    base.pathname !== '/' ||
+    base.search ||
+    base.hash
+  ) {
     throw new Error('Invalid health base URL (must be an HTTP(S) origin without credentials)');
   }
   async function check(path) {
@@ -143,8 +151,10 @@ export async function probeHealth(baseUrl, fetchFn = fetch) {
         redirect: 'manual',
         signal: AbortSignal.timeout(3_000),
       });
-      return { status: response.status === 200 ? 'ok' : 'failed',
-        httpStatus: Number.isInteger(response.status) ? response.status : null };
+      return {
+        status: response.status === 200 ? 'ok' : 'failed',
+        httpStatus: Number.isInteger(response.status) ? response.status : null,
+      };
     } catch {
       return { status: 'failed', httpStatus: null };
     }

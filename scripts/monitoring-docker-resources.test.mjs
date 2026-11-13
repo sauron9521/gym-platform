@@ -1,36 +1,49 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import {
-  chmodSync, lstatSync, mkdtempSync, readFileSync, rmSync, symlinkSync,
-} from 'node:fs';
+import { chmodSync, lstatSync, mkdtempSync, readFileSync, rmSync, symlinkSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 import {
-  collectSample, metricsFromSample, parseInspect, parseStats, publishMetrics,
+  collectSample,
+  metricsFromSample,
+  parseInspect,
+  parseStats,
+  publishMetrics,
 } from './monitoring-docker-resources.mjs';
 
-const fixture = JSON.stringify({
-  Name: 'private-container', CPUPerc: '122.50%',
-  MemPerc: '91.25%', PIDs: '12', Env: 'PRIVATE-TOKEN',
-}) + '\n';
+const fixture =
+  JSON.stringify({
+    Name: 'private-container',
+    CPUPerc: '122.50%',
+    MemPerc: '91.25%',
+    PIDs: '12',
+    Env: 'PRIVATE-TOKEN',
+  }) + '\n';
 
 test('parses only fixed numeric Docker inspect and stats fields', () => {
   assert.deepEqual(parseInspect('3 false true\n'), {
-    restartCount: 3, oomKilled: false, running: true,
+    restartCount: 3,
+    oomKilled: false,
+    running: true,
   });
   assert.deepEqual(parseStats(fixture), {
-    cpuPercent: 122.5, memoryPercent: 91.25, pids: 12,
+    cpuPercent: 122.5,
+    memoryPercent: 91.25,
+    pids: 12,
   });
   for (const broken of ['NaN false true', '-2 false true', '0 x true', '0 true', '']) {
     assert.throws(() => parseInspect(broken));
   }
   for (const broken of [
-    '{}', 'not JSON', fixture + fixture,
+    '{}',
+    'not JSON',
+    fixture + fixture,
     '{"CPUPerc":"NaN%","MemPerc":"10%","PIDs":"1"}',
     '{"CPUPerc":"10%","MemPerc":"101%","PIDs":"1"}',
     '{"CPUPerc":"10%","MemPerc":"10%","PIDs":"1;rm"}',
-  ]) assert.throws(() => parseStats(broken));
+  ])
+    assert.throws(() => parseStats(broken));
 });
 
 test('collector requests Docker numeric format only and never full inspect', async () => {
@@ -42,8 +55,12 @@ test('collector requests Docker numeric format only and never full inspect', asy
     throw new Error('unexpected Docker call');
   });
   assert.deepEqual(commands, [
-    ['inspect', '--format',
-      '{{.RestartCount}} {{.State.OOMKilled}} {{.State.Running}}', 'gym-platform-api-api-1'],
+    [
+      'inspect',
+      '--format',
+      '{{.RestartCount}} {{.State.OOMKilled}} {{.State.Running}}',
+      'gym-platform-api-api-1',
+    ],
     ['stats', '--no-stream', '--format', '{{json .}}', 'gym-platform-api-api-1'],
   ]);
   assert.equal(sample.restartCount, 4);
@@ -70,29 +87,45 @@ test('stopped or OOM-killed container yields unknown usage, not false zeros', as
   assert.match(metrics, /^gym_api_docker_oom_killed 1$/m);
   assert.match(metrics, /^gym_api_docker_memory_percent -1$/m);
   assert.throws(() => metricsFromSample({ ...sample, memoryPercent: 0 }));
-  await assert.rejects(collectSample('gym-platform-api-api-1', async () => {
-    throw new Error('Docker unavailable with private secret');
-  }));
+  await assert.rejects(
+    collectSample('gym-platform-api-api-1', async () => {
+      throw new Error('Docker unavailable with private secret');
+    }),
+  );
 });
 
 test('atomic 0640 metric publication protects prior snapshot and rejects unsafe paths', async () => {
   const root = mkdtempSync(join(tmpdir(), 'gym-resources-'));
   const output = join(root, 'gym_api_docker.prom');
   try {
-    const good = metricsFromSample({
-      restartCount: 0, oomKilled: false, running: true,
-      cpuPercent: 10, memoryPercent: 20, pids: 2,
-    }, 1_700_000_000);
+    const good = metricsFromSample(
+      {
+        restartCount: 0,
+        oomKilled: false,
+        running: true,
+        cpuPercent: 10,
+        memoryPercent: 20,
+        pids: 2,
+      },
+      1_700_000_000,
+    );
     await publishMetrics(output, good);
     assert.equal(readFileSync(output, 'utf8'), good);
     assert.equal(lstatSync(output).mode & 0o777, 0o640);
     await assert.rejects(publishMetrics(join(root, 'bad.prom'), good));
     assert.equal(readFileSync(output, 'utf8'), good);
 
-    const replacement = metricsFromSample({
-      restartCount: 1, oomKilled: false, running: true,
-      cpuPercent: 0, memoryPercent: 11, pids: 1,
-    }, 1_700_000_060);
+    const replacement = metricsFromSample(
+      {
+        restartCount: 1,
+        oomKilled: false,
+        running: true,
+        cpuPercent: 0,
+        memoryPercent: 11,
+        pids: 1,
+      },
+      1_700_000_060,
+    );
     await publishMetrics(output, replacement);
     assert.equal(readFileSync(output, 'utf8'), replacement);
 

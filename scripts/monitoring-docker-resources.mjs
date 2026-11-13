@@ -42,10 +42,18 @@ export function parseStats(text) {
     throw new Error('Invalid stats response');
   }
   let stats;
-  try { stats = JSON.parse(lines[0]); }
-  catch { throw new Error('Invalid stats JSON'); }
-  if (!stats || typeof stats !== 'object' || Array.isArray(stats) ||
-      typeof stats.PIDs !== 'string' || !/^\d+$/.test(stats.PIDs)) {
+  try {
+    stats = JSON.parse(lines[0]);
+  } catch {
+    throw new Error('Invalid stats JSON');
+  }
+  if (
+    !stats ||
+    typeof stats !== 'object' ||
+    Array.isArray(stats) ||
+    typeof stats.PIDs !== 'string' ||
+    !/^\d+$/.test(stats.PIDs)
+  ) {
     throw new Error('Invalid stats fields');
   }
   const pids = Number(stats.PIDs);
@@ -62,37 +70,49 @@ export async function collectSample(container, invoke = invokeDocker) {
     throw new Error('Invalid container');
   }
   // Only request fixed numeric fields: never read inspect env, labels or secrets.
-  const status = parseInspect(await invoke([
-    'inspect', '--format',
-    '{{.RestartCount}} {{.State.OOMKilled}} {{.State.Running}}', container,
-  ]));
+  const status = parseInspect(
+    await invoke([
+      'inspect',
+      '--format',
+      '{{.RestartCount}} {{.State.OOMKilled}} {{.State.Running}}',
+      container,
+    ]),
+  );
   // Preserve OOM/stopped state while marking unavailable usage as -1, not 0.
-  const usage = status.running ? parseStats(await invoke([
-    'stats', '--no-stream', '--format', '{{json .}}', container,
-  ])) : { cpuPercent: -1, memoryPercent: -1, pids: -1 };
+  const usage = status.running
+    ? parseStats(await invoke(['stats', '--no-stream', '--format', '{{json .}}', container]))
+    : { cpuPercent: -1, memoryPercent: -1, pids: -1 };
   return { ...status, ...usage };
 }
 
 async function invokeDocker(args) {
   const { stdout } = await execFileAsync('docker', args, {
-    timeout: 12_000, maxBuffer: 64 * 1024,
+    timeout: 12_000,
+    maxBuffer: 64 * 1024,
   });
   return stdout;
 }
 
 export function metricsFromSample(sample, now = Math.floor(Date.now() / 1000)) {
-  if (!sample || !Number.isSafeInteger(now) || now < 0 ||
-      !Number.isSafeInteger(sample.restartCount) || sample.restartCount < 0 ||
-      typeof sample.running !== 'boolean' ||
-      typeof sample.oomKilled !== 'boolean' ||
-      ![sample.cpuPercent, sample.memoryPercent, sample.pids].every(Number.isFinite) ||
-      sample.cpuPercent < -1 || sample.cpuPercent > 100_000 ||
-      sample.memoryPercent < -1 || sample.memoryPercent > 100 ||
-      sample.pids < -1 || !Number.isSafeInteger(sample.pids) ||
-      (sample.running && (sample.cpuPercent < 0 || sample.memoryPercent < 0 ||
-        sample.pids < 0)) ||
-      (!sample.running && (sample.cpuPercent !== -1 ||
-        sample.memoryPercent !== -1 || sample.pids !== -1))) {
+  if (
+    !sample ||
+    !Number.isSafeInteger(now) ||
+    now < 0 ||
+    !Number.isSafeInteger(sample.restartCount) ||
+    sample.restartCount < 0 ||
+    typeof sample.running !== 'boolean' ||
+    typeof sample.oomKilled !== 'boolean' ||
+    ![sample.cpuPercent, sample.memoryPercent, sample.pids].every(Number.isFinite) ||
+    sample.cpuPercent < -1 ||
+    sample.cpuPercent > 100_000 ||
+    sample.memoryPercent < -1 ||
+    sample.memoryPercent > 100 ||
+    sample.pids < -1 ||
+    !Number.isSafeInteger(sample.pids) ||
+    (sample.running && (sample.cpuPercent < 0 || sample.memoryPercent < 0 || sample.pids < 0)) ||
+    (!sample.running &&
+      (sample.cpuPercent !== -1 || sample.memoryPercent !== -1 || sample.pids !== -1))
+  ) {
     throw new Error('Invalid resource sample');
   }
   const values = [
@@ -105,13 +125,13 @@ export function metricsFromSample(sample, now = Math.floor(Date.now() / 1000)) {
     ['gym_api_docker_oom_killed', Number(sample.oomKilled)],
   ];
   // No labels, hostnames, paths, container names or Docker inspection text.
-  return values.map(([key, value]) =>
-    '# TYPE ' + key + ' gauge\n' + key + ' ' + value + '\n').join('');
+  return values
+    .map(([key, value]) => '# TYPE ' + key + ' gauge\n' + key + ' ' + value + '\n')
+    .join('');
 }
 
 export async function publishMetrics(path, text) {
-  if (typeof path !== 'string' || !isAbsolute(path) ||
-      basename(path) !== DESTINATION) {
+  if (typeof path !== 'string' || !isAbsolute(path) || basename(path) !== DESTINATION) {
     throw new Error('Invalid metrics path');
   }
   const parent = dirname(path);

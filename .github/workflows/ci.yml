@@ -61,16 +61,6 @@ jobs:
       - name: Validate release and GHCR safety contracts (offline)
         run: node --test scripts/release-bundle.test.mjs scripts/ghcr-promotion.test.mjs scripts/release-supply-chain.test.mjs scripts/release-ci-gate.test.mjs
 
-      - name: Temporary canonical formatting diagnostics for observability
-        run: |
-          for file in scripts/monitoring-*.mjs ops/monitoring/alerts.*.yml ops/monitoring/slo.*.yml ops/monitoring/grafana/*.json docs/production-observability.md; do
-            if ! pnpm exec prettier --check "$file" >/dev/null 2>&1; then
-              echo "FORMATTED_START:$file"
-              pnpm exec prettier "$file" | node -e 'let s="";process.stdin.on("data",c=>s+=c);process.stdin.on("end",()=>console.log(JSON.stringify(s)))'
-              echo "FORMATTED_END:$file"
-            fi
-          done
-
       - name: Check formatting
         run: pnpm format:check
 

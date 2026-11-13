@@ -21,7 +21,10 @@ test('production monitoring example matches the monorepo Docker Compose layout',
   assert.match(collector, /^MONITOR_API_ORIGIN=http:\/\/127\.0\.0\.1:3001$/m);
   assert.match(collector, /^MONITOR_LOG_FILE=\/var\/log\/gym-platform-api\/events\.jsonl$/m);
   assert.match(forward, /^FORWARD_LOG_FILE=\/var\/log\/gym-platform-api\/events\.jsonl$/m);
-  assert.doesNotMatch(forward + collector + resources + signals, /\/etc\/gym-api\b|gym-api-api-1|\/var\/log\/gym-api\//);
+  assert.doesNotMatch(
+    forward + collector + resources + signals,
+    /\/etc\/gym-api\b|gym-api-api-1|\/var\/log\/gym-api\//,
+  );
 });
 
 test('host collector has no Docker access and host-forwarder remains separate', async () => {
@@ -32,11 +35,17 @@ test('host collector has no Docker access and host-forwarder remains separate', 
 
   assert.match(monitor, /^User=gym-monitor$/m);
   assert.match(monitor, /^ReadOnlyPaths=\/var\/log\/gym-platform-api$/m);
-  assert.match(monitor, /^ExecStart=\/usr\/bin\/bash \/opt\/gym-platform\/scripts\/monitoring-collect\.sh$/m);
+  assert.match(
+    monitor,
+    /^ExecStart=\/usr\/bin\/bash \/opt\/gym-platform\/scripts\/monitoring-collect\.sh$/m,
+  );
   assert.match(monitor, /^SuccessExitStatus=2$/m);
   assert.match(collect, /monitoring-log-window\.mjs/);
   assert.match(collect, /monitoring-textfile\.mjs/);
-  assert.doesNotMatch(monitor + collect, /docker logs|docker inspect|docker stats|\/var\/run\/docker\.sock|SupplementaryGroups=docker/);
+  assert.doesNotMatch(
+    monitor + collect,
+    /docker logs|docker inspect|docker stats|\/var\/run\/docker\.sock|SupplementaryGroups=docker/,
+  );
 
   assert.match(forwarder, /^User=root$/m);
   assert.match(forwarder, /^EnvironmentFile=\/etc\/gym-platform\/forwarder\.env$/m);

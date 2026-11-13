@@ -14,22 +14,31 @@ const WINDOW_SECONDS = 600;
 const OUTPUT_NAME = 'gym_api_docker_signals.prom';
 
 export function parseIdentity(input) {
-  const match = typeof input === 'string'
-    ? /^([a-f0-9]{64}) (\d+) (true|false)$/.exec(input.trim()) : null;
+  const match =
+    typeof input === 'string' ? /^([a-f0-9]{64}) (\d+) (true|false)$/.exec(input.trim()) : null;
   if (!match) throw new Error('Invalid Docker identity');
   const pid = Number(match[2]);
-  if (!Number.isSafeInteger(pid) || (match[3] === 'true' && pid < 1) ||
-      (match[3] === 'false' && pid !== 0)) {
+  if (
+    !Number.isSafeInteger(pid) ||
+    (match[3] === 'true' && pid < 1) ||
+    (match[3] === 'false' && pid !== 0)
+  ) {
     throw new Error('Invalid Docker PID');
   }
   return { id: match[1], pid, running: match[3] === 'true' };
 }
 
 export function parseOomEvents(text, id, since, until) {
-  if (!CONTAINER_ID.test(id) || !Number.isSafeInteger(since) ||
-      !Number.isSafeInteger(until) || since < 0 || until <= since ||
-      until - since !== WINDOW_SECONDS || typeof text !== 'string' ||
-      Buffer.byteLength(text) > 256 * 1024) {
+  if (
+    !CONTAINER_ID.test(id) ||
+    !Number.isSafeInteger(since) ||
+    !Number.isSafeInteger(until) ||
+    since < 0 ||
+    until <= since ||
+    until - since !== WINDOW_SECONDS ||
+    typeof text !== 'string' ||
+    Buffer.byteLength(text) > 256 * 1024
+  ) {
     throw new Error('Invalid Docker event input');
   }
   if (!text.trim()) return 0;
@@ -39,11 +48,20 @@ export function parseOomEvents(text, id, since, until) {
   for (const line of lines) {
     if (Buffer.byteLength(line) > 16 * 1024) throw new Error('Oversized Docker event');
     let event;
-    try { event = JSON.parse(line); }
-    catch { throw new Error('Invalid Docker event'); }
-    if (!event || event.Type !== 'container' || event.Action !== 'oom' ||
-        event.Actor?.ID !== id || !Number.isSafeInteger(event.time) ||
-        event.time < since || event.time > until) {
+    try {
+      event = JSON.parse(line);
+    } catch {
+      throw new Error('Invalid Docker event');
+    }
+    if (
+      !event ||
+      event.Type !== 'container' ||
+      event.Action !== 'oom' ||
+      event.Actor?.ID !== id ||
+      !Number.isSafeInteger(event.time) ||
+      event.time < since ||
+      event.time > until
+    ) {
       throw new Error('Unexpected Docker event');
     }
     // Nanosecond Docker timestamps exceed JS safe integers. Count each
@@ -54,18 +72,20 @@ export function parseOomEvents(text, id, since, until) {
 }
 
 export function cgroupCpuStatPath(cgroup, containerId) {
-  if (typeof cgroup !== 'string' || cgroup.length > 4096 ||
-      !CONTAINER_ID.test(containerId)) {
+  if (typeof cgroup !== 'string' || cgroup.length > 4096 || !CONTAINER_ID.test(containerId)) {
     throw new Error('Invalid cgroup mapping');
   }
   const lines = cgroup.trim().split(/\r?\n/);
-  const values = lines.filter(line => line.startsWith('0::'));
+  const values = lines.filter((line) => line.startsWith('0::'));
   if (values.length !== 1) throw new Error('Requires host cgroup v2');
   const relative = values[0].slice(3);
-  if (!relative.startsWith('/') || !relative.includes(containerId) ||
-      relative.includes('\0') ||
-      relative.split('/').some(part => part === '.' || part === '..') ||
-      !/^\/[a-zA-Z0-9_./:-]*$/.test(relative)) {
+  if (
+    !relative.startsWith('/') ||
+    !relative.includes(containerId) ||
+    relative.includes('\0') ||
+    relative.split('/').some((part) => part === '.' || part === '..') ||
+    !/^\/[a-zA-Z0-9_./:-]*$/.test(relative)
+  ) {
     throw new Error('Invalid cgroup location');
   }
   const destination = resolve('/sys/fs/cgroup', '.' + relative, 'cpu.stat');
@@ -86,8 +106,10 @@ export function parseCpuStat(text) {
     values.set(match[1], Number(match[2]));
   }
   const required = ['nr_periods', 'nr_throttled', 'throttled_usec'];
-  if (!required.every(k => Number.isSafeInteger(values.get(k))) ||
-      values.get('nr_throttled') > values.get('nr_periods')) {
+  if (
+    !required.every((k) => Number.isSafeInteger(values.get(k))) ||
+    values.get('nr_throttled') > values.get('nr_periods')
+  ) {
     throw new Error('Missing or invalid cgroup CPU counters');
   }
   return {
@@ -102,21 +124,37 @@ async function docker(args) {
   return stdout;
 }
 
-export async function collectSignals(container, now = Math.floor(Date.now() / 1000),
-  invoke = docker, read = (path) => readFile(path, 'utf8')) {
-  if (typeof container !== 'string' || !CONTAINER_NAME.test(container) ||
-      !Number.isSafeInteger(now) || now < WINDOW_SECONDS) {
+export async function collectSignals(
+  container,
+  now = Math.floor(Date.now() / 1000),
+  invoke = docker,
+  read = (path) => readFile(path, 'utf8'),
+) {
+  if (
+    typeof container !== 'string' ||
+    !CONTAINER_NAME.test(container) ||
+    !Number.isSafeInteger(now) ||
+    now < WINDOW_SECONDS
+  ) {
     throw new Error('Invalid resource configuration');
   }
-  const identity = parseIdentity(await invoke([
-    'inspect', '--format', '{{.Id}} {{.State.Pid}} {{.State.Running}}', container,
-  ]));
+  const identity = parseIdentity(
+    await invoke(['inspect', '--format', '{{.Id}} {{.State.Pid}} {{.State.Running}}', container]),
+  );
   const since = now - WINDOW_SECONDS;
   // Time-bounded Docker API query (not a permanent streaming connection).
   const events = await invoke([
-    'events', '--since', String(since), '--until', String(now),
-    '--filter', 'container=' + identity.id, '--filter', 'event=oom',
-    '--format', '{{json .}}',
+    'events',
+    '--since',
+    String(since),
+    '--until',
+    String(now),
+    '--filter',
+    'container=' + identity.id,
+    '--filter',
+    'event=oom',
+    '--format',
+    '{{json .}}',
   ]);
   const oomEvents = parseOomEvents(events, identity.id, since, now);
   let cpu = null;
@@ -128,11 +166,16 @@ export async function collectSignals(container, now = Math.floor(Date.now() / 10
 }
 
 export function metricsFromSignals(sample, now = Math.floor(Date.now() / 1000)) {
-  if (!sample || !Number.isSafeInteger(now) || now < 0 ||
-      typeof sample.running !== 'boolean' ||
-      !Number.isSafeInteger(sample.oomEvents) ||
-      sample.oomEvents < 0 || sample.oomEvents > 512 ||
-      (sample.running !== (sample.cpu !== null))) {
+  if (
+    !sample ||
+    !Number.isSafeInteger(now) ||
+    now < 0 ||
+    typeof sample.running !== 'boolean' ||
+    !Number.isSafeInteger(sample.oomEvents) ||
+    sample.oomEvents < 0 ||
+    sample.oomEvents > 512 ||
+    sample.running !== (sample.cpu !== null)
+  ) {
     throw new Error('Invalid Docker signals');
   }
   const values = [
@@ -142,11 +185,16 @@ export function metricsFromSignals(sample, now = Math.floor(Date.now() / 1000)) 
   ];
   if (sample.running) {
     const c = sample.cpu;
-    if (!c || !Number.isSafeInteger(c.periods) ||
-        !Number.isSafeInteger(c.throttledPeriods) ||
-        c.periods < 0 || c.throttledPeriods < 0 ||
-        c.throttledPeriods > c.periods || !Number.isFinite(c.throttledSeconds) ||
-        c.throttledSeconds < 0) {
+    if (
+      !c ||
+      !Number.isSafeInteger(c.periods) ||
+      !Number.isSafeInteger(c.throttledPeriods) ||
+      c.periods < 0 ||
+      c.throttledPeriods < 0 ||
+      c.throttledPeriods > c.periods ||
+      !Number.isFinite(c.throttledSeconds) ||
+      c.throttledSeconds < 0
+    ) {
       throw new Error('Invalid cgroup CPU sample');
     }
     values.push(
@@ -155,13 +203,13 @@ export function metricsFromSignals(sample, now = Math.floor(Date.now() / 1000)) 
       ['gym_api_docker_cpu_throttled_seconds_total', c.throttledSeconds, 'counter'],
     );
   }
-  return values.map(([name, value, type]) =>
-    '# TYPE ' + name + ' ' + type + '\n' + name + ' ' + value + '\n').join('');
+  return values
+    .map(([name, value, type]) => '# TYPE ' + name + ' ' + type + '\n' + name + ' ' + value + '\n')
+    .join('');
 }
 
 export async function publishSignals(output, contents) {
-  if (typeof output !== 'string' || !isAbsolute(output) ||
-      basename(output) !== OUTPUT_NAME) {
+  if (typeof output !== 'string' || !isAbsolute(output) || basename(output) !== OUTPUT_NAME) {
     throw new Error('Invalid Docker signals destination');
   }
   const parent = dirname(output);

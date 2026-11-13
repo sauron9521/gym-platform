@@ -8,11 +8,7 @@ import { fileURLToPath } from 'node:url';
 import { test } from 'node:test';
 
 import { buildReport, emptySummary } from './monitoring-report.mjs';
-import {
-  metricsFromReport,
-  parseOutputArg,
-  writeMetricsFile,
-} from './monitoring-textfile.mjs';
+import { metricsFromReport, parseOutputArg, writeMetricsFile } from './monitoring-textfile.mjs';
 
 const cli = fileURLToPath(new URL('./monitoring-textfile.mjs', import.meta.url));
 const collect = fileURLToPath(new URL('./monitoring-collect.sh', import.meta.url));
@@ -45,8 +41,12 @@ test('converts a validated report to label-free, timestamp-free Prometheus gauge
   assert.match(output, /gym_api_monitor_warning_alert 1/);
   assert.doesNotMatch(output, /sensitive@example.test|private-password|redis:\/\//);
   assert.doesNotMatch(output, /\{[^\n]*=/);
-  assert.ok(output.split('\n').filter((line) => /^gym_api_monitor_/.test(line))
-    .every((line) => /^gym_api_monitor_[a-z0-9_]+ -?\d+$/.test(line)));
+  assert.ok(
+    output
+      .split('\n')
+      .filter((line) => /^gym_api_monitor_/.test(line))
+      .every((line) => /^gym_api_monitor_[a-z0-9_]+ -?\d+$/.test(line)),
+  );
 });
 
 test('unknown probe is minus one, distinct from healthy 1 and failed 0', () => {
@@ -73,8 +73,7 @@ test('publishes atomically with restrictive permissions and preserves old report
   try {
     const target = join(dir, 'gym_api_monitor.prom');
     await writeMetricsFile(target, metricsFromReport(fixture(), 123));
-    assert.match(readFileSync(target, 'utf8'),
-      /gym_api_monitor_last_run_timestamp_seconds 123/);
+    assert.match(readFileSync(target, 'utf8'), /gym_api_monitor_last_run_timestamp_seconds 123/);
     assert.equal(statSync(target).mode & 0o777, 0o640);
     const first = readFileSync(target, 'utf8');
     await assert.rejects(writeMetricsFile(join(dir, 'missing', 'monitor.prom'), 'bad'));
@@ -93,14 +92,18 @@ test('CLI accepts sanitized report, ignores extra secret fields, and rejects mal
     const data = fixture();
     data.secret = 'recovery@example.test';
     const ok = spawnSync(process.execPath, [cli, '--output', dest], {
-      input: JSON.stringify(data), encoding: 'utf8', timeout: 10_000,
+      input: JSON.stringify(data),
+      encoding: 'utf8',
+      timeout: 10_000,
     });
     assert.equal(ok.status, 0, ok.stderr);
     assert.equal(ok.stdout, '');
     assert.equal(readFileSync(dest, 'utf8').includes(data.secret), false);
 
     const failed = spawnSync(process.execPath, [cli, '--output', dest], {
-      input: '{ "secret": "tok@unsafe" ', encoding: 'utf8', timeout: 10_000,
+      input: '{ "secret": "tok@unsafe" ',
+      encoding: 'utf8',
+      timeout: 10_000,
     });
     assert.equal(failed.status, 1);
     assert.equal(failed.stderr.includes('tok@unsafe'), false);
@@ -123,12 +126,15 @@ test('five-minute read-only log collection publishes privacy-safe metrics withou
         statusCode: 429,
         email: 'private@example.test',
         token: 'sensitive-token',
-      }));
-    lines.push(JSON.stringify({
-      timestamp: new Date(Date.now() - 10 * 60_000).toISOString(),
-      event: 'http.request.completed',
-      statusCode: 503,
-    }));
+      }),
+    );
+    lines.push(
+      JSON.stringify({
+        timestamp: new Date(Date.now() - 10 * 60_000).toISOString(),
+        event: 'http.request.completed',
+        statusCode: 503,
+      }),
+    );
     writeFileSync(source, lines.join('\n') + '\n');
     chmodSync(source, 0o640);
 
@@ -139,7 +145,9 @@ test('five-minute read-only log collection publishes privacy-safe metrics withou
       MONITOR_TEXTFILE_PATH: dest,
     };
     const run = spawnSync('bash', [collect], {
-      encoding: 'utf8', timeout: 20_000, env: environment,
+      encoding: 'utf8',
+      timeout: 20_000,
+      env: environment,
     });
     assert.equal(run.status, 2, run.stderr);
     assert.equal(run.stdout, '');
@@ -155,7 +163,9 @@ test('five-minute read-only log collection publishes privacy-safe metrics withou
     // A failed/untrusted source must preserve the last complete snapshot.
     chmodSync(source, 0o666);
     const rejected = spawnSync('bash', [collect], {
-      encoding: 'utf8', timeout: 20_000, env: environment,
+      encoding: 'utf8',
+      timeout: 20_000,
+      env: environment,
     });
     assert.equal(rejected.status, 1);
     assert.equal(readFileSync(dest, 'utf8'), output);
@@ -164,7 +174,9 @@ test('five-minute read-only log collection publishes privacy-safe metrics withou
     chmodSync(source, 0o640);
     writeFileSync(source, '{ broken JSON\n');
     const malformed = spawnSync('bash', [collect], {
-      encoding: 'utf8', timeout: 20_000, env: environment,
+      encoding: 'utf8',
+      timeout: 20_000,
+      env: environment,
     });
     assert.equal(malformed.status, 1);
     assert.equal(readFileSync(dest, 'utf8'), output);

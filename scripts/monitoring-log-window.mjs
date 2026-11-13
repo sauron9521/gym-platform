@@ -13,9 +13,13 @@ export const MAX_LINE_BYTES = 64 * 1024;
 export const MAX_SOURCE_AGE_MS = 150 * 1000;
 
 export function parseLogFileArg(args) {
-  if (args.length !== 2 || args[0] !== '--file' ||
-      typeof args[1] !== 'string' || !isAbsolute(args[1]) ||
-      !/^[A-Za-z0-9][A-Za-z0-9_.-]*\.jsonl$/.test(basename(args[1]))) {
+  if (
+    args.length !== 2 ||
+    args[0] !== '--file' ||
+    typeof args[1] !== 'string' ||
+    !isAbsolute(args[1]) ||
+    !/^[A-Za-z0-9][A-Za-z0-9_.-]*\.jsonl$/.test(basename(args[1]))
+  ) {
     throw new Error('Invalid log source');
   }
   return args[1];
@@ -36,8 +40,10 @@ export function selectWindowLine(line, nowMs) {
     throw new Error('Invalid log entry');
   }
   const timestamp = record.timestamp ?? record.time;
-  if (typeof timestamp !== 'string' ||
-      !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/.test(timestamp)) {
+  if (
+    typeof timestamp !== 'string' ||
+    !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/.test(timestamp)
+  ) {
     throw new Error('Missing ISO timestamp');
   }
   const at = Date.parse(timestamp);
@@ -49,9 +55,15 @@ export function selectWindowLine(line, nowMs) {
 
   // Only emit whitelisted aggregate signals. The output must never carry
   // arbitrary log fields (authorization headers, session IDs or user data).
-  const candidates = [record, record.message, record.context,
-    record.metadata, record.data, record.message?.context,
-    record.message?.metadata];
+  const candidates = [
+    record,
+    record.message,
+    record.context,
+    record.metadata,
+    record.data,
+    record.message?.context,
+    record.message?.metadata,
+  ];
   for (const candidate of candidates) {
     if (!candidate || typeof candidate !== 'object' || Array.isArray(candidate)) {
       continue;
@@ -62,8 +74,10 @@ export function selectWindowLine(line, nowMs) {
         ? JSON.stringify({ event: 'http.request.completed', statusCode: status })
         : null;
     }
-    if (candidate.event === 'RATE_LIMIT_REDIS_UNAVAILABLE' ||
-        candidate.event === 'RATE_LIMIT_REDIS_RECOVERED') {
+    if (
+      candidate.event === 'RATE_LIMIT_REDIS_UNAVAILABLE' ||
+      candidate.event === 'RATE_LIMIT_REDIS_RECOVERED'
+    ) {
       return JSON.stringify({ event: candidate.event });
     }
   }
@@ -79,14 +93,12 @@ export async function filterLogFile(path, emit, nowMs = Date.now()) {
   const handle = await open(file, flags);
   try {
     const stats = await handle.stat();
-    if (!stats.isFile() || stats.size > MAX_FILE_BYTES ||
-        (stats.mode & 0o027) !== 0) {
+    if (!stats.isFile() || stats.size > MAX_FILE_BYTES || (stats.mode & 0o027) !== 0) {
       throw new Error('Untrusted log file');
     }
     // The forwarder runs every minute. A stale but readable snapshot
     // must NOT be re-reported as fresh, masking a broken upstream source.
-    if (stats.mtimeMs > nowMs + 5_000 ||
-        nowMs - stats.mtimeMs > MAX_SOURCE_AGE_MS) {
+    if (stats.mtimeMs > nowMs + 5_000 || nowMs - stats.mtimeMs > MAX_SOURCE_AGE_MS) {
       throw new Error('Stale log source');
     }
     const lines = createInterface({

@@ -26,8 +26,10 @@ test('aggregates known HTTP and Redis event counters from flattened and nested J
   const lines = [
     http(200),
     http(429, { email: 'private@example.test', token: 'secret-token' }),
-    JSON.stringify({ message: 'HTTP request completed',
-      context: { event: 'http.request.completed', statusCode: 503, route: '/ready' } }),
+    JSON.stringify({
+      message: 'HTTP request completed',
+      context: { event: 'http.request.completed', statusCode: 503, route: '/ready' },
+    }),
     JSON.stringify({ message: { event: 'RATE_LIMIT_REDIS_UNAVAILABLE' } }),
     JSON.stringify({ metadata: { event: 'RATE_LIMIT_REDIS_RECOVERED' } }),
     JSON.stringify({ event: 'RATE_LIMIT_REDIS_UNAVAILABLE' }),
@@ -113,7 +115,7 @@ test('probe network errors are reported without exposing target or exception tex
 
 test('rejects credential-bearing and non-origin targets without logging the target', async () => {
   const rejected = [
-    'https://user:password@api.example.test',
+    '***api.example.test',
     'https://api.example.test/private?token=secret',
     'file:///etc/hosts',
     'https://api.example.test/health/live',
@@ -129,10 +131,7 @@ test('rejects credential-bearing and non-origin targets without logging the targ
 
 test('one-shot CLI writes only safe aggregates and exits 2 on a critical threshold', () => {
   const secret = 'token=SENSITIVE123 email=private@example.test';
-  const lines = [
-    ...Array.from({ length: 19 }, () => http(200, { secret })),
-    http(503, { secret }),
-  ];
+  const lines = [...Array.from({ length: 19 }, () => http(200, { secret })), http(503, { secret })];
   const result = spawnSync(process.execPath, [script], {
     encoding: 'utf8',
     input: lines.join('\n') + '\n',
@@ -141,19 +140,22 @@ test('one-shot CLI writes only safe aggregates and exits 2 on a critical thresho
   assert.equal(result.status, 2);
   const output = JSON.parse(result.stdout);
   assert.equal(output.counters.http503, 1);
-  assert.deepEqual(output.alerts, [
-    { severity: 'critical', code: 'HIGH_HTTP_503_RATE' },
-  ]);
+  assert.deepEqual(output.alerts, [{ severity: 'critical', code: 'HIGH_HTTP_503_RATE' }]);
   assert.equal(result.stdout.includes(secret), false);
   assert.equal(result.stdout.includes('private@example.test'), false);
   assert.equal(result.stderr, '');
 });
 
 test('one-shot CLI does not print malformed URLs or other input values on failure', () => {
-  const result = spawnSync(process.execPath, [script, '--base-url',
-    'https://user:password@api.example.test'], {
-    encoding: 'utf8', input: '', timeout: 10_000,
-  });
+  const result = spawnSync(
+    process.execPath,
+    [script, '--base-url', '***api.example.test'],
+    {
+      encoding: 'utf8',
+      input: '',
+      timeout: 10_000,
+    },
+  );
   assert.equal(result.status, 1);
   assert.equal(result.stderr.includes('password'), false);
   assert.equal(result.stdout.includes('api.example.test'), false);

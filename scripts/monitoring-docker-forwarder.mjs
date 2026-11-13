@@ -9,10 +9,7 @@ import { fileURLToPath } from 'node:url';
 export const MAX_DOCKER_LOG_LINE_BYTES = 64 * 1024;
 export const MAX_SNAPSHOT_BYTES = 16 * 1024 * 1024;
 const TIMESTAMP = /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d{1,9})?(?:Z|[+-]\d\d:\d\d)$/;
-const ALLOWED_EVENTS = new Set([
-  'RATE_LIMIT_REDIS_UNAVAILABLE',
-  'RATE_LIMIT_REDIS_RECOVERED',
-]);
+const ALLOWED_EVENTS = new Set(['RATE_LIMIT_REDIS_UNAVAILABLE', 'RATE_LIMIT_REDIS_RECOVERED']);
 
 function object(value) {
   return value && typeof value === 'object' && !Array.isArray(value) ? value : null;
@@ -24,15 +21,23 @@ function eventFromNestRecord(record) {
   // Nest's ConsoleLogger({json:true}) uses message/context metadata.
   // Never preserve arbitrary fields from log messages or HTTP requests.
   const candidates = [
-    root, root.message, root.context, root.metadata, root.data,
-    object(root.message)?.context, object(root.message)?.metadata,
+    root,
+    root.message,
+    root.context,
+    root.metadata,
+    root.data,
+    object(root.message)?.context,
+    object(root.message)?.metadata,
   ];
   for (const candidate of candidates) {
     const item = object(candidate);
     if (!item) continue;
-    if (item.event === 'http.request.completed' &&
-        Number.isInteger(item.statusCode) &&
-        item.statusCode >= 100 && item.statusCode <= 599) {
+    if (
+      item.event === 'http.request.completed' &&
+      Number.isInteger(item.statusCode) &&
+      item.statusCode >= 100 &&
+      item.statusCode <= 599
+    ) {
       return { event: 'http.request.completed', statusCode: item.statusCode };
     }
     if (ALLOWED_EVENTS.has(item.event)) return { event: item.event };
@@ -44,8 +49,7 @@ function eventFromNestRecord(record) {
  * Sanitize event metadata BEFORE it can reach disk or stdout.
  */
 export function normalizeDockerLogLine(line) {
-  if (typeof line !== 'string' ||
-      Buffer.byteLength(line, 'utf8') > MAX_DOCKER_LOG_LINE_BYTES) {
+  if (typeof line !== 'string' || Buffer.byteLength(line, 'utf8') > MAX_DOCKER_LOG_LINE_BYTES) {
     throw new Error('Invalid Docker log line');
   }
   const space = line.indexOf(' ');
@@ -72,8 +76,7 @@ export function normalizeDockerLogLine(line) {
  * from writing arbitrary log content into the group-readable snapshot.
  */
 export function validateSnapshot(snapshot) {
-  if (typeof snapshot !== 'string' ||
-      Buffer.byteLength(snapshot, 'utf8') > MAX_SNAPSHOT_BYTES) {
+  if (typeof snapshot !== 'string' || Buffer.byteLength(snapshot, 'utf8') > MAX_SNAPSHOT_BYTES) {
     throw new Error('Invalid snapshot size');
   }
   if (snapshot === '') return;
@@ -83,14 +86,24 @@ export function validateSnapshot(snapshot) {
       throw new Error('Oversized snapshot event');
     }
     let record;
-    try { record = JSON.parse(line); } catch { throw new Error('Malformed snapshot event'); }
-    if (!object(record) || typeof record.timestamp !== 'string' ||
-        !TIMESTAMP.test(record.timestamp) || !Number.isFinite(Date.parse(record.timestamp))) {
+    try {
+      record = JSON.parse(line);
+    } catch {
+      throw new Error('Malformed snapshot event');
+    }
+    if (
+      !object(record) ||
+      typeof record.timestamp !== 'string' ||
+      !TIMESTAMP.test(record.timestamp) ||
+      !Number.isFinite(Date.parse(record.timestamp))
+    ) {
       throw new Error('Invalid snapshot timestamp');
     }
     const safe = eventFromNestRecord(record);
-    if (!safe || JSON.stringify(record) !==
-        JSON.stringify({ timestamp: record.timestamp, ...safe })) {
+    if (
+      !safe ||
+      JSON.stringify(record) !== JSON.stringify({ timestamp: record.timestamp, ...safe })
+    ) {
       throw new Error('Unexpected snapshot fields');
     }
   }
@@ -98,8 +111,7 @@ export function validateSnapshot(snapshot) {
 
 export function parsePublishArgs(args) {
   const path = args.length === 2 && args[0] === '--output' ? args[1] : null;
-  if (typeof path !== 'string' || !isAbsolute(path) ||
-      basename(path) !== 'events.jsonl') {
+  if (typeof path !== 'string' || !isAbsolute(path) || basename(path) !== 'events.jsonl') {
     throw new Error('Invalid snapshot destination');
   }
   return path;
@@ -128,8 +140,11 @@ export async function publishSnapshot(outputPath, content) {
   const tempPath = join(directory, '.events.' + randomUUID() + '.tmp');
   let handle;
   try {
-    handle = await open(tempPath, constants.O_WRONLY | constants.O_CREAT |
-      constants.O_EXCL | constants.O_NOFOLLOW, 0o640);
+    handle = await open(
+      tempPath,
+      constants.O_WRONLY | constants.O_CREAT | constants.O_EXCL | constants.O_NOFOLLOW,
+      0o640,
+    );
     await handle.writeFile(content, 'utf8');
     await handle.sync();
     await handle.close();
@@ -159,7 +174,8 @@ async function main() {
     if (mode === 'normalize' && args.length === 0) {
       let total = 0;
       for await (const line of createInterface({
-        input: process.stdin, crlfDelay: Infinity,
+        input: process.stdin,
+        crlfDelay: Infinity,
       })) {
         const safe = normalizeDockerLogLine(line);
         if (safe !== null) {

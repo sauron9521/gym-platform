@@ -8,7 +8,7 @@ groups:
         labels:
           severity: critical
         annotations:
-          summary: "Gym API monitoring snapshot is missing"
+          summary: 'Gym API monitoring snapshot is missing'
 
       - alert: GymApiMonitoringSnapshotStale
         expr: time() - gym_api_monitor_last_run_timestamp_seconds > 900
@@ -16,7 +16,7 @@ groups:
         labels:
           severity: critical
         annotations:
-          summary: "Gym API monitoring snapshot has not updated for 15 minutes"
+          summary: 'Gym API monitoring snapshot has not updated for 15 minutes'
 
       - alert: GymApiLivenessFailed
         expr: gym_api_monitor_live_probe_success == 0
@@ -24,7 +24,7 @@ groups:
         labels:
           severity: critical
         annotations:
-          summary: "Gym API liveness probe failed"
+          summary: 'Gym API liveness probe failed'
 
       - alert: GymApiReadinessFailed
         expr: gym_api_monitor_ready_probe_success == 0
@@ -32,7 +32,7 @@ groups:
         labels:
           severity: critical
         annotations:
-          summary: "Gym API readiness probe failed"
+          summary: 'Gym API readiness probe failed'
 
       - alert: GymApiHealthProbeNotConfigured
         expr: gym_api_monitor_ready_probe_success == -1
@@ -40,7 +40,7 @@ groups:
         labels:
           severity: warning
         annotations:
-          summary: "Gym API active readiness check is not configured"
+          summary: 'Gym API active readiness check is not configured'
 
       - alert: GymApiHttp503Elevated
         expr: |
@@ -51,7 +51,7 @@ groups:
         labels:
           severity: critical
         annotations:
-          summary: "Gym API HTTP 503 share exceeds 5 percent"
+          summary: 'Gym API HTTP 503 share exceeds 5 percent'
 
       - alert: GymApiHttp429Elevated
         expr: |
@@ -62,7 +62,7 @@ groups:
         labels:
           severity: warning
         annotations:
-          summary: "Gym API HTTP 429 share exceeds 20 percent"
+          summary: 'Gym API HTTP 429 share exceeds 20 percent'
 
       - alert: GymApiRedisOutageObserved
         expr: gym_api_monitor_redis_outages_window_5m > 0
@@ -70,7 +70,7 @@ groups:
         labels:
           severity: warning
         annotations:
-          summary: "Gym API observed a Redis outage in the last report window"
+          summary: 'Gym API observed a Redis outage in the last report window'
 
       - alert: GymApiMonitoringTextfileReadError
         expr: node_textfile_scrape_error == 1
@@ -78,7 +78,7 @@ groups:
         labels:
           severity: critical
         annotations:
-          summary: "Node exporter cannot read one or more textfile snapshots"
+          summary: 'Node exporter cannot read one or more textfile snapshots'
 
       - alert: GymApiMonitoringCriticalSignal
         expr: gym_api_monitor_critical_alert == 1
@@ -86,7 +86,7 @@ groups:
         labels:
           severity: critical
         annotations:
-          summary: "Gym API monitoring report contains a critical signal"
+          summary: 'Gym API monitoring report contains a critical signal'
 
       - alert: GymApiMonitoringWarningSignal
         expr: gym_api_monitor_warning_alert == 1
@@ -94,7 +94,7 @@ groups:
         labels:
           severity: warning
         annotations:
-          summary: "Gym API monitoring report contains a warning signal"
+          summary: 'Gym API monitoring report contains a warning signal'
 
       # Metrics are produced by a separate opt-in trusted host collector.
       - alert: GymApiDockerResourceSnapshotMissing
@@ -103,7 +103,7 @@ groups:
         labels:
           severity: critical
         annotations:
-          summary: "Gym API Docker resource sampler has no metrics"
+          summary: 'Gym API Docker resource sampler has no metrics'
 
       - alert: GymApiDockerResourceSnapshotStale
         expr: time() - gym_api_docker_last_sample_timestamp_seconds > 180
@@ -111,7 +111,7 @@ groups:
         labels:
           severity: critical
         annotations:
-          summary: "Gym API Docker resource metrics are stale"
+          summary: 'Gym API Docker resource metrics are stale'
 
       - alert: GymApiDockerContainerStopped
         expr: gym_api_docker_running == 0
@@ -119,7 +119,7 @@ groups:
         labels:
           severity: critical
         annotations:
-          summary: "Gym API Docker container is not running"
+          summary: 'Gym API Docker container is not running'
 
       - alert: GymApiDockerOOMKilled
         expr: gym_api_docker_oom_killed == 1
@@ -127,7 +127,7 @@ groups:
         labels:
           severity: critical
         annotations:
-          summary: "Gym API Docker container was killed by OOM"
+          summary: 'Gym API Docker container was killed by OOM'
 
       - alert: GymApiDockerMemoryPressure
         expr: gym_api_docker_memory_percent >= 90
@@ -135,7 +135,7 @@ groups:
         labels:
           severity: warning
         annotations:
-          summary: "Gym API container memory usage exceeds 90 percent"
+          summary: 'Gym API container memory usage exceeds 90 percent'
 
       - alert: GymApiDockerCpuSaturation
         expr: gym_api_docker_cpu_percent >= 180
@@ -143,7 +143,7 @@ groups:
         labels:
           severity: warning
         annotations:
-          summary: "Gym API container CPU usage is near its 2-core limit"
+          summary: 'Gym API container CPU usage is near its 2-core limit'
 
       - alert: GymApiDockerPidPressure
         expr: gym_api_docker_pids >= 230
@@ -151,7 +151,7 @@ groups:
         labels:
           severity: warning
         annotations:
-          summary: "Gym API container PID usage is near its 256-PID limit"
+          summary: 'Gym API container PID usage is near its 256-PID limit'
 
       # RestartCount is a per-container gauge; the number resets on recreate.
       - alert: GymApiDockerRestartLoop
@@ -160,7 +160,7 @@ groups:
         labels:
           severity: critical
         annotations:
-          summary: "Gym API container restarted at least three times within ten minutes"
+          summary: 'Gym API container restarted at least three times within ten minutes'
 
       # Opt-in trusted host collector. Deploy together with the signals timer.
       - alert: GymApiDockerSignalsSnapshotMissing
@@ -169,7 +169,7 @@ groups:
         labels:
           severity: critical
         annotations:
-          summary: "Gym API Docker events and cgroup sampler has no metrics"
+          summary: 'Gym API Docker events and cgroup sampler has no metrics'
 
       - alert: GymApiDockerSignalsSnapshotStale
         expr: time() - gym_api_docker_signals_last_sample_timestamp_seconds > 180
@@ -177,7 +177,7 @@ groups:
         labels:
           severity: critical
         annotations:
-          summary: "Gym API Docker events and cgroup metrics are stale"
+          summary: 'Gym API Docker events and cgroup metrics are stale'
 
       - alert: GymApiDockerRecentOomEvents
         expr: gym_api_docker_oom_events_window_10m > 0
@@ -185,7 +185,7 @@ groups:
         labels:
           severity: critical
         annotations:
-          summary: "Docker reported an API container OOM event in the last ten minutes"
+          summary: 'Docker reported an API container OOM event in the last ten minutes'
 
       - alert: GymApiDockerCpuThrottling
         expr: |
@@ -198,4 +198,4 @@ groups:
         labels:
           severity: warning
         annotations:
-          summary: "Gym API CPU cgroup is throttled in at least 20 percent of periods"
+          summary: 'Gym API CPU cgroup is throttled in at least 20 percent of periods'
