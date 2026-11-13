@@ -195,7 +195,7 @@ test('operator preflight requires verified GitHub origin BEFORE backup/OCI/Docke
   const docker = shell.indexOf('node scripts/production-digest-guard.mjs images');
   assert.ok(evidence > 0 && evidence < originCheck && originCheck < backup && backup < docker);
   assert.match(shell, /RELEASE_REVIEW_RUN_ID/);
-  assert.match(origin, /gh run download|['"]run['"], ['"]download['"]/);
+  assert.match(origin, /'run',\s*'download'/);
   assert.match(origin, /release-readiness-/);
   assert.match(origin, /workflow_dispatch/);
   assert.match(origin, /rmSync\(scratch/);
