@@ -8,6 +8,8 @@ test('Next.js app router entrypoints exist', () => {
   assert.ok(existsSync(new URL('../src/app/register/page.tsx', import.meta.url)));
   assert.ok(existsSync(new URL('../src/app/verify-email/page.tsx', import.meta.url)));
   assert.ok(existsSync(new URL('../src/app/verify-email/resend/page.tsx', import.meta.url)));
+  assert.ok(existsSync(new URL('../src/app/forgot-password/page.tsx', import.meta.url)));
+  assert.ok(existsSync(new URL('../src/app/reset-password/page.tsx', import.meta.url)));
 });
 
 test('shadcn/ui configuration exists', () => {

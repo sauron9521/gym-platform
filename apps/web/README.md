@@ -69,7 +69,7 @@ CORS_ORIGINS=http://localhost:3000 in the API environment.
   flags and host-only Domain, and keep the internal API origin trusted.
   Configure NestJS APP_URL to the public web origin for session/CSRF validation.
 - Do not call the backend directly from browser code or persist access tokens.
-  MFA challenge UI and password recovery are separate PRs.
+  MFA challenge UI remains a separate PR.
 
 ## Registration flow
 
@@ -116,3 +116,32 @@ environment. Configure HTTPS, cache/referrer policies and access log
 redaction for query strings at the reverse proxy in any deployment.
 Actual deliverability, mailer availability and end-to-end confirmation
 against a live server require manual integration verification.
+
+## Password recovery
+
+The public `/forgot-password` page submits only a normalized email
+to `POST /auth/password-reset/forgot`. HTTP 202 shows the **same generic
+message** for existing and nonexistent accounts, without revealing which
+accounts are registered. Throttling and transport errors are surfaced as
+operational failures, not account-existence claims.
+
+NestJS generates links to `APP_URL/reset-password?token=...`. The
+`/reset-password` page parses and bounds the token, uses `noindex`
+and `no-referrer` metadata and removes the token from visible browser
+history on hydration. A GET never consumes the token: only an explicit
+form submission calls `POST /auth/password-reset/reset` with the
+opaque token and new password. The browser never renders, logs or stores
+reset tokens in local/session storage, or treats HTTP 200 alone as
+authorization to enter private pages.
+
+Password complexity and token validity are enforced by NestJS. Client
+checks only length, whitespace and matching confirmation. Reset errors
+are derived from HTTP status, not untrusted API response bodies. The API
+may create an authenticated or MFA-pending session during reset, so the
+screen directs the user to the existing login flow; it never bypasses
+the independently protected dashboard.
+
+Set `APP_URL=http://localhost:3000` locally. Deployments require
+HTTPS, query-string redaction in all reverse-proxy/access logs, secure
+session cookies and real SMTP checks. Email delivery and end-to-end
+password recovery against a live server are not claimed by offline CI.
