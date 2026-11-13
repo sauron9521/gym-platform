@@ -1,8 +1,8 @@
 import type { operations } from '@gym/api-client';
 
 export type Account = operations['UsersController_me']['responses'][200]['content']['application/json'];
-export type ProfilePatch =
-  operations['UsersController_updateMe']['requestBody']['content']['application/json'];
+type UpdateMe = operations['UsersController_updateMe'];
+export type ProfilePatch = UpdateMe['requestBody']['content']['application/json'];
 
 export type ProfileDraft = {
   firstName: string;
@@ -27,36 +27,50 @@ export function toProfileDraft(account: Account): ProfileDraft {
   };
 }
 
+function parseMeasurement(
+  input: string,
+  label: string,
+  min: number,
+  max: number,
+): { value: number | null; error?: string } {
+  if (!input.trim()) return { value: null };
+  const value = Number(input);
+  const valid = Number.isFinite(value) && value >= min && value <= max;
+  if (!valid) return { value: null, error: `Некоректне значення: ${label}.` };
+  return { value };
+}
+
+function validBirthday(input: string): boolean {
+  if (!input) return true;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(input)) return false;
+  const timestamp = Date.parse(input);
+  if (!Number.isFinite(timestamp)) return false;
+  return input <= new Date().toISOString().slice(0, 10);
+}
+
 export function buildProfilePatch(draft: ProfileDraft): { data?: ProfilePatch; error?: string } {
   const firstName = draft.firstName.trim();
   const lastName = draft.lastName.trim();
   const displayName = draft.displayName.trim();
   const timezone = draft.timezone.trim();
-  if ([firstName, lastName, displayName].some((value) => value.length > 100)) {
+  const names = [firstName, lastName, displayName];
+
+  if (names.some((value) => value.length > 100)) {
     return { error: 'Ім’я, прізвище та відображуване ім’я мають містити не більше 100 символів.' };
   }
-  if (!timezone || timezone.length > 100 || !/^[A-Za-z0-9_+./-]+$/.test(timezone)) {
+  const timezonePattern = /^[A-Za-z0-9_+./-]+$/;
+  if (!timezone || timezone.length > 100 || !timezonePattern.test(timezone)) {
     return { error: 'Вкажіть коректний часовий пояс, наприклад Europe/Kyiv.' };
   }
-  const optionalNumber = (value: string, label: string, min: number, max: number) => {
-    if (!value.trim()) return { value: null };
-    const number = Number(value);
-    if (!Number.isFinite(number) || number < min || number > max) {
-      return { error: `Некоректне значення: ${label}.` };
-    }
-    return { value: number };
-  };
-  const height = optionalNumber(draft.height, 'зріст', 1, 300);
-  const weight = optionalNumber(draft.weight, 'вага', 1, 700);
-  if (height.error || weight.error) return { error: height.error ?? weight.error };
-  if (
-    draft.birthday &&
-    (!/^\d{4}-\d{2}-\d{2}$/.test(draft.birthday) ||
-      !Number.isFinite(Date.parse(draft.birthday)) ||
-      draft.birthday > new Date().toISOString().slice(0, 10))
-  ) {
+
+  const height = parseMeasurement(draft.height, 'зріст', 1, 300);
+  const weight = parseMeasurement(draft.weight, 'вага', 1, 700);
+  if (height.error) return { error: height.error };
+  if (weight.error) return { error: weight.error };
+  if (!validBirthday(draft.birthday)) {
     return { error: 'Перевірте дату народження.' };
   }
+
   return {
     data: {
       firstName: firstName || null,
