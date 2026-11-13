@@ -1,0 +1,396 @@
+# Executed by promtool test rules in CI. No real monitoring backend required.
+rule_files:
+  - alerts.rules.yml
+evaluation_interval: 1m
+
+tests:
+  - name: "missing snapshot is not immediate, but fires after five minutes"
+    interval: 1m
+    alert_rule_test:
+      - eval_time: 4m
+        alertname: GymApiMonitoringSnapshotMissing
+        exp_alerts: []
+      - eval_time: 6m
+        alertname: GymApiMonitoringSnapshotMissing
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+            exp_annotations:
+              summary: "Gym API monitoring snapshot is missing"
+
+  - name: "stale last successful publication triggers after fifteen minutes"
+    interval: 1m
+    input_series:
+      - series: gym_api_monitor_last_run_timestamp_seconds
+        values: "0+0x30"
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: GymApiMonitoringSnapshotStale
+        exp_alerts: []
+      - eval_time: 22m
+        alertname: GymApiMonitoringSnapshotStale
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+            exp_annotations:
+              summary: "Gym API monitoring snapshot has not updated for 15 minutes"
+      - eval_time: 22m
+        alertname: GymApiMonitoringSnapshotMissing
+        exp_alerts: []
+
+  - name: "429 503 and readiness alerts require sustained errors"
+    interval: 1m
+    input_series:
+      - series: gym_api_monitor_last_run_timestamp_seconds
+        values: "2000+0x10"
+      - series: gym_api_monitor_http_requests_window_5m
+        values: "20+0x10"
+      - series: gym_api_monitor_http_429_window_5m
+        values: "4+0x10"
+      - series: gym_api_monitor_http_503_window_5m
+        values: "1+0x10"
+      - series: gym_api_monitor_live_probe_success
+        values: "1+0x10"
+      - series: gym_api_monitor_ready_probe_success
+        values: "0+0x10"
+      - series: gym_api_monitor_redis_outages_window_5m
+        values: "1+0x10"
+    alert_rule_test:
+      - eval_time: 1m
+        alertname: GymApiReadinessFailed
+        exp_alerts: []
+      - eval_time: 4m
+        alertname: GymApiReadinessFailed
+        exp_alerts:
+          - exp_labels: { severity: critical }
+            exp_annotations:
+              summary: "Gym API readiness probe failed"
+      - eval_time: 4m
+        alertname: GymApiHttp503Elevated
+        exp_alerts:
+          - exp_labels: { severity: critical }
+            exp_annotations:
+              summary: "Gym API HTTP 503 share exceeds 5 percent"
+      - eval_time: 4m
+        alertname: GymApiHttp429Elevated
+        exp_alerts:
+          - exp_labels: { severity: warning }
+            exp_annotations:
+              summary: "Gym API HTTP 429 share exceeds 20 percent"
+      - eval_time: 4m
+        alertname: GymApiRedisOutageObserved
+        exp_alerts:
+          - exp_labels: { severity: warning }
+            exp_annotations:
+              summary: "Gym API observed a Redis outage in the last report window"
+
+  - name: "small traffic sample never trips HTTP ratio alerts"
+    interval: 1m
+    input_series:
+      - series: gym_api_monitor_last_run_timestamp_seconds
+        values: "2000+0x8"
+      - series: gym_api_monitor_http_requests_window_5m
+        values: "19+0x8"
+      - series: gym_api_monitor_http_429_window_5m
+        values: "10+0x8"
+      - series: gym_api_monitor_http_503_window_5m
+        values: "9+0x8"
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: GymApiHttp429Elevated
+        exp_alerts: []
+      - eval_time: 5m
+        alertname: GymApiHttp503Elevated
+        exp_alerts: []
+
+  - name: "healthy signals do not trigger false alarms"
+    interval: 1m
+    input_series:
+      - series: gym_api_monitor_last_run_timestamp_seconds
+        values: "2000+0x8"
+      - series: gym_api_monitor_live_probe_success
+        values: "1+0x8"
+      - series: gym_api_monitor_ready_probe_success
+        values: "1+0x8"
+      - series: gym_api_monitor_http_requests_window_5m
+        values: "40+0x8"
+      - series: gym_api_monitor_http_429_window_5m
+        values: "0+0x8"
+      - series: gym_api_monitor_http_503_window_5m
+        values: "0+0x8"
+      - series: gym_api_monitor_redis_outages_window_5m
+        values: "0+0x8"
+      - series: node_textfile_scrape_error
+        values: "0+0x8"
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: GymApiMonitoringSnapshotMissing
+        exp_alerts: []
+      - eval_time: 5m
+        alertname: GymApiReadinessFailed
+        exp_alerts: []
+      - eval_time: 5m
+        alertname: GymApiLivenessFailed
+        exp_alerts: []
+      - eval_time: 5m
+        alertname: GymApiHttp503Elevated
+        exp_alerts: []
+      - eval_time: 5m
+        alertname: GymApiHttp429Elevated
+        exp_alerts: []
+
+  - name: "unconfigured health check differs from failed probe"
+    interval: 1m
+    input_series:
+      - series: gym_api_monitor_last_run_timestamp_seconds
+        values: "3000+0x25"
+      - series: gym_api_monitor_ready_probe_success
+        values: "-1+0x25"
+    alert_rule_test:
+      - eval_time: 18m
+        alertname: GymApiHealthProbeNotConfigured
+        exp_alerts:
+          - exp_labels: { severity: warning }
+            exp_annotations:
+              summary: "Gym API active readiness check is not configured"
+      - eval_time: 18m
+        alertname: GymApiReadinessFailed
+        exp_alerts: []
+
+  - name: "node exporter textfile parsing errors trigger alert"
+    interval: 1m
+    input_series:
+      - series: node_textfile_scrape_error
+        values: "1+0x8"
+    alert_rule_test:
+      - eval_time: 4m
+        alertname: GymApiMonitoringTextfileReadError
+        exp_alerts:
+          - exp_labels: { severity: critical }
+            exp_annotations:
+              summary: "Node exporter cannot read one or more textfile snapshots"
+
+  - name: "resource sampler missing and stale data both alert"
+    interval: 1m
+    alert_rule_test:
+      - eval_time: 6m
+        alertname: GymApiDockerResourceSnapshotMissing
+        exp_alerts:
+          - exp_labels: { severity: critical }
+            exp_annotations:
+              summary: "Gym API Docker resource sampler has no metrics"
+
+  - name: "stale Docker snapshot does not silently recover"
+    interval: 1m
+    input_series:
+      - series: gym_api_docker_last_sample_timestamp_seconds
+        values: "0+0x12"
+    alert_rule_test:
+      - eval_time: 7m
+        alertname: GymApiDockerResourceSnapshotStale
+        exp_alerts:
+          - exp_labels: { severity: critical }
+            exp_annotations:
+              summary: "Gym API Docker resource metrics are stale"
+      - eval_time: 7m
+        alertname: GymApiDockerResourceSnapshotMissing
+        exp_alerts: []
+
+  - name: "sustained resource pressure and restart loops alert"
+    interval: 1m
+    input_series:
+      - series: gym_api_docker_last_sample_timestamp_seconds
+        values: "2000+60x12"
+      - series: gym_api_docker_running
+        values: "1+0x12"
+      - series: gym_api_docker_oom_killed
+        values: "0+0x12"
+      - series: gym_api_docker_memory_percent
+        values: "95+0x12"
+      - series: gym_api_docker_cpu_percent
+        values: "195+0x12"
+      - series: gym_api_docker_pids
+        values: "235+0x12"
+      - series: gym_api_docker_restart_count
+        values: "0+1x12"
+    alert_rule_test:
+      - eval_time: 8m
+        alertname: GymApiDockerMemoryPressure
+        exp_alerts:
+          - exp_labels: { severity: warning }
+            exp_annotations:
+              summary: "Gym API container memory usage exceeds 90 percent"
+      - eval_time: 8m
+        alertname: GymApiDockerCpuSaturation
+        exp_alerts:
+          - exp_labels: { severity: warning }
+            exp_annotations:
+              summary: "Gym API container CPU usage is near its 2-core limit"
+      - eval_time: 8m
+        alertname: GymApiDockerPidPressure
+        exp_alerts:
+          - exp_labels: { severity: warning }
+            exp_annotations:
+              summary: "Gym API container PID usage is near its 256-PID limit"
+      - eval_time: 8m
+        alertname: GymApiDockerRestartLoop
+        exp_alerts:
+          - exp_labels: { severity: critical }
+            exp_annotations:
+              summary: "Gym API container restarted at least three times within ten minutes"
+      - eval_time: 8m
+        alertname: GymApiDockerOOMKilled
+        exp_alerts: []
+
+  - name: "stopped and OOM-killed Docker process surfaces both failures"
+    interval: 1m
+    input_series:
+      - series: gym_api_docker_running
+        values: "0+0x8"
+      - series: gym_api_docker_oom_killed
+        values: "1+0x8"
+      - series: gym_api_docker_memory_percent
+        values: "-1+0x8"
+    alert_rule_test:
+      - eval_time: 4m
+        alertname: GymApiDockerContainerStopped
+        exp_alerts:
+          - exp_labels: { severity: critical }
+            exp_annotations:
+              summary: "Gym API Docker container is not running"
+      - eval_time: 4m
+        alertname: GymApiDockerOOMKilled
+        exp_alerts:
+          - exp_labels: { severity: critical }
+            exp_annotations:
+              summary: "Gym API Docker container was killed by OOM"
+      - eval_time: 4m
+        alertname: GymApiDockerMemoryPressure
+        exp_alerts: []
+
+  - name: "healthy Docker usage never fires resource alerts"
+    interval: 1m
+    input_series:
+      - series: gym_api_docker_last_sample_timestamp_seconds
+        values: "2000+60x10"
+      - series: gym_api_docker_running
+        values: "1+0x10"
+      - series: gym_api_docker_oom_killed
+        values: "0+0x10"
+      - series: gym_api_docker_cpu_percent
+        values: "10+0x10"
+      - series: gym_api_docker_memory_percent
+        values: "35+0x10"
+      - series: gym_api_docker_pids
+        values: "10+0x10"
+      - series: gym_api_docker_restart_count
+        values: "0+0x10"
+    alert_rule_test:
+      - eval_time: 8m
+        alertname: GymApiDockerResourceSnapshotMissing
+        exp_alerts: []
+      - eval_time: 8m
+        alertname: GymApiDockerResourceSnapshotStale
+        exp_alerts: []
+      - eval_time: 8m
+        alertname: GymApiDockerContainerStopped
+        exp_alerts: []
+      - eval_time: 8m
+        alertname: GymApiDockerMemoryPressure
+        exp_alerts: []
+      - eval_time: 8m
+        alertname: GymApiDockerRestartLoop
+        exp_alerts: []
+
+  - name: "Docker signals missing fires after five minutes"
+    interval: 1m
+    alert_rule_test:
+      - eval_time: 4m
+        alertname: GymApiDockerSignalsSnapshotMissing
+        exp_alerts: []
+      - eval_time: 6m
+        alertname: GymApiDockerSignalsSnapshotMissing
+        exp_alerts:
+          - exp_labels: { severity: critical }
+            exp_annotations:
+              summary: "Gym API Docker events and cgroup sampler has no metrics"
+
+  - name: "stale Docker signals do not refresh last sample timestamp"
+    interval: 1m
+    input_series:
+      - series: gym_api_docker_signals_last_sample_timestamp_seconds
+        values: "0+0x12"
+    alert_rule_test:
+      - eval_time: 7m
+        alertname: GymApiDockerSignalsSnapshotStale
+        exp_alerts:
+          - exp_labels: { severity: critical }
+            exp_annotations:
+              summary: "Gym API Docker events and cgroup metrics are stale"
+      - eval_time: 7m
+        alertname: GymApiDockerSignalsSnapshotMissing
+        exp_alerts: []
+
+  - name: "recent Docker OOM events trigger and resolve when the window clears"
+    interval: 1m
+    input_series:
+      - series: gym_api_docker_signals_last_sample_timestamp_seconds
+        values: "2000+60x12"
+      - series: gym_api_docker_oom_events_window_10m
+        values: "0 1 2 2 2 1 0 0 0 0 0 0"
+    alert_rule_test:
+      - eval_time: 4m
+        alertname: GymApiDockerRecentOomEvents
+        exp_alerts:
+          - exp_labels: { severity: critical }
+            exp_annotations:
+              summary: "Docker reported an API container OOM event in the last ten minutes"
+      - eval_time: 8m
+        alertname: GymApiDockerRecentOomEvents
+        exp_alerts: []
+
+  - name: "actual cgroup throttling periods trigger a warning"
+    interval: 1m
+    input_series:
+      - series: gym_api_docker_signals_last_sample_timestamp_seconds
+        values: "2000+60x12"
+      - series: gym_api_docker_signals_running
+        values: "1+0x12"
+      - series: gym_api_docker_cpu_periods_total
+        values: "0+100x12"
+      - series: gym_api_docker_cpu_throttled_periods_total
+        values: "0+30x12"
+    alert_rule_test:
+      - eval_time: 2m
+        alertname: GymApiDockerCpuThrottling
+        exp_alerts: []
+      - eval_time: 8m
+        alertname: GymApiDockerCpuThrottling
+        exp_alerts:
+          - exp_labels: { severity: warning }
+            exp_annotations:
+              summary: "Gym API CPU cgroup is throttled in at least 20 percent of periods"
+
+  - name: "healthy cgroup data does not trigger throttling or OOM"
+    interval: 1m
+    input_series:
+      - series: gym_api_docker_signals_last_sample_timestamp_seconds
+        values: "2000+60x12"
+      - series: gym_api_docker_signals_running
+        values: "1+0x12"
+      - series: gym_api_docker_oom_events_window_10m
+        values: "0+0x12"
+      - series: gym_api_docker_cpu_periods_total
+        values: "0+100x12"
+      - series: gym_api_docker_cpu_throttled_periods_total
+        values: "0+5x12"
+    alert_rule_test:
+      - eval_time: 8m
+        alertname: GymApiDockerCpuThrottling
+        exp_alerts: []
+      - eval_time: 8m
+        alertname: GymApiDockerRecentOomEvents
+        exp_alerts: []
+      - eval_time: 8m
+        alertname: GymApiDockerSignalsSnapshotStale
+        exp_alerts: []

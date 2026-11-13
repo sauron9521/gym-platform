@@ -61,6 +61,16 @@ jobs:
       - name: Validate release and GHCR safety contracts (offline)
         run: node --test scripts/release-bundle.test.mjs scripts/ghcr-promotion.test.mjs scripts/release-supply-chain.test.mjs scripts/release-ci-gate.test.mjs
 
+      - name: Temporary canonical formatting diagnostics for observability
+        run: |
+          for file in scripts/monitoring-*.mjs ops/monitoring/alerts.*.yml ops/monitoring/slo.*.yml ops/monitoring/grafana/*.json docs/production-observability.md; do
+            if ! pnpm exec prettier --check "$file" >/dev/null 2>&1; then
+              echo "FORMATTED_START:$file"
+              pnpm exec prettier "$file" | node -e 'let s="";process.stdin.on("data",c=>s+=c);process.stdin.on("end",()=>console.log(JSON.stringify(s)))'
+              echo "FORMATTED_END:$file"
+            fi
+          done
+
       - name: Check formatting
         run: pnpm format:check
 
@@ -197,6 +207,57 @@ jobs:
             -v "$PWD/ops/monitoring:/rules:ro" \
             prom/prometheus@sha256:23031bfe0e74a13004252caaa74eccd0d62b6c6e7a04711d5b8bf5b7e113adc7 \
             test rules /rules/backup-health.test.yml
+
+  api-observability:
+    name: API Observability / HTTP, Redis and Docker
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+
+      - name: Validate shell runners and monitor privilege boundaries
+        run: |
+          bash -n scripts/monitoring-collect.sh scripts/monitoring-forward.sh
+          node --test \
+            scripts/monitoring-docker-forwarder.test.mjs \
+            scripts/monitoring-log-window.test.mjs \
+            scripts/monitoring-report.test.mjs \
+            scripts/monitoring-textfile.test.mjs \
+            scripts/monitoring-docker-resources.test.mjs \
+            scripts/monitoring-docker-signals.test.mjs \
+            scripts/monitoring-platform.test.mjs
+
+      - name: Validate opt-in monitoring systemd units and timer syntax
+        run: |
+          systemd-analyze verify \
+            ops/monitoring/gym-platform-api-forwarder.service \
+            ops/monitoring/gym-platform-api-forwarder.timer \
+            ops/monitoring/gym-platform-api-monitor.service \
+            ops/monitoring/gym-platform-api-monitor.timer \
+            ops/monitoring/gym-platform-api-resources.service \
+            ops/monitoring/gym-platform-api-resources.timer \
+            ops/monitoring/gym-platform-api-signals.service \
+            ops/monitoring/gym-platform-api-signals.timer
+          systemd-analyze calendar '*:0/1'
+          systemd-analyze calendar '*:0/5'
+
+      - name: Validate alerts and provisional observed SLO simulations
+        run: |
+          docker run --rm --entrypoint /bin/promtool \
+            -v "$PWD/ops/monitoring:/rules:ro" \
+            prom/prometheus@sha256:23031bfe0e74a13004252caaa74eccd0d62b6c6e7a04711d5b8bf5b7e113adc7 \
+            check rules /rules/alerts.rules.yml /rules/slo.rules.yml
+          docker run --rm --entrypoint /bin/promtool \
+            -v "$PWD/ops/monitoring:/rules:ro" \
+            prom/prometheus@sha256:23031bfe0e74a13004252caaa74eccd0d62b6c6e7a04711d5b8bf5b7e113adc7 \
+            test rules /rules/alerts.test.yml /rules/slo.test.yml
 
   api-docker:
     name: API Docker / Node 24
