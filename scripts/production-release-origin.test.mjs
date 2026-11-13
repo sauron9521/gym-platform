@@ -201,5 +201,5 @@ test('operator preflight requires verified GitHub origin BEFORE backup/OCI/Docke
   assert.match(origin, /rmSync\(scratch/);
   assert.ok(ci.includes('node --test scripts/production-release-origin.test.mjs'));
   assert.ok(!shell.includes('production-digest-deploy.sh'));
-  assert.doesNotMatch(shell, /^\\s*docker (pull|run|push|build|stop|start)\\b/m);
+  assert.doesNotMatch(shell, /^\s*docker (pull|run|push|build|stop|start)\b/m);
 });
