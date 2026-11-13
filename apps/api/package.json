@@ -20,7 +20,7 @@
     "db:migrate:status": "prisma migrate status --config prisma7.config.ts",
     "db:seed": "prisma db seed --config prisma7.config.ts",
     "typecheck:e2e": "tsc --noEmit -p tsconfig.json",
-    "docs:openapi": "tsx src/infra/openapi/export-openapi.ts"
+    "docs:openapi": "nest build && node dist/infra/openapi/export-openapi.js"
   },
   "dependencies": {
     "@nestjs/authentication": "^0.1.5",
