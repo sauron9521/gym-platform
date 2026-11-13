@@ -29,7 +29,7 @@ Exact request/response bodies, authentication requirements and status codes are 
 
 ## Validation and security
 
-Auth HTTP controllers validate bodies through Nest 12's `@Body({ schema })` and strict Zod schemas in `src/modules/auth/dto/auth.schemas.ts`. OpenAPI request bodies are now generated from the same strict Zod schemas as runtime validation; the frontend client is regenerated from that contract. The old decorated DTO source is retained temporarily for removal in a follow-up audit but is no longer referenced by Auth controllers. Both production and relevant HTTP test hosts register `StandardSchemaValidationPipe`. Remove the legacy DTOs and class-validation dependencies only after auditing all consumers and verifying generated OpenAPI/client compatibility.
+Auth HTTP controllers validate bodies through Nest 12's `@Body({ schema })` and strict Zod schemas in `src/modules/auth/dto/auth.schemas.ts`. OpenAPI request bodies are now generated from the same strict Zod schemas as runtime validation; the frontend client is regenerated from that contract. The historical `auth.dto.ts` path now exports only TypeScript aliases for the Zod request types; it is retained so the frozen API migration inventory remains valid. Production bootstrap uses only `StandardSchemaValidationPipe`. Some older HTTP test hosts still instantiate `ValidationPipe`; migrate those fixtures and remove `class-validator`/`class-transformer` dependencies in a separate PR, after verifying lockfile and full CI compatibility.
 
 Preserve email normalization behavior, password constraints, throttling, session invalidation and redaction/no-store semantics. Never include tokens, passwords or email addresses in logs.
 

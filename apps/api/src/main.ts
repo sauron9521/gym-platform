@@ -1,9 +1,4 @@
-import {
-  ConsoleLogger,
-  Logger,
-  StandardSchemaValidationPipe,
-  ValidationPipe,
-} from '@nestjs/common';
+import { ConsoleLogger, Logger, StandardSchemaValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import type { NestExpressApplication } from '@nestjs/platform-express';
@@ -48,15 +43,8 @@ async function bootstrap() {
     trustedOrigins: [getWebAppOrigin(config.getOrThrow('APP_URL'))],
   });
 
-  //Global Pipes
-  app.useGlobalPipes(
-    new ValidationPipe({
-      whitelist: true,
-      transform: true,
-      forbidNonWhitelisted: true,
-    }),
-    new StandardSchemaValidationPipe(),
-  );
+  // All request DTOs now use Nest 12 Standard Schema/Zod validation.
+  app.useGlobalPipes(new StandardSchemaValidationPipe());
 
   // Documentation is opt-in, never exposed to production by default.
   if (config.get('ENABLE_OPENAPI') === true) {
