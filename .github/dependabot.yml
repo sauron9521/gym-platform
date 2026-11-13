@@ -1,0 +1,63 @@
+# Dependabot does not merge anything; the repository owner reviews every PR.
+# The npm entry discovers packages through pnpm-workspace.yaml and pnpm-lock.yaml.
+# pnpm 12 currently emits a two-document lockfile: version PRs work, but
+# dependency-graph alerts/security update PRs may be unavailable. Keep pnpm audit in CI.
+version: 2
+updates:
+  - package-ecosystem: 'npm'
+    directory: '/'
+    schedule:
+      interval: 'weekly'
+      day: 'wednesday'
+      time: '08:00'
+      timezone: 'Europe/Kyiv'
+    open-pull-requests-limit: 5
+    groups:
+      patch-updates:
+        applies-to: version-updates
+        patterns:
+          - '*'
+        update-types:
+          - 'patch'
+      dev-minor-updates:
+        applies-to: version-updates
+        dependency-type: 'development'
+        patterns:
+          - '*'
+        update-types:
+          - 'minor'
+
+  - package-ecosystem: 'github-actions'
+    directory: '/'
+    schedule:
+      interval: 'weekly'
+      day: 'wednesday'
+      time: '08:30'
+      timezone: 'Europe/Kyiv'
+    open-pull-requests-limit: 3
+    groups:
+      actions-minor-patch:
+        applies-to: version-updates
+        patterns:
+          - '*'
+        update-types:
+          - 'minor'
+          - 'patch'
+
+  - package-ecosystem: 'docker'
+    directory: '/apps/api'
+    schedule:
+      interval: 'weekly'
+      day: 'wednesday'
+      time: '09:00'
+      timezone: 'Europe/Kyiv'
+    open-pull-requests-limit: 3
+
+  - package-ecosystem: 'docker-compose'
+    directory: '/infra/docker'
+    schedule:
+      interval: 'weekly'
+      day: 'wednesday'
+      time: '09:30'
+      timezone: 'Europe/Kyiv'
+    open-pull-requests-limit: 3
