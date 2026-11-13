@@ -268,10 +268,9 @@ describe('OpenAPI / HTTP contract regression (PostgreSQL)', () => {
     ] as const;
 
     for (const [path, name, fields] of cases) {
-      const request = document.paths?.[path]?.post?.requestBody?.content?.['application/json']?.schema;
-      expect(request?.$ref, `Missing request DTO on ${path}`).toBe(
-        `#/components/schemas/${name}`,
-      );
+      const request =
+        document.paths?.[path]?.post?.requestBody?.content?.['application/json']?.schema;
+      expect(request?.$ref, `Missing request DTO on ${path}`).toBe(`#/components/schemas/${name}`);
       const dto = document.components?.schemas?.[name];
       expect(dto?.type).toBe('object');
       expect(dto?.required?.slice().sort()).toEqual([...fields].sort());

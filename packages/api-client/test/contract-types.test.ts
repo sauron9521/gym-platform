@@ -39,9 +39,12 @@ void native.POST('/auth/token/refresh', { body: { refreshToken: 'new-token-value
 // @ts-expect-error - refresh token is mandatory
 void native.POST('/auth/token/refresh', { body: {} });
 
-type LoginResponse = operations['AuthController_signIn']['responses'][200]['content']['application/json'];
-type TokenResponse = operations['TokensController_issue']['responses'][200]['content']['application/json'];
-type RotatedTokenResponse = operations['TokensController_refresh']['responses'][200]['content']['application/json'];
+type LoginResponse =
+  operations['AuthController_signIn']['responses'][200]['content']['application/json'];
+type TokenResponse =
+  operations['TokensController_issue']['responses'][200]['content']['application/json'];
+type RotatedTokenResponse =
+  operations['TokensController_refresh']['responses'][200]['content']['application/json'];
 
 const sessionState: LoginResponse = { mfaRequired: false };
 const tokenPair: TokenResponse = {
