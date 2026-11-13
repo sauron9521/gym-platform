@@ -13,8 +13,9 @@ permissions:
   contents: read
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  group: ci-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
+  # Keep successful main-branch verification available after every merge.
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
   quality:
@@ -47,6 +48,16 @@ jobs:
       - name: Generate Prisma client
         run: pnpm --filter @gym/api db:generate
 
+      - name: Validate Prisma schema
+        run: pnpm --filter @gym/api db:validate
+
+      - name: Enforce feature architecture and runtime dependency graph
+        run: |
+          pnpm --filter @gym/api architecture:check
+          pnpm --filter @gym/api architecture:deps
+          pnpm --filter @gym/api test:architecture
+          pnpm --filter @gym/api test:coverage-tools
+
       - name: Check formatting
         run: pnpm format:check
 
@@ -61,6 +72,85 @@ jobs:
 
       - name: Build workspaces
         run: pnpm build
+
+  api-coverage:
+    name: API Coverage / Critical modules
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install locked dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma Client
+        run: pnpm --filter @gym/api db:generate
+
+      - name: Enforce existing Vitest coverage thresholds
+        run: pnpm --filter @gym/api test:cov
+
+      - name: Summarize measured coverage by critical module
+        if: always()
+        run: |
+          if [ -s apps/api/coverage/coverage-summary.json ]; then
+            pnpm --filter @gym/api coverage:summary
+          else
+            echo "Coverage summary unavailable; inspect Vitest logs." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Inventory production sources absent from unit coverage
+        if: always()
+        run: |
+          if [ -s apps/api/coverage/coverage-summary.json ]; then
+            pnpm --filter @gym/api coverage:inventory
+          else
+            echo "Coverage inventory unavailable; inspect Vitest logs." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload API coverage report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: api-coverage-report
+          path: apps/api/coverage/
+          if-no-files-found: ignore
+
+  dependency-security:
+    name: Dependency vulnerability audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Block high and critical production vulnerabilities
+        run: pnpm audit --prod --audit-level high
+
+      - name: Block critical vulnerabilities across all workspaces
+        run: pnpm audit --audit-level critical
 
   api-docker:
     name: API Docker / Node 24
