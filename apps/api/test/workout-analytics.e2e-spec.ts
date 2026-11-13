@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 
 import { PasswordHasher } from '@nestjs/authentication';
-import { StandardSchemaValidationPipe, ValidationPipe } from '@nestjs/common';
+import { StandardSchemaValidationPipe } from '@nestjs/common';
 import type { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { ThrottlerGuard } from '@nestjs/throttler';
@@ -120,14 +120,7 @@ describe('Workout Analytics (HTTP + PostgreSQL)', () => {
       .compile();
 
     app = moduleRef.createNestApplication();
-    app.useGlobalPipes(
-      new ValidationPipe({
-        whitelist: true,
-        transform: true,
-        forbidNonWhitelisted: true,
-      }),
-      new StandardSchemaValidationPipe(),
-    );
+    app.useGlobalPipes(new StandardSchemaValidationPipe());
     await app.init();
 
     prisma = app.get(PrismaService);
