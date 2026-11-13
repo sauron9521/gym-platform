@@ -7,9 +7,9 @@ import { Test } from '@nestjs/testing';
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
-import { getTrustedProxies } from '../../src/common/config/proxy.config.js';
-import { PrismaService } from '../../src/infra/database/index.js';
-import { useTestDatabase } from '../utility/test-db-helper.js';
+import { getTrustedProxies } from '../../../src/common/config/proxy.config.js';
+import { PrismaService } from '../../../src/infra/database/index.js';
+import { useTestDatabase } from '../../utility/test-db-helper.js';
 
 const originalEnv = {
   DATABASE_URL: process.env.DATABASE_URL,
@@ -39,7 +39,7 @@ describe('Per-account recovery throttling (HTTP + PostgreSQL)', () => {
       process.env.JWT_SECRET = randomUUID() + randomUUID();
     }
 
-    const { AppModule } = await import('../../src/app.module.js');
+    const { AppModule } = await import('../../../src/app.module.js');
     const moduleRef = await Test.createTestingModule({
       imports: [AppModule],
     })

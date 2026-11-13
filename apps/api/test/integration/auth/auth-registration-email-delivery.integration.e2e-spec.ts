@@ -8,9 +8,9 @@ import { ThrottlerGuard } from '@nestjs/throttler';
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
-import { AppModule } from '../../src/app.module.js';
-import { PrismaService } from '../../src/infra/database/index.js';
-import { useTestDatabase } from '../utility/test-db-helper.js';
+import { AppModule } from '../../../src/app.module.js';
+import { PrismaService } from '../../../src/infra/database/index.js';
+import { useTestDatabase } from '../../utility/test-db-helper.js';
 
 describe('Registration email submission recovery (HTTP + PostgreSQL)', () => {
   let app: INestApplication;

@@ -4,8 +4,8 @@ import { Test } from '@nestjs/testing';
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
-import { AppModule } from '../../src/app.module.js';
-import { useTestDatabase } from '../utility/test-db-helper.js';
+import { AppModule } from '../../../src/app.module.js';
+import { useTestDatabase } from '../../utility/test-db-helper.js';
 
 describe('Auth no-store before guards (AppModule + PostgreSQL)', () => {
   let app: INestApplication;

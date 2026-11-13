@@ -11,8 +11,8 @@ import { Test } from '@nestjs/testing';
 import request from 'supertest';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { PrismaService } from '../../src/infra/database/index.js';
-import { useTestDatabase } from '../utility/test-db-helper.js';
+import { PrismaService } from '../../../src/infra/database/index.js';
+import { useTestDatabase } from '../../utility/test-db-helper.js';
 
 const password = 'StrongPassword123!';
 const nextPassword = 'UpdatedPassword456!';
@@ -52,7 +52,7 @@ describe('Auth recovery route throttling (real HTTP guard + PostgreSQL)', () => 
       process.env.JWT_SECRET = randomUUID() + randomUUID();
     }
 
-    const { AppModule } = await import('../../src/app.module.js');
+    const { AppModule } = await import('../../../src/app.module.js');
     const moduleRef = await Test.createTestingModule({
       imports: [AppModule],
     })

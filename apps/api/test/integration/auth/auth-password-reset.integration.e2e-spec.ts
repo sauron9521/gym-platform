@@ -7,8 +7,8 @@ import { ThrottlerGuard } from '@nestjs/throttler';
 import request from 'supertest';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { PrismaService } from '../../src/infra/database/index.js';
-import { useTestDatabase } from '../utility/test-db-helper.js';
+import { PrismaService } from '../../../src/infra/database/index.js';
+import { useTestDatabase } from '../../utility/test-db-helper.js';
 
 const originalEnv = {
   DATABASE_URL: process.env.DATABASE_URL,
@@ -81,7 +81,7 @@ describe('Password reset security (HTTP + PostgreSQL)', () => {
       process.env.JWT_SECRET = randomUUID() + randomUUID();
     }
 
-    const { AppModule } = await import('../../src/app.module.js');
+    const { AppModule } = await import('../../../src/app.module.js');
     const moduleRef = await Test.createTestingModule({
       imports: [AppModule],
     })

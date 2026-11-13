@@ -9,9 +9,9 @@ import type { Redis } from 'ioredis';
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
-import { DistributedThrottlerStorage } from '../../src/common/rate-limit/distributed-throttler.storage.js';
-import { PrismaService } from '../../src/infra/database/index.js';
-import { useTestDatabase } from '../utility/test-db-helper.js';
+import { DistributedThrottlerStorage } from '../../../src/common/rate-limit/distributed-throttler.storage.js';
+import { PrismaService } from '../../../src/infra/database/index.js';
+import { useTestDatabase } from '../../utility/test-db-helper.js';
 
 const testRedisUrl = process.env.TEST_REDIS_URL;
 const redisDescribe = testRedisUrl ? describe : describe.skip;
@@ -79,7 +79,7 @@ redisDescribe('Account throttle Redis client outage and recovery (HTTP + Postgre
       get: (key: string) => (key === 'REDIS_URL' ? testRedisUrl : undefined),
     } as never);
 
-    const { AppModule } = await import('../../src/app.module.js');
+    const { AppModule } = await import('../../../src/app.module.js');
     const moduleRef = await Test.createTestingModule({
       imports: [AppModule],
     })

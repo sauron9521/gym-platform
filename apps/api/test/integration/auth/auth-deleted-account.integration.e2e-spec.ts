@@ -7,10 +7,10 @@ import { ThrottlerGuard } from '@nestjs/throttler';
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
-import { AppModule } from '../../src/app.module.js';
-import { PrismaService } from '../../src/infra/database/index.js';
-import { PrismaSessionStore, PrismaTokenStore } from '../../src/modules/auth/stores/index.js';
-import { useTestDatabase } from '../utility/test-db-helper.js';
+import { AppModule } from '../../../src/app.module.js';
+import { PrismaService } from '../../../src/infra/database/index.js';
+import { PrismaSessionStore, PrismaTokenStore } from '../../../src/modules/auth/stores/index.js';
+import { useTestDatabase } from '../../utility/test-db-helper.js';
 
 describe('Soft-deleted identity cannot authenticate (PostgreSQL)', () => {
   let app: INestApplication;
