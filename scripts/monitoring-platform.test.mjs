@@ -68,7 +68,7 @@ test('metrics and recording rules preserve existing gym_api series names', async
   assert.match(exporter, /gym_api_monitor_redis_outages_window_5m/);
   assert.match(rules, /GymApiMonitoringSnapshotStale/);
   assert.match(rules, /GymApiHttp503Elevated/);
-  assert.match(rules, /GymApiDockerOomKilled/);
+  assert.match(rules, /GymApiDockerOOMKilled/);
   assert.match(slo, /gym_api:sli:readiness_observed/);
   assert.ok(Array.isArray(dashboard.panels) && dashboard.panels.length > 0);
 });
