@@ -20,7 +20,13 @@
     "db:migrate:status": "prisma migrate status --config prisma7.config.ts",
     "db:seed": "prisma db seed --config prisma7.config.ts",
     "typecheck:e2e": "tsc --noEmit -p tsconfig.json",
-    "docs:openapi": "nest build && node dist/infra/openapi/export-openapi.js"
+    "docs:openapi": "nest build && node dist/infra/openapi/export-openapi.js",
+    "architecture:check": "node scripts/check-architecture.mjs",
+    "architecture:deps": "node scripts/check-feature-dependencies.mjs",
+    "test:architecture": "node --test scripts/check-architecture.test.mjs scripts/check-feature-dependencies.test.mjs scripts/import-parser.test.mjs",
+    "test:coverage-tools": "node --test scripts/coverage-report.test.mjs scripts/coverage-inventory.test.mjs",
+    "coverage:summary": "node scripts/coverage-report.mjs",
+    "coverage:inventory": "node scripts/coverage-inventory.mjs"
   },
   "dependencies": {
     "@nestjs/authentication": "^0.1.5",
