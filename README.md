@@ -101,3 +101,11 @@ checks exact signed GHCR digest publication, main source CI and successful
 seven-stage two-release rehearsal. Even when evidence is verified, the
 review reports **production NO-GO**; it never deploys or replaces the
 standalone API without separately approved host operations.
+
+## Immutable production digest preflight (read-only)
+
+The [digest-only Compose policy](docs/production-digest-preflight.md) adds
+strict offline checks for signed GHCR image references, build-free Docker
+Compose overrides and the existing runtime identity. The checks **never
+start or update production services**. A separate operator-approved
+release rollout and real staging evidence are still required.

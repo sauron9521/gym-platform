@@ -1,0 +1,9 @@
+# Manual, opt-in digest override. This file never runs Docker or deploys.
+# Merge after infra/docker/compose.prod.yaml; no local build is allowed.
+services:
+  api:
+    image: ${DEPLOY_RUNTIME_IMAGE:?Signed GHCR runtime digest required}
+    build: !reset null
+  migrate:
+    image: ${DEPLOY_MIGRATE_IMAGE:?Signed GHCR migrations digest required}
+    build: !reset null

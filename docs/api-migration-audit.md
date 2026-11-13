@@ -147,3 +147,11 @@ equivalent to real-production readiness.
 repository checks and operator cutover criteria. A separate focused PR
 must port, exercise and validate the missing signed staging/rollback
 workflows before a production handover is considered.
+
+## Digest-only production Compose preflight (PR #23)
+
+The [offline digest guard](production-digest-preflight.md) validates a
+build-free override for both signed GHCR images, the original Compose
+hardening and expected current runtime identity. No automatic deployment,
+migration or host contact is added. Production cutover is still **NO-GO**
+until real signed staging, off-host restore and human approval are proven.
