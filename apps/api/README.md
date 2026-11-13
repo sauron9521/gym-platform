@@ -79,3 +79,7 @@ Prisma migration image digests, exercises health/auth/profile HTTP flows
 against disposable PostgreSQL 17 and Redis 7, and tests migration replay
 and same-digest restart. It does **not** deploy or approve production.
 See [staging operator guide](../../docs/staging-ghcr-monorepo.md).
+
+## Module documentation
+
+Start with the [NestJS API handbook](../../docs/api/README.md) for feature modules, HTTP route maps and contract ownership. The [API testing guide](../../docs/api/testing.md) describes unit, e2e and PostgreSQL integration checks. The [documentation index](../../docs/README.md) keeps the migration and operational runbooks discoverable.

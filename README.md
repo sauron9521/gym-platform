@@ -118,3 +118,7 @@ archive hashes and the original GitHub Actions release-evidence artifact
 for an explicitly supplied successful review run ID. It never runs a migration,
 starts a container or authorizes production; human restore and operational
 approval remain required.
+
+## API developer handbook
+
+See [module-by-module API documentation](docs/api/README.md), the [API testing guide](docs/api/testing.md) and the [documentation index](docs/README.md).
