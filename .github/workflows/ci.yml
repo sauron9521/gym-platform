@@ -61,6 +61,16 @@ jobs:
       - name: Validate release and GHCR safety contracts (offline)
         run: node --test scripts/release-bundle.test.mjs scripts/ghcr-promotion.test.mjs scripts/release-supply-chain.test.mjs scripts/release-ci-gate.test.mjs
 
+      - name: Temporary canonical Prettier output for cutover audit
+        run: |
+          for file in apps/api/migration-source-inventory.json scripts/api-migration-readiness*.mjs docs/api-migration-audit.md apps/api/README.md README.md; do
+            if ! pnpm exec prettier --check "$file" >/dev/null 2>&1; then
+              echo "FORMATTED_START:$file"
+              pnpm exec prettier "$file" | node -e 'let s="";process.stdin.on("data",c=>s+=c);process.stdin.on("end",()=>console.log(JSON.stringify(s)))'
+              echo "FORMATTED_END:$file"
+            fi
+          done
+
       - name: Check formatting
         run: pnpm format:check
 
@@ -197,6 +207,29 @@ jobs:
             -v "$PWD/ops/monitoring:/rules:ro" \
             prom/prometheus@sha256:23031bfe0e74a13004252caaa74eccd0d62b6c6e7a04711d5b8bf5b7e113adc7 \
             test rules /rules/backup-health.test.yml
+
+  api-migration:
+    name: API Migration / Source inventory and cutover NO-GO
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+
+      - name: Verify imported source and immutable Prisma history
+        run: |
+          node --test \
+            apps/api/test/migration-baseline.test.mjs \
+            scripts/api-migration-readiness.test.mjs
+
+      - name: Publish read-only migration inventory and missing-gates report
+        run: node scripts/api-migration-readiness.mjs --report >> "$GITHUB_STEP_SUMMARY"
 
   api-observability:
     name: API Observability / HTTP, Redis and Docker
