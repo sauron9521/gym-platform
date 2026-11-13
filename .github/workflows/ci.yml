@@ -198,6 +198,25 @@ jobs:
             prom/prometheus@sha256:23031bfe0e74a13004252caaa74eccd0d62b6c6e7a04711d5b8bf5b7e113adc7 \
             test rules /rules/backup-health.test.yml
 
+  api-staging-contracts:
+    name: API Staging / Signed GHCR offline contracts
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+
+      - name: Validate manual signed staging and functional smoke contracts
+        run: |
+          node --test scripts/staging-smoke.test.mjs
+          node --test scripts/staging-functional-smoke.test.mjs
+
   api-migration:
     name: API Migration / Source inventory and cutover NO-GO
     runs-on: ubuntu-latest

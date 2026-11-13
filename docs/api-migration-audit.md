@@ -62,10 +62,12 @@ deliberately replaced by Gym Platform equivalents.
 ## Blocking gaps
 
 1. **Signed single-release staging:** the old
-   `.github/workflows/staging-ghcr.yml` and its smoke tools have
-   not yet been ported to Gym Platform. Prove both digest-pinned GHCR
-   images with disposable PostgreSQL/Redis, synthetic credentials and
-   functional HTTP flows.
+   `.github/workflows/staging-ghcr.yml` and its smoke tools are
+   included in Gym Platform starting with PR #20, but a successful
+   **manual run against newly published, attested Gym Platform digests**
+   is still required. The offline CI contract checks alone are not
+   staging evidence. Use disposable PostgreSQL/Redis and synthetic
+   credentials.
 2. **Two-release rollback:** port or replace
    `.github/workflows/staging-upgrade-rollback.yml` and its tests.
    Prove old runtime compatibility after forward migrations and safe
@@ -81,7 +83,8 @@ deliberately replaced by Gym Platform equivalents.
    image digests and a concrete maintenance/rollback window are
    external operational prerequisites.
 
-The preflight report deliberately lists these missing workflows. The
+The preflight report deliberately lists workflows still missing and
+never infers staging success from the presence of a workflow file. The
 automated CI stays green when its audit correctly reports NO-GO;
 production authorization is a separate process.
 

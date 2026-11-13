@@ -63,3 +63,8 @@ tmp/
 temp/
 *.tmp
 *.bak
+
+# Temporary signed-image staging rehearsal (never commit credentials/evidence)
+/staging/functional-state.json
+/staging/functional-evidence.json
+/staging/evidence.json
