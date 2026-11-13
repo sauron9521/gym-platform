@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { classifySessionCheck } from '@/features/auth/lib/auth-flow';
 import { webApi } from '@/shared/api/client';
 import { Button } from '@/shared/ui/button';
+import type { AuthenticatedUser } from '@/shared/api/server-session';
 
 type DashboardState =
   | { kind: 'loading' }
@@ -13,9 +14,13 @@ type DashboardState =
   | { kind: 'error' }
   | { kind: 'ready'; email: string; displayName: string };
 
-export function DashboardScreen() {
+export function DashboardScreen({ initialUser }: { initialUser: AuthenticatedUser }) {
   const router = useRouter();
-  const [state, setState] = useState<DashboardState>({ kind: 'loading' });
+  const [state, setState] = useState<DashboardState>({
+    kind: 'ready',
+    email: initialUser.email,
+    displayName: initialUser.displayName,
+  });
   const [attempt, setAttempt] = useState(0);
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [signOutError, setSignOutError] = useState<string | null>(null);

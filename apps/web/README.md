@@ -49,14 +49,24 @@ succeeds. HTTP 401 redirects to `/login`; HTTP 403 shows an access error; networ
 failures are retryable. Sign-out calls `POST /auth/sign-out` and clears the
 server-side session (no JWTs or browser token storage).
 
-For local development use `NEXT_PUBLIC_API_URL=http://localhost:3001` in
-`apps/web/.env.local`, `APP_URL=http://localhost:3000` and
-`CORS_ORIGINS=http://localhost:3000,http://localhost:3001` in the API environment.
-NestJS CSRF protection and the session provider trust **only** the configured
-`APP_URL` origin for cross-origin browser writes. CORS alone does not authorize
-cookie-based writes. For production, serve the web and API over HTTPS on
-same-site hosts; cross-site cookies require additional deliberate configuration.
+For local development set GYM_API_INTERNAL_URL=http://localhost:3001 in
+apps/web/.env.local, plus APP_URL=http://localhost:3000 and
+CORS_ORIGINS=http://localhost:3000 in the API environment.
 
-MFA challenge UI, registration, password recovery and **server-side** route
-protection are separate follow-up work. Client gating is a UX measure, not a
-substitute for API authentication/authorization.
+## Server-side browser sessions
+
+- Browser calls to /backend/* are proxied by Next.js to the fixed API origin,
+  so the API's host-only HttpOnly session cookie is scoped to the web host.
+- Deployments MUST set GYM_API_INTERNAL_URL to a trusted HTTP(S) API origin at
+  build time and runtime. The localhost default is only for development/CI.
+- Next.js server pages forward the incoming Cookie header to NestJS /users/me
+  with cache: no-store, no redirects, and a bounded timeout.
+- Every protected page must perform its OWN session check. Layouts are cached
+  by the Next.js client router and MUST NOT be treated as an auth guard.
+- 401 redirects to login; 403 and backend failures render no private content.
+  API authentication/authorization still secures every data operation.
+- Production: serve the web via HTTPS, confirm cookie HttpOnly/Secure/SameSite
+  flags and host-only Domain, and keep the internal API origin trusted.
+  Configure NestJS APP_URL to the public web origin for session/CSRF validation.
+- Do not call the backend directly from browser code or persist access tokens.
+  MFA challenge UI, registration and password recovery are separate PRs.
