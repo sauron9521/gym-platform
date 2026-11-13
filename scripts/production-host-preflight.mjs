@@ -37,11 +37,16 @@ export function validateReleaseReport(report, env, now = new Date()) {
   assert.match(String(report?.ciRunId ?? ''), RUN_ID);
   assert.deepEqual(report?.verifiedChecks, REQUIRED_CHECKS);
   assert.deepEqual(report?.verifiedStagingPhases, PHASES);
-  assert.equal(report?.previous?.runtime?.startsWith('ghcr.io/sauron9521/gym-platform@sha256:'), true);
+  assert.equal(
+    report?.previous?.runtime?.startsWith('ghcr.io/sauron9521/gym-platform@sha256:'),
+    true,
+  );
 
   const age = now.getTime() - Date.parse(report?.verifiedAt ?? '');
-  assert.ok(Number.isFinite(age) && age >= 0 && age <= 7 * 86_400_000,
-    'Release receipt must be current (seven days maximum)');
+  assert.ok(
+    Number.isFinite(age) && age >= 0 && age <= 7 * 86_400_000,
+    'Release receipt must be current (seven days maximum)',
+  );
   // The receipt is an input for a human review, not a cryptographic proof.
   // OCI attestations are verified independently in the host preflight.
   return identity;
@@ -100,8 +105,8 @@ async function main() {
     // No evidence record is trustworthy merely because the file parses.
     process.stdout.write(
       'Release receipt and backup manifest structure checked; ' +
-      'production NO-GO until OCI verification, backup archive checks, ' +
-      'real restore, host review and operator approval.\n',
+        'production NO-GO until OCI verification, backup archive checks, ' +
+        'real restore, host review and operator approval.\n',
     );
     assert.equal(report.productionReleaseApproval, false);
   } catch {

@@ -23,7 +23,7 @@ command. It has exactly one mode: `preflight`. There is no
   cannot cryptographically prove who authored it.
 - A private PostgreSQL custom-format archive
   `postgres.dump`, avatar archive `avatars.tar.gz` and
-  `SHA256SUMS` manifest from the *same backup directory*.
+  `SHA256SUMS` manifest from the _same backup directory_.
   The manifest must name those two files only. This is an
   on-host **format and checksum** check, not an off-host restore proof.
 - A private production environment file kept outside the checkout,
@@ -45,22 +45,22 @@ session. All digest and SHA values below must come from real verified
 publication receipts; examples shown are **names**, not sample
 credentials:
 
-| Environment variable | Required source |
-| --- | --- |
-| `DEPLOY_ENV_FILE` | Absolute private production env file |
-| `DEPLOY_RUNTIME_IMAGE` | Immutable runtime `ghcr.io/sauron9521/gym-platform@sha256:...` |
-| `DEPLOY_MIGRATE_IMAGE` | Immutable migration `ghcr.io/sauron9521/gym-platform-migrate@sha256:...` |
-| `SOURCE_SHA` | Source commit identified in signed release |
-| `PUBLISH_SHA` | Exact GHCR publisher signing commit |
-| `EXPECTED_CURRENT_IMAGE` | Currently deployed signed digest, or `none` for first deploy |
-| `PRODUCTION_RELEASE_REPORT` | Absolute private path to real reviewed `release-evidence.json` |
-| `BACKUP_DIR` | Absolute private directory containing both archives and checksums |
+| Environment variable        | Required source                                                          |
+| --------------------------- | ------------------------------------------------------------------------ |
+| `DEPLOY_ENV_FILE`           | Absolute private production env file                                     |
+| `DEPLOY_RUNTIME_IMAGE`      | Immutable runtime `ghcr.io/sauron9521/gym-platform@sha256:...`           |
+| `DEPLOY_MIGRATE_IMAGE`      | Immutable migration `ghcr.io/sauron9521/gym-platform-migrate@sha256:...` |
+| `SOURCE_SHA`                | Source commit identified in signed release                               |
+| `PUBLISH_SHA`               | Exact GHCR publisher signing commit                                      |
+| `EXPECTED_CURRENT_IMAGE`    | Currently deployed signed digest, or `none` for first deploy             |
+| `PRODUCTION_RELEASE_REPORT` | Absolute private path to real reviewed `release-evidence.json`           |
+| `BACKUP_DIR`                | Absolute private directory containing both archives and checksums        |
 
 Once those values are configured:
 
-~~~sh
+```sh
 bash scripts/production-host-preflight.sh preflight
-~~~
+```
 
 The command refuses to run inside GitHub Actions, does not print the
 environment or the merged Compose JSON, and stops on its first error.
@@ -115,6 +115,6 @@ no `docker pull`, `docker run`, `docker compose up`,
 The required real operational evidence still includes an **off-site**
 backup restore, real session/web proxy/auth and email checks, alert
 delivery, operator identity and private approval. Only after all of
-those have been reviewed may a *separate* explicitly authorized
+those have been reviewed may a _separate_ explicitly authorized
 deployment procedure be considered. The standalone API remains
 operational source of truth until an approved cutover.

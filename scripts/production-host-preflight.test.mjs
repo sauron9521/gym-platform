@@ -51,29 +51,59 @@ const receipt = () => ({
     migrate: 'ghcr.io/sauron9521/gym-platform-migrate@sha256:' + '3'.repeat(64),
   },
 });
-const sums = () =>
-  'a'.repeat(64) + '  postgres.dump\n' +
-  'b'.repeat(64) + '  avatars.tar.gz\n';
+const sums = () => 'a'.repeat(64) + '  postgres.dump\n' + 'b'.repeat(64) + '  avatars.tar.gz\n';
 
 test('only exact signed release evidence identities and current NO-GO reports are accepted', () => {
   assert.deepEqual(validateReleaseReport(receipt(), env, now), validateIdentity(env));
   for (const edit of [
-    (r) => { r.releaseEvidence = 'FAILED'; },
-    (r) => { r.decision = 'GO'; },
-    (r) => { r.productionReleaseApproval = true; },
-    (r) => { r.productionContacted = true; },
-    (r) => { r.deployTriggered = true; },
-    (r) => { r.verifiedOciAttestations = false; },
-    (r) => { r.publisherRunId = 'not-a-run'; },
-    (r) => { r.ciRunId = 0; },
-    (r) => { r.runtime = r.previous.runtime; },
-    (r) => { r.migrate = r.previous.migrate; },
-    (r) => { r.sourceSha = 'f'.repeat(40); },
-    (r) => { r.publisherSha = 'e'.repeat(40); },
-    (r) => { r.verifiedChecks.pop(); },
-    (r) => { r.verifiedStagingPhases[4] = 'omitted'; },
-    (r) => { r.verifiedAt = '2026-11-01T00:00:00Z'; },
-    (r) => { r.verifiedAt = '2026-11-14T00:00:00Z'; },
+    (r) => {
+      r.releaseEvidence = 'FAILED';
+    },
+    (r) => {
+      r.decision = 'GO';
+    },
+    (r) => {
+      r.productionReleaseApproval = true;
+    },
+    (r) => {
+      r.productionContacted = true;
+    },
+    (r) => {
+      r.deployTriggered = true;
+    },
+    (r) => {
+      r.verifiedOciAttestations = false;
+    },
+    (r) => {
+      r.publisherRunId = 'not-a-run';
+    },
+    (r) => {
+      r.ciRunId = 0;
+    },
+    (r) => {
+      r.runtime = r.previous.runtime;
+    },
+    (r) => {
+      r.migrate = r.previous.migrate;
+    },
+    (r) => {
+      r.sourceSha = 'f'.repeat(40);
+    },
+    (r) => {
+      r.publisherSha = 'e'.repeat(40);
+    },
+    (r) => {
+      r.verifiedChecks.pop();
+    },
+    (r) => {
+      r.verifiedStagingPhases[4] = 'omitted';
+    },
+    (r) => {
+      r.verifiedAt = '2026-11-01T00:00:00Z';
+    },
+    (r) => {
+      r.verifiedAt = '2026-11-14T00:00:00Z';
+    },
   ]) {
     const candidate = receipt();
     edit(candidate);
@@ -91,7 +121,8 @@ test('backup manifest must list only fixed archive names and distinct valid SHA 
     'a'.repeat(64) + '  postgres.dump\n' + 'b'.repeat(64) + '  postgres.dump\n',
     sums() + 'c'.repeat(64) + '  credentials.env\n',
     'a'.repeat(64) + '  postgres.dump\n' + 'z'.repeat(64) + '  avatars.tar.gz\n',
-  ]) assert.throws(() => validateBackupManifest(bad));
+  ])
+    assert.throws(() => validateBackupManifest(bad));
 });
 
 test('reject symlinks, world/group-writable backup contents and missing archives', async (t) => {
@@ -123,15 +154,27 @@ test('private release report must match selected release and is never itself aut
   await writeFile(join(root, 'SHA256SUMS'), sums(), { mode: 0o600 });
   await writeFile(join(root, 'postgres.dump'), 'archive', { mode: 0o600 });
   await writeFile(join(root, 'avatars.tar.gz'), 'archive', { mode: 0o600 });
-  const result = await checkEvidenceFiles({
-    ...env, BACKUP_DIR: root, PRODUCTION_RELEASE_REPORT: join(root, 'release.json'),
-  }, now);
+  const result = await checkEvidenceFiles(
+    {
+      ...env,
+      BACKUP_DIR: root,
+      PRODUCTION_RELEASE_REPORT: join(root, 'release.json'),
+    },
+    now,
+  );
   assert.equal(result.report.decision, 'NO-GO');
   assert.equal(result.report.productionReleaseApproval, false);
   await chmod(join(root, 'release.json'), 0o666);
-  await assert.rejects(checkEvidenceFiles({
-    ...env, BACKUP_DIR: root, PRODUCTION_RELEASE_REPORT: join(root, 'release.json'),
-  }, now));
+  await assert.rejects(
+    checkEvidenceFiles(
+      {
+        ...env,
+        BACKUP_DIR: root,
+        PRODUCTION_RELEASE_REPORT: join(root, 'release.json'),
+      },
+      now,
+    ),
+  );
 });
 
 test('operator shell preflight is read-only, opt-in and refuses GitHub Actions', async () => {
@@ -148,6 +191,9 @@ test('operator shell preflight is read-only, opt-in and refuses GitHub Actions',
   assert.match(shell, /NO-GO/);
   assert.ok(ci.includes('node --test scripts/production-host-preflight.test.mjs'));
   assert.ok(ci.includes('bash -n scripts/production-host-preflight.sh'));
-  assert.doesNotMatch(shell, /^\s*(docker (pull|run|stop|build|push|restart|rm|volume)|.*\b(up -d|migrate deploy|db reset|docker compose up)\b)/m);
+  assert.doesNotMatch(
+    shell,
+    /^\s*(docker (pull|run|stop|build|push|restart|rm|volume)|.*\b(up -d|migrate deploy|db reset|docker compose up)\b)/m,
+  );
   assert.ok(!shell.includes('production-digest-deploy.sh'));
 });
