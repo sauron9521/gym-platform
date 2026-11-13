@@ -145,3 +145,7 @@ Set `APP_URL=http://localhost:3000` locally. Deployments require
 HTTPS, query-string redaction in all reverse-proxy/access logs, secure
 session cookies and real SMTP checks. Email delivery and end-to-end
 password recovery against a live server are not claimed by offline CI.
+
+## User profile
+
+The dynamic /profile route verifies the cookie-backed session server-side before rendering any private UI. Its client form loads profile data using the typed same-origin GET /users/me and updates using PATCH /users/me. PATCH 200 has no response body in OpenAPI; the UI re-reads GET after successful changes. Weight and height accept decimal values; nullable fields can be cleared. Email and account role are read-only. Avatar upload is intentionally a separate PR. Tokens and raw API errors are never displayed or stored in browser storage.

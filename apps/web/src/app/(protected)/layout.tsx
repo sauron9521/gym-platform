@@ -17,6 +17,7 @@ export default function ProtectedLayout({ children }: Readonly<{ children: React
             <Link href="/dashboard" className="text-sm text-muted-foreground hover:underline">
               Кабінет
             </Link>
+            <Link href="/profile" className="ml-5 text-sm text-muted-foreground hover:underline">Профіль</Link>
           </nav>
         </div>
       </header>
