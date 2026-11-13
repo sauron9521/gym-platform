@@ -5,8 +5,14 @@ import { join } from 'node:path';
 import { test } from 'node:test';
 
 import {
-  archiveFingerprint, buildManifest, createBundle, loadManifest,
-  parseOptions, releaseImageTags, validateManifest, verifyBundle,
+  archiveFingerprint,
+  buildManifest,
+  createBundle,
+  loadManifest,
+  parseOptions,
+  releaseImageTags,
+  validateManifest,
+  verifyBundle,
   verifyLoadedImages,
 } from './release-bundle.mjs';
 
@@ -27,47 +33,88 @@ const options = {
 };
 
 test('release options refuse missing context, malicious tags and unknown switches', () => {
-  assert.deepEqual(parseOptions([
-    'create', ...Object.entries(options)
-      .filter(([k]) => k !== 'command')
-      .flatMap(([k, v]) => ['--' + k, v]),
-  ]), options);
+  assert.deepEqual(
+    parseOptions([
+      'create',
+      ...Object.entries(options)
+        .filter(([k]) => k !== 'command')
+        .flatMap(([k, v]) => ['--' + k, v]),
+    ]),
+    options,
+  );
   for (const invalid of [
     ['create'],
     ['create', '--commit', 'main'],
-    ['verify', '--archive', '/tmp/a.tar.gz', '--manifest', '/tmp/manifest.json',
-      '--commit', commit, '--repository', options.repository, '--run-id', '123'],
-    ['verify-images', '--manifest', '/tmp/manifest.json', '--commit', commit,
-      '--repository', options.repository, '--run-id', '0'],
+    [
+      'verify',
+      '--archive',
+      '/tmp/a.tar.gz',
+      '--manifest',
+      '/tmp/manifest.json',
+      '--commit',
+      commit,
+      '--repository',
+      options.repository,
+      '--run-id',
+      '123',
+    ],
+    [
+      'verify-images',
+      '--manifest',
+      '/tmp/manifest.json',
+      '--commit',
+      commit,
+      '--repository',
+      options.repository,
+      '--run-id',
+      '0',
+    ],
     ['create', '--archive', '/tmp/images.tar.gz', '--archive', '/tmp/images.tar.gz'],
-  ]) assert.throws(() => parseOptions(invalid));
+  ])
+    assert.throws(() => parseOptions(invalid));
   assert.throws(() => releaseImageTags('main'));
 });
 
 test('manifest generation is SHA-bound to commit, base and docker config IDs', () => {
-  const manifest = buildManifest({
-    commit,
-    repository: options.repository,
-    runId: options['run-id'],
-    runtimeId: idRuntime,
-    migrateId: idMigrate,
-    baseImage,
-  }, { sha256: 'd'.repeat(64), bytes: 123 });
+  const manifest = buildManifest(
+    {
+      commit,
+      repository: options.repository,
+      runId: options['run-id'],
+      runtimeId: idRuntime,
+      migrateId: idMigrate,
+      baseImage,
+    },
+    { sha256: 'd'.repeat(64), bytes: 123 },
+  );
   assert.equal(manifest.source.ref, 'refs/heads/main');
   assert.equal(manifest.images.runtime.tag, 'gym-platform-api:runtime-' + commit);
   assert.equal(manifest.images.migrate.id, idMigrate);
   assert.equal(manifest.baseImage, baseImage);
-  assert.throws(() => validateManifest(
-    { ...manifest, source: { ...manifest.source, commit: 'e'.repeat(40) } },
-    options,
-  ));
-  assert.throws(() => validateManifest(
-    { ...manifest, images: { ...manifest.images,
-      runtime: { ...manifest.images.runtime, tag: 'gym-platform-api:latest' } } },
-    options,
-  ));
-  assert.throws(() => buildManifest({ ...options, runtimeId: idRuntime,
-    migrateId: idMigrate, baseImage }, { sha256: 'wrong', bytes: 123 }));
+  assert.throws(() =>
+    validateManifest(
+      { ...manifest, source: { ...manifest.source, commit: 'e'.repeat(40) } },
+      options,
+    ),
+  );
+  assert.throws(() =>
+    validateManifest(
+      {
+        ...manifest,
+        images: {
+          ...manifest.images,
+          runtime: { ...manifest.images.runtime, tag: 'gym-platform-api:latest' },
+        },
+      },
+      options,
+    ),
+  );
+  assert.throws(() =>
+    buildManifest(
+      { ...options, runtimeId: idRuntime, migrateId: idMigrate, baseImage },
+      { sha256: 'wrong', bytes: 123 },
+    ),
+  );
 });
 
 test('release bundle hashes archive bytes, catches corruption and prevents overwrite', async (t) => {
@@ -92,22 +139,41 @@ test('release bundle hashes archive bytes, catches corruption and prevents overw
 });
 
 test('archive image load must match IDs, non-root runtime and source revision', () => {
-  const manifest = buildManifest({
-    commit, repository: options.repository, runId: options['run-id'],
-    runtimeId: idRuntime, migrateId: idMigrate, baseImage,
-  }, { sha256: 'd'.repeat(64), bytes: 123 });
+  const manifest = buildManifest(
+    {
+      commit,
+      repository: options.repository,
+      runId: options['run-id'],
+      runtimeId: idRuntime,
+      migrateId: idMigrate,
+      baseImage,
+    },
+    { sha256: 'd'.repeat(64), bytes: 123 },
+  );
   const mock = (tag) => ({
     id: tag.includes(':runtime-') ? idRuntime : idMigrate,
     user: 'node',
     revision: commit,
   });
   assert.equal(verifyLoadedImages(manifest, mock), true);
-  assert.throws(() => verifyLoadedImages(manifest, () => ({
-    id: idRuntime, user: 'root', revision: commit,
-  })), /identity mismatch/);
-  assert.throws(() => verifyLoadedImages(manifest, () => ({
-    id: idMigrate, user: 'node', revision: 'f'.repeat(40),
-  })), /identity mismatch/);
+  assert.throws(
+    () =>
+      verifyLoadedImages(manifest, () => ({
+        id: idRuntime,
+        user: 'root',
+        revision: commit,
+      })),
+    /identity mismatch/,
+  );
+  assert.throws(
+    () =>
+      verifyLoadedImages(manifest, () => ({
+        id: idMigrate,
+        user: 'node',
+        revision: 'f'.repeat(40),
+      })),
+    /identity mismatch/,
+  );
 });
 
 test('release workflow is manual-only, provenance-attested and source-gated', async () => {

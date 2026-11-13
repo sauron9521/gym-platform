@@ -21,22 +21,31 @@ export function parsePromotionOptions(args) {
   const values = {};
   for (let i = 1; i < args.length; i += 2) {
     const name = args[i];
-    if (!['--repository', '--source-sha', '--release-run-id', '--run-json',
-      '--manifest'].includes(name) || Object.hasOwn(values, name) ||
-      !args[i + 1] || args[i + 1].startsWith('--')) {
+    if (
+      !['--repository', '--source-sha', '--release-run-id', '--run-json', '--manifest'].includes(
+        name,
+      ) ||
+      Object.hasOwn(values, name) ||
+      !args[i + 1] ||
+      args[i + 1].startsWith('--')
+    ) {
       throw new Error('Invalid promotion argument');
     }
     values[name.slice(2)] = args[i + 1];
   }
-  const allowed = command === 'validate-run'
-    ? ['repository', 'source-sha', 'release-run-id', 'run-json']
-    : command === 'verify-published'
-      ? ['repository', 'source-sha', 'release-run-id', 'manifest']
-      : ['repository', 'source-sha', 'release-run-id'];
-  if (Object.keys(values).length !== allowed.length ||
-      !allowed.every((name) => Object.hasOwn(values, name)) ||
-      !REPO.test(values.repository) || !SHA.test(values['source-sha']) ||
-      !RUN_ID.test(values['release-run-id'])) {
+  const allowed =
+    command === 'validate-run'
+      ? ['repository', 'source-sha', 'release-run-id', 'run-json']
+      : command === 'verify-published'
+        ? ['repository', 'source-sha', 'release-run-id', 'manifest']
+        : ['repository', 'source-sha', 'release-run-id'];
+  if (
+    Object.keys(values).length !== allowed.length ||
+    !allowed.every((name) => Object.hasOwn(values, name)) ||
+    !REPO.test(values.repository) ||
+    !SHA.test(values['source-sha']) ||
+    !RUN_ID.test(values['release-run-id'])
+  ) {
     throw new Error('Invalid promotion identity');
   }
   return { command, ...values };
@@ -45,14 +54,20 @@ export function parsePromotionOptions(args) {
 export function validateReleaseRun(run, opts) {
   const expectedPath = '.github/workflows/release-artifacts.yml';
   const runPath = run?.path;
-  const workflowMatches = runPath === expectedPath ||
+  const workflowMatches =
+    runPath === expectedPath ||
     runPath === opts.repository + '/' + expectedPath + '@refs/heads/main' ||
     runPath === opts.repository + '/' + expectedPath + '@main';
-  if (String(run?.id) !== opts['release-run-id'] ||
-      run.repository?.full_name !== opts.repository ||
-      run.head_sha !== opts['source-sha'] || run.head_branch !== 'main' ||
-      run.event !== 'workflow_dispatch' || run.status !== 'completed' ||
-      run.conclusion !== 'success' || !workflowMatches) {
+  if (
+    String(run?.id) !== opts['release-run-id'] ||
+    run.repository?.full_name !== opts.repository ||
+    run.head_sha !== opts['source-sha'] ||
+    run.head_branch !== 'main' ||
+    run.event !== 'workflow_dispatch' ||
+    run.status !== 'completed' ||
+    run.conclusion !== 'success' ||
+    !workflowMatches
+  ) {
     throw new Error('Release run does not match the approved successful main workflow');
   }
   return true;
@@ -72,13 +87,16 @@ export function publicationTargets(repository, sha, releaseRunId) {
 
 function manifestIdentity(opts) {
   return {
-    commit: opts['source-sha'], repository: opts.repository,
+    commit: opts['source-sha'],
+    repository: opts.repository,
     'run-id': opts['release-run-id'],
   };
 }
 
 function imageRepo(imageRef) {
-  const match = /^(ghcr\.io\/[a-z0-9_.-]+\/[a-z0-9_.-]+):sha-[a-f0-9]{40}-run-[0-9]+$/.exec(imageRef);
+  const match = /^(ghcr\.io\/[a-z0-9_.-]+\/[a-z0-9_.-]+):sha-[a-f0-9]{40}-run-[0-9]+$/.exec(
+    imageRef,
+  );
   if (!match) throw new Error('Invalid GHCR image reference');
   return match[1];
 }
@@ -86,8 +104,12 @@ function imageRepo(imageRef) {
 export async function targetAbsent(imageRef, actor, token, fetchFn = fetch) {
   const repo = imageRepo(imageRef).slice('ghcr.io/'.length);
   const tag = imageRef.slice(imageRef.lastIndexOf(':') + 1);
-  if (typeof actor !== 'string' || !/^[a-zA-Z0-9-]{1,39}$/.test(actor) ||
-      typeof token !== 'string' || !token) {
+  if (
+    typeof actor !== 'string' ||
+    !/^[a-zA-Z0-9-]{1,39}$/.test(actor) ||
+    typeof token !== 'string' ||
+    !token
+  ) {
     throw new Error('Missing GHCR registry credentials');
   }
   // Obtain an authenticated pull-scoped bearer token. Do not log either token.
@@ -95,7 +117,8 @@ export async function targetAbsent(imageRef, actor, token, fetchFn = fetch) {
   const authUrl = new URL('https://ghcr.io/token');
   authUrl.searchParams.set('scope', 'repository:' + repo + ':pull');
   const response = await fetchFn(authUrl, {
-    headers: { authorization: auth }, redirect: 'error',
+    headers: { authorization: auth },
+    redirect: 'error',
     signal: AbortSignal.timeout(10_000),
   });
   if (response.status !== 200) throw new Error('GHCR token request failed');
@@ -115,7 +138,8 @@ export async function targetAbsent(imageRef, actor, token, fetchFn = fetch) {
         'application/vnd.docker.distribution.manifest.v2+json',
       ].join(', '),
     },
-    redirect: 'error', signal: AbortSignal.timeout(10_000),
+    redirect: 'error',
+    signal: AbortSignal.timeout(10_000),
   });
   if (answer.status === 404) return true;
   if (answer.status === 200) throw new Error('Refusing to overwrite an existing GHCR tag');
@@ -123,9 +147,7 @@ export async function targetAbsent(imageRef, actor, token, fetchFn = fetch) {
 }
 
 export async function preflight(opts, actor, token, fetchFn = fetch) {
-  const tags = publicationTargets(
-    opts.repository, opts['source-sha'], opts['release-run-id'],
-  );
+  const tags = publicationTargets(opts.repository, opts['source-sha'], opts['release-run-id']);
   for (const tag of Object.values(tags)) {
     await targetAbsent(tag, actor, token, fetchFn);
   }
@@ -134,14 +156,20 @@ export async function preflight(opts, actor, token, fetchFn = fetch) {
 
 export function verifyRemoteImage(tag, manifestImage, commit, inspect) {
   const repo = imageRepo(tag);
-  if (inspect?.Id !== manifestImage?.id ||
-      inspect?.Config?.User !== 'node' ||
-      inspect?.Config?.Labels?.['org.opencontainers.image.revision'] !== commit) {
+  if (
+    inspect?.Id !== manifestImage?.id ||
+    inspect?.Config?.User !== 'node' ||
+    inspect?.Config?.Labels?.['org.opencontainers.image.revision'] !== commit
+  ) {
     throw new Error('Published image differs from the verified release archive');
   }
   const digests = inspect.RepoDigests ?? [];
-  const matches = digests.filter((value) => typeof value === 'string' &&
-    value.startsWith(repo + '@') && DIGEST.test(value.slice(repo.length + 1)));
+  const matches = digests.filter(
+    (value) =>
+      typeof value === 'string' &&
+      value.startsWith(repo + '@') &&
+      DIGEST.test(value.slice(repo.length + 1)),
+  );
   if (matches.length !== 1) {
     throw new Error('Cannot unambiguously identify the published registry digest');
   }
@@ -150,15 +178,16 @@ export function verifyRemoteImage(tag, manifestImage, commit, inspect) {
 
 export function verifyPublishedImages(manifest, opts, inspect) {
   validateManifest(manifest, manifestIdentity(opts));
-  const tags = publicationTargets(
-    opts.repository, opts['source-sha'], opts['release-run-id'],
+  const tags = publicationTargets(opts.repository, opts['source-sha'], opts['release-run-id']);
+  return Object.fromEntries(
+    ['runtime', 'migrate'].map((kind) => {
+      const image = inspect(tags[kind]);
+      return [
+        kind,
+        verifyRemoteImage(tags[kind], manifest.images[kind], opts['source-sha'], image),
+      ];
+    }),
   );
-  return Object.fromEntries(['runtime', 'migrate'].map((kind) => {
-    const image = inspect(tags[kind]);
-    return [kind, verifyRemoteImage(
-      tags[kind], manifest.images[kind], opts['source-sha'], image,
-    )];
-  }));
 }
 
 async function main() {
@@ -169,16 +198,16 @@ async function main() {
       const run = JSON.parse(await readFile(opts['run-json'], 'utf8'));
       result = { releaseRunValid: validateReleaseRun(run, opts) };
     } else if (opts.command === 'targets') {
-      result = publicationTargets(
-        opts.repository, opts['source-sha'], opts['release-run-id'],
-      );
+      result = publicationTargets(opts.repository, opts['source-sha'], opts['release-run-id']);
     } else if (opts.command === 'preflight') {
       result = await preflight(opts, process.env.GITHUB_ACTOR, process.env.GH_TOKEN);
     } else {
       const manifest = JSON.parse(await readFile(opts.manifest, 'utf8'));
       result = verifyPublishedImages(manifest, opts, (tag) => {
         const raw = execFileSync('docker', ['image', 'inspect', tag, '--format', '{{json .}}'], {
-          encoding: 'utf8', timeout: 30_000, stdio: ['ignore', 'pipe', 'ignore'],
+          encoding: 'utf8',
+          timeout: 30_000,
+          stdio: ['ignore', 'pipe', 'ignore'],
         });
         return JSON.parse(raw);
       });

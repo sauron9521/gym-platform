@@ -38,8 +38,8 @@ test('release gate rejects invalid or absent source-commit CI', () => {
   ];
 
   for (const change of changes) {
-    assert.throws(
-      () => requireGreenMainCi({ workflow_runs: [{ ...good, ...change }] }, repository, sha),
+    assert.throws(() =>
+      requireGreenMainCi({ workflow_runs: [{ ...good, ...change }] }, repository, sha),
     );
   }
   assert.throws(() => requireGreenMainCi({ workflow_runs: [] }, repository, sha));
@@ -58,7 +58,12 @@ test('more recent failure blocks release even when older CI passed', () => {
   assert.throws(() => requireGreenMainCi(payload, repository, sha));
   assert.equal(
     requireGreenMainCi(
-      { workflow_runs: [{ ...good, id: 124 }, { ...good, id: 123, conclusion: 'failure' }] },
+      {
+        workflow_runs: [
+          { ...good, id: 124 },
+          { ...good, id: 123, conclusion: 'failure' },
+        ],
+      },
       repository,
       sha,
     ).runId,

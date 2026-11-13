@@ -2,13 +2,18 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { test } from 'node:test';
 import {
-  validateSpdx, validateGrype, digestTargets, githubOutputs,
+  validateSpdx,
+  validateGrype,
+  digestTargets,
+  githubOutputs,
 } from './release-supply-chain.mjs';
 
 const sha = 'abcdef0123456789abcdef0123456789abcdef01';
 const makeSpdx = () => ({
-  spdxVersion: 'SPDX-2.3', SPDXID: 'SPDXRef-DOCUMENT',
-  dataLicense: 'CC0-1.0', name: 'gym-api',
+  spdxVersion: 'SPDX-2.3',
+  SPDXID: 'SPDXRef-DOCUMENT',
+  dataLicense: 'CC0-1.0',
+  name: 'gym-api',
   documentNamespace: 'https://example.test/spdx/gym-api',
   packages: [{ SPDXID: 'SPDXRef-Package-node', name: 'node' }],
 });
@@ -25,38 +30,52 @@ const receipt = {
 test('SPDX guards reject missing, empty and fabricated inventory', () => {
   assert.deepEqual(validateSpdx(makeSpdx()), { packages: 1 });
   for (const invalid of [
-    {}, { ...makeSpdx(), spdxVersion: 'SPDX-3.0' },
+    {},
+    { ...makeSpdx(), spdxVersion: 'SPDX-3.0' },
     { ...makeSpdx(), packages: [] },
     { ...makeSpdx(), packages: [{ name: 'node' }] },
     { ...makeSpdx(), documentNamespace: 'not-an-uri' },
-  ]) assert.throws(() => validateSpdx(invalid));
+  ])
+    assert.throws(() => validateSpdx(invalid));
 });
 
 test('Grype reports contain scanner identity and well-formed results', () => {
   assert.deepEqual(validateGrype(makeGrype()), {
-    findings: 1, severities: { critical: 0, high: 1, medium: 0, low: 0, unknown: 0 },
+    findings: 1,
+    severities: { critical: 0, high: 1, medium: 0, low: 0, unknown: 0 },
   });
   assert.equal(validateGrype({ ...makeGrype(), matches: [] }).findings, 0);
   // Actual Grype v0.110 JSON omits ignoredMatches, while retaining
   // matches, source, distro and descriptor. Regress release #43212588160.
   const { ignoredMatches: _unused, ...grype110 } = makeGrype();
-  assert.deepEqual(validateGrype({
-    ...grype110,
-    descriptor: { name: 'grype', version: '0.110.0' },
-    source: { type: 'sbom' }, distro: { name: 'debian', version: '13' },
-  }), {
-    findings: 1, severities: { critical: 0, high: 1, medium: 0, low: 0, unknown: 0 },
-  });
-  assert.throws(() => validateGrype({
-    ...grype110,
-    matches: [{ vulnerability: { id: 'CVE-2026-5450', severity: 'Critical' } }],
-  }), /Critical Grype vulnerabilities present/);
+  assert.deepEqual(
+    validateGrype({
+      ...grype110,
+      descriptor: { name: 'grype', version: '0.110.0' },
+      source: { type: 'sbom' },
+      distro: { name: 'debian', version: '13' },
+    }),
+    {
+      findings: 1,
+      severities: { critical: 0, high: 1, medium: 0, low: 0, unknown: 0 },
+    },
+  );
+  assert.throws(
+    () =>
+      validateGrype({
+        ...grype110,
+        matches: [{ vulnerability: { id: 'CVE-2026-5450', severity: 'Critical' } }],
+      }),
+    /Critical Grype vulnerabilities present/,
+  );
   for (const invalid of [
-    {}, { ...makeGrype(), descriptor: { name: 'fake' } },
+    {},
+    { ...makeGrype(), descriptor: { name: 'fake' } },
     { ...makeGrype(), matches: [{ vulnerability: {} }] },
     { ...makeGrype(), ignoredMatches: null },
     { ...makeGrype(), ignoredMatches: 'not-a-list' },
-  ]) assert.throws(() => validateGrype(invalid));
+  ])
+    assert.throws(() => validateGrype(invalid));
 });
 
 test('OCI targets are bound to exact registry namespace and digest, no tag substitution', () => {
@@ -69,12 +88,16 @@ test('OCI targets are bound to exact registry namespace and digest, no tag subst
     { ...receipt, runtime: 'ghcr.io/sauron9521/gym-platform:latest' },
     { ...receipt, migrate: 'ghcr.io/sauron9521/gym-platform-migrate@sha256:123' },
     { ...receipt, migrate: receipt.runtime.replace('gym-platform@', 'gym-platform-migrate@') },
-  ]) assert.throws(() => digestTargets(invalid, 'sauron9521/gym-platform'));
+  ])
+    assert.throws(() => digestTargets(invalid, 'sauron9521/gym-platform'));
   assert.throws(() => digestTargets(receipt, '../evil'));
 });
 
 test('manual GHCR publish signs provenance and SPDX SBOMs for both exact digests', async () => {
-  const workflow = await readFile(new URL('../.github/workflows/publish-ghcr.yml', import.meta.url), 'utf8');
+  const workflow = await readFile(
+    new URL('../.github/workflows/publish-ghcr.yml', import.meta.url),
+    'utf8',
+  );
   assert.match(workflow, /^on:\n  workflow_dispatch:/m);
   assert.match(workflow, /id-token: write/);
   assert.match(workflow, /attestations: write/);
@@ -87,12 +110,19 @@ test('manual GHCR publish signs provenance and SPDX SBOMs for both exact digests
   assert.match(workflow, /push-to-registry: true/g);
   assert.match(workflow, /sbom-path: release\/runtime\.spdx\.json/);
   assert.match(workflow, /sbom-path: release\/migrate\.spdx\.json/);
-  assert.match(workflow, /for predicate in https:\/\/slsa\.dev\/provenance\/v1 https:\/\/spdx\.dev\/Document\/v2\.3/);
+  assert.match(
+    workflow,
+    /for predicate in https:\/\/slsa\.dev\/provenance\/v1 https:\/\/spdx\.dev\/Document\/v2\.3/,
+  );
   assert.match(workflow, /--predicate-type "\$predicate"/);
   assert.match(workflow, /--signer-workflow/);
   assert.match(workflow, /--source-digest "\$GITHUB_SHA"/);
-  const beforePush = workflow.indexOf('      - name: Publish both verified images without rebuilding');
-  const beforeScan = workflow.indexOf('      - name: Scan runtime SBOM for critical vulnerabilities');
+  const beforePush = workflow.indexOf(
+    '      - name: Publish both verified images without rebuilding',
+  );
+  const beforeScan = workflow.indexOf(
+    '      - name: Scan runtime SBOM for critical vulnerabilities',
+  );
   assert.ok(beforeScan > 0 && beforeScan < beforePush);
   assert.doesNotMatch(workflow, /docker build |docker compose|gh release create/);
   assert.doesNotMatch(workflow, /^\s+(pull_request|push|schedule):/m);

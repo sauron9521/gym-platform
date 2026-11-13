@@ -16,13 +16,21 @@ export function validateSpdx(sbom) {
   assert.equal(typeof sbom?.name, 'string', 'Missing SPDX name');
   assert.ok(sbom.name.length > 0 && sbom.name.length < 4096, 'Invalid SPDX name');
   assert.equal(typeof sbom?.documentNamespace, 'string', 'Missing SPDX namespace');
-  assert.ok(sbom.documentNamespace.startsWith('https://') || sbom.documentNamespace.startsWith('http://'),
-    'Invalid SPDX namespace');
-  assert.ok(Array.isArray(sbom.packages) && sbom.packages.length > 0,
-    'Empty SBOM packages');
-  assert.ok(sbom.packages.every((p) => typeof p?.SPDXID === 'string' &&
-    /^SPDXRef-[A-Za-z0-9.-]+$/.test(p.SPDXID) &&
-    typeof p.name === 'string' && p.name.length > 0), 'Invalid SPDX package');
+  assert.ok(
+    sbom.documentNamespace.startsWith('https://') || sbom.documentNamespace.startsWith('http://'),
+    'Invalid SPDX namespace',
+  );
+  assert.ok(Array.isArray(sbom.packages) && sbom.packages.length > 0, 'Empty SBOM packages');
+  assert.ok(
+    sbom.packages.every(
+      (p) =>
+        typeof p?.SPDXID === 'string' &&
+        /^SPDXRef-[A-Za-z0-9.-]+$/.test(p.SPDXID) &&
+        typeof p.name === 'string' &&
+        p.name.length > 0,
+    ),
+    'Invalid SPDX package',
+  );
   return { packages: sbom.packages.length };
 }
 
@@ -31,8 +39,7 @@ export function validateGrype(report) {
   // Grype 0.110.0 omits ignoredMatches entirely when there are none.
   // An explicitly present ignoredMatches value must still be an array.
   if (Object.hasOwn(report, 'ignoredMatches')) {
-    assert.ok(Array.isArray(report.ignoredMatches),
-      'Invalid Grype ignoredMatches array');
+    assert.ok(Array.isArray(report.ignoredMatches), 'Invalid Grype ignoredMatches array');
   }
   assert.equal(typeof report?.descriptor?.name, 'string', 'Missing Grype descriptor');
   assert.ok(report.descriptor.name.toLowerCase().includes('grype'), 'Wrong scanner');
@@ -54,7 +61,10 @@ export function digestTargets(receipt, repository) {
   const runtimeRepo = 'ghcr.io/' + repository.toLowerCase();
   const migrateRepo = runtimeRepo + '-migrate';
   const result = {};
-  for (const [key, expectedName] of [['runtime', runtimeRepo], ['migrate', migrateRepo]]) {
+  for (const [key, expectedName] of [
+    ['runtime', runtimeRepo],
+    ['migrate', migrateRepo],
+  ]) {
     const value = receipt?.[key];
     assert.equal(typeof value, 'string', 'Missing published image');
     const parts = value.split('@');
@@ -71,7 +81,11 @@ export function digestTargets(receipt, repository) {
 
 export function githubOutputs(values) {
   // Values are strictly syntax-validated above; no injection of output lines.
-  return Object.entries(values).map(([key, value]) => key + '=' + value).join('\n') + '\n';
+  return (
+    Object.entries(values)
+      .map(([key, value]) => key + '=' + value)
+      .join('\n') + '\n'
+  );
 }
 
 async function main() {

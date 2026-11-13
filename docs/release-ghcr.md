@@ -25,7 +25,7 @@ manually against `main`. The workflow:
 - Resolves a digest-pinned `node:24-trixie-slim` base image; uses the
   **monorepo root** as Docker context and `apps/api/Dockerfile`.
 - Builds both non-root `gym-platform-api:runtime-SHA` and
-  `gym-platform-api:migrate-SHA` from the *same* source commit.
+  `gym-platform-api:migrate-SHA` from the _same_ source commit.
 - Archives the exact images and produces a SHA-256 manifest containing
   repository, source SHA, base digest, workflow run ID and image config IDs.
 - Attests both files with GitHub OIDC/Sigstore and uploads
@@ -56,7 +56,7 @@ source SHA. Explicitly select `PUBLISH_VERIFIED_CANDIDATE` (default is
   independently verifies those signatures.
 - Keeps digest-only receipts and security evidence as workflow artifacts.
 
-A GHCR *tag* is still mutable; use the attested `@sha256` digest for any
+A GHCR _tag_ is still mutable; use the attested `@sha256` digest for any
 future deployment. The GITHUB_TOKEN requires repository Actions permission
 to write packages; package visibility/access must be configured separately.
 

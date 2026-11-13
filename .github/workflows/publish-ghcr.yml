@@ -4,15 +4,15 @@ on:
   workflow_dispatch:
     inputs:
       release_run_id:
-        description: "Successful Release candidate images and signed provenance workflow run ID"
+        description: 'Successful Release candidate images and signed provenance workflow run ID'
         required: true
         type: string
       source_sha:
-        description: "Full 40-character main commit SHA that the release run built"
+        description: 'Full 40-character main commit SHA that the release run built'
         required: true
         type: string
       confirm_publish:
-        description: "Explicit authorization to publish both verified images"
+        description: 'Explicit authorization to publish both verified images'
         required: true
         default: NO_PUBLISH
         type: choice
