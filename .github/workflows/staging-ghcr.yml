@@ -4,23 +4,23 @@ on:
   workflow_dispatch:
     inputs:
       runtime_digest:
-        description: "Full immutable runtime GHCR ref (ghcr.io/...@sha256:...)"
+        description: 'Full immutable runtime GHCR ref (ghcr.io/...@sha256:...)'
         required: true
         type: string
       migrate_digest:
-        description: "Full immutable Prisma migration GHCR ref (ghcr.io/...@sha256:...)"
+        description: 'Full immutable Prisma migration GHCR ref (ghcr.io/...@sha256:...)'
         required: true
         type: string
       source_sha:
-        description: "Full SHA of signed release-candidate image source"
+        description: 'Full SHA of signed release-candidate image source'
         required: true
         type: string
       publish_sha:
-        description: "Full main SHA that signed and published the OCI attestations"
+        description: 'Full main SHA that signed and published the OCI attestations'
         required: true
         type: string
       confirm_staging:
-        description: "Explicit authorization for disposable runner-only rehearsal"
+        description: 'Explicit authorization for disposable runner-only rehearsal'
         required: true
         default: NO_STAGING_RUN
         type: choice
@@ -59,7 +59,7 @@ jobs:
       STAGING_REDIS: gym-stage-redis-${{ github.run_id }}-${{ github.run_attempt }}
       STAGING_API: gym-stage-api-${{ github.run_id }}-${{ github.run_attempt }}
       STAGING_AVATARS: gym-stage-avatars-${{ github.run_id }}-${{ github.run_attempt }}
-      STAGING_DATABASE_URL: postgresql://postgres:staging_only_ephemeral@staging-postgres:5432/gym_app_staging_test?schema=public
+      STAGING_DATABASE_URL: ***staging-postgres:5432/gym_app_staging_test?schema=public
       STAGING_REDIS_URL: redis://staging-redis:6379
 
     steps:
