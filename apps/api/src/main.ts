@@ -9,7 +9,7 @@ import { NestFactory } from '@nestjs/core';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from '#src/app.module';
 import type { AppConfigService } from '#src/common/config/app-config.types';
-import { getCorsOrigins } from '#src/common/config/http.config';
+import { getCorsOrigins, getWebAppOrigin } from '#src/common/config/http.config';
 import { getTrustedProxies } from '#src/common/config/proxy.config';
 import { getLogLevels } from '#src/common/config/logger.config';
 import { enableOpenApi } from '#src/infra/openapi/openapi';
@@ -43,8 +43,10 @@ async function bootstrap() {
     methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE'],
   });
 
-  //CSRF
-  app.enableCsrfProtection();
+  // Browser writes from the configured web app are permitted; arbitrary origins remain blocked.
+  app.enableCsrfProtection({
+    trustedOrigins: [getWebAppOrigin(config.getOrThrow('APP_URL'))],
+  });
 
   //Global Pipes
   app.useGlobalPipes(
