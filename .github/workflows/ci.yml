@@ -58,6 +58,9 @@ jobs:
           pnpm --filter @gym/api test:architecture
           pnpm --filter @gym/api test:coverage-tools
 
+      - name: Validate release and GHCR safety contracts (offline)
+        run: node --test scripts/release-bundle.test.mjs scripts/ghcr-promotion.test.mjs scripts/release-supply-chain.test.mjs scripts/release-ci-gate.test.mjs
+
       - name: Check formatting
         run: pnpm format:check
 

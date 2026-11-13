@@ -58,3 +58,11 @@ Types are generated from the NestJS OpenAPI schema and checked in CI.
 After changing API routes or DTOs, run `pnpm api:contract:generate` and commit
 the updated `apps/api/openapi/openapi.json` and `packages/api-client/src/generated/schema.d.ts`
 alongside the API change. See [client documentation](packages/api-client/README.md).
+
+## Manual API release pipeline
+
+Production API Docker images may be packaged and signed by the manual
+`release-artifacts.yml` workflow, then independently verified before an
+explicit GHCR publication in `publish-ghcr.yml`. Neither workflow deploys
+to production or runs database migrations.
+See [release and GHCR procedures](docs/release-ghcr.md).
