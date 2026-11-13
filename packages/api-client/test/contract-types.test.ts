@@ -1,4 +1,4 @@
-import type { paths } from '../src/generated/schema.js';
+import type { paths, operations } from '../src/generated/schema.js';
 import { createGymApiClient } from '../src/index.js';
 
 type Assert<T extends true> = T;
