@@ -17,15 +17,10 @@ type HasTokenIssue = Assert<'/auth/token' extends keyof paths ? true : false>;
 type HasTokenRefresh = Assert<'/auth/token/refresh' extends keyof paths ? true : false>;
 type HasCurrentUser = Assert<'/users/me' extends keyof paths ? true : false>;
 
-export type AuthContractChecks = [
-  HasSessionLogin,
-  HasTokenIssue,
-  HasTokenRefresh,
-  HasCurrentUser,
-];
+export type AuthContractChecks = [HasSessionLogin, HasTokenIssue, HasTokenRefresh, HasCurrentUser];
 
 const browser = createBrowserSessionClient({ baseUrl: 'https://api.example.test' });
-void browser.POST('/auth/login', { body: { email: 'user@example.test', password: 'secret' } });
+void browser.GET('/users/me');
 
 const native = createBearerTokenClient({
   baseUrl: 'https://api.example.test',

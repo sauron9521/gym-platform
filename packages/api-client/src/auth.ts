@@ -1,15 +1,11 @@
 import { createGymApiClient } from './client.js';
 import type { GymApiClient } from './client.js';
 
-type ClientOptions = Parameters<typeof createGymApiClient>[0];
+type ClientOptions = NonNullable<Parameters<typeof createGymApiClient>[0]>;
 
 export type AuthFailure = 'unauthenticated' | 'forbidden';
 export type AuthFailureListener = (failure: AuthFailure) => void | Promise<void>;
-export type TokenGetter = () =>
-  | string
-  | null
-  | undefined
-  | Promise<string | null | undefined>;
+export type TokenGetter = () => string | null | undefined | Promise<string | null | undefined>;
 
 type AuthCallbacks = {
   onAuthFailure?: AuthFailureListener;

@@ -107,10 +107,7 @@ test('bearer client reports 401 once and never attempts automatic token refresh'
 });
 
 test('bearer client rejects non-http origins and missing base URLs', () => {
-  assert.throws(
-    () => createBearerTokenClient({ getAccessToken: () => 'token' }),
-    /baseUrl/,
-  );
+  assert.throws(() => createBearerTokenClient({ getAccessToken: () => 'token' }), /baseUrl/);
   assert.throws(
     () =>
       createBearerTokenClient({
