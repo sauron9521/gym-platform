@@ -19,7 +19,7 @@ cd "$(dirname "$0")/.."
 # All values are operator-provided. Never print the environment or Compose JSON.
 : "$DEPLOY_ENV_FILE" "$DEPLOY_RUNTIME_IMAGE" "$DEPLOY_MIGRATE_IMAGE"
 : "$SOURCE_SHA" "$PUBLISH_SHA" "$EXPECTED_CURRENT_IMAGE"
-: "$PRODUCTION_RELEASE_REPORT" "$BACKUP_DIR"
+: "$PRODUCTION_RELEASE_REPORT" "$BACKUP_DIR" "${RELEASE_REVIEW_RUN_ID:?Explicit successful readiness review run ID required}"
 
 if [[ "$DEPLOY_ENV_FILE" != /* || ! -f "$DEPLOY_ENV_FILE" || -L "$DEPLOY_ENV_FILE" ]]; then
   echo 'Invalid private production env file' >&2
@@ -36,6 +36,9 @@ done
 # Fail fast on untrusted release receipt, missing metadata, symlinks or
 # malformed checksum paths BEFORE any network or Docker operations.
 node scripts/production-host-preflight.mjs evidence
+# Re-fetch the exact successful review run and compare with its GitHub-hosted
+# latest-attempt artifact. No local receipt alone is trusted.
+node scripts/production-release-origin.mjs verify
 node scripts/production-digest-guard.mjs refs
 
 # The manifest has already been checked for *exactly* the two fixed names.

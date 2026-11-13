@@ -204,6 +204,7 @@ jobs:
         run: |
           bash -n scripts/production-host-preflight.sh
           node --test scripts/production-host-preflight.test.mjs
+          node --test scripts/production-release-origin.test.mjs
 
       - name: Check opt-in systemd service and timer units
         run: |
