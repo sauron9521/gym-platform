@@ -4,10 +4,10 @@
 
 Authenticated summary statistics and exercise-specific history/progress views.
 
-| Method | Path |
-| --- | --- |
-| GET | `/workout-analytics/summary` |
-| GET | `/workout-analytics/exercises/:exerciseId` |
+| Method | Path                                       |
+| ------ | ------------------------------------------ |
+| GET    | `/workout-analytics/summary`               |
+| GET    | `/workout-analytics/exercises/:exerciseId` |
 
 Both routes have endpoint-level throttling. Keep statistics scoped to the authenticated principal and document precise aggregation rules in the code/tests, not in ad hoc frontend calculations.
 

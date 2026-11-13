@@ -4,13 +4,13 @@
 
 The current-user profile endpoints are authenticated. Public avatar serving is intentionally separate from authenticated profile mutations.
 
-| Method | Path | Purpose |
-| --- | --- | --- |
-| GET | `/users/me` | Read own profile |
-| PATCH | `/users/me` | Update own profile |
-| POST | `/users/me/avatar` | Upload/replace avatar |
-| DELETE | `/users/me/avatar` | Remove avatar |
-| GET | `/avatars/:key` | Public avatar retrieval |
+| Method | Path               | Purpose                 |
+| ------ | ------------------ | ----------------------- |
+| GET    | `/users/me`        | Read own profile        |
+| PATCH  | `/users/me`        | Update own profile      |
+| POST   | `/users/me/avatar` | Upload/replace avatar   |
+| DELETE | `/users/me/avatar` | Remove avatar           |
+| GET    | `/avatars/:key`    | Public avatar retrieval |
 
 Check the controller, validation schema and OpenAPI for the current profile field set, upload limits and response types. Do not document profile fields by copying a Prisma model: public responses must not expose credential secrets. Avatar writes have additional throttling.
 

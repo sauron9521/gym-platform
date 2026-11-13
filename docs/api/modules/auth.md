@@ -9,21 +9,21 @@ Registration, credential sign-in, session and token lifecycle, email verificatio
 
 ## HTTP surface
 
-| Method | Path | Purpose |
-| --- | --- | --- |
-| POST | `/auth/register` | Register and create a sign-in session |
-| POST | `/auth/login` | Authenticate with credentials |
-| POST | `/auth/email/verify` | Verify email token |
-| POST | `/auth/email/verification` | Request verification resend |
-| POST | `/auth/password-reset/forgot` | Request recovery |
-| POST | `/auth/password-reset/reset` | Complete password reset |
-| GET | `/auth/sessions` | List active sessions |
-| DELETE | `/auth/sessions/:id` | Revoke a session |
-| POST | `/auth/sign-out` | Sign out |
-| POST | `/auth/sign-out-everywhere` | Revoke all sessions |
-| POST | `/auth/token` | Issue token |
-| POST | `/auth/token/refresh` | Refresh token |
-| POST | `/auth/token/revoke` | Revoke token |
+| Method | Path                          | Purpose                               |
+| ------ | ----------------------------- | ------------------------------------- |
+| POST   | `/auth/register`              | Register and create a sign-in session |
+| POST   | `/auth/login`                 | Authenticate with credentials         |
+| POST   | `/auth/email/verify`          | Verify email token                    |
+| POST   | `/auth/email/verification`    | Request verification resend           |
+| POST   | `/auth/password-reset/forgot` | Request recovery                      |
+| POST   | `/auth/password-reset/reset`  | Complete password reset               |
+| GET    | `/auth/sessions`              | List active sessions                  |
+| DELETE | `/auth/sessions/:id`          | Revoke a session                      |
+| POST   | `/auth/sign-out`              | Sign out                              |
+| POST   | `/auth/sign-out-everywhere`   | Revoke all sessions                   |
+| POST   | `/auth/token`                 | Issue token                           |
+| POST   | `/auth/token/refresh`         | Refresh token                         |
+| POST   | `/auth/token/revoke`          | Revoke token                          |
 
 Exact request/response bodies, authentication requirements and status codes are defined by controllers and generated OpenAPI; do not infer them from this overview.
 

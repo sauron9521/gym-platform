@@ -4,14 +4,14 @@
 
 Authenticated tracking of body measurements and statistics. Use the Zod request schema / generated OpenAPI for field types, precision and date handling.
 
-| Method | Path |
-| --- | --- |
-| POST | `/body-measurements` |
-| GET | `/body-measurements` |
-| GET | `/body-measurements/statistics` |
-| GET | `/body-measurements/:id` |
-| PATCH | `/body-measurements/:id` |
-| DELETE | `/body-measurements/:id` |
+| Method | Path                            |
+| ------ | ------------------------------- |
+| POST   | `/body-measurements`            |
+| GET    | `/body-measurements`            |
+| GET    | `/body-measurements/statistics` |
+| GET    | `/body-measurements/:id`        |
+| PATCH  | `/body-measurements/:id`        |
+| DELETE | `/body-measurements/:id`        |
 
 Do not round fractional measurements in API validation or persistence unless the contract specifies it. Keep each athlete's measurements private.
 
