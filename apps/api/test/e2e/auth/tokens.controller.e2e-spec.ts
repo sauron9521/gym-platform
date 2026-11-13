@@ -4,8 +4,8 @@ import type { INestApplication } from '@nestjs/common';
 import { StandardSchemaValidationPipe, UnauthorizedException } from '@nestjs/common';
 import { TokenService } from '@nestjs/authentication';
 import request from 'supertest';
-import { CredentialsService } from '../src/modules/auth/services/index.js';
-import { TokensController } from '../src/modules/auth/controllers/index.js';
+import { CredentialsService } from '../../../src/modules/auth/services/index.js';
+import { TokensController } from '../../../src/modules/auth/controllers/index.js';
 
 describe('TokensController (HTTP)', () => {
   let app: INestApplication;

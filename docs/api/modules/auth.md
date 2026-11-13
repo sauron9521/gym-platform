@@ -36,7 +36,7 @@ Preserve email normalization behavior, password constraints, throttling, session
 ## Verification
 
 - Unit: `src/modules/auth/test/`
-- HTTP e2e: `test/auth.e2e-spec.ts`, `test/tokens.controller.e2e-spec.ts` and other `test/*auth*.e2e-spec.ts`
+- HTTP e2e: `test/e2e/auth/` (registration/login, token issuance, endpoint throttling); remaining Auth integration/HTTP suites reside under `test/integration/` and the legacy `test/` root
 - Database contracts: `test/integration/auth*.integration.e2e-spec.ts`, session/token-store contract specs
 
 See [testing guide](../testing.md) and regenerate the frontend API client after changing contract-visible DTOs.
