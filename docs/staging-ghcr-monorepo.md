@@ -90,7 +90,8 @@ delivery, TLS/CORS test, or alert-delivery validation.
 - Missing artifacts: an early identity failure can prevent receipts;
   GitHub Actions job conclusion remains authoritative.
 
-**Production NO-GO** until a separate signed two-release rollback drill,
-independent release-evidence review, operator backups/restoration,
-security review and explicit operational approval succeed.
+**Production NO-GO** until the separate [signed two-release rollback drill](staging-two-release-rollback.md)
+has actually succeeded using two real Gym Platform published releases, and
+independent release-evidence review, operator backups/restoration, security
+review and explicit operational approval are completed.
 The old API stays operational source of truth until authorized cutover.

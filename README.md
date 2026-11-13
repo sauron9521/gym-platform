@@ -87,3 +87,9 @@ The imported API has a frozen legacy source/test inventory and a CI-backed,
 read-only cutover audit. **Production remains NO-GO** until signed GHCR images,
 staging, two-release rollback and external operator approvals are verified.
 See [API migration audit and cutover criteria](docs/api-migration-audit.md).
+
+## Signed two-release API rollback rehearsal
+
+Manual, runner-only [two-release upgrade and rollback](docs/staging-two-release-rollback.md)
+checks signed GHCR runtime compatibility after forward Prisma migrations.
+Repository CI validates safety contracts only; production cutover stays NO-GO.

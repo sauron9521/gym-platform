@@ -68,10 +68,12 @@ deliberately replaced by Gym Platform equivalents.
    is still required. The offline CI contract checks alone are not
    staging evidence. Use disposable PostgreSQL/Redis and synthetic
    credentials.
-2. **Two-release rollback:** port or replace
-   `.github/workflows/staging-upgrade-rollback.yml` and its tests.
-   Prove old runtime compatibility after forward migrations and safe
-   runtime-only rollback with real persisted test data.
+2. **Two-release rollback:** `.github/workflows/staging-upgrade-rollback.yml`
+   and its offline tests are now included, but a real **manual run using
+   two separately published and verified Gym Platform releases** remains
+   mandatory. Demonstrate that the old runtime remains functional after
+   forward migrations and safe runtime-only rollback preserving data.
+   See [two-release staging guide](staging-two-release-rollback.md).
 3. **Independent production evidence review:** port or replace
    `.github/workflows/production-readiness.yml`, binding signed image
    digests, publisher identity, successful exact-commit main CI, staging

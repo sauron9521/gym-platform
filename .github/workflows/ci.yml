@@ -212,10 +212,12 @@ jobs:
         with:
           node-version: '24'
 
-      - name: Validate manual signed staging and functional smoke contracts
+      - name: Validate manual signed staging, two-release upgrade and functional contracts
         run: |
+          bash -n scripts/staging-upgrade-run.sh
           node --test scripts/staging-smoke.test.mjs
           node --test scripts/staging-functional-smoke.test.mjs
+          node --test scripts/staging-upgrade-rollback.test.mjs
 
   api-migration:
     name: API Migration / Source inventory and cutover NO-GO
