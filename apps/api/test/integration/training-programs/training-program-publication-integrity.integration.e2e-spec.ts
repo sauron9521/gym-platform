@@ -5,15 +5,15 @@ import { ConfigModule } from '@nestjs/config';
 import { Test } from '@nestjs/testing';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
-import { PrismaModule, PrismaService } from '../../src/infra/database/index.js';
-import { TrainingProgramVersionRepository } from '../../src/modules/training-programs/repositories/training-program-version.repository.js';
-import { TrainingProgramExerciseRepository } from '../../src/modules/training-programs/repositories/training-program-exercise.repository.js';
-import { TrainingProgramAssignmentRepository } from '../../src/modules/training-programs/repositories/training-program-assignment.repository.js';
-import { WorkoutsRepository } from '../../src/modules/workouts/repositories/workouts.repository.js';
-import { WorkoutCreationRepository } from '../../src/modules/workouts/repositories/workout-creation.repository.js';
-import { WorkoutLifecycleRepository } from '../../src/modules/workouts/repositories/workout-lifecycle.repository.js';
-import { WorkoutSetsRepository } from '../../src/modules/workouts/repositories/workout-sets.repository.js';
-import { useTestDatabase } from '../utility/test-db-helper.js';
+import { PrismaModule, PrismaService } from '../../../src/infra/database/index.js';
+import { TrainingProgramVersionRepository } from '../../../src/modules/training-programs/repositories/training-program-version.repository.js';
+import { TrainingProgramExerciseRepository } from '../../../src/modules/training-programs/repositories/training-program-exercise.repository.js';
+import { TrainingProgramAssignmentRepository } from '../../../src/modules/training-programs/repositories/training-program-assignment.repository.js';
+import { WorkoutsRepository } from '../../../src/modules/workouts/repositories/workouts.repository.js';
+import { WorkoutCreationRepository } from '../../../src/modules/workouts/repositories/workout-creation.repository.js';
+import { WorkoutLifecycleRepository } from '../../../src/modules/workouts/repositories/workout-lifecycle.repository.js';
+import { WorkoutSetsRepository } from '../../../src/modules/workouts/repositories/workout-sets.repository.js';
+import { useTestDatabase } from '../../utility/test-db-helper.js';
 
 /**
  * Real PostgreSQL publication integrity checks, including a deterministic

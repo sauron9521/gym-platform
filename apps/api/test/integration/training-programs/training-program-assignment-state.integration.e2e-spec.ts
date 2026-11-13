@@ -4,9 +4,9 @@ import type { INestApplication } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { Test } from '@nestjs/testing';
 
-import { PrismaModule, PrismaService } from '../../src/infra/database/index.js';
-import { TrainingProgramAssignmentRepository } from '../../src/modules/training-programs/repositories/training-program-assignment.repository.js';
-import { useTestDatabase } from '../utility/test-db-helper.js';
+import { PrismaModule, PrismaService } from '../../../src/infra/database/index.js';
+import { TrainingProgramAssignmentRepository } from '../../../src/modules/training-programs/repositories/training-program-assignment.repository.js';
+import { useTestDatabase } from '../../utility/test-db-helper.js';
 
 describe('TrainingProgramAssignmentRepository eligibility (PostgreSQL)', () => {
   let app: INestApplication;
