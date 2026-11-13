@@ -1,4 +1,4 @@
-import { StandardSchemaValidationPipe, ValidationPipe } from '@nestjs/common';
+import { StandardSchemaValidationPipe } from '@nestjs/common';
 import type { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
@@ -19,14 +19,7 @@ describe('Auth no-store before guards (AppModule + PostgreSQL)', () => {
 
     app = moduleRef.createNestApplication();
     // Mirror main.ts, which enables request validation during production boot.
-    app.useGlobalPipes(
-      new ValidationPipe({
-        whitelist: true,
-        transform: true,
-        forbidNonWhitelisted: true,
-      }),
-      new StandardSchemaValidationPipe(),
-    );
+    app.useGlobalPipes(new StandardSchemaValidationPipe());
     await app.init();
   }, 30_000);
 

@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 
 import type { INestApplication } from '@nestjs/common';
-import { StandardSchemaValidationPipe, ValidationPipe } from '@nestjs/common';
+import { StandardSchemaValidationPipe } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { Mailer } from '@nestjs/mail';
 import { ThrottlerGuard } from '@nestjs/throttler';
@@ -46,14 +46,7 @@ describe('Registration email submission recovery (HTTP + PostgreSQL)', () => {
       .compile();
 
     app = module.createNestApplication();
-    app.useGlobalPipes(
-      new ValidationPipe({
-        whitelist: true,
-        transform: true,
-        forbidNonWhitelisted: true,
-      }),
-      new StandardSchemaValidationPipe(),
-    );
+    app.useGlobalPipes(new StandardSchemaValidationPipe());
     await app.init();
     prisma = app.get(PrismaService);
   }, 30_000);

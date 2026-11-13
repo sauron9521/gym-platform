@@ -1,11 +1,7 @@
 import { randomUUID } from 'node:crypto';
 
 import { PasswordHasher } from '@nestjs/authentication';
-import {
-  StandardSchemaValidationPipe,
-  ValidationPipe,
-  type INestApplication,
-} from '@nestjs/common';
+import { StandardSchemaValidationPipe, type INestApplication } from '@nestjs/common';
 import { Mailer } from '@nestjs/mail';
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
@@ -80,14 +76,7 @@ describe('Verification resend per-user throttle (HTTP + PostgreSQL)', () => {
     app = moduleRef.createNestApplication();
     // Only trusted loopback can supply the simulated real client IP.
     app.getHttpAdapter().getInstance().set('trust proxy', getTrustedProxies('loopback'));
-    app.useGlobalPipes(
-      new ValidationPipe({
-        whitelist: true,
-        transform: true,
-        forbidNonWhitelisted: true,
-      }),
-      new StandardSchemaValidationPipe(),
-    );
+    app.useGlobalPipes(new StandardSchemaValidationPipe());
     await app.init();
     prisma = app.get(PrismaService);
   }, 30_000);
