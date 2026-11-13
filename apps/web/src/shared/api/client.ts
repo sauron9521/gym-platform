@@ -1,10 +1,16 @@
-import { createGymApiClient } from '@gym/api-client';
+import { createBrowserSessionClient } from '@gym/api-client';
+import type { AuthFailureListener } from '@gym/api-client';
 
 /**
- * Browser requests send HttpOnly session cookies only when opted in.
- * NEXT_PUBLIC_API_URL is a public origin, not a secret.
+ * Browser-only API client. HttpOnly session cookies are managed by the browser.
+ * Do not use this singleton in Next.js Server Components or route handlers:
+ * a server-side fetch does not implicitly forward a user's cookies.
  */
-export const webApi = createGymApiClient({
-  baseUrl: process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001',
-  credentials: 'include',
-});
+export function createWebSessionApi(onAuthFailure?: AuthFailureListener) {
+  return createBrowserSessionClient({
+    baseUrl: process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001',
+    onAuthFailure,
+  });
+}
+
+export const webApi = createWebSessionApi();
