@@ -29,7 +29,7 @@ Exact request/response bodies, authentication requirements and status codes are 
 
 ## Validation and security
 
-At the time this page was introduced, `src/modules/auth/dto/auth.dto.ts` still uses `class-validator`/`class-transformer`, while `src/main.ts` installs both `ValidationPipe` and `StandardSchemaValidationPipe`. The intended follow-up is Zod/Standard Schema migration with HTTP behavior and OpenAPI parity tests. **Do not remove the global class-validation pipe or dependencies before auditing every consumer.**
+The first migration stage defines typed, strict Zod contracts in `src/modules/auth/dto/auth.schemas.ts` and tests their parity with the legacy DTO rules. **Controllers still use the original class-based DTOs at this stage**; adding schemas alone does not change runtime validation. The next PR must switch `@Body()` to `@Body({ schema })`, migrate the global/test pipes where appropriate, and regenerate OpenAPI plus the typed frontend client. Do not remove `ValidationPipe`, `class-validator` or `class-transformer` before checking all other consumers.
 
 Preserve email normalization behavior, password constraints, throttling, session invalidation and redaction/no-store semantics. Never include tokens, passwords or email addresses in logs.
 
