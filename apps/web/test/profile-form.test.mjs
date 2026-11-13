@@ -48,11 +48,19 @@ test('Zod rejects invalid height, fractional precision, timezone and birthday', 
     { birthday: '2999-01-01' },
     { birthday: '2026-02-30' },
     { timezone: 'Invalid/TimeZone' },
+    { timezone: 'GMT' },
   ]) {
     assert.equal(profileSchema.safeParse({ ...draft, ...changes }).success, false);
     assert.ok(buildProfilePatch({ ...draft, ...changes }).error);
   }
   assert.equal(buildProfilePatch({ ...draft, timezone: 'UTC' }).data.timezone, 'UTC');
+});
+
+test('valid decimal weights are accepted without floating-point precision errors', () => {
+  const draft = toProfileDraft(account);
+  for (const weight of ['1.16', '75.99', '81.21']) {
+    assert.equal(buildProfilePatch({ ...draft, weight }).data?.weight, Number(weight));
+  }
 });
 
 test('Zod trim follows API semantics and clears optional fields as null', () => {

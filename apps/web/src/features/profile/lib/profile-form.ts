@@ -12,13 +12,9 @@ const measurement = (label: string, min: number, max: number, integer = false) =
   z.string().refine((input) => {
     if (!input.trim()) return true;
     const value = Number(input);
-    return (
-      Number.isFinite(value) &&
-      value >= min &&
-      value <= max &&
-      (!integer || Number.isInteger(value)) &&
-      (integer || Math.round(value * 100) === value * 100)
-    );
+    if (!Number.isFinite(value) || value < min || value > max) return false;
+    if (integer) return Number.isInteger(value);
+    return /^[0-9]+(?:\.[0-9]{1,2})?$/.test(input.trim());
   }, `Некоректне значення: ${label}.`);
 
 const birthday = z.string().refine((input) => {
@@ -31,12 +27,15 @@ const birthday = z.string().refine((input) => {
   return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === input;
 }, 'Перевірте дату народження.');
 
+const timezonePattern = /^(?:UTC|[A-Za-z_]+\/[A-Za-z0-9_+.-]+(?:\/[A-Za-z0-9_+.-]+)?)$/;
+
 const timezone = z
   .string()
   .trim()
   .min(1, 'Вкажіть часовий пояс.')
   .max(64, 'Часовий пояс занадто довгий.')
   .refine((value) => {
+    if (!timezonePattern.test(value)) return false;
     try {
       new Intl.DateTimeFormat('en-US', { timeZone: value });
       return true;
