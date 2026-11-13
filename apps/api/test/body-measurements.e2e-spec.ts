@@ -28,7 +28,8 @@ describe('Body Measurements (HTTP + PostgreSQL)', () => {
   async function login(email: string): Promise<string> {
     const res = await request(app.getHttpServer()).post('/auth/login').send({ email, password });
     expect(res.status).toBe(200);
-    const setCookies: string[] = res.headers['set-cookie'] ?? [];
+    const rawCookies = res.headers['set-cookie'];
+    const setCookies = Array.isArray(rawCookies) ? rawCookies : rawCookies ? [rawCookies] : [];
     const cookie = setCookies
       .map((value) => value.split(';')[0] ?? '')
       .find((value) => value.startsWith('__Host-sid='));

@@ -44,7 +44,8 @@ describe('Workout Analytics (HTTP + PostgreSQL)', () => {
       .post('/auth/login')
       .send({ email, password })
       .expect(200);
-    const cookies: string[] = res.headers['set-cookie'] ?? [];
+    const rawCookies = res.headers['set-cookie'];
+    const cookies = Array.isArray(rawCookies) ? rawCookies : rawCookies ? [rawCookies] : [];
     const cookie = cookies
       .map((value) => value.split(';')[0] ?? '')
       .find((value) => value.startsWith('__Host-sid='));

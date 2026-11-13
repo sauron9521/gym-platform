@@ -195,7 +195,7 @@ describe('OpenAPI / HTTP contract regression (PostgreSQL)', () => {
     );
     await app.init();
 
-    document = createOpenApiDocument(app) as OpenApiDocument;
+    document = createOpenApiDocument(app) as unknown as OpenApiDocument;
     prisma = app.get(PrismaService);
     const muscleGroup = await prisma.muscleGroup.upsert({
       where: { slug: 'chest' },

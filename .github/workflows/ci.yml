@@ -56,3 +56,93 @@ jobs:
 
       - name: Build workspaces
         run: pnpm build
+
+  api-e2e:
+    name: API e2e / PostgreSQL 17
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: gym_app_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d gym_app_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/gym_app_test?schema=public
+      TEST_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/gym_app_test?schema=public
+      TEST_REDIS_URL: redis://127.0.0.1:6379
+      CORS_ORIGINS: http://localhost:3000
+      APP_URL: http://localhost:3000
+      JWT_ISSUER: http://localhost:3000
+      JWT_SECRET: xjYwwAdHREaWbPRsTFQikrf0jnu4enSyEfthz+evnJo
+      MAIL_FROM: Gym Test <no-reply@example.test>
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install locked dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Guard disposable test database
+        working-directory: apps/api
+        run: |
+          node --input-type=module <<'NODE'
+          const db = process.env.DATABASE_URL;
+          const testDb = process.env.TEST_DATABASE_URL;
+          if (!db || !testDb || db !== testDb) {
+            throw new Error('Database URLs must be identical and dedicated to tests.');
+          }
+          const url = new URL(db);
+          const name = decodeURIComponent(url.pathname.slice(1));
+          if (!name.toLowerCase().endsWith('_test') ||
+              !['127.0.0.1', 'localhost'].includes(url.hostname)) {
+            throw new Error('Refusing to migrate a non-local or non-test database.');
+          }
+          console.log('Disposable test database guard passed:', name);
+          NODE
+
+      - name: Generate Prisma Client
+        run: pnpm --filter @gym/api db:generate
+
+      - name: Typecheck integration and HTTP e2e tests
+        run: pnpm --filter @gym/api typecheck:e2e
+
+      - name: Apply test database migrations
+        run: pnpm --filter @gym/api db:migrate:deploy
+
+      - name: Seed test exercise library
+        run: pnpm --filter @gym/api db:seed
+
+      - name: Integration and HTTP e2e tests
+        run: pnpm --filter @gym/api test:e2e
