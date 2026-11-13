@@ -1,0 +1,74 @@
+# Opt-in single-instance API production baseline; never auto-deploy.
+name: gym-platform-api
+
+x-api-env: &api-env
+  NODE_ENV: production
+  DATABASE_URL: ${DATABASE_URL:?DATABASE_URL must be set}
+  JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set}
+  JWT_ISSUER: ${JWT_ISSUER:?JWT_ISSUER must be set}
+  APP_URL: ${APP_URL:?APP_URL must be set}
+  CORS_ORIGINS: ${CORS_ORIGINS:?CORS_ORIGINS must be set}
+  SMTP_URL: ${SMTP_URL:?SMTP_URL must be set}
+  MAIL_FROM: ${MAIL_FROM:?MAIL_FROM must be set}
+  PORT: '3000'
+  ENABLE_OPENAPI: 'false'
+  HTTP_METRICS_ENABLED: ${HTTP_METRICS_ENABLED:-false}
+  HTTP_METRICS_TOKEN: ${HTTP_METRICS_TOKEN:-}
+  LOG_LEVEL: ${LOG_LEVEL:-log}
+  REDIS_URL: ${REDIS_URL:-}
+  TRUSTED_PROXY_CIDRS: ${TRUSTED_PROXY_CIDRS:-}
+
+services:
+  api:
+    image: gym-platform-api:runtime-local
+    build:
+      context: ../..
+      dockerfile: apps/api/Dockerfile
+      target: runtime
+    init: true
+    restart: unless-stopped
+    mem_limit: 1g
+    memswap_limit: 1g
+    cpus: 2.0
+    pids_limit: 256
+    logging:
+      driver: local
+      options:
+        max-size: '10m'
+        max-file: '3'
+    stop_grace_period: 30s
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      <<: *api-env
+      AVATAR_STORAGE_DIR: /app/uploads/avatars
+    ports:
+      - '127.0.0.1:${API_PORT:-3001}:3000'
+    volumes:
+      - avatars:/app/uploads/avatars
+
+  migrate:
+    profiles: [ops]
+    image: gym-platform-api:migrate-local
+    build:
+      context: ../..
+      dockerfile: apps/api/Dockerfile
+      target: migrate
+    init: true
+    restart: 'no'
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: ${DATABASE_URL:?DATABASE_URL must be set}
+
+volumes:
+  avatars:
