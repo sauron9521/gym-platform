@@ -80,6 +80,18 @@ export const registrationResponseSchema = objectSchema({
   verificationEmailStatus: enumSchema(['SUBMITTED', 'RETRY_REQUIRED']),
 });
 
+/** Browser login returns only MFA state; the session is held in an HttpOnly cookie. */
+export const sessionSignInResponseSchema = objectSchema({
+  mfaRequired: booleanSchema,
+});
+
+/** Native credentials and refresh both return this short-lived token pair. */
+export const tokenPairResponseSchema = objectSchema({
+  accessToken: stringSchema,
+  refreshToken: stringSchema,
+  expiresIn: integerSchema,
+});
+
 const exerciseTypes = enumSchema(['STRENGTH', 'CARDIO', 'MOBILITY', 'PLYOMETRIC', 'OTHER']);
 const setTypes = enumSchema(['WARMUP', 'WORKING', 'DROP_SET', 'AMRAP']);
 

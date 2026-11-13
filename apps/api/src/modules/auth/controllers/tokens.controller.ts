@@ -1,4 +1,6 @@
 import { Public, TokenService } from '@nestjs/authentication';
+import { ApiOkResponse } from '@nestjs/swagger';
+import { tokenPairResponseSchema } from '#src/infra/openapi/response-contracts';
 import {
   Body,
   Controller,
@@ -24,6 +26,7 @@ export class TokensController {
   @Throttle({ default: { limit: 3, ttl: 60000 } })
   @Post()
   @HttpCode(200)
+  @ApiOkResponse({ schema: tokenPairResponseSchema })
   async issue(@Body() body: SignInDto) {
     const user = await this.credentialService.verify(body.email, body.password);
 
@@ -39,6 +42,7 @@ export class TokensController {
   @Throttle({ default: { limit: 20, ttl: 60000 } })
   @Post('refresh')
   @HttpCode(200)
+  @ApiOkResponse({ schema: tokenPairResponseSchema })
   refresh(@Body() body: RefreshTokenDto) {
     return this.tokenService.refresh(body.refreshToken);
   }
