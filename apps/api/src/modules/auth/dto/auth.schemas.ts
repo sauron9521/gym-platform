@@ -27,10 +27,7 @@ const tokenSchema = z.string().min(1).meta({ writeOnly: true });
 
 // Only the recovery email was normalized by the previous DTO.
 // Do not alter login/registration identity semantics as a side effect.
-const recoveryEmailSchema = z
-  .string()
-  .transform(normalizeRecoveryEmail)
-  .pipe(z.email());
+const recoveryEmailSchema = z.string().transform(normalizeRecoveryEmail).pipe(z.email());
 
 export const signInSchema = z.strictObject({
   email: credentialsEmailSchema,

@@ -32,13 +32,15 @@ describe('Auth Zod request schemas (pre-migration contract)', () => {
     expect(signInSchema.safeParse(input).success).toBe(false);
   });
 
-  it.each([
-    'short1A!',
+  const weakPasswords = [
+    'shor1A!',
     'lowercase123!',
     'UPPERCASE123!',
     'NoNumbersHere!',
     'NoSymbols123',
-  ])('rejects weak registration and reset passwords: %s', (password) => {
+  ];
+
+  it.each(weakPasswords)('rejects weak registration and reset passwords: %s', (password) => {
     expect(signUpSchema.safeParse({ email, password }).success).toBe(false);
     expect(resetPasswordSchema.safeParse({ token: 'reset-token', password }).success).toBe(false);
   });
