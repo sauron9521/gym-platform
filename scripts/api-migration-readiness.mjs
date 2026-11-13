@@ -36,7 +36,8 @@ export const CUTOVER_GATES = Object.freeze([
   },
   {
     id: 'cutover-approval',
-    label: 'Obtain an explicit operator change window, rollback plan and repository handover approval',
+    label:
+      'Obtain an explicit operator change window, rollback plan and repository handover approval',
   },
 ]);
 
@@ -205,11 +206,17 @@ export function renderMarkdown(report) {
     'Monorepo audit commit: ' + report.monorepoAuditCommit,
     '',
     '- Imported source paths: ' + report.counts.sourceFiles,
-    '  (historically unchanged: ' + report.counts.sourceUnchanged +
-      '; adapted: ' + report.counts.sourceAdapted + ')',
+    '  (historically unchanged: ' +
+      report.counts.sourceUnchanged +
+      '; adapted: ' +
+      report.counts.sourceAdapted +
+      ')',
     '- Imported test paths: ' + report.counts.testFiles,
-    '  (historically unchanged: ' + report.counts.testUnchanged +
-      '; adapted: ' + report.counts.testAdapted + ')',
+    '  (historically unchanged: ' +
+      report.counts.testUnchanged +
+      '; adapted: ' +
+      report.counts.testAdapted +
+      ')',
     '- Original Prisma schemas: 10; migration files: 25',
     '',
     '**Required repository artifacts missing:**',

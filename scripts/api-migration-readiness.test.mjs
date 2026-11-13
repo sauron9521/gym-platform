@@ -47,7 +47,10 @@ test('source inventory rejects duplicates, path traversal and missing imported p
   }
   assert.throws(() =>
     verifySourceInventory(
-      { ...inventory, files: [inventory.files[0], inventory.files[0], ...inventory.files.slice(2)] },
+      {
+        ...inventory,
+        files: [inventory.files[0], inventory.files[0], ...inventory.files.slice(2)],
+      },
       root,
     ),
   );

@@ -11,10 +11,10 @@ The frozen audit inventory is `apps/api/migration-source-inventory.json`;
 historical Prisma SQL history is checked against
 `apps/api/migration-baseline.json`. Verify from repository root:
 
-~~~sh
+```sh
 node --test apps/api/test/migration-baseline.test.mjs scripts/api-migration-readiness.test.mjs
 node scripts/api-migration-readiness.mjs --report
-~~~
+```
 
 The report checks local inventory and repository artifacts, explicitly
 lists missing staging workflows, and always returns production NO-GO.
@@ -22,12 +22,12 @@ A green workflow never grants authorization to deploy.
 
 ## Imported source audit
 
-| Legacy scope | Original files | Identical Git blob SHA | Adapted blobs | Missing |
-| --- | ---: | ---: | ---: | ---: |
-| `src/` | 302 | 86 | 216 | 0 |
-| `test/` | 48 | 2 | 46 | 0 |
-| `prisma/schemas/` | 10 | 10 | 0 | 0 |
-| `prisma/migrations/` | 25 | 25 | 0 | 0 |
+| Legacy scope         | Original files | Identical Git blob SHA | Adapted blobs | Missing |
+| -------------------- | -------------: | ---------------------: | ------------: | ------: |
+| `src/`               |            302 |                     86 |           216 |       0 |
+| `test/`              |             48 |                      2 |            46 |       0 |
+| `prisma/schemas/`    |             10 |                     10 |             0 |       0 |
+| `prisma/migrations/` |             25 |                     25 |             0 |       0 |
 
 The comparison maps old paths to `apps/api/`. The snapshot records
 original file Git blob hashes, distinguishes unchanged versus adapted
@@ -122,7 +122,7 @@ behavior with the generated OpenAPI client.
 6. **Approve switch:** operator signs off on exact signed digests,
    health gates, backups, rollback steps, staffing, abort threshold
    and change window before routing traffic to the new API.
-7. **Rollback safely:** use a previous signed *runtime* only if it was
+7. **Rollback safely:** use a previous signed _runtime_ only if it was
    staged against the newer schema. Never blindly reverse SQL migrations.
    If forward compatibility cannot be proven, stop and invoke the
    independently reviewed backup/restore recovery plan.
