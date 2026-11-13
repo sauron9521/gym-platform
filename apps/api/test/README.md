@@ -5,6 +5,7 @@ The test root is `apps/api/test/`.
 - `e2e/<module>/` — HTTP-level feature behavior (migration in progress).
   - `e2e/auth/` — auth registration/login, tokens and endpoint throttling HTTP tests.
 - `integration/<module>/` — database/provider integration and contract tests.
+  - `integration/auth/` — credential, token-flow and email-verification database/HTTP integration tests.
 - `utility/` — shared fixtures and guarded disposable test database setup.
 - Root-level `*.e2e-spec.ts` files are legacy layout; migrate in focused PRs.
 - Root-level `*.test.mjs` files may be invoked directly by CI/scripts; do not move them without updating each caller.

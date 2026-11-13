@@ -12,7 +12,7 @@ pnpm --filter @gym/api test
 pnpm --filter @gym/api build
 ```
 
-Unit tests are co-located under `apps/api/src/**/test/` (and some feature-specific locations). HTTP e2e tests are gradually being organized into `apps/api/test/e2e/<module>/` (Auth and body measurements have dedicated folders); legacy HTTP suites remain at `apps/api/test/*.e2e-spec.ts`. Database integration tests reside under `apps/api/test/integration/`, with module-specific subfolders added incrementally. Shared helpers are in `apps/api/test/utility/`.
+Unit tests are co-located under `apps/api/src/**/test/` (and some feature-specific locations). HTTP e2e tests are gradually being organized into `apps/api/test/e2e/<module>/` (Auth and body measurements have dedicated folders); legacy HTTP suites remain at `apps/api/test/*.e2e-spec.ts`. Database integration tests reside under `apps/api/test/integration/`; the first Auth suites are grouped in `apps/api/test/integration/auth/` while the other suites are being migrated incrementally. Shared helpers are in `apps/api/test/utility/`.
 
 ## Integration and HTTP e2e
 
