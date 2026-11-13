@@ -74,11 +74,13 @@ deliberately replaced by Gym Platform equivalents.
    mandatory. Demonstrate that the old runtime remains functional after
    forward migrations and safe runtime-only rollback preserving data.
    See [two-release staging guide](staging-two-release-rollback.md).
-3. **Independent production evidence review:** port or replace
-   `.github/workflows/production-readiness.yml`, binding signed image
-   digests, publisher identity, successful exact-commit main CI, staging
-   evidence and two-release rollback evidence. A successful review must
-   still not automatically deploy anything.
+3. **Independent production evidence review:** `.github/workflows/production-readiness.yml`
+   and its offline contract tests are now included (PR #22). A **real
+   manually triggered** read-only review must still verify the published
+   signed digests, source commit's nine green CI jobs, successful
+   two-release staging receipts and publisher signer identity. The
+   review always returns **production NO-GO** until independent human
+   host evidence and approval. See [release evidence review](production-readiness-review.md).
 4. **Human approval:** secure off-host backup plus full database and
    avatar restore, TLS/proxy, session cookies and CSRF, secrets, SMTP,
    Redis failure handling, alert delivery, staff/on-call, authorized

@@ -61,6 +61,16 @@ jobs:
       - name: Validate release and GHCR safety contracts (offline)
         run: node --test scripts/release-bundle.test.mjs scripts/ghcr-promotion.test.mjs scripts/release-supply-chain.test.mjs scripts/release-ci-gate.test.mjs
 
+      - name: Temporary canonical Prettier report for production readiness
+        run: |
+          for file in .github/workflows/production-readiness.yml scripts/production-readiness.mjs scripts/production-readiness.test.mjs docs/production-readiness-review.md docs/api-migration-audit.md README.md; do
+            if ! pnpm exec prettier --check "$file" >/dev/null 2>&1; then
+              echo "FORMATTED_START:$file"
+              pnpm exec prettier "$file" | node -e 'let s="";process.stdin.on("data",c=>s+=c);process.stdin.on("end",()=>console.log(JSON.stringify(s)))'
+              echo "FORMATTED_END:$file"
+            fi
+          done
+
       - name: Check formatting
         run: pnpm format:check
 
@@ -218,6 +228,23 @@ jobs:
           node --test scripts/staging-smoke.test.mjs
           node --test scripts/staging-functional-smoke.test.mjs
           node --test scripts/staging-upgrade-rollback.test.mjs
+
+  api-readiness:
+    name: API Readiness / Verified release NO-GO
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+
+      - name: Validate signed release, exact-source CI, staging and operator NO-GO contracts
+        run: node --test scripts/production-readiness.test.mjs
 
   api-migration:
     name: API Migration / Source inventory and cutover NO-GO
