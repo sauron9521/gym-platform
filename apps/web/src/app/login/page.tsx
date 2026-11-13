@@ -19,6 +19,12 @@ export default function LoginPage() {
           Увійдіть за допомогою електронної пошти та пароля.
         </p>
         <SignInForm />
+        <p className="mt-5 text-center text-sm text-muted-foreground">
+          Потрібно підтвердити адресу?{' '}
+          <Link href="/verify-email/resend" className="font-medium text-foreground hover:underline">
+            Надіслати лист ще раз
+          </Link>
+        </p>
         <p className="mt-6 text-center text-sm text-muted-foreground">
           Ще немає облікового запису?{' '}
           <Link href="/register" className="font-medium text-foreground hover:underline">
