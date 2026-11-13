@@ -951,32 +951,7 @@ export interface paths {
 }
 export type webhooks = Record<string, never>;
 export interface components {
-  schemas: {
-    SignUpDto: {
-      /** Format: email */
-      email: string;
-      password: string;
-    };
-    SignInDto: {
-      /** Format: email */
-      email: string;
-      password: string;
-    };
-    EmailDto: {
-      /** Format: email */
-      email: string;
-    };
-    ResetPasswordDto: {
-      token: string;
-      password: string;
-    };
-    VerificationTokenDto: {
-      token: string;
-    };
-    RefreshTokenDto: {
-      refreshToken: string;
-    };
-  };
+  schemas: never;
   responses: never;
   parameters: never;
   requestBodies: never;
@@ -994,7 +969,11 @@ export interface operations {
     };
     requestBody: {
       content: {
-        'application/json': components['schemas']['SignUpDto'];
+        'application/json': {
+          /** Format: email */
+          email: string;
+          password: string & string;
+        };
       };
     };
     responses: {
@@ -1030,7 +1009,11 @@ export interface operations {
     };
     requestBody: {
       content: {
-        'application/json': components['schemas']['SignInDto'];
+        'application/json': {
+          /** Format: email */
+          email: string;
+          password: string;
+        };
       };
     };
     responses: {
@@ -1055,7 +1038,9 @@ export interface operations {
     };
     requestBody: {
       content: {
-        'application/json': components['schemas']['EmailDto'];
+        'application/json': {
+          email: string;
+        };
       };
     };
     responses: {
@@ -1076,7 +1061,10 @@ export interface operations {
     };
     requestBody: {
       content: {
-        'application/json': components['schemas']['ResetPasswordDto'];
+        'application/json': {
+          token: string;
+          password: string & string;
+        };
       };
     };
     responses: {
@@ -1097,7 +1085,9 @@ export interface operations {
     };
     requestBody: {
       content: {
-        'application/json': components['schemas']['VerificationTokenDto'];
+        'application/json': {
+          token: string;
+        };
       };
     };
     responses: {
@@ -1135,7 +1125,11 @@ export interface operations {
     };
     requestBody: {
       content: {
-        'application/json': components['schemas']['SignInDto'];
+        'application/json': {
+          /** Format: email */
+          email: string;
+          password: string;
+        };
       };
     };
     responses: {
@@ -1162,7 +1156,9 @@ export interface operations {
     };
     requestBody: {
       content: {
-        'application/json': components['schemas']['RefreshTokenDto'];
+        'application/json': {
+          refreshToken: string;
+        };
       };
     };
     responses: {
@@ -1189,7 +1185,9 @@ export interface operations {
     };
     requestBody: {
       content: {
-        'application/json': components['schemas']['RefreshTokenDto'];
+        'application/json': {
+          refreshToken: string;
+        };
       };
     };
     responses: {

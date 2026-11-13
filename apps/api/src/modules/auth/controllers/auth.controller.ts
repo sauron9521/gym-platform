@@ -15,7 +15,12 @@ import {
   registrationResponseSchema,
   sessionSignInResponseSchema,
 } from '#src/infra/openapi/response-contracts';
-import { SignInDto, SignUpDto } from '../dto/auth.dto.js';
+import {
+  signInSchema,
+  signUpSchema,
+  type SignInInput,
+  type SignUpInput,
+} from '../dto/auth.schemas.js';
 import { CredentialsService } from '../services/index.js';
 
 @Public()
@@ -34,7 +39,7 @@ export class AuthController {
   @Throttle({ default: { limit: 3, ttl: 60000 } })
   @Post('register')
   @ApiCreatedResponse({ schema: registrationResponseSchema })
-  async signUp(@Body() signUpDto: SignUpDto) {
+  async signUp(@Body({ schema: signUpSchema }) signUpDto: SignUpInput) {
     const user = await this.credentialsService.register(signUpDto);
     await this.signInService.signIn(user.id, { method: 'password' });
 
@@ -57,7 +62,7 @@ export class AuthController {
   @Post('login')
   @HttpCode(200)
   @ApiOkResponse({ schema: sessionSignInResponseSchema })
-  async signIn(@Body() body: SignInDto) {
+  async signIn(@Body({ schema: signInSchema }) body: SignInInput) {
     const user = await this.credentialsService.verify(body.email, body.password);
     if (!user) {
       throw new UnauthorizedException('Invalid credentials! Wrong email or password.');

@@ -11,7 +11,12 @@ import {
 } from '@nestjs/common';
 import { AuthNoStoreInterceptor } from '../interceptors/auth-no-store.interceptor.js';
 import { CredentialsService } from '../services/index.js';
-import { RefreshTokenDto, SignInDto } from '../dto/auth.dto.js';
+import {
+  refreshTokenSchema,
+  signInSchema,
+  type RefreshTokenInput,
+  type SignInInput,
+} from '../dto/auth.schemas.js';
 import { Throttle } from '@nestjs/throttler';
 
 @Public()
@@ -27,7 +32,7 @@ export class TokensController {
   @Post()
   @HttpCode(200)
   @ApiOkResponse({ schema: tokenPairResponseSchema })
-  async issue(@Body() body: SignInDto) {
+  async issue(@Body({ schema: signInSchema }) body: SignInInput) {
     const user = await this.credentialService.verify(body.email, body.password);
 
     if (!user) {
@@ -43,14 +48,14 @@ export class TokensController {
   @Post('refresh')
   @HttpCode(200)
   @ApiOkResponse({ schema: tokenPairResponseSchema })
-  refresh(@Body() body: RefreshTokenDto) {
+  refresh(@Body({ schema: refreshTokenSchema }) body: RefreshTokenInput) {
     return this.tokenService.refresh(body.refreshToken);
   }
 
   @Throttle({ default: { limit: 10, ttl: 60000 } })
   @Post('revoke')
   @HttpCode(204)
-  async revoke(@Body() body: RefreshTokenDto): Promise<void> {
+  async revoke(@Body({ schema: refreshTokenSchema }) body: RefreshTokenInput): Promise<void> {
     await this.tokenService.revoke(body.refreshToken);
   }
 }

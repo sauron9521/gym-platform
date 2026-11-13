@@ -255,36 +255,38 @@ describe('OpenAPI / HTTP contract regression (PostgreSQL)', () => {
     );
   });
 
-  it('publishes complete auth request fields and exact login/token responses', () => {
+  it('publishes inline Zod auth requests and exact login/token responses', () => {
     const cases = [
-      ['/auth/login', 'SignInDto', ['email', 'password']],
-      ['/auth/register', 'SignUpDto', ['email', 'password']],
-      ['/auth/token', 'SignInDto', ['email', 'password']],
-      ['/auth/token/refresh', 'RefreshTokenDto', ['refreshToken']],
-      ['/auth/token/revoke', 'RefreshTokenDto', ['refreshToken']],
-      ['/auth/password-reset/forgot', 'EmailDto', ['email']],
-      ['/auth/password-reset/reset', 'ResetPasswordDto', ['token', 'password']],
-      ['/auth/email/verify', 'VerificationTokenDto', ['token']],
+      ['/auth/login', ['email', 'password']],
+      ['/auth/register', ['email', 'password']],
+      ['/auth/token', ['email', 'password']],
+      ['/auth/token/refresh', ['refreshToken']],
+      ['/auth/token/revoke', ['refreshToken']],
+      ['/auth/password-reset/forgot', ['email']],
+      ['/auth/password-reset/reset', ['token', 'password']],
+      ['/auth/email/verify', ['token']],
     ] as const;
 
-    for (const [path, name, fields] of cases) {
-      const request =
+    for (const [path, fields] of cases) {
+      const schema =
         document.paths?.[path]?.post?.requestBody?.content?.['application/json']?.schema;
-      expect(request?.$ref, `Missing request DTO on ${path}`).toBe(`#/components/schemas/${name}`);
-      const dto = document.components?.schemas?.[name];
-      expect(dto?.type).toBe('object');
-      expect(dto?.required?.slice().sort()).toEqual([...fields].sort());
-      expect(Object.keys(dto?.properties ?? {}).sort()).toEqual([...fields].sort());
+      expect(schema?.type, `Missing Zod request object on ${path}`).toBe('object');
+      expect(schema?.required?.slice().sort()).toEqual([...fields].sort());
+      expect(Object.keys(schema?.properties ?? {}).sort()).toEqual([...fields].sort());
+      expect(schema?.additionalProperties).toBe(false);
       for (const field of fields) {
-        expect(dto?.properties?.[field]?.type).toBe('string');
+        expect(schema?.properties?.[field]?.type).toBe('string');
       }
     }
 
-    expect(document.components?.schemas?.SignInDto?.properties?.email?.format).toBe('email');
-    expect(document.components?.schemas?.SignInDto?.properties?.password?.writeOnly).toBe(true);
-    expect(document.components?.schemas?.RefreshTokenDto?.properties?.refreshToken?.writeOnly).toBe(
-      true,
-    );
+    const loginSchema =
+      document.paths?.['/auth/login']?.post?.requestBody?.content?.['application/json']?.schema;
+    const refreshSchema =
+      document.paths?.['/auth/token/refresh']?.post?.requestBody?.content?.['application/json']
+        ?.schema;
+    expect(loginSchema?.properties?.email?.format).toBe('email');
+    expect(loginSchema?.properties?.password?.writeOnly).toBe(true);
+    expect(refreshSchema?.properties?.refreshToken?.writeOnly).toBe(true);
 
     const login = responseSchema(document, '/auth/login', 'post', 200);
     expect(login.required).toEqual(['mfaRequired']);

@@ -54,7 +54,10 @@ test('verification only consumes email token after explicit user action', async 
   assert.match(component, /body: \{ token \}/);
   assert.match(component, /response\.status !== 200/);
   assert.match(contract, /'\/auth\/email\/verify': \{/);
-  assert.match(contract, /'application\/json': components\['schemas'\]\['VerificationTokenDto'\]/);
+  assert.match(
+    contract,
+    /EmailVerificationController_verifyEmail: \{[\s\S]*?requestBody: \{[\s\S]*?'application\/json': \{\s*token: string;/,
+  );
   assert.doesNotMatch(component, /localStorage|sessionStorage|console\.log|document\.cookie/);
   const effectBody = component.slice(
     component.indexOf('useEffect(() => {'),
