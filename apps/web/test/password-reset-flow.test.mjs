@@ -12,7 +12,10 @@ import {
 test('password reset requires matching non-empty, minimum-length passwords', () => {
   assert.match(validatePasswordResetInput('short', 'short'), /8 символів/);
   assert.match(validatePasswordResetInput('        ', '        '), /пробілів/);
-  assert.match(validatePasswordResetInput('StrongPassword123!', 'DifferentPassword123!'), /не збігаються/);
+  assert.match(
+    validatePasswordResetInput('StrongPassword123!', 'DifferentPassword123!'),
+    /не збігаються/,
+  );
   assert.equal(validatePasswordResetInput('StrongPassword123!', 'StrongPassword123!'), null);
 });
 
@@ -55,7 +58,10 @@ test('forgot request follows actual 202-only OpenAPI contract with generic succe
   assert.match(ui, /body: \{ email: email\.trim\(\) \}/);
   assert.match(ui, /response\.status !== 202/);
   assert.match(ui, /Якщо обліковий запис із такою адресою існує/);
-  assert.doesNotMatch(ui, /response\.json\(|localStorage|sessionStorage|console\.log|document\.cookie/);
+  assert.doesNotMatch(
+    ui,
+    /response\.json\(|localStorage|sessionStorage|console\.log|document\.cookie/,
+  );
   assert.match(contract, /'\/auth\/password-reset\/forgot': \{/);
   assert.match(contract, /PasswordResetController_forgot: \{/);
 });
@@ -65,7 +71,10 @@ test('reset requires explicit form submit, removes query token and never grants 
     new URL('../src/features/auth/ui/reset-password-form.tsx', import.meta.url),
     'utf8',
   );
-  const page = await readFile(new URL('../src/app/reset-password/page.tsx', import.meta.url), 'utf8');
+  const page = await readFile(
+    new URL('../src/app/reset-password/page.tsx', import.meta.url),
+    'utf8',
+  );
   const backend = await readFile(new URL('../../api/src/app.module.ts', import.meta.url), 'utf8');
   const contract = await readFile(
     new URL('../../../packages/api-client/src/generated/schema.d.ts', import.meta.url),
@@ -85,7 +94,10 @@ test('reset requires explicit form submit, removes query token and never grants 
   assert.match(ui, /setConfirmation\(''\)/);
   assert.match(contract, /'\/auth\/password-reset\/reset': \{/);
   assert.match(contract, /PasswordResetController_reset: \{/);
-  assert.doesNotMatch(ui, /router\.replace\('\/dashboard'\)|localStorage|sessionStorage|console\.log|document\.cookie/);
+  assert.doesNotMatch(
+    ui,
+    /router\.replace\('\/dashboard'\)|localStorage|sessionStorage|console\.log|document\.cookie/,
+  );
   const effect = ui.slice(ui.indexOf('useEffect(() => {'), ui.indexOf('}, []);'));
   assert.doesNotMatch(effect, /webApi\.POST/);
 });
