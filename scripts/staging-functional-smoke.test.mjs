@@ -203,5 +203,12 @@ test('manual workflow executes functional checks between first ready and evidenc
   assert.match(functional, /state\.refreshToken = refresh\.body\.refreshToken/);
   assert.match(functional, /state = \{[\s\S]*refreshToken: refresh\.body\.refreshToken/);
   assert.doesNotMatch(functional, /state = \{ email, password/);
-  // Cross-release staging workflow is intentionally delivered in the next PR.
+  const upgrade = await readFile(
+    new URL('../.github/workflows/staging-upgrade-rollback.yml', import.meta.url),
+    'utf8',
+  );
+  assert.equal(
+    upgrade.split('node scripts/staging-functional-smoke.mjs verify-data').length - 1,
+    3,
+  );
 });
