@@ -21,7 +21,7 @@ pnpm dev
 Open Web at http://localhost:3000; the API listens on http://localhost:3001.
 Expo Metro uses its own default port (usually 8081).
 
-Customize the **local** password in both copied `.env` files *before* running the services.
+Customize the **local** password in both copied `.env` files _before_ running the services.
 Do not commit either file. The password in the example is for localhost-only development,
 not for public networks or production.
 
