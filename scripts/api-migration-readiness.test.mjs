@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -20,6 +20,24 @@ const root = fileURLToPath(new URL('../', import.meta.url));
 const inventory = JSON.parse(
   readFileSync(join(root, 'apps/api/migration-source-inventory.json'), 'utf8'),
 );
+
+test('all historical E2E suites are mapped to module folders with no flat legacy TS suites', () => {
+  const testRoot = join(root, 'apps/api/test');
+  const relocationMap = JSON.parse(readFileSync(join(testRoot, 'relocations.json'), 'utf8'));
+  const historicalE2e = inventory.files.filter((item) => item.path.endsWith('.e2e-spec.ts'));
+
+  assert.equal(Object.keys(relocationMap).length, historicalE2e.length);
+  for (const { path } of historicalE2e) {
+    const relocated = relocationMap[path];
+    assert.ok(relocated, 'Missing historical E2E relocation: ' + path);
+    assert.match(relocated, /^test\\/(?:e2e|integration)\\/[a-z-]+\\/[^/]+\\.e2e-spec\\.ts$/);
+  }
+
+  for (const directory of [testRoot, join(testRoot, 'integration')]) {
+    const flatSuites = readdirSync(directory).filter((entry) => entry.endsWith('.e2e-spec.ts'));
+    assert.deepEqual(flatSuites, []);
+  }
+});
 
 test('all original 302 source files and 48 test paths exist inside apps/api', () => {
   const counts = verifySourceInventory(inventory, root);
