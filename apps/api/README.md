@@ -71,3 +71,11 @@ original Git blobs. Modified source/test blobs still require staging review.
 The read-only [cutover audit](../../docs/api-migration-audit.md) explicitly
 lists remaining staging/rollback/approval blockers. **Production NO-GO:**
 merging the repository audit does not transfer operational ownership.
+
+## Signed GHCR staging rehearsal
+
+The manual-only `staging-ghcr.yml` workflow verifies published runtime and
+Prisma migration image digests, exercises health/auth/profile HTTP flows
+against disposable PostgreSQL 17 and Redis 7, and tests migration replay
+and same-digest restart. It does **not** deploy or approve production.
+See [staging operator guide](../../docs/staging-ghcr-monorepo.md).
