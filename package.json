@@ -15,7 +15,7 @@
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
     "format": "prettier --write .",
-    "format:check": "prettier --write apps/web/src/features/profile/lib/avatar.ts apps/web/src/features/profile/ui/profile-avatar.tsx && git diff -- apps/web/src/features/profile/lib/avatar.ts apps/web/src/features/profile/ui/profile-avatar.tsx && git diff --exit-code -- apps/web/src/features/profile/lib/avatar.ts apps/web/src/features/profile/ui/profile-avatar.tsx",
+    "format:check": "prettier --check .",
     "prepare": "husky",
     "api:openapi": "pnpm --filter @gym/api docs:openapi",
     "api:types": "pnpm --filter @gym/api-client generate",

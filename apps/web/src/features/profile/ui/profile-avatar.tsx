@@ -75,9 +75,7 @@ export function ProfileAvatar({ avatarUrl, displayName, email, onChanged }: Prop
   return (
     <section aria-label="Фото профілю" className="space-y-4 rounded-xl border p-6">
       <div className="flex items-center gap-5">
-        <div
-          className="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-full bg-muted text-2xl font-semibold"
-        >
+        <div className="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-full bg-muted text-2xl font-semibold">
           {source ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
@@ -87,9 +85,7 @@ export function ProfileAvatar({ avatarUrl, displayName, email, onChanged }: Prop
               referrerPolicy="no-referrer"
             />
           ) : (
-            <span aria-label="Ініціали користувача">
-              {getAvatarInitials(displayName, email)}
-            </span>
+            <span aria-label="Ініціали користувача">{getAvatarInitials(displayName, email)}</span>
           )}
         </div>
         <div className="space-y-1">

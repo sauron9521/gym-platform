@@ -29,7 +29,10 @@ export function getAvatarSource(value: string | null | undefined): string | null
 
 export function getAvatarInitials(displayName: string, email: string): string {
   const words = displayName.trim().split(/\s+/).filter(Boolean);
-  const letters = words.slice(0, 2).map((word) => word[0]).join('');
+  const letters = words
+    .slice(0, 2)
+    .map((word) => word[0])
+    .join('');
   return (letters || email.charAt(0) || '?').toUpperCase();
 }
 
