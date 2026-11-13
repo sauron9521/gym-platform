@@ -1,3 +1,5 @@
+import Link from 'next/link';
+
 import { Button } from '@/shared/ui/button';
 
 const applications = [
@@ -22,13 +24,11 @@ export function HomeScreen() {
         </p>
         <div className="mt-8 flex flex-wrap gap-3">
           <Button asChild>
-            <a href="https://github.com/sauron9521/gym-platform" target="_blank" rel="noreferrer">
-              View repository
-            </a>
+            <Link href="/login">Увійти</Link>
           </Button>
           <Button asChild variant="outline">
-            <a href="https://nextjs.org/docs" target="_blank" rel="noreferrer">
-              Next.js documentation
+            <a href="https://github.com/sauron9521/gym-platform" target="_blank" rel="noreferrer">
+              View repository
             </a>
           </Button>
         </div>

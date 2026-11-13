@@ -42,4 +42,21 @@ client-side UI state without consuming the response.
 This is a browser-only adapter. **Next.js Server Components must not reuse
 its singleton** for authenticated requests: pass cookies explicitly through
 a server-side boundary, with appropriate authorization and CSRF checks.
-Login/logout screens and guarded routes will be added in later PRs.
+`/login` provides browser sign-in using the generated `@gym/api-client` contract.
+It confirms the HttpOnly session through `GET /users/me` before redirecting to
+`/dashboard`. The dashboard renders no private information until that check
+succeeds. HTTP 401 redirects to `/login`; HTTP 403 shows an access error; network
+failures are retryable. Sign-out calls `POST /auth/sign-out` and clears the
+server-side session (no JWTs or browser token storage).
+
+For local development use `NEXT_PUBLIC_API_URL=http://localhost:3001` in
+`apps/web/.env.local`, `APP_URL=http://localhost:3000` and
+`CORS_ORIGINS=http://localhost:3000,http://localhost:3001` in the API environment.
+NestJS CSRF protection and the session provider trust **only** the configured
+`APP_URL` origin for cross-origin browser writes. CORS alone does not authorize
+cookie-based writes. For production, serve the web and API over HTTPS on
+same-site hosts; cross-site cookies require additional deliberate configuration.
+
+MFA challenge UI, registration, password recovery and **server-side** route
+protection are separate follow-up work. Client gating is a UX measure, not a
+substitute for API authentication/authorization.

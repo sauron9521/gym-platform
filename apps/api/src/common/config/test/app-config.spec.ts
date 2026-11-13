@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { getCorsOrigins } from '../http.config.js';
+import { getCorsOrigins, getWebAppOrigin } from '../http.config.js';
 import { getLogLevels } from '../logger.config.js';
 
 describe('typed application config helpers', () => {
@@ -9,6 +9,13 @@ describe('typed application config helpers', () => {
       'https://a.example.test',
       'https://b.example.test',
     ]);
+  });
+
+  it('trusts only the configured web app origin, not arbitrary CORS origins', () => {
+    expect(getWebAppOrigin('https://web.example.test/verify-email')).toBe(
+      'https://web.example.test',
+    );
+    expect(getWebAppOrigin('http://localhost:3000')).toBe('http://localhost:3000');
   });
 
   it('keeps only the selected and more severe log levels', () => {
