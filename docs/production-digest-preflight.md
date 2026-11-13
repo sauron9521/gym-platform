@@ -40,7 +40,7 @@ short success/failure message.
 
 The CI verification creates **synthetic test values only** and runs:
 
-~~~sh
+```sh
 node --test scripts/production-digest-guard.test.mjs
 
 docker compose --env-file infra/docker/.env.example \
@@ -48,7 +48,7 @@ docker compose --env-file infra/docker/.env.example \
   -f infra/docker/compose.digest.prod.yaml \
   --profile ops config --format json |
   node scripts/production-digest-guard.mjs compose
-~~~
+```
 
 The pipeline requires non-sensitive, synthetic values for
 `DATABASE_URL`, `JWT_SECRET`, `JWT_ISSUER`, `APP_URL`,
@@ -66,7 +66,7 @@ The guard does not fetch GitHub evidence or verify an attestation by
 itself: that remains the job of the manual signed GHCR and
 `production-readiness.yml` workflows.
 
-## What is intentionally *not* in PR #23
+## What is intentionally _not_ in PR #23
 
 This PR **does not include a production apply/rollback script** or
 connect the guard to live Docker operations. No GitHub Actions workflow

@@ -23,8 +23,10 @@ export function validateIdentity(input) {
   assert.match(id.migrate ?? '', MIGRATE, 'Migrate ref must be a verified GHCR digest');
   assert.match(id.sourceSha ?? '', SHA, 'Source SHA required');
   assert.match(id.publisherSha ?? '', SHA, 'Publisher signer SHA required');
-  assert.ok(id.previous === 'none' || RUNTIME.test(id.previous ?? ''),
-    'Exact expected currently running image required (or none for first deploy)');
+  assert.ok(
+    id.previous === 'none' || RUNTIME.test(id.previous ?? ''),
+    'Exact expected currently running image required (or none for first deploy)',
+  );
   assert.notEqual(id.previous, id.runtime, 'New runtime already deployed');
   return id;
 }
@@ -37,8 +39,10 @@ export function validateCompose(config, id) {
   assert.deepEqual(Object.keys(config.services).sort(), ['api', 'migrate']);
   assert.equal(api.image, id.runtime);
   assert.equal(migrate.image, id.migrate);
-  assert.ok(!Object.hasOwn(api, 'build') && !Object.hasOwn(migrate, 'build'),
-    'Never allow Compose builds in digest deployment');
+  assert.ok(
+    !Object.hasOwn(api, 'build') && !Object.hasOwn(migrate, 'build'),
+    'Never allow Compose builds in digest deployment',
+  );
   assert.equal(api.read_only, true);
   assert.equal(api.init, true);
   assert.equal(api.restart, 'unless-stopped');
@@ -46,8 +50,10 @@ export function validateCompose(config, id) {
   assert.equal(migrate.read_only, true);
   assert.ok(!migrate.ports?.length, 'Migration service must not expose a host port');
   assert.ok(api.cap_drop?.includes('ALL') && migrate.cap_drop?.includes('ALL'));
-  assert.ok(api.security_opt?.includes('no-new-privileges:true') &&
-    migrate.security_opt?.includes('no-new-privileges:true'));
+  assert.ok(
+    api.security_opt?.includes('no-new-privileges:true') &&
+      migrate.security_opt?.includes('no-new-privileges:true'),
+  );
   assert.equal(Number(api.mem_limit), 1073741824);
   assert.equal(Number(api.memswap_limit), 1073741824);
   assert.equal(Number(api.cpus), 2);
@@ -57,8 +63,10 @@ export function validateCompose(config, id) {
   assert.equal(Number(api.ports[0].target), 3000);
   const published = Number(api.ports[0].published);
   assert.ok(Number.isInteger(published) && published >= 1 && published <= 65535);
-  assert.ok(api.volumes?.some(v => v.target === '/app/uploads/avatars' &&
-    v.type === 'volume'), 'Persistent avatar volume is missing');
+  assert.ok(
+    api.volumes?.some((v) => v.target === '/app/uploads/avatars' && v.type === 'volume'),
+    'Persistent avatar volume is missing',
+  );
   assert.ok(migrate.profiles?.includes('ops'), 'Migration must stay opt-in');
   return true;
 }
@@ -67,8 +75,11 @@ export function validatePulled(image, ref, sourceSha) {
   assert.match(ref, /@sha256:[a-f0-9]{64}$/);
   assert.match(image?.Id ?? '', ID, 'Unexpected image config ID');
   assert.equal(image?.Config?.User, 'node', 'Image must run non-root');
-  assert.equal(image?.Config?.Labels?.['org.opencontainers.image.revision'],
-    sourceSha, 'Wrong source revision');
+  assert.equal(
+    image?.Config?.Labels?.['org.opencontainers.image.revision'],
+    sourceSha,
+    'Wrong source revision',
+  );
   assert.equal(image?.Os, 'linux');
   assert.equal(image?.Architecture, 'amd64');
   assert.ok(image?.RepoDigests?.includes(ref), 'Pulled image digest mismatch');
@@ -77,8 +88,11 @@ export function validatePulled(image, ref, sourceSha) {
 
 export function validateCurrent(actual, expected) {
   assert.ok(expected === 'none' || RUNTIME.test(expected ?? ''));
-  assert.equal(actual || 'none', expected,
-    'Running image differs from the version approved by the operator');
+  assert.equal(
+    actual || 'none',
+    expected,
+    'Running image differs from the version approved by the operator',
+  );
   return true;
 }
 
@@ -92,9 +106,13 @@ async function jsonStdin() {
 }
 
 function inspect(ref) {
-  return JSON.parse(execFileSync('docker', [
-    'image', 'inspect', '--format', '{{json .}}', ref,
-  ], { encoding: 'utf8', timeout: 20_000, stdio: ['ignore','pipe','ignore'] }));
+  return JSON.parse(
+    execFileSync('docker', ['image', 'inspect', '--format', '{{json .}}', ref], {
+      encoding: 'utf8',
+      timeout: 20_000,
+      stdio: ['ignore', 'pipe', 'ignore'],
+    }),
+  );
 }
 
 async function main() {
