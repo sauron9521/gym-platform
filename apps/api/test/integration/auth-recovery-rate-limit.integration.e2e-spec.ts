@@ -5,10 +5,7 @@ import {
   PasswordHasher,
   PasswordResetService,
 } from '@nestjs/authentication';
-import {
-  StandardSchemaValidationPipe,
-  type INestApplication,
-} from '@nestjs/common';
+import { StandardSchemaValidationPipe, type INestApplication } from '@nestjs/common';
 import { Mailer } from '@nestjs/mail';
 import { Test } from '@nestjs/testing';
 import request from 'supertest';

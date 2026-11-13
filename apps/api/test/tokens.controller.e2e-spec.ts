@@ -1,10 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Test, type TestingModule } from '@nestjs/testing';
 import type { INestApplication } from '@nestjs/common';
-import {
-  StandardSchemaValidationPipe,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { StandardSchemaValidationPipe, UnauthorizedException } from '@nestjs/common';
 import { TokenService } from '@nestjs/authentication';
 import request from 'supertest';
 import { CredentialsService } from '../src/modules/auth/services/index.js';
