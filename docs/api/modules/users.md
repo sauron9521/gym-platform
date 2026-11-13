@@ -14,6 +14,6 @@ The current-user profile endpoints are authenticated. Public avatar serving is i
 
 Check the controller, validation schema and OpenAPI for the current profile field set, upload limits and response types. Do not document profile fields by copying a Prisma model: public responses must not expose credential secrets. Avatar writes have additional throttling.
 
-**Tests:** `src/modules/users/**/test/`, `test/users.e2e-spec.ts`, `test/integration/users.repository.integration.e2e-spec.ts`. Profile/avatar API changes should update the OpenAPI-generated client and include own-user/cross-user access tests.
+**Tests:** `src/modules/users/**/test/`, `test/e2e/users/users.e2e-spec.ts`, `test/integration/users/users.repository.integration.e2e-spec.ts`. Profile/avatar API changes should update the OpenAPI-generated client and include own-user/cross-user access tests.
 
 See [testing guide](../testing.md).

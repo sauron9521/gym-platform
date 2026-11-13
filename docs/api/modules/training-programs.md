@@ -19,6 +19,6 @@ The ellipsis above stands for the **same** `/training-programs/:programId/versio
 
 Protect draft/published/archived rules, immutable published content, concurrent draft creation, trainer authorization, assignment ownership, workout linkage and completion/cancellation transitions. Changes across services/repositories should be tested at the HTTP and PostgreSQL levels.
 
-**Tests:** `test/integration/training-program-*.integration.e2e-spec.ts`, module unit tests, and linked `test/workouts.e2e-spec.ts` flows. For every contract change, regenerate OpenAPI and the frontend client.
+**Tests:** `test/integration/training-programs/training-program-*.integration.e2e-spec.ts`, module unit tests, and linked `test/e2e/workouts/workouts.e2e-spec.ts` flows. For every contract change, regenerate OpenAPI and the frontend client.
 
 See [workouts](workouts.md), [trainer–athletes](trainer-athletes.md), and [testing guide](../testing.md).

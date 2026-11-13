@@ -36,7 +36,7 @@ Preserve email normalization behavior, password constraints, throttling, session
 ## Verification
 
 - Unit: `src/modules/auth/test/`
-- HTTP e2e: `test/e2e/auth/` (registration/login, token issuance, endpoint throttling); remaining Auth integration/HTTP suites reside under `test/integration/` and the legacy `test/` root
-- Database integration: `test/integration/auth/` (credential, token-flow and email-verification suites); additional Auth suites and session/token-store contracts remain in `test/integration/` for phased relocation
+- HTTP e2e: `test/e2e/auth/` (registration/login, token issuance, account recovery and resend throttling); shared security and rate-limit HTTP suites are grouped under `test/e2e/common/`
+- Database integration: `test/integration/auth/` (registration, tokens, email verification, password recovery, sessions, throttling and persistence contracts); cross-module principal isolation is grouped under `test/integration/common/`
 
 See [testing guide](../testing.md) and regenerate the frontend API client after changing contract-visible DTOs.

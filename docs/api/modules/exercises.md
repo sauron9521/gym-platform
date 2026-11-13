@@ -17,6 +17,6 @@ Maintains the exercise library, user-owned exercises and trainer access. Lists/d
 
 Treat public/global, private/owned and trainer-visible exercises differently; a guest must never gain private exercise access. Preserve archive visibility and trainer-relationship termination rules. Review `src/modules/exercises/` source for the authoritative ownership implementation.
 
-**Tests:** `test/exercises.e2e-spec.ts`, `test/integration/exercise-trainer-access.integration.e2e-spec.ts` and co-located module unit tests.
+**Tests:** `test/e2e/exercises/exercises.e2e-spec.ts`, `test/integration/exercises/exercise-trainer-access.integration.e2e-spec.ts` and co-located module unit tests.
 
 See [testing guide](../testing.md).

@@ -12,7 +12,7 @@ pnpm --filter @gym/api test
 pnpm --filter @gym/api build
 ```
 
-Unit tests are co-located under `apps/api/src/**/test/` (and some feature-specific locations). HTTP e2e tests are gradually being organized into `apps/api/test/e2e/<module>/` (Auth and body measurements have dedicated folders); legacy HTTP suites remain at `apps/api/test/*.e2e-spec.ts`. Database integration tests reside under `apps/api/test/integration/`; the first Auth suites are grouped in `apps/api/test/integration/auth/` while the other suites are being migrated incrementally. Shared helpers are in `apps/api/test/utility/`.
+Unit tests are co-located under `apps/api/src/**/test/` (and some feature-specific locations). All HTTP E2E suites are organized under `apps/api/test/e2e/<module>/`; database/provider integration suites are grouped under `apps/api/test/integration/<module>/`. Cross-cutting security tests use `common/`, infrastructure tests use `infra/`, and shared helpers live in `apps/api/test/utility/`. The two root-level `.test.mjs` checks remain at `apps/api/test/` because CI invokes them by explicit paths.
 
 ## Integration and HTTP e2e
 
@@ -28,7 +28,7 @@ pnpm --filter @gym/api test:e2e
 
 All HTTP test hosts that manually call `createNestApplication()` must register `StandardSchemaValidationPipe` to mirror production. Do not add the legacy `ValidationPipe`: request-body and query validation use module-owned Zod/Standard Schema contracts. Tests asserting invalid requests must validate the real HTTP `400` response, not only call Zod directly.
 
-The E2E Vitest configuration currently discovers `test/**/*.e2e-spec.ts`, so future per-module subdirectories can be introduced without losing test discovery. **Moving files also changes relative imports, fixtures and migration inventory expectations**. Update those paths and `scripts/api-migration-readiness.mjs` with tests in the same PR; preserve the original legacy path provenance separately from current physical paths.
+Vitest discovers `test/**/*.e2e-spec.ts` recursively. **Moving files changes relative imports and migration inventory expectations**: record each legacy test relocation in `apps/api/test/relocations.json` without rewriting the frozen `apps/api/migration-source-inventory.json` (new, non-legacy tests have no historical entry). The migration-readiness gate also enforces the per-module test layout.
 
 ## Contract, architecture and migration gates
 

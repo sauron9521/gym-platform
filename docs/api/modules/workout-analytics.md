@@ -11,6 +11,6 @@ Authenticated summary statistics and exercise-specific history/progress views.
 
 Both routes have endpoint-level throttling. Keep statistics scoped to the authenticated principal and document precise aggregation rules in the code/tests, not in ad hoc frontend calculations.
 
-**Tests:** `test/workout-analytics.e2e-spec.ts` and co-located unit tests. Include empty-history, time range and cross-user isolation checks for analytics changes.
+**Tests:** `test/e2e/workout-analytics/workout-analytics.e2e-spec.ts` and co-located unit tests. Include empty-history, time range and cross-user isolation checks for analytics changes.
 
 See [testing guide](../testing.md).
