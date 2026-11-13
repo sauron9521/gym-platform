@@ -3,6 +3,13 @@
   "private": true,
   "scripts": {
     "dev": "turbo run dev",
+    "dev:api": "pnpm --filter @gym/api dev",
+    "dev:web": "pnpm --filter @gym/web dev",
+    "dev:mobile": "pnpm --filter @gym/mobile dev",
+    "db:up": "docker compose --env-file infra/docker/.env -f infra/docker/compose.yaml up -d --wait",
+    "db:down": "docker compose --env-file infra/docker/.env -f infra/docker/compose.yaml down",
+    "db:ps": "docker compose --env-file infra/docker/.env -f infra/docker/compose.yaml ps",
+    "db:logs": "docker compose --env-file infra/docker/.env -f infra/docker/compose.yaml logs -f --tail=100",
     "build": "turbo run build",
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",

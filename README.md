@@ -22,8 +22,28 @@ pnpm test
 pnpm build
 ```
 
-At the bootstrap stage, there are no application packages yet. Turborepo task commands
-will begin running each application's scripts as the packages are added.
+## Local development
+
+Requires Docker Desktop/Engine and Docker Compose v2.
+The local services use PostgreSQL 17 and Redis 7; API, Web, and Mobile run on the host.
+
+```powershell
+Copy-Item infra/docker/.env.example infra/docker/.env
+Copy-Item apps/api/.env.local.example apps/api/.env
+pnpm db:up
+pnpm --filter @gym/api db:generate
+pnpm --filter @gym/api db:migrate:deploy
+pnpm --filter @gym/api db:seed
+pnpm dev
+```
+
+Web: http://localhost:3000 · API: http://localhost:3001.
+The sample credentials are local placeholders; customize matching passwords
+in both untracked `.env` files. See [local services](infra/docker/README.md)
+for stopping services, persistent volumes and safety notes.
+
+To start applications individually, use `pnpm dev:web`, `pnpm dev:api`,
+or `pnpm dev:mobile`.
 
 ## Contribution workflow
 
