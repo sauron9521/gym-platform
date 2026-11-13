@@ -80,10 +80,7 @@ export function SignUpForm() {
         </Button>
         <p className="text-sm text-muted-foreground">
           Не отримали лист?{' '}
-          <Link
-            href="/verify-email/resend"
-            className="font-medium text-foreground hover:underline"
-          >
+          <Link href="/verify-email/resend" className="font-medium text-foreground hover:underline">
             Надіслати ще раз
           </Link>
         </p>

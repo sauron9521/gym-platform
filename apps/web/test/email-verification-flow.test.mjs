@@ -36,14 +36,8 @@ test('verification only consumes email token after explicit user action', async 
     new URL('../src/features/auth/ui/verify-email-form.tsx', import.meta.url),
     'utf8',
   );
-  const page = await readFile(
-    new URL('../src/app/verify-email/page.tsx', import.meta.url),
-    'utf8',
-  );
-  const backend = await readFile(
-    new URL('../../api/src/app.module.ts', import.meta.url),
-    'utf8',
-  );
+  const page = await readFile(new URL('../src/app/verify-email/page.tsx', import.meta.url), 'utf8');
+  const backend = await readFile(new URL('../../api/src/app.module.ts', import.meta.url), 'utf8');
   const contract = await readFile(
     new URL('../../../packages/api-client/src/generated/schema.d.ts', import.meta.url),
     'utf8',

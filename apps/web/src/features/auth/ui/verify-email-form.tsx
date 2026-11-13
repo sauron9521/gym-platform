@@ -72,15 +72,20 @@ export function VerifyEmailForm({ token }: { token: string | null }) {
   return (
     <div className="mt-6 space-y-5">
       <p className="text-sm text-muted-foreground">
-        Натисніть кнопку, щоб підтвердити електронну адресу. Посилання можна використати лише
-        один раз.
+        Натисніть кнопку, щоб підтвердити електронну адресу. Посилання можна використати лише один
+        раз.
       </p>
       {error && (
         <p role="alert" className="text-sm text-destructive">
           {error}
         </p>
       )}
-      <Button className="w-full" type="button" onClick={handleVerify} disabled={state === 'verifying'}>
+      <Button
+        className="w-full"
+        type="button"
+        onClick={handleVerify}
+        disabled={state === 'verifying'}
+      >
         {state === 'verifying' ? 'Підтверджуємо…' : 'Підтвердити email'}
       </Button>
       <p className="text-sm text-muted-foreground">

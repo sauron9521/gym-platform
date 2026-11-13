@@ -31,7 +31,5 @@ export function getResendErrorMessage(status: number): string {
 
 /** Avoid passing malformed and arbitrarily long tokens to the API. */
 export function getVerificationToken(value: unknown): string | null {
-  return typeof value === 'string' && value.length > 0 && value.length <= 2048
-    ? value
-    : null;
+  return typeof value === 'string' && value.length > 0 && value.length <= 2048 ? value : null;
 }
