@@ -177,6 +177,29 @@ jobs:
           bash scripts/test-backup-readiness.sh
           node --test scripts/monitoring-backup-health.test.mjs scripts/backup-operations.test.mjs
 
+      - name: Verify immutable GHCR Compose override and offline operator digest guards
+        env:
+          DEPLOY_RUNTIME_IMAGE: ghcr.io/sauron9521/gym-platform@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          DEPLOY_MIGRATE_IMAGE: ghcr.io/sauron9521/gym-platform-migrate@sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+          SOURCE_SHA: cccccccccccccccccccccccccccccccccccccccc
+          PUBLISH_SHA: dddddddddddddddddddddddddddddddddddddddd
+          EXPECTED_CURRENT_IMAGE: none
+          DATABASE_URL: postgresql://example:example@db.invalid:5432/gym_test?schema=public
+          JWT_SECRET: ci-local-not-a-secret
+          JWT_ISSUER: https://issuer.example.invalid
+          APP_URL: https://app.example.invalid
+          CORS_ORIGINS: https://app.example.invalid
+          SMTP_URL: smtp://mail.example.invalid:2525
+          MAIL_FROM: test@example.invalid
+        run: |
+          node --test scripts/production-digest-guard.test.mjs
+          node scripts/production-digest-guard.mjs refs
+          docker compose --env-file infra/docker/.env.example \
+            -f infra/docker/compose.prod.yaml \
+            -f infra/docker/compose.digest.prod.yaml \
+            --profile ops config --format json \
+            | node scripts/production-digest-guard.mjs compose
+
       - name: Check opt-in systemd service and timer units
         run: |
           systemd-analyze verify \
