@@ -1,0 +1,26 @@
+# Exclude secrets, state and irrelevant monorepo artifacts from build context.
+.git
+.github
+**/.env
+**/.env.*
+**/node_modules
+**/dist
+**/build
+**/.next
+**/coverage
+**/.turbo
+**/.cache
+**/uploads
+**/logs
+**/*.log
+**/*.tsbuildinfo
+**/.idea
+**/.vscode
+**/test
+**/docs
+**/playwright-report
+**/test-results
+**/src/infra/database/generated
+**/*.pem
+**/*.key
+**/*.p12

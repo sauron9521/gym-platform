@@ -62,6 +62,50 @@ jobs:
       - name: Build workspaces
         run: pnpm build
 
+  api-docker:
+    name: API Docker / Node 24
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Verify production Docker policy
+        run: node --test apps/api/test/production-docker.test.mjs
+
+      - name: Validate production Compose (dummy values, no deployment)
+        env:
+          DATABASE_URL: postgresql://example:example@db.example.test:5432/gym_app
+          JWT_SECRET: placeholder-not-for-production-deployment-tests-only
+          JWT_ISSUER: https://api.example.test
+          APP_URL: https://app.example.test
+          CORS_ORIGINS: https://app.example.test
+          SMTP_URL: smtps://example:example@mail.example.test:465
+          MAIL_FROM: Gym Test <noreply@example.test>
+        run: docker compose -f infra/docker/compose.prod.yaml config --quiet
+
+      - name: Build production runtime image (no deployment)
+        run: docker build -f apps/api/Dockerfile --target runtime -t gym-platform-api:runtime-ci .
+
+      - name: Build one-shot migration image (no migration execution)
+        run: docker build -f apps/api/Dockerfile --target migrate -t gym-platform-api:migrate-ci .
+
+      - name: Check image contents and non-root runtime
+        run: |
+          docker run --rm --entrypoint sh gym-platform-api:runtime-ci -ec '
+            test -f dist/main.js
+            test -f dist/mail/templates/password-reset.html
+            test ! -x node_modules/.bin/prisma
+            test "$(id -u)" -ne 0
+            node --version
+          '
+          docker run --rm --entrypoint sh gym-platform-api:migrate-ci -ec '
+            test -x ./node_modules/.bin/prisma
+            test -d prisma/migrations
+            test "$(id -u)" -ne 0
+          '
+
   api-e2e:
     name: API e2e / PostgreSQL 17
     runs-on: ubuntu-latest
