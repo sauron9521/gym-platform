@@ -61,15 +61,11 @@ jobs:
       - name: Validate release and GHCR safety contracts (offline)
         run: node --test scripts/release-bundle.test.mjs scripts/ghcr-promotion.test.mjs scripts/release-supply-chain.test.mjs scripts/release-ci-gate.test.mjs
 
-      - name: Temporary canonical Prettier output for signed staging scripts
+      - name: Temporary canonical Prettier output for staging workflow
         run: |
-          for file in scripts/staging-*.mjs docs/staging-ghcr-monorepo.md; do
-            if ! pnpm exec prettier --check "$file" >/dev/null 2>&1; then
-              echo "FORMATTED_START:$file"
-              pnpm exec prettier "$file" | node -e 'let s="";process.stdin.on("data",c=>s+=c);process.stdin.on("end",()=>console.log(JSON.stringify(s)))'
-              echo "FORMATTED_END:$file"
-            fi
-          done
+          echo "FORMATTED_START:.github/workflows/staging-ghcr.yml"
+          pnpm exec prettier .github/workflows/staging-ghcr.yml | node -e 'let s="";process.stdin.on("data",c=>s+=c);process.stdin.on("end",()=>console.log(JSON.stringify(s)))'
+          echo "FORMATTED_END:.github/workflows/staging-ghcr.yml"
 
       - name: Check formatting
         run: pnpm format:check

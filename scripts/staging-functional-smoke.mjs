@@ -32,20 +32,25 @@ export function verifyFunctionalResponse(name, status, body) {
   assert.equal(status, expected[name], 'Unexpected HTTP result');
   if (name === 'registration') {
     assert.match(body?.id ?? '', UUID, 'Missing registered user ID');
-    assert.ok(['SUBMITTED', 'RETRY_REQUIRED'].includes(body?.verificationEmailStatus),
-      'Unknown verification email submission status');
+    assert.ok(
+      ['SUBMITTED', 'RETRY_REQUIRED'].includes(body?.verificationEmailStatus),
+      'Unknown verification email submission status',
+    );
     assert.equal(typeof body.email, 'string', 'Missing registered email');
     assert.ok(!Object.hasOwn(body, 'passwordHash'), 'Credential hash leaked');
   }
   if (name === 'login') assert.equal(body?.mfaRequired, false, 'Unexpected MFA requirement');
   if (name === 'tokenIssued' || name === 'refresh') {
-    assert.ok(typeof body?.accessToken === 'string' &&
-      body.accessToken.length > 20, 'Missing access token');
-    assert.ok(typeof body?.refreshToken === 'string' &&
-      body.refreshToken.length > 20, 'Missing refresh token');
+    assert.ok(
+      typeof body?.accessToken === 'string' && body.accessToken.length > 20,
+      'Missing access token',
+    );
+    assert.ok(
+      typeof body?.refreshToken === 'string' && body.refreshToken.length > 20,
+      'Missing refresh token',
+    );
   }
-  if (name === 'profileRead' || name === 'profileUpdated' ||
-      name === 'profilePreserved') {
+  if (name === 'profileRead' || name === 'profileUpdated' || name === 'profilePreserved') {
     assert.match(body?.id ?? '', UUID, 'Missing profile owner');
     assert.ok(!Object.hasOwn(body, 'passwordHash'), 'Credential hash leaked');
   }
@@ -57,13 +62,13 @@ export function verifyFunctionalResponse(name, status, body) {
 // of reissuing four independent credential token pairs in under 60 seconds.
 // Check the new and old refresh-token format across upgrade AND rollback.
 export function verifyRefreshRotation(previous, status, body) {
-  assert.equal(status, 200,
-    'Staging refresh endpoint returned HTTP ' + status);
+  assert.equal(status, 200, 'Staging refresh endpoint returned HTTP ' + status);
   verifyFunctionalResponse('refresh', status, body);
-  assert.ok(typeof previous === 'string' && previous.length > 20,
-    'Missing prior staging refresh token');
-  assert.notEqual(body.refreshToken, previous,
-    'Staging refresh-token rotation failed');
+  assert.ok(
+    typeof previous === 'string' && previous.length > 20,
+    'Missing prior staging refresh token',
+  );
+  assert.notEqual(body.refreshToken, previous, 'Staging refresh-token rotation failed');
   return body;
 }
 
@@ -132,8 +137,11 @@ async function http(method, path, body, bearer) {
   if (body !== undefined) headers['content-type'] = 'application/json';
   if (bearer) headers.authorization = 'Bearer ' + bearer;
   const response = await fetch(ORIGIN + path, {
-    method, headers, body: body === undefined ? undefined : JSON.stringify(body),
-    redirect: 'error', signal: AbortSignal.timeout(20_000),
+    method,
+    headers,
+    body: body === undefined ? undefined : JSON.stringify(body),
+    redirect: 'error',
+    signal: AbortSignal.timeout(20_000),
   });
   let value = {};
   if (response.status !== 204) {
@@ -153,10 +161,16 @@ async function createSyntheticAccount(request) {
   const registered = await http('POST', '/auth/register', { email, password });
   verifyFunctionalResponse('registration', registered.status, registered.body);
   assert.equal(registered.body.email, email, 'Wrong new account');
-  assert.equal(registered.headers.get('cache-control'), 'no-store',
-    'Missing sensitive auth response cache protection');
-  assert.match(registered.headers.get('set-cookie') ?? '', /__Host-sid=/,
-    'Registration session cookie missing');
+  assert.equal(
+    registered.headers.get('cache-control'),
+    'no-store',
+    'Missing sensitive auth response cache protection',
+  );
+  assert.match(
+    registered.headers.get('set-cookie') ?? '',
+    /__Host-sid=/,
+    'Registration session cookie missing',
+  );
 
   const login = await http('POST', '/auth/login', { email, password });
   verifyFunctionalResponse('login', login.status, login.body);
@@ -169,8 +183,12 @@ async function createSyntheticAccount(request) {
   assert.equal(user.body.id, registered.body.id);
   assert.equal(user.body.email, email);
 
-  const update = await http('PATCH', '/users/me',
-    { firstName: FIRST_NAME, weight: WEIGHT }, token.body.accessToken);
+  const update = await http(
+    'PATCH',
+    '/users/me',
+    { firstName: FIRST_NAME, weight: WEIGHT },
+    token.body.accessToken,
+  );
   verifyFunctionalResponse('profileUpdated', update.status, update.body);
   assert.equal(update.body.profile?.firstName, FIRST_NAME);
   assert.equal(update.body.profile?.weight, WEIGHT);
@@ -180,18 +198,20 @@ async function createSyntheticAccount(request) {
   });
   verifyRefreshRotation(token.body.refreshToken, refresh.status, refresh.body);
 
-  const rotated = await http('GET', '/users/me',
-    undefined, refresh.body.accessToken);
+  const rotated = await http('GET', '/users/me', undefined, refresh.body.accessToken);
   assert.equal(rotated.status, 200);
   verifyPersistedProfile(rotated.body, {
-    userId: registered.body.id, email,
+    userId: registered.body.id,
+    email,
   });
 
   // Never put email/password/tokens in the public Actions evidence artifact.
   // Do not retain the synthetic password after initial login. The rotated
   // refresh token is only runner-local, never uploaded to Action artifacts.
   const state = {
-    email, userId: registered.body.id, refreshToken: refresh.body.refreshToken,
+    email,
+    userId: registered.body.id,
+    refreshToken: refresh.body.refreshToken,
   };
   await mkdir('staging', { recursive: true, mode: 0o700 });
   await writeFile(STATE, JSON.stringify(state), { flag: 'wx', mode: 0o600 });
@@ -202,16 +222,19 @@ async function verifySyntheticAccount(request, final) {
   const state = JSON.parse(await readFile(STATE, 'utf8'));
   assert.match(state.email ?? '', EMAIL_RE);
   assert.match(state.userId ?? '', UUID);
-  assert.ok(!Object.hasOwn(state, 'password'),
-    'Staging state should never persist the synthetic password');
-  assert.ok(typeof state.refreshToken === 'string' &&
-    state.refreshToken.length > 20, 'Missing staging refresh token');
+  assert.ok(
+    !Object.hasOwn(state, 'password'),
+    'Staging state should never persist the synthetic password',
+  );
+  assert.ok(
+    typeof state.refreshToken === 'string' && state.refreshToken.length > 20,
+    'Missing staging refresh token',
+  );
   const refresh = await http('POST', '/auth/token/refresh', {
     refreshToken: state.refreshToken,
   });
   verifyRefreshRotation(state.refreshToken, refresh.status, refresh.body);
-  const profile = await http('GET', '/users/me',
-    undefined, refresh.body.accessToken);
+  const profile = await http('GET', '/users/me', undefined, refresh.body.accessToken);
   assert.equal(profile.status, 200);
   verifyPersistedProfile(profile.body, state);
   // Persist only the spent token's rotated successor. No additional
@@ -220,14 +243,18 @@ async function verifySyntheticAccount(request, final) {
   await writeFile(STATE, JSON.stringify(state), { mode: 0o600 });
   if (final) {
     const evidence = makeFunctionalEvidence(request, 'passed');
-    await writeFile(EVIDENCE, JSON.stringify(evidence, null, 2) + '\n',
-      { flag: 'wx', mode: 0o600 });
+    await writeFile(EVIDENCE, JSON.stringify(evidence, null, 2) + '\n', {
+      flag: 'wx',
+      mode: 0o600,
+    });
     if (process.env.GITHUB_STEP_SUMMARY) {
       const { appendFile } = await import('node:fs/promises');
-      await appendFile(process.env.GITHUB_STEP_SUMMARY,
+      await appendFile(
+        process.env.GITHUB_STEP_SUMMARY,
         '### Functional staging drill\n' +
-        'Authentication, token rotation, synthetic profile preservation and same-digest restart: passed.\n' +
-        'Version-to-version rollback and production migration compatibility: NOT TESTED.\n');
+          'Authentication, token rotation, synthetic profile preservation and same-digest restart: passed.\n' +
+          'Version-to-version rollback and production migration compatibility: NOT TESTED.\n',
+      );
     }
   }
 }
@@ -249,9 +276,11 @@ async function main() {
         await readFile(EVIDENCE, 'utf8');
       } catch {
         await mkdir('staging', { recursive: true, mode: 0o700 });
-        await writeFile(EVIDENCE,
+        await writeFile(
+          EVIDENCE,
           JSON.stringify(makeFunctionalFailureEvidence(process.env), null, 2) + '\n',
-          { flag: 'wx', mode: 0o600 });
+          { flag: 'wx', mode: 0o600 },
+        );
       }
       process.stdout.write('Safe incomplete-functional-rehearsal receipt recorded\n');
     } else {

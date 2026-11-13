@@ -34,12 +34,17 @@ export function verifyPulledImage(image, reference, sourceSha) {
   assert.match(reference, /@sha256:[a-f0-9]{64}$/, 'Unpinned reference');
   assert.match(image?.Id ?? '', IMAGE_ID, 'Missing image config digest');
   assert.equal(image?.Config?.User, 'node', 'Image is not the approved non-root build');
-  assert.equal(image?.Config?.Labels?.['org.opencontainers.image.revision'], sourceSha,
-    'Image revision differs from signed release');
+  assert.equal(
+    image?.Config?.Labels?.['org.opencontainers.image.revision'],
+    sourceSha,
+    'Image revision differs from signed release',
+  );
   assert.equal(image?.Os, 'linux', 'Unexpected platform OS');
   assert.equal(image?.Architecture, 'amd64', 'Unexpected platform architecture');
-  assert.ok(Array.isArray(image?.RepoDigests) &&
-    image.RepoDigests.includes(reference), 'Registry digest mismatch');
+  assert.ok(
+    Array.isArray(image?.RepoDigests) && image.RepoDigests.includes(reference),
+    'Registry digest mismatch',
+  );
   return { imageId: image.Id, reference };
 }
 
@@ -57,8 +62,7 @@ export function makeReceipt(input, outcome, results = {}) {
     assert.equal(results.dockerHealth, 'healthy');
     assert.deepEqual(Object.keys(results.endpoints).sort(), ['live', 'ready']);
     for (const name of HEALTH) {
-      verifyHealthResponse(name, results.endpoints[name].statusCode,
-        results.endpoints[name]);
+      verifyHealthResponse(name, results.endpoints[name].statusCode, results.endpoints[name]);
     }
     assert.match(results.runtimeImageId ?? '', IMAGE_ID);
     assert.match(results.migrateImageId ?? '', IMAGE_ID);
@@ -73,13 +77,15 @@ export function makeReceipt(input, outcome, results = {}) {
     publisherSha: request.publisherSha,
     runtime: request.runtime,
     migrate: request.migrate,
-    ... (outcome === 'passed' ? {
-      migrations: 'success',
-      runtimeImageId: results.runtimeImageId,
-      migrateImageId: results.migrateImageId,
-      dockerHealth: 'healthy',
-      endpoints: results.endpoints,
-    } : {}),
+    ...(outcome === 'passed'
+      ? {
+          migrations: 'success',
+          runtimeImageId: results.runtimeImageId,
+          migrateImageId: results.migrateImageId,
+          dockerHealth: 'healthy',
+          endpoints: results.endpoints,
+        }
+      : {}),
     productionContacted: false,
     deploymentPerformed: false,
     rollbackPerformed: false,
@@ -87,17 +93,21 @@ export function makeReceipt(input, outcome, results = {}) {
 }
 
 function inspect(ref) {
-  return JSON.parse(execFileSync('docker', [
-    'image', 'inspect', '--format', '{{json .}}', ref,
-  ], { encoding: 'utf8', timeout: 30_000,
-    stdio: ['ignore', 'pipe', 'ignore'] }));
+  return JSON.parse(
+    execFileSync('docker', ['image', 'inspect', '--format', '{{json .}}', ref], {
+      encoding: 'utf8',
+      timeout: 30_000,
+      stdio: ['ignore', 'pipe', 'ignore'],
+    }),
+  );
 }
 
 function dockerHealth(name) {
-  return execFileSync('docker', [
-    'inspect', '--format', '{{.State.Health.Status}}', name,
-  ], { encoding: 'utf8', timeout: 20_000,
-    stdio: ['ignore', 'pipe', 'ignore'] }).trim();
+  return execFileSync('docker', ['inspect', '--format', '{{.State.Health.Status}}', name], {
+    encoding: 'utf8',
+    timeout: 20_000,
+    stdio: ['ignore', 'pipe', 'ignore'],
+  }).trim();
 }
 
 async function checkEndpoints() {
@@ -115,22 +125,38 @@ async function checkEndpoints() {
 
 async function writeReceipt(receipt) {
   await mkdir('staging', { recursive: true, mode: 0o700 });
-  await writeFile('staging/evidence.json', JSON.stringify(receipt, null, 2) + '\n',
-    { flag: 'wx', mode: 0o600 });
-  const line = receipt.status === 'passed'
-    ? 'Ephemeral signed GHCR image + Prisma migration + HTTP readiness smoke passed.'
-    : 'Ephemeral staging rehearsal failed or did not finish.';
+  await writeFile('staging/evidence.json', JSON.stringify(receipt, null, 2) + '\n', {
+    flag: 'wx',
+    mode: 0o600,
+  });
+  const line =
+    receipt.status === 'passed'
+      ? 'Ephemeral signed GHCR image + Prisma migration + HTTP readiness smoke passed.'
+      : 'Ephemeral staging rehearsal failed or did not finish.';
   if (process.env.GITHUB_STEP_SUMMARY) {
     const { appendFile } = await import('node:fs/promises');
-    await appendFile(process.env.GITHUB_STEP_SUMMARY,
+    await appendFile(
+      process.env.GITHUB_STEP_SUMMARY,
       '### Signed GHCR staging rehearsal\n' +
-      'Result: ' + receipt.status + '\n' +
-      'Source SHA: ' + receipt.sourceSha + '\n' +
-      'Publish SHA: ' + receipt.publisherSha + '\n' +
-      'Runtime: ' + receipt.runtime + '\n' +
-      'Migrate: ' + receipt.migrate + '\n' +
-      line + '\n' +
-      'This is a disposable test, not staging-host or production deployment.\n');
+        'Result: ' +
+        receipt.status +
+        '\n' +
+        'Source SHA: ' +
+        receipt.sourceSha +
+        '\n' +
+        'Publish SHA: ' +
+        receipt.publisherSha +
+        '\n' +
+        'Runtime: ' +
+        receipt.runtime +
+        '\n' +
+        'Migrate: ' +
+        receipt.migrate +
+        '\n' +
+        line +
+        '\n' +
+        'This is a disposable test, not staging-host or production deployment.\n',
+    );
   }
 }
 
@@ -141,25 +167,44 @@ async function main() {
     if (mode === 'identity') {
       process.stdout.write('Signed staging request identities validated\n');
     } else if (mode === 'images') {
-      const runtime = verifyPulledImage(inspect(request.runtime),
-        request.runtime, request.sourceSha);
-      const migrate = verifyPulledImage(inspect(request.migrate),
-        request.migrate, request.sourceSha);
-      assert.notEqual(runtime.imageId, migrate.imageId,
-        'Runtime and migration images must be distinct');
+      const runtime = verifyPulledImage(
+        inspect(request.runtime),
+        request.runtime,
+        request.sourceSha,
+      );
+      const migrate = verifyPulledImage(
+        inspect(request.migrate),
+        request.migrate,
+        request.sourceSha,
+      );
+      assert.notEqual(
+        runtime.imageId,
+        migrate.imageId,
+        'Runtime and migration images must be distinct',
+      );
       process.stdout.write('Both immutable image digests and source labels verified\n');
     } else if (mode === 'probe') {
       const health = dockerHealth(process.env.STAGING_API);
       const endpoints = await checkEndpoints();
-      const runtime = verifyPulledImage(inspect(request.runtime),
-        request.runtime, request.sourceSha);
-      const migrate = verifyPulledImage(inspect(request.migrate),
-        request.migrate, request.sourceSha);
-      await writeReceipt(makeReceipt(process.env, 'passed', {
-        dockerHealth: health, endpoints,
-        migrations: 'success',
-        runtimeImageId: runtime.imageId, migrateImageId: migrate.imageId,
-      }));
+      const runtime = verifyPulledImage(
+        inspect(request.runtime),
+        request.runtime,
+        request.sourceSha,
+      );
+      const migrate = verifyPulledImage(
+        inspect(request.migrate),
+        request.migrate,
+        request.sourceSha,
+      );
+      await writeReceipt(
+        makeReceipt(process.env, 'passed', {
+          dockerHealth: health,
+          endpoints,
+          migrations: 'success',
+          runtimeImageId: runtime.imageId,
+          migrateImageId: migrate.imageId,
+        }),
+      );
       process.stdout.write('Isolated staging ready/live HTTP checks passed\n');
     } else if (mode === 'failed') {
       try {

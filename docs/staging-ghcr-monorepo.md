@@ -32,13 +32,13 @@ These are not interchangeable.
 In GitHub Actions select **Manual staging smoke of verified GHCR images**
 and **Run workflow** on `main`. Supply:
 
-| Input | Meaning |
-| --- | --- |
-| `runtime_digest` | Exact runtime digest ref from publisher |
-| `migrate_digest` | Exact migration digest ref from publisher |
-| `source_sha` | Full signing source Git SHA |
-| `publish_sha` | Full publisher signer Git SHA |
-| `confirm_staging` | Select `RUN_EPHEMERAL_STAGING` |
+| Input             | Meaning                                   |
+| ----------------- | ----------------------------------------- |
+| `runtime_digest`  | Exact runtime digest ref from publisher   |
+| `migrate_digest`  | Exact migration digest ref from publisher |
+| `source_sha`      | Full signing source Git SHA               |
+| `publish_sha`     | Full publisher signer Git SHA             |
+| `confirm_staging` | Select `RUN_EPHEMERAL_STAGING`            |
 
 The job requires read access to GHCR packages and GitHub attestations,
 but no registry write, production secrets, OIDC signing or SSH. Rejects
@@ -46,7 +46,7 @@ invalid namespace, non-main ref, missing confirmation and mutable refs.
 
 ## What is validated
 
-1. Independently verify SLSA provenance and SPDX inventory on *both*
+1. Independently verify SLSA provenance and SPDX inventory on _both_
    digests, bound to this repository's manual GHCR publisher and SHA.
 2. Pull by digest without rebuilding. Verify image ID, source revision
    label, Linux amd64 and non-root runtime identity.
