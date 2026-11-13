@@ -155,6 +155,49 @@ jobs:
       - name: Block critical vulnerabilities across all workspaces
         run: pnpm audit --audit-level critical
 
+  api-operations:
+    name: API Operations / Backup and monitoring
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+
+      - name: Validate backup and restore scripts without external services
+        run: |
+          bash -n scripts/backup-production.sh scripts/test-backup-production.sh scripts/test-backup-readiness.sh scripts/verify-backup-freshness.sh
+          sh -n scripts/restore-drill.sh
+          bash scripts/test-backup-production.sh
+          bash scripts/test-backup-readiness.sh
+          node --test scripts/monitoring-backup-health.test.mjs scripts/backup-operations.test.mjs
+
+      - name: Check opt-in systemd service and timer units
+        run: |
+          systemd-analyze verify \
+            ops/backup/gym-platform-api-backup.service \
+            ops/backup/gym-platform-api-backup.timer \
+            ops/backup/gym-platform-api-backup-health.service \
+            ops/backup/gym-platform-api-backup-health.timer
+          systemd-analyze calendar '*-*-* 03:30:00'
+          systemd-analyze calendar '*:0/15'
+
+      - name: Validate backup Prometheus alert rules and firing scenarios
+        run: |
+          docker run --rm --entrypoint /bin/promtool \
+            -v "$PWD/ops/monitoring:/rules:ro" \
+            prom/prometheus@sha256:23031bfe0e74a13004252caaa74eccd0d62b6c6e7a04711d5b8bf5b7e113adc7 \
+            check rules /rules/backup-health.rules.yml
+          docker run --rm --entrypoint /bin/promtool \
+            -v "$PWD/ops/monitoring:/rules:ro" \
+            prom/prometheus@sha256:23031bfe0e74a13004252caaa74eccd0d62b6c6e7a04711d5b8bf5b7e113adc7 \
+            test rules /rules/backup-health.test.yml
+
   api-docker:
     name: API Docker / Node 24
     runs-on: ubuntu-latest
@@ -292,3 +335,51 @@ jobs:
 
       - name: Integration and HTTP e2e tests
         run: pnpm --filter @gym/api test:e2e
+
+      - name: Rehearse isolated PostgreSQL 17 and avatar restore (disposable CI only)
+        run: |
+          set -euo pipefail
+          work="$RUNNER_TEMP/gym-platform-api-restore-drill"
+          mkdir -p "$work/backup" "$work/avatars"
+          volume="gym-platform-ci-avatar-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
+          trap 'docker volume rm -f "$volume" >/dev/null 2>&1 || true; rm -rf -- "$work"' EXIT
+          printf 'sample-avatar\n' > "$work/avatars/sample.png"
+
+          # PostgreSQL 17 client matches the server major version.
+          docker run --rm --network host \
+            --mount "type=bind,src=$work/backup,dst=/backup" \
+            -e BACKUP_DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:5432/gym_app_test \
+            postgres:17-alpine sh -ec \
+            'pg_dump --format=custom --no-owner --no-acl --dbname="$BACKUP_DATABASE_URL" --file=/backup/postgres.dump'
+
+          tar -czf "$work/backup/avatars.tar.gz" -C "$work/avatars" .
+          (
+            cd "$work/backup"
+            sha256sum postgres.dump avatars.tar.gz > SHA256SUMS
+            printf 'created_utc=%s\navatar_volume=disposable-ci\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > MANIFEST.txt
+          )
+
+          # Provision a NEW isolated target, never restore to gym_app_test.
+          docker run --rm --network host -e PGPASSWORD=postgres \
+            postgres:17-alpine psql -h 127.0.0.1 -U postgres -d postgres \
+            -v ON_ERROR_STOP=1 -c 'CREATE DATABASE gym_restore_test'
+
+          docker run --rm --network host \
+            --mount "type=bind,src=$work/backup,dst=/backup,readonly" \
+            --mount "type=bind,src=$PWD/scripts,dst=/scripts,readonly" \
+            -e DATABASE_URL \
+            -e RESTORE_DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:5432/gym_restore_test \
+            -e RESTORE_DRILL_CONFIRM=I_ACKNOWLEDGE_ISOLATED_RESTORE \
+            postgres:17-alpine sh /scripts/restore-drill.sh /backup
+
+          # Restore sample avatar into a disposable scratch Docker volume.
+          docker volume create "$volume" >/dev/null
+          docker run --rm --network none --read-only --cap-drop ALL \
+            --security-opt no-new-privileges \
+            --mount "type=volume,src=$volume,dst=/avatars" \
+            --mount "type=bind,src=$work/backup,dst=/backup,readonly" \
+            alpine:3.21 tar -xzf /backup/avatars.tar.gz -C /avatars
+          docker run --rm --network none --read-only --cap-drop ALL \
+            --security-opt no-new-privileges \
+            --mount "type=volume,src=$volume,dst=/avatars,readonly" \
+            alpine:3.21 test -s /avatars/sample.png

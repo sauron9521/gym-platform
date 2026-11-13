@@ -66,3 +66,10 @@ Production API Docker images may be packaged and signed by the manual
 explicit GHCR publication in `publish-ghcr.yml`. Neither workflow deploys
 to production or runs database migrations.
 See [release and GHCR procedures](docs/release-ghcr.md).
+
+## API backup and recovery toolkit
+
+The monorepo includes opt-in PostgreSQL/avatar backup, guarded restore rehearsal,
+and backup-health alert templates. These are not enabled on merge and require
+operator-controlled credentials, storage and independent off-host replication.
+See [backup, restore and monitoring](docs/backup-restore-operations.md).
