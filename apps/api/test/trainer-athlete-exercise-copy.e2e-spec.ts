@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 
 import type { INestApplication } from '@nestjs/common';
-import { StandardSchemaValidationPipe, ValidationPipe } from '@nestjs/common';
+import { StandardSchemaValidationPipe } from '@nestjs/common';
 
 import { ConfigModule } from '@nestjs/config';
 import { PasswordHasher } from '@nestjs/authentication';
@@ -79,14 +79,7 @@ describe('Trainer-athlete exercise copies (HTTP + PostgreSQL)', () => {
 
     app = moduleRef.createNestApplication();
 
-    app.useGlobalPipes(
-      new ValidationPipe({
-        whitelist: true,
-        transform: true,
-        forbidNonWhitelisted: true,
-      }),
-      new StandardSchemaValidationPipe(),
-    );
+    app.useGlobalPipes(new StandardSchemaValidationPipe());
 
     await app.init();
 

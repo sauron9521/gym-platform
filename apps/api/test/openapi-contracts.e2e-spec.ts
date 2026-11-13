@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 
-import { StandardSchemaValidationPipe, ValidationPipe } from '@nestjs/common';
+import { StandardSchemaValidationPipe } from '@nestjs/common';
 import type { INestApplication } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { Test } from '@nestjs/testing';
@@ -188,14 +188,7 @@ describe('OpenAPI / HTTP contract regression (PostgreSQL)', () => {
       .compile();
 
     app = moduleRef.createNestApplication();
-    app.useGlobalPipes(
-      new ValidationPipe({
-        whitelist: true,
-        transform: true,
-        forbidNonWhitelisted: true,
-      }),
-      new StandardSchemaValidationPipe(),
-    );
+    app.useGlobalPipes(new StandardSchemaValidationPipe());
     await app.init();
 
     document = createOpenApiDocument(app) as unknown as OpenApiDocument;

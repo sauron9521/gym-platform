@@ -26,6 +26,8 @@ pnpm --filter @gym/api typecheck:e2e
 pnpm --filter @gym/api test:e2e
 ```
 
+All HTTP test hosts that manually call `createNestApplication()` must register `StandardSchemaValidationPipe` to mirror production. Do not add the legacy `ValidationPipe`: request-body and query validation use module-owned Zod/Standard Schema contracts. Tests asserting invalid requests must validate the real HTTP `400` response, not only call Zod directly.
+
 The E2E Vitest configuration currently discovers `test/**/*.e2e-spec.ts`, so future per-module subdirectories can be introduced without losing test discovery. **Moving files also changes relative imports, fixtures and migration inventory expectations**. Update those paths and `scripts/api-migration-readiness.mjs` with tests in the same PR; preserve the original legacy path provenance separately from current physical paths.
 
 ## Contract, architecture and migration gates
