@@ -93,3 +93,11 @@ See [API migration audit and cutover criteria](docs/api-migration-audit.md).
 Manual, runner-only [two-release upgrade and rollback](docs/staging-two-release-rollback.md)
 checks signed GHCR runtime compatibility after forward Prisma migrations.
 Repository CI validates safety contracts only; production cutover stays NO-GO.
+
+## Independent production release-evidence review
+
+Manual, read-only [release readiness review](docs/production-readiness-review.md)
+checks exact signed GHCR digest publication, main source CI and successful
+seven-stage two-release rehearsal. Even when evidence is verified, the
+review reports **production NO-GO**; it never deploys or replaces the
+standalone API without separately approved host operations.

@@ -219,6 +219,23 @@ jobs:
           node --test scripts/staging-functional-smoke.test.mjs
           node --test scripts/staging-upgrade-rollback.test.mjs
 
+  api-readiness:
+    name: API Readiness / Verified release NO-GO
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+
+      - name: Validate signed release, exact-source CI, staging and operator NO-GO contracts
+        run: node --test scripts/production-readiness.test.mjs
+
   api-migration:
     name: API Migration / Source inventory and cutover NO-GO
     runs-on: ubuntu-latest

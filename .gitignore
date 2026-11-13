@@ -72,3 +72,6 @@ temp/
 # Two-release staging state/receipts, never commit test-only account state
 /staging/upgrade-phase-state.json
 /staging/upgrade-evidence.json
+
+# Runner-only release evidence and private metadata must not be committed
+/readiness/
