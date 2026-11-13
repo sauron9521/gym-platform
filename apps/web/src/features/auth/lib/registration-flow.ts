@@ -1,18 +1,6 @@
-/** Pure client-side hints. NestJS remains the source of truth for validation. */
+/** Use HTTP status, never an untrusted backend error body. */
 export type VerificationEmailStatus = 'SUBMITTED' | 'RETRY_REQUIRED';
 
-export function validateRegistrationInput(
-  email: string,
-  password: string,
-  confirmation: string,
-): string | null {
-  if (!email.trim()) return 'Вкажіть електронну пошту.';
-  if (password.length < 8) return 'Пароль має містити щонайменше 8 символів.';
-  if (password !== confirmation) return 'Паролі не збігаються.';
-  return null;
-}
-
-/** Use HTTP status, never an untrusted backend error body. */
 export function getRegistrationErrorMessage(status: number): string {
   switch (status) {
     case 400:
