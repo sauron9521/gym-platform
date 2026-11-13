@@ -1,5 +1,7 @@
 # Dependabot does not merge anything; the repository owner reviews every PR.
 # The npm entry discovers packages through pnpm-workspace.yaml and pnpm-lock.yaml.
+# pnpm 12 currently emits a two-document lockfile: version PRs work, but
+# dependency-graph alerts/security update PRs may be unavailable. Keep pnpm audit in CI.
 version: 2
 updates:
   - package-ecosystem: 'npm'
@@ -43,12 +45,19 @@ updates:
           - 'patch'
 
   - package-ecosystem: 'docker'
-    directories:
-      - '/apps/api'
-      - '/infra/docker'
+    directory: '/apps/api'
     schedule:
       interval: 'weekly'
       day: 'wednesday'
       time: '09:00'
+      timezone: 'Europe/Kyiv'
+    open-pull-requests-limit: 3
+
+  - package-ecosystem: 'docker-compose'
+    directory: '/infra/docker'
+    schedule:
+      interval: 'weekly'
+      day: 'wednesday'
+      time: '09:30'
       timezone: 'Europe/Kyiv'
     open-pull-requests-limit: 3
