@@ -952,12 +952,30 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
-    SignUpDto: Record<string, never>;
-    SignInDto: Record<string, never>;
-    EmailDto: Record<string, never>;
-    ResetPasswordDto: Record<string, never>;
-    VerificationTokenDto: Record<string, never>;
-    RefreshTokenDto: Record<string, never>;
+    SignUpDto: {
+      /** Format: email */
+      email: string;
+      password: string;
+    };
+    SignInDto: {
+      /** Format: email */
+      email: string;
+      password: string;
+    };
+    EmailDto: {
+      /** Format: email */
+      email: string;
+    };
+    ResetPasswordDto: {
+      token: string;
+      password: string;
+    };
+    VerificationTokenDto: {
+      token: string;
+    };
+    RefreshTokenDto: {
+      refreshToken: string;
+    };
   };
   responses: never;
   parameters: never;
@@ -1020,7 +1038,11 @@ export interface operations {
         headers: {
           [name: string]: unknown;
         };
-        content?: never;
+        content: {
+          'application/json': {
+            mfaRequired: boolean;
+          };
+        };
       };
     };
   };
@@ -1121,7 +1143,13 @@ export interface operations {
         headers: {
           [name: string]: unknown;
         };
-        content?: never;
+        content: {
+          'application/json': {
+            accessToken: string;
+            refreshToken: string;
+            expiresIn: number;
+          };
+        };
       };
     };
   };
@@ -1142,7 +1170,13 @@ export interface operations {
         headers: {
           [name: string]: unknown;
         };
-        content?: never;
+        content: {
+          'application/json': {
+            accessToken: string;
+            refreshToken: string;
+            expiresIn: number;
+          };
+        };
       };
     };
   };

@@ -21,12 +21,40 @@ export type AuthContractChecks = [HasSessionLogin, HasTokenIssue, HasTokenRefres
 
 const browser = createBrowserSessionClient({ baseUrl: 'https://api.example.test' });
 void browser.GET('/users/me');
+void browser.POST('/auth/login', {
+  body: { email: 'athlete@example.test', password: 'CorrectPassword123!' },
+});
+// @ts-expect-error - auth login requires a password
+void browser.POST('/auth/login', { body: { email: 'athlete@example.test' } });
 
 const native = createBearerTokenClient({
   baseUrl: 'https://api.example.test',
   getAccessToken: async () => null,
 });
 void native.GET('/users/me');
+void native.POST('/auth/token', {
+  body: { email: 'athlete@example.test', password: 'CorrectPassword123!' },
+});
+void native.POST('/auth/token/refresh', { body: { refreshToken: 'new-token-value' } });
+// @ts-expect-error - refresh token is mandatory
+void native.POST('/auth/token/refresh', { body: {} });
+
+type LoginResponse = operations['AuthController_signIn']['responses'][200]['content']['application/json'];
+type TokenResponse = operations['TokensController_issue']['responses'][200]['content']['application/json'];
+type RotatedTokenResponse = operations['TokensController_refresh']['responses'][200]['content']['application/json'];
+
+const sessionState: LoginResponse = { mfaRequired: false };
+const tokenPair: TokenResponse = {
+  accessToken: 'access',
+  refreshToken: 'refresh',
+  expiresIn: 900,
+};
+const rotated: RotatedTokenResponse = tokenPair;
+void sessionState;
+void rotated;
+// @ts-expect-error - login response must include the MFA flag
+const missingMfa: LoginResponse = {};
+void missingMfa;
 
 // @ts-expect-error - the mobile factory requires an explicit access-token callback
 createBearerTokenClient({ baseUrl: 'https://api.example.test' });

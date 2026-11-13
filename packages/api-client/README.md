@@ -67,5 +67,6 @@ the consuming app.
 
 Use `POST /auth/login` and `POST /auth/sign-out` for browser sessions;
 the native token flow uses `POST /auth/token` and
-`POST /auth/token/refresh`. The token-refresh lifecycle, secure
-storage, and API response-schema annotations will be handled separately.
+`POST /auth/token/refresh`. The OpenAPI contract now types browser login as `{ mfaRequired: boolean }` and
+native issue/refresh as `{ accessToken, refreshToken, expiresIn }`.
+The token-refresh lifecycle and secure storage will be handled separately.
