@@ -31,3 +31,15 @@ pnpm --filter @gym/web build
 
 Add shadcn/ui components from `apps/web` with `pnpm dlx shadcn@latest add <component>`.
 Keep code in the appropriate FSD slice; do not add a Next.js `src/pages` directory.
+
+## Browser authentication foundation
+
+`src/shared/api/client.ts` wraps `@gym/api-client` with browser-session
+cookies (`credentials: 'include'`). A 401 means unauthenticated; a 403
+means insufficient permissions. The `onAuthFailure` callback can update
+client-side UI state without consuming the response.
+
+This is a browser-only adapter. **Next.js Server Components must not reuse
+its singleton** for authenticated requests: pass cookies explicitly through
+a server-side boundary, with appropriate authorization and CSRF checks.
+Login/logout screens and guarded routes will be added in later PRs.

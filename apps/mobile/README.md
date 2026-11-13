@@ -48,3 +48,11 @@ No additional Metro monorepo overrides are needed with modern Expo SDKs.
 
 Connect the generated API client and implement authentication, user profiles,
 training programs, and workout sessions in small PRs.
+
+## Native authentication foundation
+
+`src/shared/api/client.ts` now accepts a required `getAccessToken`
+callback, attaches bearer credentials only for the API's configured origin,
+and reports 401/403 separately. No token storage, refresh, or logout
+behavior is implemented by this adapter: supply a short-lived token reader
+from a later secure storage/auth module. Mobile does not send cookies.

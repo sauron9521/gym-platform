@@ -46,3 +46,26 @@ types in its isolated PostgreSQL job and checks for uncommitted differences.
 
 Do not edit generated snapshots manually or include credentials in OpenAPI
 descriptions.
+
+## Authentication adapters
+
+`createBrowserSessionClient({ baseUrl, onAuthFailure? })` opts into browser
+HttpOnly session cookies via `credentials: 'include'`. The API must allow the
+Web origin through credentialed CORS, and the server's CSRF requirements must
+still be satisfied. Do **not** reuse the browser singleton for Next.js SSR:
+server-side requests do not automatically forward the user's cookies.
+
+`createBearerTokenClient({ baseUrl, getAccessToken, onAuthFailure? })`
+fetches a short-lived bearer token from the caller for every request. It
+does not read storage, refresh credentials, follow redirects, or send cookies.
+Access tokens are never sent to a different origin than `baseUrl`.
+
+`onAuthFailure` receives `'unauthenticated'` for HTTP 401 or `'forbidden'`
+for HTTP 403. The original response remains available through `openapi-fetch`.
+No automatic retry or logout is performed; UI-level behavior belongs to
+the consuming app.
+
+Use `POST /auth/login` and `POST /auth/sign-out` for browser sessions;
+the native token flow uses `POST /auth/token` and
+`POST /auth/token/refresh`. The token-refresh lifecycle, secure
+storage, and API response-schema annotations will be handled separately.
