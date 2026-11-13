@@ -56,7 +56,30 @@ export function ProfileEditor() {
   }
 
   useEffect(() => {
-    void loadProfile();
+    let active = true;
+    void webApi
+      .GET('/users/me')
+      .then(({ data, response }) => {
+        if (!active) return;
+        if (response.status === 401) {
+          setUnauthenticated(true);
+        } else if (response.status !== 200 || !data) {
+          setError(getProfileErrorMessage(response.status));
+        } else {
+          setAccount(data);
+          setDraft(toProfileDraft(data));
+          setError(null);
+        }
+      })
+      .catch(() => {
+        if (active) setError('Немає з’єднання з API. Спробуйте пізніше.');
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
   }, []);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
