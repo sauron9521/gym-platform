@@ -1,10 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import {
-  classifySessionCheck,
-  getLoginErrorMessage,
-} from '../src/features/auth/lib/auth-flow.ts';
+import { classifySessionCheck, getLoginErrorMessage } from '../src/features/auth/lib/auth-flow.ts';
 
 test('login errors keep invalid credentials distinct from CSRF and rate limiting', () => {
   assert.match(getLoginErrorMessage(401), /Невірна/);
