@@ -1,29 +1,35 @@
 'use client';
 
-import { useState, type FormEvent } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useForm } from 'react-hook-form';
 
 import { webApi } from '@/shared/api/client';
 import { Button } from '@/shared/ui/button';
 import { classifySessionCheck, getLoginErrorMessage } from '../lib/auth-flow';
+import { loginSchema, type LoginValues } from '../lib/login-schema';
 
 export function SignInForm() {
   const router = useRouter();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<LoginValues>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: { email: '', password: '' },
+    mode: 'onBlur',
+    reValidateMode: 'onChange',
+  });
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (isSubmitting) return;
-
-    setIsSubmitting(true);
+  async function submit(values: LoginValues) {
     setError(null);
 
     try {
       const { data, response } = await webApi.POST('/auth/login', {
-        body: { email: email.trim(), password },
+        body: { email: values.email, password: values.password },
       });
 
       if (response.status !== 200 || !data) {
@@ -32,18 +38,17 @@ export function SignInForm() {
       }
 
       if (data.mfaRequired) {
-        // No MFA challenge screen yet: do not treat a pending-MFA session as signed in.
-        // The API explicitly permits signing out a pending-MFA session.
+        // A pending MFA challenge must never unlock private routes.
         try {
           await webApi.POST('/auth/sign-out');
         } catch {
-          // Best effort; the pending session must not unlock the dashboard.
+          // Best effort; user still remains on this public route.
         }
         setError('Для цього облікового запису потрібна MFA. Підтримку додамо окремо.');
         return;
       }
 
-      // A successful login is not enough if the browser rejected the session cookie.
+      // A login response alone cannot establish that the browser accepted the session.
       const account = await webApi.GET('/users/me');
       const decision = classifySessionCheck(account.response.status, Boolean(account.data));
 
@@ -60,28 +65,31 @@ export function SignInForm() {
       router.refresh();
     } catch {
       setError('Немає з’єднання з API. Спробуйте ще раз.');
-    } finally {
-      setIsSubmitting(false);
     }
   }
 
   return (
-    <form onSubmit={handleSubmit} className="mt-8 space-y-5">
+    <form onSubmit={handleSubmit(submit)} noValidate className="mt-8 space-y-5">
       <div className="space-y-2">
         <label htmlFor="email" className="block text-sm font-medium">
           Електронна пошта
         </label>
         <input
           id="email"
-          name="email"
           type="email"
           autoComplete="username"
-          required
-          value={email}
-          onChange={(event) => setEmail(event.target.value)}
+          maxLength={254}
           disabled={isSubmitting}
+          aria-invalid={Boolean(errors.email)}
+          aria-describedby={errors.email ? 'login-email-error' : undefined}
+          {...register('email', { onChange: () => setError(null) })}
           className="h-11 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
         />
+        {errors.email && (
+          <p id="login-email-error" role="alert" className="text-xs text-destructive">
+            {errors.email.message}
+          </p>
+        )}
       </div>
       <div className="space-y-2">
         <label htmlFor="password" className="block text-sm font-medium">
@@ -89,15 +97,19 @@ export function SignInForm() {
         </label>
         <input
           id="password"
-          name="password"
           type="password"
           autoComplete="current-password"
-          required
-          value={password}
-          onChange={(event) => setPassword(event.target.value)}
           disabled={isSubmitting}
+          aria-invalid={Boolean(errors.password)}
+          aria-describedby={errors.password ? 'login-password-error' : undefined}
+          {...register('password', { onChange: () => setError(null) })}
           className="h-11 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
         />
+        {errors.password && (
+          <p id="login-password-error" role="alert" className="text-xs text-destructive">
+            {errors.password.message}
+          </p>
+        )}
       </div>
       {error && (
         <p role="alert" className="text-sm text-destructive">

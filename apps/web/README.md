@@ -173,3 +173,12 @@ timezones use IANA names. The API remains authoritative.
 
 Authentication, session verification and avatar upload remain unchanged.
 Avoid rewriting other forms in this PR; migrate them in focused follow-ups.
+
+## Login form validation
+
+The login form uses React Hook Form with the Zod resolver. It trims and
+validates the email address, checks for a non-blank password without
+transforming password bytes, and displays accessible field errors. It keeps
+the existing MFA-pending safeguard and verifies the session through
+`GET /users/me` before routing to the dashboard. Backend authorization,
+rate limiting and credentials checks remain authoritative.
