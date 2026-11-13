@@ -1,6 +1,7 @@
 import type { operations } from '@gym/api-client';
 
-export type Account = operations['UsersController_me']['responses'][200]['content']['application/json'];
+type MeResponse = operations['UsersController_me']['responses'][200];
+export type Account = MeResponse['content']['application/json'];
 type UpdateMe = operations['UsersController_updateMe'];
 export type ProfilePatch = UpdateMe['requestBody']['content']['application/json'];
 
