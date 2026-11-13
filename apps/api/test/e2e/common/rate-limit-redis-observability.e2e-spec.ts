@@ -6,9 +6,9 @@ import type { Redis } from 'ioredis';
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
-import { DistributedThrottlerStorage } from '../src/common/rate-limit/distributed-throttler.storage.js';
-import { PrismaService } from '../src/infra/database/index.js';
-import { HealthController } from '../src/infra/health/health.controller.js';
+import { DistributedThrottlerStorage } from '../../../src/common/rate-limit/distributed-throttler.storage.js';
+import { PrismaService } from '../../../src/infra/database/index.js';
+import { HealthController } from '../../../src/infra/health/health.controller.js';
 
 const redisUrl = process.env.TEST_REDIS_URL;
 const redisDescribe = redisUrl ? describe : describe.skip;

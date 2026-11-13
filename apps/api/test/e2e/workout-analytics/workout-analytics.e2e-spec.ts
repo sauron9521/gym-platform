@@ -7,9 +7,9 @@ import { Test } from '@nestjs/testing';
 import { ThrottlerGuard } from '@nestjs/throttler';
 import request from 'supertest';
 
-import { AppModule } from '../src/app.module.js';
-import { PrismaService } from '../src/infra/database/index.js';
-import { useTestDatabase } from './utility/test-db-helper.js';
+import { AppModule } from '../../../src/app.module.js';
+import { PrismaService } from '../../../src/infra/database/index.js';
+import { useTestDatabase } from '../../utility/test-db-helper.js';
 
 describe('Workout Analytics (HTTP + PostgreSQL)', () => {
   let app: INestApplication;

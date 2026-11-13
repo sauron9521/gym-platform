@@ -9,9 +9,9 @@ import { ThrottlerGuard } from '@nestjs/throttler';
 import request from 'supertest';
 import sharp from 'sharp';
 
-import { AppModule } from '../src/app.module.js';
-import { PrismaService } from '../src/infra/database/index.js';
-import { useTestDatabase } from './utility/test-db-helper.js';
+import { AppModule } from '../../../src/app.module.js';
+import { PrismaService } from '../../../src/infra/database/index.js';
+import { useTestDatabase } from '../../utility/test-db-helper.js';
 
 describe('Users /me (HTTP + PostgreSQL)', () => {
   let app: INestApplication;

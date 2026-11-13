@@ -7,7 +7,7 @@ import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import request from 'supertest';
 import { afterAll, describe, expect, it } from 'vitest';
 
-import { DistributedThrottlerStorage } from '../src/common/rate-limit/distributed-throttler.storage.js';
+import { DistributedThrottlerStorage } from '../../../src/common/rate-limit/distributed-throttler.storage.js';
 
 const redisUrl = process.env.TEST_REDIS_URL;
 const redisDescribe = redisUrl ? describe : describe.skip;

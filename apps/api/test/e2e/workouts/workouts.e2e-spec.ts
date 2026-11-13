@@ -12,10 +12,10 @@ import request from 'supertest';
 
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
-import { AppModule } from '../src/app.module.js';
-import { PrismaService } from '../src/infra/database/index.js';
-import { WorkoutsRepository } from '../src/modules/workouts/repositories/workouts.repository.js';
-import { useTestDatabase } from './utility/test-db-helper.js';
+import { AppModule } from '../../../src/app.module.js';
+import { PrismaService } from '../../../src/infra/database/index.js';
+import { WorkoutsRepository } from '../../../src/modules/workouts/repositories/workouts.repository.js';
+import { useTestDatabase } from '../../utility/test-db-helper.js';
 
 describe('Workouts (HTTP + PostgreSQL)', () => {
   let app: INestApplication | undefined;
