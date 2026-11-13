@@ -49,3 +49,12 @@ or `pnpm dev:mobile`.
 
 Open a pull request against `main`. CI verifies formatting and workspace quality tasks.
 Only the repository owner merges approved changes.
+
+## Typed API contract
+
+Both frontends depend on `@gym/api-client` in `packages/api-client`.
+Types are generated from the NestJS OpenAPI schema and checked in CI.
+
+After changing API routes or DTOs, run `pnpm api:contract:generate` and commit
+the updated `apps/api/openapi/openapi.json` and `packages/api-client/src/generated/schema.d.ts`
+alongside the API change. See [client documentation](packages/api-client/README.md).

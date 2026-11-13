@@ -149,5 +149,9 @@ jobs:
       - name: Seed test exercise library
         run: pnpm --filter @gym/api db:seed
 
+      # Build NestJS with decorator metadata; fail if generated client types drift.
+      - name: Verify generated OpenAPI contract is committed and current
+        run: pnpm api:contract:check
+
       - name: Integration and HTTP e2e tests
         run: pnpm --filter @gym/api test:e2e

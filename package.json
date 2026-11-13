@@ -16,7 +16,11 @@
     "test": "turbo run test",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "prepare": "husky"
+    "prepare": "husky",
+    "api:openapi": "pnpm --filter @gym/api docs:openapi",
+    "api:types": "pnpm --filter @gym/api-client generate",
+    "api:contract:generate": "pnpm api:openapi && pnpm api:types && pnpm exec prettier --write apps/api/openapi/openapi.json packages/api-client/src/generated/schema.d.ts",
+    "api:contract:check": "pnpm api:contract:generate && git diff --exit-code -- apps/api/openapi/openapi.json packages/api-client/src/generated/schema.d.ts"
   },
   "devDependencies": {
     "husky": "^9.1.7",
