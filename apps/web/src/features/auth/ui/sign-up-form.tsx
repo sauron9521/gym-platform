@@ -78,6 +78,12 @@ export function SignUpForm() {
         <Button asChild className="w-full">
           <Link href="/dashboard">Перейти до кабінету</Link>
         </Button>
+        <p className="text-sm text-muted-foreground">
+          Не отримали лист?{' '}
+          <Link href="/verify-email/resend" className="font-medium text-foreground hover:underline">
+            Надіслати ще раз
+          </Link>
+        </p>
       </section>
     );
   }

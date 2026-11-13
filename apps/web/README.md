@@ -88,3 +88,31 @@ The screen does **not** assume a verified email or automatically redirect
 past an authentication check. The existing `/dashboard` route verifies the
 session independently via `GET /users/me`. Email confirmation, resend and
 password recovery UI will follow in separate small PRs.
+
+## Email verification and resend
+
+The API creates a verification link using `APP_URL/verify-email?token=...`.
+The public `/verify-email` page checks the token's shape and **only
+consumes the one-time token after an explicit click**, never on a GET or
+automatically during hydration (mail scanners may open links). The
+browser removes the token query from its address bar during hydration
+without reloading, never renders or logs the token, and requests the
+same-origin typed `POST /auth/email/verify` with `{ token }`.
+The page is noindex/no-referrer and only HTTP 200 is considered confirmed;
+HTTP 400 includes expired/replayed links. Do not claim success after
+a failed request or infer verification from a logged-in session.
+
+`/verify-email/resend` calls `POST /auth/email/verification` **only
+on an explicit button click**. The API sends to the authenticated
+user's own email, so there is no free-form email input; HTTP 401
+requires sign-in, 409 means already verified, 429 means throttling,
+503 means the mailer is unavailable, and 202 means only that the
+send request was accepted, not that the message was delivered.
+The browser never holds an access token and the Web app continues
+to use HttpOnly session cookies through `/backend`.
+
+For local email links, set `APP_URL=http://localhost:3000` in the API
+environment. Configure HTTPS, cache/referrer policies and access log
+redaction for query strings at the reverse proxy in any deployment.
+Actual deliverability, mailer availability and end-to-end confirmation
+against a live server require manual integration verification.
