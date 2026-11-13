@@ -20,6 +20,12 @@ export default function LoginPage() {
         </p>
         <SignInForm />
         <p className="mt-5 text-center text-sm text-muted-foreground">
+          Забули пароль?{' '}
+          <Link href="/forgot-password" className="font-medium text-foreground hover:underline">
+            Відновити доступ
+          </Link>
+        </p>
+        <p className="mt-5 text-center text-sm text-muted-foreground">
           Потрібно підтвердити адресу?{' '}
           <Link href="/verify-email/resend" className="font-medium text-foreground hover:underline">
             Надіслати лист ще раз
