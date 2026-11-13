@@ -42,12 +42,18 @@ test('operator timers are opt-in and point to monorepo scripts and matching serv
     ),
   );
 
-  assert.match(contents.backupService, /ExecStart=\/usr\/bin\/bash \/opt\/gym-platform\/scripts\/backup-production\.sh/);
+  assert.match(
+    contents.backupService,
+    /ExecStart=\/usr\/bin\/bash \/opt\/gym-platform\/scripts\/backup-production\.sh/,
+  );
   assert.match(contents.backupService, /EnvironmentFile=\/etc\/gym-platform\/backup\.env/);
   assert.match(contents.backupService, /UMask=0077/);
   assert.match(contents.backupTimer, /Unit=gym-platform-api-backup\.service/);
   assert.match(contents.backupTimer, /OnCalendar=\*-\*-\* 03:30:00/);
-  assert.match(contents.healthService, /ExecStart=\/usr\/bin\/env node \/opt\/gym-platform\/scripts\/monitoring-backup-health\.mjs/);
+  assert.match(
+    contents.healthService,
+    /ExecStart=\/usr\/bin\/env node \/opt\/gym-platform\/scripts\/monitoring-backup-health\.mjs/,
+  );
   assert.match(contents.healthService, /EnvironmentFile=\/etc\/gym-platform\/backup-health\.env/);
   assert.match(contents.healthTimer, /Unit=gym-platform-api-backup-health\.service/);
   assert.match(contents.healthTimer, /OnCalendar=\*:0\/15/);

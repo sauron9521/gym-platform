@@ -61,14 +61,6 @@ jobs:
       - name: Validate release and GHCR safety contracts (offline)
         run: node --test scripts/release-bundle.test.mjs scripts/ghcr-promotion.test.mjs scripts/release-supply-chain.test.mjs scripts/release-ci-gate.test.mjs
 
-      - name: Temporary formatting diagnostics for migrated operations
-        run: |
-          for file in scripts/monitoring-backup-health*.mjs scripts/monitoring-textfile.mjs scripts/backup-operations.test.mjs docs/backup-restore-operations.md ops/monitoring/backup-health.*.yml; do
-            echo "FORMATTED_START:$file"
-            pnpm exec prettier "$file" | node -e 'let s="";process.stdin.on("data",c=>s+=c);process.stdin.on("end",()=>console.log(JSON.stringify(s)))'
-            echo "FORMATTED_END:$file"
-          done
-
       - name: Check formatting
         run: pnpm format:check
 

@@ -3,13 +3,13 @@ rule_files:
 evaluation_interval: 1m
 
 tests:
-  - name: "failed backup check fires after five minutes"
+  - name: 'failed backup check fires after five minutes'
     interval: 1m
     input_series:
       - series: gym_api_backup_verified
-        values: "0+0x15"
+        values: '0+0x15'
       - series: gym_api_backup_last_check_timestamp_seconds
-        values: "0+60x15"
+        values: '0+60x15'
     alert_rule_test:
       - eval_time: 4m
         alertname: GymApiBackupVerificationFailed
@@ -19,15 +19,15 @@ tests:
         exp_alerts:
           - exp_labels: { severity: critical }
             exp_annotations:
-              summary: "Latest gym API backup is missing, stale or failed verification"
+              summary: 'Latest gym API backup is missing, stale or failed verification'
 
-  - name: "healthy verified backups stay silent"
+  - name: 'healthy verified backups stay silent'
     interval: 1m
     input_series:
       - series: gym_api_backup_verified
-        values: "1+0x15"
+        values: '1+0x15'
       - series: gym_api_backup_last_check_timestamp_seconds
-        values: "0+60x15"
+        values: '0+60x15'
     alert_rule_test:
       - eval_time: 12m
         alertname: GymApiBackupVerificationFailed
@@ -39,7 +39,7 @@ tests:
         alertname: GymApiBackupHealthSnapshotMissing
         exp_alerts: []
 
-  - name: "missing collector produces distinct missing alert"
+  - name: 'missing collector produces distinct missing alert'
     interval: 1m
     alert_rule_test:
       - eval_time: 29m
@@ -50,15 +50,15 @@ tests:
         exp_alerts:
           - exp_labels: { severity: critical }
             exp_annotations:
-              summary: "Gym API backup health collector has no metrics"
+              summary: 'Gym API backup health collector has no metrics'
 
-  - name: "stale collector alert is not suppressed by last healthy result"
+  - name: 'stale collector alert is not suppressed by last healthy result'
     interval: 1m
     input_series:
       - series: gym_api_backup_verified
-        values: "1+0x60"
+        values: '1+0x60'
       - series: gym_api_backup_last_check_timestamp_seconds
-        values: "0+0x60"
+        values: '0+0x60'
     alert_rule_test:
       - eval_time: 34m
         alertname: GymApiBackupHealthSnapshotStale
@@ -68,4 +68,4 @@ tests:
         exp_alerts:
           - exp_labels: { severity: critical }
             exp_annotations:
-              summary: "Gym API backup health collector has not updated for 30 minutes"
+              summary: 'Gym API backup health collector has not updated for 30 minutes'

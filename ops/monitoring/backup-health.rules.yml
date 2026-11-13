@@ -10,7 +10,7 @@ groups:
         labels:
           severity: critical
         annotations:
-          summary: "Latest gym API backup is missing, stale or failed verification"
+          summary: 'Latest gym API backup is missing, stale or failed verification'
 
       - alert: GymApiBackupHealthSnapshotMissing
         expr: absent(gym_api_backup_last_check_timestamp_seconds)
@@ -18,7 +18,7 @@ groups:
         labels:
           severity: critical
         annotations:
-          summary: "Gym API backup health collector has no metrics"
+          summary: 'Gym API backup health collector has no metrics'
 
       - alert: GymApiBackupHealthSnapshotStale
         expr: time() - gym_api_backup_last_check_timestamp_seconds > 1800
@@ -26,4 +26,4 @@ groups:
         labels:
           severity: critical
         annotations:
-          summary: "Gym API backup health collector has not updated for 30 minutes"
+          summary: 'Gym API backup health collector has not updated for 30 minutes'

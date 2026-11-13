@@ -13,10 +13,15 @@ export function parseBackupHealthConfig(env) {
   const root = env.BACKUP_ROOT;
   const output = env.BACKUP_TEXTFILE_PATH;
   const ageHours = env.BACKUP_MAX_AGE_HOURS ?? '26';
-  if (typeof root !== 'string' || !isAbsolute(root) || root.includes('\n') ||
-      typeof output !== 'string' || !isAbsolute(output) ||
-      basename(output) !== 'gym_api_backup.prom' ||
-      !/^[0-9]{1,3}$/.test(ageHours)) {
+  if (
+    typeof root !== 'string' ||
+    !isAbsolute(root) ||
+    root.includes('\n') ||
+    typeof output !== 'string' ||
+    !isAbsolute(output) ||
+    basename(output) !== 'gym_api_backup.prom' ||
+    !/^[0-9]{1,3}$/.test(ageHours)
+  ) {
     throw new Error('Invalid backup health configuration');
   }
   const hours = Number(ageHours);
@@ -27,8 +32,7 @@ export function parseBackupHealthConfig(env) {
 }
 
 export function renderBackupHealthMetrics(healthy, timestamp) {
-  if (typeof healthy !== 'boolean' ||
-      !Number.isSafeInteger(timestamp) || timestamp < 0) {
+  if (typeof healthy !== 'boolean' || !Number.isSafeInteger(timestamp) || timestamp < 0) {
     throw new Error('Invalid backup health sample');
   }
   // Fixed unlabeled metrics. Never expose archive names, paths or credentials.

@@ -102,7 +102,7 @@ that no user tables exist, then performs a single-transaction PostgreSQL
 restore. It checks that `public.users` and
 `public._prisma_migrations` exist afterwards. It does **not** restore
 avatars. In staging, extract the avatar archive into a separately
-provisioned *disposable* volume after manual review.
+provisioned _disposable_ volume after manual review.
 
 ## Monitoring (optional; never enabled by CI)
 

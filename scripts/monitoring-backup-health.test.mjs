@@ -2,7 +2,9 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import {
-  collectBackupHealth, parseBackupHealthConfig, renderBackupHealthMetrics,
+  collectBackupHealth,
+  parseBackupHealthConfig,
+  renderBackupHealthMetrics,
 } from './monitoring-backup-health.mjs';
 
 const config = {
@@ -41,12 +43,16 @@ test('publishes fixed numeric metrics without any private path', () => {
 
 test('healthy check publishes a successful snapshot', async () => {
   const calls = [];
-  const result = await collectBackupHealth(config, 1_800_000_000,
+  const result = await collectBackupHealth(
+    config,
+    1_800_000_000,
     async (root, hours) => {
       assert.equal(root, config.BACKUP_ROOT);
       assert.equal(hours, '26');
       return true;
-    }, async (output, data) => calls.push({ output, data }));
+    },
+    async (output, data) => calls.push({ output, data }),
+  );
   assert.deepEqual(result, { published: true, verified: true });
   assert.equal(calls.length, 1);
   assert.equal(calls[0].output, config.BACKUP_TEXTFILE_PATH);
@@ -55,15 +61,33 @@ test('healthy check publishes a successful snapshot', async () => {
 
 test('failed verification publishes an unhealthy snapshot, not a false success', async () => {
   let saved = '';
-  const result = await collectBackupHealth(config, 1_800_000_020,
-    () => false, async (_, data) => { saved = data; });
+  const result = await collectBackupHealth(
+    config,
+    1_800_000_020,
+    () => false,
+    async (_, data) => {
+      saved = data;
+    },
+  );
   assert.deepEqual(result, { published: true, verified: false });
   assert.match(saved, /gym_api_backup_verified 0\n/);
 });
 
 test('publication errors fail closed rather than reporting a verified backup', async () => {
-  await assert.rejects(collectBackupHealth(config, 1_800_000_000,
-    () => true, () => { throw new Error('write failed'); }), /write failed/);
-  await assert.rejects(collectBackupHealth({ ...config, BACKUP_ROOT: '' },
-    1_800_000_000, () => { throw new Error('should not run'); }));
+  await assert.rejects(
+    collectBackupHealth(
+      config,
+      1_800_000_000,
+      () => true,
+      () => {
+        throw new Error('write failed');
+      },
+    ),
+    /write failed/,
+  );
+  await assert.rejects(
+    collectBackupHealth({ ...config, BACKUP_ROOT: '' }, 1_800_000_000, () => {
+      throw new Error('should not run');
+    }),
+  );
 });
