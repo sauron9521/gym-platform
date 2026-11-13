@@ -182,3 +182,13 @@ transforming password bytes, and displays accessible field errors. It keeps
 the existing MFA-pending safeguard and verifies the session through
 `GET /users/me` before routing to the dashboard. Backend authorization,
 rate limiting and credentials checks remain authoritative.
+
+## Registration form (React Hook Form + Zod)
+
+The public /register form uses React Hook Form and Zod 4 for email normalization,
+minimum password length and matching confirmation. Field-level messages are
+accessible via aria-invalid and aria-describedby. Only email and the unchanged
+password are sent through the typed same-origin POST /auth/register. On HTTP 201,
+the form clears credentials and preserves the distinction between accepted
+verification email submission and successful email verification. NestJS remains
+authoritative for password strength, account creation and rate limiting.

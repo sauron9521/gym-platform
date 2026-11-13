@@ -1,16 +1,18 @@
 'use client';
 
-import { useState, type FormEvent } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useForm } from 'react-hook-form';
 
 import { webApi } from '@/shared/api/client';
 import { Button } from '@/shared/ui/button';
 import {
   getRegistrationEmailMessage,
   getRegistrationErrorMessage,
-  validateRegistrationInput,
   type VerificationEmailStatus,
 } from '../lib/registration-flow';
+import { registrationSchema, type RegistrationValues } from '../lib/registration-schema';
 
 type RegistrationSuccess = {
   email: string;
@@ -18,47 +20,41 @@ type RegistrationSuccess = {
 };
 
 export function SignUpForm() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmation, setConfirmation] = useState('');
-  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<RegistrationSuccess | null>(null);
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors, isSubmitting },
+  } = useForm<RegistrationValues>({
+    resolver: zodResolver(registrationSchema),
+    defaultValues: { email: '', password: '', confirmation: '' },
+    mode: 'onBlur',
+    reValidateMode: 'onChange',
+  });
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (submitting || success) return;
-
-    const validationError = validateRegistrationInput(email, password, confirmation);
-    if (validationError) {
-      setError(validationError);
-      return;
-    }
-
-    setSubmitting(true);
+  async function submit(values: RegistrationValues) {
+    if (success) return;
     setError(null);
     try {
-      // The backend owns password strength rules, email uniqueness,
-      // session creation, and verification email delivery status.
+      // The backend owns password strength, email uniqueness and verification delivery.
       const { data, response } = await webApi.POST('/auth/register', {
-        body: { email: email.trim(), password },
+        body: { email: values.email, password: values.password },
       });
       if (response.status !== 201 || !data) {
         setError(getRegistrationErrorMessage(response.status));
         return;
       }
 
-      // Never retain the submitted password after a successful request.
-      setPassword('');
-      setConfirmation('');
+      // Clear submitted credentials immediately after successful registration.
+      reset();
       setSuccess({
         email: data.email,
         verificationEmailStatus: data.verificationEmailStatus,
       });
     } catch {
       setError('Немає з’єднання з API. Спробуйте ще раз.');
-    } finally {
-      setSubmitting(false);
     }
   }
 
@@ -89,23 +85,27 @@ export function SignUpForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="mt-8 space-y-5">
+    <form onSubmit={handleSubmit(submit)} noValidate className="mt-8 space-y-5">
       <div className="space-y-2">
         <label htmlFor="register-email" className="block text-sm font-medium">
           Електронна пошта
         </label>
         <input
           id="register-email"
-          name="email"
           type="email"
           autoComplete="email"
-          required
           maxLength={254}
-          disabled={submitting}
-          value={email}
-          onChange={(event) => setEmail(event.target.value)}
+          disabled={isSubmitting}
+          aria-invalid={Boolean(errors.email)}
+          aria-describedby={errors.email ? 'register-email-error' : undefined}
+          {...register('email', { onChange: () => setError(null) })}
           className="h-11 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
         />
+        {errors.email && (
+          <p id="register-email-error" role="alert" className="text-xs text-destructive">
+            {errors.email.message}
+          </p>
+        )}
       </div>
       <div className="space-y-2">
         <label htmlFor="register-password" className="block text-sm font-medium">
@@ -113,20 +113,26 @@ export function SignUpForm() {
         </label>
         <input
           id="register-password"
-          name="password"
           type="password"
           autoComplete="new-password"
-          required
-          minLength={8}
-          disabled={submitting}
-          value={password}
-          onChange={(event) => setPassword(event.target.value)}
-          aria-describedby="register-password-hint"
+          disabled={isSubmitting}
+          aria-invalid={Boolean(errors.password)}
+          aria-describedby={
+            errors.password
+              ? 'register-password-hint register-password-error'
+              : 'register-password-hint'
+          }
+          {...register('password', { onChange: () => setError(null) })}
           className="h-11 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
         />
         <p id="register-password-hint" className="text-xs text-muted-foreground">
           Щонайменше 8 символів: великі й малі літери, цифра та спеціальний символ.
         </p>
+        {errors.password && (
+          <p id="register-password-error" role="alert" className="text-xs text-destructive">
+            {errors.password.message}
+          </p>
+        )}
       </div>
       <div className="space-y-2">
         <label htmlFor="register-confirmation" className="block text-sm font-medium">
@@ -134,24 +140,27 @@ export function SignUpForm() {
         </label>
         <input
           id="register-confirmation"
-          name="confirmation"
           type="password"
           autoComplete="new-password"
-          required
-          minLength={8}
-          disabled={submitting}
-          value={confirmation}
-          onChange={(event) => setConfirmation(event.target.value)}
+          disabled={isSubmitting}
+          aria-invalid={Boolean(errors.confirmation)}
+          aria-describedby={errors.confirmation ? 'register-confirmation-error' : undefined}
+          {...register('confirmation', { onChange: () => setError(null) })}
           className="h-11 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
         />
+        {errors.confirmation && (
+          <p id="register-confirmation-error" role="alert" className="text-xs text-destructive">
+            {errors.confirmation.message}
+          </p>
+        )}
       </div>
       {error && (
         <p role="alert" className="text-sm text-destructive">
           {error}
         </p>
       )}
-      <Button type="submit" disabled={submitting} className="w-full">
-        {submitting ? 'Створюємо обліковий запис…' : 'Зареєструватися'}
+      <Button type="submit" disabled={isSubmitting} className="w-full">
+        {isSubmitting ? 'Створюємо обліковий запис…' : 'Зареєструватися'}
       </Button>
     </form>
   );

@@ -5,23 +5,41 @@ import { test } from 'node:test';
 import {
   getRegistrationEmailMessage,
   getRegistrationErrorMessage,
-  validateRegistrationInput,
 } from '../src/features/auth/lib/registration-flow.ts';
+import { registrationSchema } from '../src/features/auth/lib/registration-schema.ts';
 
-test('registration checks basics without changing the password', () => {
-  assert.equal(
-    validateRegistrationInput(' ', 'Password1!', 'Password1!'),
-    'Вкажіть електронну пошту.',
-  );
-  assert.match(validateRegistrationInput('user@example.test', 'short', 'short'), /8 символів/);
-  assert.match(
-    validateRegistrationInput('user@example.test', 'Password1!', 'Password1?'),
-    /не збігаються/,
-  );
-  assert.equal(
-    validateRegistrationInput('  user@example.test  ', 'Password1!', 'Password1!'),
-    null,
-  );
+const valid = {
+  email: 'user@example.test',
+  password: 'Password1!',
+  confirmation: 'Password1!',
+};
+
+test('registration Zod schema trims email but does not transform credentials', () => {
+  const result = registrationSchema.parse({ ...valid, email: '  user@example.test  ' });
+  assert.equal(result.email, valid.email);
+  assert.equal(result.password, valid.password);
+  assert.equal(result.confirmation, valid.confirmation);
+});
+
+test('registration rejects missing email, short passwords and invalid email addresses', () => {
+  for (const change of [
+    { email: ' ' },
+    { email: 'not-an-email' },
+    { email: 'a'.repeat(250) + '@mail.com' },
+    { password: 'short', confirmation: 'short' },
+    { password: '        ', confirmation: '        ' },
+    { confirmation: '' },
+  ]) {
+    assert.equal(registrationSchema.safeParse({ ...valid, ...change }).success, false);
+  }
+});
+
+test('registration reports mismatched passwords on confirmation field', () => {
+  const result = registrationSchema.safeParse({ ...valid, confirmation: 'Password1?' });
+  assert.equal(result.success, false);
+  if (result.success) return;
+  assert.equal(result.error.issues[0]?.path[0], 'confirmation');
+  assert.match(result.error.issues[0]?.message, /не збігаються/);
 });
 
 test('registration errors distinguish duplicate email, rate limiting and CSRF', () => {
@@ -42,7 +60,7 @@ test('registration success does not treat email submission as confirmed delivery
   );
 });
 
-test('sign-up uses generated API contract without sending roles or storing tokens', async () => {
+test('sign-up uses RHF and typed API without roles or credential persistence', async () => {
   const form = await readFile(
     new URL('../src/features/auth/ui/sign-up-form.tsx', import.meta.url),
     'utf8',
@@ -51,12 +69,15 @@ test('sign-up uses generated API contract without sending roles or storing token
     new URL('../../../packages/api-client/src/generated/schema.d.ts', import.meta.url),
     'utf8',
   );
-
-  assert.match(form, /webApi\.POST\('\/auth\/register'/);
-  assert.match(form, /body: \{ email: email\.trim\(\), password \}/);
-  assert.match(form, /response\.status !== 201/);
-  assert.match(form, /data\.verificationEmailStatus/);
-  assert.doesNotMatch(form, /localStorage|sessionStorage|document\.cookie/);
+  assert.match(form, /useForm<RegistrationValues>/);
+  assert.match(form, /zodResolver\(registrationSchema\)/);
+  assert.match(form, /handleSubmit\(submit\)/);
+  assert.match(form, /webApi.POST\('\/auth\/register'/);
+  assert.match(form, /body: \{ email: values\.email, password: values\.password \}/);
+  assert.match(form, /response.status !== 201/);
+  assert.match(form, /data.verificationEmailStatus/);
+  assert.match(form, /reset\(\)/);
+  assert.doesNotMatch(form, /localStorage|sessionStorage|document.cookie/);
   assert.match(schema, /'\/auth\/register': \{/);
   assert.match(schema, /verificationEmailStatus: 'SUBMITTED' \| 'RETRY_REQUIRED'/);
 });
