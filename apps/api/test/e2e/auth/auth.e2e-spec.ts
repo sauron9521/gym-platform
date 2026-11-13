@@ -4,8 +4,8 @@ import type { INestApplication } from '@nestjs/common';
 import { StandardSchemaValidationPipe } from '@nestjs/common';
 import { EmailVerificationService, SignInService } from '@nestjs/authentication';
 import request from 'supertest';
-import { AuthController } from '../src/modules/auth/controllers/index.js';
-import { CredentialsService } from '../src/modules/auth/services/index.js';
+import { AuthController } from '../../../src/modules/auth/controllers/index.js';
+import { CredentialsService } from '../../../src/modules/auth/services/index.js';
 
 describe('AuthController (HTTP)', () => {
   let app: INestApplication;

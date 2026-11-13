@@ -7,14 +7,14 @@ import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
-import { AuthController } from '../src/modules/auth/controllers/auth.controller.js';
-import { EmailVerificationController } from '../src/modules/auth/controllers/email-verification.controller.js';
-import { TokensController } from '../src/modules/auth/controllers/tokens.controller.js';
-import { CredentialsService } from '../src/modules/auth/services/credentials.service.js';
-import { AuthNoStoreMiddleware } from '../src/modules/auth/middleware/auth-no-store.middleware.js';
-import { VerificationResendRateLimitGuard } from '../src/modules/auth/guards/verification-resend-rate-limit.guard.js';
-import { AuthAccountThrottleService } from '../src/modules/auth/services/auth-account-throttle.service.js';
-import { DistributedThrottlerStorage } from '../src/common/rate-limit/distributed-throttler.storage.js';
+import { AuthController } from '../../../src/modules/auth/controllers/auth.controller.js';
+import { EmailVerificationController } from '../../../src/modules/auth/controllers/email-verification.controller.js';
+import { TokensController } from '../../../src/modules/auth/controllers/tokens.controller.js';
+import { CredentialsService } from '../../../src/modules/auth/services/credentials.service.js';
+import { AuthNoStoreMiddleware } from '../../../src/modules/auth/middleware/auth-no-store.middleware.js';
+import { VerificationResendRateLimitGuard } from '../../../src/modules/auth/guards/verification-resend-rate-limit.guard.js';
+import { AuthAccountThrottleService } from '../../../src/modules/auth/services/auth-account-throttle.service.js';
+import { DistributedThrottlerStorage } from '../../../src/common/rate-limit/distributed-throttler.storage.js';
 
 describe('Auth endpoint throttling (HTTP)', () => {
   let app: INestApplication;
