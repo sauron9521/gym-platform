@@ -75,7 +75,9 @@ export function ProfileAvatar({ avatarUrl, displayName, email, onChanged }: Prop
   return (
     <section aria-label="Фото профілю" className="space-y-4 rounded-xl border p-6">
       <div className="flex items-center gap-5">
-        <div className="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-full bg-muted text-2xl font-semibold">
+        <div
+          className="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-full bg-muted text-2xl font-semibold"
+        >
           {source ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
@@ -97,7 +99,10 @@ export function ProfileAvatar({ avatarUrl, displayName, email, onChanged }: Prop
       </div>
       {signedOut ? (
         <p role="alert">
-          Сесію завершено. <Link href="/login" className="underline">Увійти повторно</Link>
+          Сесію завершено.{' '}
+          <Link href="/login" className="underline">
+            Увійти повторно
+          </Link>
         </p>
       ) : (
         <div className="space-y-3">
@@ -154,8 +159,16 @@ export function ProfileAvatar({ avatarUrl, displayName, email, onChanged }: Prop
           </div>
         </div>
       )}
-      {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
-      {message && <p role="status" className="text-sm">{message}</p>}
+      {error && (
+        <p role="alert" className="text-sm text-destructive">
+          {error}
+        </p>
+      )}
+      {message && (
+        <p role="status" className="text-sm">
+          {message}
+        </p>
+      )}
     </section>
   );
 }
