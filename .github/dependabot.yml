@@ -2,53 +2,53 @@
 # The npm entry discovers packages through pnpm-workspace.yaml and pnpm-lock.yaml.
 version: 2
 updates:
-  - package-ecosystem: "npm"
-    directory: "/"
+  - package-ecosystem: 'npm'
+    directory: '/'
     schedule:
-      interval: "weekly"
-      day: "wednesday"
-      time: "08:00"
-      timezone: "Europe/Kyiv"
+      interval: 'weekly'
+      day: 'wednesday'
+      time: '08:00'
+      timezone: 'Europe/Kyiv'
     open-pull-requests-limit: 5
     groups:
       patch-updates:
         applies-to: version-updates
         patterns:
-          - "*"
+          - '*'
         update-types:
-          - "patch"
+          - 'patch'
       dev-minor-updates:
         applies-to: version-updates
-        dependency-type: "development"
+        dependency-type: 'development'
         patterns:
-          - "*"
+          - '*'
         update-types:
-          - "minor"
+          - 'minor'
 
-  - package-ecosystem: "github-actions"
-    directory: "/"
+  - package-ecosystem: 'github-actions'
+    directory: '/'
     schedule:
-      interval: "weekly"
-      day: "wednesday"
-      time: "08:30"
-      timezone: "Europe/Kyiv"
+      interval: 'weekly'
+      day: 'wednesday'
+      time: '08:30'
+      timezone: 'Europe/Kyiv'
     open-pull-requests-limit: 3
     groups:
       actions-minor-patch:
         applies-to: version-updates
         patterns:
-          - "*"
+          - '*'
         update-types:
-          - "minor"
-          - "patch"
+          - 'minor'
+          - 'patch'
 
-  - package-ecosystem: "docker"
+  - package-ecosystem: 'docker'
     directories:
-      - "/apps/api"
-      - "/infra/docker"
+      - '/apps/api'
+      - '/infra/docker'
     schedule:
-      interval: "weekly"
-      day: "wednesday"
-      time: "09:00"
-      timezone: "Europe/Kyiv"
+      interval: 'weekly'
+      day: 'wednesday'
+      time: '09:00'
+      timezone: 'Europe/Kyiv'
     open-pull-requests-limit: 3
