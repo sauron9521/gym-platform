@@ -61,12 +61,6 @@ jobs:
       - name: Validate release and GHCR safety contracts (offline)
         run: node --test scripts/release-bundle.test.mjs scripts/ghcr-promotion.test.mjs scripts/release-supply-chain.test.mjs scripts/release-ci-gate.test.mjs
 
-      - name: Temporary canonical Prettier check for monitoring report test
-        run: |
-          echo "FORMATTED_START:scripts/monitoring-report.test.mjs"
-          pnpm exec prettier scripts/monitoring-report.test.mjs | node -e 'let s="";process.stdin.on("data",c=>s+=c);process.stdin.on("end",()=>console.log(JSON.stringify(s)))'
-          echo "FORMATTED_END:scripts/monitoring-report.test.mjs"
-
       - name: Check formatting
         run: pnpm format:check
 

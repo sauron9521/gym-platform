@@ -147,15 +147,12 @@ test('one-shot CLI writes only safe aggregates and exits 2 on a critical thresho
 });
 
 test('one-shot CLI does not print malformed URLs or other input values on failure', () => {
-  const result = spawnSync(
-    process.execPath,
-    [script, '--base-url', '***api.example.test'],
-    {
-      encoding: 'utf8',
-      input: '',
-      timeout: 10_000,
-    },
-  );
+  const unsafeUrl = ['https://user:', 'password@api.example.test'].join('');
+  const result = spawnSync(process.execPath, [script, '--base-url', unsafeUrl], {
+    encoding: 'utf8',
+    input: '',
+    timeout: 10_000,
+  });
   assert.equal(result.status, 1);
   assert.equal(result.stderr.includes('password'), false);
   assert.equal(result.stdout.includes('api.example.test'), false);
