@@ -2,6 +2,7 @@ import { createGymApiClient } from './client.js';
 import type { GymApiClient } from './client.js';
 
 type ClientOptions = NonNullable<Parameters<typeof createGymApiClient>[0]>;
+type HttpFetch = (request: Request) => Promise<Response>;
 
 export type AuthFailure = 'unauthenticated' | 'forbidden';
 export type AuthFailureListener = (failure: AuthFailure) => void | Promise<void>;
@@ -19,11 +20,11 @@ export function classifyAuthFailure(status: number): AuthFailure | null {
 }
 
 function observeAuthFailures(
-  send: typeof fetch,
+  send: HttpFetch,
   listener: AuthFailureListener | undefined,
-): typeof fetch {
-  return async (input, init) => {
-    const response = await send(input, init);
+): HttpFetch {
+  return async (request) => {
+    const response = await send(request);
     const failure = classifyAuthFailure(response.status);
     if (failure) await listener?.(failure);
     return response;
@@ -75,8 +76,8 @@ export function createBearerTokenClient(
 
   const send = clientOptions.fetch ?? globalThis.fetch;
 
-  const withBearer: typeof fetch = async (input, init) => {
-    const request = new Request(input, init);
+  const withBearer: HttpFetch = async (input) => {
+    const request = new Request(input);
 
     // Never send a caller-supplied access token to an unrelated origin.
     if (new URL(request.url).origin !== base.origin) {
