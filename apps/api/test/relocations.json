@@ -1,0 +1,4 @@
+{
+  "test/body-measurements.e2e-spec.ts": "test/e2e/body-measurements/body-measurements.e2e-spec.ts",
+  "test/integration/users.repository.integration.e2e-spec.ts": "test/integration/users/users.repository.integration.e2e-spec.ts"
+}

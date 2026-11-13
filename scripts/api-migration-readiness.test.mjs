@@ -13,6 +13,7 @@ import {
   REQUIRED_ARTIFACTS,
   STAGING_BLOCKERS,
   verifySourceInventory,
+  validateTestRelocations,
 } from './api-migration-readiness.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
@@ -54,6 +55,31 @@ test('source inventory rejects duplicates, path traversal and missing imported p
       root,
     ),
   );
+});
+
+test('legacy path relocation map validates test-only destinations without changing provenance', () => {
+  const originalPaths = new Set(inventory.files.map((item) => item.path));
+  const valid = {
+    'test/body-measurements.e2e-spec.ts':
+      'test/e2e/body-measurements/body-measurements.e2e-spec.ts',
+  };
+  assert.deepEqual(validateTestRelocations(valid, originalPaths), valid);
+
+  for (const invalid of [
+    { 'src/app.module.ts': 'test/e2e/app.e2e-spec.ts' },
+    { 'test/missing.e2e-spec.ts': 'test/e2e/auth/missing.e2e-spec.ts' },
+    { 'test/body-measurements.e2e-spec.ts': 'test/../secrets.txt' },
+    { 'test/body-measurements.e2e-spec.ts': 'src/app.module.ts' },
+    { 'test/body-measurements.e2e-spec.ts': 'test/body-measurements.e2e-spec.ts' },
+    { 'test/body-measurements.e2e-spec.ts': 'test/app.e2e-spec.ts' },
+    {
+      'test/body-measurements.e2e-spec.ts': 'test/e2e/duplicate.e2e-spec.ts',
+      'test/users.e2e-spec.ts': 'test/e2e/duplicate.e2e-spec.ts',
+    },
+  ]) {
+    assert.throws(() => validateTestRelocations(invalid, originalPaths));
+  }
+  assert.throws(() => validateTestRelocations([], originalPaths));
 });
 
 test('required infrastructure is checked and staging omissions are explicit', () => {
