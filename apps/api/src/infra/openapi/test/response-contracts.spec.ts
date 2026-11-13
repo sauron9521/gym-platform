@@ -1,6 +1,8 @@
 import {
   archivedExerciseResponseSchema,
   registrationResponseSchema,
+  sessionSignInResponseSchema,
+  tokenPairResponseSchema,
   exerciseListResponseSchema,
   exerciseResponseSchema,
   exerciseTrainerAccessListResponseSchema,
@@ -74,6 +76,25 @@ describe('OpenAPI response projections vs Prisma selects', () => {
     ]);
     expect(registrationResponseSchema.properties).not.toHaveProperty('passwordHash');
     expect(registrationResponseSchema.properties).not.toHaveProperty('deletedAt');
+  });
+
+  it('documents browser-session and native-token auth responses without secrets', () => {
+    expect(sessionSignInResponseSchema).toEqual({
+      type: 'object',
+      properties: { mfaRequired: { type: 'boolean' } },
+      required: ['mfaRequired'],
+      additionalProperties: false,
+    });
+    expect(tokenPairResponseSchema).toEqual({
+      type: 'object',
+      properties: {
+        accessToken: { type: 'string' },
+        refreshToken: { type: 'string' },
+        expiresIn: { type: 'integer' },
+      },
+      required: ['accessToken', 'refreshToken', 'expiresIn'],
+      additionalProperties: false,
+    });
   });
 
   it('covers the exercise select without leaking unrelated fields', () => {

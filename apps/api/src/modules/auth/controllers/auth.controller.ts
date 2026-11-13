@@ -10,8 +10,11 @@ import {
 import { AuthNoStoreInterceptor } from '../interceptors/auth-no-store.interceptor.js';
 import { EmailVerificationService, Public, SignInService } from '@nestjs/authentication';
 import { Throttle } from '@nestjs/throttler';
-import { ApiCreatedResponse, ApiTags } from '@nestjs/swagger';
-import { registrationResponseSchema } from '#src/infra/openapi/response-contracts';
+import { ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
+import {
+  registrationResponseSchema,
+  sessionSignInResponseSchema,
+} from '#src/infra/openapi/response-contracts';
 import { SignInDto, SignUpDto } from '../dto/auth.dto.js';
 import { CredentialsService } from '../services/index.js';
 
@@ -53,6 +56,7 @@ export class AuthController {
   @Throttle({ default: { limit: 3, ttl: 60000 } })
   @Post('login')
   @HttpCode(200)
+  @ApiOkResponse({ schema: sessionSignInResponseSchema })
   async signIn(@Body() body: SignInDto) {
     const user = await this.credentialsService.verify(body.email, body.password);
     if (!user) {

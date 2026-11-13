@@ -21,6 +21,8 @@ type Schema = {
   $ref?: string;
   type?: string;
   format?: string;
+  writeOnly?: boolean;
+  minLength?: number;
   nullable?: boolean;
   enum?: unknown[];
   properties?: Record<string, Schema>;
@@ -36,6 +38,7 @@ type OpenApiDocument = {
     Record<
       string,
       {
+        requestBody?: { content?: Record<string, { schema?: Schema }> };
         responses?: Record<
           string,
           {
@@ -250,6 +253,51 @@ describe('OpenAPI / HTTP contract regression (PostgreSQL)', () => {
       responseSchema(document, '/exercises', 'get', 200),
       document,
     );
+  });
+
+  it('publishes complete auth request fields and exact login/token responses', () => {
+    const cases = [
+      ['/auth/login', 'SignInDto', ['email', 'password']],
+      ['/auth/register', 'SignUpDto', ['email', 'password']],
+      ['/auth/token', 'SignInDto', ['email', 'password']],
+      ['/auth/token/refresh', 'RefreshTokenDto', ['refreshToken']],
+      ['/auth/token/revoke', 'RefreshTokenDto', ['refreshToken']],
+      ['/auth/password-reset/forgot', 'EmailDto', ['email']],
+      ['/auth/password-reset/reset', 'ResetPasswordDto', ['token', 'password']],
+      ['/auth/email/verify', 'VerificationTokenDto', ['token']],
+    ] as const;
+
+    for (const [path, name, fields] of cases) {
+      const request =
+        document.paths?.[path]?.post?.requestBody?.content?.['application/json']?.schema;
+      expect(request?.$ref, `Missing request DTO on ${path}`).toBe(`#/components/schemas/${name}`);
+      const dto = document.components?.schemas?.[name];
+      expect(dto?.type).toBe('object');
+      expect(dto?.required?.slice().sort()).toEqual([...fields].sort());
+      expect(Object.keys(dto?.properties ?? {}).sort()).toEqual([...fields].sort());
+      for (const field of fields) {
+        expect(dto?.properties?.[field]?.type).toBe('string');
+      }
+    }
+
+    expect(document.components?.schemas?.SignInDto?.properties?.email?.format).toBe('email');
+    expect(document.components?.schemas?.SignInDto?.properties?.password?.writeOnly).toBe(true);
+    expect(document.components?.schemas?.RefreshTokenDto?.properties?.refreshToken?.writeOnly).toBe(
+      true,
+    );
+
+    const login = responseSchema(document, '/auth/login', 'post', 200);
+    expect(login.required).toEqual(['mfaRequired']);
+    expect(login.properties?.mfaRequired?.type).toBe('boolean');
+
+    for (const path of ['/auth/token', '/auth/token/refresh']) {
+      const tokenPair = responseSchema(document, path, 'post', 200);
+      expect(tokenPair.required).toEqual(['accessToken', 'refreshToken', 'expiresIn']);
+      expect(tokenPair.properties?.accessToken?.type).toBe('string');
+      expect(tokenPair.properties?.refreshToken?.type).toBe('string');
+      expect(tokenPair.properties?.expiresIn?.type).toBe('integer');
+      expect(tokenPair.additionalProperties).toBe(false);
+    }
   });
 
   it('does not publish the removed legacy root route in OpenAPI', () => {
