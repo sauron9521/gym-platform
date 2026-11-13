@@ -41,11 +41,12 @@ describe('renderCoverageSummary', () => {
 
   it('fails if a critical module disappears from the coverage report', () => {
     assert.throws(
-      () => renderCoverageSummary({
-        total: entry(1, 2),
-        '/runner/src/modules/auth/auth.service.ts': entry(1, 2),
-        '/runner/src/modules/workouts/workouts.service.ts': entry(1, 2),
-      }),
+      () =>
+        renderCoverageSummary({
+          total: entry(1, 2),
+          '/runner/src/modules/auth/auth.service.ts': entry(1, 2),
+          '/runner/src/modules/workouts/workouts.service.ts': entry(1, 2),
+        }),
       /Missing coverage entries for critical module: training-programs/,
     );
   });

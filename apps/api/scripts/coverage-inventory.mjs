@@ -2,9 +2,7 @@ import { appendFileSync, readFileSync, readdirSync, writeFileSync } from 'node:f
 import { join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const ignoredDirectories = new Set([
-  'generated', 'test', 'tests', '__tests__', '__fixtures__',
-]);
+const ignoredDirectories = new Set(['generated', 'test', 'tests', '__tests__', '__fixtures__']);
 
 function normalizePath(path) {
   return path.replaceAll('\\', '/').replace(/^\.\//, '');
@@ -84,9 +82,9 @@ export function buildCoverageInventory(sourcePaths, summary) {
     throw new Error('Coverage report contains no production source file entries');
   }
 
-  const candidates = [...new Set(
-    sourcePaths.map(normalizePath).filter(isProductionSourcePath),
-  )].sort();
+  const candidates = [
+    ...new Set(sourcePaths.map(normalizePath).filter(isProductionSourcePath)),
+  ].sort();
   if (candidates.length === 0) throw new Error('No eligible production source files found');
 
   const measuredPaths = candidates.filter((path) => measured.has(path));
@@ -117,14 +115,19 @@ export function renderCoverageInventory(inventory, maxPaths = 40) {
   return [
     '### Unit coverage source inventory',
     '',
-    '**' + inventory.measured + ' of ' + inventory.eligible +
+    '**' +
+      inventory.measured +
+      ' of ' +
+      inventory.eligible +
       '** eligible production source files appear in the unit-test V8 coverage summary; **' +
-      inventory.unmeasured + '** do not.',
+      inventory.unmeasured +
+      '** do not.',
     '',
     '| Scope | Eligible files | Measured files | Unmeasured files |',
     '| --- | ---: | ---: | ---: |',
-    ...inventory.scopes.map(({ scope, eligible, measured, unmeasured }) =>
-      '| ' + scope + ' | ' + eligible + ' | ' + measured + ' | ' + unmeasured + ' |',
+    ...inventory.scopes.map(
+      ({ scope, eligible, measured, unmeasured }) =>
+        '| ' + scope + ' | ' + eligible + ' | ' + measured + ' | ' + unmeasured + ' |',
     ),
     '',
     '#### Source files absent from unit coverage (first ' + shown.length + ')',
@@ -133,8 +136,16 @@ export function renderCoverageInventory(inventory, maxPaths = 40) {
       ? shown.map((path) => '- ' + tick + path + tick)
       : ['No eligible files are missing from the coverage report.']),
     ...(inventory.unmeasured > shown.length
-      ? ['', (inventory.unmeasured - shown.length) +
-          ' additional paths are in ' + tick + 'coverage/source-inventory.json' + tick + '.']
+      ? [
+          '',
+          inventory.unmeasured -
+            shown.length +
+            ' additional paths are in ' +
+            tick +
+            'coverage/source-inventory.json' +
+            tick +
+            '.',
+        ]
       : []),
     '',
     '> **Inventory, not zero coverage:** absent entries are not assumed to have 0% lines/branches. Some may be entry points or type-only modules. This report does not change Vitest thresholds or include patterns; integration/E2E coverage is separate.',

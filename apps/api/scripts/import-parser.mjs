@@ -27,8 +27,11 @@ export function parseModuleImports(source, filename = 'source.ts') {
     if (ts.isImportDeclaration(declaration)) {
       const clause = declaration.importClause;
       const named = clause?.namedBindings;
-      const inlineTypesOnly = !clause?.name && named &&
-        ts.isNamedImports(named) && named.elements.length > 0 &&
+      const inlineTypesOnly =
+        !clause?.name &&
+        named &&
+        ts.isNamedImports(named) &&
+        named.elements.length > 0 &&
         named.elements.every((binding) => binding.isTypeOnly);
       append(
         declaration,
@@ -38,8 +41,10 @@ export function parseModuleImports(source, filename = 'source.ts') {
       );
     } else if (ts.isExportDeclaration(declaration) && declaration.moduleSpecifier) {
       const named = declaration.exportClause;
-      const inlineTypesOnly = named &&
-        ts.isNamedExports(named) && named.elements.length > 0 &&
+      const inlineTypesOnly =
+        named &&
+        ts.isNamedExports(named) &&
+        named.elements.length > 0 &&
         named.elements.every((binding) => binding.isTypeOnly);
       append(
         declaration,
@@ -47,8 +52,10 @@ export function parseModuleImports(source, filename = 'source.ts') {
         Boolean(declaration.isTypeOnly || inlineTypesOnly),
         're-export',
       );
-    } else if (ts.isImportEqualsDeclaration(declaration) &&
-               ts.isExternalModuleReference(declaration.moduleReference)) {
+    } else if (
+      ts.isImportEqualsDeclaration(declaration) &&
+      ts.isExternalModuleReference(declaration.moduleReference)
+    ) {
       append(
         declaration,
         declaration.moduleReference.expression,
@@ -69,8 +76,7 @@ export function parseModuleImports(source, filename = 'source.ts') {
 
     if (ts.isCallExpression(node)) {
       const dynamicImport = node.expression.kind === ts.SyntaxKind.ImportKeyword;
-      const requireCall = ts.isIdentifier(node.expression) &&
-        node.expression.text === 'require';
+      const requireCall = ts.isIdentifier(node.expression) && node.expression.text === 'require';
       if (dynamicImport || requireCall) {
         const argument = node.arguments[0];
         if (argument && ts.isStringLiteralLike(argument)) {

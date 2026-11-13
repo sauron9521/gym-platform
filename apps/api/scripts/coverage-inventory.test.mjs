@@ -11,33 +11,37 @@ import {
 } from './coverage-inventory.mjs';
 
 const covered = { lines: { covered: 2, total: 4 } };
-const summary = (paths) => Object.fromEntries([
-  ['total', covered],
-  ...paths.map((path) => [path, covered]),
-]);
+const summary = (paths) =>
+  Object.fromEntries([['total', covered], ...paths.map((path) => [path, covered])]);
 
 describe('coverage source inventory', () => {
   it('normalizes POSIX, Windows and relative source paths without double counting', () => {
-    const inventory = buildCoverageInventory([
-      'src/modules/auth/services/auth.service.ts',
-      'src/modules/auth/services/auth.service.ts',
-      'src/modules/training-programs/services/program.service.ts',
-      'src/main.ts',
-    ], summary([
-      '/home/runner/work/app/src/modules/auth/services/auth.service.ts',
-      'C:\\dev\\app\\src\\main.ts',
-    ]));
+    const inventory = buildCoverageInventory(
+      [
+        'src/modules/auth/services/auth.service.ts',
+        'src/modules/auth/services/auth.service.ts',
+        'src/modules/training-programs/services/program.service.ts',
+        'src/main.ts',
+      ],
+      summary([
+        '/home/runner/work/app/src/modules/auth/services/auth.service.ts',
+        'C:\\dev\\app\\src\\main.ts',
+      ]),
+    );
 
     assert.equal(inventory.eligible, 3);
     assert.equal(inventory.measured, 2);
     assert.deepEqual(inventory.unmeasuredPaths, [
       'src/modules/training-programs/services/program.service.ts',
     ]);
-    assert.deepEqual(inventory.scopes, [
-      { scope: 'modules/auth', eligible: 1, measured: 1, unmeasured: 0 },
-      { scope: 'modules/training-programs', eligible: 1, measured: 0, unmeasured: 1 },
-      { scope: 'main.ts', eligible: 1, measured: 1, unmeasured: 0 },
-    ].sort((a, b) => a.scope.localeCompare(b.scope)));
+    assert.deepEqual(
+      inventory.scopes,
+      [
+        { scope: 'modules/auth', eligible: 1, measured: 1, unmeasured: 0 },
+        { scope: 'modules/training-programs', eligible: 1, measured: 0, unmeasured: 1 },
+        { scope: 'main.ts', eligible: 1, measured: 1, unmeasured: 0 },
+      ].sort((a, b) => a.scope.localeCompare(b.scope)),
+    );
   });
 
   it('excludes specs, declarations, generated files, barrels and type-only folders', () => {
@@ -103,10 +107,7 @@ describe('coverage source inventory', () => {
   it('does not mistake a covered test file for a measured production file', () => {
     const inventory = buildCoverageInventory(
       ['src/modules/auth/auth.service.ts', 'src/modules/auth/test/auth.spec.ts'],
-      summary([
-        'src/modules/auth/auth.service.ts',
-        'src/modules/auth/test/auth.spec.ts',
-      ]),
+      summary(['src/modules/auth/auth.service.ts', 'src/modules/auth/test/auth.spec.ts']),
     );
     assert.equal(inventory.measured, 1);
     assert.equal(inventory.eligible, 1);
@@ -114,12 +115,15 @@ describe('coverage source inventory', () => {
   });
 
   it('renders a capped, deterministic Markdown inventory without inventing coverage percentages', () => {
-    const inventory = buildCoverageInventory([
-      'src/modules/auth/services/auth.service.ts',
-      'src/modules/auth/services/session.service.ts',
-      'src/modules/auth/services/token.service.ts',
-      'src/modules/workouts/workouts.service.ts',
-    ], summary(['src/modules/workouts/workouts.service.ts']));
+    const inventory = buildCoverageInventory(
+      [
+        'src/modules/auth/services/auth.service.ts',
+        'src/modules/auth/services/session.service.ts',
+        'src/modules/auth/services/token.service.ts',
+        'src/modules/workouts/workouts.service.ts',
+      ],
+      summary(['src/modules/workouts/workouts.service.ts']),
+    );
     const markdown = renderCoverageInventory(inventory, 2);
 
     assert.match(markdown, /1 of 4/);

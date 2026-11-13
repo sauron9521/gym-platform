@@ -19,7 +19,8 @@ function walk(dir) {
     .flatMap((entry) => {
       const path = join(dir, entry.name);
       return entry.isDirectory() ? walk(path) : entry.isFile() ? [path] : [];
-    }).sort();
+    })
+    .sort();
 }
 
 function outside(directory, target) {
@@ -82,23 +83,31 @@ export function checkFeatureDependencies(repositoryRoot) {
   const known = new Set(modules);
   const runtime = new Map(modules.map((name) => [name, new Set()]));
   const nestModules = new Map(modules.map((name) => [name, new Set()]));
-  const moduleSources = new Map(modules.map((name) => [
-    name,
-    readFileSync(join(modulesRoot, name, name + '.module.ts'), 'utf8'),
-  ]));
+  const moduleSources = new Map(
+    modules.map((name) => [
+      name,
+      readFileSync(join(modulesRoot, name, name + '.module.ts'), 'utf8'),
+    ]),
+  );
   const errors = [];
 
   for (const name of modules) {
-    const files = walk(join(modulesRoot, name)).filter((file) =>
-      file.endsWith('.ts') && !relative(join(modulesRoot, name), file).split(sep).includes('test'),
+    const files = walk(join(modulesRoot, name)).filter(
+      (file) =>
+        file.endsWith('.ts') &&
+        !relative(join(modulesRoot, name), file).split(sep).includes('test'),
     );
 
     for (const file of files) {
       const display = relative(resolve(repositoryRoot), file).split(sep).join('/');
       for (const imported of parseModuleImports(readFileSync(file, 'utf8'), file)) {
         if (imported.path === null) {
-          errors.push(display + ':' + imported.line +
-            ': computed dynamic import cannot be checked statically; use a string literal');
+          errors.push(
+            display +
+              ':' +
+              imported.line +
+              ': computed dynamic import cannot be checked statically; use a string literal',
+          );
           continue;
         }
         let targetFeature;
@@ -123,20 +132,27 @@ export function checkFeatureDependencies(repositoryRoot) {
         if (!targetFeature || targetFeature === name) continue;
 
         if (relativeCrossFeature) {
-          errors.push(display + ": cross-feature relative import '" +
-            imported.path + "'; use #src/modules/<feature>/...");
+          errors.push(
+            display +
+              ": cross-feature relative import '" +
+              imported.path +
+              "'; use #src/modules/<feature>/...",
+          );
         }
 
         if (!known.has(targetFeature)) {
-          errors.push(display + ": unknown feature '" + targetFeature +
-            "' in import '" + imported.path + "'");
+          errors.push(
+            display + ": unknown feature '" + targetFeature + "' in import '" + imported.path + "'",
+          );
           continue;
         }
 
         if (!imported.typeOnly) {
           addEdge(runtime, name, targetFeature);
-          if (file === join(modulesRoot, name, name + '.module.ts') &&
-              targetPath === targetFeature + '.module') {
+          if (
+            file === join(modulesRoot, name, name + '.module.ts') &&
+            targetPath === targetFeature + '.module'
+          ) {
             addEdge(nestModules, name, targetFeature);
           }
         }
@@ -146,26 +162,41 @@ export function checkFeatureDependencies(repositoryRoot) {
         // reviewed exception, independent of whether the import is type-only.
         if (targetPath) {
           const isModule = targetPath === targetFeature + '.module';
-          const isServiceOrType = targetPath.startsWith('services/') ||
-            targetPath.startsWith('types/');
-          const approved = APPROVED_INTERNAL_IMPORTS.get(
-            targetFeature + '/' + targetPath,
-          )?.has(name);
+          const isServiceOrType =
+            targetPath.startsWith('services/') || targetPath.startsWith('types/');
+          const approved = APPROVED_INTERNAL_IMPORTS.get(targetFeature + '/' + targetPath)?.has(
+            name,
+          );
           if (!isModule && !isServiceOrType && !approved) {
-            errors.push(display + ": private cross-feature import '" +
-              imported.path + "'; expose a service/type contract or review an exception");
+            errors.push(
+              display +
+                ": private cross-feature import '" +
+                imported.path +
+                "'; expose a service/type contract or review an exception",
+            );
           }
 
-          const isDependencyInjected = !imported.typeOnly &&
-            (targetPath.startsWith('services/') ||
-             targetPath.startsWith('repositories/'));
+          const isDependencyInjected =
+            !imported.typeOnly &&
+            (targetPath.startsWith('services/') || targetPath.startsWith('repositories/'));
           if (isDependencyInjected) {
             const moduleImports = parseModuleImports(moduleSources.get(name), name + '.module.ts');
-            if (!moduleImports.some((entry) =>
-              entry.path === '#src/modules/' + targetFeature + '/' + targetFeature + '.module' &&
-              !entry.typeOnly)) {
-              errors.push(display + ": runtime provider import from '" + targetFeature +
-                "' requires its Nest module in " + name + '.module.ts');
+            if (
+              !moduleImports.some(
+                (entry) =>
+                  entry.path ===
+                    '#src/modules/' + targetFeature + '/' + targetFeature + '.module' &&
+                  !entry.typeOnly,
+              )
+            ) {
+              errors.push(
+                display +
+                  ": runtime provider import from '" +
+                  targetFeature +
+                  "' requires its Nest module in " +
+                  name +
+                  '.module.ts',
+              );
             }
           }
         }
@@ -188,7 +219,9 @@ export function checkFeatureDependencies(repositoryRoot) {
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const errors = checkFeatureDependencies(process.cwd());
   if (errors.length > 0) {
-    console.error('Feature dependency violations:\n' + errors.map((error) => ' - ' + error).join('\n'));
+    console.error(
+      'Feature dependency violations:\n' + errors.map((error) => ' - ' + error).join('\n'),
+    );
     process.exitCode = 1;
   } else {
     console.log('Feature dependency graph and import boundaries: OK');

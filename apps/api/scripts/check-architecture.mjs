@@ -56,11 +56,13 @@ export function checkArchitecture(repositoryRoot) {
         (file) => dirname(file) === join(directory, layer) && file.endsWith('.ts'),
       ),
     );
-    const controllers = filesUnder(controllerDir)
-      .filter((path) => dirname(path) === controllerDir && path.endsWith('.controller.ts'));
+    const controllers = filesUnder(controllerDir).filter(
+      (path) => dirname(path) === controllerDir && path.endsWith('.controller.ts'),
+    );
     const controllerNames = new Set(controllers.map((path) => basename(path)));
-    const testFiles = filesUnder(testDir)
-      .filter((path) => dirname(path) === testDir && path.endsWith('.spec.ts'));
+    const testFiles = filesUnder(testDir).filter(
+      (path) => dirname(path) === testDir && path.endsWith('.spec.ts'),
+    );
 
     const display = (file) => relative(root, file).split('\\').join('/');
 
@@ -75,9 +77,8 @@ export function checkArchitecture(repositoryRoot) {
     ];
     for (const file of featureFiles) {
       const parent = dirname(file);
-      if (parent !== directory && !domainLayers.some(
-        (layer) => parent === join(directory, layer),
-      )) continue;
+      if (parent !== directory && !domainLayers.some((layer) => parent === join(directory, layer)))
+        continue;
 
       for (const [suffix, folder] of roleFolders) {
         if (basename(file).endsWith(suffix) && parent !== join(directory, folder)) {
@@ -108,7 +109,10 @@ export function checkArchitecture(repositoryRoot) {
     }
 
     const registeredNames = registered
-      ? registered[1].split(',').map((value) => value.trim()).filter(Boolean)
+      ? registered[1]
+          .split(',')
+          .map((value) => value.trim())
+          .filter(Boolean)
       : [];
 
     if (new Set(registeredNames).size !== registeredNames.length) {
@@ -128,8 +132,11 @@ export function checkArchitecture(repositoryRoot) {
         errors.push(`${display(moduleFile)}: ${className} not registered`);
       }
 
-      if (!parseModuleImports(moduleSource, moduleFile).some((entry) =>
-        entry.path === expectedImport && !entry.typeOnly)) {
+      if (
+        !parseModuleImports(moduleSource, moduleFile).some(
+          (entry) => entry.path === expectedImport && !entry.typeOnly,
+        )
+      ) {
         errors.push(`${display(moduleFile)}: import controller directly from '${expectedImport}'`);
       }
 
@@ -161,12 +168,12 @@ export function checkArchitecture(repositoryRoot) {
 
     // Validate imports in domain layers as well as HTTP/controller boundaries.
     for (const file of [moduleFile, ...controllers, ...testFiles, ...domainFiles]) {
-      const sourceLayer = domainLayers.find(
-        (layer) => dirname(file) === join(directory, layer),
-      );
+      const sourceLayer = domainLayers.find((layer) => dirname(file) === join(directory, layer));
       for (const imported of parseModuleImports(readFileSync(file, 'utf8'), file)) {
         if (imported.path === null) {
-          errors.push(`${display(file)}:${imported.line}: computed dynamic import cannot be checked statically; use a string literal`);
+          errors.push(
+            `${display(file)}:${imported.line}: computed dynamic import cannot be checked statically; use a string literal`,
+          );
           continue;
         }
         const specifier = imported.path;
@@ -181,7 +188,9 @@ export function checkArchitecture(repositoryRoot) {
             errors.push(`${display(file)}: relative ESM import needs .js: '${specifier}'`);
           }
           if (isOutside(directory, resolve(dirname(file), specifier))) {
-            errors.push(`${display(file)}: cross-feature relative import '${specifier}'; use #src/*`);
+            errors.push(
+              `${display(file)}: cross-feature relative import '${specifier}'; use #src/*`,
+            );
           }
         }
 
@@ -199,10 +208,13 @@ export function checkArchitecture(repositoryRoot) {
             }
           }
 
-          const forbidden = targetLayer === 'controllers' ||
+          const forbidden =
+            targetLayer === 'controllers' ||
             (sourceLayer !== 'services' && targetLayer === 'services');
           if (forbidden) {
-            errors.push(`${display(file)}: ${sourceLayer}/ must not import ${targetLayer}/: '${specifier}'`);
+            errors.push(
+              `${display(file)}: ${sourceLayer}/ must not import ${targetLayer}/: '${specifier}'`,
+            );
           }
         }
       }
