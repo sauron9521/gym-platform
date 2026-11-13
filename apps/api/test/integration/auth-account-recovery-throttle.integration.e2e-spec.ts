@@ -1,11 +1,7 @@
 import { randomUUID } from 'node:crypto';
 
 import { PasswordHasher } from '@nestjs/authentication';
-import {
-  StandardSchemaValidationPipe,
-  ValidationPipe,
-  type INestApplication,
-} from '@nestjs/common';
+import { StandardSchemaValidationPipe, type INestApplication } from '@nestjs/common';
 import { Mailer } from '@nestjs/mail';
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
@@ -55,14 +51,7 @@ describe('Per-account recovery throttling (HTTP + PostgreSQL)', () => {
     // Simulate distinct real client IPs arriving via a trusted local proxy.
     // The 3/min IP throttler must not hide the independent 5/hour email rule.
     app.getHttpAdapter().getInstance().set('trust proxy', getTrustedProxies('loopback'));
-    app.useGlobalPipes(
-      new ValidationPipe({
-        whitelist: true,
-        transform: true,
-        forbidNonWhitelisted: true,
-      }),
-      new StandardSchemaValidationPipe(),
-    );
+    app.useGlobalPipes(new StandardSchemaValidationPipe());
     await app.init();
     prisma = app.get(PrismaService);
 

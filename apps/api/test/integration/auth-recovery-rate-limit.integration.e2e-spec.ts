@@ -5,11 +5,7 @@ import {
   PasswordHasher,
   PasswordResetService,
 } from '@nestjs/authentication';
-import {
-  StandardSchemaValidationPipe,
-  ValidationPipe,
-  type INestApplication,
-} from '@nestjs/common';
+import { StandardSchemaValidationPipe, type INestApplication } from '@nestjs/common';
 import { Mailer } from '@nestjs/mail';
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
@@ -67,14 +63,7 @@ describe('Auth recovery route throttling (real HTTP guard + PostgreSQL)', () => 
     // Deliberately DO NOT override ThrottlerGuard: these checks exercise
     // the real APP_GUARD, route @Throttle metadata and configured storage.
     app = moduleRef.createNestApplication();
-    app.useGlobalPipes(
-      new ValidationPipe({
-        whitelist: true,
-        transform: true,
-        forbidNonWhitelisted: true,
-      }),
-      new StandardSchemaValidationPipe(),
-    );
+    app.useGlobalPipes(new StandardSchemaValidationPipe());
     await app.init();
 
     prisma = app.get(PrismaService);
