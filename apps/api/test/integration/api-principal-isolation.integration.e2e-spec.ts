@@ -3,7 +3,6 @@ import { randomUUID } from 'node:crypto';
 import { PasswordHasher } from '@nestjs/authentication';
 import {
   StandardSchemaValidationPipe,
-  ValidationPipe,
   type INestApplication,
 } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
@@ -75,14 +74,7 @@ describe('API principal isolation (HTTP + PostgreSQL)', () => {
       .compile();
 
     app = moduleRef.createNestApplication();
-    app.useGlobalPipes(
-      new ValidationPipe({
-        whitelist: true,
-        transform: true,
-        forbidNonWhitelisted: true,
-      }),
-      new StandardSchemaValidationPipe(),
-    );
+    app.useGlobalPipes(new StandardSchemaValidationPipe());
     await app.init();
     prisma = app.get(PrismaService);
 
