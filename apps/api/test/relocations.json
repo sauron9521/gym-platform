@@ -2,6 +2,9 @@
   "test/auth-rate-limit.e2e-spec.ts": "test/e2e/auth/auth-rate-limit.e2e-spec.ts",
   "test/auth.e2e-spec.ts": "test/e2e/auth/auth.e2e-spec.ts",
   "test/body-measurements.e2e-spec.ts": "test/e2e/body-measurements/body-measurements.e2e-spec.ts",
+  "test/integration/auth-email-verification.integration.e2e-spec.ts": "test/integration/auth/auth-email-verification.integration.e2e-spec.ts",
+  "test/integration/auth-token-flow.integration.e2e-spec.ts": "test/integration/auth/auth-token-flow.integration.e2e-spec.ts",
+  "test/integration/auth.integration.e2e-spec.ts": "test/integration/auth/auth.integration.e2e-spec.ts",
   "test/integration/users.repository.integration.e2e-spec.ts": "test/integration/users/users.repository.integration.e2e-spec.ts",
   "test/tokens.controller.e2e-spec.ts": "test/e2e/auth/tokens.controller.e2e-spec.ts"
 }

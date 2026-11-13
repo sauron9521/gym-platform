@@ -5,8 +5,8 @@ import { PasswordHasher } from '@nestjs/authentication';
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { PrismaService } from '../../src/infra/database/index.js';
-import { useTestDatabase } from '../utility/test-db-helper.js';
+import { PrismaService } from '../../../src/infra/database/index.js';
+import { useTestDatabase } from '../../utility/test-db-helper.js';
 import { ThrottlerGuard } from '@nestjs/throttler';
 
 type TokenPair = {
@@ -56,7 +56,7 @@ describe('Auth token flow (HTTP + PostgreSQL)', () => {
       process.env.JWT_SECRET = randomUUID() + randomUUID();
     }
 
-    const { AppModule } = await import('../../src/app.module.js');
+    const { AppModule } = await import('../../../src/app.module.js');
     const moduleFixture = await Test.createTestingModule({
       imports: [AppModule],
     })
