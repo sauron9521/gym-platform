@@ -1,7 +1,7 @@
 import { PasswordHasher } from '@nestjs/authentication';
 import { Injectable } from '@nestjs/common';
 import { UsersRepository } from '#src/modules/users/repositories/users.repository';
-import type { SignUpDto } from '../dto/auth.dto.js';
+import type { SignUpInput } from '../dto/auth.schemas.js';
 import { toAuthenticatedUser } from '../mappers/auth-credential-user.mapper.js';
 import type { UserResponse } from '#src/modules/users/types/user-payload.types';
 
@@ -12,7 +12,7 @@ export class CredentialsService {
     private readonly passwordHasher: PasswordHasher,
   ) {}
 
-  async register(dto: SignUpDto): Promise<UserResponse> {
+  async register(dto: SignUpInput): Promise<UserResponse> {
     await this.usersRepository.checkEmail(dto.email);
     const hashedPassword = await this.passwordHasher.hash(dto.password);
     return this.usersRepository.create(dto.email, hashedPassword);

@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import type { INestApplication } from '@nestjs/common';
-import { ValidationPipe } from '@nestjs/common';
+import { StandardSchemaValidationPipe, ValidationPipe } from '@nestjs/common';
 import { PasswordHasher } from '@nestjs/authentication';
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
@@ -71,6 +71,7 @@ describe('Auth token flow (HTTP + PostgreSQL)', () => {
         transform: true,
         forbidNonWhitelisted: true,
       }),
+      new StandardSchemaValidationPipe(),
     );
 
     await app.init();

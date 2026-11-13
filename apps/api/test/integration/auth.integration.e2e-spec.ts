@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { Test } from '@nestjs/testing';
 import type { INestApplication } from '@nestjs/common';
-import { ValidationPipe } from '@nestjs/common';
+import { StandardSchemaValidationPipe, ValidationPipe } from '@nestjs/common';
 import { Mailer } from '@nestjs/mail';
 import { AppModule } from '../../src/app.module.js';
 import request from 'supertest';
@@ -39,6 +39,7 @@ describe('Authentication integration (e2e)', () => {
         transform: true,
         forbidNonWhitelisted: true,
       }),
+      new StandardSchemaValidationPipe(),
     );
 
     await app.init();

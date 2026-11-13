@@ -10,7 +10,12 @@ import {
 } from '@nestjs/common';
 import { AuthNoStoreInterceptor } from '../interceptors/auth-no-store.interceptor.js';
 import { Throttle } from '@nestjs/throttler';
-import { EmailDto, ResetPasswordDto } from '../dto/auth.dto.js';
+import {
+  emailSchema,
+  resetPasswordSchema,
+  type EmailInput,
+  type ResetPasswordInput,
+} from '../dto/auth.schemas.js';
 import { AccountRecoveryRateLimitGuard } from '../guards/account-recovery-rate-limit.guard.js';
 
 @Public()
@@ -23,14 +28,14 @@ export class PasswordResetController {
   @UseGuards(AccountRecoveryRateLimitGuard)
   @Post('forgot')
   @HttpCode(202)
-  async forgot(@Body() body: EmailDto): Promise<void> {
+  async forgot(@Body({ schema: emailSchema }) body: EmailInput): Promise<void> {
     return this.passwordResetService.request(body.email);
   }
 
   @Throttle({ default: { limit: 3, ttl: 60000 } })
   @Post('reset')
   @HttpCode(200)
-  async reset(@Body() body: ResetPasswordDto) {
+  async reset(@Body({ schema: resetPasswordSchema }) body: ResetPasswordInput) {
     const result = await this.passwordResetService.reset(body.token, body.password, {
       signIn: true,
     });

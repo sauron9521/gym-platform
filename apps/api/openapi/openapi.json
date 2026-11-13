@@ -10,7 +10,39 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/SignUpDto"
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+                  },
+                  "password": {
+                    "type": "string",
+                    "minLength": 8,
+                    "allOf": [
+                      {
+                        "type": "string",
+                        "pattern": "[a-z]"
+                      },
+                      {
+                        "type": "string",
+                        "pattern": "[A-Z]"
+                      },
+                      {
+                        "type": "string",
+                        "pattern": "[0-9]"
+                      },
+                      {
+                        "type": "string",
+                        "pattern": "[^a-zA-Z0-9]"
+                      }
+                    ],
+                    "writeOnly": true
+                  }
+                },
+                "required": ["email", "password"],
+                "additionalProperties": false
               }
             }
           }
@@ -77,7 +109,22 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/SignInDto"
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+                  },
+                  "password": {
+                    "type": "string",
+                    "minLength": 1,
+                    "pattern": "\\S",
+                    "writeOnly": true
+                  }
+                },
+                "required": ["email", "password"],
+                "additionalProperties": false
               }
             }
           }
@@ -113,7 +160,14 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/EmailDto"
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string"
+                  }
+                },
+                "required": ["email"],
+                "additionalProperties": false
               }
             }
           }
@@ -135,7 +189,39 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ResetPasswordDto"
+                "type": "object",
+                "properties": {
+                  "token": {
+                    "type": "string",
+                    "minLength": 1,
+                    "writeOnly": true
+                  },
+                  "password": {
+                    "type": "string",
+                    "minLength": 8,
+                    "allOf": [
+                      {
+                        "type": "string",
+                        "pattern": "[a-z]"
+                      },
+                      {
+                        "type": "string",
+                        "pattern": "[A-Z]"
+                      },
+                      {
+                        "type": "string",
+                        "pattern": "[0-9]"
+                      },
+                      {
+                        "type": "string",
+                        "pattern": "[^a-zA-Z0-9]"
+                      }
+                    ],
+                    "writeOnly": true
+                  }
+                },
+                "required": ["token", "password"],
+                "additionalProperties": false
               }
             }
           }
@@ -157,7 +243,16 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/VerificationTokenDto"
+                "type": "object",
+                "properties": {
+                  "token": {
+                    "type": "string",
+                    "minLength": 1,
+                    "writeOnly": true
+                  }
+                },
+                "required": ["token"],
+                "additionalProperties": false
               }
             }
           }
@@ -191,7 +286,22 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/SignInDto"
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+                  },
+                  "password": {
+                    "type": "string",
+                    "minLength": 1,
+                    "pattern": "\\S",
+                    "writeOnly": true
+                  }
+                },
+                "required": ["email", "password"],
+                "additionalProperties": false
               }
             }
           }
@@ -233,7 +343,16 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/RefreshTokenDto"
+                "type": "object",
+                "properties": {
+                  "refreshToken": {
+                    "type": "string",
+                    "minLength": 1,
+                    "writeOnly": true
+                  }
+                },
+                "required": ["refreshToken"],
+                "additionalProperties": false
               }
             }
           }
@@ -275,7 +394,16 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/RefreshTokenDto"
+                "type": "object",
+                "properties": {
+                  "refreshToken": {
+                    "type": "string",
+                    "minLength": 1,
+                    "writeOnly": true
+                  }
+                },
+                "required": ["refreshToken"],
+                "additionalProperties": false
               }
             }
           }
@@ -15005,85 +15133,6 @@
         "name": "__Host-sid"
       }
     },
-    "schemas": {
-      "SignUpDto": {
-        "type": "object",
-        "properties": {
-          "email": {
-            "type": "string",
-            "format": "email"
-          },
-          "password": {
-            "type": "string",
-            "minLength": 8,
-            "writeOnly": true
-          }
-        },
-        "required": ["email", "password"]
-      },
-      "SignInDto": {
-        "type": "object",
-        "properties": {
-          "email": {
-            "type": "string",
-            "format": "email"
-          },
-          "password": {
-            "type": "string",
-            "minLength": 1,
-            "writeOnly": true
-          }
-        },
-        "required": ["email", "password"]
-      },
-      "EmailDto": {
-        "type": "object",
-        "properties": {
-          "email": {
-            "type": "string",
-            "format": "email"
-          }
-        },
-        "required": ["email"]
-      },
-      "ResetPasswordDto": {
-        "type": "object",
-        "properties": {
-          "token": {
-            "type": "string",
-            "minLength": 1,
-            "writeOnly": true
-          },
-          "password": {
-            "type": "string",
-            "minLength": 8,
-            "writeOnly": true
-          }
-        },
-        "required": ["token", "password"]
-      },
-      "VerificationTokenDto": {
-        "type": "object",
-        "properties": {
-          "token": {
-            "type": "string",
-            "minLength": 1,
-            "writeOnly": true
-          }
-        },
-        "required": ["token"]
-      },
-      "RefreshTokenDto": {
-        "type": "object",
-        "properties": {
-          "refreshToken": {
-            "type": "string",
-            "minLength": 1,
-            "writeOnly": true
-          }
-        },
-        "required": ["refreshToken"]
-      }
-    }
+    "schemas": {}
   }
 }

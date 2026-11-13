@@ -13,7 +13,7 @@ import {
 } from '@nestjs/common';
 import { AuthNoStoreInterceptor } from '../interceptors/auth-no-store.interceptor.js';
 import { Throttle } from '@nestjs/throttler';
-import { VerificationTokenDto } from '../dto/auth.dto.js';
+import { verificationTokenSchema, type VerificationTokenInput } from '../dto/auth.schemas.js';
 import { VerificationResendRateLimitGuard } from '../guards/verification-resend-rate-limit.guard.js';
 import type { UserResponse } from '#src/modules/users/types/user-payload.types';
 
@@ -28,7 +28,7 @@ export class EmailVerificationController {
   @Throttle({ default: { limit: 8, ttl: 60000 } })
   @Post('verify')
   @HttpCode(200)
-  async verifyEmail(@Body() body: VerificationTokenDto) {
+  async verifyEmail(@Body({ schema: verificationTokenSchema }) body: VerificationTokenInput) {
     const verified = await this.emailVerificationService.verify(body.token);
     if (!verified) {
       throw new BadRequestException('Invalid or expired link');

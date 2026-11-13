@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Test, type TestingModule } from '@nestjs/testing';
 import type { INestApplication } from '@nestjs/common';
-import { ValidationPipe } from '@nestjs/common';
+import { StandardSchemaValidationPipe, ValidationPipe } from '@nestjs/common';
 import { EmailVerificationService, SignInService } from '@nestjs/authentication';
 import request from 'supertest';
 import { AuthController } from '../src/modules/auth/controllers/index.js';
@@ -11,7 +11,7 @@ describe('AuthController (HTTP)', () => {
   let app: INestApplication;
 
   const credentialsService = {
-    registry: vi.fn(),
+    register: vi.fn(),
     verify: vi.fn(),
   };
 
@@ -52,6 +52,7 @@ describe('AuthController (HTTP)', () => {
         transform: true,
         forbidNonWhitelisted: true,
       }),
+      new StandardSchemaValidationPipe(),
     );
 
     await app.init();
@@ -59,6 +60,23 @@ describe('AuthController (HTTP)', () => {
 
   afterEach(async () => {
     await app.close();
+  });
+
+  describe('POST /auth/register', () => {
+    it('rejects weak passwords and unexpected fields before registration', async () => {
+      const weak = await request(app.getHttpServer()).post('/auth/register').send({
+        email: 'test@example.com',
+        password: 'weak',
+      });
+      const extra = await request(app.getHttpServer()).post('/auth/register').send({
+        email: 'test@example.com',
+        password: 'StrongPassword123!',
+        isAdmin: true,
+      });
+      expect(weak.status).toBe(400);
+      expect(extra.status).toBe(400);
+      expect(credentialsService.register).not.toHaveBeenCalled();
+    });
   });
 
   describe('POST /auth/login', () => {
@@ -122,6 +140,16 @@ describe('AuthController (HTTP)', () => {
     it('should return 400 when password is missing', async () => {
       const response = await request(app.getHttpServer()).post('/auth/login').send({
         email: 'test@example.com',
+      });
+
+      expect(response.status).toBe(400);
+      expect(credentialsService.verify).not.toHaveBeenCalled();
+    });
+
+    it('should reject whitespace-only credentials before invoking the service', async () => {
+      const response = await request(app.getHttpServer()).post('/auth/login').send({
+        email: 'test@example.com',
+        password: '  \t ',
       });
 
       expect(response.status).toBe(400);
