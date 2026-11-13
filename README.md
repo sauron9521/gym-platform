@@ -109,3 +109,11 @@ strict offline checks for signed GHCR image references, build-free Docker
 Compose overrides and the existing runtime identity. The checks **never
 start or update production services**. A separate operator-approved
 release rollout and real staging evidence are still required.
+
+## Operator-only production host preflight
+
+The [read-only host preflight](docs/production-host-preflight.md) verifies
+trusted signed GHCR images, exact deployed image identity, private backup
+archive hashes and the release evidence receipt. It never runs a migration,
+starts a container or authorizes production; human restore and operational
+approval remain required.

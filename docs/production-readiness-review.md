@@ -92,8 +92,11 @@ The imported source project included a local operator approval helper.
 Its exported offline function can **structurally evaluate** private
 approval references, but it cannot independently prove external
 operator evidence exists; no monorepo deployment action invokes it.
-There is **no automatic or authorized production deployment** wired to
-this PR. Do not interpret a test fixture with a synthetic `GO` as
+A separate [operator-only read-only preflight](production-host-preflight.md)
+can check private backup archive integrity, exact cached images and a supplied
+release receipt, but it cannot grant deployment approval or substitute for an
+external restore drill. There is **no automatic or authorized production
+deployment** wired to the monorepo. Do not interpret a test fixture with a synthetic `GO` as
 actual authorization.
 
 After a real successful manual review, keep the old API repository as
