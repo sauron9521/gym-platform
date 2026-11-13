@@ -80,3 +80,10 @@ The API includes optional host collectors for sanitized HTTP/Redis logs,
 Docker container resources, readiness and provisional Prometheus SLI views.
 These do not start automatically. See [observability operator guide](docs/production-observability.md)
 for host privileges, environment templates, alerts and manual activation.
+
+## API source migration audit and cutover
+
+The imported API has a frozen legacy source/test inventory and a CI-backed,
+read-only cutover audit. **Production remains NO-GO** until signed GHCR images,
+staging, two-release rollback and external operator approvals are verified.
+See [API migration audit and cutover criteria](docs/api-migration-audit.md).

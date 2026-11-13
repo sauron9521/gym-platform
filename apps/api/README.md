@@ -62,3 +62,12 @@ The API source and tests were imported from commit
 `79e53bc1b7a78bb3856ff2aeab2529559240521e` of
 `sauron9521/gym-api-nestjs`. The Prisma migration history baseline is tested
 separately by `test/migration-baseline.test.mjs`.
+
+## Migration parity and cutover
+
+All 302 source and 48 test paths from the recorded legacy commit were imported;
+all ten Prisma schema files and 25 historical migration files match their
+original Git blobs. Modified source/test blobs still require staging review.
+The read-only [cutover audit](../../docs/api-migration-audit.md) explicitly
+lists remaining staging/rollback/approval blockers. **Production NO-GO:**
+merging the repository audit does not transfer operational ownership.

@@ -1,0 +1,1770 @@
+{
+  "audit": "2026-11-13",
+  "legacy_repository": "sauron9521/gym-api-nestjs",
+  "legacy_commit": "79e53bc1b7a78bb3856ff2aeab2529559240521e",
+  "monorepo_repository": "sauron9521/gym-platform",
+  "monorepo_commit": "98d5be4cea9fd6c454536c0ab764d64a55ce7925",
+  "historical_snapshot": {
+    "source_files": 302,
+    "test_files": 48,
+    "prisma_schemas_unchanged": 10,
+    "prisma_migration_files_unchanged": 25,
+    "src_unchanged": 86,
+    "src_adapted": 216,
+    "test_unchanged": 2,
+    "test_adapted": 46
+  },
+  "caveat": "Snapshot SHA comparisons are provenance evidence, not behavioral equivalence; adapted files require staging.",
+  "files": [
+    {
+      "path": "src/app.module.ts",
+      "legacy_sha": "e3da371b1fb1aa135a1e68a3b4a3f7142a63c38c",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/common/config/app-config.types.ts",
+      "legacy_sha": "32120888b3a6f9b39547972c6eb166be608a8907",
+      "at_audit": "unchanged"
+    },
+    {
+      "path": "src/common/config/env.schema.ts",
+      "legacy_sha": "9f07aaabab7dd9b9700666f7006c7d458c2810bb",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/common/config/env.validation.ts",
+      "legacy_sha": "f6fe62ea5b0f9ddd3a2c3d5343f2f6af39a71426",
+      "at_audit": "unchanged"
+    },
+    {
+      "path": "src/common/config/http-metrics-env.spec.ts",
+      "legacy_sha": "563b114625cc03d0c9f5e31aaadf32f1dfee3716",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/common/config/http.config.ts",
+      "legacy_sha": "96bf5ba6ce1c9f3275d6544541f71f37550f02ee",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/common/config/logger.config.ts",
+      "legacy_sha": "f6c6e576cc44eff4f833bebc340b735029a71159",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/common/config/mail.config.ts",
+      "legacy_sha": "30abd884b962004908ff641a47b26a0fc75f3bb5",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/common/config/proxy.config.ts",
+      "legacy_sha": "84d8227eec954b016ec1b046335bfe7fe95f9eb8",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/common/config/test/app-config.spec.ts",
+      "legacy_sha": "453656d4c1d991926863af64cbfd9597445932a2",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/common/config/test/env.validation.spec.ts",
+      "legacy_sha": "25e066c1fe78c0eef0c4fc5a54e1ce49f7170796",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/common/config/test/mail.config.spec.ts",
+      "legacy_sha": "72db9dd6082cf1425d735304946404cde6667ec5",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/common/config/test/proxy.config.spec.ts",
+      "legacy_sha": "6ced12da17391b44c4ede2ee3c7cbfae42d66300",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/common/decorators/roles.decorator.ts",
+      "legacy_sha": "84a0374d154d788bf36218d486d6eca7fd698ea8",
+      "at_audit": "unchanged"
+    },
+    {
+      "path": "src/common/filters/api-exception.filter.spec.ts",
+      "legacy_sha": "28d350e748d6f1f62de57c2f632388f840e33e65",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/common/filters/api-exception.filter.ts",
+      "legacy_sha": "c8215e2240c73cd660977e11b886badb54e6a0df",
+      "at_audit": "unchanged"
+    },
+    {
+      "path": "src/common/guards/roles.guard.spec.ts",
+      "legacy_sha": "76b9e5084da9f445bfea84efa783ec28e2242563",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/common/guards/roles.guard.ts",
+      "legacy_sha": "d182ab4ec0e21f5905d88ed727df33ad878b59a7",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/common/http-metrics/http-metrics.controller.spec.ts",
+      "legacy_sha": "5021601985a46d0ece20021b3c483dd6053cfe9e",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/common/http-metrics/http-metrics.controller.ts",
+      "legacy_sha": "321b9c9635ed2a326c5eb810379ad1c2e4cdbfca",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/common/http-metrics/http-metrics.registry.spec.ts",
+      "legacy_sha": "716252955f3eb22811c92b3315ea49d6ea2eaea6",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/common/http-metrics/http-metrics.registry.ts",
+      "legacy_sha": "4abe1dd5ba1dcbd5769aff1dd781d96a384f5b06",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/common/http/private-api-no-store.middleware.spec.ts",
+      "legacy_sha": "47fd879b4ef4bbdd06ee462081d3b596a3774147",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/common/http/private-api-no-store.middleware.ts",
+      "legacy_sha": "b15d0ed3333e292355b74988409e9397d2ffe206",
+      "at_audit": "unchanged"
+    },
+    {
+      "path": "src/common/rate-limit/distributed-throttler.storage.spec.ts",
+      "legacy_sha": "052585a548e9f2626911e2f23e8963447d4364e1",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/common/rate-limit/distributed-throttler.storage.ts",
+      "legacy_sha": "88906a617cf7c39f0e3cd9295e14fa2a3a2d55fa",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/common/rate-limit/endpoint-policies.spec.ts",
+      "legacy_sha": "8f39bb8972d745cae6e92900ba9d497998360c6b",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/common/rate-limit/rate-limit-storage.module.ts",
+      "legacy_sha": "30d12c140f428d7df6c69c09fded8bfed468108b",
+      "at_audit": "unchanged"
+    },
+    {
+      "path": "src/common/request-context/request-context.middleware.spec.ts",
+      "legacy_sha": "657b78b02da44fb26d462d80728a333992f301a3",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/common/request-context/request-context.middleware.ts",
+      "legacy_sha": "cc24649bd650ea3f5b486faffbfcf07732d7b2ab",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/infra/database/index.ts",
+      "legacy_sha": "1fe6d4fb4d5d6efa823c47711302ba784b13bdb5",
+      "at_audit": "unchanged"
+    },
+    {
+      "path": "src/infra/database/prisma.module.ts",
+      "legacy_sha": "efb7a8dc0bb83ba5f2c99547abdd2c5023d1072d",
+      "at_audit": "unchanged"
+    },
+    {
+      "path": "src/infra/database/prisma.service.ts",
+      "legacy_sha": "b2e0cd232f4e6878a09c2e86dc19d82eabbf5a04",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/infra/health/health.controller.ts",
+      "legacy_sha": "203292200dd53a5374f61db80ecca459b4648568",
+      "at_audit": "unchanged"
+    },
+    {
+      "path": "src/infra/health/health.module.ts",
+      "legacy_sha": "a943980542b1cbbbde490123d27d9641cb9a70e1",
+      "at_audit": "unchanged"
+    },
+    {
+      "path": "src/infra/health/test/health.controller.spec.ts",
+      "legacy_sha": "02ee7fb080d58b592508cecdad05924751599924",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/infra/openapi/export-openapi.ts",
+      "legacy_sha": "bce1afa7b7860a86792ecc0c1779cdb029f9d2e3",
+      "at_audit": "unchanged"
+    },
+    {
+      "path": "src/infra/openapi/openapi.ts",
+      "legacy_sha": "271d8f08509b5a87cd0623b5607c8c0144d6672b",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/infra/openapi/response-contracts.ts",
+      "legacy_sha": "7859c1ba2345eb2991990620205e31d578b3c97e",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/infra/openapi/test/response-contracts.spec.ts",
+      "legacy_sha": "dc9811c8237c4158c801ea4b4b3497ba4aea2d16",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/mail/templates/password-reset.html",
+      "legacy_sha": "75c385192b5c38c90cc0acc6454f40b03cd20399",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/mail/templates/verify-email.html",
+      "legacy_sha": "6df8ba0b9054e2b4ca91a54daa9d9e10708a2bb0",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/main.ts",
+      "legacy_sha": "ca260b8adff775cd1175aa7a12d3009c03fb11c4",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/auth/auth.module.ts",
+      "legacy_sha": "c5ed6a27a3a5da9dbee0e42231b9c4f5dfa7e1df",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/auth/controllers/auth.controller.ts",
+      "legacy_sha": "b1286d0f8f5e579cb15d6521b4cbbc146c9a993f",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/auth/controllers/email-verification.controller.ts",
+      "legacy_sha": "f81ad24f854ae5e16d3ed9f22b518fa6b483dbe5",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/auth/controllers/index.ts",
+      "legacy_sha": "dcd5874b49c2047aa64b795da720e5d5ab8a17ca",
+      "at_audit": "unchanged"
+    },
+    {
+      "path": "src/modules/auth/controllers/password-reset.controller.ts",
+      "legacy_sha": "556e0d809b78512abfcbbbccaa9f7e6b966de448",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/auth/controllers/sessions.controller.ts",
+      "legacy_sha": "0af27d771a68711e64e8aa8d4cc0bd8d42b2b17a",
+      "at_audit": "unchanged"
+    },
+    {
+      "path": "src/modules/auth/controllers/tokens.controller.ts",
+      "legacy_sha": "b6c9e0a277cd07f533114db2d73db6dc3ab261c2",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/auth/dto/auth.dto.ts",
+      "legacy_sha": "d855a585f00fa2a53e9c339e26ec22d63f7eb58c",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/auth/guards/account-recovery-rate-limit.guard.ts",
+      "legacy_sha": "9283dde93df7a52fb2ca033669cde68c96305814",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/auth/guards/verification-resend-rate-limit.guard.ts",
+      "legacy_sha": "2b00e827517db9ae34e290eb65e20b7bce9c7116",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/auth/interceptors/auth-no-store.interceptor.ts",
+      "legacy_sha": "6e51c3b4f106e03f6191de574acc18b6dafbe126",
+      "at_audit": "unchanged"
+    },
+    {
+      "path": "src/modules/auth/mailers/email-verification.mailer.ts",
+      "legacy_sha": "88288fd34954aa030e844a559ca61e3ae898d1af",
+      "at_audit": "unchanged"
+    },
+    {
+      "path": "src/modules/auth/mailers/index.ts",
+      "legacy_sha": "1e691e015c8766ccdafaf11e7dc9256b7a879d0f",
+      "at_audit": "unchanged"
+    },
+    {
+      "path": "src/modules/auth/mailers/password-reset.mailer.ts",
+      "legacy_sha": "b8399fbf1ce36dd0c93f7cea274aafe6958f9981",
+      "at_audit": "unchanged"
+    },
+    {
+      "path": "src/modules/auth/mappers/auth-credential-user.mapper.ts",
+      "legacy_sha": "93c302dbd79cce41d1597360ede6f7af1c89cb2a",
+      "at_audit": "unchanged"
+    },
+    {
+      "path": "src/modules/auth/mappers/auth-session.mapper.ts",
+      "legacy_sha": "59d27cbd75907f07f98fe61bec6bc29cd4a0638f",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/auth/mappers/auth-token.mapper.ts",
+      "legacy_sha": "3e028992f208b0b01181c1f865f596f50b664f1d",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/auth/middleware/auth-no-store.middleware.ts",
+      "legacy_sha": "c8af56d31c83681338d03d503774e091e655cc45",
+      "at_audit": "unchanged"
+    },
+    {
+      "path": "src/modules/auth/providers/index.ts",
+      "legacy_sha": "fb128c73b0ce1fb6fb20ad482f039b022de3f135",
+      "at_audit": "unchanged"
+    },
+    {
+      "path": "src/modules/auth/providers/jwt-auth.provider.ts",
+      "legacy_sha": "718000a3258a1cb250bdba11b627376d50ab95ed",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/auth/providers/session-auth.provider.ts",
+      "legacy_sha": "696e1c4f720cc6377bb366411eaa4bb78dcca8f0",
+      "at_audit": "unchanged"
+    },
+    {
+      "path": "src/modules/auth/selects/auth-session.select.ts",
+      "legacy_sha": "1130099b9d1ce4fa34feeff260b1d6c0ed8234ec",
+      "at_audit": "unchanged"
+    },
+    {
+      "path": "src/modules/auth/selects/auth-token.select.ts",
+      "legacy_sha": "aaa8bde3a3117e56df002e19d9b9c2b74d65dc58",
+      "at_audit": "unchanged"
+    },
+    {
+      "path": "src/modules/auth/services/auth-account-throttle.service.ts",
+      "legacy_sha": "24c6dc15f4a84e7f42feaf207eba4e915d1d0ea4",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/auth/services/credentials.service.ts",
+      "legacy_sha": "5c5b31da3dc846d418eb8e14e60144474301e960",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/auth/services/index.ts",
+      "legacy_sha": "b10c693a37707a558c2ccb4379fc097a799f6aa2",
+      "at_audit": "unchanged"
+    },
+    {
+      "path": "src/modules/auth/services/token-cleanup.service.ts",
+      "legacy_sha": "a5a502a145fd2f4d5975623f22748f33ca870b08",
+      "at_audit": "unchanged"
+    },
+    {
+      "path": "src/modules/auth/stores/index.ts",
+      "legacy_sha": "d430cfd459c5f6b41d6d7b2e5a088d0582da6907",
+      "at_audit": "unchanged"
+    },
+    {
+      "path": "src/modules/auth/stores/prisma-session.store.ts",
+      "legacy_sha": "b1c40c695f1751f1deb4129fd456489ac119f6d6",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/auth/stores/prisma-token.store.ts",
+      "legacy_sha": "685c7ec96c96355ea705f70bc5505b12d3a283a8",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/auth/test/account-recovery-rate-limit.guard.spec.ts",
+      "legacy_sha": "7e0cc4f9564f5e63806ce73bbf5fb194401c8c51",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/auth/test/auth-account-throttle.service.spec.ts",
+      "legacy_sha": "5b1a65c765534cfabc72f83012b8e67317784742",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/auth/test/auth-credential-user.mapper.spec.ts",
+      "legacy_sha": "33730aaa213426229b38adf396571c51ed8af548",
+      "at_audit": "unchanged"
+    },
+    {
+      "path": "src/modules/auth/test/auth-no-store.interceptor.spec.ts",
+      "legacy_sha": "58cdbb271c16d2d9f261ebaa7f0193b9c3109d11",
+      "at_audit": "unchanged"
+    },
+    {
+      "path": "src/modules/auth/test/auth-no-store.middleware.spec.ts",
+      "legacy_sha": "13c5ad0518ee6bd36499cdb5e88f8d12d58b4c79",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/auth/test/auth-providers.spec.ts",
+      "legacy_sha": "b502f2b3cdfd519e39612f0167bbee8295403a21",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/auth/test/auth-store.mapper.spec.ts",
+      "legacy_sha": "77a097acce2b48bdab118abc9c136671f15b1f75",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/auth/test/auth-store.select.spec.ts",
+      "legacy_sha": "13643e5dbbb506c9570aa9936aa806efd16fb23b",
+      "at_audit": "unchanged"
+    },
+    {
+      "path": "src/modules/auth/test/controllers/auth-controller-registry.spec.ts",
+      "legacy_sha": "e0d98c99bcd3b41c52196755ded26552ce92469f",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/auth/test/controllers/auth.controller.spec.ts",
+      "legacy_sha": "7de3ce8fea6e7c41bd409973bbe9b05464f4863f",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/auth/test/controllers/email-verification.controller.spec.ts",
+      "legacy_sha": "4b2ca2540b30c860fd3c5827299e88a4d796a235",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/auth/test/controllers/password-reset.controller.spec.ts",
+      "legacy_sha": "df730c8a143ac3cffa821ba36f7ade91913da8c3",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/auth/test/controllers/sessions.controller.spec.ts",
+      "legacy_sha": "812d418890e80d2a5d52511e602566d91da50f53",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/auth/test/controllers/tokens.controller.spec.ts",
+      "legacy_sha": "e75e1aec0f4eb0e4e143774b5ae0524ef5dd8080",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/auth/test/prisma-session.store.spec.ts",
+      "legacy_sha": "fa5ea09d9f5615753a003d192f8075fbc1fb7109",
+      "at_audit": "unchanged"
+    },
+    {
+      "path": "src/modules/auth/test/services/credentials.service.spec.ts",
+      "legacy_sha": "fb997548206b4b52f086a5aa5a0e8817fd3086cd",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/auth/test/services/token-cleanup.service.spec.ts",
+      "legacy_sha": "5d6a2e85ad4c894428115d2e7f32b5aa978ed52a",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/auth/test/verification-resend-rate-limit.guard.spec.ts",
+      "legacy_sha": "e007270515e95193915a1a9772b7e981b3a17804",
+      "at_audit": "unchanged"
+    },
+    {
+      "path": "src/modules/auth/types/auth-store.types.ts",
+      "legacy_sha": "e8cc2dd325b129d6dbb111c56524487569a2e4e2",
+      "at_audit": "unchanged"
+    },
+    {
+      "path": "src/modules/auth/utils/normalize-recovery-email.ts",
+      "legacy_sha": "6ef9e35b2b85f0d1e0dfbe621a8d54d7f03f0acb",
+      "at_audit": "unchanged"
+    },
+    {
+      "path": "src/modules/body-measurements/body-measurements.module.ts",
+      "legacy_sha": "fe8520376ee03c944b5d2425ae5c57d8dc83178e",
+      "at_audit": "unchanged"
+    },
+    {
+      "path": "src/modules/body-measurements/controllers/body-measurements.controller.ts",
+      "legacy_sha": "a3a8bb352aae5dbb5fcfc7cb8b1c737c5fde5ea8",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/body-measurements/dto/body-measurement-statistics.schemas.ts",
+      "legacy_sha": "6aca6230acc1aee36ec057c976acfe145e871d18",
+      "at_audit": "unchanged"
+    },
+    {
+      "path": "src/modules/body-measurements/dto/body-measurement.schemas.ts",
+      "legacy_sha": "601a982ab7f793315e5823773969eddbd410fcbe",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/body-measurements/mappers/body-measurement-statistics.mapper.ts",
+      "legacy_sha": "075294ec563e93d1061fc17dedea5be22a94f0b4",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/body-measurements/mappers/body-measurement.mapper.ts",
+      "legacy_sha": "94f9093a1dac248a70564723feded343156c37b9",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/body-measurements/repositories/body-measurement-statistics.repository.ts",
+      "legacy_sha": "e30a50dd1a9a380fe40f64b333ce28409dad9f60",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/body-measurements/repositories/body-measurements.repository.ts",
+      "legacy_sha": "8bd2c15c0f8d00251108744e1f8f9505991160cc",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/body-measurements/selects/body-measurement.select.ts",
+      "legacy_sha": "a027aed532795225403aaff7ec469335c53e5955",
+      "at_audit": "unchanged"
+    },
+    {
+      "path": "src/modules/body-measurements/services/body-measurement-statistics.service.ts",
+      "legacy_sha": "a147f45d12ad4343570ecafcd4546b066ed934ea",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/body-measurements/services/body-measurements.service.ts",
+      "legacy_sha": "975c0ccd53474e7018ce4dd019d4b6ac6e75c592",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/body-measurements/test/body-measurement-statistics.mapper.spec.ts",
+      "legacy_sha": "6cf9dc007df1b8aec5f4d53eaf2477fc904c781b",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/body-measurements/test/body-measurement-statistics.repository.spec.ts",
+      "legacy_sha": "84b53f771b3e7a8b31c45ecfa28c08967d1933a0",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/body-measurements/test/body-measurement-statistics.schemas.spec.ts",
+      "legacy_sha": "ce25e3f5622107e2ac9d3fe2fa09a12d0918d7a2",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/body-measurements/test/body-measurement-statistics.service.spec.ts",
+      "legacy_sha": "b9b1b808895b56fd2f554d7e4149c5553b8c516c",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/body-measurements/test/body-measurement.mapper.spec.ts",
+      "legacy_sha": "e65bf39cce759a49acac6b3928eb2006d5aa0f2e",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/body-measurements/test/body-measurement.schemas.spec.ts",
+      "legacy_sha": "2cee478c10148b78903390999d90fe30750a2c84",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/body-measurements/test/body-measurements.service.spec.ts",
+      "legacy_sha": "866e55de596d54f9facc3b2b3bef81ef8b247831",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/body-measurements/test/controllers/body-measurements-controller-registry.spec.ts",
+      "legacy_sha": "73212c49ea0981288d3c75d4c28cf9ebd0a4d2bc",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/body-measurements/test/controllers/body-measurements.controller.spec.ts",
+      "legacy_sha": "f2842c23466b728cf0ac1a3e9ba35e1d51eb5227",
+      "at_audit": "unchanged"
+    },
+    {
+      "path": "src/modules/body-measurements/test/statistics-utc-period.spec.ts",
+      "legacy_sha": "af4500d98f5d7ada9362f4391831d5f205e51263",
+      "at_audit": "unchanged"
+    },
+    {
+      "path": "src/modules/body-measurements/types/body-measurement.types.ts",
+      "legacy_sha": "e6e150ff5fd844a4528ab83f02ca1957135d360c",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/body-measurements/utils/statistics-utc-period.ts",
+      "legacy_sha": "45b193a47a74e3f1b45c7cf2693ceb7069822987",
+      "at_audit": "unchanged"
+    },
+    {
+      "path": "src/modules/exercises/controllers/exercise-trainer-access.controller.ts",
+      "legacy_sha": "998904451098b56f337be1f2bfa9a3b1750336ac",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/exercises/controllers/exercises.controller.ts",
+      "legacy_sha": "1828ea60f2aa92078e22bea97572fa5794a7c2ac",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/exercises/dto/create-exercise.dto.ts",
+      "legacy_sha": "bc364c213d693b331c9fa9865bb7e308ebeb734f",
+      "at_audit": "unchanged"
+    },
+    {
+      "path": "src/modules/exercises/dto/exercise-trainer-access.dto.ts",
+      "legacy_sha": "3977b0b5fdc34d684b43284a3290c7b72864e3fb",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/exercises/dto/exercise.schemas.ts",
+      "legacy_sha": "9a25bc2adf78729c136768ef30dd22818363831e",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/exercises/dto/query-exercises.dto.ts",
+      "legacy_sha": "04c804ae843a469651d93c9aaadecaf312b6e40b",
+      "at_audit": "unchanged"
+    },
+    {
+      "path": "src/modules/exercises/dto/update-exercise.dto.ts",
+      "legacy_sha": "740d9d4fe163395c88604f93ec028ed8a6ec9cf8",
+      "at_audit": "unchanged"
+    },
+    {
+      "path": "src/modules/exercises/exercises.module.ts",
+      "legacy_sha": "57ad5174a1fd902703a27e858894932c3f0d9d63",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/exercises/policies/exercise-access.policy.ts",
+      "legacy_sha": "235baa93d3fd1f6b7b138e564cc815efdb52c02e",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/exercises/repositories/exercise-trainer-access.repository.ts",
+      "legacy_sha": "42b5c8244d089c5da72fefb5b73327dd517943b3",
+      "at_audit": "unchanged"
+    },
+    {
+      "path": "src/modules/exercises/repositories/exercises.repository.ts",
+      "legacy_sha": "f0c424c6b43655c5bce25d12787d0ed030a972ad",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/exercises/selects/exercise.select.ts",
+      "legacy_sha": "c0712afd5b7e159609b2347703c47f672716f0f0",
+      "at_audit": "unchanged"
+    },
+    {
+      "path": "src/modules/exercises/services/exercise-trainer-access.service.ts",
+      "legacy_sha": "e92182badab5181535b4c6b5169fa4905b4f9b43",
+      "at_audit": "unchanged"
+    },
+    {
+      "path": "src/modules/exercises/services/exercises.service.ts",
+      "legacy_sha": "9bd56921e5af4971f74d14bb9b976e67ee767f03",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/exercises/test/controllers/exercise-trainer-access.controller.spec.ts",
+      "legacy_sha": "3f4bbf566a9cce91ecf3ca51944d73c83dbf7fef",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/exercises/test/controllers/exercises-controller-registry.spec.ts",
+      "legacy_sha": "2c00a9e765ebbce09b3028556a1b5624a8098648",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/exercises/test/controllers/exercises.controller.spec.ts",
+      "legacy_sha": "98e175650fcd7f525be0fb90a8ae71e0c0209f03",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/exercises/test/exercise-access.policy.spec.ts",
+      "legacy_sha": "38c7c8493475ccf0d96bf903c21497673a1565dd",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/exercises/test/exercise-trainer-access.dto.spec.ts",
+      "legacy_sha": "5e781ea51529775203ffe015efa15814b8a72576",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/exercises/test/exercise-trainer-access.repository.spec.ts",
+      "legacy_sha": "2854943cc166387ff1244d1a6a626cfbd3af819c",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/exercises/test/exercise-trainer-access.service.spec.ts",
+      "legacy_sha": "e14b892674752b1831f678b7d35d59252a35fc4f",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/exercises/test/exercise.select.spec.ts",
+      "legacy_sha": "ea83d141d27647bf59309b07ec5335f2a9e27a1d",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/exercises/test/exercises.repository.spec.ts",
+      "legacy_sha": "560e51f54c793f6db5b814b46926fff0aaeb2ebe",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/exercises/test/exercises.service.spec.ts",
+      "legacy_sha": "5d17e9e27cb020c1eeef2cac7e289f1c635fcba4",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/exercises/types/exercise.types.ts",
+      "legacy_sha": "d6d745034c6032d72d4e7b17991f5acff31da5a1",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/trainer-athletes/controllers/trainer-athletes.controller.ts",
+      "legacy_sha": "11d515477c65f84b5043a66afbce98dcd480d9b7",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/trainer-athletes/dto/create-trainer-athlete.dto.ts",
+      "legacy_sha": "4347cbd94d8349d8b7e89e5c8b50964b88fd31e4",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/trainer-athletes/dto/query-trainer-athletes.dto.ts",
+      "legacy_sha": "d7af766d8a1d7b928426dc2e7c4ddd4a61c7cae6",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/trainer-athletes/dto/terminate-trainer-athlete.dto.ts",
+      "legacy_sha": "fa9ed72786688e6bba4924a2223068b61beb482e",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/trainer-athletes/dto/trainer-athlete.schemas.ts",
+      "legacy_sha": "69749c4e56e462ac098ec59c7879902d38804bb9",
+      "at_audit": "unchanged"
+    },
+    {
+      "path": "src/modules/trainer-athletes/repositories/trainer-athletes.repository.ts",
+      "legacy_sha": "bd62e3dedd309dfe69096f9a2b1e57f2ccca5903",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/trainer-athletes/selects/trainer-athlete.select.ts",
+      "legacy_sha": "8b6594043e8ab70cc69ae86e9c1b33ebbb91c869",
+      "at_audit": "unchanged"
+    },
+    {
+      "path": "src/modules/trainer-athletes/services/trainer-athlete-exercise-copy.service.ts",
+      "legacy_sha": "a6c49ef1cde11944b5635f8d10719fe649c9de25",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/trainer-athletes/services/trainer-athlete-termination.service.ts",
+      "legacy_sha": "e4bdc4169450368647cd3ac865114a124e9d214b",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/trainer-athletes/services/trainer-athletes.service.ts",
+      "legacy_sha": "58f4cca9e3ea48979caaf440630fbb4d4d52336d",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/trainer-athletes/test/controllers/trainer-athletes-controller-registry.spec.ts",
+      "legacy_sha": "1ec73c9ad8e4a6c4144bb817d5f8988a9cf84d9c",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/trainer-athletes/test/controllers/trainer-athletes.controller.spec.ts",
+      "legacy_sha": "d9641453e2eaac856942f96ea7cdd6c63236aa58",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/trainer-athletes/test/trainer-athlete-exercise-copy.service.spec.ts",
+      "legacy_sha": "829b261368ced02b0ae198fc9264b8d782a91e0a",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/trainer-athletes/test/trainer-athlete-termination.service.spec.ts",
+      "legacy_sha": "3c9def7ff911eea0462f7075ec3ffb575e8024b1",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/trainer-athletes/test/trainer-athlete.select.spec.ts",
+      "legacy_sha": "0eead6f0464847360c66616b19625b27a4f268ce",
+      "at_audit": "unchanged"
+    },
+    {
+      "path": "src/modules/trainer-athletes/test/trainer-athletes.repository.spec.ts",
+      "legacy_sha": "cb2d01c0e86aa1008f3be1cf04196b10891fb38a",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/trainer-athletes/test/trainer-athletes.service.spec.ts",
+      "legacy_sha": "cb7b23d9e87dca87213339f1f34e811093460467",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/trainer-athletes/trainer-athletes.module.ts",
+      "legacy_sha": "5893db32490572d1c9c4d251353c5fc7ccddc188",
+      "at_audit": "unchanged"
+    },
+    {
+      "path": "src/modules/trainer-athletes/types/trainer-athlete.types.ts",
+      "legacy_sha": "7d140c038190046f2435067738c47a02e6d20fd3",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/training-programs/controllers/training-program-assignments.controller.ts",
+      "legacy_sha": "d4f8fc5fdce23fa7a12ff1c321aab31fec31a565",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/training-programs/controllers/training-program-exercises.controller.ts",
+      "legacy_sha": "5ce56dba4ba1475a0a4c3e1977bec808f72dcdce",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/training-programs/controllers/training-program-sets.controller.ts",
+      "legacy_sha": "161ffff0edee92c5afb3538841b7918d9bc34637",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/training-programs/controllers/training-program-versions.controller.ts",
+      "legacy_sha": "b67abe4c871150faf7ccc4eac0e3f1017b79e844",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/training-programs/controllers/training-program-workouts.controller.ts",
+      "legacy_sha": "f978117ba2ae194cb059674e43af9a2693dbd515",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/training-programs/controllers/training-programs.controller.ts",
+      "legacy_sha": "fee5f802e9c7180e46f0723d4205a2014e6e81d5",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/training-programs/dto/add-training-program-exercise.dto.ts",
+      "legacy_sha": "d0ec19ea09f5d9c9ce451ea526da93ee352028c0",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/training-programs/dto/cancel-training-program-assignment.dto.ts",
+      "legacy_sha": "8579e2d0081cbc1ea7aef6498a1107586b9867e2",
+      "at_audit": "unchanged"
+    },
+    {
+      "path": "src/modules/training-programs/dto/create-training-program-assignment.dto.ts",
+      "legacy_sha": "cb01eb5befc70b77449a3efaadf5510caad3558a",
+      "at_audit": "unchanged"
+    },
+    {
+      "path": "src/modules/training-programs/dto/create-training-program-set.dto.ts",
+      "legacy_sha": "4446110b856a291ac218aa0c0ca8b403654e87fb",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/training-programs/dto/create-training-program-workout.dto.ts",
+      "legacy_sha": "acad2f3cf3aa8d788487f63aecf3bbc45ba2ba30",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/training-programs/dto/create-training-program.dto.ts",
+      "legacy_sha": "927384e913665e153021c84e79037971a20766f1",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/training-programs/dto/query-training-program-assignments.dto.ts",
+      "legacy_sha": "2d316e83ab3136580d7388c25a0493654e354b5e",
+      "at_audit": "unchanged"
+    },
+    {
+      "path": "src/modules/training-programs/dto/query-training-programs.dto.ts",
+      "legacy_sha": "d66f38438184e412b57830619930062a98c521ca",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/training-programs/dto/reorder-training-program-exercises.dto.ts",
+      "legacy_sha": "8d56ca1a5525401e4d8c81d9c9231cb1e059dab3",
+      "at_audit": "unchanged"
+    },
+    {
+      "path": "src/modules/training-programs/dto/reorder-training-program-sets.dto.ts",
+      "legacy_sha": "86bd6633e05a1f0676ebb8adc2cb5d0c2968bf89",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/training-programs/dto/training-program.schemas.ts",
+      "legacy_sha": "d89e66ec7ccb6f3125e628d3d1aeae071a66921b",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/training-programs/dto/update-training-program-draft.dto.ts",
+      "legacy_sha": "a1fd4b38a6fa919bd93b9df515d8337fdfb54355",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/training-programs/dto/update-training-program-exercise.dto.ts",
+      "legacy_sha": "657689c0d31870d804c6ba9785b13880c4a2d7b9",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/training-programs/dto/update-training-program-set.dto.ts",
+      "legacy_sha": "6cd936d1b9e351a038b172912e0f8b64be270aa4",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/training-programs/dto/update-training-program-workout.dto.ts",
+      "legacy_sha": "c0671ca6b21996c413fe408b35ab77abb5bf1cdc",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/training-programs/policies/training-program-publication.policy.ts",
+      "legacy_sha": "c0f062a73ffeabe4150be476e5cb8bd5c72edffd",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/training-programs/repositories/training-program-assignment.repository.ts",
+      "legacy_sha": "36f19d476cbcf86bf0ee4ae757ec26d4453d9762",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/training-programs/repositories/training-program-crud.repository.ts",
+      "legacy_sha": "f7116ad30b0e819644ac690c12ab8980e31a6626",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/training-programs/repositories/training-program-exercise.repository.ts",
+      "legacy_sha": "0ddd358eab611a9f47d7daf7345898c686deadcd",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/training-programs/repositories/training-program-set.repository.ts",
+      "legacy_sha": "f9d6c44419c81ce7ddbadbb6175687cc096b70a4",
+      "at_audit": "unchanged"
+    },
+    {
+      "path": "src/modules/training-programs/repositories/training-program-version.repository.ts",
+      "legacy_sha": "b8075ad037c9f32ee006186d0043490096f8f0b2",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/training-programs/repositories/training-program-workout.repository.ts",
+      "legacy_sha": "28d58c12cf9a30cfa042b22d6f1d6032ccf7e6c7",
+      "at_audit": "unchanged"
+    },
+    {
+      "path": "src/modules/training-programs/selects/training-program-access.select.ts",
+      "legacy_sha": "e8b1d725c1a190bb3e7452e09781989019178bfc",
+      "at_audit": "unchanged"
+    },
+    {
+      "path": "src/modules/training-programs/selects/training-program-assignment.select.ts",
+      "legacy_sha": "8f8dddc49022107bbae45e954951a950d964fcf0",
+      "at_audit": "unchanged"
+    },
+    {
+      "path": "src/modules/training-programs/selects/training-program-query.select.ts",
+      "legacy_sha": "311b405fdc3eb84257f5c6a32cb9c27d6887dc28",
+      "at_audit": "unchanged"
+    },
+    {
+      "path": "src/modules/training-programs/selects/training-program-version.select.ts",
+      "legacy_sha": "df53282c9c347c84d8f6dc0c5cb3e816092f3c03",
+      "at_audit": "unchanged"
+    },
+    {
+      "path": "src/modules/training-programs/selects/training-program.select.ts",
+      "legacy_sha": "7b9a10feffab59cfdd264ca3d4a011fb04731352",
+      "at_audit": "unchanged"
+    },
+    {
+      "path": "src/modules/training-programs/services/training-program-access.service.ts",
+      "legacy_sha": "d8645ec49ff71209811b4c6a46b7b4d0afe3712d",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/training-programs/services/training-program-assignment.service.ts",
+      "legacy_sha": "5b23df4a3b020f6bb80c5e057c2ddbd3f927ed8b",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/training-programs/services/training-program-crud.service.ts",
+      "legacy_sha": "a047d39de4c0e082009649a31e3b2705697bc986",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/training-programs/services/training-program-exercise.service.ts",
+      "legacy_sha": "8b4ff0dbea835e29b5b9863b938ae0bfec38132d",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/training-programs/services/training-program-set.service.ts",
+      "legacy_sha": "655d6791cc6c6a8ea0d75768886b273fb262a3f3",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/training-programs/services/training-program-version.service.ts",
+      "legacy_sha": "1711d51e82d673435e4789dcaac557bb5d811251",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/training-programs/services/training-program-workout.service.ts",
+      "legacy_sha": "fa9f19f4ae2c9867124ba8980e6e095f58b70822",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/training-programs/services/training-programs.service.ts",
+      "legacy_sha": "48d1c9257f9e3adf624905e7855ba0cafdce9682",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/training-programs/test/controllers/training-program-assignments.controller.spec.ts",
+      "legacy_sha": "9fa4b1b8970817a1cb975eb64a7983160caad14a",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/training-programs/test/controllers/training-program-controller-registry.spec.ts",
+      "legacy_sha": "9fae52310f83ea878c164e2a7167c253010c5de1",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/training-programs/test/controllers/training-program-exercises.controller.spec.ts",
+      "legacy_sha": "f17071fb2b34d0512b9670845f3c071fbe1148a7",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/training-programs/test/controllers/training-program-sets.controller.spec.ts",
+      "legacy_sha": "f04e8d0a5aaacb61a223d0d8a8d79e6460110012",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/training-programs/test/controllers/training-program-versions.controller.spec.ts",
+      "legacy_sha": "7275379a81c25f3137d989333c71ae48cb8cc0b6",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/training-programs/test/controllers/training-program-workouts.controller.spec.ts",
+      "legacy_sha": "e00658e0e6382b7a51724696b00d393d097cc0be",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/training-programs/test/controllers/training-programs.controller.spec.ts",
+      "legacy_sha": "1ec4e5462e9b593f9793a2ff64635e3630e2e109",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/training-programs/test/training-program-access.service.spec.ts",
+      "legacy_sha": "b19042c4fc3ff2cb5deffb84189baa20b5b4f66e",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/training-programs/test/training-program-assignment-repository-privacy.spec.ts",
+      "legacy_sha": "c1972827f7dc7dd3147dec3e63ba804ae57c8b3d",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/training-programs/test/training-program-assignment.repository.spec.ts",
+      "legacy_sha": "8e1b5cd7c82d213b9e2df1d2dd4c5fe03c54b3c4",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/training-programs/test/training-program-assignment.service.spec.ts",
+      "legacy_sha": "ce732fa691850f8ebaf774006eda1645a0f74123",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/training-programs/test/training-program-crud.repository.spec.ts",
+      "legacy_sha": "abda44c61b2d60748f50fe2ce39c7fdac9ef5fad",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/training-programs/test/training-program-crud.service.spec.ts",
+      "legacy_sha": "20c129511a79246b58ad39b316898e8b89b636a4",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/training-programs/test/training-program-decimal-precision.spec.ts",
+      "legacy_sha": "288afe889d8805aa4fae5b706dcba14fede38a4b",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/training-programs/test/training-program-exercise.service.spec.ts",
+      "legacy_sha": "cb8d91bd88f2f4ce2a94cfab5616270aa3ea4d93",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/training-programs/test/training-program-nested-repositories.spec.ts",
+      "legacy_sha": "b5688be1f7988da69b6af8da5484b8c39d03e7ef",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/training-programs/test/training-program-projections.spec.ts",
+      "legacy_sha": "1930442ec14f781497f1749acec06e1aa89caf5a",
+      "at_audit": "unchanged"
+    },
+    {
+      "path": "src/modules/training-programs/test/training-program-publication.policy.spec.ts",
+      "legacy_sha": "485f0758c19bad898a552c8c929fee279c398829",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/training-programs/test/training-program-query.select.spec.ts",
+      "legacy_sha": "60dacb43ac19d70cb006e7143438e193145c2be7",
+      "at_audit": "unchanged"
+    },
+    {
+      "path": "src/modules/training-programs/test/training-program-repository-edge-coverage.spec.ts",
+      "legacy_sha": "0602e633d3454d53973485598a850af86d247688",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/training-programs/test/training-program-set.service.spec.ts",
+      "legacy_sha": "d579a7bc7b31a577156e02aaa258b5b2326bb7f7",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/training-programs/test/training-program-version.repository.spec.ts",
+      "legacy_sha": "736b15f116e26daa48329e9eedb917791f5b933d",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/training-programs/test/training-program-version.service.spec.ts",
+      "legacy_sha": "175816c01819074109ab9452b2bb5742b6cdd8f8",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/training-programs/test/training-program-workout.service.spec.ts",
+      "legacy_sha": "68dffd32ced0debcc3559e3b6ee5d575b86e8203",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/training-programs/test/training-programs-facade.service.spec.ts",
+      "legacy_sha": "9b9804f9a1fef8c4f580ee7596612cd8dc4026c3",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/training-programs/test/training-programs.service.spec.ts",
+      "legacy_sha": "4a6f36edc1915811008adbeb412730406bec90f5",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/training-programs/training-programs.module.ts",
+      "legacy_sha": "908116fef86cda6abe2dcab041fd8674bd46c947",
+      "at_audit": "unchanged"
+    },
+    {
+      "path": "src/modules/training-programs/types/paginated-result.types.ts",
+      "legacy_sha": "82048fc7ef93cfb837c2fe41cce5e465d55c9b00",
+      "at_audit": "unchanged"
+    },
+    {
+      "path": "src/modules/training-programs/types/training-program-payload.types.ts",
+      "legacy_sha": "bddb64a3835f0af917ac560730481aa002843183",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/training-programs/types/training-program-repository.types.ts",
+      "legacy_sha": "0286759bba089e95de7deb4fadd7189a8e993446",
+      "at_audit": "unchanged"
+    },
+    {
+      "path": "src/modules/training-programs/types/training-program.types.ts",
+      "legacy_sha": "79ff8d97e3e770dc4d85714fee2759016bc0b7bb",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/users/avatar/avatar-disk.storage.ts",
+      "legacy_sha": "c115d6805bccb10ad5926610ca04efd0d3e5def5",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/users/avatar/avatar-image.processor.ts",
+      "legacy_sha": "696fb942e7be6d39ea2dfedc14ef4355028659ef",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/users/avatar/avatar-orphan-cleanup.service.ts",
+      "legacy_sha": "ffd7b49a1ef3a09e4c92ec367caac30575cde94d",
+      "at_audit": "unchanged"
+    },
+    {
+      "path": "src/modules/users/avatar/avatar-validation.ts",
+      "legacy_sha": "1305b0ac648015c313c0365d04a3b21fcf8413fd",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/users/avatar/avatar.service.ts",
+      "legacy_sha": "f5e4f4578dedd987981f94741b6b83337c84cd5a",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/users/controllers/avatar-public.controller.ts",
+      "legacy_sha": "c07c7e8ddbe58a3705d55d98127e870278c6f5e3",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/users/controllers/users.controller.ts",
+      "legacy_sha": "99994b3af4bfaeb3ca95d61c5c8fe41d4eb8f4cb",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/users/dto/update-my-profile.dto.ts",
+      "legacy_sha": "b890e23e4b02bbe5f08543c76502d42155e6f1f4",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/users/mappers/user-profile.mapper.ts",
+      "legacy_sha": "948d7753464d0247ba132cbd4f817cbba69e065b",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/users/repositories/users.repository.ts",
+      "legacy_sha": "8557bcae1968678cc42c286fa10bffba92f0f324",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/users/selects/user.select.ts",
+      "legacy_sha": "39f5966d333e42c05f4084d5890286b6c719c0b2",
+      "at_audit": "unchanged"
+    },
+    {
+      "path": "src/modules/users/services/users.service.ts",
+      "legacy_sha": "38b36b8437da337b15fa31d26930bae5c17ccbc8",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/users/test/avatar-disk.storage.spec.ts",
+      "legacy_sha": "cbabe1c77ab0cd61390e91e7a1eb8c48b7bdca65",
+      "at_audit": "unchanged"
+    },
+    {
+      "path": "src/modules/users/test/avatar-image.processor.spec.ts",
+      "legacy_sha": "e212ab80d4ededa38b0d3e8593f0ec651352a0bd",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/users/test/avatar-orphan-cleanup.service.spec.ts",
+      "legacy_sha": "a36c229de695c36ed8cc5f8c32edbde652b4f1f0",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/users/test/avatar-validation.spec.ts",
+      "legacy_sha": "a654e4d37f0eff1f2fc78a9e07b6dd8416226144",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/users/test/avatar.service.spec.ts",
+      "legacy_sha": "d773fb764821b1eb3f0b2b76445075bf703376e7",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/users/test/controllers/avatar-public.controller.spec.ts",
+      "legacy_sha": "e14674ff3ed21b57b5986d951cc0b97b71fed817",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/users/test/controllers/users-controller-registry.spec.ts",
+      "legacy_sha": "849158c27940a546637727003a4d7421aa765287",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/users/test/controllers/users.controller.spec.ts",
+      "legacy_sha": "55c6567cae6eb0ddc943d633d1e5a4877518f9d5",
+      "at_audit": "unchanged"
+    },
+    {
+      "path": "src/modules/users/test/update-my-profile.dto.spec.ts",
+      "legacy_sha": "c038851399ca5d8f2796f87d654b422eb63d9f54",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/users/test/user-privacy-projections.spec.ts",
+      "legacy_sha": "e0178bc42ac18858c8c2053218077cb72c82339c",
+      "at_audit": "unchanged"
+    },
+    {
+      "path": "src/modules/users/test/user-profile.mapper.spec.ts",
+      "legacy_sha": "f9c23eda3ee975f034e4919c9f30bd1d3ed67ce4",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/users/test/users.repository.spec.ts",
+      "legacy_sha": "18593a5390160a133932d1b4271c04be34568cd2",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/users/test/users.service.spec.ts",
+      "legacy_sha": "7a490bb75cfe3ace19612af1e9a9f6a6ec7cfa45",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/users/types/user-payload.types.ts",
+      "legacy_sha": "eb2a697a66c795aafcb3abc087db90c25b773c76",
+      "at_audit": "unchanged"
+    },
+    {
+      "path": "src/modules/users/users.module.ts",
+      "legacy_sha": "73914bfc54f417242ebd6a0b786c291d3bace763",
+      "at_audit": "unchanged"
+    },
+    {
+      "path": "src/modules/workout-analytics/controllers/workout-analytics.controller.ts",
+      "legacy_sha": "9af4d3dccf1d283d1f021ec3b34d48909b1053a1",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/workout-analytics/dto/workout-analytics.schemas.ts",
+      "legacy_sha": "0f05a8bc2bdc3fee8d47e95e4643b8b37fd7ea0c",
+      "at_audit": "unchanged"
+    },
+    {
+      "path": "src/modules/workout-analytics/repositories/workout-analytics.repository.ts",
+      "legacy_sha": "023083986c08e041104ced10d10327632083b0e0",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/workout-analytics/services/workout-analytics.service.ts",
+      "legacy_sha": "9a2db275f4f9026302867b1ae833edb6c8e12730",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/workout-analytics/test/controllers/workout-analytics-controller-registry.spec.ts",
+      "legacy_sha": "c517b75644ee456261e1f8c3983f1b044ec0c35f",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/workout-analytics/test/controllers/workout-analytics.controller.spec.ts",
+      "legacy_sha": "5f0458f04f2d1712fa530a9125e25d49f51d0bfd",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/workout-analytics/test/workout-analytics-window.spec.ts",
+      "legacy_sha": "d39a6aebbd26664d8a286673bd880bce1cccef9e",
+      "at_audit": "unchanged"
+    },
+    {
+      "path": "src/modules/workout-analytics/test/workout-analytics.schemas.spec.ts",
+      "legacy_sha": "dbc98fdc02786e7e356c654429f35eea3ca713b2",
+      "at_audit": "unchanged"
+    },
+    {
+      "path": "src/modules/workout-analytics/test/workout-analytics.service.spec.ts",
+      "legacy_sha": "55f3ff218089bb2b17e1c8599f9a3e0c9a9a331d",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/workout-analytics/types/workout-analytics.types.ts",
+      "legacy_sha": "6a7fd31a7713a24ab6f821f2beabbbcc27d42553",
+      "at_audit": "unchanged"
+    },
+    {
+      "path": "src/modules/workout-analytics/utils/workout-analytics-window.ts",
+      "legacy_sha": "cab78200f48bfe265ff374df9eebe4fd3902684e",
+      "at_audit": "unchanged"
+    },
+    {
+      "path": "src/modules/workout-analytics/workout-analytics.module.ts",
+      "legacy_sha": "f9d70e0a16a0ad53eb208df1a692749541a3b2f6",
+      "at_audit": "unchanged"
+    },
+    {
+      "path": "src/modules/workout-analytics/workout-analytics.responses.ts",
+      "legacy_sha": "273e8517a43eb186d2b0b43101e4dc2bd961ba04",
+      "at_audit": "unchanged"
+    },
+    {
+      "path": "src/modules/workouts/controllers/workouts.controller.ts",
+      "legacy_sha": "955c016a21d458d8df1e6299c6a00574ea167c86",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/workouts/dto/create-workout-from-program.dto.ts",
+      "legacy_sha": "7ec638397e4a1bea845f539ad756ff62d5808a43",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/workouts/dto/create-workout.dto.ts",
+      "legacy_sha": "9c0296b7c2b04d8344d70432d173901d28c660ac",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/workouts/dto/query-workouts.dto.ts",
+      "legacy_sha": "e2455d9f528a0626c0b0d529cdfe8273a42e2973",
+      "at_audit": "unchanged"
+    },
+    {
+      "path": "src/modules/workouts/dto/update-workout-set.dto.ts",
+      "legacy_sha": "ac76bec1275342e9db1068bc0082b6ee2c551086",
+      "at_audit": "unchanged"
+    },
+    {
+      "path": "src/modules/workouts/dto/update-workout.dto.ts",
+      "legacy_sha": "b3ceeacf143343a87089637553be80a475f5da04",
+      "at_audit": "unchanged"
+    },
+    {
+      "path": "src/modules/workouts/dto/workout.schemas.ts",
+      "legacy_sha": "2e59b3787bb88854966ddddc0ba93fc8d48da40b",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/workouts/policies/workout-access.policy.ts",
+      "legacy_sha": "f0e814c400d935bb8d2c2b243288f8ffd942898c",
+      "at_audit": "unchanged"
+    },
+    {
+      "path": "src/modules/workouts/repositories/workout-creation.repository.ts",
+      "legacy_sha": "57cdf29d54ec90d47d7d6bb5400bcafededee8d4",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/workouts/repositories/workout-lifecycle.repository.ts",
+      "legacy_sha": "e70430a835a26113f4c494b0bdaa678a8f3dc7fb",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/workouts/repositories/workout-locks.ts",
+      "legacy_sha": "b93856e1f746fafd7345bd57bd0476bcba82b5fb",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/workouts/repositories/workout-queries.repository.ts",
+      "legacy_sha": "caf4443f3cf242c581abb7a03f78ef0f2c786446",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/workouts/repositories/workout-sets.repository.ts",
+      "legacy_sha": "d8beb3b92124fae186bc14d09a69f42adb2fd801",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/workouts/repositories/workouts.repository.ts",
+      "legacy_sha": "184a7317efa4c9c09c88afca6192f574c0e0aaf2",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/workouts/selects/workout.select.ts",
+      "legacy_sha": "c87d75021986766d2ed68a749f90783697669b63",
+      "at_audit": "unchanged"
+    },
+    {
+      "path": "src/modules/workouts/services/workouts.service.ts",
+      "legacy_sha": "b4ecf87acc8eeb9891e3c0cfb59d4c226ea98079",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/workouts/test/controllers/workouts-controller-registry.spec.ts",
+      "legacy_sha": "213a1e10c3c698a0e886b924d2e8a509cfb1e620",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/workouts/test/controllers/workouts.controller.spec.ts",
+      "legacy_sha": "f7f4e579551241fc1ccae834c62a6934b06de89f",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/workouts/test/query-workouts.dto.spec.ts",
+      "legacy_sha": "ab2664a3e78aabb035203ee6667d7d87ccf68e9d",
+      "at_audit": "unchanged"
+    },
+    {
+      "path": "src/modules/workouts/test/update-workout-set.dto.spec.ts",
+      "legacy_sha": "c2b714590c51cba56fcf27d529b12dcf0872f89b",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/workouts/test/workout-access.policy.spec.ts",
+      "legacy_sha": "90894eb93a233c6c83cfc733cffbc78a21c1a79e",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/workouts/test/workout-command-transactions.repository.spec.ts",
+      "legacy_sha": "fc8247603181063c1fc583aae93e4c28756052b2",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/workouts/test/workout-decimal-precision.spec.ts",
+      "legacy_sha": "75fea0797120b76151345a4add0d37df01fcc744",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/workouts/test/workout-idempotency.spec.ts",
+      "legacy_sha": "ece2a36211dc4248c72c65dd28a61ab19f4095bb",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/workouts/test/workout.select.spec.ts",
+      "legacy_sha": "5e8b6a81720d718a94cfc44b6df1836cdd6cf8e9",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/workouts/test/workouts.repository.spec.ts",
+      "legacy_sha": "5a636a13193a5caf0e0224dbcc442be6ef279b99",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/workouts/test/workouts.service.spec.ts",
+      "legacy_sha": "1578c792dfd528c2d186cb94c09a11c6078567c6",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/workouts/types/workout.types.ts",
+      "legacy_sha": "27048efa271a41983926a574441100a9a822885f",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/workouts/utils/workout-idempotency.ts",
+      "legacy_sha": "21da70bed18b93b3f5e62ce8add5f89d0e12214b",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "src/modules/workouts/workouts.module.ts",
+      "legacy_sha": "d819a8a504563b10f144897ee06f10452c02e963",
+      "at_audit": "unchanged"
+    },
+    {
+      "path": "test/account-recovery-redis.e2e-spec.ts",
+      "legacy_sha": "ec0a7d40a4c14b8a017c74eda60922eb37bbe6fb",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "test/app.e2e-spec.ts",
+      "legacy_sha": "73e37242616ebb462a7c98710e4619a5db915e37",
+      "at_audit": "unchanged"
+    },
+    {
+      "path": "test/auth-rate-limit.e2e-spec.ts",
+      "legacy_sha": "335eeacdad22223492c228bf160903b3fe6521aa",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "test/auth.e2e-spec.ts",
+      "legacy_sha": "a6fa5af6c0cbb39726fccfa7b0764db519fa4d4e",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "test/body-measurements.e2e-spec.ts",
+      "legacy_sha": "de1fdb9c7e7dd1423ed7b01c2de58613d139612d",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "test/error-handling.e2e-spec.ts",
+      "legacy_sha": "a17196c1410296af75799d7061085631f51aa60e",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "test/exercises.e2e-spec.ts",
+      "legacy_sha": "d501cea4f4055fef8d77270eb3d7eb0b87091505",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "test/health.e2e-spec.ts",
+      "legacy_sha": "25e5199b74e4c0fd2ba9cf6785509fe2f6ae41a6",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "test/http-metrics.e2e-spec.ts",
+      "legacy_sha": "64a9e2d50069d75c83a5b4dcabfb16bb4fde902b",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "test/integration/api-principal-isolation.integration.e2e-spec.ts",
+      "legacy_sha": "f826ae18a217203f2e0cbdbf7554eaf8b9b46384",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "test/integration/auth-account-recovery-throttle.integration.e2e-spec.ts",
+      "legacy_sha": "56fe0a9df945a1f390974e180cac1bb632c2a486",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "test/integration/auth-account-throttle-redis-resilience.integration.e2e-spec.ts",
+      "legacy_sha": "04b5b29c9148af13137ccd35a847588f9ab92053",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "test/integration/auth-deleted-account.integration.e2e-spec.ts",
+      "legacy_sha": "a90724466aff00bc69b83d03d85b287435da3ec1",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "test/integration/auth-email-verification.integration.e2e-spec.ts",
+      "legacy_sha": "32df33cda62eead1ffe84ee595aafee0e486a35d",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "test/integration/auth-no-store.integration.e2e-spec.ts",
+      "legacy_sha": "582be92b750d72cf4159be5e8e6c5aacd336faf5",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "test/integration/auth-password-reset.integration.e2e-spec.ts",
+      "legacy_sha": "60f0d3658958c81102dcddfaa61c8f5f2897ec96",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "test/integration/auth-recovery-rate-limit.integration.e2e-spec.ts",
+      "legacy_sha": "3de19e4d831d6a24f8303175b62dcdc85093de77",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "test/integration/auth-registration-email-delivery.integration.e2e-spec.ts",
+      "legacy_sha": "593518de8284bd348a71df11e9ec0e870e281be9",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "test/integration/auth-session-management.integration.e2e-spec.ts",
+      "legacy_sha": "b7a289c10475f90c4523f693bbf33fa205149747",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "test/integration/auth-session.integration.e2e-spec.ts",
+      "legacy_sha": "2b632c1334d8732853537d8b9736e192a0a267ea",
+      "at_audit": "unchanged"
+    },
+    {
+      "path": "test/integration/auth-token-flow.integration.e2e-spec.ts",
+      "legacy_sha": "a8479c79377ea76bcbd8229cf3e689353db4b94a",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "test/integration/auth-verification-resend-user-throttle.integration.e2e-spec.ts",
+      "legacy_sha": "f77195dd73a1613f65c082babb4536e13dd36dbb",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "test/integration/auth.integration.e2e-spec.ts",
+      "legacy_sha": "930dc782400d24cba8386a24f62615b1cbbf3baa",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "test/integration/authentication-session-store.contract.e2e-spec.ts",
+      "legacy_sha": "6a120bc4d07f931989bf86ebc6c713462c5be066",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "test/integration/authentication-token-store.contract.e2e-spec.ts",
+      "legacy_sha": "339e892c4c91f616c31c083c437f4ceabef8445e",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "test/integration/exercise-trainer-access.integration.e2e-spec.ts",
+      "legacy_sha": "43e5f5239e55c02a14a55d013d85eede65f474c3",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "test/integration/list-query-indexes.integration.e2e-spec.ts",
+      "legacy_sha": "f77ba35a3a3906391650748541f8cf9b3b14e7d6",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "test/integration/prisma-session.store.integration.e2e-spec.ts",
+      "legacy_sha": "6525cc6e0b7dce99be4fd914c7eaed1977303bab",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "test/integration/prisma-token.store.integration.e2e-spec.ts",
+      "legacy_sha": "da76d430bc0e7d2da7ef9662ece6a261bf7eb0c9",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "test/integration/private-api-response-headers.integration.e2e-spec.ts",
+      "legacy_sha": "c76fbca7396f89b47b0d9e0d7586233a8526e719",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "test/integration/training-program-assignment-state.integration.e2e-spec.ts",
+      "legacy_sha": "dfc3ed026c87810cafa45286f2e10294da173cab",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "test/integration/training-program-assignment.repository.integration.e2e-spec.ts",
+      "legacy_sha": "84a46784145960dee3f616a4cfc6a3bef248b85b",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "test/integration/training-program-publication-integrity.integration.e2e-spec.ts",
+      "legacy_sha": "c3be563f99b806f63c800d8a0b2d43879c1c62d7",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "test/integration/training-program-version.repository.integration.e2e-spec.ts",
+      "legacy_sha": "7286d40bfd2e3ecb2e20fb71eae11eae03ecdf65",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "test/integration/users.repository.integration.e2e-spec.ts",
+      "legacy_sha": "8eae12736cf632731cf5acf509fdba622949c8d3",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "test/integration/workouts.repository.integration.e2e-spec.ts",
+      "legacy_sha": "06a4527d4570abcf1447b44868cd0198095ddab2",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "test/openapi-contracts.e2e-spec.ts",
+      "legacy_sha": "1d8732b14f9e932f339af7a1622a031c01be0310",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "test/rate-limit-proxy.e2e-spec.ts",
+      "legacy_sha": "f1f9fd5ad44e226f09da79f73b10d5b0e722332c",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "test/rate-limit-redis-observability.e2e-spec.ts",
+      "legacy_sha": "8e2be082e9f5c0204954aa02e3b932caa0926451",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "test/rate-limit-redis.e2e-spec.ts",
+      "legacy_sha": "c360f87fd9e604ca6959610a62b38f30a2761d31",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "test/tokens.controller.e2e-spec.ts",
+      "legacy_sha": "56f239b89f292d3bc486708bab2c672ac39868da",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "test/trainer-athlete-exercise-copy.e2e-spec.ts",
+      "legacy_sha": "7763ebf12ca7ce834fb437f2d532e592433c4781",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "test/trainer-athletes.e2e-spec.ts",
+      "legacy_sha": "1ebbb729f50471d293edba7dea490caf07bd72cf",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "test/users.e2e-spec.ts",
+      "legacy_sha": "b1c28974f3908e497e9a37825d1f9cd0e4bc8b32",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "test/utility/test-db-helper.ts",
+      "legacy_sha": "baae49234b91ff9628c10dda1aac449c493b8ca6",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "test/verification-resend-redis.e2e-spec.ts",
+      "legacy_sha": "9e7c75147df7302bae8d885622678d1b5785f05b",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "test/workout-analytics.e2e-spec.ts",
+      "legacy_sha": "ddf21f6f4d249fc43c16172d78afa5d0dece5c6a",
+      "at_audit": "adapted"
+    },
+    {
+      "path": "test/workouts.e2e-spec.ts",
+      "legacy_sha": "17a193415382d5ae8f63f869a12c56161e12f615",
+      "at_audit": "adapted"
+    }
+  ]
+}
