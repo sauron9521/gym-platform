@@ -5,6 +5,7 @@ import Link from 'next/link';
 
 import { webApi } from '@/shared/api/client';
 import { Button } from '@/shared/ui/button';
+import { ProfileAvatar } from './profile-avatar';
 import {
   buildProfilePatch,
   getProfileErrorMessage,
@@ -134,6 +135,14 @@ export function ProfileEditor() {
         <p role="status" className="text-sm">
           Профіль оновлено.
         </p>
+      )}
+      {!unauthenticated && account && draft && (
+        <ProfileAvatar
+          avatarUrl={account.profile?.avatarUrl}
+          displayName={account.profile?.displayName || account.profile?.firstName || ''}
+          email={account.email}
+          onChanged={loadProfile}
+        />
       )}
       {!unauthenticated && account && draft && (
         <form onSubmit={submit} className="space-y-5 rounded-xl border p-6">

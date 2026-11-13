@@ -149,3 +149,15 @@ password recovery against a live server are not claimed by offline CI.
 ## User profile
 
 The dynamic /profile route verifies the cookie-backed session server-side before rendering any private UI. Its client form loads profile data using the typed same-origin GET /users/me and updates using PATCH /users/me. PATCH 200 has no response body in OpenAPI; the UI re-reads GET after successful changes. Weight and height accept decimal values; nullable fields can be cleared. Email and account role are read-only. Avatar upload is intentionally a separate PR. Tokens and raw API errors are never displayed or stored in browser storage.
+
+## Avatar management
+
+The authenticated /profile page displays a backend-managed avatar from GET /users/me.
+Only canonical /avatars/<uuid>.(png|jpg|webp) paths are accepted and mapped to
+same-origin /backend/avatars/*, never arbitrary external URLs. Image files are
+posted using native multipart FormData with field "file" to POST /users/me/avatar.
+DELETE /users/me/avatar removes the avatar only after explicit confirmation.
+Both mutations re-read GET /users/me; on failure the UI does not claim success.
+Client-side guards allow PNG/JPEG/WebP up to 2 MiB, while the API remains
+authoritative for image content validation and dimensions. No bearer tokens,
+image blobs, or arbitrary upstream errors are stored or logged. No new packages.
