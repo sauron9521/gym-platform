@@ -30,7 +30,7 @@ test('all historical E2E suites are mapped to module folders with no flat legacy
   for (const { path } of historicalE2e) {
     const relocated = relocationMap[path];
     assert.ok(relocated, 'Missing historical E2E relocation: ' + path);
-    assert.match(relocated, /^test\\/(?:e2e|integration)\\/[a-z-]+\\/[^/]+\\.e2e-spec\\.ts$/);
+    assert.match(relocated, /^test\/(?:e2e|integration)\/[a-z-]+\/[^/]+\.e2e-spec\.ts$/);
   }
 
   for (const directory of [testRoot, join(testRoot, 'integration')]) {
