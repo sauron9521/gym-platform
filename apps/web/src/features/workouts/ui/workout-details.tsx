@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { webApi } from '@/shared/api/client';
 import { Button } from '@/shared/ui/button';
 import { WorkoutActions } from './workout-actions';
+import { EditWorkoutForm } from './edit-workout-form';
 import { WorkoutSetForm } from './workout-set-form';
 import {
   formatWorkoutValue,
@@ -35,6 +36,7 @@ export function WorkoutDetails({ id }: { id: string }) {
   const router = useRouter();
   const [attempt, setAttempt] = useState(0);
   const [editingSetId, setEditingSetId] = useState<string | null>(null);
+  const [editingWorkout, setEditingWorkout] = useState(false);
   const [state, setState] = useState<DetailsState>({ kind: 'loading' });
 
   useEffect(() => {
@@ -63,6 +65,7 @@ export function WorkoutDetails({ id }: { id: string }) {
   }, [id, attempt, router]);
 
   function retry() {
+    setEditingWorkout(false);
     setEditingSetId(null);
     setState({ kind: 'loading' });
     setAttempt((current) => current + 1);
@@ -97,6 +100,11 @@ export function WorkoutDetails({ id }: { id: string }) {
               <span className="rounded-full bg-muted px-3 py-1 text-xs font-medium">
                 {getWorkoutStatusLabel(state.workout.status)}
               </span>
+              {state.workout.status === 'PLANNED' && !editingWorkout && (
+                <Button type="button" variant="outline" onClick={() => setEditingWorkout(true)}>
+                  Редагувати
+                </Button>
+              )}
             </div>
             <dl className="grid gap-3 text-sm sm:grid-cols-3">
               <SetMetric label="Заплановано" value={formatWorkoutDate(state.workout.scheduledAt)} />
@@ -110,11 +118,25 @@ export function WorkoutDetails({ id }: { id: string }) {
             )}
           </header>
 
-          <WorkoutActions
-            workout={state.workout}
-            onUpdated={(workout) => setState({ kind: 'ready', workout })}
-            onReload={retry}
-          />
+          {editingWorkout && state.workout.status === 'PLANNED' && (
+            <EditWorkoutForm
+              workout={state.workout}
+              onSaved={(workout) => {
+                setState({ kind: 'ready', workout });
+                setEditingWorkout(false);
+              }}
+              onCancel={() => setEditingWorkout(false)}
+              onReload={retry}
+            />
+          )}
+
+          {!editingWorkout && (
+            <WorkoutActions
+              workout={state.workout}
+              onUpdated={(workout) => setState({ kind: 'ready', workout })}
+              onReload={retry}
+            />
+          )}
 
           <section className="space-y-4" aria-label="Вправи тренування">
             <h2 className="text-xl font-semibold">Вправи ({state.workout.exercises.length})</h2>
