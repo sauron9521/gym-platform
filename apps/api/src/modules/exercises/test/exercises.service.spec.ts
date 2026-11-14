@@ -92,9 +92,7 @@ describe('ExercisesService', () => {
       repository.listMuscleGroups.mockResolvedValue([{ slug: 'chest', name: 'Chest' }]);
       repository.listEquipment.mockResolvedValue([{ slug: 'barbell', name: 'Barbell' }]);
 
-      await expect(service.listMuscleGroups()).resolves.toEqual([
-        { slug: 'chest', name: 'Chest' },
-      ]);
+      await expect(service.listMuscleGroups()).resolves.toEqual([{ slug: 'chest', name: 'Chest' }]);
       await expect(service.listEquipment()).resolves.toEqual([
         { slug: 'barbell', name: 'Barbell' },
       ]);
