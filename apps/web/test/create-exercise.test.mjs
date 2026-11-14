@@ -5,9 +5,7 @@ import { test } from 'node:test';
 import {
   buildCreateExercisePayload,
   createExerciseFormSchema,
-  EQUIPMENT_OPTIONS,
   getCreateExerciseErrorMessage,
-  MUSCLE_OPTIONS,
 } from '../src/features/exercises/lib/create-exercise.ts';
 
 function validExercise() {
@@ -25,11 +23,16 @@ function validExercise() {
   };
 }
 
-test('custom exercise schema accepts valid seed-backed relations', () => {
+test('custom exercise form validates relations without a hardcoded seed allowlist', () => {
   const result = createExerciseFormSchema.safeParse(validExercise());
   assert.equal(result.success, true);
-  assert.ok(MUSCLE_OPTIONS.some((item) => item.slug === 'shoulders'));
-  assert.ok(EQUIPMENT_OPTIONS.some((item) => item.slug === 'dumbbell'));
+  assert.equal(
+    createExerciseFormSchema.safeParse({
+      ...validExercise(),
+      muscleGroups: [{ slug: 'new-database-muscle', role: 'PRIMARY' }],
+    }).success,
+    true,
+  );
 });
 
 test('athlete payload includes privacy and omits empty optional text', () => {
@@ -60,12 +63,12 @@ test('trainer payload omits forbidden visibility despite form defaults', () => {
   assert.equal(payload.instructions, 'Виконувати плавно');
 });
 
-test('schema rejects missing primary muscles and duplicate or unknown slugs', () => {
+test('schema rejects missing primary muscles and duplicate or malformed slugs', () => {
   const exercise = validExercise();
   const invalid = [
     { muscleGroups: [] },
     { muscleGroups: [{ slug: 'triceps', role: 'SECONDARY' }] },
-    { muscleGroups: [{ slug: 'invalid-muscle', role: 'PRIMARY' }] },
+    { muscleGroups: [{ slug: '', role: 'PRIMARY' }] },
     {
       muscleGroups: [
         { slug: 'chest', role: 'PRIMARY' },
@@ -73,7 +76,7 @@ test('schema rejects missing primary muscles and duplicate or unknown slugs', ()
       ],
     },
     { equipment: ['dumbbell', 'dumbbell'] },
-    { equipment: ['invalid-equipment'] },
+    { equipment: [''] },
   ];
   for (const changes of invalid) {
     assert.equal(createExerciseFormSchema.safeParse({ ...exercise, ...changes }).success, false);
@@ -89,11 +92,11 @@ test('API bounds for text, muscle groups and equipment are enforced', () => {
     { instructions: 'x'.repeat(10001) },
     {
       muscleGroups: Array.from({ length: 11 }, (_, i) => ({
-        slug: MUSCLE_OPTIONS[i].slug,
+        slug: `muscle-${i}`,
         role: 'PRIMARY',
       })),
     },
-    { equipment: EQUIPMENT_OPTIONS.slice(0, 21).map((item) => item.slug) },
+    { equipment: Array.from({ length: 21 }, (_, i) => `equipment-${i}`) },
   ]) {
     assert.equal(createExerciseFormSchema.safeParse({ ...exercise, ...changes }).success, false);
   }
@@ -136,5 +139,15 @@ test('creation uses typed POST and RHF/Zod, with state and auth handling', async
   assert.match(form, /role === 'ATHLETE'/);
   assert.match(form, /disabled=\{busy\}/);
   assert.match(catalog, /href="\/exercises\/new"/);
+  const taxonomyHook = await readFile(
+    new URL('../src/features/exercises/lib/use-exercise-taxonomy.ts', import.meta.url),
+    'utf8',
+  );
+  assert.match(taxonomyHook, /GET\\('\/exercise-taxonomy\/muscle-groups'/);
+  assert.match(taxonomyHook, /GET\\('\/exercise-taxonomy\/equipment'/);
+  assert.match(form, /useExerciseTaxonomy/);
+  assert.match(form, /taxonomy.kind !== 'ready'/);
+  assert.match(catalog, /useExerciseTaxonomy/);
+  assert.doesNotMatch(form, /MUSCLE_OPTIONS|EQUIPMENT_OPTIONS/);
   assert.doesNotMatch(form, /localStorage|sessionStorage|dangerouslySetInnerHTML/);
 });
