@@ -41,7 +41,11 @@ export class PrismaTokenStore implements RefreshTokenStore, EmailTokenStore {
 
   async saveRefreshToken(record: RefreshTokenRecord): Promise<void> {
     await this.prisma.$transaction(async (tx) => {
-      await tx.refreshTokenFamily.upsert({
+      // The family tombstone is authoritative: library rotation may save
+      // another successor after a concurrent request has revoked its family.
+      // Read the revocation state from the same upsert/transaction and
+      // persist the successor as already revoked in that case.
+      const family = await tx.refreshTokenFamily.upsert({
         where: { id: record.familyId },
         create: {
           id: record.familyId,
@@ -49,6 +53,7 @@ export class PrismaTokenStore implements RefreshTokenStore, EmailTokenStore {
           familyExpiresAt: record.familyExpiresAt,
         },
         update: {},
+        select: { revokedAt: true },
       });
 
       await tx.refreshToken.create({
@@ -60,7 +65,7 @@ export class PrismaTokenStore implements RefreshTokenStore, EmailTokenStore {
           expiresAt: record.expiresAt,
           familyExpiresAt: record.familyExpiresAt,
           usedAt: record.usedAt ?? null,
-          revoked: false,
+          revoked: family.revokedAt !== null,
           claims: (record.claims as Prisma.InputJsonValue) ?? undefined,
         },
       });
