@@ -15,6 +15,7 @@ function allScopes() {
     client: true,
     deps: true,
     workspaces: true,
+    redis: false,
   };
 }
 
@@ -31,6 +32,16 @@ export function classifyChangedPaths(paths, { forceFull = false } = {}) {
     client: false,
     deps: false,
     workspaces: false,
+    redis: paths.some(
+      (raw) =>
+        typeof raw === 'string' &&
+        [
+          'infra/docker/compose.yaml',
+          'scripts/test-redis-upgrade.sh',
+          'scripts/ci-select.mjs',
+          '.github/workflows/ci.yml',
+        ].includes(raw.replaceAll('\\', '/')),
+    ),
   };
 
   for (const rawPath of paths) {
@@ -85,7 +96,7 @@ export function classifyChangedPaths(paths, { forceFull = false } = {}) {
     }
 
     // Root manifests, lockfile, CI, infra and unknown files invalidate all.
-    return allScopes();
+    return { ...allScopes(), redis: selected.redis };
   }
 
   selected.workspaces = selected.api || selected.web || selected.mobile || selected.client;

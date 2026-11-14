@@ -30,6 +30,7 @@ jobs:
       client: ${{ steps.select.outputs.client }}
       deps: ${{ steps.select.outputs.deps }}
       workspaces: ${{ steps.select.outputs.workspaces }}
+      redis: ${{ steps.select.outputs.redis }}
 
     steps:
       - name: Checkout complete history for safe PR diff
@@ -215,6 +216,11 @@ jobs:
 
       - name: Check formatting
         run: pnpm format:check
+
+      # Only Redis-related pull requests exercise the extra Docker image upgrade.
+      - name: Rehearse isolated Redis 7 to Redis 8 AOF and backup recovery
+        if: github.event_name == 'pull_request' && needs.changes.outputs.redis == 'true'
+        run: bash scripts/test-redis-upgrade.sh
 
       - name: Full workspace regression for main and cross-cutting changes
         if: needs.changes.outputs.full == 'true'
