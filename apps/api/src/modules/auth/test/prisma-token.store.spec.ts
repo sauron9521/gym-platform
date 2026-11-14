@@ -69,7 +69,9 @@ describe('PrismaTokenStore security and persistence contracts', () => {
     prisma.refreshTokenFamily.upsert.mockResolvedValue({ revokedAt: null });
     prisma.refreshToken.updateMany.mockResolvedValue({ count: 0 });
     prisma.emailToken.findMany.mockResolvedValue([]);
-    prisma.$queryRaw.mockResolvedValue([{ revokedAt: null }]);
+    prisma.$queryRaw.mockImplementation(async (sql: TemplateStringsArray) =>
+      sql.join('').includes('FOR UPDATE') ? [{ revokedAt: null }] : [],
+    );
     store = new PrismaTokenStore(
       prisma as unknown as PrismaService,
       storage as unknown as AuthenticationStorage,
