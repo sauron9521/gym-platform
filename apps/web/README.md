@@ -262,5 +262,9 @@ pnpm --filter @gym/web test:e2e:integration
 Provide the API's required test JWT/environment settings. The suite reserves
 ports 3200/3201 and creates a unique test account, which remains in the disposable
 database. It verifies login, secure HttpOnly cookies, profile persistence, role
-isolation and sign-out. The `Web / Real API and PostgreSQL` CI job provisions its
-own PostgreSQL service and retains failure traces. No existing database is reset.
+isolation and sign-out. Twelve authenticated profile reads within one minute guard
+against the former 10/minute limit. An independent HTTP context replays the saved
+session cookie after logout and requires 401, proving server-side revocation.
+The `Web / Real API and PostgreSQL` CI check is required by `protect-main`; its job
+provisions its own PostgreSQL service and retains failure traces. No existing
+database is reset.
