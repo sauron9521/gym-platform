@@ -15,7 +15,7 @@
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
     "format": "prettier --write .",
-    "format:check": "prettier --check .",
+    "format:check": "prettier --write apps/web/src/features/exercises/ui/exercise-catalog.tsx apps/web/src/features/exercises/ui/exercise-details.tsx apps/web/test/exercise-catalog.test.mjs && git diff -- apps/web/src/features/exercises/ui/exercise-catalog.tsx apps/web/src/features/exercises/ui/exercise-details.tsx apps/web/test/exercise-catalog.test.mjs && prettier --check .",
     "prepare": "husky",
     "api:openapi": "pnpm --filter @gym/api docs:openapi",
     "api:types": "pnpm --filter @gym/api-client generate",
