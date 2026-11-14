@@ -121,7 +121,10 @@ test('PostgreSQL E2E is split across isolated runners and all shards remain requ
   assert.ok(suite);
   assert.ok(gate);
   assert.match(suite, /strategy:\n\s+fail-fast: false\n\s+matrix:\n\s+shard: \[1, 2\]/);
-  assert.match(suite, /run: pnpm --filter @gym\/api exec vitest run --config \.\/vitest\.config\.e2e\.ts --shard=\$\{\{ matrix\.shard \}\}\/2/);
+  assert.match(
+    suite,
+    /run: pnpm --filter @gym\/api exec vitest run --config \.\/vitest\.config\.e2e\.ts --shard=\$\{\{ matrix\.shard \}\}\/2/,
+  );
   assert.match(suite, /if: matrix\.shard == 1\n\s+run: pnpm api:contract:check/);
   assert.match(
     suite,
@@ -132,10 +135,8 @@ test('PostgreSQL E2E is split across isolated runners and all shards remain requ
   assert.doesNotMatch(suite, /--passWithNoTests/);
 
   // The volume test runs inside normal E2E (not a separate, optional gate).
-  const volumeTest = readFileSync(
-    new URL('../apps/api/test/integration/auth/auth-cleanup-volume.integration.e2e-spec.ts', import.meta.url),
-    'utf8',
-  );
+  const volumePath = '../apps/api/test/integration/auth/auth-cleanup-volume.integration.e2e-spec.ts';
+  const volumeTest = readFileSync(new URL(volumePath, import.meta.url), 'utf8');
   assert.match(volumeTest, /EXPIRED_PER_TABLE = 1_200/);
   assert.match(volumeTest, /\[500, 500, 500\]/);
   assert.match(volumeTest, /\[200, 200, 200\]/);
