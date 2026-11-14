@@ -5,60 +5,6 @@ export type CustomExerciseActorRole = 'ATHLETE' | 'TRAINER';
 export type CreateExercisePayload =
   operations['ExercisesController_create']['requestBody']['content']['application/json'];
 
-// These slugs mirror the checked-in Prisma seed. A taxonomy API should replace
-// this static reference when users can administer muscle groups and equipment.
-export const MUSCLE_OPTIONS = [
-  { slug: 'chest', label: 'Грудні' },
-  { slug: 'lats', label: 'Найширші м’язи спини' },
-  { slug: 'upper-back', label: 'Верх спини' },
-  { slug: 'lower-back', label: 'Низ спини' },
-  { slug: 'shoulders', label: 'Плечі' },
-  { slug: 'biceps', label: 'Біцепс' },
-  { slug: 'triceps', label: 'Трицепс' },
-  { slug: 'forearms', label: 'Передпліччя' },
-  { slug: 'abs', label: 'М’язи живота' },
-  { slug: 'obliques', label: 'Косі м’язи живота' },
-  { slug: 'quadriceps', label: 'Квадрицепс' },
-  { slug: 'hamstrings', label: 'Задня поверхня стегна' },
-  { slug: 'glutes', label: 'Сідничні м’язи' },
-  { slug: 'calves', label: 'Литки' },
-  { slug: 'adductors', label: 'Привідні м’язи стегна' },
-  { slug: 'abductors', label: 'Відвідні м’язи стегна' },
-  { slug: 'hip-flexors', label: 'Згиначі стегна' },
-  { slug: 'traps', label: 'Трапецієподібні м’язи' },
-] as const;
-
-export const EQUIPMENT_OPTIONS = [
-  { slug: 'barbell', label: 'Штанга' },
-  { slug: 'dumbbell', label: 'Гантелі' },
-  { slug: 'ez-bar', label: 'EZ-гриф' },
-  { slug: 'kettlebell', label: 'Гиря' },
-  { slug: 'cable-machine', label: 'Блоковий тренажер' },
-  { slug: 'smith-machine', label: 'Тренажер Сміта' },
-  { slug: 'resistance-band', label: 'Еспандер' },
-  { slug: 'pull-up-bar', label: 'Турнік' },
-  { slug: 'dip-station', label: 'Бруси' },
-  { slug: 'bench', label: 'Лава' },
-  { slug: 'squat-rack', label: 'Силова рама' },
-  { slug: 'leg-press-machine', label: 'Жим ногами' },
-  { slug: 'leg-extension-machine', label: 'Розгинання ніг' },
-  { slug: 'leg-curl-machine', label: 'Згинання ніг' },
-  { slug: 'lat-pulldown-machine', label: 'Верхній блок' },
-  { slug: 'chest-press-machine', label: 'Жим для грудей' },
-  { slug: 'pec-deck-machine', label: 'Пек-дек' },
-  { slug: 'calf-raise-machine', label: 'Тренажер для литок' },
-  { slug: 'adductor-machine', label: 'Привідний тренажер' },
-  { slug: 'abductor-machine', label: 'Відвідний тренажер' },
-  { slug: 'treadmill', label: 'Бігова доріжка' },
-  { slug: 'stationary-bike', label: 'Велотренажер' },
-  { slug: 'rowing-machine', label: 'Гребний тренажер' },
-  { slug: 'elliptical-machine', label: 'Еліптичний тренажер' },
-  { slug: 'plyo-box', label: 'Пліобокс' },
-  { slug: 'ab-wheel', label: 'Ролик для преса' },
-  { slug: 'exercise-mat', label: 'Килимок' },
-  { slug: 'bodyweight', label: 'Власна вага' },
-] as const;
-
 export const CREATE_EXERCISE_TYPES = [
   { value: 'STRENGTH', label: 'Силова' },
   { value: 'CARDIO', label: 'Кардіо' },
@@ -105,28 +51,6 @@ export const createExerciseFormSchema = z
         code: 'custom',
         path: ['equipment'],
         message: 'Обладнання не повинно повторюватися.',
-      });
-    }
-
-    const muscleSlugs = new Set(MUSCLE_OPTIONS.map((item) => item.slug));
-    if (muscles.some((item) => !muscleSlugs.has(item as (typeof MUSCLE_OPTIONS)[number]['slug']))) {
-      ctx.addIssue({
-        code: 'custom',
-        path: ['muscleGroups'],
-        message: 'Оберіть м’язові групи зі списку.',
-      });
-    }
-
-    const equipmentSlugs = new Set(EQUIPMENT_OPTIONS.map((item) => item.slug));
-    if (
-      data.equipment.some(
-        (item) => !equipmentSlugs.has(item as (typeof EQUIPMENT_OPTIONS)[number]['slug']),
-      )
-    ) {
-      ctx.addIssue({
-        code: 'custom',
-        path: ['equipment'],
-        message: 'Оберіть обладнання зі списку.',
       });
     }
   });

@@ -316,6 +316,30 @@ describe('ExercisesRepository', () => {
     });
   });
 
+  describe('public taxonomy', () => {
+    it('loads only stable, sorted muscle references', async () => {
+      const items = [{ id: 'muscle-1', slug: 'chest', name: 'Chest' }];
+      prisma.muscleGroup.findMany.mockResolvedValue(items);
+
+      await expect(repository.listMuscleGroups()).resolves.toEqual(items);
+      expect(prisma.muscleGroup.findMany).toHaveBeenCalledWith({
+        select: { id: true, name: true, slug: true },
+        orderBy: [{ name: 'asc' }, { id: 'asc' }],
+      });
+    });
+
+    it('loads only stable, sorted equipment references', async () => {
+      const items = [{ id: 'equipment-1', slug: 'barbell', name: 'Barbell' }];
+      prisma.equipment.findMany.mockResolvedValue(items);
+
+      await expect(repository.listEquipment()).resolves.toEqual(items);
+      expect(prisma.equipment.findMany).toHaveBeenCalledWith({
+        select: { id: true, name: true, slug: true },
+        orderBy: [{ name: 'asc' }, { id: 'asc' }],
+      });
+    });
+  });
+
   describe('findMuscleGroupsBySlugs', () => {
     it('should return muscle groups by slugs', async () => {
       const muscleGroups = [

@@ -70,6 +70,15 @@ export class ExercisesService {
     return this.exercisesRepository.create(data);
   }
 
+  /** Reference data is public, independent of custom exercise visibility. */
+  listMuscleGroups() {
+    return this.exercisesRepository.listMuscleGroups();
+  }
+
+  listEquipment() {
+    return this.exercisesRepository.listEquipment();
+  }
+
   // FIND MANY
   async findMany(
     actor: ExerciseActor | null,

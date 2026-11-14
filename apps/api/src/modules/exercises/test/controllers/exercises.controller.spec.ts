@@ -14,6 +14,8 @@ describe('ExercisesController', () => {
   let controller: ExercisesController;
 
   const exercisesService = {
+    listMuscleGroups: vi.fn(),
+    listEquipment: vi.fn(),
     findMany: vi.fn(),
     findOne: vi.fn(),
     create: vi.fn(),
@@ -55,6 +57,26 @@ describe('ExercisesController', () => {
     }).compile();
 
     controller = module.get<ExercisesController>(ExercisesController);
+  });
+
+  describe('taxonomy', () => {
+    it('returns public muscle groups without exercise access lookups', async () => {
+      const items = [{ id: 'muscle-1', slug: 'chest', name: 'Chest' }];
+      exercisesService.listMuscleGroups.mockResolvedValue(items);
+
+      await expect(controller.listMuscleGroups()).resolves.toEqual(items);
+      expect(exercisesService.listMuscleGroups).toHaveBeenCalledOnce();
+      expect(trainerAthletesService.getExerciseAccessContext).not.toHaveBeenCalled();
+    });
+
+    it('returns public equipment without exercise access lookups', async () => {
+      const items = [{ id: 'equipment-1', slug: 'barbell', name: 'Barbell' }];
+      exercisesService.listEquipment.mockResolvedValue(items);
+
+      await expect(controller.listEquipment()).resolves.toEqual(items);
+      expect(exercisesService.listEquipment).toHaveBeenCalledOnce();
+      expect(trainerAthletesService.getExerciseAccessContext).not.toHaveBeenCalled();
+    });
   });
 
   describe('findMany', () => {

@@ -1224,6 +1224,78 @@
         "tags": ["Exercises"]
       }
     },
+    "/exercises/muscle-groups": {
+      "get": {
+        "operationId": "ExercisesController_listMuscleGroups",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "slug": {
+                        "type": "string"
+                      }
+                    },
+                    "required": ["id", "name", "slug"],
+                    "additionalProperties": false
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": ["Exercises"]
+      }
+    },
+    "/exercises/equipment": {
+      "get": {
+        "operationId": "ExercisesController_listEquipment",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "slug": {
+                        "type": "string"
+                      }
+                    },
+                    "required": ["id", "name", "slug"],
+                    "additionalProperties": false
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": ["Exercises"]
+      }
+    },
     "/exercises/{id}": {
       "get": {
         "operationId": "ExercisesController_findOne",

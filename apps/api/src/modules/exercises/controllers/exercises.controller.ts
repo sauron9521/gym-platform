@@ -13,6 +13,7 @@ import {
   archivedExerciseResponseSchema,
   exerciseListResponseSchema,
   exerciseResponseSchema,
+  exerciseTaxonomyListResponseSchema,
 } from '#src/infra/openapi/response-contracts';
 
 import { ExercisesService } from '../services/exercises.service.js';
@@ -55,6 +56,23 @@ export class ExercisesController {
       : EMPTY_ACCESS_CONTEXT;
 
     return this.exercisesService.findMany(user, query, access);
+  }
+
+  /** Specific routes must precede /:id, which accepts only UUIDs. */
+  @Throttle({ default: { limit: 60, ttl: 60_000 } })
+  @Get('muscle-groups')
+  @ApiOkResponse({ schema: exerciseTaxonomyListResponseSchema })
+  @Authenticate({ optional: true })
+  listMuscleGroups() {
+    return this.exercisesService.listMuscleGroups();
+  }
+
+  @Throttle({ default: { limit: 60, ttl: 60_000 } })
+  @Get('equipment')
+  @ApiOkResponse({ schema: exerciseTaxonomyListResponseSchema })
+  @Authenticate({ optional: true })
+  listEquipment() {
+    return this.exercisesService.listEquipment();
   }
 
   @Throttle({ default: { limit: 60, ttl: 60_000 } })

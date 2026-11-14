@@ -248,6 +248,35 @@ describe('Exercises (HTTP + PostgreSQL)', () => {
     });
   });
 
+  describe('GET /exercises/muscle-groups and /exercises/equipment', () => {
+    it('returns seeded taxonomy as minimal sorted public records for guests', async () => {
+      for (const [path, slug] of [
+        ['/exercises/muscle-groups', 'chest'],
+        ['/exercises/equipment', 'barbell'],
+      ]) {
+        const response = await request(app!.getHttpServer()).get(path);
+        expect(response.status).toBe(200);
+        expect(response.body).toEqual(expect.arrayContaining([expect.objectContaining({ slug })]));
+        for (const item of response.body as Array<Record<string, unknown>>) {
+          expect(Object.keys(item).sort()).toEqual(['id', 'name', 'slug']);
+        }
+
+        const ids = response.body.map((item: { id: string }) => item.id);
+        expect(new Set(ids).size).toBe(ids.length);
+      }
+    });
+
+    it('returns the same public taxonomy for signed-in athletes', async () => {
+      const [guest, authenticated] = await Promise.all([
+        request(app!.getHttpServer()).get('/exercises/muscle-groups'),
+        request(app!.getHttpServer()).get('/exercises/muscle-groups').set('Cookie', ownerCookie),
+      ]);
+      expect(guest.status).toBe(200);
+      expect(authenticated.status).toBe(200);
+      expect(authenticated.body).toEqual(guest.body);
+    });
+  });
+
   describe('GET /exercises/:id', () => {
     it('should return a global exercise to guests', async () => {
       const response = await request(app!.getHttpServer()).get(`/exercises/${globalExerciseId}`);

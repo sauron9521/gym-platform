@@ -5,9 +5,7 @@ import { test } from 'node:test';
 import {
   buildCreateExercisePayload,
   createExerciseFormSchema,
-  EQUIPMENT_OPTIONS,
   getCreateExerciseErrorMessage,
-  MUSCLE_OPTIONS,
 } from '../src/features/exercises/lib/create-exercise.ts';
 
 function validExercise() {
@@ -25,11 +23,14 @@ function validExercise() {
   };
 }
 
-test('custom exercise schema accepts valid seed-backed relations', () => {
+test('custom exercise schema accepts valid relation slugs from the API', () => {
   const result = createExerciseFormSchema.safeParse(validExercise());
   assert.equal(result.success, true);
-  assert.ok(MUSCLE_OPTIONS.some((item) => item.slug === 'shoulders'));
-  assert.ok(EQUIPMENT_OPTIONS.some((item) => item.slug === 'dumbbell'));
+  assert.deepEqual(
+    result.data.muscleGroups.map((item) => item.slug),
+    ['shoulders', 'triceps'],
+  );
+  assert.deepEqual(result.data.equipment, ['dumbbell', 'bench']);
 });
 
 test('athlete payload includes privacy and omits empty optional text', () => {
@@ -65,7 +66,6 @@ test('schema rejects missing primary muscles and duplicate or unknown slugs', ()
   const invalid = [
     { muscleGroups: [] },
     { muscleGroups: [{ slug: 'triceps', role: 'SECONDARY' }] },
-    { muscleGroups: [{ slug: 'invalid-muscle', role: 'PRIMARY' }] },
     {
       muscleGroups: [
         { slug: 'chest', role: 'PRIMARY' },
@@ -73,7 +73,6 @@ test('schema rejects missing primary muscles and duplicate or unknown slugs', ()
       ],
     },
     { equipment: ['dumbbell', 'dumbbell'] },
-    { equipment: ['invalid-equipment'] },
   ];
   for (const changes of invalid) {
     assert.equal(createExerciseFormSchema.safeParse({ ...exercise, ...changes }).success, false);
@@ -89,14 +88,23 @@ test('API bounds for text, muscle groups and equipment are enforced', () => {
     { instructions: 'x'.repeat(10001) },
     {
       muscleGroups: Array.from({ length: 11 }, (_, i) => ({
-        slug: MUSCLE_OPTIONS[i].slug,
+        slug: `test-muscle-${i}`,
         role: 'PRIMARY',
       })),
     },
-    { equipment: EQUIPMENT_OPTIONS.slice(0, 21).map((item) => item.slug) },
+    { equipment: Array.from({ length: 21 }, (_, i) => `test-equipment-${i}`) },
   ]) {
     assert.equal(createExerciseFormSchema.safeParse({ ...exercise, ...changes }).success, false);
   }
+});
+
+test('new database-defined slugs are not rejected by a hardcoded frontend allowlist', () => {
+  const parsed = createExerciseFormSchema.safeParse({
+    ...validExercise(),
+    muscleGroups: [{ slug: 'new-muscle-from-database', role: 'PRIMARY' }],
+    equipment: ['new-equipment-from-database'],
+  });
+  assert.equal(parsed.success, true);
 });
 
 test('errors remain safe and do not expose upstream messages', () => {

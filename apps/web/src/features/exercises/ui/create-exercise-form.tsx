@@ -12,15 +12,15 @@ import {
   buildCreateExercisePayload,
   CREATE_EXERCISE_TYPES,
   createExerciseFormSchema,
-  EQUIPMENT_OPTIONS,
   getCreateExerciseErrorMessage,
-  MUSCLE_OPTIONS,
   type CreateExerciseValues,
   type CustomExerciseActorRole,
 } from '../lib/create-exercise';
+import { useExerciseTaxonomy } from './use-exercise-taxonomy';
 
 export function CreateExerciseForm({ role }: { role: CustomExerciseActorRole }) {
   const router = useRouter();
+  const { state: taxonomy, retry: retryTaxonomy } = useExerciseTaxonomy();
   const [selectedMuscle, setSelectedMuscle] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [created, setCreated] = useState(false);
@@ -44,9 +44,11 @@ export function CreateExerciseForm({ role }: { role: CustomExerciseActorRole }) 
   });
   const { errors, isSubmitting } = form.formState;
   const busy = isSubmitting || created;
+  const muscleOptions = taxonomy.kind === 'ready' ? taxonomy.muscleGroups : [];
+  const equipmentOptions = taxonomy.kind === 'ready' ? taxonomy.equipment : [];
 
   function addMuscle() {
-    if (!selectedMuscle || busy || fields.length >= 10) return;
+    if (!selectedMuscle || busy || taxonomy.kind !== 'ready' || fields.length >= 10) return;
     if (fields.some((item) => item.slug === selectedMuscle)) {
       setError('Цю м’язову групу вже додано.');
       return;
@@ -59,6 +61,10 @@ export function CreateExerciseForm({ role }: { role: CustomExerciseActorRole }) 
 
   async function submit(values: CreateExerciseValues) {
     if (created) return;
+    if (taxonomy.kind !== 'ready') {
+      setError('Довідники ще не завантажено. Оновіть їх перед збереженням.');
+      return;
+    }
     setError(null);
     try {
       const { data, response } = await webApi.POST('/exercises', {
@@ -93,6 +99,19 @@ export function CreateExerciseForm({ role }: { role: CustomExerciseActorRole }) 
       </header>
 
       <form onSubmit={form.handleSubmit(submit)} noValidate className="space-y-6">
+        {taxonomy.kind === 'loading' && (
+          <p role="status" className="text-sm text-muted-foreground">
+            Завантажуємо довідники…
+          </p>
+        )}
+        {taxonomy.kind === 'error' && (
+          <div role="alert" className="space-y-2">
+            <p className="text-sm text-destructive">{taxonomy.message}</p>
+            <Button type="button" variant="outline" onClick={retryTaxonomy}>
+              Повторити
+            </Button>
+          </div>
+        )}
         <section className="space-y-4 rounded-xl border bg-card p-5">
           <h2 className="text-lg font-semibold">Основна інформація</h2>
           <div className="space-y-1">
@@ -182,14 +201,14 @@ export function CreateExerciseForm({ role }: { role: CustomExerciseActorRole }) 
               <select
                 id="create-exercise-muscle"
                 value={selectedMuscle}
-                disabled={busy || fields.length >= 10}
+                disabled={busy || taxonomy.kind !== 'ready' || fields.length >= 10}
                 onChange={(event) => setSelectedMuscle(event.target.value)}
                 className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
               >
                 <option value="">Оберіть зі списку</option>
-                {MUSCLE_OPTIONS.map((item) => (
+                {muscleOptions.map((item) => (
                   <option key={item.slug} value={item.slug}>
-                    {item.label}
+                    {item.name}
                   </option>
                 ))}
               </select>
@@ -197,7 +216,7 @@ export function CreateExerciseForm({ role }: { role: CustomExerciseActorRole }) 
             <Button
               type="button"
               variant="outline"
-              disabled={busy || !selectedMuscle || fields.length >= 10}
+              disabled={busy || taxonomy.kind !== 'ready' || !selectedMuscle || fields.length >= 10}
               onClick={addMuscle}
             >
               Додати групу
@@ -209,7 +228,7 @@ export function CreateExerciseForm({ role }: { role: CustomExerciseActorRole }) 
                 <li key={field.id} className="flex flex-wrap items-center gap-3">
                   <input type="hidden" {...form.register(`muscleGroups.${index}.slug`)} />
                   <span className="min-w-40 flex-1 text-sm font-medium">
-                    {MUSCLE_OPTIONS.find((item) => item.slug === field.slug)?.label ?? field.slug}
+                    {muscleOptions.find((item) => item.slug === field.slug)?.name ?? field.slug}
                   </span>
                   <label className="text-sm" htmlFor={`create-exercise-role-${index}`}>
                     Роль
@@ -249,7 +268,7 @@ export function CreateExerciseForm({ role }: { role: CustomExerciseActorRole }) 
             Оберіть потрібне обладнання (необов’язково, максимум 20 позицій).
           </p>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {EQUIPMENT_OPTIONS.map((item) => (
+            {equipmentOptions.map((item) => (
               <label key={item.slug} className="flex items-center gap-2 text-sm">
                 <input
                   type="checkbox"
@@ -257,7 +276,7 @@ export function CreateExerciseForm({ role }: { role: CustomExerciseActorRole }) 
                   disabled={busy}
                   {...form.register('equipment')}
                 />
-                {item.label}
+                {item.name}
               </label>
             ))}
           </div>
@@ -296,7 +315,7 @@ export function CreateExerciseForm({ role }: { role: CustomExerciseActorRole }) 
           </p>
         )}
         <div className="flex flex-wrap gap-3">
-          <Button type="submit" disabled={busy}>
+          <Button type="submit" disabled={busy || taxonomy.kind !== 'ready'}>
             {created ? 'Вправу створено' : isSubmitting ? 'Створюємо…' : 'Створити вправу'}
           </Button>
           <Button asChild variant="outline">

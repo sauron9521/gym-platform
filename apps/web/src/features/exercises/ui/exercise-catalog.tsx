@@ -16,6 +16,8 @@ import {
   type ExerciseTypeFilter,
 } from '../lib/exercise-catalog';
 
+import { useExerciseTaxonomy } from './use-exercise-taxonomy';
+
 const PAGE_SIZE = 20;
 
 type CatalogState =
@@ -25,6 +27,7 @@ type CatalogState =
 
 export function ExerciseCatalog({ role }: { role: 'ATHLETE' | 'TRAINER' | 'ADMIN' }) {
   const router = useRouter();
+  const { state: taxonomy, retry: retryTaxonomy } = useExerciseTaxonomy();
   const [search, setSearch] = useState('');
   const [exerciseType, setExerciseType] = useState<ExerciseTypeFilter>('ALL');
   const [muscleGroup, setMuscleGroup] = useState('');
@@ -111,6 +114,20 @@ export function ExerciseCatalog({ role }: { role: 'ATHLETE' | 'TRAINER' | 'ADMIN
         </div>
       )}
 
+      {taxonomy.kind === 'loading' && (
+        <p role="status" className="text-sm text-muted-foreground">
+          Завантажуємо довідники фільтрів…
+        </p>
+      )}
+      {taxonomy.kind === 'error' && (
+        <div role="alert" className="flex flex-wrap items-center gap-3">
+          <p className="text-sm text-destructive">{taxonomy.message}</p>
+          <Button type="button" variant="outline" onClick={retryTaxonomy}>
+            Повторити
+          </Button>
+        </div>
+      )}
+
       <section className="space-y-4 rounded-xl border bg-card p-5" aria-label="Фільтри вправ">
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
@@ -147,31 +164,43 @@ export function ExerciseCatalog({ role }: { role: 'ATHLETE' | 'TRAINER' | 'ADMIN
           </div>
           <div className="space-y-2">
             <label htmlFor="exercise-muscle" className="block text-sm font-medium">
-              Група м’язів (slug)
+              Група м’язів
             </label>
-            <input
+            <select
               id="exercise-muscle"
-              type="text"
-              maxLength={80}
-              placeholder="Наприклад: chest"
               value={muscleGroup}
+              disabled={taxonomy.kind !== 'ready'}
               onChange={(event) => resetAndFilter(() => setMuscleGroup(event.target.value))}
               className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
-            />
+            >
+              <option value="">Усі групи</option>
+              {taxonomy.kind === 'ready' &&
+                taxonomy.muscleGroups.map((item) => (
+                  <option key={item.id} value={item.slug}>
+                    {item.name}
+                  </option>
+                ))}
+            </select>
           </div>
           <div className="space-y-2">
             <label htmlFor="exercise-equipment" className="block text-sm font-medium">
-              Обладнання (slug)
+              Обладнання
             </label>
-            <input
+            <select
               id="exercise-equipment"
-              type="text"
-              maxLength={80}
-              placeholder="Наприклад: barbell"
               value={equipment}
+              disabled={taxonomy.kind !== 'ready'}
               onChange={(event) => resetAndFilter(() => setEquipment(event.target.value))}
               className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
-            />
+            >
+              <option value="">Усе обладнання</option>
+              {taxonomy.kind === 'ready' &&
+                taxonomy.equipment.map((item) => (
+                  <option key={item.id} value={item.slug}>
+                    {item.name}
+                  </option>
+                ))}
+            </select>
           </div>
         </div>
         <div className="flex flex-wrap items-center justify-between gap-3">
