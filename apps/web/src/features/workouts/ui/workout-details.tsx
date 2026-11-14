@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { webApi } from '@/shared/api/client';
 import { Button } from '@/shared/ui/button';
 import { WorkoutActions } from './workout-actions';
+import { WorkoutSetForm } from './workout-set-form';
 import {
   formatWorkoutValue,
   getWorkoutDetailsErrorMessage,
@@ -33,6 +34,7 @@ function SetMetric({ label, value }: { label: string; value: string }) {
 export function WorkoutDetails({ id }: { id: string }) {
   const router = useRouter();
   const [attempt, setAttempt] = useState(0);
+  const [editingSetId, setEditingSetId] = useState<string | null>(null);
   const [state, setState] = useState<DetailsState>({ kind: 'loading' });
 
   useEffect(() => {
@@ -61,6 +63,7 @@ export function WorkoutDetails({ id }: { id: string }) {
   }, [id, attempt, router]);
 
   function retry() {
+    setEditingSetId(null);
     setState({ kind: 'loading' });
     setAttempt((current) => current + 1);
   }
@@ -182,6 +185,27 @@ export function WorkoutDetails({ id }: { id: string }) {
                           <p className="whitespace-pre-wrap text-sm text-muted-foreground">
                             {set.notes}
                           </p>
+                        )}
+                        {state.workout.status === 'IN_PROGRESS' && (
+                          <>
+                            {editingSetId === set.id ? (
+                              <WorkoutSetForm
+                                key={set.updatedAt}
+                                workoutId={state.workout.id}
+                                set={set}
+                                onSaved={retry}
+                                onClose={() => setEditingSetId(null)}
+                              />
+                            ) : (
+                              <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => setEditingSetId(set.id)}
+                              >
+                                {set.status === 'PENDING' ? 'Записати результат' : 'Змінити результат'}
+                              </Button>
+                            )}
+                          </>
                         )}
                       </li>
                     ))}
