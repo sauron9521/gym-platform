@@ -93,9 +93,6 @@ test('exercise details handle inaccessible and archived records', async () => {
 });
 
 test('protected navigation links to exercise catalog', async () => {
-  const nav = await readFile(
-    new URL('../src/app/(protected)/layout.tsx', import.meta.url),
-    'utf8',
-  );
+  const nav = await readFile(new URL('../src/app/(protected)/layout.tsx', import.meta.url), 'utf8');
   assert.match(nav, /href="\/exercises"/);
 });
