@@ -1,11 +1,7 @@
 import type { operations } from '@gym/api-client';
 
 import type { AuthenticatedUser } from '@/shared/api/server-session';
-import {
-  createExerciseFormSchema,
-  type CreateExerciseValues,
-  type CustomExerciseActorRole,
-} from './create-exercise';
+import type { CreateExerciseValues, CustomExerciseActorRole } from './create-exercise';
 import type { ExerciseDetailsData } from './exercise-catalog';
 
 export type UpdateExercisePayload =
@@ -22,8 +18,6 @@ export function canManageCustomExercise(
     (actor.role === 'TRAINER' && exercise.source === 'TRAINER_CUSTOM')
   );
 }
-
-export const editExerciseSchema = createExerciseFormSchema;
 
 export function getEditExerciseDefaults(exercise: ExerciseDetailsData): EditExerciseValues {
   return {
