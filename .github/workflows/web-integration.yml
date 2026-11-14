@@ -15,8 +15,31 @@ concurrency:
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
-  browser-api:
-    name: Web / Real API and PostgreSQL
+  changes:
+    name: Web integration / Determine affected workspaces
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      run: ${{ steps.select.outputs.full == 'true' || steps.select.outputs.api == 'true' || steps.select.outputs.web == 'true' || steps.select.outputs.client == 'true' }}
+    steps:
+      - name: Checkout complete history for safe PR diff
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Test change classification and required-gate contract
+        run: node --test scripts/ci-select.test.mjs
+      - name: Classify changed files
+        id: select
+        env:
+          CI_FORCE_ALL: ${{ github.event_name != 'pull_request' }}
+          CI_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          CI_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: node scripts/ci-select.mjs --github-output "$GITHUB_OUTPUT"
+
+  browser-api-suite:
+    name: Web / Real API and PostgreSQL suite
+    needs: changes
+    if: needs.changes.outputs.run == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     services:
@@ -57,6 +80,11 @@ jobs:
       - run: pnpm --filter @gym/api db:generate
       - run: pnpm --filter @gym/api db:migrate:deploy
       - run: pnpm --filter @gym/api build
+      - name: Restore Playwright Chromium browser cache
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-chromium-1.65.0
       - run: pnpm --filter @gym/web exec playwright install --with-deps chromium
       - run: pnpm --filter @gym/web test:e2e:integration
       - name: Retain failure traces
@@ -67,3 +95,26 @@ jobs:
           path: apps/web/test-results/integration/
           if-no-files-found: ignore
           retention-days: 7
+
+  browser-api:
+    # Keep the existing required check name stable, even when the suite is skipped.
+    name: Web / Real API and PostgreSQL
+    needs: [changes, browser-api-suite]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Enforce affected browser suite result (fail closed)
+        env:
+          CLASSIFY_RESULT: ${{ needs.changes.result }}
+          RUN_REQUIRED: ${{ needs.changes.outputs.run }}
+          SUITE_RESULT: ${{ needs.browser-api-suite.result }}
+        run: |
+          set -euo pipefail
+          test "$CLASSIFY_RESULT" = success
+          if [ "$RUN_REQUIRED" = true ]; then
+            test "$SUITE_RESULT" = success
+          else
+            test "$RUN_REQUIRED" = false
+            test "$SUITE_RESULT" = skipped
+          fi
