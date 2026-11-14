@@ -10,6 +10,28 @@ const commit = /^(?:[0-9a-f]{40}|[0-9a-f]{64})$/i;
 const zero = /^0+$/;
 const formatExtension = /\.(?:[cm]?jsx?|[cm]?tsx?|jsonc?|css|scss|mdx?|ya?ml|html)$/i;
 
+const prettierCli = fileURLToPath(
+  new URL('../node_modules/prettier/bin/prettier.cjs', import.meta.url),
+);
+
+// These fixed commands are safe through cmd.exe on Windows. Git filenames
+// MUST NOT be passed through that shell, even when they contain metacharacters.
+const trustedPnpmCommands = new Set(
+  [
+    ['pnpm', 'format:check'],
+    ['pnpm', 'lint'],
+    ['pnpm', 'typecheck'],
+    ['pnpm', '--filter', '@gym/api', 'db:generate'],
+    ['pnpm', '--filter', '@gym/api', 'lint'],
+    ['pnpm', '--filter', '@gym/api', 'typecheck'],
+    ['pnpm', '--filter', '@gym/api-client', 'typecheck'],
+    ['pnpm', '--filter', '@gym/web', 'lint'],
+    ['pnpm', '--filter', '@gym/web', 'typecheck'],
+    ['pnpm', '--filter', '@gym/mobile', 'lint'],
+    ['pnpm', '--filter', '@gym/mobile', 'typecheck'],
+  ].map((args) => JSON.stringify(args)),
+);
+
 export function parsePushRefs(stdin) {
   if (typeof stdin !== 'string' || !stdin.trim()) return null;
   const result = [];
@@ -148,23 +170,68 @@ export function createPrePushPlan({ full, files }) {
   return { scopes, commands };
 }
 
-export function runPrePushChecks(plan) {
+/**
+ * Git filenames are untrusted command arguments. On Windows, pnpm resolves
+ * through a .cmd shim, which requires a shell; scoped Prettier MUST instead
+ * use the Node executable directly so filenames are never shell-expanded.
+ */
+export function resolvePrePushCommand(
+  command,
+  { platform = process.platform, nodeExecutable = process.execPath } = {},
+) {
+  if (!Array.isArray(command) || command[0] !== 'pnpm') {
+    throw new Error('Unexpected pre-push command');
+  }
+
+  if (command[1] === 'exec' && command[2] === 'prettier') {
+    if (
+      command[3] !== '--check' ||
+      command[4] !== '--ignore-unknown' ||
+      command[5] !== '--' ||
+      command.length < 7
+    ) {
+      throw new Error('Unexpected scoped Prettier arguments');
+    }
+
+    return {
+      executable: nodeExecutable,
+      args: [prettierCli, ...command.slice(3)],
+      shell: false,
+    };
+  }
+
+  // Only known, filename-free pnpm commands may use the Windows cmd shim.
+  if (!trustedPnpmCommands.has(JSON.stringify(command))) {
+    throw new Error('Untrusted pre-push command');
+  }
+
+  return {
+    executable: 'pnpm',
+    args: command.slice(1),
+    shell: platform === 'win32',
+  };
+}
+
+export function runPrePushChecks(
+  plan,
+  { spawn = spawnSync, platform = process.platform, nodeExecutable = process.execPath } = {},
+) {
   console.log('[pre-push] Selected scopes:', JSON.stringify(plan.scopes));
   if (!plan.commands.length) {
     console.log('[pre-push] No changed source files need checks.');
     return;
   }
-  for (const args of plan.commands) {
-    console.log('[pre-push] Running:', args.join(' '));
-    // pnpm is exposed as pnpm.cmd by Corepack on Windows.
-    const result = spawnSync(args[0], args.slice(1), {
+  for (const command of plan.commands) {
+    const invocation = resolvePrePushCommand(command, { platform, nodeExecutable });
+    console.log('[pre-push] Running:', command.join(' '));
+    const result = spawn(invocation.executable, invocation.args, {
       cwd: root,
       stdio: 'inherit',
-      shell: process.platform === 'win32',
+      shell: invocation.shell,
     });
     if (result.error) throw result.error;
     if (result.status !== 0) {
-      throw new Error('Pre-push check failed: ' + args.join(' '));
+      throw new Error('Pre-push check failed: ' + command.join(' '));
     }
   }
 }

@@ -1,7 +1,13 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { createPrePushPlan, findPushedPaths, parsePushRefs } from './pre-push-checks.mjs';
+import {
+  createPrePushPlan,
+  findPushedPaths,
+  parsePushRefs,
+  resolvePrePushCommand,
+  runPrePushChecks,
+} from './pre-push-checks.mjs';
 
 const oldSha = 'a'.repeat(40);
 const headSha = 'b'.repeat(40);
@@ -177,4 +183,89 @@ test('ref-only deletion and empty net diff run no local commands', () => {
   const plan = createPrePushPlan(deletion);
   assert.equal(plan.scopes.full, false);
   assert.deepEqual(plan.commands, []);
+});
+
+test('Windows passes adversarial Git filenames directly to Node, never to cmd.exe', () => {
+  const unsafeNames = [
+    'docs/a & echo INJECTION.md',
+    'docs/a ^ (echo exploit).md',
+    'apps/web/src/%PATH% & echo injected.tsx',
+    'apps/web/src/!USERNAME! file.tsx',
+    'docs/semicolon;dollar$(touch file).md',
+    'docs/файл зі пробілами.md',
+  ];
+  for (const filename of unsafeNames) {
+    const plan = createPrePushPlan({ full: false, files: [filename] });
+    const invocation = resolvePrePushCommand(plan.commands[0], {
+      platform: 'win32',
+      nodeExecutable: 'C:/Program Files/nodejs/node.exe',
+    });
+
+    assert.equal(invocation.shell, false);
+    assert.equal(invocation.executable, 'C:/Program Files/nodejs/node.exe');
+    assert.match(invocation.args[0], /prettier[\\/]bin[\\/]prettier\.cjs$/);
+    assert.deepEqual(invocation.args.slice(1, 4), ['--check', '--ignore-unknown', '--']);
+    assert.equal(invocation.args.at(-1), filename);
+  }
+});
+
+test('only fixed pnpm commands use Windows shell shim', () => {
+  const plan = createPrePushPlan({
+    full: false,
+    files: ['apps/web/src/page.tsx'],
+  });
+  const pnpmCommands = plan.commands.filter((command) => command[2] === '@gym/web');
+  assert.equal(pnpmCommands.length, 2);
+  for (const command of pnpmCommands) {
+    const invocation = resolvePrePushCommand(command, { platform: 'win32' });
+    assert.equal(invocation.executable, 'pnpm');
+    assert.equal(invocation.shell, true);
+    assert.deepEqual(invocation.args, command.slice(1));
+    assert.ok(!invocation.args.some((value) => value.includes('page.tsx')));
+  }
+  assert.equal(resolvePrePushCommand(['pnpm', 'lint'], { platform: 'linux' }).shell, false);
+});
+
+test('rejects dynamic shell commands and unsafe scoped Prettier modes', () => {
+  assert.throws(() =>
+    resolvePrePushCommand(['pnpm', '--filter', 'apps/web & whoami', 'lint'], {
+      platform: 'win32',
+    }),
+  );
+  assert.throws(() =>
+    resolvePrePushCommand(['pnpm', 'exec', 'prettier', '--write', '--', 'src/a.ts'], {
+      platform: 'win32',
+    }),
+  );
+  assert.throws(() => resolvePrePushCommand(['cmd.exe', '/c', 'echo bad']));
+});
+
+test('runner preserves literal filenames and fails closed on subprocess errors', () => {
+  const filename = 'docs/a & echo NEVER_EXECUTED.md';
+  const plan = createPrePushPlan({ full: false, files: [filename] });
+  const calls = [];
+  runPrePushChecks(plan, {
+    platform: 'win32',
+    nodeExecutable: 'C:/node.exe',
+    spawn: (file, args, options) => {
+      calls.push({ file, args, options });
+      return { status: 0 };
+    },
+  });
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].options.shell, false);
+  assert.equal(calls[0].args.at(-1), filename);
+
+  assert.throws(() =>
+    runPrePushChecks(plan, {
+      platform: 'win32',
+      spawn: () => ({ status: 1 }),
+    }),
+  );
+  assert.throws(() =>
+    runPrePushChecks(plan, {
+      platform: 'win32',
+      spawn: () => ({ error: new Error('ENOENT'), status: null }),
+    }),
+  );
 });

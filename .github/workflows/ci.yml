@@ -48,18 +48,45 @@ jobs:
           CI_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: node scripts/ci-select.mjs --github-output "$GITHUB_OUTPUT"
 
+  prepush-windows:
+    name: Pre-push / Windows Node 24
+    needs: changes
+    if: needs.changes.outputs.full == 'true'
+    runs-on: windows-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+
+      - name: Validate Windows-safe pre-push argument handling
+        run: node --test scripts/pre-push-checks.test.mjs
+
   quality:
     name: Quality / Node 24
-    needs: changes
+    needs: [changes, prepush-windows]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
     steps:
-      - name: Fail closed if change classification fails
+      - name: Fail closed if change classification or Windows safety checks fail
         env:
           CHANGE_DETECTION_RESULT: ${{ needs.changes.result }}
-        run: test "$CHANGE_DETECTION_RESULT" = success
+          FULL_SCOPE: ${{ needs.changes.outputs.full }}
+          WINDOWS_RESULT: ${{ needs.prepush-windows.result }}
+        run: |
+          test "$CHANGE_DETECTION_RESULT" = success
+          if [ "$FULL_SCOPE" = true ]; then
+            test "$WINDOWS_RESULT" = success
+          else
+            test "$WINDOWS_RESULT" = skipped
+          fi
 
       - name: Checkout
         uses: actions/checkout@v6
