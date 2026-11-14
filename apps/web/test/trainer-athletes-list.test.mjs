@@ -89,7 +89,8 @@ test('protected trainer page verifies identity and role before showing private d
   assert.match(page, /session.kind === 'unauthenticated'/);
   assert.match(page, /session.kind === 'unavailable'/);
   assert.match(page, /session.user.role !== 'TRAINER'/);
-  assert.match(page, /<TrainerAthletesList trainerId=\{session.user.id\}/);
+  assert.match(page, /actorId=/);
+  assert.match(page, /actorRole="TRAINER"/);
   assert.match(page, /robots: \{ index: false \}/);
   assert.match(page, /force-dynamic/);
 });
@@ -113,8 +114,8 @@ test('relationships UI uses typed filters and pagination, retry, and request cle
   assert.match(ui, /if \(!active\) return/);
   assert.match(ui, /active = false/);
   assert.match(ui, /aria-label="Сторінки підопічних"/);
-  assert.match(ui, /Пошук за email на поточній сторінці/);
+  assert.match(ui, /Пошук контакту на поточній сторінці/);
   assert.match(dashboard, /initialUser.role === 'TRAINER'/);
-  assert.match(dashboard, /href="\/trainer\/athletes"/);
+  assert.ok(dashboard.includes("'/trainer/athletes'"));
   assert.doesNotMatch(ui, /localStorage|sessionStorage|document.cookie|dangerouslySetInnerHTML/);
 });
