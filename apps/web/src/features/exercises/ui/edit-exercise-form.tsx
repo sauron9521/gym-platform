@@ -10,8 +10,6 @@ import { Button } from '@/shared/ui/button';
 import {
   CREATE_EXERCISE_TYPES,
   createExerciseFormSchema as editExerciseSchema,
-  EQUIPMENT_OPTIONS,
-  MUSCLE_OPTIONS,
   type CustomExerciseActorRole,
 } from '../lib/create-exercise';
 import type { ExerciseDetailsData } from '../lib/exercise-catalog';
@@ -21,6 +19,7 @@ import {
   getExerciseMutationErrorMessage,
   type EditExerciseValues,
 } from '../lib/manage-exercise';
+import { useExerciseTaxonomy } from './use-exercise-taxonomy';
 
 export function EditExerciseForm({
   exercise,
@@ -36,6 +35,7 @@ export function EditExerciseForm({
   onReload: () => void;
 }) {
   const router = useRouter();
+  const { state: taxonomy, retry: retryTaxonomy } = useExerciseTaxonomy();
   const [error, setError] = useState<string | null>(null);
   const [selectedMuscle, setSelectedMuscle] = useState('');
   const form = useForm<EditExerciseValues>({
@@ -49,9 +49,15 @@ export function EditExerciseForm({
     name: 'muscleGroups',
   });
   const { errors, isSubmitting, isDirty } = form.formState;
+  const muscleOptions = taxonomy.kind === 'ready' ? taxonomy.muscleGroups : [];
+  const equipmentOptions = taxonomy.kind === 'ready' ? taxonomy.equipment : [];
 
   async function submit(values: EditExerciseValues) {
     if (isSubmitting) return;
+    if (taxonomy.kind !== 'ready') {
+      setError('Довідники ще не завантажено. Спробуйте оновити їх.');
+      return;
+    }
     const body = buildUpdateExercisePayload(values, exercise, role);
     if (Object.keys(body).length === 0) {
       onCancel();
@@ -79,7 +85,7 @@ export function EditExerciseForm({
   }
 
   function addMuscle() {
-    if (!selectedMuscle || isSubmitting || fields.length >= 10) return;
+    if (!selectedMuscle || isSubmitting || taxonomy.kind !== 'ready' || fields.length >= 10) return;
     if (fields.some((field) => field.slug === selectedMuscle)) {
       setError('Цю групу вже додано.');
       return;
@@ -94,6 +100,15 @@ export function EditExerciseForm({
     <section className="space-y-4 rounded-xl border bg-card p-5" aria-label="Редагування вправи">
       <h2 className="text-lg font-semibold">Редагувати вправу</h2>
       <form onSubmit={form.handleSubmit(submit)} noValidate className="space-y-5">
+        {taxonomy.kind === 'loading' && (
+          <p role="status" className="text-sm text-muted-foreground">Завантажуємо довідники…</p>
+        )}
+        {taxonomy.kind === 'error' && (
+          <div role="alert" className="space-y-2">
+            <p className="text-sm text-destructive">{taxonomy.message}</p>
+            <Button type="button" variant="outline" onClick={retryTaxonomy}>Повторити</Button>
+          </div>
+        )}
         <div className="space-y-1">
           <label htmlFor="edit-exercise-name" className="block text-sm font-medium">
             Назва
@@ -126,7 +141,7 @@ export function EditExerciseForm({
           >
             {CREATE_EXERCISE_TYPES.map((item) => (
               <option key={item.value} value={item.value}>
-                {item.label}
+                {item.name}
               </option>
             ))}
           </select>
@@ -180,14 +195,14 @@ export function EditExerciseForm({
               <select
                 id="edit-exercise-muscle"
                 value={selectedMuscle}
-                disabled={isSubmitting || fields.length >= 10}
+                disabled={isSubmitting || taxonomy.kind !== 'ready' || fields.length >= 10}
                 onChange={(event) => setSelectedMuscle(event.target.value)}
                 className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
               >
                 <option value="">Оберіть групу</option>
-                {MUSCLE_OPTIONS.map((option) => (
+                {muscleOptions.map((option) => (
                   <option key={option.slug} value={option.slug}>
-                    {option.label}
+                    {option.name}
                   </option>
                 ))}
               </select>
@@ -195,7 +210,7 @@ export function EditExerciseForm({
             <Button
               type="button"
               variant="outline"
-              disabled={isSubmitting || !selectedMuscle || fields.length >= 10}
+              disabled={isSubmitting || taxonomy.kind !== 'ready' || !selectedMuscle || fields.length >= 10}
               onClick={addMuscle}
             >
               Додати
@@ -205,7 +220,7 @@ export function EditExerciseForm({
             <div key={field.id} className="flex flex-wrap items-center gap-3">
               <input type="hidden" {...form.register(`muscleGroups.${index}.slug`)} />
               <span className="min-w-32 flex-1 text-sm">
-                {MUSCLE_OPTIONS.find((item) => item.slug === field.slug)?.label ?? field.slug}
+                {muscleOptions.find((item) => item.slug === field.slug)?.name ?? field.slug}
               </span>
               <label htmlFor={`edit-exercise-role-${index}`} className="text-sm">
                 Роль
@@ -240,7 +255,7 @@ export function EditExerciseForm({
         <fieldset className="space-y-3">
           <legend className="font-medium">Обладнання</legend>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {EQUIPMENT_OPTIONS.map((item) => (
+            {equipmentOptions.map((item) => (
               <label key={item.slug} className="flex items-center gap-2 text-sm">
                 <input
                   type="checkbox"
@@ -248,7 +263,7 @@ export function EditExerciseForm({
                   disabled={isSubmitting}
                   {...form.register('equipment')}
                 />
-                {item.label}
+                {item.name}
               </label>
             ))}
           </div>
@@ -288,7 +303,7 @@ export function EditExerciseForm({
           </div>
         )}
         <div className="flex flex-wrap gap-2">
-          <Button type="submit" disabled={isSubmitting || !isDirty}>
+          <Button type="submit" disabled={isSubmitting || !isDirty || taxonomy.kind !== 'ready'}>
             {isSubmitting ? 'Зберігаємо…' : 'Зберегти зміни'}
           </Button>
           <Button type="button" variant="outline" disabled={isSubmitting} onClick={onCancel}>
