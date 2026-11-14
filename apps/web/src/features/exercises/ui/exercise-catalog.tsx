@@ -23,7 +23,7 @@ type CatalogState =
   | { kind: 'error'; message: string }
   | { kind: 'ready'; exercises: ExerciseListItem[]; total: number; pages: number };
 
-export function ExerciseCatalog() {
+export function ExerciseCatalog({ role }: { role: 'ATHLETE' | 'TRAINER' | 'ADMIN' }) {
   const router = useRouter();
   const [search, setSearch] = useState('');
   const [exerciseType, setExerciseType] = useState<ExerciseTypeFilter>('ALL');
@@ -102,6 +102,14 @@ export function ExerciseCatalog() {
           Переглядайте доступні вправи, їхні м’язові групи, обладнання та техніку виконання.
         </p>
       </header>
+
+      {role !== 'ADMIN' && (
+        <div>
+          <Button asChild>
+            <Link href="/exercises/new">Створити власну вправу</Link>
+          </Button>
+        </div>
+      )}
 
       <section className="space-y-4 rounded-xl border bg-card p-5" aria-label="Фільтри вправ">
         <div className="grid gap-4 sm:grid-cols-2">
