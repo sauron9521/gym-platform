@@ -73,7 +73,6 @@ export class PrismaSessionStore implements SessionStore {
     return sessions.map(toSessionRecord);
   }
 
-
   /** Remove one bounded, ordered batch without locking other sessions. */
   async deleteExpiredSessionsBatch(now: Date, batchSize: number): Promise<number> {
     return this.prisma.$executeRaw`
