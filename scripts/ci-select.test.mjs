@@ -13,6 +13,7 @@ test('Web-only change skips API E2E, Docker and Mobile', () => {
     client: false,
     deps: false,
     workspaces: true,
+    redis: false,
   });
 });
 
@@ -245,4 +246,42 @@ test('scheduled dependency audit checks newly disclosed vulnerabilities without 
   assert.match(yaml, /pnpm audit --prod --audit-level high/);
   assert.match(yaml, /pnpm audit --audit-level critical/);
   assert.doesNotMatch(yaml, /pnpm install|pnpm build|pnpm test/);
+});
+
+test('Redis 7 to 8 migration check is selected only on relevant pull requests', () => {
+  for (const path of [
+    'infra/docker/compose.yaml',
+    'scripts/test-redis-upgrade.sh',
+    'scripts/ci-select.mjs',
+    '.github/workflows/ci.yml',
+  ]) {
+    const selection = classifyChangedPaths([path]);
+    assert.equal(selection.redis, true, 'Redis test not selected: ' + path);
+    assert.equal(selection.full, true);
+  }
+  for (const path of ['apps/web/src/app/page.tsx', 'apps/api/src/main.ts', 'README.md']) {
+    assert.equal(classifyChangedPaths([path]).redis, false);
+  }
+  assert.equal(classifyChangedPaths(['pnpm-lock.yaml']).redis, false);
+  assert.equal(selectFromGitHubEnvironment({ CI_FORCE_ALL: 'true' }).redis, false);
+
+  const workflow = readFileSync(new URL('../.github/workflows/ci.yml', import.meta.url), 'utf8');
+  const quality = workflow.split('  quality:\n')[1]?.split('\n  api-coverage:\n')[0];
+  assert.ok(quality);
+  assert.ok(workflow.includes('redis: $' + '{{ steps.select.outputs.redis }}'));
+  assert.match(quality, /Rehearse isolated Redis 7 to Redis 8 AOF and backup recovery/);
+  assert.ok(quality.includes("needs.changes.outputs.redis == 'true'"));
+  assert.ok(quality.includes('run: bash scripts/test-redis-upgrade.sh'));
+});
+
+test('Redis migration rehearsal does not use real Compose volumes or downgrade in place', () => {
+  const script = readFileSync(new URL('../scripts/test-redis-upgrade.sh', import.meta.url), 'utf8');
+  assert.match(script, /set -euo pipefail/);
+  assert.match(script, /redis:7-alpine/);
+  assert.match(script, /redis:8-alpine/);
+  assert.match(script, /docker volume create/);
+  assert.match(script, /BGREWRITEAOF/);
+  assert.match(script, /redis7-data\.tar/);
+  assert.match(script, /docker volume rm/);
+  assert.doesNotMatch(script, /docker compose down|gym-platform-local_redis_data/);
 });
