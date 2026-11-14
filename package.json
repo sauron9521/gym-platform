@@ -15,7 +15,7 @@
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
     "format": "prettier --write .",
-    "format:check": "prettier --write apps/web/src/features/trainer-athletes/ui/invite-relationship-form.tsx apps/web/src/features/trainer-athletes/ui/relationship-actions.tsx apps/web/src/widgets/dashboard/ui/dashboard-screen.tsx && git diff -- apps/web/src/features/trainer-athletes/ui/invite-relationship-form.tsx apps/web/src/features/trainer-athletes/ui/relationship-actions.tsx apps/web/src/widgets/dashboard/ui/dashboard-screen.tsx && prettier --check .",
+    "format:check": "prettier --check .",
     "prepare": "husky",
     "api:openapi": "pnpm --filter @gym/api docs:openapi",
     "api:types": "pnpm --filter @gym/api-client generate",
