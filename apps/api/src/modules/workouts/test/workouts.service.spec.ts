@@ -10,6 +10,7 @@ import { Prisma } from '#prisma/client';
 import { ExercisesService } from '#src/modules/exercises/services/exercises.service';
 import { WorkoutsRepository } from '../repositories/workouts.repository.js';
 import { WorkoutsService } from '../services/workouts.service.js';
+import { workoutIdempotency } from '../utils/workout-idempotency.js';
 
 import type {
   CreateWorkoutFromProgramInput,
@@ -24,6 +25,7 @@ describe('WorkoutsService', () => {
   const repository = {
     create: vi.fn(),
     createFromProgram: vi.fn(),
+    findByIdempotencyKey: vi.fn(),
     findMany: vi.fn(),
     findManySummary: vi.fn(),
     findById: vi.fn(),
@@ -843,6 +845,257 @@ describe('WorkoutsService', () => {
       repository.startWorkout.mockRejectedValue(prismaError);
 
       await expect(service.start('workout-1', athlete)).rejects.toThrow(ConflictException);
+    });
+  });
+
+  describe('idempotency, ownership and concurrent transitions', () => {
+    const idempotencyKey = 'workout-key-0001';
+    const completedSetsWorkout = {
+      ...plannedWorkout,
+      status: 'IN_PROGRESS',
+      exercises: [
+        {
+          ...plannedWorkout.exercises[0],
+          sets: [
+            { id: 'set-1', status: 'COMPLETED' },
+            { id: 'set-2', status: 'SKIPPED' },
+          ],
+        },
+      ],
+    };
+
+    it('replays a previous creation without rechecking exercises or inserting a duplicate', async () => {
+      const previous = workoutIdempotency(idempotencyKey, 'manual', createInput)!;
+      const currentWorkout = { ...plannedWorkout, status: 'IN_PROGRESS' };
+      repository.findByIdempotencyKey.mockResolvedValueOnce({
+        id: plannedWorkout.id,
+        idempotencyFingerprint: previous.fingerprint,
+      });
+      repository.findById.mockResolvedValueOnce(currentWorkout);
+
+      const response = await service.create(athlete, createInput, idempotencyKey);
+
+      expect(response).toBe(currentWorkout);
+      expect(repository.findByIdempotencyKey).toHaveBeenCalledWith(
+        athlete.id,
+        idempotencyKey,
+      );
+      expect(repository.findById).toHaveBeenCalledWith(plannedWorkout.id, {
+        athleteId: athlete.id,
+      });
+      expect(repository.create).not.toHaveBeenCalled();
+      expect(exercisesService.findAvailableForWorkout).not.toHaveBeenCalled();
+    });
+
+    it('rejects using an existing idempotency key for a different payload', async () => {
+      repository.findByIdempotencyKey.mockResolvedValueOnce({
+        id: plannedWorkout.id,
+        idempotencyFingerprint: 'another-request-fingerprint',
+      });
+
+      await expect(service.create(athlete, createInput, idempotencyKey)).rejects.toThrow(
+        ConflictException,
+      );
+      expect(repository.create).not.toHaveBeenCalled();
+      expect(trainerAthletesService.getExerciseAccessContext).not.toHaveBeenCalled();
+    });
+
+    it('returns the committed winner when concurrent creation loses a unique-key race', async () => {
+      const previous = workoutIdempotency(idempotencyKey, 'manual', createInput)!;
+      const uniqueError = new Prisma.PrismaClientKnownRequestError('Unique constraint failed', {
+        code: 'P2002',
+        clientVersion: '7.10.1',
+      });
+      repository.findByIdempotencyKey
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce({
+          id: plannedWorkout.id,
+          idempotencyFingerprint: previous.fingerprint,
+        });
+      repository.create.mockRejectedValueOnce(uniqueError);
+      repository.findById.mockResolvedValueOnce(plannedWorkout);
+
+      const result = await service.create(athlete, createInput, idempotencyKey);
+
+      expect(result).toBe(plannedWorkout);
+      expect(repository.findByIdempotencyKey).toHaveBeenCalledTimes(2);
+      expect(repository.create).toHaveBeenCalledOnce();
+    });
+
+    it('propagates unique-key errors if no committed winner exists after a race', async () => {
+      const uniqueError = new Prisma.PrismaClientKnownRequestError('Unique constraint failed', {
+        code: 'P2002',
+        clientVersion: '7.10.1',
+      });
+      repository.findByIdempotencyKey.mockResolvedValue(null);
+      repository.create.mockRejectedValueOnce(uniqueError);
+
+      await expect(service.create(athlete, createInput, idempotencyKey)).rejects.toBe(
+        uniqueError,
+      );
+      expect(repository.findByIdempotencyKey).toHaveBeenCalledTimes(2);
+    });
+
+    it('rejects unavailable exercise metadata before persisting a workout', async () => {
+      exercisesService.findAvailableForWorkout.mockResolvedValueOnce([]);
+
+      await expect(service.create(athlete, createInput)).rejects.toThrow(
+        BadRequestException,
+      );
+      expect(repository.create).not.toHaveBeenCalled();
+    });
+
+    it('rejects an empty update instead of sending an unrestricted write', async () => {
+      repository.findById.mockResolvedValueOnce(plannedWorkout);
+
+      await expect(service.update(plannedWorkout.id, athlete, {})).rejects.toThrow(
+        BadRequestException,
+      );
+      expect(repository.update).not.toHaveBeenCalled();
+    });
+
+    it('preserves explicitly cleared notes and scheduling when editing a planned workout', async () => {
+      repository.findById.mockResolvedValueOnce(plannedWorkout);
+      repository.update.mockResolvedValueOnce(plannedWorkout);
+
+      await service.update(plannedWorkout.id, athlete, {
+        title: '  Trimmed workout  ',
+        notes: null,
+        scheduledAt: null,
+      });
+
+      expect(repository.update).toHaveBeenCalledWith(
+        { id: plannedWorkout.id, athleteId: athlete.id, status: 'PLANNED' },
+        { title: 'Trimmed workout', notes: null, scheduledAt: null },
+      );
+    });
+
+    it('turns a lost start state transition into conflict instead of success', async () => {
+      repository.findById.mockResolvedValueOnce(plannedWorkout);
+      repository.startWorkout.mockResolvedValueOnce(null);
+
+      await expect(service.start(plannedWorkout.id, athlete)).rejects.toThrow(
+        ConflictException,
+      );
+      expect(repository.startWorkout).toHaveBeenCalledOnce();
+    });
+
+    it('persists timing, distance, exertion and notes for a completed set', async () => {
+      repository.findById.mockResolvedValueOnce({
+        ...plannedWorkout,
+        status: 'IN_PROGRESS',
+      });
+      repository.updateSet.mockResolvedValueOnce({ id: 'set-1', status: 'COMPLETED' });
+
+      await service.updateSet(plannedWorkout.id, 'set-1', athlete, {
+        status: 'COMPLETED',
+        actualDurationSeconds: 120,
+        actualDistanceMeters: 500.5,
+        restSeconds: 45,
+        rpe: 7.5,
+        rir: 2,
+        notes: 'Controlled tempo',
+      });
+
+      expect(repository.updateSet).toHaveBeenCalledWith(
+        'set-1',
+        expect.objectContaining({
+          status: 'COMPLETED',
+          actualDurationSeconds: 120,
+          actualDistanceMeters: 500.5,
+          restSeconds: 45,
+          rpe: 7.5,
+          rir: 2,
+          notes: 'Controlled tempo',
+          completedAt: expect.any(Date),
+        }),
+      );
+    });
+
+    it('converts a stale set update P2025 into conflict', async () => {
+      repository.findById.mockResolvedValueOnce({
+        ...plannedWorkout,
+        status: 'IN_PROGRESS',
+      });
+      repository.updateSet.mockRejectedValueOnce(
+        new Prisma.PrismaClientKnownRequestError('Record changed', {
+          code: 'P2025',
+          clientVersion: '7.10.1',
+        }),
+      );
+
+      await expect(
+        service.updateSet(plannedWorkout.id, 'set-1', athlete, {
+          status: 'COMPLETED',
+        }),
+      ).rejects.toThrow(ConflictException);
+    });
+
+    it('rejects a completion after the state changes while acquiring its lock', async () => {
+      repository.findById.mockResolvedValueOnce(completedSetsWorkout);
+      repository.completeWorkout.mockResolvedValueOnce({ status: 'NOT_IN_PROGRESS' });
+
+      await expect(service.complete(plannedWorkout.id, athlete)).rejects.toThrow(
+        ConflictException,
+      );
+      expect(repository.completeWorkout).toHaveBeenCalledOnce();
+    });
+
+    it('converts a deleted workout during completion into conflict', async () => {
+      repository.findById.mockResolvedValueOnce(completedSetsWorkout);
+      repository.completeWorkout.mockRejectedValueOnce(
+        new Prisma.PrismaClientKnownRequestError('Record missing', {
+          code: 'P2025',
+          clientVersion: '7.10.1',
+        }),
+      );
+
+      await expect(service.complete(plannedWorkout.id, athlete)).rejects.toThrow(
+        ConflictException,
+      );
+    });
+
+    it('permits cancelling an active workout using its exact previous status', async () => {
+      const active = { ...plannedWorkout, status: 'IN_PROGRESS' };
+      repository.findById.mockResolvedValueOnce(active);
+      repository.update.mockResolvedValueOnce({ ...active, status: 'CANCELLED' });
+
+      const result = await service.cancel(plannedWorkout.id, athlete);
+
+      expect(result.status).toBe('CANCELLED');
+      expect(repository.update).toHaveBeenCalledWith(
+        { id: plannedWorkout.id, athleteId: athlete.id, status: 'IN_PROGRESS' },
+        { status: 'CANCELLED' },
+      );
+    });
+
+    it('rejects cancellation when its optimistic status condition no longer matches', async () => {
+      repository.findById.mockResolvedValueOnce(plannedWorkout);
+      repository.update.mockRejectedValueOnce(
+        new Prisma.PrismaClientKnownRequestError('Record missing', {
+          code: 'P2025',
+          clientVersion: '7.10.1',
+        }),
+      );
+
+      await expect(service.cancel(plannedWorkout.id, athlete)).rejects.toThrow(
+        ConflictException,
+      );
+    });
+
+    it('does not leak a foreign workout through update or cancellation', async () => {
+      repository.findById.mockResolvedValue(null);
+
+      await expect(
+        service.update('another-athlete-workout', athlete, { title: 'Stolen' }),
+      ).rejects.toThrow(NotFoundException);
+      await expect(service.cancel('another-athlete-workout', athlete)).rejects.toThrow(
+        NotFoundException,
+      );
+      expect(repository.findById).toHaveBeenCalledWith('another-athlete-workout', {
+        athleteId: athlete.id,
+      });
+      expect(repository.update).not.toHaveBeenCalled();
     });
   });
 });
