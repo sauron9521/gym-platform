@@ -52,7 +52,7 @@ test('server forwards only cookies and verifies the user with uncached requests'
   assert.equal(initSeen.redirect, 'error');
   assert.deepEqual(result, {
     kind: 'authenticated',
-    user: { email: 'athlete@example.test', displayName: 'Athlete A' },
+    user: { email: 'athlete@example.test', displayName: 'Athlete A', role: 'ATHLETE' },
   });
 });
 
