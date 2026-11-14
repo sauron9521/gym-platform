@@ -63,8 +63,8 @@ export function InviteRelationshipForm({
         {actorRole === 'TRAINER' ? 'Запросити атлета' : 'Запросити тренера'}
       </h2>
       <p className="text-sm text-muted-foreground">
-        Для створення запрошення потрібен ID користувача (UUID), а не його email.
-        Передайте свій ID партнеру або попросіть його ID.
+        Для створення запрошення потрібен ID користувача (UUID), а не його email. Передайте свій ID
+        партнеру або попросіть його ID.
       </p>
       <div className="space-y-1">
         <p className="text-sm font-medium">Ваш ID</p>
