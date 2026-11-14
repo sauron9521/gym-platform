@@ -10,7 +10,9 @@ const commit = /^(?:[0-9a-f]{40}|[0-9a-f]{64})$/i;
 const zero = /^0+$/;
 const formatExtension = /\.(?:[cm]?jsx?|[cm]?tsx?|jsonc?|css|scss|mdx?|ya?ml|html)$/i;
 
-const prettierCli = fileURLToPath(new URL('../node_modules/prettier/bin/prettier.cjs', import.meta.url));
+const prettierCli = fileURLToPath(
+  new URL('../node_modules/prettier/bin/prettier.cjs', import.meta.url),
+);
 
 // These fixed commands are safe through cmd.exe on Windows. Git filenames
 // MUST NOT be passed through that shell, even when they contain metacharacters.

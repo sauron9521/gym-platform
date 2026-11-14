@@ -1,7 +1,13 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { createPrePushPlan, findPushedPaths, parsePushRefs, resolvePrePushCommand, runPrePushChecks } from './pre-push-checks.mjs';
+import {
+  createPrePushPlan,
+  findPushedPaths,
+  parsePushRefs,
+  resolvePrePushCommand,
+  runPrePushChecks,
+} from './pre-push-checks.mjs';
 
 const oldSha = 'a'.repeat(40);
 const headSha = 'b'.repeat(40);
