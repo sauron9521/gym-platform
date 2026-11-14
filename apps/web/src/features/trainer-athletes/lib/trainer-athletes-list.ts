@@ -43,18 +43,27 @@ export function formatTrainerAthleteDate(date: string | null): string {
 }
 
 /** A former trainer must not receive names or emails for archived relationships. */
+export function getRelationshipContact(
+  relationship: TrainerAthleteListItem,
+  role: 'TRAINER' | 'ATHLETE',
+): string | null {
+  const participant = role === 'TRAINER' ? relationship.athlete : relationship.trainer;
+  return 'email' in participant ? participant.email : null;
+}
+
 export function getTrainerAthleteContact(relationship: TrainerAthleteListItem): string | null {
-  return 'email' in relationship.athlete ? relationship.athlete.email : null;
+  return getRelationshipContact(relationship, 'TRAINER');
 }
 
 export function searchTrainerAthletesOnPage(
   items: readonly TrainerAthleteListItem[],
   query: string,
+  role: 'TRAINER' | 'ATHLETE' = 'TRAINER',
 ): TrainerAthleteListItem[] {
   const search = query.trim().toLocaleLowerCase('uk-UA');
   if (!search) return [...items];
   return items.filter((relationship) =>
-    getTrainerAthleteContact(relationship)?.toLocaleLowerCase('uk-UA').includes(search),
+    getRelationshipContact(relationship, role)?.toLocaleLowerCase('uk-UA').includes(search),
   );
 }
 
