@@ -9,23 +9,26 @@ export type WorkoutSetPayload = NonNullable<
 >['content']['application/json'];
 
 function numericText(min: number, max: number, decimals: number, integer = false) {
-  return z.string().trim().superRefine((value, ctx) => {
-    if (value === '') return;
-    const pattern = integer ? /^\d+$/ : /^\d+(?:[.,]\d+)?$/;
-    const number = Number(value.replace(',', '.'));
-    if (
-      !pattern.test(value) ||
-      !Number.isFinite(number) ||
-      number < min ||
-      number > max ||
-      Math.abs(number * 10 ** decimals - Math.round(number * 10 ** decimals)) > 1e-6
-    ) {
-      ctx.addIssue({
-        code: 'custom',
-        message: `Введіть число від ${min} до ${max} (до ${decimals} знаків після коми).`,
-      });
-    }
-  });
+  return z
+    .string()
+    .trim()
+    .superRefine((value, ctx) => {
+      if (value === '') return;
+      const pattern = integer ? /^\d+$/ : /^\d+(?:[.,]\d+)?$/;
+      const number = Number(value.replace(',', '.'));
+      if (
+        !pattern.test(value) ||
+        !Number.isFinite(number) ||
+        number < min ||
+        number > max ||
+        Math.abs(number * 10 ** decimals - Math.round(number * 10 ** decimals)) > 1e-6
+      ) {
+        ctx.addIssue({
+          code: 'custom',
+          message: `Введіть число від ${min} до ${max} (до ${decimals} знаків після коми).`,
+        });
+      }
+    });
 }
 
 export const workoutSetFormSchema = z.object({
