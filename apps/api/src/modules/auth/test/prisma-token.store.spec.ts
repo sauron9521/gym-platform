@@ -322,7 +322,6 @@ describe('PrismaTokenStore security and persistence contracts', () => {
     });
   });
 
-
   it('removes a bounded batch of expired refresh families using FK cascade', async () => {
     prisma.$executeRaw.mockResolvedValueOnce(23);
     const deleted = await store.deleteExpiredRefreshTokenFamiliesBatch(now, 500);
