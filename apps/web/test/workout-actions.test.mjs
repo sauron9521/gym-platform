@@ -41,7 +41,7 @@ test('actions use safe messages and Ukrainian labels', () => {
   assert.match(WORKOUT_ACTION_LABELS.complete, /Завершити/);
 });
 
-test('workout lifecycle controls use generated typed endpoints and inline confirmations', async () => {
+test('workout lifecycle controls use typed endpoints and inline confirmations', async () => {
   const ui = await readFile(
     new URL('../src/features/workouts/ui/workout-actions.tsx', import.meta.url),
     'utf8',
