@@ -1,0 +1,32 @@
+name: Temporary CI cleanup formatter
+
+on:
+  push:
+    branches:
+      - ci/cleanup-cache-and-coverage-gate-20261114
+
+permissions:
+  contents: read
+
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - name: Format changed files and emit output
+        run: |
+          set -euo pipefail
+          pnpm exec prettier --write scripts/ci-select.test.mjs
+          node --test scripts/ci-select.test.mjs scripts/pre-push-checks.test.mjs
+          echo FORMATTED_BEGIN:scripts/ci-select.test.mjs
+          base64 -w 0 scripts/ci-select.test.mjs
+          echo
+          echo FORMATTED_END:scripts/ci-select.test.mjs
