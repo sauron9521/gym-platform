@@ -162,7 +162,7 @@ export function DashboardScreen({ initialUser }: { initialUser: AuthenticatedUse
                 {initialUser.role === 'TRAINER' ? 'Тренувальні програми' : 'Мої програми'}
               </Link>
             </Button>
-          )
+          )}
         </div>
       </section>
     </main>
