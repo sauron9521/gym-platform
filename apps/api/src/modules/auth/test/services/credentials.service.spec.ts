@@ -157,4 +157,112 @@ describe('Credentials service', () => {
       expect(result).not.toHaveProperty('passwordHash');
     });
   });
+
+  describe('credential persistence and failure safety', () => {
+    const persistedUser = {
+      id: 'user-safe-1',
+      email: 'athlete@example.test',
+      emailVerified: true,
+      role: 'ATHLETE' as const,
+      createdAt: new Date('2026-11-01T10:00:00.000Z'),
+      updatedAt: new Date('2026-11-01T10:00:00.000Z'),
+      passwordHash: 'persisted-hash',
+    };
+
+    it('does not create an account when hashing the password fails', async () => {
+      const error = new Error('Password hashing failed');
+      passwordHasher.hash.mockRejectedValueOnce(error);
+
+      await expect(
+        service.register({ email: persistedUser.email, password: 'ValidPassword123!' }),
+      ).rejects.toBe(error);
+
+      expect(userRepository.checkEmail).toHaveBeenCalledOnce();
+      expect(userRepository.create).not.toHaveBeenCalled();
+    });
+
+    it('does not silently succeed when account persistence fails', async () => {
+      const error = new Error('User insert failed');
+      passwordHasher.hash.mockResolvedValueOnce('hashed-password');
+      userRepository.create.mockRejectedValueOnce(error);
+
+      await expect(
+        service.register({ email: persistedUser.email, password: 'ValidPassword123!' }),
+      ).rejects.toBe(error);
+
+      expect(userRepository.create).toHaveBeenCalledWith(persistedUser.email, 'hashed-password');
+    });
+
+    it('performs a password check for unknown users without touching rehash storage', async () => {
+      userRepository.findCredentials.mockResolvedValueOnce(null);
+      passwordHasher.verify.mockResolvedValueOnce(false);
+
+      await expect(service.verify('unknown@example.test', 'InvalidPassword!')).resolves.toBeNull();
+
+      expect(passwordHasher.verify).toHaveBeenCalledWith('InvalidPassword!', undefined);
+      expect(passwordHasher.hash).not.toHaveBeenCalled();
+      expect(passwordHasher.needsRehash).not.toHaveBeenCalled();
+      expect(userRepository.updatePassHash).not.toHaveBeenCalled();
+    });
+
+    it('never attempts a password upgrade after invalid credentials', async () => {
+      userRepository.findCredentials.mockResolvedValueOnce(persistedUser);
+      passwordHasher.verify.mockResolvedValueOnce(false);
+
+      await expect(service.verify(persistedUser.email, 'WrongPassword!')).resolves.toBeNull();
+
+      expect(passwordHasher.needsRehash).not.toHaveBeenCalled();
+      expect(passwordHasher.hash).not.toHaveBeenCalled();
+      expect(userRepository.updatePassHash).not.toHaveBeenCalled();
+    });
+
+    it('does not rehash an already-current password', async () => {
+      userRepository.findCredentials.mockResolvedValueOnce(persistedUser);
+      passwordHasher.verify.mockResolvedValueOnce(true);
+      passwordHasher.needsRehash.mockReturnValueOnce(false);
+
+      const result = await service.verify(persistedUser.email, 'ValidPassword123!');
+
+      expect(result?.id).toBe(persistedUser.id);
+      expect(result).not.toHaveProperty('passwordHash');
+      expect(passwordHasher.hash).not.toHaveBeenCalled();
+      expect(userRepository.updatePassHash).not.toHaveBeenCalled();
+    });
+
+    it('does not return an authenticated identity if rehashing fails', async () => {
+      const error = new Error('Hasher unavailable');
+      userRepository.findCredentials.mockResolvedValueOnce(persistedUser);
+      passwordHasher.verify.mockResolvedValueOnce(true);
+      passwordHasher.needsRehash.mockReturnValueOnce(true);
+      passwordHasher.hash.mockRejectedValueOnce(error);
+
+      await expect(service.verify(persistedUser.email, 'ValidPassword123!')).rejects.toBe(error);
+
+      expect(userRepository.updatePassHash).not.toHaveBeenCalled();
+    });
+
+    it('propagates a password-upgrade write failure instead of issuing a login', async () => {
+      const error = new Error('Credential update failed');
+      userRepository.findCredentials.mockResolvedValueOnce(persistedUser);
+      passwordHasher.verify.mockResolvedValueOnce(true);
+      passwordHasher.needsRehash.mockReturnValueOnce(true);
+      passwordHasher.hash.mockResolvedValueOnce('upgraded-hash');
+      userRepository.updatePassHash.mockRejectedValueOnce(error);
+
+      await expect(service.verify(persistedUser.email, 'ValidPassword123!')).rejects.toBe(error);
+
+      expect(userRepository.updatePassHash).toHaveBeenCalledWith(persistedUser.id, 'upgraded-hash');
+    });
+
+    it('propagates credential lookup errors without running the hasher', async () => {
+      const error = new Error('Credentials storage unavailable');
+      userRepository.findCredentials.mockRejectedValueOnce(error);
+
+      await expect(service.verify(persistedUser.email, 'ValidPassword123!')).rejects.toBe(error);
+
+      expect(passwordHasher.verify).not.toHaveBeenCalled();
+      expect(passwordHasher.needsRehash).not.toHaveBeenCalled();
+      expect(userRepository.updatePassHash).not.toHaveBeenCalled();
+    });
+  });
 });
