@@ -19,6 +19,8 @@ describe('ExercisesService', () => {
     findBySlug: vi.fn(),
     update: vi.fn(),
     archive: vi.fn(),
+    listMuscleGroups: vi.fn(),
+    listEquipment: vi.fn(),
     findMuscleGroupsBySlugs: vi.fn(),
     findEquipmentBySlugs: vi.fn(),
   };
@@ -83,6 +85,22 @@ describe('ExercisesService', () => {
     ]);
 
     service = new ExercisesService(repository as unknown as ExercisesRepository);
+  });
+
+  describe('public taxonomy', () => {
+    it('delegates muscle and equipment reads with no ownership context', async () => {
+      repository.listMuscleGroups.mockResolvedValue([{ slug: 'chest', name: 'Chest' }]);
+      repository.listEquipment.mockResolvedValue([{ slug: 'barbell', name: 'Barbell' }]);
+
+      await expect(service.listMuscleGroups()).resolves.toEqual([
+        { slug: 'chest', name: 'Chest' },
+      ]);
+      await expect(service.listEquipment()).resolves.toEqual([
+        { slug: 'barbell', name: 'Barbell' },
+      ]);
+      expect(repository.listMuscleGroups).toHaveBeenCalledOnce();
+      expect(repository.listEquipment).toHaveBeenCalledOnce();
+    });
   });
 
   describe('create', () => {
