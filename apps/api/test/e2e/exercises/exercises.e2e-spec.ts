@@ -233,6 +233,25 @@ describe('Exercises (HTTP + PostgreSQL)', () => {
     }
   }, 20_000);
 
+  describe('GET /exercise-taxonomy', () => {
+    it.each([
+      ['/exercise-taxonomy/muscle-groups', 'chest'],
+      ['/exercise-taxonomy/equipment', 'barbell'],
+    ])('returns public DB-backed reference data from %s', async (endpoint, seededSlug) => {
+      const response = await request(app!.getHttpServer()).get(endpoint);
+
+      expect(response.status).toBe(200);
+      expect(response.body).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ id: expect.any(String), name: expect.any(String), slug: seededSlug }),
+        ]),
+      );
+      for (const entry of response.body as Record<string, unknown>[]) {
+        expect(Object.keys(entry).sort()).toEqual(['id', 'name', 'slug']);
+      }
+    });
+  });
+
   describe('GET /exercises', () => {
     it('should return global exercises to guests', async () => {
       const response = await request(app!.getHttpServer()).get('/exercises').query({
