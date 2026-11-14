@@ -12,6 +12,20 @@ updates:
       time: '08:00'
       timezone: 'Europe/Kyiv'
     open-pull-requests-limit: 5
+    # Temporary toolchain compatibility guards. Revisit with Nest CLI,
+    # Node runtime, or Expo SDK upgrades; keep reviewing security alerts.
+    ignore:
+      # TypeScript 7.0 removes the compiler API required by Nest CLI and
+      # the API architecture import parser.
+      - dependency-name: 'typescript'
+        versions: ['>=7.0.0']
+      # Keep Node type declarations aligned to our Node 24 runtime.
+      - dependency-name: '@types/node'
+        versions: ['>=25.0.0']
+      # Expo SDK 58 recommends ~3.3.0 for this native dependency.
+      # Remove after a reviewed Expo upgrade and native build verification.
+      - dependency-name: 'react-native-gesture-handler'
+        versions: ['>=3.4.0']
     groups:
       patch-updates:
         applies-to: version-updates
