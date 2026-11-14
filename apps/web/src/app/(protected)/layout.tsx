@@ -20,6 +20,9 @@ export default function ProtectedLayout({ children }: Readonly<{ children: React
             <Link href="/workouts" className="ml-5 text-sm text-muted-foreground hover:underline">
               Тренування
             </Link>
+            <Link href="/exercises" className="ml-5 text-sm text-muted-foreground hover:underline">
+              Вправи
+            </Link>
             <Link href="/profile" className="ml-5 text-sm text-muted-foreground hover:underline">
               Профіль
             </Link>
