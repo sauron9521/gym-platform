@@ -100,12 +100,16 @@ export function CreateExerciseForm({ role }: { role: CustomExerciseActorRole }) 
 
       <form onSubmit={form.handleSubmit(submit)} noValidate className="space-y-6">
         {taxonomy.kind === 'loading' && (
-          <p role="status" className="text-sm text-muted-foreground">Завантажуємо довідники…</p>
+          <p role="status" className="text-sm text-muted-foreground">
+            Завантажуємо довідники…
+          </p>
         )}
         {taxonomy.kind === 'error' && (
           <div role="alert" className="space-y-2">
             <p className="text-sm text-destructive">{taxonomy.message}</p>
-            <Button type="button" variant="outline" onClick={retryTaxonomy}>Повторити</Button>
+            <Button type="button" variant="outline" onClick={retryTaxonomy}>
+              Повторити
+            </Button>
           </div>
         )}
         <section className="space-y-4 rounded-xl border bg-card p-5">
@@ -141,7 +145,7 @@ export function CreateExerciseForm({ role }: { role: CustomExerciseActorRole }) 
             >
               {CREATE_EXERCISE_TYPES.map((item) => (
                 <option key={item.value} value={item.value}>
-                  {item.name}
+                  {item.label}
                 </option>
               ))}
             </select>
