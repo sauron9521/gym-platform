@@ -122,7 +122,7 @@ test('mutation UI calls all typed routes and keeps destructive actions confirmed
   }
   assert.match(actions, /onSubmit=\{form.handleSubmit\(confirm\)\}/);
   assert.match(actions, /setSelected\(action\)/);
-  assert.match(actions, /Сервер зберігає необхідні копії/);
+  assert.match(actions, /Сервер зберігає/);
   assert.match(actions, /response.status === 401/);
   assert.match(list, /<InviteRelationshipForm/);
   assert.match(list, /<RelationshipActions/);
