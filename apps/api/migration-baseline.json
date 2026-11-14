@@ -42,8 +42,10 @@
   ],
   "current_baseline": {
     "path": "prisma/migrations/20261114000000_initial_baseline/migration.sql",
-    "git_blob_sha": "38ccd661c70b6e04f177e8ea2aa054f3b3cb27a8",
+    "git_blob_sha": "8c426fb534ae4586bfa2c15bbc56f6ab30413861",
     "consolidated_migrations": 24,
-    "requires_empty_database": true
+    "requires_empty_database": true,
+    "generator": "prisma migrate diff --from-empty --to-schema prisma/schemas --config prisma7.config.ts --script",
+    "manual_constraints": ["body_measurements_at_least_one_metric"]
   }
 }

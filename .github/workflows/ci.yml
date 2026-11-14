@@ -51,6 +51,9 @@ jobs:
       - name: Validate Prisma schema
         run: pnpm --filter @gym/api db:validate
 
+      - name: Verify Prisma initial baseline against schema
+        run: pnpm --filter @gym/api db:baseline:check
+
       - name: Enforce feature architecture and runtime dependency graph
         run: |
           pnpm --filter @gym/api architecture:check
