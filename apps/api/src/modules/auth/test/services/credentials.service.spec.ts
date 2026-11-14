@@ -251,10 +251,7 @@ describe('Credentials service', () => {
 
       await expect(service.verify(persistedUser.email, 'ValidPassword123!')).rejects.toBe(error);
 
-      expect(userRepository.updatePassHash).toHaveBeenCalledWith(
-        persistedUser.id,
-        'upgraded-hash',
-      );
+      expect(userRepository.updatePassHash).toHaveBeenCalledWith(persistedUser.id, 'upgraded-hash');
     });
 
     it('propagates credential lookup errors without running the hasher', async () => {

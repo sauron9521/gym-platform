@@ -35,16 +35,20 @@ export default defineConfig({
         functions: 75,
         lines: 77,
         'src/modules/auth/**/*.ts': {
-          statements: 73,
-          branches: 61,
-          functions: 61,
-          lines: 73,
+          // PR #73: 77.54% statements, 66.67% branches, 64.47% functions,
+          // 77.45% lines. Keep a small buffer while guarding regressions.
+          statements: 75,
+          branches: 64,
+          functions: 62,
+          lines: 75,
         },
         'src/modules/workouts/**/*.ts': {
-          statements: 77,
-          branches: 66,
-          functions: 80,
-          lines: 78,
+          // PR #73: 88.86% statements, 83.14% branches, 86.02% functions,
+          // 89.32% lines after concurrency and idempotency regression tests.
+          statements: 85,
+          branches: 78,
+          functions: 82,
+          lines: 85,
         },
         'src/modules/training-programs/**/*.ts': {
           // Verified by successful PR #167 CI (run 43289865381):

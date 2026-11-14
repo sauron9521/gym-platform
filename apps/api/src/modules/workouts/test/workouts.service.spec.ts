@@ -876,10 +876,7 @@ describe('WorkoutsService', () => {
       const response = await service.create(athlete, createInput, idempotencyKey);
 
       expect(response).toBe(currentWorkout);
-      expect(repository.findByIdempotencyKey).toHaveBeenCalledWith(
-        athlete.id,
-        idempotencyKey,
-      );
+      expect(repository.findByIdempotencyKey).toHaveBeenCalledWith(athlete.id, idempotencyKey);
       expect(repository.findById).toHaveBeenCalledWith(plannedWorkout.id, {
         athleteId: athlete.id,
       });
@@ -906,12 +903,10 @@ describe('WorkoutsService', () => {
         code: 'P2002',
         clientVersion: '7.10.1',
       });
-      repository.findByIdempotencyKey
-        .mockResolvedValueOnce(null)
-        .mockResolvedValueOnce({
-          id: plannedWorkout.id,
-          idempotencyFingerprint: previous.fingerprint,
-        });
+      repository.findByIdempotencyKey.mockResolvedValueOnce(null).mockResolvedValueOnce({
+        id: plannedWorkout.id,
+        idempotencyFingerprint: previous.fingerprint,
+      });
       repository.create.mockRejectedValueOnce(uniqueError);
       repository.findById.mockResolvedValueOnce(plannedWorkout);
 
@@ -930,18 +925,14 @@ describe('WorkoutsService', () => {
       repository.findByIdempotencyKey.mockResolvedValue(null);
       repository.create.mockRejectedValueOnce(uniqueError);
 
-      await expect(service.create(athlete, createInput, idempotencyKey)).rejects.toBe(
-        uniqueError,
-      );
+      await expect(service.create(athlete, createInput, idempotencyKey)).rejects.toBe(uniqueError);
       expect(repository.findByIdempotencyKey).toHaveBeenCalledTimes(2);
     });
 
     it('rejects unavailable exercise metadata before persisting a workout', async () => {
       exercisesService.findAvailableForWorkout.mockResolvedValueOnce([]);
 
-      await expect(service.create(athlete, createInput)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(service.create(athlete, createInput)).rejects.toThrow(BadRequestException);
       expect(repository.create).not.toHaveBeenCalled();
     });
 
@@ -974,9 +965,7 @@ describe('WorkoutsService', () => {
       repository.findById.mockResolvedValueOnce(plannedWorkout);
       repository.startWorkout.mockResolvedValueOnce(null);
 
-      await expect(service.start(plannedWorkout.id, athlete)).rejects.toThrow(
-        ConflictException,
-      );
+      await expect(service.start(plannedWorkout.id, athlete)).rejects.toThrow(ConflictException);
       expect(repository.startWorkout).toHaveBeenCalledOnce();
     });
 
@@ -1035,9 +1024,7 @@ describe('WorkoutsService', () => {
       repository.findById.mockResolvedValueOnce(completedSetsWorkout);
       repository.completeWorkout.mockResolvedValueOnce({ status: 'NOT_IN_PROGRESS' });
 
-      await expect(service.complete(plannedWorkout.id, athlete)).rejects.toThrow(
-        ConflictException,
-      );
+      await expect(service.complete(plannedWorkout.id, athlete)).rejects.toThrow(ConflictException);
       expect(repository.completeWorkout).toHaveBeenCalledOnce();
     });
 
@@ -1050,9 +1037,7 @@ describe('WorkoutsService', () => {
         }),
       );
 
-      await expect(service.complete(plannedWorkout.id, athlete)).rejects.toThrow(
-        ConflictException,
-      );
+      await expect(service.complete(plannedWorkout.id, athlete)).rejects.toThrow(ConflictException);
     });
 
     it('permits cancelling an active workout using its exact previous status', async () => {
@@ -1078,9 +1063,7 @@ describe('WorkoutsService', () => {
         }),
       );
 
-      await expect(service.cancel(plannedWorkout.id, athlete)).rejects.toThrow(
-        ConflictException,
-      );
+      await expect(service.cancel(plannedWorkout.id, athlete)).rejects.toThrow(ConflictException);
     });
 
     it('does not leak a foreign workout through update or cancellation', async () => {
