@@ -118,8 +118,10 @@ test('API-only push generates Prisma client before lint and typecheck', () => {
   });
   const commands = plan.commands.map((cmd) => cmd.join(' '));
   assert.ok(commands.indexOf('pnpm --filter @gym/api db:generate') !== -1);
-  assert.ok(commands.indexOf('pnpm --filter @gym/api db:generate') <
-    commands.indexOf('pnpm --filter @gym/api typecheck'));
+  assert.ok(
+    commands.indexOf('pnpm --filter @gym/api db:generate') <
+      commands.indexOf('pnpm --filter @gym/api typecheck'),
+  );
   assert.ok(!commands.some((cmd) => cmd.includes('@gym/web')));
 });
 
@@ -140,12 +142,7 @@ test('docs-only push runs scoped Prettier without workspace checks', () => {
     files: ['docs/ci-affected-workspaces.md'],
   });
   assert.equal(plan.commands.length, 1);
-  assert.deepEqual(plan.commands[0].slice(0, 4), [
-    'pnpm',
-    'exec',
-    'prettier',
-    '--check',
-  ]);
+  assert.deepEqual(plan.commands[0].slice(0, 4), ['pnpm', 'exec', 'prettier', '--check']);
 });
 
 test('root, unknown, and failed diff fallback to whole-repo validation', () => {

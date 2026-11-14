@@ -119,7 +119,15 @@ export function createPrePushPlan({ full, files }) {
     if (formatted.length > 100) {
       commands.push(['pnpm', 'format:check']);
     } else {
-      commands.push(['pnpm', 'exec', 'prettier', '--check', '--ignore-unknown', '--', ...formatted]);
+      commands.push([
+        'pnpm',
+        'exec',
+        'prettier',
+        '--check',
+        '--ignore-unknown',
+        '--',
+        ...formatted,
+      ]);
     }
   }
 
