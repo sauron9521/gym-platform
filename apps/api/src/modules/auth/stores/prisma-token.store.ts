@@ -207,7 +207,6 @@ export class PrismaTokenStore implements RefreshTokenStore, EmailTokenStore {
     await this.prisma.emailToken.deleteMany({ where: { userId, purpose } });
   }
 
-
   /**
    * Delete at most one bounded batch of expired refresh families.
    * PostgreSQL cascades token rows through the existing family_id FK.
