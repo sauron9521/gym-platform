@@ -17,7 +17,7 @@ describe('ExercisesModule controller registry', () => {
     );
   });
 
-  it('registers exactly eight unique HTTP verb/path combinations', () => {
+  it('registers exactly ten unique HTTP verb/path combinations', () => {
     const routes = controllers.flatMap((controller) => {
       const prefix = Reflect.getMetadata(PATH_METADATA, controller) as string;
       return Object.getOwnPropertyNames(controller.prototype)
@@ -33,8 +33,10 @@ describe('ExercisesModule controller registry', () => {
           return `${method}:${prefix}/${path}`;
         });
     });
-    expect(routes).toHaveLength(8);
+    expect(routes).toHaveLength(10);
     expect(new Set(routes).size).toBe(routes.length);
+    expect(routes).toContain(`${RequestMethod.GET}:exercises/muscle-groups`);
+    expect(routes).toContain(`${RequestMethod.GET}:exercises/equipment`);
     expect(routes).toContain(`${RequestMethod.GET}:exercises/:id`);
     expect(routes).toContain(`${RequestMethod.DELETE}:exercises/:id/trainer-access/:trainerId`);
   });
