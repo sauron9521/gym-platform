@@ -19,6 +19,10 @@ updates:
       # the API architecture import parser.
       - dependency-name: 'typescript'
         versions: ['>=7.0.0']
+      # ESLint 10 breaks eslint-plugin-react (react/display-name) in Expo/Next
+      # lint checks. Revisit when the ESLint ecosystem supports v10.
+      - dependency-name: 'eslint'
+        versions: ['>=10.0.0']
       # Keep Node type declarations aligned to our Node 24 runtime.
       - dependency-name: '@types/node'
         versions: ['>=25.0.0']
