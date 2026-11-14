@@ -18,6 +18,6 @@ Authenticated workout creation, retrieval, editing, set updates, lifecycle trans
 
 Preserve transitions and invariants (especially completion and assignment state), ownership checks and version linkage. Controllers and generated OpenAPI are the source of truth for accepted fields and transition error codes.
 
-**Tests:** `test/workouts.e2e-spec.ts`, `test/integration/workouts.repository.integration.e2e-spec.ts` and co-located module tests.
+**Tests:** `test/e2e/workouts/workouts.e2e-spec.ts`, `test/integration/workouts/workouts.repository.integration.e2e-spec.ts` and co-located module tests.
 
 See [training programs](training-programs.md) and [testing guide](../testing.md).

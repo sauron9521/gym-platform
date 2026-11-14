@@ -2,13 +2,12 @@
 
 The test root is `apps/api/test/`.
 
-- `e2e/<module>/` — HTTP-level feature behavior (migration in progress).
-  - `e2e/auth/` — auth registration/login, tokens and endpoint throttling HTTP tests.
-- `integration/<module>/` — database/provider integration and contract tests.
-  - `integration/auth/` — credential, token-flow and email-verification database/HTTP integration tests.
+- `e2e/<module>/` — HTTP-level suites grouped by feature (`auth`, `body-measurements`, `exercises`, `trainer-athletes`, `users`, `workout-analytics`, `workouts`).
+- `integration/<module>/` — database/provider suites grouped by feature (`auth`, `exercises`, `training-programs`, `users`, `workouts`).
+- `e2e/common/` and `integration/common/` — cross-cutting HTTP security, rate limiting and principal isolation.
+- `e2e/infra/` and `integration/infra/` — bootstrap, health, observability, OpenAPI and database index checks.
 - `utility/` — shared fixtures and guarded disposable test database setup.
-- Root-level `*.e2e-spec.ts` files are legacy layout; migrate in focused PRs.
-- Root-level `*.test.mjs` files may be invoked directly by CI/scripts; do not move them without updating each caller.
+- The two root-level `*.test.mjs` files are invoked directly by CI/scripts and remain at their original paths.
 
 Vitest discovers nested `test/**/*.e2e-spec.ts`; `fileParallelism: false` preserves the existing test concurrency policy.
 

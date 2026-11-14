@@ -16,6 +16,6 @@ Authenticated invitation/relationship management with accept, decline, cancellat
 
 Relationship state affects trainer access to exercises and program assignment. The termination flow may require exercising copy/visibility rules for previously shared exercises; never replace it with an untested direct database update.
 
-**Tests:** `test/trainer-athletes.e2e-spec.ts`, `test/trainer-athlete-exercise-copy.e2e-spec.ts` and module tests. Verify both parties' permissions and unauthorized transitions.
+**Tests:** `test/e2e/trainer-athletes/trainer-athletes.e2e-spec.ts`, `test/e2e/trainer-athletes/trainer-athlete-exercise-copy.e2e-spec.ts` and module tests. Verify both parties' permissions and unauthorized transitions.
 
 See [exercises](exercises.md), [training programs](training-programs.md), and [testing guide](../testing.md).
