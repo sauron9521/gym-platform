@@ -143,8 +143,8 @@ test('creation uses typed POST and RHF/Zod, with state and auth handling', async
     new URL('../src/features/exercises/lib/use-exercise-taxonomy.ts', import.meta.url),
     'utf8',
   );
-  assert.match(taxonomyHook, /GET\\('\/exercise-taxonomy\/muscle-groups'/);
-  assert.match(taxonomyHook, /GET\\('\/exercise-taxonomy\/equipment'/);
+  assert.match(taxonomyHook, /GET\('\/exercise-taxonomy\/muscle-groups'/);
+  assert.match(taxonomyHook, /GET\('\/exercise-taxonomy\/equipment'/);
   assert.match(form, /useExerciseTaxonomy/);
   assert.match(form, /taxonomy.kind !== 'ready'/);
   assert.match(catalog, /useExerciseTaxonomy/);
