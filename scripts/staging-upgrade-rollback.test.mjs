@@ -187,10 +187,10 @@ test('two-release staging PostgreSQL URL is valid YAML and matches disposable cr
     new URL('../.github/workflows/staging-upgrade-rollback.yml', import.meta.url),
     'utf8',
   );
-  const urlEntry = workflow.match(/^      STAGING_DATABASE_URL: '([^'\\n]+)'$/m);
+  const urlEntry = workflow.match(/^      STAGING_DATABASE_URL: '([^'\n]+)'$/m);
   assert.ok(urlEntry, 'The disposable PostgreSQL URL must be a quoted YAML scalar');
   const database = new URL(urlEntry[1]);
-  const passwordEntry = workflow.match(/-e POSTGRES_PASSWORD=([^\\s]+)/);
+  const passwordEntry = workflow.match(/-e POSTGRES_PASSWORD=([^\s]+)/);
   assert.ok(passwordEntry);
   assert.equal(database.protocol, 'postgresql:');
   assert.equal(database.username, 'postgres');
