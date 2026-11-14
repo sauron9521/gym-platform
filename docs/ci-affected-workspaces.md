@@ -44,3 +44,30 @@ in the GitHub Actions job log.
 
 The CI refactor does not change `main` protection rules or automatic
 publishing. Deployment and release approval remain separate workflows.
+
+## Build caching and removal of duplicate tests
+
+The `Quality / Node 24` job now restores the Turborepo task cache
+(`.turbo/cache`) and Next.js incremental cache (`apps/web/.next/cache`)
+using `actions/cache@v6`. Keys are scoped to the operating system,
+Node.js version, lockfile, workspace manifests, Turborepo configuration
+and commit SHA. A restore prefix permits reusing safe prior build artifacts
+within the same dependency configuration. The existing
+`actions/setup-node@v7` pnpm-store cache remains in place.
+
+Only build caches are stored. Dependencies (`node_modules`), Prisma
+generated files, credentials, test databases and coverage reports are
+never added to the build cache.
+
+API unit tests already run with coverage thresholds in
+`API Coverage / Critical modules`. The Quality job runs Web, Mobile
+and API Client tests without running the same API unit tests twice.
+The protected `API e2e / PostgreSQL 17` check **requires both** the
+real PostgreSQL E2E suite and API coverage to succeed when API files
+are affected; it fails if either fails or is missing.
+
+Workspace test tasks are marked `cache: false` in `turbo.json` so
+tests always execute on pushes to `main`. Builds, lint and typechecks
+may reuse correctly hashed Turborepo results. The vulnerability audit
+does not restore the pnpm package store because it only reads the
+lockfile and queries the registry.
