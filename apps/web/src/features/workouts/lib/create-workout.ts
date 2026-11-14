@@ -3,8 +3,9 @@ import { z } from 'zod';
 
 import { numericText } from './workout-set-form';
 
-export type ExerciseListItem =
-  operations['ExercisesController_findMany']['responses'][200]['content']['application/json']['data'][number];
+type ExerciseListResponse =
+  operations['ExercisesController_findMany']['responses'][200]['content']['application/json'];
+export type ExerciseListItem = ExerciseListResponse['data'][number];
 
 export type CreateWorkoutPayload =
   operations['WorkoutsController_create']['requestBody']['content']['application/json'];
