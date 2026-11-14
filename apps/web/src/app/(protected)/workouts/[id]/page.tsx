@@ -12,11 +12,7 @@ export const metadata: Metadata = {
 
 export const dynamic = 'force-dynamic';
 
-export default async function WorkoutDetailsPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
+export default async function WorkoutDetailsPage({ params }: { params: Promise<{ id: string }> }) {
   const cookieHeader = (await headers()).get('cookie') ?? '';
   const session = await verifyServerSession(cookieHeader);
 
