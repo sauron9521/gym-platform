@@ -29,3 +29,22 @@ node --test scripts/pre-push-checks.test.mjs
 To bypass a hook intentionally for a local one-off diagnostic, set
 `HUSKY=0` only if you understand that GitHub CI will still enforce the
 required checks. Do not disable branch protection.
+
+## Windows process safety
+
+Windows pnpm typically uses a `.cmd` shim, which needs `cmd.exe` to
+launch. The hook allows that shell **only for an explicit allowlist of
+filename-free, fixed pnpm commands** (lint, typecheck, Prisma generation
+and full formatting).
+
+Scoped Prettier checks are different: changed Git filenames are untrusted
+arguments and can contain spaces or shell metacharacters. The hook invokes
+the installed Prettier CLI directly using `process.execPath` and an argument
+array with `shell: false`. This keeps each filename literal and prevents
+Windows command expansion or accidental invocation of other commands.
+Unexpected command shapes fail the push instead of entering a shell.
+
+The CI runs pre-push unit tests on Linux and, for cross-cutting changes,
+on a Windows runner. A passing Windows test covers the argument handling;
+interactive Git for Windows / Corepack end-to-end behavior still depends
+on the local installation.
