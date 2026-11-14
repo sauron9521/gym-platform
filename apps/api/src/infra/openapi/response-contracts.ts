@@ -132,6 +132,9 @@ export const archivedExerciseResponseSchema = objectSchema({
 
 export const exerciseListResponseSchema = paginatedSchema(exerciseResponseSchema);
 
+/** Public dictionary entries used by exercise forms and catalog filters. */
+export const exerciseTaxonomyListResponseSchema = arraySchema(namedReference);
+
 export const exerciseTrainerAccessResponseSchema = objectSchema({
   id: uuidSchema,
   exerciseId: uuidSchema,
