@@ -20,7 +20,7 @@ test('real API persists the profile and revokes the browser session', async ({ p
   await page.locator('#password').fill(password);
   await page.getByRole('button', { name: 'Увійти' }).click();
   await expect(page).toHaveURL(/\/dashboard$/);
-  await expect(page.getByText(email)).toBeVisible();
+  await expect(page.getByText(email, { exact: true })).toBeVisible();
   const cookies = await page.context().cookies();
   expect(
     cookies.some((cookie) => cookie.name === '__Host-sid' && cookie.httpOnly && cookie.secure),
