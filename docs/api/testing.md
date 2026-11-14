@@ -38,6 +38,7 @@ pnpm --filter @gym/api architecture:check
 pnpm --filter @gym/api architecture:deps
 pnpm --filter @gym/api test:architecture
 pnpm --filter @gym/api test:coverage-tools
+pnpm --filter @gym/api db:baseline:check
 ```
 
 `apps/api/test/migration-baseline.test.mjs` protects the single initial Prisma baseline and archives the original migration hashes as metadata. The root migration readiness checks preserve provenance of imported source/tests. A green repository CI does **not** imply a production cutover approval.

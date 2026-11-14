@@ -26,7 +26,8 @@
     "test:architecture": "node --test scripts/check-architecture.test.mjs scripts/check-feature-dependencies.test.mjs scripts/import-parser.test.mjs",
     "test:coverage-tools": "node --test scripts/coverage-report.test.mjs scripts/coverage-inventory.test.mjs",
     "coverage:summary": "node scripts/coverage-report.mjs",
-    "coverage:inventory": "node scripts/coverage-inventory.mjs"
+    "coverage:inventory": "node scripts/coverage-inventory.mjs",
+    "db:baseline:check": "node scripts/verify-prisma-baseline.mjs"
   },
   "dependencies": {
     "@nestjs/authentication": "^0.1.5",

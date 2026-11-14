@@ -16,11 +16,18 @@ function gitBlobSha(buffer) {
     .digest('hex');
 }
 
-test('only the new initial database migration is active and frozen', () => {
+test('one Prisma-generated baseline for an empty database is frozen', () => {
   assert.equal(manifest.source_repository, 'sauron9521/gym-api-nestjs');
   assert.equal(manifest.current_baseline.path, expectedBaseline);
   assert.equal(manifest.current_baseline.consolidated_migrations, 24);
   assert.equal(manifest.current_baseline.requires_empty_database, true);
+  assert.equal(
+    manifest.current_baseline.generator,
+    'prisma migrate diff --from-empty --to-schema prisma/schemas --config prisma7.config.ts --script',
+  );
+  assert.deepEqual(manifest.current_baseline.manual_constraints, [
+    'body_measurements_at_least_one_metric',
+  ]);
 
   const source = Object.keys(manifest.historical_migration_files)
     .filter((path) => path.endsWith('/migration.sql'))
@@ -35,17 +42,20 @@ test('only the new initial database migration is active and frozen', () => {
   const buffer = readFileSync(join(root, expectedBaseline));
   assert.equal(gitBlobSha(buffer), manifest.current_baseline.git_blob_sha);
   const sql = buffer.toString('utf8');
-  for (const [index, path] of source.entries()) {
-    const sourceName = path.split('/')[2];
-    assert.ok(
-      sql.includes('-- ===== Historical step ' + (index + 1) + ' of 24: ' + sourceName + ' ====='),
-      'Historical SQL step missing or reordered: ' + sourceName,
-    );
-  }
+  assert.equal((sql.match(/CREATE TABLE /g) ?? []).length, 24);
+  assert.doesNotMatch(sql, /Historical step \d+ of 24/);
+  assert.doesNotMatch(sql, /\b(?:DROP TABLE|DROP TYPE|DROP INDEX)\b/i);
   assert.doesNotMatch(sql, /\b(?:CREATE|DROP)\s+(?:UNIQUE\s+)?INDEX\s+CONCURRENTLY\b/i);
-  assert.match(sql, /CREATE UNIQUE INDEX "trainer_athletes_open_pair_key"/);
-  assert.match(sql, /CREATE UNIQUE INDEX "training_program_assignments_one_active_version_key"/);
-  assert.match(sql, /CONSTRAINT "body_measurements_at_least_one_metric"/);
+  for (const name of [
+    'trainer_athletes_open_pair_key',
+    'training_program_versions_one_draft_key',
+    'training_program_assignments_one_active_version_key',
+  ]) {
+    assert.ok(sql.includes('CREATE UNIQUE INDEX "' + name + '"'));
+  }
+  assert.equal((sql.match(/WHERE \(/g) ?? []).length, 3);
+  assert.match(sql, /CONSTRAINT "body_measurements_at_least_one_metric"\s+CHECK\s*\(/);
+  assert.match(sql, /ALTER TABLE "body_measurements"/);
 });
 
 test('all source Prisma schema files remain intact', () => {
