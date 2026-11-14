@@ -56,10 +56,10 @@ test('catalog uses dropdowns from live taxonomy rather than editable slug string
 
 test('API taxonomy endpoints specify minimal OpenAPI responses', async () => {
   const controller = await source(
-    '../../../api/src/modules/exercises/controllers/exercises.controller.ts',
+    '../../api/src/modules/exercises/controllers/exercises.controller.ts',
   );
   const contracts = await source(
-    '../../../api/src/infra/openapi/response-contracts.ts',
+    '../../api/src/infra/openapi/response-contracts.ts',
   );
   assert.match(controller, /@Get\('muscle-groups'\)/);
   assert.match(controller, /@Get\('equipment'\)/);
