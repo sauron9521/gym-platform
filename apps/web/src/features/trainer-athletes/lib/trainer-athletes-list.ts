@@ -48,7 +48,9 @@ export function getRelationshipContact(
   role: 'TRAINER' | 'ATHLETE',
 ): string | null {
   const participant = role === 'TRAINER' ? relationship.athlete : relationship.trainer;
-  return 'email' in participant ? participant.email : null;
+  return 'email' in participant && typeof participant.email === 'string'
+    ? participant.email
+    : null;
 }
 
 export function getTrainerAthleteContact(relationship: TrainerAthleteListItem): string | null {
