@@ -174,3 +174,10 @@ test('pre-push never rewrites committed source files', () => {
     assert.ok(!plan.commands.some((cmd) => cmd.includes('format')));
   }
 });
+
+test('ref-only deletion and empty net diff run no local commands', () => {
+  const deletion = findPushedPaths(line(oldSha, zeroSha));
+  const plan = createPrePushPlan(deletion);
+  assert.equal(plan.scopes.full, false);
+  assert.deepEqual(plan.commands, []);
+});

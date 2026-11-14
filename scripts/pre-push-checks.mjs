@@ -82,6 +82,23 @@ export function findPushedPaths(
 }
 
 export function createPrePushPlan({ full, files }) {
+  // Valid Git ref updates with no net file changes, or only ref deletions,
+  // publish no modified source and require no local checks.
+  if (!full && files.length === 0) {
+    return {
+      scopes: {
+        full: false,
+        api: false,
+        web: false,
+        mobile: false,
+        client: false,
+        deps: false,
+        workspaces: false,
+      },
+      commands: [],
+    };
+  }
+
   const scopes = classifyChangedPaths(files, { forceFull: full });
   const commands = [];
   if (scopes.full) {
