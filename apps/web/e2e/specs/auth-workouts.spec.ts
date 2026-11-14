@@ -35,7 +35,9 @@ test('login form validates the email before sending credentials', async ({ page 
   await page.getByLabel('Електронна пошта').fill('invalid-email');
   await page.getByLabel('Пароль').fill(password);
   await page.getByRole('button', { name: 'Увійти' }).click();
-  await expect(page.locator('#login-email-error')).toContainText('Вкажіть коректну електронну адресу');
+  await expect(page.locator('#login-email-error')).toContainText(
+    'Вкажіть коректну електронну адресу',
+  );
   await expect(page).toHaveURL(/\/login$/);
 });
 
