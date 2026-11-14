@@ -53,9 +53,10 @@ test('only pending recipients can accept or decline, and only initiators can can
 });
 
 test('active relationships can be terminated, and historical records cannot be mutated', () => {
-  assert.deepEqual(getAvailableRelationshipActions({ ...participant, status: 'ACTIVE' }, 'trainer-1'), [
-    'terminate',
-  ]);
+  assert.deepEqual(
+    getAvailableRelationshipActions({ ...participant, status: 'ACTIVE' }, 'trainer-1'),
+    ['terminate'],
+  );
   for (const status of ['DECLINED', 'CANCELLED', 'TERMINATED']) {
     assert.deepEqual(getAvailableRelationshipActions({ ...participant, status }, 'trainer-1'), []);
   }
