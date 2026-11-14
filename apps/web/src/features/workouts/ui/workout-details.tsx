@@ -141,17 +141,43 @@ export function WorkoutDetails({ id }: { id: string }) {
                           </span>
                         </div>
                         <dl className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
-                          <SetMetric label="План · повторення" value={formatWorkoutValue(set.plannedReps)} />
-                          <SetMetric label="Факт · повторення" value={formatWorkoutValue(set.actualReps)} />
-                          <SetMetric label="План · вага" value={formatWorkoutValue(set.plannedWeightKg, ' кг')} />
-                          <SetMetric label="Факт · вага" value={formatWorkoutValue(set.actualWeightKg, ' кг')} />
-                          <SetMetric label="План · час" value={formatWorkoutValue(set.plannedDurationSeconds, ' с')} />
-                          <SetMetric label="Факт · час" value={formatWorkoutValue(set.actualDurationSeconds, ' с')} />
-                          <SetMetric label="План · дистанція" value={formatWorkoutValue(set.plannedDistanceMeters, ' м')} />
-                          <SetMetric label="Факт · дистанція" value={formatWorkoutValue(set.actualDistanceMeters, ' м')} />
+                          <SetMetric
+                            label="План · повторення"
+                            value={formatWorkoutValue(set.plannedReps)}
+                          />
+                          <SetMetric
+                            label="Факт · повторення"
+                            value={formatWorkoutValue(set.actualReps)}
+                          />
+                          <SetMetric
+                            label="План · вага"
+                            value={formatWorkoutValue(set.plannedWeightKg, ' кг')}
+                          />
+                          <SetMetric
+                            label="Факт · вага"
+                            value={formatWorkoutValue(set.actualWeightKg, ' кг')}
+                          />
+                          <SetMetric
+                            label="План · час"
+                            value={formatWorkoutValue(set.plannedDurationSeconds, ' с')}
+                          />
+                          <SetMetric
+                            label="Факт · час"
+                            value={formatWorkoutValue(set.actualDurationSeconds, ' с')}
+                          />
+                          <SetMetric
+                            label="План · дистанція"
+                            value={formatWorkoutValue(set.plannedDistanceMeters, ' м')}
+                          />
+                          <SetMetric
+                            label="Факт · дистанція"
+                            value={formatWorkoutValue(set.actualDistanceMeters, ' м')}
+                          />
                         </dl>
                         {set.notes && (
-                          <p className="whitespace-pre-wrap text-sm text-muted-foreground">{set.notes}</p>
+                          <p className="whitespace-pre-wrap text-sm text-muted-foreground">
+                            {set.notes}
+                          </p>
                         )}
                       </li>
                     ))}
