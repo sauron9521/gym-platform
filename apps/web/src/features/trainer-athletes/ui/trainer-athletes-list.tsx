@@ -5,9 +5,11 @@ import { useRouter } from 'next/navigation';
 
 import { webApi } from '@/shared/api/client';
 import { Button } from '@/shared/ui/button';
+import { InviteRelationshipForm } from './invite-relationship-form';
+import { RelationshipActions } from './relationship-actions';
 import {
   formatTrainerAthleteDate,
-  getTrainerAthleteContact,
+  getRelationshipContact,
   getTrainerAthleteInvitationLabel,
   getTrainerAthleteListErrorMessage,
   getTrainerAthletePageCount,
@@ -30,7 +32,13 @@ type ListState =
       pages: number;
     };
 
-export function TrainerAthletesList({ trainerId }: { trainerId: string }) {
+export function TrainerAthletesList({
+  actorId,
+  actorRole,
+}: {
+  actorId: string;
+  actorRole: 'TRAINER' | 'ATHLETE';
+}) {
   const router = useRouter();
   const [filter, setFilter] = useState<TrainerAthleteFilter>('ALL');
   const [page, setPage] = useState(1);
@@ -95,23 +103,37 @@ export function TrainerAthletesList({ trainerId }: { trainerId: string }) {
     setState({ kind: 'loading' });
   }
 
+  function inviteCreated() {
+    setFilter('PENDING');
+    setPage(1);
+    setSearch('');
+    setState({ kind: 'loading' });
+    setAttempt((value) => value + 1);
+  }
+
   function retry() {
     setState({ kind: 'loading' });
     setAttempt((current) => current + 1);
   }
 
   const visible =
-    state.kind === 'ready' ? searchTrainerAthletesOnPage(state.relationships, search) : [];
+    state.kind === 'ready' ? searchTrainerAthletesOnPage(state.relationships, search, actorRole) : [];
 
   return (
     <main className="mx-auto max-w-5xl space-y-7 px-6 py-12">
       <header className="space-y-2">
-        <p className="text-sm font-medium text-muted-foreground">Кабінет тренера</p>
-        <h1 className="text-3xl font-semibold tracking-tight">Мої підопічні</h1>
+        <p className="text-sm font-medium text-muted-foreground">
+          {actorRole === 'TRAINER' ? 'Кабінет тренера' : 'Кабінет атлета'}
+        </p>
+        <h1 className="text-3xl font-semibold tracking-tight">
+          {actorRole === 'TRAINER' ? 'Мої підопічні' : 'Мої тренери'}
+        </h1>
         <p className="text-sm text-muted-foreground">
-          Переглядайте запрошення, активні відносини та історію співпраці з атлетами.
+          Переглядайте запрошення, активні відносини та історію співпраці.
         </p>
       </header>
+
+      <InviteRelationshipForm actorId={actorId} actorRole={actorRole} onCreated={inviteCreated} />
 
       <section
         className="grid gap-4 rounded-xl border bg-card p-5 sm:grid-cols-2"
@@ -136,7 +158,7 @@ export function TrainerAthletesList({ trainerId }: { trainerId: string }) {
         </div>
         <div className="space-y-2">
           <label htmlFor="trainer-athletes-search" className="block text-sm font-medium">
-            Пошук за email на поточній сторінці
+            Пошук контакту на поточній сторінці
           </label>
           <input
             id="trainer-athletes-search"
@@ -144,7 +166,7 @@ export function TrainerAthletesList({ trainerId }: { trainerId: string }) {
             value={search}
             maxLength={254}
             onChange={(event) => setSearch(event.target.value)}
-            placeholder="Email атлета"
+            placeholder="Email співрозмовника"
             className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
           />
           <p className="text-xs text-muted-foreground">
@@ -193,14 +215,14 @@ export function TrainerAthletesList({ trainerId }: { trainerId: string }) {
           ) : (
             <section className="grid gap-4 sm:grid-cols-2" aria-label="Список підопічних">
               {visible.map((relationship) => {
-                const email = getTrainerAthleteContact(relationship);
+                const email = getRelationshipContact(relationship, actorRole);
                 return (
                   <article
                     key={relationship.id}
                     className="space-y-3 rounded-xl border bg-card p-5"
                   >
                     <div className="flex flex-wrap items-start justify-between gap-3">
-                      <h2 className="font-semibold">{email ?? 'Атлет (контакти приховані)'}</h2>
+                      <h2 className="font-semibold">{email ?? 'Користувач (контакти приховані)'}</h2>
                       <span className="rounded-full bg-muted px-3 py-1 text-xs font-medium">
                         {getTrainerAthleteStatusLabel(relationship.status)}
                       </span>
@@ -209,7 +231,7 @@ export function TrainerAthletesList({ trainerId }: { trainerId: string }) {
                       <div className="flex justify-between gap-3">
                         <dt className="text-muted-foreground">Запрошення</dt>
                         <dd className="text-right">
-                          {getTrainerAthleteInvitationLabel(relationship, trainerId)}
+                          {getTrainerAthleteInvitationLabel(relationship, relationship.trainerId)}
                         </dd>
                       </div>
                       <div className="flex justify-between gap-3">
@@ -229,6 +251,11 @@ export function TrainerAthletesList({ trainerId }: { trainerId: string }) {
                         </div>
                       )}
                     </dl>
+                    <RelationshipActions
+                      relationship={relationship}
+                      actorId={actorId}
+                      onUpdated={retry}
+                    />
                   </article>
                 );
               })}
