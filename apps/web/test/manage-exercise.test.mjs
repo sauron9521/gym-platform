@@ -74,7 +74,10 @@ test('edit defaults include current editable values and relations', () => {
 });
 
 test('unchanged values never trigger a PATCH request', () => {
-  assert.deepEqual(buildUpdateExercisePayload(getEditExerciseDefaults(exercise), exercise, 'ATHLETE'), {});
+  assert.deepEqual(
+    buildUpdateExercisePayload(getEditExerciseDefaults(exercise), exercise, 'ATHLETE'),
+    {},
+  );
 });
 
 test('edited fields map to existing PATCH endpoint and clearing text becomes null', () => {
@@ -106,13 +109,13 @@ test('trainer edits cannot send athlete-only visibility', () => {
   );
 });
 
-test('mutation errors hide backend details and distinguish access, conflict and rate limits', () => {
+test('mutation errors are safe and distinguish access from rate limits', () => {
   assert.equal(getExerciseMutationErrorMessage(), getExerciseMutationErrorMessage(500));
   assert.equal(getExerciseMutationErrorMessage(403), getExerciseMutationErrorMessage(404));
   assert.notEqual(getExerciseMutationErrorMessage(400), getExerciseMutationErrorMessage(429));
 });
 
-test('owner-only management uses typed PATCH and DELETE endpoints and inline confirmation', async () => {
+test('owner-only UI uses typed mutation endpoints and inline confirmation', async () => {
   const details = await readFile(
     new URL('../src/features/exercises/ui/exercise-details.tsx', import.meta.url),
     'utf8',
