@@ -101,12 +101,16 @@ export function EditExerciseForm({
       <h2 className="text-lg font-semibold">Редагувати вправу</h2>
       <form onSubmit={form.handleSubmit(submit)} noValidate className="space-y-5">
         {taxonomy.kind === 'loading' && (
-          <p role="status" className="text-sm text-muted-foreground">Завантажуємо довідники…</p>
+          <p role="status" className="text-sm text-muted-foreground">
+            Завантажуємо довідники…
+          </p>
         )}
         {taxonomy.kind === 'error' && (
           <div role="alert" className="space-y-2">
             <p className="text-sm text-destructive">{taxonomy.message}</p>
-            <Button type="button" variant="outline" onClick={retryTaxonomy}>Повторити</Button>
+            <Button type="button" variant="outline" onClick={retryTaxonomy}>
+              Повторити
+            </Button>
           </div>
         )}
         <div className="space-y-1">
@@ -141,7 +145,7 @@ export function EditExerciseForm({
           >
             {CREATE_EXERCISE_TYPES.map((item) => (
               <option key={item.value} value={item.value}>
-                {item.name}
+                {item.label}
               </option>
             ))}
           </select>
