@@ -7,6 +7,7 @@ type Account = operations['UsersController_me']['responses'][200]['content']['ap
 export type AuthenticatedUser = {
   email: string;
   displayName: string;
+  role: Account['role'];
 };
 
 export type ServerSessionResult =
@@ -21,7 +22,7 @@ function isAccount(value: unknown): value is Account {
   return (
     typeof account.id === 'string' &&
     typeof account.email === 'string' &&
-    typeof account.role === 'string'
+    ['ATHLETE', 'TRAINER', 'ADMIN'].includes(String(account.role))
   );
 }
 
@@ -57,6 +58,7 @@ export async function verifyServerSession(
       user: {
         email: payload.email,
         displayName: payload.profile?.displayName || payload.profile?.firstName || payload.email,
+        role: payload.role,
       },
     };
   } catch {
