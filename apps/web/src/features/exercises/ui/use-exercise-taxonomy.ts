@@ -13,10 +13,7 @@ export function useExerciseTaxonomy() {
 
   useEffect(() => {
     let active = true;
-    void Promise.all([
-      webApi.GET('/exercises/muscle-groups'),
-      webApi.GET('/exercises/equipment'),
-    ])
+    void Promise.all([webApi.GET('/exercises/muscle-groups'), webApi.GET('/exercises/equipment')])
       .then(([muscles, equipment]) => {
         if (!active) return;
 
@@ -31,7 +28,8 @@ export function useExerciseTaxonomy() {
           !muscles.data ||
           !equipment.data
         ) {
-          const status = muscles.response.status !== 200 ? muscles.response.status : equipment.response.status;
+          const status =
+            muscles.response.status !== 200 ? muscles.response.status : equipment.response.status;
           setState({ kind: 'error', message: getTaxonomyErrorMessage(status) });
           return;
         }
