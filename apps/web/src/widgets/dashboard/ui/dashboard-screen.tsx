@@ -145,9 +145,15 @@ export function DashboardScreen({ initialUser }: { initialUser: AuthenticatedUse
           <Button asChild variant="outline">
             <Link href="/profile">Мій профіль</Link>
           </Button>
-          {initialUser.role === 'TRAINER' && (
+          {(initialUser.role === 'TRAINER' || initialUser.role === 'ATHLETE') && (
             <Button asChild variant="outline">
-              <Link href="/trainer/athletes">Мої підопічні</Link>
+              <Link
+                href={
+                  initialUser.role === 'TRAINER' ? '/trainer/athletes' : '/athlete/trainers'
+                }
+              >
+                {initialUser.role === 'TRAINER' ? 'Мої підопічні' : 'Мої тренери'}
+              </Link>
             </Button>
           )}
         </div>
