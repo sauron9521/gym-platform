@@ -100,9 +100,8 @@ export function TrainerAthletesList({ trainerId }: { trainerId: string }) {
     setAttempt((current) => current + 1);
   }
 
-  const visible = state.kind === 'ready'
-    ? searchTrainerAthletesOnPage(state.relationships, search)
-    : [];
+  const visible =
+    state.kind === 'ready' ? searchTrainerAthletesOnPage(state.relationships, search) : [];
 
   return (
     <main className="mx-auto max-w-5xl space-y-7 px-6 py-12">
@@ -114,7 +113,10 @@ export function TrainerAthletesList({ trainerId }: { trainerId: string }) {
         </p>
       </header>
 
-      <section className="grid gap-4 rounded-xl border bg-card p-5 sm:grid-cols-2" aria-label="Фільтри підопічних">
+      <section
+        className="grid gap-4 rounded-xl border bg-card p-5 sm:grid-cols-2"
+        aria-label="Фільтри підопічних"
+      >
         <div className="space-y-2">
           <label htmlFor="trainer-athletes-status" className="block text-sm font-medium">
             Статус відносин
@@ -193,11 +195,12 @@ export function TrainerAthletesList({ trainerId }: { trainerId: string }) {
               {visible.map((relationship) => {
                 const email = getTrainerAthleteContact(relationship);
                 return (
-                  <article key={relationship.id} className="space-y-3 rounded-xl border bg-card p-5">
+                  <article
+                    key={relationship.id}
+                    className="space-y-3 rounded-xl border bg-card p-5"
+                  >
                     <div className="flex flex-wrap items-start justify-between gap-3">
-                      <h2 className="font-semibold">
-                        {email ?? 'Атлет (контакти приховані)'}
-                      </h2>
+                      <h2 className="font-semibold">{email ?? 'Атлет (контакти приховані)'}</h2>
                       <span className="rounded-full bg-muted px-3 py-1 text-xs font-medium">
                         {getTrainerAthleteStatusLabel(relationship.status)}
                       </span>
@@ -232,7 +235,10 @@ export function TrainerAthletesList({ trainerId }: { trainerId: string }) {
             </section>
           )}
           {state.pages > 1 && (
-            <nav aria-label="Сторінки підопічних" className="flex items-center justify-between gap-4">
+            <nav
+              aria-label="Сторінки підопічних"
+              className="flex items-center justify-between gap-4"
+            >
               <Button
                 type="button"
                 variant="outline"
