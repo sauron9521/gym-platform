@@ -41,11 +41,10 @@ export class PrismaTokenStore implements RefreshTokenStore, EmailTokenStore {
 
   async saveRefreshToken(record: RefreshTokenRecord): Promise<void> {
     await this.prisma.$transaction(async (tx) => {
-      // The family tombstone is authoritative: library rotation may save
-      // another successor after a concurrent request has revoked its family.
-      // Read the revocation state from the same upsert/transaction and
-      // persist the successor as already revoked in that case.
-      const family = await tx.refreshTokenFamily.upsert({
+      // Ensure the family exists before acquiring a row lock. A preceding
+      // upsert with update: {} may be a plain read and does NOT serialize
+      // concurrent revocations.
+      await tx.refreshTokenFamily.upsert({
         where: { id: record.familyId },
         create: {
           id: record.familyId,
@@ -53,8 +52,21 @@ export class PrismaTokenStore implements RefreshTokenStore, EmailTokenStore {
           familyExpiresAt: record.familyExpiresAt,
         },
         update: {},
-        select: { revokedAt: true },
+        select: { id: true },
       });
+
+      // A save racing with revokeRefreshTokenFamily/revokeUserRefreshTokens
+      // must not insert an unrevoked token after the revoker has marked all
+      // existing rows. Hold this parent row's lock through the child insert.
+      const [family] = await tx.$queryRaw<Array<{ revokedAt: Date | null }>>`
+        SELECT "revoked_at" AS "revokedAt"
+        FROM "refresh_token_families"
+        WHERE "id" = ${record.familyId}
+        FOR UPDATE
+      `;
+      if (!family) {
+        throw new Error('Refresh token family missing after upsert');
+      }
 
       await tx.refreshToken.create({
         data: {
@@ -196,21 +208,13 @@ export class PrismaTokenStore implements RefreshTokenStore, EmailTokenStore {
   }
 
   async deleteExpiredRefreshTokens(now = new Date()): Promise<void> {
-    await this.prisma.$transaction(async (tx) => {
-      await tx.refreshToken.deleteMany({
-        where: {
-          familyExpiresAt: { lte: now },
-        },
-      });
-
-      await tx.refreshTokenFamily.deleteMany({
-        where: {
-          familyExpiresAt: { lte: now },
-          tokens: {
-            none: {},
-          },
-        },
-      });
+    // The family is the absolute-lifetime boundary. PostgreSQL's
+    // refresh_tokens_family_id_fkey ON DELETE CASCADE removes all children
+    // atomically, including rotated tokens and late revoked successors.
+    // One indexed family delete replaces two full-table delete passes and
+    // avoids holding an interactive transaction open for the cleanup.
+    await this.prisma.refreshTokenFamily.deleteMany({
+      where: { familyExpiresAt: { lte: now } },
     });
   }
 

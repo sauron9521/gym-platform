@@ -69,7 +69,9 @@ describe('PrismaTokenStore security and persistence contracts', () => {
     prisma.refreshTokenFamily.upsert.mockResolvedValue({ revokedAt: null });
     prisma.refreshToken.updateMany.mockResolvedValue({ count: 0 });
     prisma.emailToken.findMany.mockResolvedValue([]);
-    prisma.$queryRaw.mockResolvedValue([]);
+    prisma.$queryRaw.mockImplementation(async (sql: TemplateStringsArray) =>
+      sql.join('').includes('FOR UPDATE') ? [{ revokedAt: null }] : [],
+    );
     store = new PrismaTokenStore(
       prisma as unknown as PrismaService,
       storage as unknown as AuthenticationStorage,
@@ -117,8 +119,16 @@ describe('PrismaTokenStore security and persistence contracts', () => {
         familyExpiresAt: refresh.familyExpiresAt,
       },
       update: {},
-      select: { revokedAt: true },
+      select: { id: true },
     });
+    expect(prisma.$queryRaw).toHaveBeenCalledOnce();
+    const [sql, familyId] = prisma.$queryRaw.mock.calls[0] as unknown as [
+      TemplateStringsArray,
+      string,
+    ];
+    expect(sql.join('?')).toContain('WHERE "id" = ?');
+    expect(sql.join('?')).toContain('FOR UPDATE');
+    expect(familyId).toBe(refresh.familyId);
     expect(prisma.refreshToken.create).toHaveBeenCalledExactlyOnceWith({
       data: {
         id: refresh.id,
@@ -135,7 +145,7 @@ describe('PrismaTokenStore security and persistence contracts', () => {
   });
 
   it('persists a successor as revoked when its family was already revoked', async () => {
-    prisma.refreshTokenFamily.upsert.mockResolvedValueOnce({ revokedAt: now });
+    prisma.$queryRaw.mockResolvedValueOnce([{ revokedAt: now }]);
 
     await store.saveRefreshToken(refresh);
 
@@ -300,18 +310,13 @@ describe('PrismaTokenStore security and persistence contracts', () => {
     });
   });
 
-  it('cleans refresh tokens by family expiration and removes only empty families', async () => {
+  it('deletes expired families in one statement and relies on FK cascade for tokens', async () => {
     await store.deleteExpiredRefreshTokens(now);
 
-    expect(prisma.$transaction).toHaveBeenCalledOnce();
-    expect(prisma.refreshToken.deleteMany).toHaveBeenCalledExactlyOnceWith({
-      where: { familyExpiresAt: { lte: now } },
-    });
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(prisma.refreshToken.deleteMany).not.toHaveBeenCalled();
     expect(prisma.refreshTokenFamily.deleteMany).toHaveBeenCalledExactlyOnceWith({
-      where: {
-        familyExpiresAt: { lte: now },
-        tokens: { none: {} },
-      },
+      where: { familyExpiresAt: { lte: now } },
     });
   });
 
