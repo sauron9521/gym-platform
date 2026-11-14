@@ -36,9 +36,7 @@ export function ExerciseDetails({ id }: { id: string }) {
         if (response.status !== 200 || !data || data.isArchived) {
           setState({
             kind: 'error',
-            message: getExerciseDetailsErrorMessage(
-              data?.isArchived ? 404 : response.status,
-            ),
+            message: getExerciseDetailsErrorMessage(data?.isArchived ? 404 : response.status),
           });
           return;
         }
