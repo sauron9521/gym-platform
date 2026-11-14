@@ -192,3 +192,17 @@ password are sent through the typed same-origin POST /auth/register. On HTTP 201
 the form clears credentials and preserves the distinction between accepted
 verification email submission and successful email verification. NestJS remains
 authoritative for password strength, account creation and rate limiting.
+
+## Workout journal (read-only)
+
+The private `/workouts` route checks the HttpOnly session on every server page
+request before rendering the browser list. It uses `GET /workouts` through the
+same-origin typed `@gym/api-client` adapter with `view=summary`, a page size of
+10, optional status filtering and server-provided pagination metadata. The API
+remains authoritative for access controls. HTTP 401 returns to sign-in; HTTP
+403, API errors and network outages never display private workout data.
+
+The list distinguishes PLANNED, IN_PROGRESS, COMPLETED and CANCELLED workouts,
+shows scheduled dates and exercise counts when available, and handles loading,
+empty, error and retry states. Workout creation, detail views, set logging and
+editing are intentionally separate follow-up PRs. No browser token storage.
