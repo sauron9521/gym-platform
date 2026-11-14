@@ -16,9 +16,13 @@ export type EndRelationshipValues = z.infer<typeof endRelationshipSchema>;
 export type RelationshipAction = 'accept' | 'decline' | 'cancel' | 'terminate';
 
 export function getAvailableRelationshipActions(
-  relationship: Pick<TrainerAthleteListItem, 'status' | 'initiatedById'>,
+  relationship: Pick<
+    TrainerAthleteListItem,
+    'status' | 'initiatedById' | 'trainerId' | 'athleteId'
+  >,
   actorId: string,
 ): RelationshipAction[] {
+  if (relationship.trainerId !== actorId && relationship.athleteId !== actorId) return [];
   if (relationship.status === 'PENDING') {
     return relationship.initiatedById === actorId ? ['cancel'] : ['accept', 'decline'];
   }
