@@ -144,3 +144,46 @@ test('CI caches only reusable build artifacts and not test or secret outputs', (
   assert.ok(paths);
   assert.doesNotMatch(paths, /node_modules|coverage\/|\.env|\.pem|secrets/);
 });
+
+test('real API browser suite runs only for API, Web, shared client, or cross-cutting changes', () => {
+  const cases = [
+    { paths: ['apps/web/src/app/page.tsx'], run: true },
+    { paths: ['apps/api/src/modules/users/users.service.ts'], run: true },
+    { paths: ['packages/api-client/src/generated/schema.d.ts'], run: true },
+    { paths: ['apps/api/openapi/openapi.json'], run: true },
+    { paths: ['pnpm-lock.yaml'], run: true },
+    { paths: ['.github/workflows/web-integration.yml'], run: true },
+    { paths: ['apps/mobile/app/index.tsx'], run: false },
+    { paths: ['README.md', 'docs/api/testing.md'], run: false },
+    { paths: ['apps/mobile/app/index.tsx', 'apps/web/src/app/page.tsx'], run: true },
+    { paths: [], run: true },
+  ];
+
+  for (const { paths, run } of cases) {
+    const scope = classifyChangedPaths(paths);
+    assert.equal(
+      scope.full || scope.api || scope.web || scope.client,
+      run,
+      'Unexpected Web integration selection for ' + JSON.stringify(paths),
+    );
+  }
+
+  assert.equal(selectFromGitHubEnvironment({ CI_FORCE_ALL: 'true' }).full, true);
+});
+
+test('real API browser suite preserves the required gate and fails closed', () => {
+  const yaml = readFileSync(
+    new URL('../.github/workflows/web-integration.yml', import.meta.url),
+    'utf8',
+  );
+  assert.match(yaml, /name: Web \/ Real API and PostgreSQL suite/);
+  assert.match(yaml, /name: Web \/ Real API and PostgreSQL\n/);
+  assert.match(yaml, /needs: \[changes, browser-api-suite\]/);
+  assert.match(yaml, /if: always\(\)/);
+  assert.match(yaml, /if: needs\.changes\.outputs\.run == 'true'/);
+  assert.match(yaml, /CI_FORCE_ALL:/);
+  assert.match(yaml, /fetch-depth: 0/);
+  assert.match(yaml, /test "\$CLASSIFY_RESULT" = success/);
+  assert.match(yaml, /test "\$SUITE_RESULT" = success/);
+  assert.match(yaml, /test "\$SUITE_RESULT" = skipped/);
+});
