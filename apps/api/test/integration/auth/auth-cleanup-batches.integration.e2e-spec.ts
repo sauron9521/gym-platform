@@ -174,6 +174,135 @@ describe('Auth retention batching and cross-replica lock (PostgreSQL)', () => {
     );
   });
 
+  it('reclaims 3001 expired rows per table in bounded batches without touching active data', async () => {
+    const user = await prisma.user.create({
+      data: {
+        email: `cleanup-stress-${randomUUID()}@example.test`,
+        passwordHash: 'test-only',
+      },
+      select: { id: true },
+    });
+
+    try {
+      // An old cutoff is isolated from the 2001 fixture and the CI clock.
+      const cutoff = new Date('1998-01-01T00:00:00.000Z');
+      const expired = new Date('1997-12-31T23:59:59.000Z');
+      const live = new Date('1999-01-01T00:00:00.000Z');
+      const count = 3001;
+      const batchSize = 500;
+      const tokenId = () => randomUUID().replaceAll('-', '').repeat(2);
+      const families = Array.from({ length: count }, () => randomUUID().replaceAll('-', ''));
+      const liveFamily = randomUUID().replaceAll('-', '');
+
+      await prisma.refreshTokenFamily.createMany({
+        data: [
+          ...families.map((id) => ({ id, userId: user.id, familyExpiresAt: expired })),
+          { id: liveFamily, userId: user.id, familyExpiresAt: live },
+        ],
+      });
+      await prisma.refreshToken.createMany({
+        data: [
+          ...families.flatMap((familyId) =>
+            [0, 1].map(() => ({
+              id: tokenId(),
+              familyId,
+              userId: user.id,
+              createdAt: expired,
+              expiresAt: expired,
+              familyExpiresAt: expired,
+            })),
+          ),
+          {
+            id: tokenId(),
+            familyId: liveFamily,
+            userId: user.id,
+            createdAt: expired,
+            // A token may individually expire while its family remains live.
+            expiresAt: expired,
+            familyExpiresAt: live,
+          },
+        ],
+      });
+      await prisma.emailToken.createMany({
+        data: [
+          ...Array.from({ length: count }, () => ({
+            id: tokenId(),
+            purpose: 'password-reset',
+            userId: user.id,
+            email: 'cleanup-stress@example.test',
+            createdAt: expired,
+            expiresAt: expired,
+          })),
+          {
+            id: tokenId(),
+            purpose: 'password-reset',
+            userId: user.id,
+            email: 'cleanup-stress@example.test',
+            createdAt: expired,
+            expiresAt: live,
+          },
+        ],
+      });
+      await prisma.session.createMany({
+        data: [
+          ...Array.from({ length: count }, () => ({
+            id: tokenId(),
+            userId: user.id,
+            createdAt: expired,
+            expiresAt: expired,
+            lastActiveAt: expired,
+          })),
+          {
+            id: tokenId(),
+            userId: user.id,
+            createdAt: expired,
+            expiresAt: live,
+            lastActiveAt: expired,
+          },
+        ],
+      });
+
+      const startedAt = performance.now();
+      const results: number[][] = [];
+      for (let round = 0; round < 10; round += 1) {
+        const deleted = [
+          await tokens.deleteExpiredRefreshTokenFamiliesBatch(cutoff, batchSize),
+          await tokens.deleteExpiredEmailTokensBatch(cutoff, batchSize),
+          await sessions.deleteExpiredSessionsBatch(cutoff, batchSize),
+        ];
+        results.push(deleted);
+        if (deleted.every((n) => n < batchSize)) break;
+      }
+      const elapsedMs = Math.round(performance.now() - startedAt);
+
+      expect(results).toHaveLength(7);
+      expect(results.slice(0, 6).every((counts) => counts.every((n) => n === 500))).toBe(
+        true,
+      );
+      expect(results[6]).toEqual([1, 1, 1]);
+      expect(await prisma.refreshTokenFamily.count({ where: { userId: user.id } })).toBe(
+        1,
+      );
+      expect(await prisma.refreshToken.count({ where: { userId: user.id } })).toBe(1);
+      expect(await prisma.emailToken.count({ where: { userId: user.id } })).toBe(1);
+      expect(await prisma.session.count({ where: { userId: user.id } })).toBe(1);
+      expect(
+        await prisma.refreshToken.findFirst({
+          where: { userId: user.id },
+          select: { familyId: true },
+        }),
+      ).toEqual({ familyId: liveFamily });
+
+      // Informational only: CI runner load varies, so assert correctness,
+      // not a hard latency budget.
+      console.info(
+        `AUTH_CLEANUP_STRESS expiredPerTable=${count} cascadedTokens=${count * 2} batchSize=${batchSize} rounds=${results.length} elapsedMs=${elapsedMs}`,
+      );
+    } finally {
+      await prisma.user.delete({ where: { id: user.id } });
+    }
+  });
+
   it('allows one PostgreSQL session lock holder and releases it on completion', async () => {
     let release!: () => void;
     let entered!: () => void;
