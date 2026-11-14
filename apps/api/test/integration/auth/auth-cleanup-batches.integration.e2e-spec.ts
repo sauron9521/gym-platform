@@ -36,7 +36,10 @@ describe('Auth retention batching and cross-replica lock (PostgreSQL)', () => {
     sessions = app.get(PrismaSessionStore);
     advisory = app.get(AuthCleanupLockService);
     const user = await prisma.user.create({
-      data: { email: `cleanup-batches-${randomUUID()}@example.test`, passwordHash: 'test-only' },
+      data: {
+        email: `cleanup-batches-${randomUUID()}@example.test`,
+        passwordHash: 'test-only',
+      },
       select: { id: true },
     });
     userId = user.id;
@@ -166,7 +169,9 @@ describe('Auth retention batching and cross-replica lock (PostgreSQL)', () => {
 
     // An informational test-database measurement. Deliberately no timing
     // threshold: shared GitHub runners have variable PostgreSQL performance.
-    console.info(`AUTH_CLEANUP_BENCHMARK rowsPerTable=61 batchSize=25 batches=3 elapsedMs=${elapsedMs}`);
+    console.info(
+      `AUTH_CLEANUP_BENCHMARK rowsPerTable=61 batchSize=25 batches=3 elapsedMs=${elapsedMs}`,
+    );
   });
 
   it('allows one PostgreSQL session lock holder and releases it on completion', async () => {
