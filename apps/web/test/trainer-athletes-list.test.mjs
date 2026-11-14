@@ -48,7 +48,9 @@ test('archived trainer records never expose a missing athlete email or an ID as 
 });
 
 test('page-local email search is case insensitive and excludes redacted records', () => {
-  assert.deepEqual(searchTrainerAthletesOnPage([pending, historical], ' ATHLETE@EXAMPLE '), [pending]);
+  assert.deepEqual(searchTrainerAthletesOnPage([pending, historical], ' ATHLETE@EXAMPLE '), [
+    pending,
+  ]);
   assert.deepEqual(searchTrainerAthletesOnPage([pending, historical], ''), [pending, historical]);
   assert.deepEqual(searchTrainerAthletesOnPage([pending, historical], 'unknown'), []);
 });
