@@ -31,7 +31,6 @@ export function InviteRelationshipForm({
   });
 
   async function submit(values: InvitationValues) {
-    if (form.formState.isSubmitting) return;
     if (values.userId === actorId) {
       form.setError('userId', { message: 'Не можна запросити самого себе.' });
       return;
