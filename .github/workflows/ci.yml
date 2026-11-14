@@ -38,7 +38,7 @@ jobs:
           fetch-depth: 0
 
       - name: Test fail-closed change classification
-        run: node --test scripts/ci-select.test.mjs
+        run: node --test scripts/ci-select.test.mjs scripts/pre-push-checks.test.mjs
 
       - name: Classify changed files
         id: select
