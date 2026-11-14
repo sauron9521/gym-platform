@@ -9,6 +9,7 @@ import { webApi } from '@/shared/api/client';
 import { Button } from '@/shared/ui/button';
 import {
   CREATE_EXERCISE_TYPES,
+  createExerciseFormSchema as editExerciseSchema,
   EQUIPMENT_OPTIONS,
   MUSCLE_OPTIONS,
   type CustomExerciseActorRole,
@@ -16,7 +17,6 @@ import {
 import type { ExerciseDetailsData } from '../lib/exercise-catalog';
 import {
   buildUpdateExercisePayload,
-  editExerciseSchema,
   getEditExerciseDefaults,
   getExerciseMutationErrorMessage,
   type EditExerciseValues,
