@@ -300,18 +300,13 @@ describe('PrismaTokenStore security and persistence contracts', () => {
     });
   });
 
-  it('cleans refresh tokens by family expiration and removes only empty families', async () => {
+  it('deletes expired families in one statement and relies on FK cascade for tokens', async () => {
     await store.deleteExpiredRefreshTokens(now);
 
-    expect(prisma.$transaction).toHaveBeenCalledOnce();
-    expect(prisma.refreshToken.deleteMany).toHaveBeenCalledExactlyOnceWith({
-      where: { familyExpiresAt: { lte: now } },
-    });
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(prisma.refreshToken.deleteMany).not.toHaveBeenCalled();
     expect(prisma.refreshTokenFamily.deleteMany).toHaveBeenCalledExactlyOnceWith({
-      where: {
-        familyExpiresAt: { lte: now },
-        tokens: { none: {} },
-      },
+      where: { familyExpiresAt: { lte: now } },
     });
   });
 
