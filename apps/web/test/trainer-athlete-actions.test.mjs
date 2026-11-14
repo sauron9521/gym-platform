@@ -112,6 +112,7 @@ test('mutation UI calls all typed routes and keeps destructive actions confirmed
   assert.match(invite, /zodResolver\(invitationSchema\)/);
   assert.match(invite, /webApi.POST\('\/trainer-athletes'/);
   assert.match(invite, /values.userId === actorId/);
+  assert.doesNotMatch(invite, /if \(form\.formState\.isSubmitting\) return;/);
   assert.match(invite, /response.status === 401/);
   assert.match(invite, /response.status !== 201/);
   assert.match(actions, /getAvailableRelationshipActions/);
