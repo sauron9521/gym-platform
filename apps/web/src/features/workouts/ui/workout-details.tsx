@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 
 import { webApi } from '@/shared/api/client';
 import { Button } from '@/shared/ui/button';
+import { WorkoutActions } from './workout-actions';
 import {
   formatWorkoutValue,
   getWorkoutDetailsErrorMessage,
@@ -105,6 +106,12 @@ export function WorkoutDetails({ id }: { id: string }) {
               </p>
             )}
           </header>
+
+          <WorkoutActions
+            workout={state.workout}
+            onUpdated={(workout) => setState({ kind: 'ready', workout })}
+            onReload={retry}
+          />
 
           <section className="space-y-4" aria-label="Вправи тренування">
             <h2 className="text-xl font-semibold">Вправи ({state.workout.exercises.length})</h2>
