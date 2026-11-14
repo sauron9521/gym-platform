@@ -1,7 +1,6 @@
 import type { operations } from '@gym/api-client';
 import { z } from 'zod';
 
-import { numericText } from './workout-set-form';
 
 type ExerciseListResponse =
   operations['ExercisesController_findMany']['responses'][200]['content']['application/json'];
@@ -9,6 +8,29 @@ export type ExerciseListItem = ExerciseListResponse['data'][number];
 
 export type CreateWorkoutPayload =
   operations['WorkoutsController_create']['requestBody']['content']['application/json'];
+
+function numericText(min: number, max: number, decimals: number, integer = false) {
+  return z
+    .string()
+    .trim()
+    .superRefine((value, ctx) => {
+      if (value === '') return;
+      const pattern = integer ? /^\d+$/ : /^\d+(?:[.,]\d+)?$/;
+      const number = Number(value.replace(',', '.'));
+      if (
+        !pattern.test(value) ||
+        !Number.isFinite(number) ||
+        number < min ||
+        number > max ||
+        Math.abs(number * 10 ** decimals - Math.round(number * 10 ** decimals)) > 1e-6
+      ) {
+        ctx.addIssue({
+          code: 'custom',
+          message: `Введіть число від ${min} до ${max} (до ${decimals} знаків після коми).`,
+        });
+      }
+    });
+}
 
 export const workoutSetTypes = ['WARMUP', 'WORKING', 'DROP_SET', 'AMRAP'] as const;
 
@@ -33,10 +55,12 @@ const createWorkoutExerciseFormSchema = z.object({
 export const createWorkoutFormSchema = z.object({
   title: z.string().trim().min(2, 'Вкажіть назву (мінімум 2 символи).').max(120),
   notes: z.string().trim().max(5000),
-  scheduledAt: z.string().refine(
-    (value) => value === '' || !Number.isNaN(new Date(value).getTime()),
-    'Вкажіть коректну дату.',
-  ),
+  scheduledAt: z
+    .string()
+    .refine(
+      (value) => value === '' || !Number.isNaN(new Date(value).getTime()),
+      'Вкажіть коректну дату.',
+    ),
   exercises: z
     .array(createWorkoutExerciseFormSchema)
     .min(1, 'Додайте хоча б одну вправу.')
