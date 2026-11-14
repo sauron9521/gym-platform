@@ -132,6 +132,9 @@ export const archivedExerciseResponseSchema = objectSchema({
 
 export const exerciseListResponseSchema = paginatedSchema(exerciseResponseSchema);
 
+/** Public DB-backed reference lists: no ownership or user data. */
+export const exerciseTaxonomyListResponseSchema = arraySchema(namedReference);
+
 export const exerciseTrainerAccessResponseSchema = objectSchema({
   id: uuidSchema,
   exerciseId: uuidSchema,
