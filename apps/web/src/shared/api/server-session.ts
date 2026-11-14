@@ -5,6 +5,7 @@ import { getApiUpstreamOrigin } from './upstream.mjs';
 type Account = operations['UsersController_me']['responses'][200]['content']['application/json'];
 
 export type AuthenticatedUser = {
+  id: string;
   email: string;
   displayName: string;
   role: Account['role'];
@@ -56,6 +57,7 @@ export async function verifyServerSession(
     return {
       kind: 'authenticated',
       user: {
+        id: payload.id,
         email: payload.email,
         displayName: payload.profile?.displayName || payload.profile?.firstName || payload.email,
         role: payload.role,
