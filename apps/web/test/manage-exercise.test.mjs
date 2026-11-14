@@ -28,18 +28,9 @@ const exercise = {
 };
 
 test('only owners of unarchived, nonglobal custom exercises can edit and archive', () => {
-  assert.equal(
-    canManageCustomExercise(exercise, { id: 'owner-1', role: 'ATHLETE' }),
-    true,
-  );
-  assert.equal(
-    canManageCustomExercise(exercise, { id: 'other', role: 'ATHLETE' }),
-    false,
-  );
-  assert.equal(
-    canManageCustomExercise(exercise, { id: 'owner-1', role: 'TRAINER' }),
-    false,
-  );
+  assert.equal(canManageCustomExercise(exercise, { id: 'owner-1', role: 'ATHLETE' }), true);
+  assert.equal(canManageCustomExercise(exercise, { id: 'other', role: 'ATHLETE' }), false);
+  assert.equal(canManageCustomExercise(exercise, { id: 'owner-1', role: 'TRAINER' }), false);
   assert.equal(
     canManageCustomExercise({ ...exercise, source: 'GLOBAL' }, { id: 'owner-1', role: 'ADMIN' }),
     false,
