@@ -3,10 +3,7 @@ import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 
 const workflow = readFileSync(new URL('../.github/workflows/ci.yml', import.meta.url), 'utf8');
-const config = readFileSync(
-  new URL('../apps/api/vitest.config.e2e.ts', import.meta.url),
-  'utf8',
-);
+const config = readFileSync(new URL('../apps/api/vitest.config.e2e.ts', import.meta.url), 'utf8');
 const suite = workflow.split('  api-e2e-suite:\n')[1]?.split('\n  api-e2e:\n')[0];
 const gate = workflow.split('  api-e2e:\n')[1];
 
