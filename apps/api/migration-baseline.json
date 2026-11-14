@@ -46,8 +46,6 @@
     "consolidated_migrations": 24,
     "requires_empty_database": true,
     "generator": "prisma migrate diff --from-empty --to-schema prisma/schemas --config prisma7.config.ts --script",
-    "manual_constraints": [
-      "body_measurements_at_least_one_metric"
-    ]
+    "manual_constraints": ["body_measurements_at_least_one_metric"]
   }
 }
