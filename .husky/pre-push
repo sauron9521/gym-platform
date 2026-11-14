@@ -1,6 +1,5 @@
 #!/bin/sh
-# Never rewrite committed files at push time. Pre-commit applies Prettier
-# through lint-staged; pre-push prevents bypassing its result.
-pnpm format:check
-pnpm --filter @gym/web lint
-pnpm --filter @gym/web typecheck
+# Git provides local/remote ref pairs on stdin. The Node runner selects only
+# changes about to be pushed and falls back to full checks on an unknown base.
+# Pre-push never reformats committed content; pre-commit uses lint-staged.
+node scripts/pre-push-checks.mjs "$@"
