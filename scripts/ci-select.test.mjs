@@ -135,7 +135,8 @@ test('PostgreSQL E2E is split across isolated runners and all shards remain requ
   assert.doesNotMatch(suite, /--passWithNoTests/);
 
   // The volume test runs inside normal E2E (not a separate, optional gate).
-  const volumePath = '../apps/api/test/integration/auth/auth-cleanup-volume.integration.e2e-spec.ts';
+  const volumePath =
+    '../apps/api/test/integration/auth/auth-cleanup-volume.integration.e2e-spec.ts';
   const volumeTest = readFileSync(new URL(volumePath, import.meta.url), 'utf8');
   assert.match(volumeTest, /EXPIRED_PER_TABLE = 1_200/);
   assert.match(volumeTest, /\[500, 500, 500\]/);
