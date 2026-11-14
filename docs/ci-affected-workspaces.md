@@ -6,15 +6,15 @@ complete Git history (`actions/checkout` with `fetch-depth: 0`).
 
 ## Pull request routing
 
-| Changed files | Quality checks | API E2E / coverage / Docker | Vulnerability audit |
-| --- | --- | --- | --- |
-| `apps/api/**` | API | Yes | If the API package manifest changed |
-| `apps/web/**` | Web | No | If the Web package manifest changed |
-| `apps/mobile/**` | Mobile | No | If the Mobile package manifest changed |
-| `packages/api-client/**` | API client + Web + Mobile | No | If the client package manifest changed |
-| `apps/api/openapi/**` | API + client + Web + Mobile | Yes | No |
-| `docs/**`, root `*.md` | Prettier formatting + required gates | No | No |
-| Root lockfile, root config, CI, infra or unknown files | All workspaces | Yes | Yes |
+| Changed files                                          | Quality checks                       | API E2E / coverage / Docker | Vulnerability audit                    |
+| ------------------------------------------------------ | ------------------------------------ | --------------------------- | -------------------------------------- |
+| `apps/api/**`                                          | API                                  | Yes                         | If the API package manifest changed    |
+| `apps/web/**`                                          | Web                                  | No                          | If the Web package manifest changed    |
+| `apps/mobile/**`                                       | Mobile                               | No                          | If the Mobile package manifest changed |
+| `packages/api-client/**`                               | API client + Web + Mobile            | No                          | If the client package manifest changed |
+| `apps/api/openapi/**`                                  | API + client + Web + Mobile          | Yes                         | No                                     |
+| `docs/**`, root `*.md`                                 | Prettier formatting + required gates | No                          | No                                     |
+| Root lockfile, root config, CI, infra or unknown files | All workspaces                       | Yes                         | Yes                                    |
 
 For mixed PRs, all relevant workspaces run. Unknown paths, empty diffs, missing
 commits and cross-cutting files must never silently bypass API checks.

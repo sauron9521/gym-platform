@@ -2,10 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 
-import {
-  classifyChangedPaths,
-  selectFromGitHubEnvironment,
-} from './ci-select.mjs';
+import { classifyChangedPaths, selectFromGitHubEnvironment } from './ci-select.mjs';
 
 test('Web-only change skips API E2E, Docker and Mobile', () => {
   assert.deepEqual(classifyChangedPaths(['apps/web/src/app/page.tsx']), {
@@ -36,9 +33,7 @@ test('API change triggers API verification but not Web or Mobile builds', () => 
 });
 
 test('shared API client triggers both frontends without API E2E', () => {
-  const actual = classifyChangedPaths([
-    'packages/api-client/src/generated/schema.d.ts',
-  ]);
+  const actual = classifyChangedPaths(['packages/api-client/src/generated/schema.d.ts']);
   assert.equal(actual.client, true);
   assert.equal(actual.web, true);
   assert.equal(actual.mobile, true);
@@ -110,10 +105,7 @@ test('invalid PR comparison refs fail rather than skip API E2E', () => {
 });
 
 test('branch protection names stay stable and API E2E is a real gate', () => {
-  const yaml = readFileSync(
-    new URL('../.github/workflows/ci.yml', import.meta.url),
-    'utf8',
-  );
+  const yaml = readFileSync(new URL('../.github/workflows/ci.yml', import.meta.url), 'utf8');
   assert.match(yaml, /name: Quality \/ Node 24/);
   assert.match(yaml, /name: API e2e \/ PostgreSQL 17/);
   assert.match(yaml, /name: API e2e suite \/ PostgreSQL 17/);

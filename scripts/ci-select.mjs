@@ -88,8 +88,7 @@ export function classifyChangedPaths(paths, { forceFull = false } = {}) {
     return allScopes();
   }
 
-  selected.workspaces =
-    selected.api || selected.web || selected.mobile || selected.client;
+  selected.workspaces = selected.api || selected.web || selected.mobile || selected.client;
   return selected;
 }
 
@@ -99,22 +98,13 @@ export function selectFromGitHubEnvironment(env = process.env) {
     return allScopes();
   }
 
-  if (
-    !commitSha.test(env.CI_BASE_SHA ?? '') ||
-    !commitSha.test(env.CI_HEAD_SHA ?? '')
-  ) {
+  if (!commitSha.test(env.CI_BASE_SHA ?? '') || !commitSha.test(env.CI_HEAD_SHA ?? '')) {
     throw new Error('PR head/base SHAs are missing or invalid.');
   }
 
   const names = execFileSync(
     'git',
-    [
-      'diff',
-      '--name-only',
-      '-z',
-      '--no-renames',
-      env.CI_BASE_SHA + '...' + env.CI_HEAD_SHA,
-    ],
+    ['diff', '--name-only', '-z', '--no-renames', env.CI_BASE_SHA + '...' + env.CI_HEAD_SHA],
     {
       cwd: repositoryRoot,
       encoding: 'utf8',
