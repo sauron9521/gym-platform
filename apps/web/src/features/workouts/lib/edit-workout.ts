@@ -70,9 +70,7 @@ export function buildWorkoutEditPayload(
   if (changes.title) payload.title = values.title.trim();
   if (changes.notes) payload.notes = values.notes.trim() || null;
   if (changes.scheduledAt) {
-    payload.scheduledAt = values.scheduledAt
-      ? new Date(values.scheduledAt).toISOString()
-      : null;
+    payload.scheduledAt = values.scheduledAt ? new Date(values.scheduledAt).toISOString() : null;
   }
 
   return payload;
