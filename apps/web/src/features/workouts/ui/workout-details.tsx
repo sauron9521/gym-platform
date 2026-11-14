@@ -202,7 +202,9 @@ export function WorkoutDetails({ id }: { id: string }) {
                                 variant="outline"
                                 onClick={() => setEditingSetId(set.id)}
                               >
-                                {set.status === 'PENDING' ? 'Записати результат' : 'Змінити результат'}
+                                {set.status === 'PENDING'
+                                  ? 'Записати результат'
+                                  : 'Змінити результат'}
                               </Button>
                             )}
                           </>
