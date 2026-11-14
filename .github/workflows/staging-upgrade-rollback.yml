@@ -79,7 +79,7 @@ jobs:
       STAGING_REDIS: gym-upgrade-redis-${{ github.run_id }}-${{ github.run_attempt }}
       STAGING_API: gym-upgrade-api-${{ github.run_id }}-${{ github.run_attempt }}
       STAGING_AVATARS: gym-upgrade-avatars-${{ github.run_id }}-${{ github.run_attempt }}
-      STAGING_DATABASE_URL: ***staging-postgres:5432/gym_app_staging_test?schema=public
+      STAGING_DATABASE_URL: 'postgresql://postgres:staging_only_ephemeral@staging-postgres:5432/gym_app_staging_test?schema=public'
       STAGING_REDIS_URL: redis://staging-redis:6379
 
     steps:
