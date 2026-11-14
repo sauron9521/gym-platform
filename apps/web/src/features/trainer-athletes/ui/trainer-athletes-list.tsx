@@ -117,7 +117,9 @@ export function TrainerAthletesList({
   }
 
   const visible =
-    state.kind === 'ready' ? searchTrainerAthletesOnPage(state.relationships, search, actorRole) : [];
+    state.kind === 'ready'
+      ? searchTrainerAthletesOnPage(state.relationships, search, actorRole)
+      : [];
 
   return (
     <main className="mx-auto max-w-5xl space-y-7 px-6 py-12">
@@ -222,7 +224,9 @@ export function TrainerAthletesList({
                     className="space-y-3 rounded-xl border bg-card p-5"
                   >
                     <div className="flex flex-wrap items-start justify-between gap-3">
-                      <h2 className="font-semibold">{email ?? 'Користувач (контакти приховані)'}</h2>
+                      <h2 className="font-semibold">
+                        {email ?? 'Користувач (контакти приховані)'}
+                      </h2>
                       <span className="rounded-full bg-muted px-3 py-1 text-xs font-medium">
                         {getTrainerAthleteStatusLabel(relationship.status)}
                       </span>
