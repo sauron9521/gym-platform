@@ -39,5 +39,5 @@ export default async function ExerciseDetailsPage({ params }: { params: Promise<
   }
 
   const { id } = await params;
-  return <ExerciseDetails id={id} />;
+  return <ExerciseDetails id={id} actor={session.user} />;
 }
