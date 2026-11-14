@@ -132,7 +132,8 @@ test('API coverage replaces duplicate API unit tests without weakening required 
 
 test('CI caches only reusable build artifacts and not test or secret outputs', () => {
   const yaml = readFileSync(new URL('../.github/workflows/ci.yml', import.meta.url), 'utf8');
-  const cacheBlock = yaml.split('      - name: Restore Turborepo and Next.js incremental build caches')[1]
+  const cacheBlock = yaml
+    .split('      - name: Restore Turborepo and Next.js incremental build caches')[1]
     ?.split('      - name: Install dependencies')[0];
   assert.ok(cacheBlock);
   assert.match(cacheBlock, /uses: actions\/cache@v6/);
