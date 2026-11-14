@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
@@ -28,7 +28,6 @@ export function EditWorkoutForm({
   onReload: () => void;
 }) {
   const router = useRouter();
-  const submitting = useRef(false);
   const [error, setError] = useState<string | null>(null);
   const {
     register,
@@ -42,14 +41,13 @@ export function EditWorkoutForm({
   });
 
   async function submit(values: EditWorkoutValues) {
-    if (submitting.current || workout.status !== 'PLANNED') return;
+    if (workout.status !== 'PLANNED') return;
     const body = buildWorkoutEditPayload(values, dirtyFields);
     if (Object.keys(body).length === 0) {
       onCancel();
       return;
     }
 
-    submitting.current = true;
     setError(null);
 
     try {
@@ -69,8 +67,6 @@ export function EditWorkoutForm({
       onSaved(data);
     } catch {
       setError(getWorkoutEditErrorMessage());
-    } finally {
-      submitting.current = false;
     }
   }
 
