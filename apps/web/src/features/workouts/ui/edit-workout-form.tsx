@@ -75,7 +75,10 @@ export function EditWorkoutForm({
   }
 
   return (
-    <section className="space-y-4 rounded-xl border bg-card p-5" aria-label="Редагування тренування">
+    <section
+      className="space-y-4 rounded-xl border bg-card p-5"
+      aria-label="Редагування тренування"
+    >
       <h2 className="text-lg font-semibold">Редагувати тренування</h2>
       <form onSubmit={handleSubmit(submit)} noValidate className="space-y-4">
         <div className="space-y-1">
