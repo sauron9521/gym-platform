@@ -66,7 +66,12 @@ test('schema rejects missing primary muscles and duplicate or unknown slugs', ()
     { muscleGroups: [] },
     { muscleGroups: [{ slug: 'triceps', role: 'SECONDARY' }] },
     { muscleGroups: [{ slug: 'invalid-muscle', role: 'PRIMARY' }] },
-    { muscleGroups: [{ slug: 'chest', role: 'PRIMARY' }, { slug: 'chest', role: 'SECONDARY' }] },
+    {
+      muscleGroups: [
+        { slug: 'chest', role: 'PRIMARY' },
+        { slug: 'chest', role: 'SECONDARY' },
+      ],
+    },
     { equipment: ['dumbbell', 'dumbbell'] },
     { equipment: ['invalid-equipment'] },
   ];
@@ -82,10 +87,12 @@ test('API bounds for text, muscle groups and equipment are enforced', () => {
     { name: 'a'.repeat(121) },
     { description: 'x'.repeat(5001) },
     { instructions: 'x'.repeat(10001) },
-    { muscleGroups: Array.from({ length: 11 }, (_, i) => ({
-      slug: MUSCLE_OPTIONS[i].slug,
-      role: 'PRIMARY',
-    })) },
+    {
+      muscleGroups: Array.from({ length: 11 }, (_, i) => ({
+        slug: MUSCLE_OPTIONS[i].slug,
+        role: 'PRIMARY',
+      })),
+    },
     { equipment: EQUIPMENT_OPTIONS.slice(0, 21).map((item) => item.slug) },
   ]) {
     assert.equal(createExerciseFormSchema.safeParse({ ...exercise, ...changes }).success, false);
