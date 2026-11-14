@@ -38,5 +38,5 @@ export default async function TrainerAthletesPage() {
     );
   }
 
-  return <TrainerAthletesList trainerId={session.user.id} />;
+  return <TrainerAthletesList actorId={session.user.id} actorRole="TRAINER" />;
 }
