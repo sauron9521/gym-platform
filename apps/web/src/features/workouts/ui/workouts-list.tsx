@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 import { webApi } from '@/shared/api/client';
@@ -171,6 +172,12 @@ export function WorkoutsList() {
                   </div>
                 )}
               </dl>
+              <Link
+                href={`/workouts/${workout.id}`}
+                className="inline-block text-sm font-medium underline-offset-4 hover:underline"
+              >
+                Переглянути деталі
+              </Link>
             </article>
           ))}
         </section>
