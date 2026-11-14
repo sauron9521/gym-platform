@@ -82,6 +82,21 @@ export class ExercisesRepository {
     });
   }
 
+  /** Stable public lookup order; no exercise ownership data or relation grants. */
+  async listMuscleGroups() {
+    return this.prisma.muscleGroup.findMany({
+      select: muscleGroupLookupSelect,
+      orderBy: [{ name: 'asc' }, { id: 'asc' }],
+    });
+  }
+
+  async listEquipment() {
+    return this.prisma.equipment.findMany({
+      select: equipmentLookupSelect,
+      orderBy: [{ name: 'asc' }, { id: 'asc' }],
+    });
+  }
+
   async findMuscleGroupsBySlugs(slugs: string[]) {
     return this.prisma.muscleGroup.findMany({
       where: {
