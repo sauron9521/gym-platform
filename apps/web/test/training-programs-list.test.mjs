@@ -79,7 +79,7 @@ test('program list errors are friendly and do not expose backend content', () =>
   assert.notEqual(getProgramListError(429), getProgramListError(400));
 });
 
-test('trainer and athlete program pages enforce roles with independently checked sessions', async () => {
+test('role-specific program pages independently verify sessions', async () => {
   for (const [path, expectedRole] of [
     ['../src/app/(protected)/trainer/programs/page.tsx', 'TRAINER'],
     ['../src/app/(protected)/athlete/programs/page.tsx', 'ATHLETE'],
