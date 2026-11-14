@@ -141,7 +141,7 @@ export function CreateExerciseForm({ role }: { role: CustomExerciseActorRole }) 
             >
               {CREATE_EXERCISE_TYPES.map((item) => (
                 <option key={item.value} value={item.value}>
-                  {item.name}
+                  {item.label}
                 </option>
               ))}
             </select>
