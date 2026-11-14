@@ -38,5 +38,5 @@ export default async function ExercisesPage() {
     );
   }
 
-  return <ExerciseCatalog />;
+  return <ExerciseCatalog role={session.user.role} />;
 }
