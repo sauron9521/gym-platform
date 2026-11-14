@@ -73,6 +73,23 @@ export class PrismaSessionStore implements SessionStore {
     return sessions.map(toSessionRecord);
   }
 
+
+  /** Remove one bounded, ordered batch without locking other sessions. */
+  async deleteExpiredSessionsBatch(now: Date, batchSize: number): Promise<number> {
+    return this.prisma.$executeRaw`
+      WITH expired AS (
+        SELECT "id"
+        FROM "sessions"
+        WHERE "expires_at" <= ${now}
+        ORDER BY "expires_at", "id"
+        LIMIT ${batchSize}
+        FOR UPDATE SKIP LOCKED
+      )
+      DELETE FROM "sessions"
+      WHERE "id" IN (SELECT "id" FROM expired)
+    `;
+  }
+
   async deleteExpiredSessions(now: Date): Promise<void> {
     await this.prisma.session.deleteMany({
       where: { expiresAt: { lte: now } },
