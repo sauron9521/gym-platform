@@ -4,6 +4,7 @@ import { ExercisesController } from '#src/modules/exercises/controllers/exercise
 import { WorkoutsController } from '#src/modules/workouts/controllers/workouts.controller';
 import { WorkoutAnalyticsController } from '#src/modules/workout-analytics/controllers/workout-analytics.controller';
 import { AuthController } from '#src/modules/auth/controllers/auth.controller';
+import { UsersController } from '#src/modules/users/controllers/users.controller';
 
 describe('Endpoint-aware throttling policies', () => {
   // Nest throttler stores method-level limits under this metadata key.
@@ -21,6 +22,9 @@ describe('Endpoint-aware throttling policies', () => {
     [WorkoutAnalyticsController, 'exercise', 20],
     [AuthController, 'signIn', 3],
     [AuthController, 'signUp', 3],
+    [UsersController, 'me', 60],
+    [UsersController, 'uploadAvatar', 5],
+    [UsersController, 'deleteAvatar', 5],
   ] as const)(
     'defines the intended per-minute limit for %s.%s',
     (controller, methodName, limit) => {
@@ -40,5 +44,12 @@ describe('Endpoint-aware throttling policies', () => {
       expect(handler).toBeTypeOf('function');
       expect(Reflect.getMetadata(limitKey, handler)).toBeUndefined();
     }
+  });
+
+  it('retains the global policy for profile mutations', () => {
+    const handler = Object.getOwnPropertyDescriptor(UsersController.prototype, 'updateMe')?.value;
+    expect(handler).toBeTypeOf('function');
+    expect(Reflect.getMetadata(limitKey, handler)).toBeUndefined();
+    expect(Reflect.getMetadata(ttlKey, handler)).toBeUndefined();
   });
 });

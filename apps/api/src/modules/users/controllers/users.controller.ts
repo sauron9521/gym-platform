@@ -42,6 +42,9 @@ export class UsersController {
   ) {}
 
   @Get('me')
+  // Server route guards and browser profile reads share this endpoint. Normal
+  // navigation must not exhaust the stricter default mutation budget.
+  @Throttle({ default: { limit: 60, ttl: 60_000 } })
   @ApiOkResponse({
     description: 'Authenticated account and nullable profile. Never includes credentials.',
     schema: {

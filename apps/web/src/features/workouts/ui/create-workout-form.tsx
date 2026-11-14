@@ -4,7 +4,7 @@ import { useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useFieldArray, useForm } from 'react-hook-form';
+import { useFieldArray, useForm, useWatch } from 'react-hook-form';
 
 import { webApi } from '@/shared/api/client';
 import { Button } from '@/shared/ui/button';
@@ -34,7 +34,7 @@ export function CreateWorkoutForm() {
     control: form.control,
     name: 'exercises',
   });
-  const selectedExercises = form.watch('exercises');
+  const selectedExercises = useWatch({ control: form.control, name: 'exercises' });
   const busy = form.formState.isSubmitting || created;
 
   async function submit(values: CreateWorkoutValues) {
@@ -80,7 +80,11 @@ export function CreateWorkoutForm() {
           Оберіть вправи, додайте підходи та задайте планові показники.
         </p>
       </div>
-      <form onSubmit={form.handleSubmit(submit)} noValidate className="space-y-6">
+      <form
+        onSubmit={(event) => void form.handleSubmit(submit)(event)}
+        noValidate
+        className="space-y-6"
+      >
         <section className="space-y-4 rounded-xl border bg-card p-5">
           <div className="space-y-1">
             <label htmlFor="workout-title" className="block text-sm font-medium">

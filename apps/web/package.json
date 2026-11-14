@@ -10,7 +10,8 @@
     "lint": "eslint .",
     "typecheck": "next typegen && tsc --noEmit",
     "test": "node --test test/*.test.mjs",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "test:e2e:integration": "playwright test --config playwright.integration.config.ts"
   },
   "dependencies": {
     "@gym/api-client": "workspace:*",

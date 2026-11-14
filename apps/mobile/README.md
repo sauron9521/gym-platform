@@ -34,6 +34,11 @@ pnpm --filter @gym/mobile build
 The `build` script exports the Expo web target for CI. It is **not** an iOS/Android binary
 build. Native builds will be added later with EAS.
 
+Web export stores Metro's temporary bundles in `apps/mobile/.cache/expo-tmp/`
+on the workspace drive. This avoids filling the Windows system temp drive when
+the repository lives on another disk. The directory is ignored by Git and may
+be removed when no export is running.
+
 ## Structure
 
 - `src/app`: Expo Router routes and navigation.
