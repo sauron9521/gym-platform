@@ -8,8 +8,8 @@ export type WorkoutSetPayload = NonNullable<
   operations['WorkoutsController_updateSet']['requestBody']
 >['content']['application/json'];
 
-const numericText = (min: number, max: number, decimals: number, integer = false) =>
-  z.string().trim().superRefine((value, ctx) => {
+function numericText(min: number, max: number, decimals: number, integer = false) {
+  return z.string().trim().superRefine((value, ctx) => {
     if (value === '') return;
     const pattern = integer ? /^\d+$/ : /^\d+(?:[.,]\d+)?$/;
     const number = Number(value.replace(',', '.'));
@@ -26,6 +26,7 @@ const numericText = (min: number, max: number, decimals: number, integer = false
       });
     }
   });
+}
 
 export const workoutSetFormSchema = z.object({
   actualReps: numericText(1, 1000, 0, true),
@@ -40,7 +41,9 @@ export const workoutSetFormSchema = z.object({
 
 export type WorkoutSetFormValues = z.infer<typeof workoutSetFormSchema>;
 
-const asText = (value: number | string | null): string => value === null ? '' : String(value);
+function asText(value: number | string | null): string {
+  return value === null ? '' : String(value);
+}
 
 export function getWorkoutSetDefaults(set: WorkoutSetData): WorkoutSetFormValues {
   return {
@@ -55,8 +58,9 @@ export function getWorkoutSetDefaults(set: WorkoutSetData): WorkoutSetFormValues
   };
 }
 
-const asNumber = (value: string): number | null =>
-  value === '' ? null : Number(value.replace(',', '.'));
+function asNumber(value: string): number | null {
+  return value === '' ? null : Number(value.replace(',', '.'));
+}
 
 export function buildWorkoutSetPayload(
   status: 'COMPLETED' | 'SKIPPED',
