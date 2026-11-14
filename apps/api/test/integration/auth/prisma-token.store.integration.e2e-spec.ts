@@ -258,4 +258,80 @@ describe('PrismaTokenStore integration (e2e)', () => {
       userId,
     });
   });
+
+  it('allows exactly one concurrent use of an opaque refresh token across PostgreSQL updates', async () => {
+    const userId = `refresh-race-${randomUUID()}`;
+    const email = `${createHash('sha256').update(userId).digest('hex')}@refresh-race.invalid`;
+    await prisma.user.create({
+      data: { id: userId, email, passwordHash: 'test-password-hash' },
+      select: { id: true },
+    });
+    testUserIds.add(userId);
+
+    const now = new Date();
+    const token: RefreshTokenRecord = {
+      id: createHash('sha256').update(randomUUID()).digest('hex'),
+      familyId: randomUUID().replaceAll('-', ''),
+      userId,
+      createdAt: now,
+      expiresAt: new Date(now.getTime() + 60_000),
+      familyExpiresAt: new Date(now.getTime() + 24 * 60 * 60_000),
+    };
+    await store.saveRefreshToken(token);
+
+    // Parallel calls share the real database connection pool, not an in-memory mock.
+    const results = await Promise.all(
+      Array.from({ length: 8 }, () => store.markRefreshTokenUsed(token.id, now)),
+    );
+
+    expect(results.filter(Boolean)).toHaveLength(1);
+    expect(results.filter((result) => !result)).toHaveLength(7);
+    await expect(store.markRefreshTokenUsed(token.id, now)).resolves.toBe(false);
+
+    const persisted = await prisma.refreshToken.findUniqueOrThrow({
+      where: { id: token.id },
+      select: { usedAt: true, familyId: true, revoked: true },
+    });
+    expect(persisted).toEqual({
+      usedAt: now,
+      familyId: token.familyId,
+      revoked: false,
+    });
+  });
+
+  it('consumes an email link only once even under parallel requests and purpose mismatches', async () => {
+    const userId = `email-race-${randomUUID()}`;
+    const email = `${createHash('sha256').update(userId).digest('hex')}@email-race.invalid`;
+    await prisma.user.create({
+      data: { id: userId, email, passwordHash: 'test-password-hash' },
+      select: { id: true },
+    });
+    testUserIds.add(userId);
+
+    const now = new Date();
+    const token: EmailTokenRecord = {
+      id: randomUUID().replaceAll('-', ''),
+      purpose: 'password-reset',
+      userId,
+      email,
+      fingerprint: 'race-test',
+      createdAt: now,
+      expiresAt: new Date(now.getTime() + 60_000),
+    };
+    await store.saveEmailToken(token);
+
+    await expect(
+      store.consumeEmailToken(token.id, 'email-verification'),
+    ).resolves.toBeUndefined();
+
+    const results = await Promise.all(
+      Array.from({ length: 8 }, () => store.consumeEmailToken(token.id, token.purpose)),
+    );
+    const winners = results.filter((record) => record !== undefined);
+    expect(winners).toHaveLength(1);
+    expect(winners[0]).toMatchObject({ id: token.id, userId, purpose: token.purpose });
+    expect(results.filter((record) => record === undefined)).toHaveLength(7);
+    await expect(store.consumeEmailToken(token.id, token.purpose)).resolves.toBeUndefined();
+    expect(await prisma.emailToken.count({ where: { id: token.id } })).toBe(0);
+  });
 });
