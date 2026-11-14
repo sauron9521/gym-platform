@@ -40,8 +40,7 @@ export const workoutSetFormSchema = z.object({
 
 export type WorkoutSetFormValues = z.infer<typeof workoutSetFormSchema>;
 
-const asText = (value: number | string | null): string =>
-  value === null ? '' : String(value);
+const asText = (value: number | string | null): string => value === null ? '' : String(value);
 
 export function getWorkoutSetDefaults(set: WorkoutSetData): WorkoutSetFormValues {
   return {
