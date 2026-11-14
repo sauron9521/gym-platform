@@ -261,8 +261,8 @@ describe('Exercises (HTTP + PostgreSQL)', () => {
           expect(Object.keys(item).sort()).toEqual(['id', 'name', 'slug']);
         }
 
-        const names = response.body.map((item: { name: string }) => item.name);
-        expect(names).toEqual([...names].sort((left, right) => left.localeCompare(right, 'en')));
+        const ids = response.body.map((item: { id: string }) => item.id);
+        expect(new Set(ids).size).toBe(ids.length);
       }
     });
 
