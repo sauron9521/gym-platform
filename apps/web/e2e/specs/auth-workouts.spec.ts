@@ -24,7 +24,7 @@ test('login rejects incorrect credentials without exposing private content', asy
   await page.getByLabel('Електронна пошта').fill('athlete@example.test');
   await page.getByLabel('Пароль').fill('WrongPassword123!');
   await page.getByRole('button', { name: 'Увійти' }).click();
-  await expect(page.getByRole('alert')).toContainText('Невірна електронна пошта або пароль');
+  await expect(page.getByText('Невірна електронна пошта або пароль.')).toBeVisible();
   await expect(page).toHaveURL(/\/login$/);
   await page.goto('/dashboard');
   await expect(page).toHaveURL(/\/login$/);
@@ -35,7 +35,7 @@ test('login form validates the email before sending credentials', async ({ page 
   await page.getByLabel('Електронна пошта').fill('invalid-email');
   await page.getByLabel('Пароль').fill(password);
   await page.getByRole('button', { name: 'Увійти' }).click();
-  await expect(page.getByRole('alert')).toContainText('Вкажіть коректну електронну адресу');
+  await expect(page.locator('#login-email-error')).toContainText('Вкажіть коректну електронну адресу');
   await expect(page).toHaveURL(/\/login$/);
 });
 
