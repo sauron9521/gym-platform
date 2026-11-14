@@ -196,21 +196,13 @@ export class PrismaTokenStore implements RefreshTokenStore, EmailTokenStore {
   }
 
   async deleteExpiredRefreshTokens(now = new Date()): Promise<void> {
-    await this.prisma.$transaction(async (tx) => {
-      await tx.refreshToken.deleteMany({
-        where: {
-          familyExpiresAt: { lte: now },
-        },
-      });
-
-      await tx.refreshTokenFamily.deleteMany({
-        where: {
-          familyExpiresAt: { lte: now },
-          tokens: {
-            none: {},
-          },
-        },
-      });
+    // The family is the absolute-lifetime boundary. PostgreSQL's
+    // refresh_tokens_family_id_fkey ON DELETE CASCADE removes all children
+    // atomically, including rotated tokens and late revoked successors.
+    // One indexed family delete replaces two full-table delete passes and
+    // avoids holding an interactive transaction open for the cleanup.
+    await this.prisma.refreshTokenFamily.deleteMany({
+      where: { familyExpiresAt: { lte: now } },
     });
   }
 
