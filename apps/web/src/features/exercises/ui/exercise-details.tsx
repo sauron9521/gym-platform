@@ -21,13 +21,7 @@ type DetailsState =
   | { kind: 'error'; message: string }
   | { kind: 'ready'; exercise: ExerciseDetailsData };
 
-export function ExerciseDetails({
-  id,
-  actor,
-}: {
-  id: string;
-  actor: AuthenticatedUser;
-}) {
+export function ExerciseDetails({ id, actor }: { id: string; actor: AuthenticatedUser }) {
   const router = useRouter();
   const [attempt, setAttempt] = useState(0);
   const [state, setState] = useState<DetailsState>({ kind: 'loading' });
