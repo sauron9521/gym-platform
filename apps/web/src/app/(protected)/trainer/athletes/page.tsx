@@ -33,9 +33,7 @@ export default async function TrainerAthletesPage() {
     return (
       <main className="mx-auto max-w-3xl px-6 py-16">
         <h1 className="text-2xl font-semibold">Доступ заборонено</h1>
-        <p className="mt-2 text-muted-foreground">
-          Список підопічних доступний лише тренерам.
-        </p>
+        <p className="mt-2 text-muted-foreground">Список підопічних доступний лише тренерам.</p>
       </main>
     );
   }
