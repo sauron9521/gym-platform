@@ -152,7 +152,8 @@ export function TrainerProgramsList() {
                     </span>
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    Оновлено: {formatProgramDate(program.updatedAt)} · Версій: {program.versions.length}
+                    Оновлено: {formatProgramDate(program.updatedAt)} · Версій:{' '}
+                    {program.versions.length}
                   </p>
                   {program.versions.length > 0 && (
                     <details className="space-y-3">
