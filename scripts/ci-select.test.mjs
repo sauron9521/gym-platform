@@ -123,11 +123,11 @@ test('API coverage replaces duplicate API unit tests without weakening required 
     yaml,
     /pnpm exec turbo run test --filter=@gym\/web --filter=@gym\/mobile --filter=@gym\/api-client/,
   );
-  assert.doesNotMatch(yaml, /pnpm exec turbo run test "\\$\\{filters\\[@\\]\\}"/);
+  assert.doesNotMatch(yaml, /pnpm exec turbo run test "\$\{filters\[@\]\}"/);
   assert.match(yaml, /needs: \[changes, api-e2e-suite, api-coverage\]/);
   assert.match(yaml, /COVERAGE_RESULT: \$\{\{ needs\.api-coverage\.result \}\}/);
-  assert.match(yaml, /test "\\$COVERAGE_RESULT" = success/);
-  assert.match(yaml, /test "\\$COVERAGE_RESULT" = skipped/);
+  assert.match(yaml, /test "\$COVERAGE_RESULT" = success/);
+  assert.match(yaml, /test "\$COVERAGE_RESULT" = skipped/);
 });
 
 test('CI caches only reusable build artifacts and not test or secret outputs', () => {
@@ -139,5 +139,7 @@ test('CI caches only reusable build artifacts and not test or secret outputs', (
   assert.match(cacheBlock, /\.turbo\/cache/);
   assert.match(cacheBlock, /apps\/web\/\.next\/cache/);
   assert.match(cacheBlock, /hashFiles\('pnpm-lock\.yaml', 'turbo\.json'/);
-  assert.doesNotMatch(cacheBlock, /node_modules|coverage\/|\.env|\.pem|secrets/);
+  const paths = cacheBlock.split('path: |')[1]?.split('key:')[0];
+  assert.ok(paths);
+  assert.doesNotMatch(paths, /node_modules|coverage\/|\.env|\.pem|secrets/);
 });
