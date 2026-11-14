@@ -95,10 +95,7 @@ export function WorkoutDetails({ id }: { id: string }) {
               </span>
             </div>
             <dl className="grid gap-3 text-sm sm:grid-cols-3">
-              <SetMetric
-                label="Заплановано"
-                value={formatWorkoutDate(state.workout.scheduledAt)}
-              />
+              <SetMetric label="Заплановано" value={formatWorkoutDate(state.workout.scheduledAt)} />
               <SetMetric label="Початок" value={formatWorkoutDate(state.workout.startedAt)} />
               <SetMetric label="Завершення" value={formatWorkoutDate(state.workout.completedAt)} />
             </dl>
