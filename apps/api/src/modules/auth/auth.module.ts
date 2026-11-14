@@ -13,6 +13,7 @@ import { AccountRecoveryRateLimitGuard } from './guards/account-recovery-rate-li
 import { VerificationResendRateLimitGuard } from './guards/verification-resend-rate-limit.guard.js';
 import { CredentialsService, TokenCleanupService } from './services/index.js';
 import { AuthAccountThrottleService } from './services/auth-account-throttle.service.js';
+import { AuthCleanupLockService } from './services/auth-cleanup-lock.service.js';
 import { PrismaSessionStore, PrismaTokenStore } from './stores/index.js';
 
 @Module({
@@ -36,6 +37,7 @@ import { PrismaSessionStore, PrismaTokenStore } from './stores/index.js';
     PrismaSessionStore,
     PrismaTokenStore,
     TokenCleanupService,
+    AuthCleanupLockService,
   ],
 })
 export class AuthModule {}

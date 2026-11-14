@@ -13,6 +13,7 @@ describe('PrismaSessionStore', () => {
       deleteMany: vi.fn(),
       findMany: vi.fn(),
     },
+    $executeRaw: vi.fn(),
   };
 
   const storage = {
@@ -39,6 +40,7 @@ describe('PrismaSessionStore', () => {
     prisma.session.updateMany.mockResolvedValue({ count: 1 });
     prisma.session.deleteMany.mockResolvedValue({ count: 1 });
     prisma.session.findMany.mockResolvedValue([]);
+    prisma.$executeRaw.mockResolvedValue(0);
 
     store = new PrismaSessionStore(
       prisma as unknown as PrismaService,
@@ -151,6 +153,25 @@ describe('PrismaSessionStore', () => {
     expect(prisma.session.deleteMany).toHaveBeenCalledExactlyOnceWith({
       where: { expiresAt: { lte: now } },
     });
+  });
+
+  it('batches expired session deletions with an indexed ordered query', async () => {
+    const now = new Date('2026-11-10T03:00:00.000Z');
+    prisma.$executeRaw.mockResolvedValueOnce(17);
+
+    await expect(store.deleteExpiredSessionsBatch(now, 500)).resolves.toBe(17);
+
+    const [sql, cutoff, limit] = prisma.$executeRaw.mock.calls[0] as unknown as [
+      TemplateStringsArray,
+      Date,
+      number,
+    ];
+    expect(sql.join('?')).toContain('DELETE FROM "sessions"');
+    expect(sql.join('?')).toContain('"expires_at" <= ?');
+    expect(sql.join('?')).toContain('FOR UPDATE SKIP LOCKED');
+    expect(cutoff).toBe(now);
+    expect(limit).toBe(500);
+    expect(prisma.session.deleteMany).not.toHaveBeenCalled();
   });
 
   it('deletes all sessions for the requested user', async () => {

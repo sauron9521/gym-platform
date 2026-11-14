@@ -53,6 +53,7 @@ describe('PrismaTokenStore security and persistence contracts', () => {
       findMany: vi.fn(),
     },
     $queryRaw: vi.fn(),
+    $executeRaw: vi.fn(),
     $transaction: vi.fn(),
   };
   const storage = { registerSource: vi.fn() };
@@ -72,6 +73,7 @@ describe('PrismaTokenStore security and persistence contracts', () => {
     prisma.$queryRaw.mockImplementation(async (sql: TemplateStringsArray) =>
       sql.join('').includes('FOR UPDATE') ? [{ revokedAt: null }] : [],
     );
+    prisma.$executeRaw.mockResolvedValue(0);
     store = new PrismaTokenStore(
       prisma as unknown as PrismaService,
       storage as unknown as AuthenticationStorage,
@@ -318,6 +320,40 @@ describe('PrismaTokenStore security and persistence contracts', () => {
     expect(prisma.refreshTokenFamily.deleteMany).toHaveBeenCalledExactlyOnceWith({
       where: { familyExpiresAt: { lte: now } },
     });
+  });
+
+  it('removes a bounded batch of expired refresh families using FK cascade', async () => {
+    prisma.$executeRaw.mockResolvedValueOnce(23);
+    const deleted = await store.deleteExpiredRefreshTokenFamiliesBatch(now, 500);
+    expect(deleted).toBe(23);
+    expect(prisma.$executeRaw).toHaveBeenCalledOnce();
+    const [sql, cutoff, limit] = prisma.$executeRaw.mock.calls[0] as unknown as [
+      TemplateStringsArray,
+      Date,
+      number,
+    ];
+    expect(sql.join('?')).toContain('DELETE FROM "refresh_token_families"');
+    expect(sql.join('?')).toContain('"family_expires_at" <= ?');
+    expect(sql.join('?')).toContain('FOR UPDATE SKIP LOCKED');
+    expect(cutoff).toBe(now);
+    expect(limit).toBe(500);
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  it('removes only one bounded batch of expired email tokens', async () => {
+    prisma.$executeRaw.mockResolvedValueOnce(5);
+    await expect(store.deleteExpiredEmailTokensBatch(now, 250)).resolves.toBe(5);
+    expect(prisma.$executeRaw).toHaveBeenCalledOnce();
+    const [sql, cutoff, limit] = prisma.$executeRaw.mock.calls[0] as unknown as [
+      TemplateStringsArray,
+      Date,
+      number,
+    ];
+    expect(sql.join('?')).toContain('DELETE FROM "email_tokens"');
+    expect(sql.join('?')).toContain('"expires_at" <= ?');
+    expect(sql.join('?')).toContain('FOR UPDATE SKIP LOCKED');
+    expect(cutoff).toBe(now);
+    expect(limit).toBe(250);
   });
 
   it('deletes only email tokens expired by the supplied cutoff', async () => {
