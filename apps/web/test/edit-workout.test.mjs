@@ -26,10 +26,7 @@ test('edit schema validates title, notes and date boundaries', () => {
     false,
   );
   for (const date of ['2026-02-31T12:00', '2026-11-25', 'not a date', '2026-12-31T25:00']) {
-    assert.equal(
-      editWorkoutSchema.safeParse({ ...defaults, scheduledAt: date }).success,
-      false,
-    );
+    assert.equal(editWorkoutSchema.safeParse({ ...defaults, scheduledAt: date }).success, false);
   }
   assert.equal(editWorkoutSchema.safeParse({ ...defaults, scheduledAt: '' }).success, true);
 });
@@ -41,10 +38,11 @@ test('defaults format an ISO timestamp as local datetime input', () => {
   const local = formatLocalDateTime(scheduledAt);
   assert.match(local, /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/);
   assert.equal(new Date(local).getTime(), new Date(scheduledAt).getTime());
-  assert.deepEqual(
-    getWorkoutEditDefaults({ title: 'A', notes: null, scheduledAt }),
-    { title: 'A', notes: '', scheduledAt: local },
-  );
+  assert.deepEqual(getWorkoutEditDefaults({ title: 'A', notes: null, scheduledAt }), {
+    title: 'A',
+    notes: '',
+    scheduledAt: local,
+  });
 });
 
 test('editing just the title leaves existing time and notes untouched', () => {
