@@ -8,7 +8,8 @@ Husky hooks (typically `.husky/_`).
 
 - **pre-commit:** `lint-staged` runs `prettier --write` on staged files, and
   re-stages formatted content before creating the commit.
-- **pre-push:** `pnpm format:check`, Web lint and Web typecheck must all pass.
+- **pre-push:** formatting and the lint/type checks selected for affected
+  workspaces must pass; unknown or cross-cutting changes trigger full checks.
   This hook intentionally does **not** rewrite commits that already exist.
 - **CI:** checks format, lint, types, tests and build independently of local hooks.
 

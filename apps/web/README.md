@@ -243,4 +243,24 @@ screenshot and HTML report artifact is uploaded for debugging.
 and expected HTTP contracts against a deterministic fixture API. Real NestJS,
 PostgreSQL, Redis, migrations and true authorization are exercised by the
 separate API integration/E2E suite, not the fixture server. An additional
-Web-to-real-Nest integration environment can be added in a future PR.
+Web-to-real-Nest integration suite is available separately as described below.
+
+## Browser integration with the real API
+
+`pnpm --filter @gym/web test:e2e:integration` runs Chromium against real NestJS,
+Next.js and PostgreSQL. Set identical `DATABASE_URL` and `TEST_DATABASE_URL` values
+pointing to a disposable loopback PostgreSQL database whose name ends in `_test`.
+Generate Prisma, apply migrations and build the API before running the suite:
+
+```bash
+pnpm --filter @gym/api db:generate
+pnpm --filter @gym/api db:migrate:deploy
+pnpm --filter @gym/api build
+pnpm --filter @gym/web test:e2e:integration
+```
+
+Provide the API's required test JWT/environment settings. The suite reserves
+ports 3200/3201 and creates a unique test account, which remains in the disposable
+database. It verifies login, secure HttpOnly cookies, profile persistence, role
+isolation and sign-out. The `Web / Real API and PostgreSQL` CI job provisions its
+own PostgreSQL service and retains failure traces. No existing database is reset.

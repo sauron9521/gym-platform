@@ -200,7 +200,7 @@ describe('ApiExceptionFilter', () => {
       code: 'INTERNAL_SERVER_ERROR',
       message: 'Internal server error',
     });
-    expect(log).toHaveBeenCalledExactlyOnceWith(
+    expect(log).toHaveBeenCalledWith(
       'Unhandled API failure (PRISMA_P2010), requestId=' + body.requestId,
     );
     expect(JSON.stringify(log.mock.calls)).not.toMatch(/PRIVATE|SECRET_TOKEN|private_email/);
@@ -227,7 +227,7 @@ describe('ApiExceptionFilter', () => {
       });
       expect(JSON.stringify(body)).not.toMatch(/PRIVATE/);
     }
-    expect(log).toHaveBeenCalledTimes(2);
+    expect(log.mock.calls.filter(([entry]) => typeof entry === 'string')).toHaveLength(2);
     expect(JSON.stringify(log.mock.calls)).not.toMatch(/PRIVATE/);
   });
 
@@ -240,9 +240,24 @@ describe('ApiExceptionFilter', () => {
       message: 'Service unavailable',
     });
     expect(JSON.stringify(body)).not.toContain('PRIVATE_DB_HOST');
-    expect(log).toHaveBeenCalledExactlyOnceWith(
+    expect(log).toHaveBeenCalledWith(
       'Unhandled API failure (HTTP_503), requestId=' + body.requestId,
     );
+  });
+
+  it('logs bounded function frames without stack paths, messages or causes', () => {
+    const log = vi.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
+    const error = new Error('SECRET_PASSWORD', { cause: new Error('SECRET_CAUSE') });
+    error.stack =
+      'Error: SECRET_PASSWORD\n    at WorkoutsService.create (/private/SECRET_PATH.ts:1:2)\n    at async WorkoutsController.create (/private/token.ts:3:4)\n    at /private/SECRET_PATH.ts:5:6';
+    const { body } = respond(error);
+    expect(log).toHaveBeenCalledWith({
+      event: 'api.failure.frames',
+      requestId: body.requestId,
+      frames: ['WorkoutsService.create', 'WorkoutsController.create'],
+    });
+    expect(JSON.stringify(log.mock.calls)).not.toMatch(/SECRET|private|token\.ts/);
+    expect(JSON.stringify(body)).not.toMatch(/WorkoutsService|SECRET/);
   });
 
   it('uses a new server-generated ID instead of an untrusted client header', () => {

@@ -79,7 +79,7 @@ export class ApiExceptionFilter implements ExceptionFilter {
     if (exception instanceof HttpException) {
       const statusCode = exception.getStatus();
       if (statusCode >= 500) {
-        this.logUnexpected('HTTP_' + statusCode, requestId);
+        this.logUnexpected('HTTP_' + statusCode, requestId, exception);
         if (statusCode === HttpStatus.SERVICE_UNAVAILABLE) {
           return {
             statusCode,
@@ -137,12 +137,12 @@ export class ApiExceptionFilter implements ExceptionFilter {
             message: 'Resource not found',
           };
         default:
-          this.logUnexpected('PRISMA_' + exception.code, requestId);
+          this.logUnexpected('PRISMA_' + exception.code, requestId, exception);
           return this.internalError();
       }
     }
 
-    this.logUnexpected('UNHANDLED_EXCEPTION', requestId);
+    this.logUnexpected('UNHANDLED_EXCEPTION', requestId, exception);
     return this.internalError();
   }
 
@@ -154,8 +154,24 @@ export class ApiExceptionFilter implements ExceptionFilter {
     };
   }
 
-  private logUnexpected(kind: string, requestId: string): void {
+  private logUnexpected(kind: string, requestId: string, exception: unknown): void {
     // Avoid logging raw Prisma SQL, error metadata, tokens or request bodies.
+    // Extract only bounded function identifiers from V8 stack frames. Exclude
+    // the message, paths, SQL, metadata and causes, which can contain secrets.
+    const frames =
+      exception instanceof Error
+        ? (exception.stack ?? '')
+            .split('\n')
+            .slice(1)
+            .flatMap((line) => {
+              const match = /^\s+at (?:async )?([A-Za-z_$][A-Za-z0-9_$.<>]{0,119}) \(/.exec(line);
+              return match ? [match[1]!] : [];
+            })
+            .slice(0, 5)
+        : [];
     this.logger.error('Unhandled API failure (' + kind + '), requestId=' + requestId);
+    if (frames.length > 0) {
+      this.logger.error({ event: 'api.failure.frames', requestId, frames });
+    }
   }
 }
