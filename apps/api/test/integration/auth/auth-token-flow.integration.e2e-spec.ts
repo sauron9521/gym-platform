@@ -312,4 +312,48 @@ describe('Auth token flow (HTTP + PostgreSQL)', () => {
       })
       .expect(400);
   });
+
+  it('does not issue two usable refresh-token successors when requests race', async () => {
+    const initial = await issueTokenPair();
+    const responses = await Promise.all(
+      Array.from({ length: 2 }, () =>
+        request(app.getHttpServer())
+          .post('/auth/token/refresh')
+          .send({ refreshToken: initial.refreshToken }),
+      ),
+    );
+
+    // A refresh token is single-use. Racing requests must never both succeed.
+    const successful = responses.filter((response) => response.status === 200);
+    const rejected = responses.filter((response) => response.status === 401);
+    expect(successful).toHaveLength(1);
+    expect(rejected).toHaveLength(1);
+    expect(rejected[0]?.headers['cache-control']).toBe('no-store');
+    expect(JSON.stringify(rejected[0]?.body)).not.toContain(initial.refreshToken);
+
+    // The rejected reuse revokes this family, including any successor issued
+    // before the replay was detected. A concurrent retry must not revive it.
+    const successor = successful[0]?.body as TokenPair;
+    expect(successor.refreshToken).not.toBe(initial.refreshToken);
+    await expectRefreshUnauthorized(initial.refreshToken);
+    await expectRefreshUnauthorized(successor.refreshToken);
+
+    const families = await prisma.refreshTokenFamily.findMany({
+      where: { userId },
+      select: { revokedAt: true },
+    });
+    expect(families).toHaveLength(1);
+    expect(families[0]?.revokedAt).toBeInstanceOf(Date);
+
+    const persisted = await prisma.refreshToken.findMany({
+      where: { userId },
+      select: { usedAt: true, revoked: true, familyId: true },
+    });
+    // A rejected racing request may persist a candidate before detecting
+    // replay. The security requirement is that no candidate remains usable.
+    expect(persisted.length).toBeGreaterThanOrEqual(2);
+    expect(persisted.filter((token) => token.usedAt !== null)).toHaveLength(1);
+    expect(persisted.every((token) => token.revoked)).toBe(true);
+    expect(new Set(persisted.map((token) => token.familyId)).size).toBe(1);
+  });
 });
