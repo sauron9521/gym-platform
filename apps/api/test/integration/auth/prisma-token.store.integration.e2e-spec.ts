@@ -320,9 +320,7 @@ describe('PrismaTokenStore integration (e2e)', () => {
     };
     await store.saveEmailToken(token);
 
-    await expect(
-      store.consumeEmailToken(token.id, 'email-verification'),
-    ).resolves.toBeUndefined();
+    await expect(store.consumeEmailToken(token.id, 'email-verification')).resolves.toBeUndefined();
 
     const results = await Promise.all(
       Array.from({ length: 8 }, () => store.consumeEmailToken(token.id, token.purpose)),
