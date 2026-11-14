@@ -155,7 +155,6 @@ describe('PrismaSessionStore', () => {
     });
   });
 
-
   it('batches expired session deletions with an indexed ordered query', async () => {
     const now = new Date('2026-11-10T03:00:00.000Z');
     prisma.$executeRaw.mockResolvedValueOnce(17);
