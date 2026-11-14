@@ -256,9 +256,7 @@ describe('Exercises (HTTP + PostgreSQL)', () => {
       ]) {
         const response = await request(app!.getHttpServer()).get(path);
         expect(response.status).toBe(200);
-        expect(response.body).toEqual(
-          expect.arrayContaining([expect.objectContaining({ slug })]),
-        );
+        expect(response.body).toEqual(expect.arrayContaining([expect.objectContaining({ slug })]));
         for (const item of response.body as Array<Record<string, unknown>>) {
           expect(Object.keys(item).sort()).toEqual(['id', 'name', 'slug']);
         }
@@ -271,9 +269,7 @@ describe('Exercises (HTTP + PostgreSQL)', () => {
     it('returns the same public taxonomy for signed-in athletes', async () => {
       const [guest, authenticated] = await Promise.all([
         request(app!.getHttpServer()).get('/exercises/muscle-groups'),
-        request(app!.getHttpServer())
-          .get('/exercises/muscle-groups')
-          .set('Cookie', ownerCookie),
+        request(app!.getHttpServer()).get('/exercises/muscle-groups').set('Cookie', ownerCookie),
       ]);
       expect(guest.status).toBe(200);
       expect(authenticated.status).toBe(200);
