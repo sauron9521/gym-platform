@@ -276,13 +276,9 @@ describe('Auth retention batching and cross-replica lock (PostgreSQL)', () => {
       const elapsedMs = Math.round(performance.now() - startedAt);
 
       expect(results).toHaveLength(7);
-      expect(results.slice(0, 6).every((counts) => counts.every((n) => n === 500))).toBe(
-        true,
-      );
+      expect(results.slice(0, 6).every((counts) => counts.every((n) => n === 500))).toBe(true);
       expect(results[6]).toEqual([1, 1, 1]);
-      expect(await prisma.refreshTokenFamily.count({ where: { userId: user.id } })).toBe(
-        1,
-      );
+      expect(await prisma.refreshTokenFamily.count({ where: { userId: user.id } })).toBe(1);
       expect(await prisma.refreshToken.count({ where: { userId: user.id } })).toBe(1);
       expect(await prisma.emailToken.count({ where: { userId: user.id } })).toBe(1);
       expect(await prisma.session.count({ where: { userId: user.id } })).toBe(1);
