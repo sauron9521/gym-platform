@@ -259,7 +259,7 @@ describe('PrismaTokenStore integration (e2e)', () => {
     });
   });
 
-  it('allows exactly one concurrent use of an opaque refresh token across PostgreSQL updates', async () => {
+  it('allows one concurrent refresh-token use in PostgreSQL', async () => {
     const userId = `refresh-race-${randomUUID()}`;
     const email = `${createHash('sha256').update(userId).digest('hex')}@refresh-race.invalid`;
     await prisma.user.create({
@@ -299,7 +299,7 @@ describe('PrismaTokenStore integration (e2e)', () => {
     });
   });
 
-  it('consumes an email link only once even under parallel requests and purpose mismatches', async () => {
+  it('consumes an email token only once across parallel requests', async () => {
     const userId = `email-race-${randomUUID()}`;
     const email = `${createHash('sha256').update(userId).digest('hex')}@email-race.invalid`;
     await prisma.user.create({
