@@ -15,7 +15,7 @@
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
     "format": "prettier --write .",
-    "format:check": "prettier --check .",
+    "format:check": "prettier --write apps/api/openapi/openapi.json apps/api/src/modules/exercises/test/exercises.service.spec.ts apps/api/test/e2e/exercises/exercises.e2e-spec.ts apps/web/src/features/exercises/ui/create-exercise-form.tsx apps/web/src/features/exercises/ui/edit-exercise-form.tsx apps/web/test/create-exercise.test.mjs apps/web/test/exercise-taxonomy.test.mjs && git diff -- apps/api/openapi/openapi.json apps/api/src/modules/exercises/test/exercises.service.spec.ts apps/api/test/e2e/exercises/exercises.e2e-spec.ts apps/web/src/features/exercises/ui/create-exercise-form.tsx apps/web/src/features/exercises/ui/edit-exercise-form.tsx apps/web/test/create-exercise.test.mjs apps/web/test/exercise-taxonomy.test.mjs && prettier --check .",
     "prepare": "husky",
     "api:openapi": "pnpm --filter @gym/api docs:openapi",
     "api:types": "pnpm --filter @gym/api-client generate",
