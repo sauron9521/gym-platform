@@ -160,9 +160,7 @@ export function AthleteProgramsList() {
                     </p>
                   )}
                   {assignment.version.durationWeeks !== null && (
-                    <p className="text-sm">
-                      Тривалість: {assignment.version.durationWeeks} тиж.
-                    </p>
+                    <p className="text-sm">Тривалість: {assignment.version.durationWeeks} тиж.</p>
                   )}
                   {assignment.completedAt && (
                     <p className="text-sm text-muted-foreground">
