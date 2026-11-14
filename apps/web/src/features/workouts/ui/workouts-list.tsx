@@ -31,7 +31,6 @@ export function WorkoutsList() {
 
   useEffect(() => {
     let active = true;
-    setState({ kind: 'loading' });
 
     void webApi
       .GET('/workouts', {

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 import { classifySessionCheck } from '@/features/auth/lib/auth-flow';
@@ -135,8 +136,16 @@ export function DashboardScreen({ initialUser }: { initialUser: AuthenticatedUse
       <section className="rounded-xl border bg-card p-6">
         <h2 className="font-semibold">Особистий кабінет</h2>
         <p className="mt-2 text-sm text-muted-foreground">
-          Сесію перевірено. Профіль, тренування та програми додамо у наступних PR.
+          Перегляньте свій журнал тренувань або оновіть особистий профіль.
         </p>
+        <div className="mt-4 flex flex-wrap gap-3">
+          <Button asChild>
+            <Link href="/workouts">Мої тренування</Link>
+          </Button>
+          <Button asChild variant="outline">
+            <Link href="/profile">Мій профіль</Link>
+          </Button>
+        </div>
       </section>
     </main>
   );
