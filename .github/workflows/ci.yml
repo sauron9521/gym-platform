@@ -18,12 +18,49 @@ concurrency:
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
+  changes:
+    name: CI / Determine affected workspaces
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      full: ${{ steps.select.outputs.full }}
+      api: ${{ steps.select.outputs.api }}
+      web: ${{ steps.select.outputs.web }}
+      mobile: ${{ steps.select.outputs.mobile }}
+      client: ${{ steps.select.outputs.client }}
+      deps: ${{ steps.select.outputs.deps }}
+      workspaces: ${{ steps.select.outputs.workspaces }}
+
+    steps:
+      - name: Checkout complete history for safe PR diff
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Test fail-closed change classification
+        run: node --test scripts/ci-select.test.mjs
+
+      - name: Classify changed files
+        id: select
+        env:
+          CI_FORCE_ALL: ${{ github.event_name != 'pull_request' }}
+          CI_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          CI_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: node scripts/ci-select.mjs --github-output "$GITHUB_OUTPUT"
+
   quality:
     name: Quality / Node 24
+    needs: changes
+    if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
     steps:
+      - name: Fail closed if change classification fails
+        env:
+          CHANGE_DETECTION_RESULT: ${{ needs.changes.result }}
+        run: test "$CHANGE_DETECTION_RESULT" = success
+
       - name: Checkout
         uses: actions/checkout@v6
 
@@ -41,20 +78,25 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Validate local Docker Compose
+        if: needs.changes.outputs.api == 'true'
         run: |
           docker compose --env-file infra/docker/.env.example -f infra/docker/compose.yaml config --quiet
           bash -n infra/docker/init/01-create-test-db.sh
 
       - name: Generate Prisma client
+        if: needs.changes.outputs.api == 'true'
         run: pnpm --filter @gym/api db:generate
 
       - name: Validate Prisma schema
+        if: needs.changes.outputs.api == 'true'
         run: pnpm --filter @gym/api db:validate
 
       - name: Verify Prisma initial baseline against schema
+        if: needs.changes.outputs.api == 'true'
         run: pnpm --filter @gym/api db:baseline:check
 
       - name: Enforce feature architecture and runtime dependency graph
+        if: needs.changes.outputs.api == 'true'
         run: |
           pnpm --filter @gym/api architecture:check
           pnpm --filter @gym/api architecture:deps
@@ -62,25 +104,44 @@ jobs:
           pnpm --filter @gym/api test:coverage-tools
 
       - name: Validate release and GHCR safety contracts (offline)
+        if: needs.changes.outputs.api == 'true'
         run: node --test scripts/release-bundle.test.mjs scripts/ghcr-promotion.test.mjs scripts/release-supply-chain.test.mjs scripts/release-ci-gate.test.mjs
 
       - name: Check formatting
         run: pnpm format:check
 
-      - name: Lint workspaces
-        run: pnpm lint
+      - name: Full workspace regression for main and cross-cutting changes
+        if: needs.changes.outputs.full == 'true'
+        run: |
+          pnpm lint
+          pnpm typecheck
+          pnpm test
+          pnpm build
 
-      - name: Typecheck workspaces
-        run: pnpm typecheck
-
-      - name: Test workspaces
-        run: pnpm test
-
-      - name: Build workspaces
-        run: pnpm build
+      - name: Lint, typecheck, test and build affected workspaces
+        if: needs.changes.outputs.full != 'true' && needs.changes.outputs.workspaces == 'true'
+        env:
+          CI_API: ${{ needs.changes.outputs.api }}
+          CI_WEB: ${{ needs.changes.outputs.web }}
+          CI_MOBILE: ${{ needs.changes.outputs.mobile }}
+          CI_CLIENT: ${{ needs.changes.outputs.client }}
+        run: |
+          set -euo pipefail
+          filters=()
+          if [ "$CI_API" = true ]; then filters+=(--filter=@gym/api); fi
+          if [ "$CI_WEB" = true ]; then filters+=(--filter=@gym/web); fi
+          if [ "$CI_MOBILE" = true ]; then filters+=(--filter=@gym/mobile); fi
+          if [ "$CI_CLIENT" = true ]; then filters+=(--filter=@gym/api-client); fi
+          test "${#filters[@]}" -gt 0
+          pnpm exec turbo run lint "${filters[@]}"
+          pnpm exec turbo run typecheck "${filters[@]}"
+          pnpm exec turbo run test "${filters[@]}"
+          pnpm exec turbo run build "${filters[@]}"
 
   api-coverage:
     name: API Coverage / Critical modules
+    needs: changes
+    if: needs.changes.outputs.api == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 25
 
@@ -135,6 +196,8 @@ jobs:
 
   dependency-security:
     name: Dependency vulnerability audit
+    needs: changes
+    if: needs.changes.outputs.deps == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -160,6 +223,8 @@ jobs:
 
   api-operations:
     name: API Operations / Backup and monitoring
+    needs: changes
+    if: needs.changes.outputs.api == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
@@ -232,6 +297,8 @@ jobs:
 
   api-staging-contracts:
     name: API Staging / Signed GHCR offline contracts
+    needs: changes
+    if: needs.changes.outputs.api == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -253,6 +320,8 @@ jobs:
 
   api-readiness:
     name: API Readiness / Verified release NO-GO
+    needs: changes
+    if: needs.changes.outputs.api == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -270,6 +339,8 @@ jobs:
 
   api-migration:
     name: API Migration / Source inventory and cutover NO-GO
+    needs: changes
+    if: needs.changes.outputs.api == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -293,6 +364,8 @@ jobs:
 
   api-observability:
     name: API Observability / HTTP, Redis and Docker
+    needs: changes
+    if: needs.changes.outputs.api == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 25
 
@@ -344,6 +417,8 @@ jobs:
 
   api-docker:
     name: API Docker / Node 24
+    needs: changes
+    if: needs.changes.outputs.api == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 35
 
@@ -386,8 +461,10 @@ jobs:
             test "$(id -u)" -ne 0
           '
 
-  api-e2e:
-    name: API e2e / PostgreSQL 17
+  api-e2e-suite:
+    name: API e2e suite / PostgreSQL 17
+    needs: changes
+    if: needs.changes.outputs.api == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 35
 
@@ -527,3 +604,27 @@ jobs:
             --security-opt no-new-privileges \
             --mount "type=volume,src=$volume,dst=/avatars,readonly" \
             alpine:3.21 test -s /avatars/sample.png
+
+  api-e2e:
+    # Keep the existing required check while skipping unnecessary DB jobs.
+    name: API e2e / PostgreSQL 17
+    needs: [changes, api-e2e-suite]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Enforce conditional API E2E result
+        env:
+          CHANGE_DETECTION_RESULT: ${{ needs.changes.result }}
+          API_REQUIRED: ${{ needs.changes.outputs.api }}
+          SUITE_RESULT: ${{ needs.api-e2e-suite.result }}
+        run: |
+          set -euo pipefail
+          test "$CHANGE_DETECTION_RESULT" = success
+          if [ "$API_REQUIRED" = true ]; then
+            test "$SUITE_RESULT" = success
+          else
+            test "$API_REQUIRED" = false
+            test "$SUITE_RESULT" = skipped
+          fi
