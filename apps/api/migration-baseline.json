@@ -1,7 +1,7 @@
 {
   "source_repository": "sauron9521/gym-api-nestjs",
   "source_tree_sha": "79e53bc1b7a78bb3856ff2aeab2529559240521e",
-  "migration_files": {
+  "historical_migration_files": {
     "prisma/migrations/20261020171252_init/migration.sql": "69cf90bda422443b044bc99e76111cb0cacfb727",
     "prisma/migrations/20261020195526_v0_1/migration.sql": "f0d0e747a5179fa82ff7455eebaee26747dd30f7",
     "prisma/migrations/20261027195610_update_schema/migration.sql": "3569cb9a2147945a8e7e79d73eccc1f0f037f893",
@@ -39,5 +39,11 @@
     "training-programs.prisma",
     "users.prisma",
     "workouts.prisma"
-  ]
+  ],
+  "current_baseline": {
+    "path": "prisma/migrations/20261114000000_initial_baseline/migration.sql",
+    "git_blob_sha": "38ccd661c70b6e04f177e8ea2aa054f3b3cb27a8",
+    "consolidated_migrations": 24,
+    "requires_empty_database": true
+  }
 }

@@ -45,6 +45,10 @@ for stopping services, persistent volumes and safety notes.
 To start applications individually, use `pnpm dev:web`, `pnpm dev:api`,
 or `pnpm dev:mobile`.
 
+## Fresh database migration baseline
+
+On 14 November 2026, the pre-production Prisma history was squashed into a single initial baseline. It is for **fresh, empty databases only**; existing local/test/staging databases that used legacy migrations must be explicitly rebuilt. See [database baseline reset](docs/database-baseline-reset.md). No production database is modified automatically.
+
 ## Contribution workflow
 
 Open a pull request against `main`. CI verifies formatting and workspace quality tasks.
