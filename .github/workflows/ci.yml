@@ -67,25 +67,81 @@ jobs:
       - name: Validate Windows-safe pre-push argument handling
         run: node --test scripts/pre-push-checks.test.mjs
 
+  web-browser-e2e:
+    name: Web Browser E2E / Chromium
+    needs: changes
+    if: needs.changes.outputs.web == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install locked dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Restore Playwright Chromium browser cache
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-chromium-1.65.0
+
+      - name: Install Chromium and system dependencies
+        run: pnpm --filter @gym/web exec playwright install --with-deps chromium
+
+      - name: Browser tests against a loopback fixture HTTP API
+        run: pnpm --filter @gym/web test:e2e
+        env:
+          CI: 'true'
+
+      - name: Upload browser failure traces
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: web-playwright-failures
+          path: |
+            apps/web/test-results/
+            apps/web/playwright-report/
+          if-no-files-found: ignore
+          retention-days: 7
+
   quality:
     name: Quality / Node 24
-    needs: [changes, prepush-windows]
+    needs: [changes, prepush-windows, web-browser-e2e]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
     steps:
-      - name: Fail closed if change classification or Windows safety checks fail
+      - name: Fail closed if change classification, Windows or browser checks fail
         env:
           CHANGE_DETECTION_RESULT: ${{ needs.changes.result }}
           FULL_SCOPE: ${{ needs.changes.outputs.full }}
+          WEB_REQUIRED: ${{ needs.changes.outputs.web }}
           WINDOWS_RESULT: ${{ needs.prepush-windows.result }}
+          WEB_E2E_RESULT: ${{ needs.web-browser-e2e.result }}
         run: |
           test "$CHANGE_DETECTION_RESULT" = success
           if [ "$FULL_SCOPE" = true ]; then
             test "$WINDOWS_RESULT" = success
           else
             test "$WINDOWS_RESULT" = skipped
+          fi
+          if [ "$WEB_REQUIRED" = true ]; then
+            test "$WEB_E2E_RESULT" = success
+          else
+            test "$WEB_E2E_RESULT" = skipped
           fi
 
       - name: Checkout

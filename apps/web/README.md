@@ -206,3 +206,41 @@ The list distinguishes PLANNED, IN_PROGRESS, COMPLETED and CANCELLED workouts,
 shows scheduled dates and exercise counts when available, and handles loading,
 empty, error and retry states. Workout creation, detail views, set logging and
 editing are intentionally separate follow-up PRs. No browser token storage.
+
+## Browser E2E (Playwright + Chromium)
+
+Browser tests live in `apps/web/e2e/specs/` and use the **real Next.js UI**
+and its same-origin `/backend` rewrite. An isolated, loopback-only Node HTTP
+fixture API in `e2e/support/mock-api.mjs` supplies deterministic authentication,
+role, profile and workout responses. **No real user accounts, secrets or
+production/staging databases are accessed.** API behavior is intentionally
+limited to the endpoints exercised by these browser scenarios.
+
+From the repository root:
+
+```bash
+pnpm install --frozen-lockfile
+pnpm --filter @gym/web exec playwright install chromium
+pnpm --filter @gym/web test:e2e
+```
+
+Playwright starts and stops the fixture API on `127.0.0.1:3101` and Next.js on
+`127.0.0.1:3100`. Both ports must be available. It deliberately refuses to
+reuse a server on either port, to avoid testing against a real local API by
+accident. No `.env.local` or remote API configuration is required.
+
+The browser suite covers: anonymous redirects, unsuccessful login, client-side
+validation, HttpOnly cookie session and sign-out, profile edit/reload, workout
+listing/filtering, and athlete/trainer role isolation. It runs separately from
+fast Node unit tests via `test:e2e`.
+
+GitHub Actions executes the browser suite whenever Web or shared dependencies
+change. The protected `Quality / Node 24` check fails if the browser job
+fails or does not run when required. On failure, a short-retention trace,
+screenshot and HTML report artifact is uploaded for debugging.
+
+**Scope limit:** This verifies browser routing, UI behavior, cookie proxying
+and expected HTTP contracts against a deterministic fixture API. Real NestJS,
+PostgreSQL, Redis, migrations and true authorization are exercised by the
+separate API integration/E2E suite, not the fixture server. An additional
+Web-to-real-Nest integration environment can be added in a future PR.
