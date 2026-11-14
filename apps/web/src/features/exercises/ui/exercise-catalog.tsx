@@ -225,9 +225,7 @@ export function ExerciseCatalog() {
                 </p>
               </div>
               {exercise.description && (
-                <p className="line-clamp-3 text-sm text-muted-foreground">
-                  {exercise.description}
-                </p>
+                <p className="line-clamp-3 text-sm text-muted-foreground">{exercise.description}</p>
               )}
               {exercise.muscleGroups.length > 0 && (
                 <p className="text-sm">
