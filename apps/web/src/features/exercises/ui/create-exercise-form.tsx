@@ -284,8 +284,8 @@ export function CreateExerciseForm({ role }: { role: CustomExerciseActorRole }) 
               <option value="SELECTED_TRAINERS">Для обраних тренерів</option>
             </select>
             <p className="text-sm text-muted-foreground">
-              Для доступу тренера потрібні активні відносини та окремий дозвіл.
-              Сам вибір видимості не надає доступ автоматично.
+              Для доступу тренера потрібні активні відносини та окремий дозвіл. Сам вибір видимості
+              не надає доступ автоматично.
             </p>
           </section>
         )}
