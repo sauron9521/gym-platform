@@ -148,8 +148,8 @@ export function TrainerAthletesList({ trainerId }: { trainerId: string }) {
             className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
           />
           <p className="text-xs text-muted-foreground">
-            Пошук працює серед завантажених записів. Для завершених відносин контактні
-            дані можуть бути приховані.
+            Пошук працює серед завантажених записів. Для завершених відносин контактні дані можуть
+            бути приховані.
           </p>
         </div>
       </section>
