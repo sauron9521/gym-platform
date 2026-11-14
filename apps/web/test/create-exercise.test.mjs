@@ -26,7 +26,10 @@ function validExercise() {
 test('custom exercise schema accepts valid relation slugs from the API', () => {
   const result = createExerciseFormSchema.safeParse(validExercise());
   assert.equal(result.success, true);
-  assert.deepEqual(result.data.muscleGroups.map((item) => item.slug), ['shoulders', 'triceps']);
+  assert.deepEqual(
+    result.data.muscleGroups.map((item) => item.slug),
+    ['shoulders', 'triceps'],
+  );
   assert.deepEqual(result.data.equipment, ['dumbbell', 'bench']);
 });
 
