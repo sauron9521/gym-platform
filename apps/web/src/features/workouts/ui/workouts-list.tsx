@@ -99,6 +99,12 @@ export function WorkoutsList() {
         </p>
       </div>
 
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <Button asChild>
+          <Link href="/workouts/new">Створити тренування</Link>
+        </Button>
+      </div>
+
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div className="space-y-2">
           <label htmlFor="workout-status" className="block text-sm font-medium">
