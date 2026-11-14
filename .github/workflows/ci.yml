@@ -74,6 +74,18 @@ jobs:
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
 
+      # Dependency downloads already use the pnpm store cache above.
+      # Persist only build/tool caches, never node_modules, secrets or tests.
+      - name: Restore Turborepo and Next.js incremental build caches
+        uses: actions/cache@v6
+        with:
+          path: |
+            .turbo/cache
+            apps/web/.next/cache
+          key: ${{ runner.os }}-node24-build-${{ hashFiles('pnpm-lock.yaml', 'turbo.json', 'apps/**/package.json', 'packages/**/package.json') }}-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-node24-build-${{ hashFiles('pnpm-lock.yaml', 'turbo.json', 'apps/**/package.json', 'packages/**/package.json') }}-
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
@@ -115,7 +127,8 @@ jobs:
         run: |
           pnpm lint
           pnpm typecheck
-          pnpm test
+          # API unit tests with coverage are enforced by the protected E2E gate.
+          pnpm exec turbo run test --filter=@gym/web --filter=@gym/mobile --filter=@gym/api-client
           pnpm build
 
       - name: Lint, typecheck, test and build affected workspaces
@@ -135,7 +148,14 @@ jobs:
           test "${#filters[@]}" -gt 0
           pnpm exec turbo run lint "${filters[@]}"
           pnpm exec turbo run typecheck "${filters[@]}"
-          pnpm exec turbo run test "${filters[@]}"
+          # API unit tests run in the dedicated coverage job.
+          test_filters=()
+          if [ "$CI_WEB" = true ]; then test_filters+=(--filter=@gym/web); fi
+          if [ "$CI_MOBILE" = true ]; then test_filters+=(--filter=@gym/mobile); fi
+          if [ "$CI_CLIENT" = true ]; then test_filters+=(--filter=@gym/api-client); fi
+          if [ "${#test_filters[@]}" -gt 0 ]; then
+            pnpm exec turbo run test "${test_filters[@]}"
+          fi
           pnpm exec turbo run build "${filters[@]}"
 
   api-coverage:
@@ -208,12 +228,12 @@ jobs:
       - name: Set up pnpm
         uses: pnpm/action-setup@v6
 
+      # Audits read the lockfile and fetch registry advisory data; no install.
+      # Avoid fetching the pnpm package store into this job.
       - name: Set up Node.js
         uses: actions/setup-node@v7
         with:
           node-version: '24'
-          cache: pnpm
-          cache-dependency-path: pnpm-lock.yaml
 
       - name: Block high and critical production vulnerabilities
         run: pnpm audit --prod --audit-level high
@@ -608,7 +628,7 @@ jobs:
   api-e2e:
     # Keep the existing required check while skipping unnecessary DB jobs.
     name: API e2e / PostgreSQL 17
-    needs: [changes, api-e2e-suite]
+    needs: [changes, api-e2e-suite, api-coverage]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -619,12 +639,15 @@ jobs:
           CHANGE_DETECTION_RESULT: ${{ needs.changes.result }}
           API_REQUIRED: ${{ needs.changes.outputs.api }}
           SUITE_RESULT: ${{ needs.api-e2e-suite.result }}
+          COVERAGE_RESULT: ${{ needs.api-coverage.result }}
         run: |
           set -euo pipefail
           test "$CHANGE_DETECTION_RESULT" = success
           if [ "$API_REQUIRED" = true ]; then
             test "$SUITE_RESULT" = success
+            test "$COVERAGE_RESULT" = success
           else
             test "$API_REQUIRED" = false
             test "$SUITE_RESULT" = skipped
+            test "$COVERAGE_RESULT" = skipped
           fi

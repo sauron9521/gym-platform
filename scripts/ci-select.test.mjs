@@ -109,6 +109,35 @@ test('branch protection names stay stable and API E2E is a real gate', () => {
   assert.match(yaml, /name: Quality \/ Node 24/);
   assert.match(yaml, /name: API e2e \/ PostgreSQL 17/);
   assert.match(yaml, /name: API e2e suite \/ PostgreSQL 17/);
-  assert.match(yaml, /needs: \[changes, api-e2e-suite\]/);
+  assert.match(yaml, /needs: \[changes, api-e2e-suite, api-coverage\]/);
   assert.match(yaml, /CI_FORCE_ALL:/);
+});
+
+test('API coverage replaces duplicate API unit tests without weakening required checks', () => {
+  const yaml = readFileSync(new URL('../.github/workflows/ci.yml', import.meta.url), 'utf8');
+  const turbo = JSON.parse(readFileSync(new URL('../turbo.json', import.meta.url), 'utf8'));
+
+  assert.equal(turbo.tasks.test.cache, false);
+  assert.match(yaml, /run: pnpm --filter @gym\/api test:cov/);
+  assert.match(
+    yaml,
+    /pnpm exec turbo run test --filter=@gym\/web --filter=@gym\/mobile --filter=@gym\/api-client/,
+  );
+  assert.doesNotMatch(yaml, /pnpm exec turbo run test "\\$\\{filters\\[@\\]\\}"/);
+  assert.match(yaml, /needs: \[changes, api-e2e-suite, api-coverage\]/);
+  assert.match(yaml, /COVERAGE_RESULT: \$\{\{ needs\.api-coverage\.result \}\}/);
+  assert.match(yaml, /test "\\$COVERAGE_RESULT" = success/);
+  assert.match(yaml, /test "\\$COVERAGE_RESULT" = skipped/);
+});
+
+test('CI caches only reusable build artifacts and not test or secret outputs', () => {
+  const yaml = readFileSync(new URL('../.github/workflows/ci.yml', import.meta.url), 'utf8');
+  const cacheBlock = yaml.split('      - name: Restore Turborepo and Next.js incremental build caches')[1]
+    ?.split('      - name: Install dependencies')[0];
+  assert.ok(cacheBlock);
+  assert.match(cacheBlock, /uses: actions\/cache@v6/);
+  assert.match(cacheBlock, /\.turbo\/cache/);
+  assert.match(cacheBlock, /apps\/web\/\.next\/cache/);
+  assert.match(cacheBlock, /hashFiles\('pnpm-lock\.yaml', 'turbo\.json'/);
+  assert.doesNotMatch(cacheBlock, /node_modules|coverage\/|\.env|\.pem|secrets/);
 });
