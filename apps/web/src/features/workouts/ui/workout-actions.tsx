@@ -102,7 +102,11 @@ export function WorkoutActions({
         ))}
       </div>
       {confirmation && (
-        <div className="space-y-3 rounded-lg border p-4" role="group" aria-label="Підтвердження дії">
+        <div
+          className="space-y-3 rounded-lg border p-4"
+          role="group"
+          aria-label="Підтвердження дії"
+        >
           <p className="text-sm">
             {confirmation === 'cancel'
               ? 'Скасувати це тренування? Дію не можна буде відновити.'
