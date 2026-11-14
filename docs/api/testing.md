@@ -40,11 +40,11 @@ pnpm --filter @gym/api test:architecture
 pnpm --filter @gym/api test:coverage-tools
 ```
 
-`apps/api/test/migration-baseline.test.mjs` protects historical Prisma migrations. The root migration readiness checks preserve provenance of imported source/tests. A green repository CI does **not** imply a production cutover approval.
+`apps/api/test/migration-baseline.test.mjs` protects the single initial Prisma baseline and archives the original migration hashes as metadata. The root migration readiness checks preserve provenance of imported source/tests. A green repository CI does **not** imply a production cutover approval.
 
 ## Changes that require special attention
 
 - **Auth / validation**: assert invalid-input 400 responses, normalization rules, allow/deny behavior, cookie/session refresh and OpenAPI request contracts.
-- **Prisma**: regenerate the client; test new migrations on a disposable database and preserve historical migration files.
+- **Prisma**: regenerate the client and test migrations on a disposable database. After the first production deployment, append forward-only migrations; do not rewrite applied history.
 - **Exercise ownership / trainer assignment**: cover guest, owner, trainer and cross-user denial paths.
 - **Dependency updates**: run the complete CI matrix, not only unit tests.

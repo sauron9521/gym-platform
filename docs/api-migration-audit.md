@@ -1,7 +1,6 @@
 # API migration audit and production cutover criteria
 
-> **Database baseline reset (14 November 2026):** The 24 legacy Prisma SQL migration directories are consolidated into `apps/api/prisma/migrations/20261114000000_initial_baseline/migration.sql`, intended only for an empty database. The pre-reset file hashes remain as *historical* provenance in `apps/api/migration-baseline.json`. The legacy migration chain **must not be used as an upgrade path** to this baseline. This invalidates two-release upgrade rehearsals that pair a pre-reset image with a post-reset image; rehearse using two releases both built after the baseline reset. No production deployment is authorized by this change.
-
+> **Database baseline reset (14 November 2026):** The 24 legacy Prisma SQL migration directories are consolidated into `apps/api/prisma/migrations/20261114000000_initial_baseline/migration.sql`, intended only for an empty database. The pre-reset file hashes remain as _historical_ provenance in `apps/api/migration-baseline.json`. The legacy migration chain **must not be used as an upgrade path** to this baseline. This invalidates two-release upgrade rehearsals that pair a pre-reset image with a post-reset image; rehearse using two releases both built after the baseline reset. No production deployment is authorized by this change.
 
 **Status: REPOSITORY IMPORT VERIFIED; PRODUCTION CUTOVER NO-GO.**
 
@@ -25,11 +24,11 @@ A green workflow never grants authorization to deploy.
 
 ## Imported source audit
 
-| Legacy scope         | Original files | Identical Git blob SHA | Adapted blobs | Missing |
-| -------------------- | -------------: | ---------------------: | ------------: | ------: |
-| `src/`               |            302 |                     86 |           216 |       0 |
-| `test/`              |             48 |                      2 |            46 |       0 |
-| `prisma/schemas/`    |             10 |                     10 |             0 |       0 |
+| Legacy scope                                      | Original files | Identical Git blob SHA | Adapted blobs | Missing |
+| ------------------------------------------------- | -------------: | ---------------------: | ------------: | ------: |
+| `src/`                                            |            302 |                     86 |           216 |       0 |
+| `test/`                                           |             48 |                      2 |            46 |       0 |
+| `prisma/schemas/`                                 |             10 |                     10 |             0 |       0 |
 | `prisma/migrations/` (historical import snapshot) |             25 |                     25 |             0 |       0 |
 
 The comparison maps old paths to `apps/api/`. The snapshot records

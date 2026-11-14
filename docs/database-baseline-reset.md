@@ -4,7 +4,7 @@ The active Prisma migration history was reset **before the first Gym Platform pr
 
 ## What this changes
 
-- The 24 imported SQL migrations were consolidated in chronological order. Historical migration hashes from the legacy standalone repository are preserved as *metadata only* in `apps/api/migration-baseline.json`.
+- The 24 imported SQL migrations were consolidated in chronological order. Historical migration hashes from the legacy standalone repository are preserved as _metadata only_ in `apps/api/migration-baseline.json`.
 - The final three `CREATE/DROP INDEX CONCURRENTLY` statements were converted to ordinary `CREATE/DROP INDEX` operations, because this initial baseline runs only against an empty database.
 - Raw PostgreSQL partial unique indexes, foreign keys and custom body-measurements CHECK constraints are retained.
 - This is a **historical SQL squash**, not a newly generated minimal Prisma diff. It intentionally contains redundant transitional DDL that is harmless on an empty database.

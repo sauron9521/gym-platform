@@ -23,7 +23,8 @@ test('only the new initial database migration is active and frozen', () => {
   assert.equal(manifest.current_baseline.requires_empty_database, true);
 
   const source = Object.keys(manifest.historical_migration_files)
-    .filter((path) => path.endsWith('/migration.sql')).sort();
+    .filter((path) => path.endsWith('/migration.sql'))
+    .sort();
   assert.equal(source.length, 24, 'Expected 24 archived legacy source migration hashes');
 
   const dirs = readdirSync(join(root, 'prisma/migrations'), { withFileTypes: true })
@@ -49,7 +50,9 @@ test('only the new initial database migration is active and frozen', () => {
 
 test('all source Prisma schema files remain intact', () => {
   const schemaPath = join(root, 'prisma/schemas');
-  const names = readdirSync(schemaPath).filter((name) => name.endsWith('.prisma')).sort();
+  const names = readdirSync(schemaPath)
+    .filter((name) => name.endsWith('.prisma'))
+    .sort();
   assert.deepEqual(names, manifest.schema_files);
 
   for (const name of names) {
