@@ -30,3 +30,5 @@ This index groups developer-facing API documentation and operational runbooks. P
 - [Observability](production-observability.md)
 
 Operational documents retain their existing locations until the reference updates are made and tested in a separate change.
+
+- [Fresh Prisma database baseline and reset policy](database-baseline-reset.md)

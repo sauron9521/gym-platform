@@ -1,5 +1,7 @@
 # API migration audit and production cutover criteria
 
+> **Database baseline reset (14 November 2026):** The 24 legacy Prisma SQL migration directories are consolidated into `apps/api/prisma/migrations/20261114000000_initial_baseline/migration.sql`, intended only for an empty database. The pre-reset file hashes remain as _historical_ provenance in `apps/api/migration-baseline.json`. The legacy migration chain **must not be used as an upgrade path** to this baseline. This invalidates two-release upgrade rehearsals that pair a pre-reset image with a post-reset image; rehearse using two releases both built after the baseline reset. No production deployment is authorized by this change.
+
 **Status: REPOSITORY IMPORT VERIFIED; PRODUCTION CUTOVER NO-GO.**
 
 Monorepo snapshot: `sauron9521/gym-platform` at commit
@@ -8,7 +10,7 @@ Operational legacy source: `sauron9521/gym-api-nestjs` at commit
 `79e53bc1b7a78bb3856ff2aeab2529559240521e`.
 
 The frozen audit inventory is `apps/api/migration-source-inventory.json`;
-historical Prisma SQL history is checked against
+historical Prisma SQL source hashes and the **new single active baseline** are tracked in
 `apps/api/migration-baseline.json`. Verify from repository root:
 
 ```sh
@@ -22,17 +24,17 @@ A green workflow never grants authorization to deploy.
 
 ## Imported source audit
 
-| Legacy scope         | Original files | Identical Git blob SHA | Adapted blobs | Missing |
-| -------------------- | -------------: | ---------------------: | ------------: | ------: |
-| `src/`               |            302 |                     86 |           216 |       0 |
-| `test/`              |             48 |                      2 |            46 |       0 |
-| `prisma/schemas/`    |             10 |                     10 |             0 |       0 |
-| `prisma/migrations/` |             25 |                     25 |             0 |       0 |
+| Legacy scope                                      | Original files | Identical Git blob SHA | Adapted blobs | Missing |
+| ------------------------------------------------- | -------------: | ---------------------: | ------------: | ------: |
+| `src/`                                            |            302 |                     86 |           216 |       0 |
+| `test/`                                           |             48 |                      2 |            46 |       0 |
+| `prisma/schemas/`                                 |             10 |                     10 |             0 |       0 |
+| `prisma/migrations/` (historical import snapshot) |             25 |                     25 |             0 |       0 |
 
 The comparison maps old paths to `apps/api/`. The snapshot records
 original file Git blob hashes, distinguishes unchanged versus adapted
 files and verifies each imported source/test path still exists.
-Prisma schema and migration integrity is verified independently.
+Prisma schema and the **current single baseline** integrity are verified independently. Historical migration hashes are retained as an audit artifact, not as active SQL files.
 
 **Presence is not behavioral parity.** In particular 216 adapted source
 files and 46 adapted test files differ from their old Git blobs, for
