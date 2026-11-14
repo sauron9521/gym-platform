@@ -50,7 +50,7 @@ test('workouts route has independent server guard and typed summary API request'
   assert.match(page, /verifyServerSession/);
   assert.match(page, /force-dynamic/);
   assert.match(page, /robots: \{ index: false \}/);
-  assert.match(ui, /webApi.GET\('\/workouts'/);
+  assert.match(ui, /webApi\s*\.GET\('\/workouts'/);
   assert.match(ui, /view: 'summary'/);
   assert.match(ui, /response.status === 401/);
   assert.match(ui, /router.replace\('\/login'\)/);
