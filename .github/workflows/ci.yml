@@ -61,6 +61,12 @@ jobs:
       - name: Validate release and GHCR safety contracts (offline)
         run: node --test scripts/release-bundle.test.mjs scripts/ghcr-promotion.test.mjs scripts/release-supply-chain.test.mjs scripts/release-ci-gate.test.mjs
 
+      - name: Show Prettier changes for migration PR files (temporary)
+        run: |
+          pnpm exec prettier --write apps/api/test/migration-baseline.test.mjs docs/api-migration-audit.md docs/database-baseline-reset.md
+          git diff -- apps/api/test/migration-baseline.test.mjs docs/api-migration-audit.md docs/database-baseline-reset.md
+          git diff --exit-code -- apps/api/test/migration-baseline.test.mjs docs/api-migration-audit.md docs/database-baseline-reset.md
+
       - name: Check formatting
         run: pnpm format:check
 
