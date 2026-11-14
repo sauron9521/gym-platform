@@ -1,7 +1,6 @@
 import type { operations } from '@gym/api-client';
 import { z } from 'zod';
 
-
 type ExerciseListResponse =
   operations['ExercisesController_findMany']['responses'][200]['content']['application/json'];
 export type ExerciseListItem = ExerciseListResponse['data'][number];
