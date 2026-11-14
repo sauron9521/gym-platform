@@ -153,7 +153,8 @@ const server = createServer(async (request, response) => {
         return send(response, 403, { message: 'Forbidden' });
       }
       const matching = workouts.filter(
-        (workout) => !url.searchParams.has('status') || workout.status === url.searchParams.get('status'),
+        (workout) =>
+          !url.searchParams.has('status') || workout.status === url.searchParams.get('status'),
       );
       const page = Number(url.searchParams.get('page') ?? 1);
       const limit = Number(url.searchParams.get('limit') ?? 10);
