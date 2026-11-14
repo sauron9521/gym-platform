@@ -95,7 +95,7 @@ jobs:
         uses: actions/cache@v6
         with:
           path: ~/.cache/ms-playwright
-          key: ${{ runner.os }}-playwright-chromium-1.65.1
+          key: ${{ runner.os }}-playwright-chromium-1.65.0
 
       - name: Install Chromium and system dependencies
         run: pnpm --filter @gym/web exec playwright install --with-deps chromium
