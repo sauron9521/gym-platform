@@ -118,30 +118,41 @@ jobs:
 
   quality:
     name: Quality / Node 24
-    needs: [changes, prepush-windows, web-browser-e2e]
+    needs: [changes, prepush-windows, web-browser-e2e, dependency-security]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
     steps:
-      - name: Fail closed if change classification, Windows or browser checks fail
+      - name: Fail closed if change classification, Windows, browser or dependency audit fails
         env:
           CHANGE_DETECTION_RESULT: ${{ needs.changes.result }}
           FULL_SCOPE: ${{ needs.changes.outputs.full }}
           WEB_REQUIRED: ${{ needs.changes.outputs.web }}
+          DEPS_REQUIRED: ${{ needs.changes.outputs.deps }}
           WINDOWS_RESULT: ${{ needs.prepush-windows.result }}
           WEB_E2E_RESULT: ${{ needs.web-browser-e2e.result }}
+          SECURITY_RESULT: ${{ needs.dependency-security.result }}
         run: |
+          set -euo pipefail
           test "$CHANGE_DETECTION_RESULT" = success
           if [ "$FULL_SCOPE" = true ]; then
             test "$WINDOWS_RESULT" = success
           else
+            test "$FULL_SCOPE" = false
             test "$WINDOWS_RESULT" = skipped
           fi
           if [ "$WEB_REQUIRED" = true ]; then
             test "$WEB_E2E_RESULT" = success
           else
+            test "$WEB_REQUIRED" = false
             test "$WEB_E2E_RESULT" = skipped
+          fi
+          if [ "$DEPS_REQUIRED" = true ]; then
+            test "$SECURITY_RESULT" = success
+          else
+            test "$DEPS_REQUIRED" = false
+            test "$SECURITY_RESULT" = skipped
           fi
 
       - name: Checkout

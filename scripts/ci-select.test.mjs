@@ -187,3 +187,62 @@ test('real API browser suite preserves the required gate and fails closed', () =
   assert.match(yaml, /test "\$SUITE_RESULT" = success/);
   assert.match(yaml, /test "\$SUITE_RESULT" = skipped/);
 });
+
+test('dependency-security job is an enforced prerequisite of the protected Quality check', () => {
+  const yaml = readFileSync(new URL('../.github/workflows/ci.yml', import.meta.url), 'utf8');
+  const quality = yaml.split('  quality:\n')[1]?.split('\n  api-coverage:\n')[0];
+  const audit = yaml.split('  dependency-security:\n')[1]?.split('\n  api-operations:\n')[0];
+  assert.ok(quality, 'Required Quality job must exist');
+  assert.ok(audit, 'Dependency security job must exist');
+  assert.match(
+    quality,
+    /needs: \[changes, prepush-windows, web-browser-e2e, dependency-security\]/,
+  );
+  assert.match(quality, /if: always\(\)/);
+  assert.match(quality, /DEPS_REQUIRED: \$\{\{ needs\.changes\.outputs\.deps \}\}/);
+  assert.match(quality, /SECURITY_RESULT: \$\{\{ needs\.dependency-security\.result \}\}/);
+  assert.match(quality, /if \[ "\$DEPS_REQUIRED" = true \]; then/);
+  assert.match(quality, /test "\$SECURITY_RESULT" = success/);
+  assert.match(quality, /test "\$DEPS_REQUIRED" = false/);
+  assert.match(quality, /test "\$SECURITY_RESULT" = skipped/);
+  assert.match(audit, /if: needs\.changes\.outputs\.deps == 'true'/);
+  assert.match(audit, /pnpm audit --prod --audit-level high/);
+  assert.match(audit, /pnpm audit --audit-level critical/);
+});
+
+test('dependency audit runs for changed manifests and lockfile, not unrelated source files', () => {
+  for (const path of [
+    'apps/api/package.json',
+    'apps/web/package.json',
+    'apps/mobile/package.json',
+    'packages/api-client/package.json',
+    'package.json',
+    'pnpm-lock.yaml',
+    '.github/workflows/ci.yml',
+  ]) {
+    assert.equal(classifyChangedPaths([path]).deps, true, 'Missing audit: ' + path);
+  }
+  for (const path of [
+    'apps/web/src/app/page.tsx',
+    'apps/mobile/app/index.tsx',
+    'docs/api/index.md',
+  ]) {
+    assert.equal(classifyChangedPaths([path]).deps, false, 'Unnecessary audit: ' + path);
+  }
+  assert.equal(selectFromGitHubEnvironment({ CI_FORCE_ALL: 'true' }).deps, true);
+});
+
+test('scheduled dependency audit checks newly disclosed vulnerabilities without app builds', () => {
+  const yaml = readFileSync(
+    new URL('../.github/workflows/dependency-audit.yml', import.meta.url),
+    'utf8',
+  );
+  assert.match(yaml, /^name: Scheduled dependency audit/m);
+  assert.match(yaml, /  schedule:/);
+  assert.match(yaml, /  workflow_dispatch:/);
+  assert.match(yaml, /    - cron: '17 4 \* \* 1'/);
+  assert.match(yaml, /permissions:\n  contents: read/);
+  assert.match(yaml, /pnpm audit --prod --audit-level high/);
+  assert.match(yaml, /pnpm audit --audit-level critical/);
+  assert.doesNotMatch(yaml, /pnpm install|pnpm build|pnpm test/);
+});

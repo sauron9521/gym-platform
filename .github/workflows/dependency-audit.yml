@@ -1,0 +1,39 @@
+name: Scheduled dependency audit
+
+on:
+  schedule:
+    # Every Monday at 04:17 UTC, including weeks without dependency PRs.
+    - cron: '17 4 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: scheduled-dependency-audit
+  cancel-in-progress: false
+
+jobs:
+  audit:
+    name: Scheduled / Dependency vulnerability audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout the current default branch
+        uses: actions/checkout@v6
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+
+      # Audit the committed lockfile directly; no dependency install or Docker.
+      # Keep these thresholds aligned with .github/workflows/ci.yml.
+      - name: Block high and critical production vulnerabilities
+        run: pnpm audit --prod --audit-level high
+
+      - name: Block critical vulnerabilities across all workspaces
+        run: pnpm audit --audit-level critical
