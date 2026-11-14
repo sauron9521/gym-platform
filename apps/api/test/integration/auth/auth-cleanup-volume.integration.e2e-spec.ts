@@ -60,10 +60,10 @@ describe('Auth cleanup medium-volume PostgreSQL regression', () => {
     // these active controls even if their cutoff uses the current wall clock.
     const active = new Date('2100-01-01T00:00:00.000Z');
     const tokenId = () => randomUUID().replaceAll('-', '').repeat(2);
-    const families = Array.from(
-      { length: EXPIRED_PER_TABLE },
-      () => randomUUID().replaceAll('-', ''),
-    );
+    const families: string[] = [];
+    for (let i = 0; i < EXPIRED_PER_TABLE; i += 1) {
+      families.push(randomUUID().replaceAll('-', ''));
+    }
     const liveFamily = randomUUID().replaceAll('-', '');
     const email = 'auth-volume@example.test';
 
