@@ -8,7 +8,7 @@ export type WorkoutSetPayload = NonNullable<
   operations['WorkoutsController_updateSet']['requestBody']
 >['content']['application/json'];
 
-export function numericText(min: number, max: number, decimals: number, integer = false) {
+function numericText(min: number, max: number, decimals: number, integer = false) {
   return z
     .string()
     .trim()
