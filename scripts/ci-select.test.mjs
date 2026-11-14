@@ -198,7 +198,7 @@ test('dependency-security job is an enforced prerequisite of the protected Quali
   assert.match(quality, /if: always\(\)/);
   assert.match(quality, /DEPS_REQUIRED: \$\{\{ needs\.changes\.outputs\.deps \}\}/);
   assert.match(quality, /SECURITY_RESULT: \$\{\{ needs\.dependency-security\.result \}\}/);
-  assert.match(quality, /test "\$DEPS_REQUIRED" = true/);
+  assert.match(quality, /if \[ "\$DEPS_REQUIRED" = true \]; then/);
   assert.match(quality, /test "\$SECURITY_RESULT" = success/);
   assert.match(quality, /test "\$DEPS_REQUIRED" = false/);
   assert.match(quality, /test "\$SECURITY_RESULT" = skipped/);
