@@ -207,6 +207,43 @@ export class PrismaTokenStore implements RefreshTokenStore, EmailTokenStore {
     await this.prisma.emailToken.deleteMany({ where: { userId, purpose } });
   }
 
+
+  /**
+   * Delete at most one bounded batch of expired refresh families.
+   * PostgreSQL cascades token rows through the existing family_id FK.
+   * SKIP LOCKED avoids waiting on concurrent refresh saves/revocations.
+   */
+  async deleteExpiredRefreshTokenFamiliesBatch(now: Date, batchSize: number): Promise<number> {
+    return this.prisma.$executeRaw`
+      WITH expired AS (
+        SELECT "id"
+        FROM "refresh_token_families"
+        WHERE "family_expires_at" <= ${now}
+        ORDER BY "family_expires_at", "id"
+        LIMIT ${batchSize}
+        FOR UPDATE SKIP LOCKED
+      )
+      DELETE FROM "refresh_token_families"
+      WHERE "id" IN (SELECT "id" FROM expired)
+    `;
+  }
+
+  /** Delete one bounded batch of expired email tokens, retaining active links. */
+  async deleteExpiredEmailTokensBatch(now: Date, batchSize: number): Promise<number> {
+    return this.prisma.$executeRaw`
+      WITH expired AS (
+        SELECT "id"
+        FROM "email_tokens"
+        WHERE "expires_at" <= ${now}
+        ORDER BY "expires_at", "id"
+        LIMIT ${batchSize}
+        FOR UPDATE SKIP LOCKED
+      )
+      DELETE FROM "email_tokens"
+      WHERE "id" IN (SELECT "id" FROM expired)
+    `;
+  }
+
   async deleteExpiredRefreshTokens(now = new Date()): Promise<void> {
     // The family is the absolute-lifetime boundary. PostgreSQL's
     // refresh_tokens_family_id_fkey ON DELETE CASCADE removes all children
