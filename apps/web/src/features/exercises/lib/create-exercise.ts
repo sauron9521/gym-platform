@@ -53,8 +53,6 @@ export const createExerciseFormSchema = z
         message: 'Обладнання не повинно повторюватися.',
       });
     }
-
-
   });
 
 export type CreateExerciseValues = z.infer<typeof createExerciseFormSchema>;
