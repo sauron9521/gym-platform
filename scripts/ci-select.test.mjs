@@ -194,7 +194,10 @@ test('dependency-security job is an enforced prerequisite of the protected Quali
   const audit = yaml.split('  dependency-security:\n')[1]?.split('\n  api-operations:\n')[0];
   assert.ok(quality, 'Required Quality job must exist');
   assert.ok(audit, 'Dependency security job must exist');
-  assert.match(quality, /needs: \[changes, prepush-windows, web-browser-e2e, dependency-security\]/);
+  assert.match(
+    quality,
+    /needs: \[changes, prepush-windows, web-browser-e2e, dependency-security\]/,
+  );
   assert.match(quality, /if: always\(\)/);
   assert.match(quality, /DEPS_REQUIRED: \$\{\{ needs\.changes\.outputs\.deps \}\}/);
   assert.match(quality, /SECURITY_RESULT: \$\{\{ needs\.dependency-security\.result \}\}/);
@@ -219,7 +222,11 @@ test('dependency audit runs for changed manifests and lockfile, not unrelated so
   ]) {
     assert.equal(classifyChangedPaths([path]).deps, true, 'Missing audit: ' + path);
   }
-  for (const path of ['apps/web/src/app/page.tsx', 'apps/mobile/app/index.tsx', 'docs/api/index.md']) {
+  for (const path of [
+    'apps/web/src/app/page.tsx',
+    'apps/mobile/app/index.tsx',
+    'docs/api/index.md',
+  ]) {
     assert.equal(classifyChangedPaths([path]).deps, false, 'Unnecessary audit: ' + path);
   }
   assert.equal(selectFromGitHubEnvironment({ CI_FORCE_ALL: 'true' }).deps, true);
