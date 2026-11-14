@@ -1,0 +1,33 @@
+name: Temporary CI formatter
+
+on:
+  push:
+    branches:
+      - ci/affected-workspaces-20261114
+
+permissions:
+  contents: read
+
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - name: Format changed CI files and print exact bytes
+        run: |
+          set -euo pipefail
+          pnpm exec prettier --write docs/ci-affected-workspaces.md scripts/ci-select.mjs scripts/ci-select.test.mjs
+          for file in docs/ci-affected-workspaces.md scripts/ci-select.mjs scripts/ci-select.test.mjs; do
+            echo "FORMATTED_BEGIN:$file"
+            base64 -w 0 "$file"
+            echo
+            echo "FORMATTED_END:$file"
+          done
