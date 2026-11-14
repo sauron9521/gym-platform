@@ -76,7 +76,7 @@ test('catalog uses typed API, filters, pagination, retries and archived protecti
   assert.doesNotMatch(catalog, /localStorage|sessionStorage|dangerouslySetInnerHTML/);
 });
 
-test('exercise details display real API data and handle 401, inaccessible and archived', async () => {
+test('exercise details handle inaccessible and archived records', async () => {
   const details = await readFile(
     new URL('../src/features/exercises/ui/exercise-details.tsx', import.meta.url),
     'utf8',
