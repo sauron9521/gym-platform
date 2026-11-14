@@ -41,6 +41,7 @@ test('relationship termination reason is optional and limited to 500 characters'
 
 test('only pending recipients can accept or decline, and only initiators can cancel', () => {
   assert.deepEqual(getAvailableRelationshipActions(participant, 'trainer-1'), ['cancel']);
+  assert.deepEqual(getAvailableRelationshipActions(participant, 'unrelated-user'), []);
   assert.deepEqual(getAvailableRelationshipActions(participant, 'athlete-1'), [
     'accept',
     'decline',
