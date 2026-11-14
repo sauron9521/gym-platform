@@ -1,0 +1,35 @@
+name: Temporary Auth Workouts formatter
+
+on:
+  push:
+    branches:
+      - test/auth-workouts-edge-coverage-20261114
+
+permissions:
+  contents: read
+
+jobs:
+  format:
+    name: Temporary test Prettier
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - name: Format Auth and Workouts tests
+        run: |
+          set -euo pipefail
+          pnpm exec prettier --write apps/api/src/modules/auth/test/services/credentials.service.spec.ts apps/api/src/modules/workouts/test/workouts.service.spec.ts
+          pnpm exec prettier --check apps/api/src/modules/auth/test/services/credentials.service.spec.ts apps/api/src/modules/workouts/test/workouts.service.spec.ts
+          for file in apps/api/src/modules/auth/test/services/credentials.service.spec.ts apps/api/src/modules/workouts/test/workouts.service.spec.ts; do
+            echo "FORMATTED_BEGIN:$file"
+            base64 -w 0 "$file"
+            echo
+            echo "FORMATTED_END:$file"
+          done
