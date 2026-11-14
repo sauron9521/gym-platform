@@ -292,20 +292,12 @@ describe('PrismaTokenStore integration (e2e)', () => {
     await store.saveRefreshToken(live);
 
     // Multiple app replicas may run cleanup at the same scheduled time.
-    await Promise.all([
-      store.deleteExpiredRefreshTokens(now),
-      store.deleteExpiredRefreshTokens(now),
-    ]);
+    const cleanup = () => store.deleteExpiredRefreshTokens(now);
+    await Promise.all([cleanup(), cleanup()]);
 
-    expect(
-      await prisma.refreshTokenFamily.count({ where: { id: expiredFamilyId } }),
-    ).toBe(0);
-    expect(
-      await prisma.refreshToken.count({ where: { familyId: expiredFamilyId } }),
-    ).toBe(0);
-    expect(
-      await prisma.refreshTokenFamily.count({ where: { id: liveFamilyId } }),
-    ).toBe(1);
+    expect(await prisma.refreshTokenFamily.count({ where: { id: expiredFamilyId } })).toBe(0);
+    expect(await prisma.refreshToken.count({ where: { familyId: expiredFamilyId } })).toBe(0);
+    expect(await prisma.refreshTokenFamily.count({ where: { id: liveFamilyId } })).toBe(1);
     expect(await prisma.refreshToken.count({ where: { id: live.id } })).toBe(1);
 
     await store.deleteExpiredRefreshTokens(now);
