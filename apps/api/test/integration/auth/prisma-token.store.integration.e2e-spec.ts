@@ -159,6 +159,53 @@ describe('PrismaTokenStore integration (e2e)', () => {
       id: successor.id,
       familyId,
     });
+    const persisted = await prisma.refreshToken.findUniqueOrThrow({
+      where: { id: successor.id },
+      select: { revoked: true },
+    });
+    expect(persisted.revoked).toBe(true);
+  });
+
+  it('keeps all token rows revoked when saving and revocation race', async () => {
+    const userId = `token-revoke-race-${randomUUID()}`;
+    const email = `${createHash('sha256').update(userId).digest('hex')}@token-race.invalid`;
+    await prisma.user.create({
+      data: { id: userId, email, passwordHash: 'test-password-hash' },
+      select: { id: true },
+    });
+    testUserIds.add(userId);
+
+    const now = new Date();
+    const familyId = randomUUID().replaceAll('-', '');
+    const original: RefreshTokenRecord = {
+      id: createHash('sha256').update(randomUUID()).digest('hex'),
+      familyId,
+      userId,
+      createdAt: now,
+      expiresAt: new Date(now.getTime() + 60_000),
+      familyExpiresAt: new Date(now.getTime() + 24 * 60 * 60_000),
+    };
+    await store.saveRefreshToken(original);
+    const successor: RefreshTokenRecord = {
+      ...original,
+      id: createHash('sha256').update(randomUUID()).digest('hex'),
+    };
+    await Promise.all([
+      store.saveRefreshToken(successor),
+      store.revokeRefreshTokenFamily(familyId),
+    ]);
+    const family = await prisma.refreshTokenFamily.findUniqueOrThrow({
+      where: { id: familyId },
+      select: { revokedAt: true },
+    });
+    const tokens = await prisma.refreshToken.findMany({
+      where: { familyId },
+      select: { revoked: true },
+    });
+    expect(family.revokedAt).toBeInstanceOf(Date);
+    expect(tokens).toHaveLength(2);
+    expect(tokens.every((token) => token.revoked)).toBe(true);
+    await expect(store.isRefreshTokenFamilyRevoked(familyId)).resolves.toBe(true);
   });
 
   it('cleans expired refresh families at the cutoff while retaining live families', async () => {

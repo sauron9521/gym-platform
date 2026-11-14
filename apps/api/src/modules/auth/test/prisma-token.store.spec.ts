@@ -66,6 +66,7 @@ describe('PrismaTokenStore security and persistence contracts', () => {
     prisma.refreshToken.findUnique.mockResolvedValue(null);
     prisma.refreshToken.findFirst.mockResolvedValue(null);
     prisma.refreshTokenFamily.findUnique.mockResolvedValue(null);
+    prisma.refreshTokenFamily.upsert.mockResolvedValue({ revokedAt: null });
     prisma.refreshToken.updateMany.mockResolvedValue({ count: 0 });
     prisma.emailToken.findMany.mockResolvedValue([]);
     prisma.$queryRaw.mockResolvedValue([]);
@@ -116,6 +117,7 @@ describe('PrismaTokenStore security and persistence contracts', () => {
         familyExpiresAt: refresh.familyExpiresAt,
       },
       update: {},
+      select: { revokedAt: true },
     });
     expect(prisma.refreshToken.create).toHaveBeenCalledExactlyOnceWith({
       data: {
@@ -130,6 +132,21 @@ describe('PrismaTokenStore security and persistence contracts', () => {
         claims: refresh.claims,
       },
     });
+  });
+
+  it('persists a successor as revoked when its family was already revoked', async () => {
+    prisma.refreshTokenFamily.upsert.mockResolvedValueOnce({ revokedAt: now });
+
+    await store.saveRefreshToken(refresh);
+
+    expect(prisma.refreshToken.create).toHaveBeenCalledExactlyOnceWith({
+      data: expect.objectContaining({
+        id: refresh.id,
+        familyId: refresh.familyId,
+        revoked: true,
+      }),
+    });
+    expect(prisma.$transaction).toHaveBeenCalledOnce();
   });
 
   it('atomically marks a refresh token used only once and excludes deleted owners', async () => {
