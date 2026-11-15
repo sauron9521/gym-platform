@@ -143,7 +143,9 @@ export function SignInScreen() {
             )}
           </Pressable>
         </View>
-        <Text style={styles.note}>Сесія тимчасова: після перезапуску потрібно ввійти знову.</Text>
+        <Text style={styles.note}>
+          На iOS та Android сесія зберігається захищено. У браузері вхід тимчасовий.
+        </Text>
       </ScrollView>
     </KeyboardAvoidingView>
   );
