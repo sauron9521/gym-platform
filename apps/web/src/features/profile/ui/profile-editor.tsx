@@ -92,7 +92,8 @@ export function ProfileEditor() {
   }
 
   async function submit(values: ProfileDraft) {
-    if (!account || busy) return;
+    // React Hook Form sets isSubmitting before invoking this callback.
+    if (!account || mutation.isPending) return;
     const result = buildProfilePatch(values);
     if (!result.data) {
       setError(result.error ?? 'Некоректні дані.');
