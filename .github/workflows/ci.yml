@@ -804,20 +804,3 @@ jobs:
             test "$SUITE_RESULT" = skipped
             test "$COVERAGE_RESULT" = skipped
           fi
-
-  landing-format-debug:
-    name: Landing Prettier diff (temporary)
-    if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@v7
-      - uses: pnpm/action-setup@v6
-      - uses: actions/setup-node@v7
-        with:
-          node-version: '24'
-      - run: pnpm install --frozen-lockfile
-      - name: Print exact formatted JSX changes
-        run: |
-          pnpm exec prettier --write apps/landing/src/widgets/home/ui/home-screen.tsx
-          git diff -- apps/landing/src/widgets/home/ui/home-screen.tsx
