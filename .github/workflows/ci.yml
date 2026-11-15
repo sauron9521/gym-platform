@@ -214,12 +214,6 @@ jobs:
         if: needs.changes.outputs.api == 'true'
         run: node --test scripts/release-bundle.test.mjs scripts/ghcr-promotion.test.mjs scripts/release-supply-chain.test.mjs scripts/release-ci-gate.test.mjs
 
-      # TEMPORARY: log exact Prettier edits to correct test sources.
-      - name: Preview exact formatting changes
-        run: |
-          pnpm exec prettier --write apps/api/src/modules/auth/test/auth-mailers.spec.ts apps/api/src/modules/auth/test/services/auth-cleanup-lock.service.spec.ts
-          git --no-pager diff -- apps/api/src/modules/auth/test/auth-mailers.spec.ts apps/api/src/modules/auth/test/services/auth-cleanup-lock.service.spec.ts
-
       - name: Check formatting
         run: pnpm format:check
 
