@@ -1,12 +1,10 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 
-import { webApi } from '@/shared/api/client';
 import { Button } from '@/shared/ui/button';
+import { useEditProgramWorkoutMutation } from '../api/program-workout-mutations';
 import {
   isWeekWithinDuration,
   type ProgramVersionWithWorkouts,
@@ -14,7 +12,6 @@ import {
 import {
   buildUpdateProgramWorkoutPayload,
   editProgramWorkoutSchema,
-  getProgramWorkoutMutationError,
   type EditProgramWorkoutValues,
   type ProgramWorkout,
 } from '../lib/edit-program-workout';
@@ -34,8 +31,7 @@ export function EditProgramWorkoutForm({
   onSaved: (version: ProgramVersionWithWorkouts) => void;
   onCancel: () => void;
 }) {
-  const router = useRouter();
-  const [error, setError] = useState<string | null>(null);
+  const mutation = useEditProgramWorkoutMutation(programId, versionId);
   const form = useForm<EditProgramWorkoutValues>({
     resolver: zodResolver(editProgramWorkoutSchema),
     defaultValues: {
@@ -51,7 +47,7 @@ export function EditProgramWorkoutForm({
   const fieldId = (name: string) => `edit-workout-${workout.id}-${name}`;
 
   async function submit(values: EditProgramWorkoutValues) {
-    setError(null);
+    mutation.reset();
     const payload = buildUpdateProgramWorkoutPayload(values);
     if (!isWeekWithinDuration(Number(values.weekNumber), durationWeeks)) {
       form.setError('weekNumber', {
@@ -62,24 +58,10 @@ export function EditProgramWorkoutForm({
     }
 
     try {
-      const { response, data } = await webApi.PATCH(
-        '/training-programs/{programId}/versions/{versionId}/workouts/{workoutId}',
-        {
-          params: { path: { programId, versionId, workoutId: workout.id } },
-          body: payload,
-        },
-      );
-      if (response.status === 401) {
-        router.replace('/login');
-        return;
-      }
-      if (response.status !== 200 || !data) {
-        setError(getProgramWorkoutMutationError('edit', response.status));
-        return;
-      }
-      onSaved(data);
+      const version = await mutation.mutateAsync({ workoutId: workout.id, body: payload });
+      onSaved(version);
     } catch {
-      setError(getProgramWorkoutMutationError('edit'));
+      // Preserve values and expose the safe mutation error.
     }
   }
 
@@ -100,7 +82,7 @@ export function EditProgramWorkoutForm({
             type="text"
             inputMode="numeric"
             maxLength={2}
-            disabled={isSubmitting}
+            disabled={isSubmitting || mutation.isPending}
             aria-invalid={Boolean(errors.weekNumber)}
             {...form.register('weekNumber')}
             className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
@@ -120,7 +102,7 @@ export function EditProgramWorkoutForm({
             type="text"
             inputMode="numeric"
             maxLength={1}
-            disabled={isSubmitting}
+            disabled={isSubmitting || mutation.isPending}
             aria-invalid={Boolean(errors.dayNumber)}
             {...form.register('dayNumber')}
             className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
@@ -140,7 +122,7 @@ export function EditProgramWorkoutForm({
           id={fieldId('title')}
           type="text"
           maxLength={120}
-          disabled={isSubmitting}
+          disabled={isSubmitting || mutation.isPending}
           aria-invalid={Boolean(errors.title)}
           {...form.register('title')}
           className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
@@ -159,7 +141,7 @@ export function EditProgramWorkoutForm({
           id={fieldId('notes')}
           rows={3}
           maxLength={5000}
-          disabled={isSubmitting}
+          disabled={isSubmitting || mutation.isPending}
           aria-invalid={Boolean(errors.notes)}
           {...form.register('notes')}
           className="w-full rounded-md border border-input bg-background p-3 text-sm"
@@ -171,16 +153,21 @@ export function EditProgramWorkoutForm({
         )}
       </div>
 
-      {error && (
+      {mutation.isError && (
         <p role="alert" className="text-sm text-destructive">
-          {error}
+          {mutation.error.message}
         </p>
       )}
       <div className="flex flex-wrap gap-2">
-        <Button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? 'Зберігаємо…' : 'Зберегти день'}
+        <Button type="submit" disabled={isSubmitting || mutation.isPending}>
+          {isSubmitting || mutation.isPending ? 'Зберігаємо…' : 'Зберегти день'}
         </Button>
-        <Button type="button" variant="outline" onClick={onCancel} disabled={isSubmitting}>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={onCancel}
+          disabled={isSubmitting || mutation.isPending}
+        >
           Скасувати редагування
         </Button>
       </div>

@@ -1,16 +1,14 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 
-import { webApi } from '@/shared/api/client';
 import { Button } from '@/shared/ui/button';
+import { useCreateProgramWorkoutMutation } from '../api/program-workout-mutations';
 import {
   buildCreateProgramWorkoutPayload,
   createProgramWorkoutSchema,
-  getCreateProgramWorkoutError,
   isWeekWithinDuration,
   type CreateProgramWorkoutValues,
   type ProgramVersionWithWorkouts,
@@ -27,8 +25,7 @@ export function CreateProgramWorkoutForm({
   durationWeeks: number | null;
   onCreated: (version: ProgramVersionWithWorkouts) => void;
 }) {
-  const router = useRouter();
-  const [error, setError] = useState<string | null>(null);
+  const mutation = useCreateProgramWorkoutMutation(programId, versionId);
   const [created, setCreated] = useState(false);
   const form = useForm<CreateProgramWorkoutValues>({
     resolver: zodResolver(createProgramWorkoutSchema),
@@ -39,7 +36,7 @@ export function CreateProgramWorkoutForm({
   const { errors, isSubmitting } = form.formState;
 
   async function submit(values: CreateProgramWorkoutValues) {
-    setError(null);
+    mutation.reset();
     setCreated(false);
 
     const payload = buildCreateProgramWorkoutPayload(values);
@@ -52,27 +49,12 @@ export function CreateProgramWorkoutForm({
     }
 
     try {
-      const { response, data } = await webApi.POST(
-        '/training-programs/{programId}/versions/{versionId}/workouts',
-        {
-          params: { path: { programId, versionId } },
-          body: payload,
-        },
-      );
-      if (response.status === 401) {
-        router.replace('/login');
-        return;
-      }
-      if (response.status !== 201 || !data) {
-        setError(getCreateProgramWorkoutError(response.status));
-        return;
-      }
-
-      onCreated(data);
+      const version = await mutation.mutateAsync(payload);
+      onCreated(version);
       form.reset({ weekNumber: values.weekNumber, dayNumber: '1', title: '', notes: '' });
       setCreated(true);
     } catch {
-      setError(getCreateProgramWorkoutError());
+      // Keep the form populated so a failed request can be retried.
     }
   }
 
@@ -98,7 +80,7 @@ export function CreateProgramWorkoutForm({
             type="text"
             inputMode="numeric"
             maxLength={2}
-            disabled={isSubmitting}
+            disabled={isSubmitting || mutation.isPending}
             aria-invalid={Boolean(errors.weekNumber)}
             {...form.register('weekNumber', { onChange: () => setCreated(false) })}
             className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
@@ -118,7 +100,7 @@ export function CreateProgramWorkoutForm({
             type="text"
             inputMode="numeric"
             maxLength={1}
-            disabled={isSubmitting}
+            disabled={isSubmitting || mutation.isPending}
             aria-invalid={Boolean(errors.dayNumber)}
             {...form.register('dayNumber', { onChange: () => setCreated(false) })}
             className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
@@ -139,7 +121,7 @@ export function CreateProgramWorkoutForm({
           id="program-workout-title"
           type="text"
           maxLength={120}
-          disabled={isSubmitting}
+          disabled={isSubmitting || mutation.isPending}
           aria-invalid={Boolean(errors.title)}
           {...form.register('title', { onChange: () => setCreated(false) })}
           className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
@@ -159,7 +141,7 @@ export function CreateProgramWorkoutForm({
           id="program-workout-notes"
           rows={3}
           maxLength={5000}
-          disabled={isSubmitting}
+          disabled={isSubmitting || mutation.isPending}
           aria-invalid={Boolean(errors.notes)}
           {...form.register('notes', { onChange: () => setCreated(false) })}
           className="w-full rounded-md border border-input bg-background p-3 text-sm"
@@ -171,9 +153,9 @@ export function CreateProgramWorkoutForm({
         )}
       </div>
 
-      {error && (
+      {mutation.isError && (
         <p role="alert" className="text-sm text-destructive">
-          {error}
+          {mutation.error.message}
         </p>
       )}
       {created && (
@@ -182,8 +164,8 @@ export function CreateProgramWorkoutForm({
         </p>
       )}
 
-      <Button type="submit" disabled={isSubmitting}>
-        {isSubmitting ? 'Додаємо…' : 'Додати день'}
+      <Button type="submit" disabled={isSubmitting || mutation.isPending}>
+        {isSubmitting || mutation.isPending ? 'Додаємо…' : 'Додати день'}
       </Button>
     </form>
   );
