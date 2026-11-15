@@ -1,9 +1,13 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useQuery } from '@tanstack/react-query';
 
-import { webApi } from '@/shared/api/client';
+import { useAuthFailure } from '@/shared/api/use-auth-failure';
+import {
+  exerciseListQueryOptions,
+  ExerciseListRequestError,
+} from '@/features/exercises/api/exercise-list-query';
 import { Button } from '@/shared/ui/button';
 import type { ExerciseListItem } from '../lib/create-workout';
 
@@ -21,67 +25,60 @@ export function WorkoutExercisePicker({
   onSelect: (exercise: ExerciseListItem) => void;
   disabled: boolean;
 }) {
-  const router = useRouter();
+  const onAuthFailure = useAuthFailure();
   const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [page, setPage] = useState(1);
-  const [attempt, setAttempt] = useState(0);
-  const [state, setState] = useState<PickerState>({ kind: 'loading' });
 
   useEffect(() => {
-    let active = true;
-    const timer = setTimeout(() => {
-      void webApi
-        .GET('/exercises', {
-          params: {
-            query: {
-              page,
-              limit: 20,
-              ...(search.trim() ? { search: search.trim() } : {}),
-            },
-          },
-        })
-        .then(({ data, response }) => {
-          if (!active) return;
-          if (response.status === 401) {
-            router.replace('/login');
-            return;
-          }
-          if (response.status !== 200 || !data) {
-            setState({
-              kind: 'error',
-              message:
-                response.status === 429
-                  ? 'Забагато запитів до каталогу. Спробуйте пізніше.'
-                  : 'Не вдалося завантажити вправи.',
-            });
-            return;
-          }
-          setState({
-            kind: 'ready',
-            items: data.data.filter((exercise) => !exercise.isArchived),
-            pages: Math.max(1, data.meta.totalPages),
-          });
-        })
-        .catch(() => {
-          if (active) setState({ kind: 'error', message: 'Каталог вправ недоступний.' });
-        });
-    }, 250);
-    return () => {
-      active = false;
-      clearTimeout(timer);
-    };
-  }, [search, page, attempt, router]);
+    const timer = setTimeout(() => setDebouncedSearch(search.trim()), 250);
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  const searching = search.trim() !== debouncedSearch;
+  const query = useQuery({
+    ...exerciseListQueryOptions({
+      search: debouncedSearch,
+      page,
+      exerciseType: 'ALL',
+      muscleGroup: '',
+      equipment: '',
+    }),
+    enabled: !searching,
+  });
+  const unauthenticated =
+    query.error instanceof ExerciseListRequestError && query.error.status === 401;
+
+  useEffect(() => {
+    if (query.error instanceof ExerciseListRequestError) {
+      onAuthFailure(query.error);
+    }
+  }, [query.error, onAuthFailure]);
 
   function updateSearch(value: string) {
     setSearch(value);
     setPage(1);
-    setState({ kind: 'loading' });
   }
 
   function updatePage(next: number) {
     setPage(next);
-    setState({ kind: 'loading' });
   }
+
+  const state: PickerState =
+    searching || query.isPending || query.isFetching || unauthenticated
+      ? { kind: 'loading' }
+      : query.isError
+        ? {
+            kind: 'error',
+            message:
+              query.error instanceof ExerciseListRequestError
+                ? query.error.message
+                : 'Каталог вправ недоступний.',
+          }
+        : { kind: 'ready', items: query.data.exercises, pages: query.data.pages };
+
+  // Never expose cached private exercise entries after a 401.
+  if (unauthenticated) return null;
 
   return (
     <section className="space-y-4 rounded-xl border bg-card p-5" aria-label="Каталог вправ">
@@ -112,10 +109,7 @@ export function WorkoutExercisePicker({
             type="button"
             variant="outline"
             disabled={disabled}
-            onClick={() => {
-              setState({ kind: 'loading' });
-              setAttempt((value) => value + 1);
-            }}
+            onClick={() => void query.refetch()}
           >
             Повторити
           </Button>

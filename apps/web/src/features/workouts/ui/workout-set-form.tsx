@@ -1,16 +1,13 @@
 'use client';
 
-import { useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
-import { useRouter } from 'next/navigation';
 
-import { webApi } from '@/shared/api/client';
 import { Button } from '@/shared/ui/button';
+import { useUpdateWorkoutSetMutation } from '../api/workout-set-mutation';
 import {
   buildWorkoutSetPayload,
   getWorkoutSetDefaults,
-  getWorkoutSetSubmitError,
   workoutSetFormSchema,
   type WorkoutSetData,
   type WorkoutSetFormValues,
@@ -40,9 +37,7 @@ export function WorkoutSetForm({
   onSaved: () => void;
   onClose: () => void;
 }) {
-  const router = useRouter();
-  const [error, setError] = useState<string | null>(null);
-  const [skipping, setSkipping] = useState(false);
+  const mutation = useUpdateWorkoutSetMutation(workoutId);
   const {
     register,
     handleSubmit,
@@ -53,37 +48,25 @@ export function WorkoutSetForm({
     mode: 'onBlur',
     reValidateMode: 'onChange',
   });
-  const busy = isSubmitting || skipping;
+  const busy = isSubmitting || mutation.isPending;
 
   async function send(status: 'COMPLETED' | 'SKIPPED', values: WorkoutSetFormValues) {
-    setError(null);
+    if (mutation.isPending) return;
+    mutation.reset();
     try {
-      const { response } = await webApi.PATCH('/workouts/{id}/sets/{setId}', {
-        params: { path: { id: workoutId, setId: set.id } },
+      await mutation.mutateAsync({
+        setId: set.id,
         body: buildWorkoutSetPayload(status, values),
       });
-      if (response.status === 401) {
-        router.replace('/login');
-        return;
-      }
-      if (response.status !== 200) {
-        setError(getWorkoutSetSubmitError(response.status));
-        return;
-      }
       onSaved();
     } catch {
-      setError(getWorkoutSetSubmitError());
+      // Mutation holds the status-specific error without dropping form values.
     }
   }
 
-  async function skip() {
+  function skip() {
     if (busy) return;
-    setSkipping(true);
-    try {
-      await send('SKIPPED', getWorkoutSetDefaults(set));
-    } finally {
-      setSkipping(false);
-    }
+    void send('SKIPPED', getWorkoutSetDefaults(set));
   }
 
   return (
@@ -109,7 +92,7 @@ export function WorkoutSetForm({
                 disabled={busy}
                 aria-invalid={Boolean(errors[name])}
                 aria-describedby={errors[name] ? errorId : undefined}
-                {...register(name, { onChange: () => setError(null) })}
+                {...register(name, { onChange: () => mutation.reset() })}
                 className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
               />
               {errors[name] && (
@@ -130,7 +113,7 @@ export function WorkoutSetForm({
           rows={2}
           disabled={busy}
           aria-invalid={Boolean(errors.notes)}
-          {...register('notes', { onChange: () => setError(null) })}
+          {...register('notes', { onChange: () => mutation.reset() })}
           className="w-full rounded-md border border-input bg-background p-3 text-sm"
         />
         {errors.notes && (
@@ -139,17 +122,21 @@ export function WorkoutSetForm({
           </p>
         )}
       </div>
-      {error && (
+      {mutation.isError && (
         <p role="alert" className="text-sm text-destructive">
-          {error}
+          {mutation.error.message}
         </p>
       )}
       <div className="flex flex-wrap gap-2">
         <Button type="submit" disabled={busy}>
-          {isSubmitting ? 'Зберігаємо…' : 'Позначити виконаним'}
+          {isSubmitting || (mutation.isPending && mutation.variables?.body.status === 'COMPLETED')
+            ? 'Зберігаємо…'
+            : 'Позначити виконаним'}
         </Button>
         <Button type="button" variant="outline" disabled={busy} onClick={() => void skip()}>
-          {skipping ? 'Пропускаємо…' : 'Пропустити підхід'}
+          {mutation.isPending && mutation.variables?.body.status === 'SKIPPED'
+            ? 'Пропускаємо…'
+            : 'Пропустити підхід'}
         </Button>
         <Button type="button" variant="outline" disabled={busy} onClick={onClose}>
           Закрити
