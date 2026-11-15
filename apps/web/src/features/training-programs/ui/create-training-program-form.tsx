@@ -65,8 +65,8 @@ export function CreateTrainingProgramForm() {
       <header className="space-y-2">
         <h1 className="text-3xl font-semibold tracking-tight">Створити програму</h1>
         <p className="text-sm text-muted-foreground">
-          Збережіть назву, опис і тривалість. Програма створюється як чернетка з версією 1;
-          тренування та вправи можна буде додати в конструкторі.
+          Збережіть назву, опис і тривалість. Перша версія створюється як чернетка.
+          Наступним кроком можна буде додати тренування та вправи.
         </p>
       </header>
 
