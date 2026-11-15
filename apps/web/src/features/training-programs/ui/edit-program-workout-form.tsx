@@ -50,7 +50,7 @@ export function EditProgramWorkoutForm({
   async function submit(values: EditProgramWorkoutValues) {
     setError(null);
     const payload = buildUpdateProgramWorkoutPayload(values);
-    if (!isWeekWithinDuration(payload.weekNumber!, durationWeeks)) {
+    if (!isWeekWithinDuration(Number(values.weekNumber), durationWeeks)) {
       form.setError('weekNumber', {
         type: 'validate',
         message: 'Тиждень перевищує тривалість програми.',
