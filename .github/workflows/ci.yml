@@ -318,7 +318,6 @@ jobs:
             test "$MOBILE_IOS_DEV_RESULT" = skipped
           fi
 
-
   api-coverage:
     name: API Coverage / Critical modules
     needs: changes
