@@ -51,13 +51,22 @@ No additional Metro monorepo overrides are needed with modern Expo SDKs.
 
 ## Next steps
 
-Connect the generated API client and implement authentication, user profiles,
-training programs, and workout sessions in small PRs.
+Implement SecureStore-backed refresh-token rotation, training programs and workout sessions in small PRs.
 
-## Native authentication foundation
+## Native authentication (first functional slice)
 
-`src/shared/api/client.ts` now accepts a required `getAccessToken`
-callback, attaches bearer credentials only for the API's configured origin,
-and reports 401/403 separately. No token storage, refresh, or logout
-behavior is implemented by this adapter: supply a short-lived token reader
-from a later secure storage/auth module. Mobile does not send cookies.
+- The sign-in screen calls `POST /auth/token` with the shared typed bearer client.
+- Protected routes unlock only after `GET /users/me` successfully verifies the token.
+- Profile shows authenticated user data, supports refresh and sign-out.
+- Sign-out clears tokens locally and best-effort revokes the refresh token via
+  `POST /auth/token/revoke`.
+- Access and refresh tokens remain **in memory only**. This first PR deliberately
+  avoids insecure storage; restarting the app requires another login and there
+  is **no automatic token refresh yet**.
+- A follow-up PR will add `expo-secure-store`, safe refresh rotation,
+  persisted login and native authentication lifecycle tests.
+
+For a physical device, copy `apps/mobile/.env.example` to `.env.local`
+and set `EXPO_PUBLIC_API_URL` to the development computer's reachable LAN IP.
+The Android emulator typically uses `http://10.0.2.2:3001`, rather than
+`localhost`. Never put a secret in an `EXPO_PUBLIC_*` variable.
