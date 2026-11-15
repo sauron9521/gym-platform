@@ -7,7 +7,7 @@ import {
   origin,
 } from '../support/real-api-accounts';
 
-test('real API: trainer invites athlete, athlete accepts and trainer terminates with redaction', async ({
+test('real API: trainer invitation, acceptance, termination and privacy', async ({
   page: athletePage,
   browser,
 }) => {
@@ -59,7 +59,8 @@ test('real API: trainer invites athlete, athlete accepts and trainer terminates 
     await athletePage.goto('/athlete/trainers');
     await expect(athletePage.getByRole('button', { name: 'Прийняти запрошення' })).toBeVisible();
     await athletePage.getByRole('button', { name: 'Прийняти запрошення' }).click();
-    await athletePage.getByRole('form', { name: 'Підтвердження дії' })
+    await athletePage
+      .getByRole('form', { name: 'Підтвердження дії' })
       .getByRole('button', { name: 'Підтвердити' })
       .click();
     await expect(athletePage.getByRole('button', { name: 'Завершити співпрацю' })).toBeVisible();
