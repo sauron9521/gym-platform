@@ -66,7 +66,11 @@ test('workout list is sorted by week and day without mutating source', () => {
   ];
   assert.deepEqual(
     sortProgramWorkouts(workouts).map((item) => [item.weekNumber, item.dayNumber]),
-    [[1, 1], [1, 3], [2, 1]],
+    [
+      [1, 1],
+      [1, 3],
+      [2, 1],
+    ],
   );
   assert.equal(workouts[0]?.weekNumber, 2);
 });
@@ -80,9 +84,18 @@ test('API errors do not include raw server details', () => {
 
 test('program details loads version workouts; creation uses the typed API path', async () => {
   const root = '../src/features/training-programs/ui/';
-  const details = await readFile(new URL(root + 'trainer-program-details.tsx', import.meta.url), 'utf8');
-  const list = await readFile(new URL(root + 'training-program-workouts.tsx', import.meta.url), 'utf8');
-  const form = await readFile(new URL(root + 'create-program-workout-form.tsx', import.meta.url), 'utf8');
+  const details = await readFile(
+    new URL(root + 'trainer-program-details.tsx', import.meta.url),
+    'utf8',
+  );
+  const list = await readFile(
+    new URL(root + 'training-program-workouts.tsx', import.meta.url),
+    'utf8',
+  );
+  const form = await readFile(
+    new URL(root + 'create-program-workout-form.tsx', import.meta.url),
+    'utf8',
+  );
 
   assert.match(details, /TrainingProgramWorkouts/);
   assert.match(list, /GET\('\/training-programs\/\{programId\}\/versions\/\{versionId\}'/);
