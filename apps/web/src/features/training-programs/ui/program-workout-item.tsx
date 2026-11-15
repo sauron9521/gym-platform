@@ -9,6 +9,7 @@ import type { ProgramVersionWithWorkouts } from '../lib/create-program-workout';
 import { getProgramWorkoutMutationError, type ProgramWorkout } from '../lib/edit-program-workout';
 import { EditProgramWorkoutForm } from './edit-program-workout-form';
 import { AddProgramExerciseForm } from './add-program-exercise-form';
+import { ProgramExerciseItem } from './program-exercise-item';
 
 export function ProgramWorkoutItem({
   programId,
@@ -70,17 +71,15 @@ export function ProgramWorkoutItem({
       {workout.exercises.length > 0 && (
         <ul aria-label={`Вправи дня ${workout.title}`} className="space-y-2">
           {workout.exercises.map((exercise) => (
-            <li key={exercise.id} className="rounded-md border p-3">
-              <p className="text-sm font-medium">{exercise.exerciseNameSnapshot}</p>
-              <p className="text-xs text-muted-foreground">
-                Тип: {exercise.exerciseTypeSnapshot} · Підходів: {exercise.sets.length}
-              </p>
-              {exercise.notes && (
-                <p className="whitespace-pre-wrap text-sm text-muted-foreground">
-                  {exercise.notes}
-                </p>
-              )}
-            </li>
+            <ProgramExerciseItem
+              key={exercise.id}
+              programId={programId}
+              versionId={versionId}
+              workoutId={workout.id}
+              exercise={exercise}
+              editable={editable}
+              onChanged={onChanged}
+            />
           ))}
         </ul>
       )}
