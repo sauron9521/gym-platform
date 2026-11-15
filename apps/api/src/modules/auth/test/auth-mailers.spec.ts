@@ -1,12 +1,13 @@
-import type { AuthenticationRegistry, EmailVerificationLink, PasswordResetLink } from '@nestjs/authentication';
+import type {
+  AuthenticationRegistry,
+  EmailVerificationLink,
+  PasswordResetLink,
+} from '@nestjs/authentication';
 import type { Mailer } from '@nestjs/mail';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { UsersRepository } from '#src/modules/users/repositories/users.repository';
-import {
-  EmailVerificationMailer,
-  VerifyEmailMail,
-} from '../mailers/email-verification.mailer.js';
+import { EmailVerificationMailer, VerifyEmailMail } from '../mailers/email-verification.mailer.js';
 import { PasswordResetMail, PasswordResetMailer } from '../mailers/password-reset.mailer.js';
 
 describe('Auth mail handlers', () => {
@@ -90,7 +91,10 @@ describe('Auth mail handlers', () => {
     await expect(verification.markVerified('user-1', 'member@example.test')).resolves.toEqual({
       count: 1,
     });
-    expect(users.markEmailVerified).toHaveBeenCalledExactlyOnceWith('user-1', 'member@example.test');
+    expect(users.markEmailVerified).toHaveBeenCalledExactlyOnceWith(
+      'user-1',
+      'member@example.test',
+    );
   });
 
   it('returns only credential fields needed by password recovery', async () => {
