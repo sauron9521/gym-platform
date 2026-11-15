@@ -59,10 +59,7 @@ export function HomeScreen() {
         </div>
       </section>
 
-      <section
-        className="mx-auto max-w-6xl px-6 py-20 sm:py-24"
-        aria-labelledby="audiences"
-      >
+      <section className="mx-auto max-w-6xl px-6 py-20 sm:py-24" aria-labelledby="audiences">
         <div className="max-w-2xl">
           <p className="text-sm font-bold tracking-widest text-primary uppercase">
             Єдина екосистема

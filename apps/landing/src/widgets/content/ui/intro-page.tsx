@@ -25,7 +25,9 @@ export function IntroPage({ eyebrow, title, description }: IntroPageProps) {
         {title}
       </h1>
       <p className="mt-7 max-w-2xl text-lg leading-8 text-muted-foreground">{description}</p>
-      <p className="mt-10 max-w-2xl border-l-2 border-primary pl-5 text-sm leading-7 text-muted-foreground">
+      <p
+        className="mt-10 max-w-2xl border-l-2 border-primary pl-5 text-sm leading-7 text-muted-foreground"
+      >
         Цей розділ готується. Детальний опис можливостей і матеріали додамо окремо.
       </p>
       <Link
