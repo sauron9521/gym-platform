@@ -97,11 +97,17 @@ test('exercise details use an ID-scoped query, reject inaccessible records and u
     new URL('../src/features/exercises/api/exercise-details-query.ts', import.meta.url),
     'utf8',
   );
+  const mutations = await readFile(
+    new URL('../src/features/exercises/api/exercise-mutations.ts', import.meta.url),
+    'utf8',
+  );
 
   assert.match(details, /useQuery\(exerciseDetailsQueryOptions\(id\)\)/);
   assert.match(details, /query.refetch\(\)/);
   assert.match(details, /ExerciseDetailsRequestError/);
-  assert.match(details, /queryClient.setQueryData\(exerciseQueryKeys.detail\(id\), exercise\)/);
+  assert.match(mutations, /queryClient.setQueryData\(queryKey, exercise\)/);
+  assert.match(mutations, /exerciseQueryKeys.detail\(exercise.id\)/);
+  assert.match(details, /useArchiveExerciseMutation\(id\)/);
   assert.match(details, /queryClient.clear\(\)/);
   assert.match(details, /router.replace\('\/login'\)/);
   assert.match(details, /state.exercise.instructions/);
