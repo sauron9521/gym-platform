@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 
 import { useAuthFailure } from '@/shared/api/use-auth-failure';
@@ -10,7 +10,6 @@ import {
   workoutDetailsQueryOptions,
   WorkoutDetailsRequestError,
 } from '../api/workout-details-query';
-import { workoutQueryKeys } from '../lib/workout-query-keys';
 import { WorkoutActions } from './workout-actions';
 import { EditWorkoutForm } from './edit-workout-form';
 import { WorkoutSetForm } from './workout-set-form';
@@ -38,7 +37,6 @@ function SetMetric({ label, value }: { label: string; value: string }) {
 }
 
 export function WorkoutDetails({ id }: { id: string }) {
-  const queryClient = useQueryClient();
   const onAuthFailure = useAuthFailure();
   const [editingSetId, setEditingSetId] = useState<string | null>(null);
   const [editingWorkout, setEditingWorkout] = useState(false);
@@ -56,16 +54,6 @@ export function WorkoutDetails({ id }: { id: string }) {
     setEditingWorkout(false);
     setEditingSetId(null);
     void query.refetch();
-  }
-
-  function updateWorkout(workout: WorkoutDetailsData) {
-    queryClient.setQueryData(workoutQueryKeys.detail(id), workout);
-    // A changed status or title affects list summaries, but should not
-    // trigger an immediate redundant GET of another list filter.
-    void queryClient.invalidateQueries({
-      queryKey: workoutQueryKeys.lists(),
-      refetchType: 'none',
-    });
   }
 
   let state: DetailsState;
@@ -136,18 +124,13 @@ export function WorkoutDetails({ id }: { id: string }) {
           {editingWorkout && state.workout.status === 'PLANNED' && (
             <EditWorkoutForm
               workout={state.workout}
-              onSaved={(workout) => {
-                updateWorkout(workout);
-                setEditingWorkout(false);
-              }}
+              onSaved={() => setEditingWorkout(false)}
               onCancel={() => setEditingWorkout(false)}
               onReload={retry}
             />
           )}
 
-          {!editingWorkout && (
-            <WorkoutActions workout={state.workout} onUpdated={updateWorkout} onReload={retry} />
-          )}
+          {!editingWorkout && <WorkoutActions workout={state.workout} onReload={retry} />}
 
           <section className="space-y-4" aria-label="Вправи тренування">
             <h2 className="text-xl font-semibold">Вправи ({state.workout.exercises.length})</h2>
