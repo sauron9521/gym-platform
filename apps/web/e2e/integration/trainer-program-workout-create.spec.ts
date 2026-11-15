@@ -77,6 +77,14 @@ test('real API: trainer creates a workout day, persists it and another trainer i
     await expect(ownerPage.getByRole('heading', { name: title })).toBeVisible();
     await expect(ownerPage.getByText('Тиждень 1 · День 2')).toBeVisible();
 
+    // Revisit the version through the program list; the cached workouts must
+    // agree with the version returned by the successful create operation.
+    await ownerPage.getByRole('link', { name: /До тренувальних програм/ }).click();
+    await expect(ownerPage).toHaveURL(/\/trainer\/programs$/);
+    await ownerPage.getByRole('link', { name: 'Деталі програми' }).click();
+    await expect(ownerPage).toHaveURL(/\/trainer\/programs\/[0-9a-f-]{36}$/);
+    await expect(ownerPage.getByRole('heading', { name: title })).toBeVisible();
+
     await ownerPage.reload();
     await expect(ownerPage.getByRole('heading', { name: title })).toBeVisible();
     await expect(ownerPage.getByText('Базові вправи')).toBeVisible();
@@ -91,6 +99,15 @@ test('real API: trainer creates a workout day, persists it and another trainer i
       },
     );
     expect(deniedCreate.status()).toBe(404);
+
+    // A rejected version fetch must redirect before any private workout is shown.
+    await ownerPage.route(
+      '**/backend/training-programs/' + program.id + '/versions/' + versionId,
+      (route) => route.fulfill({ status: 401, contentType: 'application/json', body: '{}' }),
+    );
+    await ownerPage.reload();
+    await expect(ownerPage).toHaveURL(/\/login$/);
+    await expect(ownerPage.getByRole('heading', { name: title })).toHaveCount(0);
   } finally {
     await otherContext.close();
   }
