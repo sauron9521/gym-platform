@@ -69,7 +69,9 @@ export function ProgramSetItem({
 
   return (
     <li className="space-y-3 rounded-md bg-muted p-3 text-sm">
-      <p>Підхід {set.setNumber}: {describeProgramSet(set)}</p>
+      <p>
+        Підхід {set.setNumber}: {describeProgramSet(set)}
+      </p>
       {set.notes && <p className="whitespace-pre-wrap text-muted-foreground">{set.notes}</p>}
       {editable && (
         <>
@@ -141,7 +143,11 @@ export function ProgramSetItem({
               </div>
             </div>
           )}
-          {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
+          {error && (
+            <p role="alert" className="text-sm text-destructive">
+              {error}
+            </p>
+          )}
         </>
       )}
     </li>
