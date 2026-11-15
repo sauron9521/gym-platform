@@ -174,9 +174,7 @@ test('trainer program details query redirects on 401 without exposing private co
   await expect(page.getByRole('region', { name: 'Редагування чернетки' })).toHaveCount(0);
 });
 
-test('relationship filters use isolated cached lists without API throttling', async ({
-  page,
-}) => {
+test('relationship filters use isolated cached lists without API throttling', async ({ page }) => {
   await signIn(page, 'trainer@example.test');
   const requested: string[] = [];
   await page.route('**/backend/trainer-athletes*', (route) => {
