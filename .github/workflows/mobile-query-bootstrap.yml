@@ -1,0 +1,37 @@
+name: Mobile TanStack Query install (temporary)
+
+on:
+  push:
+    branches:
+      - feat/mobile-tanstack-query-foundation
+
+permissions:
+  contents: write
+
+jobs:
+  install-dependency:
+    if: ${{ !contains(github.event.head_commit.message, '[query bootstrap]') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout feature branch
+        uses: actions/checkout@v7
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+      - name: Install locked workspace
+        run: pnpm install --frozen-lockfile
+      - name: Install mobile TanStack Query v5
+        run: pnpm --filter @gym/mobile add @tanstack/react-query@5.107.1 --save-exact
+      - name: Commit dependency and lockfile to feature branch only
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add apps/mobile/package.json pnpm-lock.yaml
+          HUSKY=0 git commit -m "chore(mobile): [query bootstrap] add TanStack Query v5"
+          HUSKY=0 git push origin HEAD:feat/mobile-tanstack-query-foundation
