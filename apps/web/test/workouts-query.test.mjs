@@ -23,7 +23,6 @@ test('workout detail keys isolate distinct workouts from list filters', () => {
   assert.notDeepEqual(workoutQueryKeys.detail('workout-1'), workoutQueryKeys.list('ALL', 1));
 });
 
-
 test('query provider is browser-scoped and cache clears on session changes', async () => {
   const provider = await readFile(new URL('../src/app/providers.tsx', import.meta.url), 'utf8');
   const layout = await readFile(new URL('../src/app/layout.tsx', import.meta.url), 'utf8');
