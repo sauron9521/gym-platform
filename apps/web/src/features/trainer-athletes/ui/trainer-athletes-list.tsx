@@ -75,10 +75,19 @@ export function TrainerAthletesList({
   }
 
   function inviteCreated() {
+    // Mark every status/page stale without an unnecessary GET for the old filter.
+    // Switching to PENDING will load the new key; if it is already selected,
+    // refresh that active query explicitly.
+    void queryClient.invalidateQueries({
+      queryKey: trainerAthleteQueryKeys.lists(),
+      refetchType: 'none',
+    });
+    if (filter === 'PENDING' && page === 1) {
+      void query.refetch();
+    }
     setFilter('PENDING');
     setPage(1);
     setSearch('');
-    refreshRelationships();
   }
 
   function retry() {
