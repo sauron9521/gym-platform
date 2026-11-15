@@ -62,7 +62,7 @@ test('workout detail route enforces session, and client uses typed cookie API', 
   assert.match(ui, /<WorkoutActions/);
   assert.match(ui, /<EditWorkoutForm/);
   assert.doesNotMatch(ui, /queryClient.setQueryData/);
-  assert.match(ui, /refetchType: 'none'/);
+  assert.match(mutations, /refetchType: 'none'/);
   assert.doesNotMatch(ui, /webApi\.GET|setAttempt|setState|if \(!active\) return/);
   assert.match(list, /href=\{\`\/workouts\/\$\{workout.id\}\`\}/);
   assert.doesNotMatch(ui, /localStorage|sessionStorage|document.cookie|dangerouslySetInnerHTML/);
