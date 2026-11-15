@@ -6,7 +6,10 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 import { webApi } from '@/shared/api/client';
-import { exerciseDetailsQueryOptions, ExerciseDetailsRequestError } from '../api/exercise-details-query';
+import {
+  exerciseDetailsQueryOptions,
+  ExerciseDetailsRequestError,
+} from '../api/exercise-details-query';
 import type { AuthenticatedUser } from '@/shared/api/server-session';
 import { Button } from '@/shared/ui/button';
 import { EditExerciseForm } from './edit-exercise-form';
