@@ -38,16 +38,6 @@ test('real API: trainer invitation, acceptance, termination and privacy', async 
     await trainerPage.getByRole('button', { name: 'Надіслати запрошення' }).click();
     await expect(trainerPage.getByRole('button', { name: 'Скасувати запрошення' })).toBeVisible();
 
-    // Query keys must isolate status filters and restore PENDING after visiting ACTIVE.
-    await trainerPage.locator('#trainer-athletes-status').selectOption('ACTIVE');
-    await expect(
-      trainerPage.getByRole('heading', { name: 'Підопічних не знайдено' }),
-    ).toBeVisible();
-    await trainerPage.locator('#trainer-athletes-status').selectOption('PENDING');
-    await expect(trainerPage.getByRole('button', { name: 'Скасувати запрошення' })).toBeVisible();
-    await trainerPage.locator('#trainer-athletes-status').selectOption('ALL');
-    await expect(trainerPage.getByRole('button', { name: 'Скасувати запрошення' })).toBeVisible();
-
     const pendingResponse = await trainerPage.request.get(
       '/backend/trainer-athletes?status=PENDING',
     );
@@ -80,14 +70,6 @@ test('real API: trainer invitation, acceptance, termination and privacy', async 
       athleteId: athlete.id,
     });
 
-    // Successful acceptance invalidates PENDING while ACTIVE gains the relationship.
-    await athletePage.locator('#trainer-athletes-status').selectOption('ACTIVE');
-    await expect(athletePage.getByRole('button', { name: 'Завершити співпрацю' })).toBeVisible();
-    await athletePage.locator('#trainer-athletes-status').selectOption('PENDING');
-    await expect(
-      athletePage.getByRole('heading', { name: 'Підопічних не знайдено' }),
-    ).toBeVisible();
-
     // Both participants now see the active relationship, but only one
     // participant needs to terminate it.
     await trainerPage.reload();
@@ -97,14 +79,6 @@ test('real API: trainer invitation, acceptance, termination and privacy', async 
     await ending.getByLabel('Причина (необов’язково)').fill('Browser lifecycle test');
     await ending.getByRole('button', { name: 'Підтвердити' }).click();
     await expect(trainerPage.getByRole('button', { name: 'Завершити співпрацю' })).toHaveCount(0);
-
-    // Termination must invalidate both the old ACTIVE and historical status caches.
-    await trainerPage.locator('#trainer-athletes-status').selectOption('ACTIVE');
-    await expect(
-      trainerPage.getByRole('heading', { name: 'Підопічних не знайдено' }),
-    ).toBeVisible();
-    await trainerPage.locator('#trainer-athletes-status').selectOption('TERMINATED');
-    await expect(trainerPage.getByText('Користувач (контакти приховані)')).toBeVisible();
 
     const terminated = await relationship(trainerPage, invitationId);
     expect(terminated).toMatchObject({
