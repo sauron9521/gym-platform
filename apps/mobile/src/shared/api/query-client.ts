@@ -1,0 +1,22 @@
+import { QueryClient } from '@tanstack/react-query';
+
+/** Scope authenticated resources by account ID. Never include credentials in query keys. */
+export const accountQueryKeys = {
+  all: ['account'] as const,
+  me: (userId: string) => ['account', 'me', userId] as const,
+};
+
+export function createMobileQueryClient() {
+  return new QueryClient({
+    defaultOptions: {
+      queries: {
+        staleTime: 30_000,
+        gcTime: 5 * 60_000,
+        retry: 1,
+      },
+      mutations: {
+        retry: false,
+      },
+    },
+  });
+}
