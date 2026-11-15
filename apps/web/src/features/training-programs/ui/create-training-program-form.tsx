@@ -70,7 +70,11 @@ export function CreateTrainingProgramForm() {
         </p>
       </header>
 
-      <form onSubmit={form.handleSubmit(submit)} noValidate className="space-y-6">
+      <form
+        onSubmit={(event) => void form.handleSubmit(submit)(event)}
+        noValidate
+        className="space-y-6"
+      >
         <section className="space-y-4 rounded-xl border bg-card p-5">
           <div className="space-y-1">
             <label htmlFor="training-program-title" className="block text-sm font-medium">
