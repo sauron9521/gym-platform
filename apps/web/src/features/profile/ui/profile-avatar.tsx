@@ -4,11 +4,7 @@ import { useState, type ChangeEvent } from 'react';
 
 import { Button } from '@/shared/ui/button';
 import { useAvatarMutation } from '../api/avatar-mutations';
-import {
-  getAvatarInitials,
-  getAvatarSource,
-  validateAvatarFile,
-} from '../lib/avatar';
+import { getAvatarInitials, getAvatarSource, validateAvatarFile } from '../lib/avatar';
 
 type Props = {
   avatarUrl: string | null | undefined;
