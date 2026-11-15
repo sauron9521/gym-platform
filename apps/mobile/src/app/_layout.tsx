@@ -24,10 +24,7 @@ function Navigation() {
       </Stack>
       <StatusBar style="auto" />
       {restoring ? (
-        <View
-          accessibilityLabel="Відновлення сесії"
-          style={styles.loadingOverlay}
-        >
+        <View accessibilityLabel="Відновлення сесії" style={styles.loadingOverlay}>
           <ActivityIndicator color={palette.primary} size="large" />
         </View>
       ) : null}
