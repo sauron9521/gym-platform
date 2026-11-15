@@ -7,9 +7,9 @@ import { useForm } from 'react-hook-form';
 
 import { webApi } from '@/shared/api/client';
 import { Button } from '@/shared/ui/button';
+import { createTrainingProgramFormSchema } from '../lib/create-training-program';
 import {
   buildUpdateTrainingProgramDraftPayload,
-  editTrainingProgramDraftSchema,
   getUpdateTrainingProgramDraftError,
   toTrainingProgramDraftValues,
   type EditTrainingProgramDraftValues,
@@ -29,7 +29,7 @@ export function EditTrainingProgramDraftForm({
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const form = useForm<EditTrainingProgramDraftValues>({
-    resolver: zodResolver(editTrainingProgramDraftSchema),
+    resolver: zodResolver(createTrainingProgramFormSchema),
     defaultValues: toTrainingProgramDraftValues(version),
     mode: 'onBlur',
     reValidateMode: 'onChange',
