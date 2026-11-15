@@ -75,13 +75,8 @@ export function TrainerAthletesList({
   }
 
   function inviteCreated() {
-    // Mark every status/page stale without an unnecessary GET for the old filter.
-    // Switching to PENDING will load the new key; if it is already selected,
-    // refresh that active query explicitly.
-    void queryClient.invalidateQueries({
-      queryKey: trainerAthleteQueryKeys.lists(),
-      refetchType: 'none',
-    });
+    // The invitation mutation already invalidated every list without refetching
+    // the old filter; only refresh when PENDING is already the active key.
     if (filter === 'PENDING' && page === 1) {
       void query.refetch();
     }
