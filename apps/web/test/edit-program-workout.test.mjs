@@ -67,16 +67,28 @@ test('draft-only edit/delete UI uses typed operations and explicit delete confir
     'utf8',
   );
 
+  const mutations = await readFile(
+    new URL('../src/features/training-programs/api/program-workout-mutations.ts', import.meta.url),
+    'utf8',
+  );
+
   assert.match(list, /editable=\{editable && version.status === 'DRAFT'\}/);
   assert.match(item, /confirmDelete &&/);
-  assert.match(item, /if \(!confirmDelete \|\| deleting\) return/);
-  assert.match(item, /webApi.DELETE\(/);
-  assert.match(item, /response.status !== 200/);
-  assert.match(edit, /webApi.PATCH\(/);
+  assert.match(item, /if \(!confirmDelete \|\| deleteMutation.isPending\) return/);
+  assert.match(item, /useDeleteProgramWorkoutMutation\(programId, versionId\)/);
+  assert.match(item, /deleteMutation.mutateAsync\(workout.id\)/);
+  assert.match(edit, /useEditProgramWorkoutMutation\(programId, versionId\)/);
+  assert.match(edit, /mutation.mutateAsync\(\{ workoutId: workout.id, body: payload \}\)/);
+  assert.match(mutations, /webApi.DELETE\(/);
+  assert.match(mutations, /webApi.PATCH\(/);
+  assert.match(mutations, /onSuccess: updateVersion/);
+  assert.match(mutations, /useAuthFailure\(\)/);
+  assert.match(mutations, /retry: false/);
+  assert.doesNotMatch(item + edit, /webApi.PATCH|webApi.DELETE|router.replace/);
   assert.match(edit, /zodResolver\(editProgramWorkoutSchema\)/);
   assert.match(edit, /isWeekWithinDuration/);
-  assert.match(edit, /response.status !== 200/);
-  for (const source of [list, item, edit]) {
+  assert.match(mutations, /response.status !== 200/);
+  for (const source of [list, item, edit, mutations]) {
     assert.doesNotMatch(source, /localStorage|sessionStorage|dangerouslySetInnerHTML/);
   }
 });
