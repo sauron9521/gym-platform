@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useForm, type FieldErrors } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 
 import { webApi } from '@/shared/api/client';
 import { Button } from '@/shared/ui/button';
@@ -28,25 +28,22 @@ export function EditTrainingProgramDraftForm({
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  const [hasChanged, setHasChanged] = useState(false);
   const form = useForm<EditTrainingProgramDraftValues>({
     resolver: zodResolver(createTrainingProgramFormSchema),
     defaultValues: toTrainingProgramDraftValues(version),
     mode: 'onBlur',
     reValidateMode: 'onChange',
   });
-  const { errors, isDirty, isSubmitting } = form.formState;
+  const { errors, isSubmitting } = form.formState;
 
   function changed() {
     setError(null);
     setSaved(false);
-  }
-
-  function invalid(fields: FieldErrors<EditTrainingProgramDraftValues>) {
-    console.info('DRAFT_E2E_DIAGNOSTIC invalid', Object.keys(fields).join(','));
+    setHasChanged(true);
   }
 
   async function submit(values: EditTrainingProgramDraftValues) {
-    console.info('DRAFT_E2E_DIAGNOSTIC valid-submit');
     setError(null);
     setSaved(false);
     try {
@@ -68,6 +65,7 @@ export function EditTrainingProgramDraftForm({
 
       onUpdated(data);
       form.reset(toTrainingProgramDraftValues(data));
+      setHasChanged(false);
       setSaved(true);
     } catch {
       setError(getUpdateTrainingProgramDraftError());
@@ -83,10 +81,7 @@ export function EditTrainingProgramDraftForm({
         </p>
       </div>
       <form
-        onSubmit={(event) => {
-          console.info('DRAFT_E2E_DIAGNOSTIC native-submit');
-          void form.handleSubmit(submit, invalid)(event);
-        }}
+        onSubmit={(event) => void form.handleSubmit(submit)(event)}
         noValidate
         className="space-y-4"
       >
@@ -160,7 +155,7 @@ export function EditTrainingProgramDraftForm({
             Зміни збережено
           </p>
         )}
-        <Button type="submit" disabled={!isDirty || isSubmitting}>
+        <Button type="submit" disabled={!hasChanged || isSubmitting}>
           {isSubmitting ? 'Зберігаємо…' : 'Зберегти зміни'}
         </Button>
       </form>
