@@ -130,7 +130,11 @@ export function useReorderProgramSetsMutation(path: SetPath) {
     path.versionId,
   );
 
-  return useMutation<ProgramVersionWithWorkouts, ProgramSetMutationError, ReorderProgramSetsPayload>({
+  return useMutation<
+    ProgramVersionWithWorkouts,
+    ProgramSetMutationError,
+    ReorderProgramSetsPayload
+  >({
     mutationFn: async (body) => {
       try {
         const { response, data } = await webApi.PATCH(
