@@ -70,7 +70,10 @@ test('workout day renders persisted exercises and uses typed draft-only POST', a
     'utf8',
   );
   const cache = await readFile(
-    new URL('../src/features/training-programs/api/program-version-mutation-context.ts', import.meta.url),
+    new URL(
+      '../src/features/training-programs/api/program-version-mutation-context.ts',
+      import.meta.url,
+    ),
     'utf8',
   );
   assert.match(day, /workout.exercises.map/);
