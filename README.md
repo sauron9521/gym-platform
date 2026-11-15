@@ -25,7 +25,7 @@ pnpm build
 ## Local development
 
 Requires Docker Desktop/Engine and Docker Compose v2.
-The local services use PostgreSQL 17 and Redis 7; API, Web, and Mobile run on the host.
+The local services use PostgreSQL 17, Redis 8 and Mailpit; API, Web, and Mobile run on the host.
 
 ```powershell
 Copy-Item infra/docker/.env.example infra/docker/.env
@@ -37,7 +37,7 @@ pnpm --filter @gym/api db:seed
 pnpm dev
 ```
 
-Web: http://localhost:3000 · API: http://localhost:3001.
+Web: http://localhost:3000 · API: http://localhost:3001 · Mailpit inbox: http://localhost:8025.
 The sample credentials are local placeholders; customize matching passwords
 in both untracked `.env` files. See [local services](infra/docker/README.md)
 for stopping services, persistent volumes and safety notes.
@@ -125,4 +125,4 @@ approval remain required.
 
 ## API developer handbook
 
-See [module-by-module API documentation](docs/api/README.md), the [API testing guide](docs/api/testing.md) and the [documentation index](docs/README.md).
+See [module-by-module API documentation](docs/api/README.md), the [API testing guide](docs/api/testing.md), the [Web app guide](apps/web/README.md) and the [documentation index](docs/README.md).

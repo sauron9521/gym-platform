@@ -1,6 +1,6 @@
 # Local services for Gym Platform
 
-This Docker Compose stack starts only **PostgreSQL 17**, **Redis 7**, and **Mailpit**.
+This Docker Compose stack starts only **PostgreSQL 17**, **Redis 8**, and **Mailpit**.
 The NestJS API, Next.js Web and Expo Mobile run on your host using pnpm.
 
 ## Quick start (PowerShell)

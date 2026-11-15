@@ -87,7 +87,8 @@ whether verification email submission was `SUBMITTED` or
 The screen does **not** assume a verified email or automatically redirect
 past an authentication check. The existing `/dashboard` route verifies the
 session independently via `GET /users/me`. Email confirmation, resend and
-password recovery UI will follow in separate small PRs.
+password recovery are already implemented at `/verify-email`,
+`/verify-email/resend`, `/forgot-password` and `/reset-password`.
 
 ## Email verification and resend
 
@@ -148,7 +149,7 @@ password recovery against a live server are not claimed by offline CI.
 
 ## User profile
 
-The dynamic /profile route verifies the cookie-backed session server-side before rendering any private UI. Its client form loads profile data using the typed same-origin GET /users/me and updates using PATCH /users/me. PATCH 200 has no response body in OpenAPI; the UI re-reads GET after successful changes. Weight and height accept decimal values; nullable fields can be cleared. Email and account role are read-only. Avatar upload is intentionally a separate PR. Tokens and raw API errors are never displayed or stored in browser storage.
+The dynamic /profile route verifies the cookie-backed session server-side before rendering any private UI. Its client form loads profile data using the typed same-origin GET /users/me and updates using PATCH /users/me. PATCH 200 has no response body in OpenAPI; the UI re-reads GET after successful changes. Weight and height accept decimal values; nullable fields can be cleared. Email and account role are read-only. Avatar upload, replacement and removal are implemented on the same profile page (see below). Tokens and raw API errors are never displayed or stored in browser storage.
 
 ## Avatar management
 
@@ -193,7 +194,7 @@ the form clears credentials and preserves the distinction between accepted
 verification email submission and successful email verification. NestJS remains
 authoritative for password strength, account creation and rate limiting.
 
-## Workout journal (read-only)
+## Workout journal (create, edit and log sets)
 
 The private `/workouts` route checks the HttpOnly session on every server page
 request before rendering the browser list. It uses `GET /workouts` through the
@@ -204,8 +205,33 @@ remains authoritative for access controls. HTTP 401 returns to sign-in; HTTP
 
 The list distinguishes PLANNED, IN_PROGRESS, COMPLETED and CANCELLED workouts,
 shows scheduled dates and exercise counts when available, and handles loading,
-empty, error and retry states. Workout creation, detail views, set logging and
-editing are intentionally separate follow-up PRs. No browser token storage.
+empty, error and retry states. At `/workouts/new`, an authenticated user with workout permissions
+can choose exercises and planned sets, then persist a workout through
+`POST /workouts`. `/workouts/:id` shows details and supports editing name/notes for
+PLANNED workouts, starting/cancelling/completing a workout, and recording or
+correcting actual set results while it is IN_PROGRESS. These writes go through
+the typed same-origin API; the backend enforces ownership and state transitions.
+No browser token storage.
+
+## Exercise library
+
+`/exercises` shows the searchable, paginated catalogue with type and taxonomy
+filters. `/exercises/new` lets authenticated athletes/trainers create a custom
+exercise with muscle groups and optional equipment. Athletes can choose private
+visibility or selected-trainer access (which still requires a separate grant).
+`/exercises/:id` shows details and allows the owner to edit or archive their
+custom exercise. Global exercises are not editable by ordinary athletes, and
+private exercises remain invisible to unrelated users. These permissions are
+validated by NestJS, not merely by hidden Web controls.
+
+## Trainer–athlete relationships and training programs
+
+`/trainer/athletes` and `/athlete/trainers` provide role-specific relationship
+lists with invitations, status filters and available relationship actions.
+`/trainer/programs` lists a trainer's programs and versions with pagination and
+status filters; `/athlete/programs` lists assigned programs. The current Web
+screens are **list views**, not complete visual program builders; the broader
+program versioning and assignment operations belong to the NestJS API.
 
 ## Browser E2E (Playwright + Chromium)
 
@@ -255,16 +281,25 @@ Generate Prisma, apply migrations and build the API before running the suite:
 ```bash
 pnpm --filter @gym/api db:generate
 pnpm --filter @gym/api db:migrate:deploy
+pnpm --filter @gym/api db:seed
 pnpm --filter @gym/api build
 pnpm --filter @gym/web test:e2e:integration
 ```
 
 Provide the API's required test JWT/environment settings. The suite reserves
-ports 3200/3201 and creates a unique test account, which remains in the disposable
-database. It verifies login, secure HttpOnly cookies, profile persistence, role
-isolation and sign-out. Twelve authenticated profile reads within one minute guard
-against the former 10/minute limit. An independent HTTP context replays the saved
-session cookie after logout and requires 401, proving server-side revocation.
-The `Web / Real API and PostgreSQL` CI check is required by `protect-main`; its job
-provisions its own PostgreSQL service and retains failure traces. No existing
+ports 3200/3201 and creates unique users in the disposable database. It covers
+login, secure HttpOnly cookies, profile persistence, role isolation and session
+revocation, plus browser creation/editing of workouts and sets and creation/editing
+of private exercises. The privacy scenario confirms that guests and unrelated
+athletes cannot read or mutate another user's private exercise. Twelve authenticated
+profile reads within one minute guard against the former 10/minute limit; an
+independent HTTP context also requires 401 when replaying a revoked session.
+
+The integration spec files live in `e2e/integration/`. The `test:e2e:integration`
+command runs **every spec in a separate Playwright invocation**, restarting its
+disposable API/Web servers between files to preserve the real API's per-IP
+registration rate limit. Do not bypass throttling, reuse an existing server or
+point the test database at production. The `Web / Real API and PostgreSQL`
+required CI check provisions disposable PostgreSQL, applies the initial Prisma
+baseline and seeds exercise taxonomy. Failure traces are retained; no existing
 database is reset.

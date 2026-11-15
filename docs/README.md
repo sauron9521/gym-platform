@@ -6,7 +6,8 @@ This index groups developer-facing API documentation and operational runbooks. P
 
 - [NestJS API handbook](api/README.md) — module map, contracts, validation, local testing
 - [API test strategy](api/testing.md) — unit, HTTP e2e and PostgreSQL integration suites
-- [API README](../apps/api/README.md) — local setup and database commands
+- [API README](../apps/api/README.md) — local setup, migration baseline and database commands
+- [Next.js Web handbook](../apps/web/README.md) — implemented routes, authentication, workouts, exercises and browser E2E
 - [Generated API client](../packages/api-client/README.md) — OpenAPI-to-TypeScript generation
 - [Docker local development](../infra/docker/README.md)
 
