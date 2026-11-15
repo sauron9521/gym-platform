@@ -43,6 +43,7 @@ export function exerciseTaxonomyQueryOptions() {
         throw new ExerciseTaxonomyRequestError();
       }
     },
+    staleTime: 5 * 60_000,
     retry: false,
   });
 }
