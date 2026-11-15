@@ -41,10 +41,13 @@ test('real API: trainer moves sets in both directions, persists order, and outsi
     expect(day.status()).toBe(201);
     const version: { workouts: Array<{ id: string }> } = await day.json();
     const workoutId = version.workouts[0]!.id;
-    const withExercise = await ownerPage.request.post(workoutsPath + '/' + workoutId + '/exercises', {
-      headers: { origin },
-      data: { exerciseId: exercise!.id },
-    });
+    const withExercise = await ownerPage.request.post(
+      workoutsPath + '/' + workoutId + '/exercises',
+      {
+        headers: { origin },
+        data: { exerciseId: exercise!.id },
+      },
+    );
     expect(withExercise.status()).toBe(201);
     const populated: { workouts: Array<{ exercises: Array<{ id: string }> }> } =
       await withExercise.json();
@@ -145,7 +148,8 @@ test('real API: trainer moves sets in both directions, persists order, and outsi
 
     await ownerPage.reload();
     await expect(
-      ownerPage.getByRole('list', { name: 'Підходи вправи ' + exercise!.name })
+      ownerPage
+        .getByRole('list', { name: 'Підходи вправи ' + exercise!.name })
         .locator(':scope > li')
         .nth(0),
     ).toContainText('5 повт.');
