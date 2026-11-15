@@ -143,7 +143,11 @@ export function ProgramWorkoutItem({
             >
               <p className="text-sm">Видалити «{workout.title}»? Дію не можна скасувати.</p>
               <div className="flex flex-wrap gap-2">
-                <Button type="button" disabled={deleteMutation.isPending} onClick={() => void deleteWorkout()}>
+                <Button
+                  type="button"
+                  disabled={deleteMutation.isPending}
+                  onClick={() => void deleteWorkout()}
+                >
                   {deleteMutation.isPending ? 'Видаляємо…' : 'Підтвердити видалення'}
                 </Button>
                 <Button
