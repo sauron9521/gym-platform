@@ -49,6 +49,9 @@ test('real API: owner edits draft v1 and another trainer cannot read or change i
     await ownerPage.getByLabel('Назва програми').fill(updatedTitle);
     await ownerPage.getByLabel('Опис (необов’язково)').fill('');
     await ownerPage.getByLabel('Тривалість у тижнях (необов’язково)').fill('');
+    await ownerPage.getByLabel('Тривалість у тижнях (необов’язково)').blur();
+    await expect(ownerPage.getByText(/ціле число від 1 до 52/)).toHaveCount(0);
+    await expect(ownerPage.getByRole('button', { name: 'Зберегти зміни' })).toBeEnabled();
     const patch = ownerPage.waitForResponse(
       (response) =>
         response
