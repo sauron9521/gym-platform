@@ -148,7 +148,11 @@ export function ExerciseDetails({ id, actor }: { id: string; actor: Authenticate
                     додавання в нові тренування.
                   </p>
                   <div className="flex flex-wrap gap-2">
-                    <Button type="button" disabled={archiveMutation.isPending} onClick={() => void archive()}>
+                    <Button
+                      type="button"
+                      disabled={archiveMutation.isPending}
+                      onClick={() => void archive()}
+                    >
                       {archiveMutation.isPending ? 'Архівуємо…' : 'Так, архівувати'}
                     </Button>
                     <Button
