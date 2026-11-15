@@ -306,7 +306,9 @@ test('trainer can access own programs but not athlete-only pages', async ({ page
   await expect(page.getByRole('heading', { name: 'Доступ заборонено' })).toBeVisible();
 });
 
-test('workout details query handles 401 without revealing private workout data', async ({ page }) => {
+test('workout details query handles 401 without revealing private workout data', async ({
+  page,
+}) => {
   await signIn(page);
   const id = '00000000-0000-4000-8000-000000000001';
   await page.route('**/backend/workouts/' + id, (route) =>
@@ -335,7 +337,9 @@ test('workout details retry is explicit and preserves 403 privacy errors', async
   });
 
   await page.goto('/workouts/' + id);
-  await expect(page.getByText('Не вдалося завантажити тренування. Спробуйте ще раз.')).toBeVisible();
+  await expect(
+    page.getByText('Не вдалося завантажити тренування. Спробуйте ще раз.'),
+  ).toBeVisible();
   const requestsBeforeRetry = requests;
   responseStatus = 403;
   await page.getByRole('button', { name: 'Спробувати ще раз' }).click();
