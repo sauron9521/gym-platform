@@ -1,12 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 
-import { webApi } from '@/shared/api/client';
 import { Button } from '@/shared/ui/button';
+import { useDeleteProgramWorkoutMutation } from '../api/program-workout-mutations';
 import type { ProgramVersionWithWorkouts } from '../lib/create-program-workout';
-import { getProgramWorkoutMutationError, type ProgramWorkout } from '../lib/edit-program-workout';
+import type { ProgramWorkout } from '../lib/edit-program-workout';
 import { EditProgramWorkoutForm } from './edit-program-workout-form';
 import { AddProgramExerciseForm } from './add-program-exercise-form';
 import { ProgramExerciseItem } from './program-exercise-item';
@@ -26,35 +25,19 @@ export function ProgramWorkoutItem({
   editable: boolean;
   onChanged: (version: ProgramVersionWithWorkouts, notice: string) => void;
 }) {
-  const router = useRouter();
+  const deleteMutation = useDeleteProgramWorkoutMutation(programId, versionId);
   const [editing, setEditing] = useState(false);
   const [addingExercise, setAddingExercise] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const [deleting, setDeleting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   async function deleteWorkout() {
-    if (!confirmDelete || deleting) return;
-    setDeleting(true);
-    setError(null);
+    if (!confirmDelete || deleteMutation.isPending) return;
+    deleteMutation.reset();
     try {
-      const { response, data } = await webApi.DELETE(
-        '/training-programs/{programId}/versions/{versionId}/workouts/{workoutId}',
-        { params: { path: { programId, versionId, workoutId: workout.id } } },
-      );
-      if (response.status === 401) {
-        router.replace('/login');
-        return;
-      }
-      if (response.status !== 200 || !data) {
-        setError(getProgramWorkoutMutationError('delete', response.status));
-        return;
-      }
-      onChanged(data, 'Тренувальний день видалено');
+      const version = await deleteMutation.mutateAsync(workout.id);
+      onChanged(version, 'Тренувальний день видалено');
     } catch {
-      setError(getProgramWorkoutMutationError('delete'));
-    } finally {
-      setDeleting(false);
+      // Preserve the confirmation so the trainer may retry after an error.
     }
   }
 
@@ -93,7 +76,7 @@ export function ProgramWorkoutItem({
                 variant="outline"
                 aria-label={`Додати вправу до дня ${workout.title}`}
                 onClick={() => {
-                  setError(null);
+                  deleteMutation.reset();
                   setAddingExercise(true);
                 }}
               >
@@ -104,7 +87,7 @@ export function ProgramWorkoutItem({
                 variant="outline"
                 aria-label={`Редагувати день ${workout.title}`}
                 onClick={() => {
-                  setError(null);
+                  deleteMutation.reset();
                   setAddingExercise(false);
                   setEditing(true);
                 }}
@@ -116,7 +99,7 @@ export function ProgramWorkoutItem({
                 variant="outline"
                 aria-label={`Видалити день ${workout.title}`}
                 onClick={() => {
-                  setError(null);
+                  deleteMutation.reset();
                   setAddingExercise(false);
                   setConfirmDelete(true);
                 }}
@@ -160,16 +143,16 @@ export function ProgramWorkoutItem({
             >
               <p className="text-sm">Видалити «{workout.title}»? Дію не можна скасувати.</p>
               <div className="flex flex-wrap gap-2">
-                <Button type="button" disabled={deleting} onClick={() => void deleteWorkout()}>
-                  {deleting ? 'Видаляємо…' : 'Підтвердити видалення'}
+                <Button type="button" disabled={deleteMutation.isPending} onClick={() => void deleteWorkout()}>
+                  {deleteMutation.isPending ? 'Видаляємо…' : 'Підтвердити видалення'}
                 </Button>
                 <Button
                   type="button"
                   variant="outline"
-                  disabled={deleting}
+                  disabled={deleteMutation.isPending}
                   onClick={() => {
                     setConfirmDelete(false);
-                    setError(null);
+                    deleteMutation.reset();
                   }}
                 >
                   Скасувати видалення
@@ -177,9 +160,9 @@ export function ProgramWorkoutItem({
               </div>
             </div>
           )}
-          {error && (
+          {deleteMutation.isError && (
             <p role="alert" className="text-sm text-destructive">
-              {error}
+              {deleteMutation.error.message}
             </p>
           )}
         </>
