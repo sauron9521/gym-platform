@@ -72,7 +72,7 @@ try {
 
   // Native dev=true uses the HMR and async-require implementations that
   // production iOS export cannot exercise.
-  const url = `${baseUrl}/index.bundle?platform=ios&dev=true&hot=true&minify=false`;
+  const url = `${baseUrl}/apps/mobile/index.bundle?platform=ios&dev=true&hot=true&minify=false`;
   const response = await fetch(url, {
     signal: AbortSignal.timeout(bundleTimeoutMs),
   });
