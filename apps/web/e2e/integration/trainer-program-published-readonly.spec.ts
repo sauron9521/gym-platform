@@ -20,6 +20,8 @@ test('real API: published program details are read-only and PATCH is rejected', 
   await expect(page.getByRole('heading', { name: 'Тренувальні дні' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Day 1' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Додати тренувальний день' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: /Редагувати день/ })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: /Видалити день/ })).toHaveCount(0);
 
   const immutable = await page.request.patch(
     '/backend/training-programs/' + published.id + '/versions/' + published.versionId,
@@ -32,4 +34,27 @@ test('real API: published program details are read-only and PATCH is rejected', 
     { headers: { origin }, data: { weekNumber: 2, dayNumber: 1, title: 'Недоступний день' } },
   );
   expect(immutableWorkout.status()).toBe(409);
+
+  const versionResponse = await page.request.get(
+    '/backend/training-programs/' + published.id + '/versions/' + published.versionId,
+  );
+  expect(versionResponse.status()).toBe(200);
+  const version: { workouts: Array<{ id: string }> } = await versionResponse.json();
+  const workoutId = version.workouts[0]!.id;
+  const workoutPath =
+    '/backend/training-programs/' +
+    published.id +
+    '/versions/' +
+    published.versionId +
+    '/workouts/' +
+    workoutId;
+  const immutableEdit = await page.request.patch(workoutPath, {
+    headers: { origin },
+    data: { title: 'Змінений день' },
+  });
+  expect(immutableEdit.status()).toBe(409);
+  const immutableDelete = await page.request.delete(workoutPath, {
+    headers: { origin },
+  });
+  expect(immutableDelete.status()).toBe(409);
 });

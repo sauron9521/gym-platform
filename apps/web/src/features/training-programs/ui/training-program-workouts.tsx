@@ -11,6 +11,7 @@ import {
   type ProgramVersionWithWorkouts,
 } from '../lib/create-program-workout';
 import { CreateProgramWorkoutForm } from './create-program-workout-form';
+import { ProgramWorkoutItem } from './program-workout-item';
 
 type WorkoutsState =
   | { kind: 'loading' }
@@ -30,6 +31,7 @@ export function TrainingProgramWorkouts({
 }) {
   const router = useRouter();
   const [attempt, setAttempt] = useState(0);
+  const [notice, setNotice] = useState<string | null>(null);
   const [state, setState] = useState<WorkoutsState>({ kind: 'loading' });
 
   useEffect(() => {
@@ -87,6 +89,11 @@ export function TrainingProgramWorkouts({
       )}
       {version && (
         <>
+          {notice && (
+            <p role="status" className="text-sm">
+              {notice}
+            </p>
+          )}
           {workouts.length === 0 ? (
             <p role="status" className="rounded-xl border bg-card p-5 text-muted-foreground">
               Тренувальних днів поки немає.
@@ -94,18 +101,18 @@ export function TrainingProgramWorkouts({
           ) : (
             <ol className="space-y-3">
               {workouts.map((workout) => (
-                <li key={workout.id} className="space-y-2 rounded-xl border bg-card p-5">
-                  <p className="text-sm text-muted-foreground">
-                    Тиждень {workout.weekNumber} · День {workout.dayNumber}
-                  </p>
-                  <h3 className="text-lg font-semibold">{workout.title}</h3>
-                  {workout.notes && (
-                    <p className="whitespace-pre-wrap text-sm text-muted-foreground">
-                      {workout.notes}
-                    </p>
-                  )}
-                  <p className="text-sm text-muted-foreground">Вправ: {workout.exercises.length}</p>
-                </li>
+                <ProgramWorkoutItem
+                  key={workout.id}
+                  programId={programId}
+                  versionId={versionId}
+                  workout={workout}
+                  durationWeeks={durationWeeks}
+                  editable={editable && version.status === 'DRAFT'}
+                  onChanged={(updatedVersion, message) => {
+                    setState({ kind: 'ready', version: updatedVersion });
+                    setNotice(message);
+                  }}
+                />
               ))}
             </ol>
           )}
@@ -114,7 +121,10 @@ export function TrainingProgramWorkouts({
               programId={programId}
               versionId={versionId}
               durationWeeks={durationWeeks}
-              onCreated={(updatedVersion) => setState({ kind: 'ready', version: updatedVersion })}
+              onCreated={(updatedVersion) => {
+                setState({ kind: 'ready', version: updatedVersion });
+                setNotice(null);
+              }}
             />
           )}
         </>
