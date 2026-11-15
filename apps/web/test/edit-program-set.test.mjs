@@ -91,7 +91,10 @@ test('mutation errors are status-based and do not leak raw backend content', () 
 
 test('draft-only controls, typed PATCH/DELETE and confirmed deletion', async () => {
   const root = '../src/features/training-programs/ui/';
-  const parent = await readFile(new URL(root + 'program-exercise-item.tsx', import.meta.url), 'utf8');
+  const parent = await readFile(
+    new URL(root + 'program-exercise-item.tsx', import.meta.url),
+    'utf8',
+  );
   const item = await readFile(new URL(root + 'program-set-item.tsx', import.meta.url), 'utf8');
   const form = await readFile(new URL(root + 'add-program-set-form.tsx', import.meta.url), 'utf8');
   assert.match(parent, /editable=\{editable\}/);
