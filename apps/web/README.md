@@ -389,3 +389,19 @@ point the test database at production. The `Web / Real API and PostgreSQL`
 required CI check provisions disposable PostgreSQL, applies the initial Prisma
 baseline and seeds exercise taxonomy. Failure traces are retained; no existing
 database is reset.
+
+## Browser server-state queries (TanStack Query)
+
+The root client provider creates one in-memory QueryClient per browser app instance.
+It is never shared between server requests and never persisted in browser storage.
+The first migrated feature is the workout summary list, whose query key includes the
+status filter and page number; requests use the generated OpenAPI client and abort
+signals. A 401 clears query state, redirects to /login, and hides private content.
+
+Queries are considered stale immediately, so navigating back to the workout list
+revalidates after existing create and edit routes. On successful login or sign-out,
+the browser query cache is cleared to avoid cross-account data exposure. When moving
+write actions to mutations, invalidate the workout list query keys on successful
+server responses.
+
+Run `pnpm --filter @gym/web test` and `pnpm --filter @gym/web test:e2e`.

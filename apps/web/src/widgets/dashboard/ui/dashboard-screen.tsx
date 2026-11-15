@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useQueryClient } from '@tanstack/react-query';
 
 import { classifySessionCheck } from '@/features/auth/lib/auth-flow';
 import { webApi } from '@/shared/api/client';
@@ -17,6 +18,7 @@ type DashboardState =
 
 export function DashboardScreen({ initialUser }: { initialUser: AuthenticatedUser }) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [state, setState] = useState<DashboardState>({
     kind: 'ready',
     email: initialUser.email,
@@ -71,6 +73,7 @@ export function DashboardScreen({ initialUser }: { initialUser: AuthenticatedUse
     try {
       const { response } = await webApi.POST('/auth/sign-out');
       if (response.status === 204 || response.status === 401) {
+        queryClient.clear();
         router.replace('/login');
         router.refresh();
       } else {

@@ -50,11 +50,17 @@ test('workouts route has independent server guard and typed summary API request'
   assert.match(page, /verifyServerSession/);
   assert.match(page, /force-dynamic/);
   assert.match(page, /robots: \{ index: false \}/);
-  assert.match(ui, /webApi\s*\.GET\('\/workouts'/);
-  assert.match(ui, /view: 'summary'/);
-  assert.match(ui, /response.status === 401/);
+  const api = await readFile(
+    new URL('../src/features/workouts/api/workouts-list-query.ts', import.meta.url),
+    'utf8',
+  );
+  assert.match(api, /webApi\s*\.GET\('\/workouts'/);
+  assert.match(api, /view: 'summary'/);
+  assert.match(api, /signal,/);
+  assert.match(ui, /useQuery\(workoutListQueryOptions\(filter, page\)\)/);
+  assert.match(ui, /query.error.status === 401/);
   assert.match(ui, /router.replace\('\/login'\)/);
-  assert.match(ui, /if \(!active\) return/);
+  assert.match(ui, /queryClient.clear\(\)/);
   assert.match(ui, /<nav aria-label="Сторінки тренувань"/);
   assert.doesNotMatch(ui, /localStorage|sessionStorage|document.cookie|dangerouslySetInnerHTML/);
 });

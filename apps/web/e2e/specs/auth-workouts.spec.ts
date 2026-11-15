@@ -86,6 +86,16 @@ test('workout list loads from the same-origin API and filters by status', async 
   await expect(page.getByRole('article').filter({ hasText: 'Жим лежачи' })).toHaveCount(0);
 });
 
+test('workouts query redirects on 401 without rendering private results', async ({ page }) => {
+  await signIn(page);
+  await page.route('**/backend/workouts*', (route) =>
+    route.fulfill({ status: 401, contentType: 'application/json', body: '{}' }),
+  );
+  await page.goto('/workouts');
+  await expect(page).toHaveURL(/\/login$/);
+  await expect(page.getByText('Жим лежачи')).toHaveCount(0);
+});
+
 test('athlete cannot view trainer-only programs even with a valid session', async ({ page }) => {
   await signIn(page);
   await page.goto('/trainer/programs');

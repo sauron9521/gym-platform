@@ -16,6 +16,8 @@ export default defineConfig({
   workers: 1,
   retries: process.env.CI ? 1 : 0,
   timeout: 45_000,
+  // Bound the entire CI browser suite, not just individual tests/retries.
+  globalTimeout: process.env.CI ? 10 * 60_000 : undefined,
   expect: { timeout: 15_000 },
   reporter: process.env.CI ? [['list'], ['html', { open: 'never' }]] : 'list',
   outputDir: './test-results',
