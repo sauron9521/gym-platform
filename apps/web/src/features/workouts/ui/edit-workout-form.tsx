@@ -2,6 +2,7 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
+import { toast } from 'sonner';
 
 import { Button } from '@/shared/ui/button';
 import {
@@ -48,6 +49,7 @@ export function EditWorkoutForm({
 
     try {
       await mutation.mutateAsync(body);
+      toast.success('Зміни тренування збережено.');
       onSaved();
     } catch {
       // The mutation retains a safe error; preserve form values for retry.
