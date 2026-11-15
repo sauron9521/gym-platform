@@ -68,9 +68,7 @@ test('real API: athlete sees only their own published program assignment', async
     });
 
     await athletePage.goto('/trainer/programs');
-    await expect(
-      athletePage.getByRole('heading', { name: 'Доступ заборонено' }),
-    ).toBeVisible();
+    await expect(athletePage.getByRole('heading', { name: 'Доступ заборонено' })).toBeVisible();
     const forbiddenProgram = await athletePage.request.get(
       '/backend/training-programs/' + program.id,
     );
