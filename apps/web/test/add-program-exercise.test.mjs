@@ -67,7 +67,27 @@ test('workout day renders persisted exercises and uses typed draft-only POST', a
   );
   assert.match(day, /workout.exercises.map/);
   assert.match(day, /AddProgramExerciseForm/);
-  assert.match(form, /webApi\s*\.GET\('\/exercises'/);
+  const query = await readFile(
+    new URL('../src/features/exercises/api/exercise-list-query.ts', import.meta.url),
+    'utf8',
+  );
+  assert.match(form, /useQuery\(\{/);
+  assert.match(form, /exerciseListQueryOptions\(\{/);
+  assert.match(form, /exerciseType: 'ALL'/);
+  assert.match(form, /enabled: !searching/);
+  assert.match(form, /staleTime: 30_000/);
+  assert.match(form, /setTimeout\(\(\) => setDebouncedSearch\(search.trim\(\)\), 250\)/);
+  assert.match(form, /clearTimeout\(timer\)/);
+  assert.match(form, /query.refetch\(\)/);
+  assert.match(form, /queryClient.clear\(\)/);
+  assert.match(form, /router.replace\('\/login'\)/);
+  assert.match(form, /if \(unauthenticated\) return null/);
+  assert.match(form, /exercise.source === 'GLOBAL' \|\| exercise.source === 'TRAINER_CUSTOM'/);
+  assert.match(form, /isProgramExerciseSelectable\(selected, existingExerciseIds\)/);
+  assert.match(query, /GET\('\/exercises'/);
+  assert.match(query, /queryKey: exerciseQueryKeys.list\(normalized\)/);
+  assert.match(query, /signal,/);
+  assert.doesNotMatch(form, /webApi\s*\.GET\('\/exercises'/);
   assert.match(form, /webApi.POST\(/);
   assert.match(form, /zodResolver\(addProgramExerciseSchema\)/);
   assert.match(form, /response.status !== 201/);
