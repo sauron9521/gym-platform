@@ -98,7 +98,10 @@ test('program details loads version workouts; creation uses the typed API path',
   );
 
   const query = await readFile(
-    new URL('../src/features/training-programs/api/training-program-version-query.ts', import.meta.url),
+    new URL(
+      '../src/features/training-programs/api/training-program-version-query.ts',
+      import.meta.url,
+    ),
     'utf8',
   );
   assert.match(details, /TrainingProgramWorkouts/);
