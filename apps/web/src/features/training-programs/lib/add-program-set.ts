@@ -13,12 +13,7 @@ export const programSetTypeLabels: Record<(typeof programSetTypes)[number], stri
   AMRAP: 'До відмови',
 };
 
-function optionalNumber(
-  label: string,
-  min: number,
-  max: number,
-  decimals: number,
-) {
+function optionalNumber(label: string, min: number, max: number, decimals: number) {
   return z
     .string()
     .trim()
