@@ -1,11 +1,16 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 
 import { webApi } from '@/shared/api/client';
+import {
+  exerciseListQueryOptions,
+  ExerciseListRequestError,
+} from '../../exercises/api/exercise-list-query';
 import { Button } from '@/shared/ui/button';
 import type { ProgramVersionWithWorkouts } from '../lib/create-program-workout';
 import {
@@ -41,10 +46,11 @@ export function AddProgramExerciseForm({
   onCancel: () => void;
 }) {
   const router = useRouter();
+  const queryClient = useQueryClient();
+  const redirecting = useRef(false);
   const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [page, setPage] = useState(1);
-  const [attempt, setAttempt] = useState(0);
-  const [catalog, setCatalog] = useState<CatalogState>({ kind: 'loading' });
   const [selected, setSelected] = useState<ProgramExerciseOption | null>(null);
   const [error, setError] = useState<string | null>(null);
   const form = useForm<AddProgramExerciseValues>({
@@ -55,61 +61,68 @@ export function AddProgramExerciseForm({
   const { errors, isSubmitting } = form.formState;
 
   useEffect(() => {
-    let active = true;
-    const timer = setTimeout(() => {
-      void webApi
-        .GET('/exercises', {
-          params: {
-            query: {
-              page,
-              limit: 20,
-              ...(search.trim() ? { search: search.trim() } : {}),
-            },
-          },
-        })
-        .then(({ response, data }) => {
-          if (!active) return;
-          if (response.status === 401) {
-            router.replace('/login');
-            return;
-          }
-          if (response.status !== 200 || !data) {
-            setCatalog({
-              kind: 'error',
-              message: getProgramExerciseListError(response.status),
-            });
-            return;
-          }
-          setCatalog({
-            kind: 'ready',
-            items: data.data.filter(
-              (exercise) =>
-                !exercise.isArchived &&
-                (exercise.source === 'GLOBAL' || exercise.source === 'TRAINER_CUSTOM'),
-            ),
-            pages: Math.max(1, data.meta.totalPages),
-          });
-        })
-        .catch(() => {
-          if (active) setCatalog({ kind: 'error', message: getProgramExerciseListError() });
-        });
-    }, 250);
-    return () => {
-      active = false;
-      clearTimeout(timer);
-    };
-  }, [search, page, attempt, router]);
+    const timer = setTimeout(() => setDebouncedSearch(search.trim()), 250);
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  const searching = search.trim() !== debouncedSearch;
+  const query = useQuery({
+    ...exerciseListQueryOptions({
+      search: debouncedSearch,
+      exerciseType: 'ALL',
+      muscleGroup: '',
+      equipment: '',
+      page,
+    }),
+    enabled: !searching,
+    staleTime: 30_000,
+  });
+  const unauthenticated =
+    query.error instanceof ExerciseListRequestError && query.error.status === 401;
+
+  useEffect(() => {
+    if (unauthenticated && !redirecting.current) {
+      redirecting.current = true;
+      queryClient.clear();
+      router.replace('/login');
+    }
+  }, [unauthenticated, queryClient, router]);
 
   function updateSearch(value: string) {
     setSearch(value);
     setPage(1);
-    setCatalog({ kind: 'loading' });
   }
 
   function changePage(next: number) {
     setPage(next);
-    setCatalog({ kind: 'loading' });
   }
+
+  function retry() {
+    void query.refetch();
+  }
+
+  let catalog: CatalogState;
+  if (searching || query.isPending || unauthenticated) {
+    catalog = { kind: 'loading' };
+  } else if (query.isError) {
+    catalog = {
+      kind: 'error',
+      message: getProgramExerciseListError(
+        query.error instanceof ExerciseListRequestError ? query.error.status : undefined,
+      ),
+    };
+  } else {
+    catalog = {
+      kind: 'ready',
+      items: query.data.exercises.filter(
+        (exercise) => exercise.source === 'GLOBAL' || exercise.source === 'TRAINER_CUSTOM',
+      ),
+      pages: query.data.pages,
+    };
+  }
+
+  // A failed session must never expose a cached private exercise list.
+  if (unauthenticated) return null;
 
   async function submit(values: AddProgramExerciseValues) {
     setError(null);
@@ -181,10 +194,7 @@ export function AddProgramExerciseForm({
             type="button"
             variant="outline"
             disabled={isSubmitting}
-            onClick={() => {
-              setCatalog({ kind: 'loading' });
-              setAttempt((value) => value + 1);
-            }}
+            onClick={retry}
           >
             Повторити пошук
           </Button>
