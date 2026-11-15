@@ -11,7 +11,7 @@
     "typecheck": "next typegen && tsc --noEmit",
     "test": "node --test test/*.test.mjs",
     "test:e2e": "playwright test",
-    "test:e2e:integration": "playwright test --config playwright.integration.config.ts"
+    "test:e2e:integration": "node scripts/run-real-api-e2e.mjs"
   },
   "dependencies": {
     "@gym/api-client": "workspace:*",
