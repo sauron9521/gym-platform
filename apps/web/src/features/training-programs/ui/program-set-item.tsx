@@ -1,13 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 
-import { webApi } from '@/shared/api/client';
 import { Button } from '@/shared/ui/button';
+import { useDeleteProgramSetMutation } from '../api/program-set-mutations';
 import { describeProgramSet, type SavedProgramSet } from '../lib/add-program-set';
 import type { ProgramVersionWithWorkouts } from '../lib/create-program-workout';
-import { getProgramSetMutationError } from '../lib/edit-program-set';
 import { AddProgramSetForm } from './add-program-set-form';
 
 export function ProgramSetItem({
@@ -45,35 +43,22 @@ export function ProgramSetItem({
   onCancelEdit: () => void;
   onChanged: (version: ProgramVersionWithWorkouts, notice: string) => void;
 }) {
-  const router = useRouter();
+  const deleteMutation = useDeleteProgramSetMutation({
+    programId,
+    versionId,
+    workoutId,
+    exerciseId,
+  });
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const [deleting, setDeleting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   async function deleteSet() {
-    if (!confirmDelete || deleting || !editable) return;
-    setDeleting(true);
-    setError(null);
+    if (!confirmDelete || deleteMutation.isPending || !editable) return;
+    deleteMutation.reset();
     try {
-      const { response, data } = await webApi.DELETE(
-        '/training-programs/{programId}/versions/{versionId}/workouts/{workoutId}/exercises/{exerciseId}/sets/{setId}',
-        {
-          params: { path: { programId, versionId, workoutId, exerciseId, setId: set.id } },
-        },
-      );
-      if (response.status === 401) {
-        router.replace('/login');
-        return;
-      }
-      if (response.status !== 200 || !data) {
-        setError(getProgramSetMutationError('delete', response.status));
-        return;
-      }
-      onChanged(data, 'Підхід видалено');
+      const version = await deleteMutation.mutateAsync(set.id);
+      onChanged(version, 'Підхід видалено');
     } catch {
-      setError(getProgramSetMutationError('delete'));
-    } finally {
-      setDeleting(false);
+      // Keep confirmation open and display the safe mutation error.
     }
   }
 
@@ -114,7 +99,7 @@ export function ProgramSetItem({
                 disabled={moveDisabled}
                 aria-label={`Редагувати підхід ${set.setNumber} вправи ${exerciseName}`}
                 onClick={() => {
-                  setError(null);
+                  deleteMutation.reset();
                   onEdit();
                 }}
               >
@@ -127,7 +112,7 @@ export function ProgramSetItem({
                 aria-label={`Видалити підхід ${set.setNumber} вправи ${exerciseName}`}
                 disabled={moveDisabled}
                 onClick={() => {
-                  setError(null);
+                  deleteMutation.reset();
                   setConfirmDelete(true);
                 }}
               >
@@ -158,16 +143,16 @@ export function ProgramSetItem({
             >
               <p>Видалити підхід {set.setNumber}? Дію не можна скасувати.</p>
               <div className="flex flex-wrap gap-2">
-                <Button type="button" disabled={deleting} onClick={() => void deleteSet()}>
-                  {deleting ? 'Видаляємо…' : 'Підтвердити видалення підходу'}
+                <Button type="button" disabled={deleteMutation.isPending} onClick={() => void deleteSet()}>
+                  {deleteMutation.isPending ? 'Видаляємо…' : 'Підтвердити видалення підходу'}
                 </Button>
                 <Button
                   type="button"
                   variant="outline"
-                  disabled={deleting}
+                  disabled={deleteMutation.isPending}
                   onClick={() => {
                     setConfirmDelete(false);
-                    setError(null);
+                    deleteMutation.reset();
                   }}
                 >
                   Скасувати видалення підходу
@@ -175,9 +160,9 @@ export function ProgramSetItem({
               </div>
             </div>
           )}
-          {error && (
+          {deleteMutation.isError && (
             <p role="alert" className="text-sm text-destructive">
-              {error}
+              {deleteMutation.error.message}
             </p>
           )}
         </>
