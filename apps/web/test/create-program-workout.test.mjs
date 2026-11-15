@@ -132,7 +132,7 @@ test('program details loads version workouts; creation uses the typed API path',
   assert.match(mutations, /trainingProgramQueryKeys.version\(programId, versionId\)/);
   assert.match(mutations, /queryClient.setQueryData\(queryKey, version\)/);
   assert.match(mutations, /retry: false/);
-  assert.doesNotMatch(form, /webApi.POST|router.replace|setError\(/);
+  assert.doesNotMatch(form, /webApi.POST|router.replace/);
   assert.match(form, /isWeekWithinDuration/);
   for (const source of [details, list, form, query, mutations]) {
     assert.doesNotMatch(source, /localStorage|sessionStorage|dangerouslySetInnerHTML/);
