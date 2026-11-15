@@ -363,4 +363,129 @@ describe('PrismaTokenStore security and persistence contracts', () => {
       where: { expiresAt: { lte: now } },
     });
   });
+
+  describe('failure-safe refresh and email token persistence', () => {
+    it('does not issue a refresh token when its family disappears after upsert', async () => {
+      prisma.$queryRaw.mockResolvedValueOnce([]);
+
+      await expect(store.saveRefreshToken(refresh)).rejects.toThrow(
+        'Refresh token family missing after upsert',
+      );
+      expect(prisma.$transaction).toHaveBeenCalledOnce();
+      expect(prisma.refreshTokenFamily.upsert).toHaveBeenCalledOnce();
+      expect(prisma.refreshToken.create).not.toHaveBeenCalled();
+    });
+
+    it('does not lock or insert a token if the refresh family upsert fails', async () => {
+      const failure = new Error('Refresh family insert failed');
+      prisma.refreshTokenFamily.upsert.mockRejectedValueOnce(failure);
+
+      await expect(store.saveRefreshToken(refresh)).rejects.toBe(failure);
+      expect(prisma.$queryRaw).not.toHaveBeenCalled();
+      expect(prisma.refreshToken.create).not.toHaveBeenCalled();
+    });
+
+    it('does not insert an unlocked refresh token when the family lock fails', async () => {
+      const failure = new Error('Refresh family row lock failed');
+      prisma.$queryRaw.mockRejectedValueOnce(failure);
+
+      await expect(store.saveRefreshToken(refresh)).rejects.toBe(failure);
+      expect(prisma.refreshTokenFamily.upsert).toHaveBeenCalledOnce();
+      expect(prisma.refreshToken.create).not.toHaveBeenCalled();
+    });
+
+    it('propagates a refresh-token insert failure without reporting a saved token', async () => {
+      const failure = new Error('Refresh token insert failed');
+      prisma.refreshToken.create.mockRejectedValueOnce(failure);
+
+      await expect(store.saveRefreshToken(refresh)).rejects.toBe(failure);
+      expect(prisma.$transaction).toHaveBeenCalledOnce();
+      expect(prisma.$queryRaw).toHaveBeenCalledOnce();
+      expect(prisma.refreshToken.create).toHaveBeenCalledOnce();
+    });
+
+    it('does not mark a refresh token used when the conditional update fails', async () => {
+      const failure = new Error('Refresh usage update failed');
+      prisma.refreshToken.updateMany.mockRejectedValueOnce(failure);
+
+      await expect(store.markRefreshTokenUsed(refresh.id, now)).rejects.toBe(failure);
+      expect(prisma.refreshToken.updateMany).toHaveBeenCalledExactlyOnceWith({
+        where: { id: refresh.id, usedAt: null, user: { deletedAt: null } },
+        data: { usedAt: now },
+      });
+    });
+
+    it('propagates revocation lookup outages rather than declaring a family valid', async () => {
+      const failure = new Error('Revocation lookup unavailable');
+      prisma.refreshTokenFamily.findUnique.mockRejectedValueOnce(failure);
+
+      await expect(store.isRefreshTokenFamilyRevoked(refresh.familyId)).rejects.toBe(failure);
+      expect(prisma.refreshToken.findFirst).toHaveBeenCalledOnce();
+    });
+
+    it('does not update token rows if the family-wide revoke fails first', async () => {
+      const failure = new Error('Revocation tombstone update failed');
+      prisma.refreshTokenFamily.updateMany.mockRejectedValueOnce(failure);
+
+      await expect(store.revokeUserRefreshTokens(refresh.userId)).rejects.toBe(failure);
+      expect(prisma.$transaction).toHaveBeenCalledOnce();
+      expect(prisma.refreshToken.updateMany).not.toHaveBeenCalled();
+    });
+
+    it('never writes an email token if the advisory transaction lock fails', async () => {
+      const failure = new Error('Email-token advisory lock failed');
+      prisma.$queryRaw.mockRejectedValueOnce(failure);
+
+      await expect(store.saveEmailToken(email)).rejects.toBe(failure);
+      expect(prisma.emailToken.create).not.toHaveBeenCalled();
+      expect(prisma.emailToken.deleteMany).not.toHaveBeenCalled();
+      expect(prisma.emailToken.findMany).not.toHaveBeenCalled();
+    });
+
+    it('aborts email-token retention cleanup when the token insert fails', async () => {
+      const failure = new Error('Email token insert failed');
+      prisma.emailToken.create.mockRejectedValueOnce(failure);
+
+      await expect(store.saveEmailToken(email)).rejects.toBe(failure);
+      expect(prisma.$queryRaw).toHaveBeenCalledOnce();
+      expect(prisma.emailToken.deleteMany).not.toHaveBeenCalled();
+      expect(prisma.emailToken.findMany).not.toHaveBeenCalled();
+    });
+
+    it('propagates email-token consumption errors rather than returning no match', async () => {
+      const failure = new Error('Atomic email-token delete failed');
+      prisma.$queryRaw.mockRejectedValueOnce(failure);
+
+      await expect(store.consumeEmailToken(email.id, email.purpose)).rejects.toBe(failure);
+      const [sql, tokenId, purpose] = prisma.$queryRaw.mock.calls[0] as unknown as [
+        TemplateStringsArray,
+        string,
+        string,
+      ];
+      expect(sql.join('?')).toContain('"id" = ? AND "purpose" = ?');
+      expect(tokenId).toBe(email.id);
+      expect(purpose).toBe(email.purpose);
+    });
+
+    it('does not convert refresh-token read outages into an absent token', async () => {
+      const failure = new Error('Refresh token lookup failed');
+      prisma.refreshToken.findUnique.mockRejectedValueOnce(failure);
+
+      await expect(store.getRefreshToken(refresh.id)).rejects.toBe(failure);
+      expect(prisma.refreshToken.findUnique).toHaveBeenCalledExactlyOnceWith({
+        where: { id: refresh.id, user: { deletedAt: null } },
+        select: authRefreshTokenSelect,
+      });
+    });
+
+    it('does not silently accept email-token expiration cleanup failures', async () => {
+      const failure = new Error('Expired email token cleanup failed');
+      prisma.emailToken.deleteMany.mockRejectedValueOnce(failure);
+
+      await expect(store.deleteExpiredEmailTokens(now)).rejects.toBe(failure);
+      expect(prisma.emailToken.deleteMany).toHaveBeenCalledExactlyOnceWith({
+        where: { expiresAt: { lte: now } },
+      });
+    });
+  });
 });
