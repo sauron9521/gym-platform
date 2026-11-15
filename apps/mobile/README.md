@@ -137,3 +137,27 @@ pnpm --filter @gym/mobile exec node -p "require.resolve('expo-router/entry')"
 The `pnpm --filter @gym/mobile build:ios` command bundles **iOS JavaScript**
 without Xcode, so CI detects native Metro entry failures as well as web errors.
 It is not a substitute for device/simulator testing or an EAS build.
+
+## Windows Metro development / isolated pnpm compatibility
+
+Expo SDK 58 supports monorepos but some native Metro integrations fail under
+pnpm's isolated symlinks on Windows. Typical symptoms include errors resolving
+`expo/src/async-require/hmr.ts` or SHA-1 errors referencing
+`apps/mobile/node_modules/expo/internal/async-require-module.js`. This repo
+therefore uses Expo's documented fallback `nodeLinker: hoisted` in
+`pnpm-workspace.yaml`. It applies to the **entire monorepo** (not just mobile);
+do not add custom Metro resolver paths to work around these errors.
+
+After pulling this change, stop Metro and run the following **from the repo root**
+using PowerShell so pnpm can replace the old node_modules layout:
+
+```powershell
+Remove-Item -Recurse -Force .\\node_modules, .\\apps\\mobile\\node_modules -ErrorAction SilentlyContinue
+pnpm install --frozen-lockfile
+pnpm --filter @gym/mobile exec expo start --clear
+```
+
+The required `Mobile iOS Dev / Windows Metro` CI job now requests an actual
+`dev=true` iOS JavaScript bundle on a Windows runner. A successful Linux
+production `expo export --platform ios` alone does **not** test Fast Refresh
+HMR or SHA-1 file-map resolution on Windows.
