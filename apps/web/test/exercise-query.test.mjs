@@ -71,7 +71,10 @@ test('detail keys isolate exercise IDs and taxonomy never aliases a private list
   assert.deepEqual(exerciseQueryKeys.details(), ['exercises', 'detail']);
   assert.deepEqual(exerciseQueryKeys.detail('exercise-1'), ['exercises', 'detail', 'exercise-1']);
   assert.deepEqual(exerciseQueryKeys.taxonomy(), ['exercises', 'taxonomy']);
-  assert.notDeepEqual(exerciseQueryKeys.detail('exercise-1'), exerciseQueryKeys.detail('exercise-2'));
+  assert.notDeepEqual(
+    exerciseQueryKeys.detail('exercise-1'),
+    exerciseQueryKeys.detail('exercise-2'),
+  );
   assert.notDeepEqual(exerciseQueryKeys.detail('exercise-1'), exerciseQueryKeys.list(filters));
   assert.notDeepEqual(exerciseQueryKeys.taxonomy(), exerciseQueryKeys.lists());
 });
