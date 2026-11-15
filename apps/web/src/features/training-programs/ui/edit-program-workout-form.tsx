@@ -162,7 +162,12 @@ export function EditProgramWorkoutForm({
         <Button type="submit" disabled={isSubmitting || mutation.isPending}>
           {isSubmitting || mutation.isPending ? 'Зберігаємо…' : 'Зберегти день'}
         </Button>
-        <Button type="button" variant="outline" onClick={onCancel} disabled={isSubmitting || mutation.isPending}>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={onCancel}
+          disabled={isSubmitting || mutation.isPending}
+        >
           Скасувати редагування
         </Button>
       </div>
