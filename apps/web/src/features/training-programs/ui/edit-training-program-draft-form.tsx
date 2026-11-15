@@ -42,7 +42,6 @@ export function EditTrainingProgramDraftForm({
   }
 
   async function submit(values: EditTrainingProgramDraftValues) {
-    if (!form.formState.isDirty) return;
     setError(null);
     setSaved(false);
     try {
