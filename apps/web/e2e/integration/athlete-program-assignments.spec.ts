@@ -45,6 +45,12 @@ test('real API: athlete sees only their own published program assignment', async
     await athletePage.locator('#training-assignment-status').selectOption('ACTIVE');
     await expect(athletePage.getByRole('heading', { name: program.title })).toBeVisible();
 
+    // Switching back to ALL must restore the correct cached query without
+    // leaking records from a different filter or another athlete.
+    await athletePage.locator('#training-assignment-status').selectOption('ALL');
+    await expect(athletePage.getByRole('heading', { name: program.title })).toBeVisible();
+    await expect(athletePage.getByText('Усього призначень: 1')).toBeVisible();
+
     await otherPage.goto('/athlete/programs');
     await expect(
       otherPage.getByRole('heading', { name: 'Немає призначених програм' }),
