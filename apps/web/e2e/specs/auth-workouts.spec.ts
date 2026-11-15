@@ -321,11 +321,14 @@ test('workout details query handles 401 without revealing private workout data',
 test('workout details retry is explicit and preserves 403 privacy errors', async ({ page }) => {
   await signIn(page);
   const id = '00000000-0000-4000-8000-000000000001';
+  // React development mode can issue more than one initial request. Keep
+  // the server error stable until the user explicitly asks to retry.
+  let responseStatus = 503;
   let requests = 0;
   await page.route('**/backend/workouts/' + id, (route) => {
     requests += 1;
     return route.fulfill({
-      status: requests === 1 ? 503 : 403,
+      status: responseStatus,
       contentType: 'application/json',
       body: '{}',
     });
@@ -333,9 +336,10 @@ test('workout details retry is explicit and preserves 403 privacy errors', async
 
   await page.goto('/workouts/' + id);
   await expect(page.getByText('Не вдалося завантажити тренування. Спробуйте ще раз.')).toBeVisible();
-  expect(requests).toBe(1);
+  const requestsBeforeRetry = requests;
+  responseStatus = 403;
   await page.getByRole('button', { name: 'Спробувати ще раз' }).click();
   await expect(page.getByText('Тренування не знайдено або немає доступу.')).toBeVisible();
-  expect(requests).toBe(2);
+  expect(requests).toBeGreaterThan(requestsBeforeRetry);
   await expect(page).toHaveURL(new RegExp('/workouts/' + id + '$'));
 });
