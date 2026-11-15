@@ -43,23 +43,25 @@ test('real API: trainer adds validated sets to a program exercise; values persis
     expect(day.status()).toBe(201);
     const firstVersion: { workouts: Array<{ id: string }> } = await day.json();
     const workoutId = firstVersion.workouts[0]!.id;
-    const addExercise = await ownerPage.request.post(
-      workoutPath + '/' + workoutId + '/exercises',
-      { headers: { origin }, data: { exerciseId: exercise!.id } },
-    );
+    const addExercise = await ownerPage.request.post(workoutPath + '/' + workoutId + '/exercises', {
+      headers: { origin },
+      data: { exerciseId: exercise!.id },
+    });
     expect(addExercise.status()).toBe(201);
     const withExercise: {
       workouts: Array<{ id: string; exercises: Array<{ id: string }> }>;
     } = await addExercise.json();
-    const programExerciseId = withExercise.workouts.find((w) => w.id === workoutId)!.exercises[0]!.id;
-    const addSetPath =
-      workoutPath + '/' + workoutId + '/exercises/' + programExerciseId + '/sets';
+    const programExerciseId = withExercise.workouts.find((w) => w.id === workoutId)!.exercises[0]!
+      .id;
+    const addSetPath = workoutPath + '/' + workoutId + '/exercises/' + programExerciseId + '/sets';
 
     await ownerPage.goto('/trainer/programs/' + program.id);
     await expect(ownerPage.getByRole('heading', { name: workoutTitle })).toBeVisible();
-    await ownerPage.getByRole('button', {
-      name: 'Додати підхід до вправи ' + exercise!.name,
-    }).click();
+    await ownerPage
+      .getByRole('button', {
+        name: 'Додати підхід до вправи ' + exercise!.name,
+      })
+      .click();
     const form = ownerPage.getByRole('form', {
       name: 'Додавання підходу до вправи ' + exercise!.name,
     });
@@ -99,7 +101,8 @@ test('real API: trainer adds validated sets to a program exercise; values persis
         }>;
       }>;
     } = await saved.json();
-    const firstSet = version.workouts[0]!.exercises.find((e) => e.id === programExerciseId)!.sets[0]!;
+    const firstSet = version.workouts[0]!.exercises.find((e) => e.id === programExerciseId)!
+      .sets[0]!;
     expect(firstSet).toMatchObject({
       setNumber: 1,
       setType: 'WORKING',
@@ -118,13 +121,16 @@ test('real API: trainer adds validated sets to a program exercise; values persis
 
     await ownerPage.reload();
     await expect(
-      ownerPage.getByRole('list', { name: 'Підходи вправи ' + exercise!.name })
+      ownerPage
+        .getByRole('list', { name: 'Підходи вправи ' + exercise!.name })
         .getByText(/Підхід 1:/),
     ).toBeVisible();
 
-    await ownerPage.getByRole('button', {
-      name: 'Додати підхід до вправи ' + exercise!.name,
-    }).click();
+    await ownerPage
+      .getByRole('button', {
+        name: 'Додати підхід до вправи ' + exercise!.name,
+      })
+      .click();
     const nextForm = ownerPage.getByRole('form', {
       name: 'Додавання підходу до вправи ' + exercise!.name,
     });
@@ -140,7 +146,8 @@ test('real API: trainer adds validated sets to a program exercise; values persis
     const sets = afterSecond.workouts[0].exercises[0].sets;
     expect(sets.map((set: { setNumber: number }) => set.setNumber)).toEqual([1, 2]);
     await expect(
-      ownerPage.getByRole('list', { name: 'Підходи вправи ' + exercise!.name })
+      ownerPage
+        .getByRole('list', { name: 'Підходи вправи ' + exercise!.name })
         .getByText(/Підхід 2:/),
     ).toBeVisible();
 
