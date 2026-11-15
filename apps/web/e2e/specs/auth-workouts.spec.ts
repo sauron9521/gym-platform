@@ -145,7 +145,9 @@ const avatarPng = {
   ),
 };
 
-test('avatar upload and delete refresh the canonical profile once per mutation', async ({ page }) => {
+test('avatar upload and delete refresh the canonical profile once per mutation', async ({
+  page,
+}) => {
   await signIn(page);
   const uploadedAvatar = '/avatars/123e4567-e89b-42d3-a456-426614174000.png';
   let avatarUrl: string | null = null;
@@ -181,7 +183,9 @@ test('avatar upload and delete refresh the canonical profile once per mutation',
   const initialGets = profileGets;
   await page.getByLabel('Обрати фотографію').setInputFiles(avatarPng);
   await page.getByRole('button', { name: 'Завантажити фото' }).click();
-  await expect(page.getByRole('status').filter({ hasText: 'Фото профілю оновлено.' })).toBeVisible();
+  await expect(
+    page.getByRole('status').filter({ hasText: 'Фото профілю оновлено.' }),
+  ).toBeVisible();
   await expect(page.getByRole('img', { name: 'Фото профілю' })).toHaveAttribute(
     'src',
     '/backend' + uploadedAvatar,
@@ -190,7 +194,9 @@ test('avatar upload and delete refresh the canonical profile once per mutation',
 
   await page.getByRole('button', { name: 'Видалити фото' }).click();
   await page.getByRole('button', { name: 'Підтвердити видалення' }).click();
-  await expect(page.getByRole('status').filter({ hasText: 'Фото профілю видалено.' })).toBeVisible();
+  await expect(
+    page.getByRole('status').filter({ hasText: 'Фото профілю видалено.' }),
+  ).toBeVisible();
   await expect(page.getByLabel('Ініціали користувача')).toBeVisible();
   expect(profileGets).toBe(initialGets + 2);
   expect(methods).toEqual(['POST', 'DELETE']);
