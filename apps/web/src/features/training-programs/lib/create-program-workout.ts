@@ -44,8 +44,7 @@ export function sortProgramWorkouts(
   workouts: ProgramVersionWithWorkouts['workouts'],
 ): ProgramVersionWithWorkouts['workouts'] {
   return [...workouts].sort(
-    (first, second) =>
-      first.weekNumber - second.weekNumber || first.dayNumber - second.dayNumber,
+    (first, second) => first.weekNumber - second.weekNumber || first.dayNumber - second.dayNumber,
   );
 }
 
