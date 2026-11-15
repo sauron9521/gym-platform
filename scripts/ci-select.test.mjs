@@ -305,7 +305,11 @@ test('real API browser suite preserves the required gate and fails closed', () =
   const suite = yaml.split('  browser-api-suite:\n')[1]?.split('\n  browser-api:\n')[0];
   assert.ok(suite, 'Real API browser matrix job must exist');
   assert.match(suite, /strategy:\n\s+fail-fast: false\n\s+matrix:\n\s+shard: \[1, 2, 3, 4\]/);
-  assert.ok(suite.includes('WEB_E2E_SHARD_INDEX: 
+  assert.match(suite, /WEB_E2E_SHARD_INDEX: .*matrix[.]shard/);
+  assert.match(suite, /WEB_E2E_SHARD_COUNT: '4'/);
+  assert.match(suite, /real-api-browser-failures-.*matrix[.]shard/);
+  assert.match(suite, /POSTGRES_DB: gym_browser_test/);
+  assert.match(suite, /run: node --test apps\\/web\\/test\\/real-api-e2e-shards\\.test\\.mjs/);
   assert.match(yaml, /needs: \[changes, browser-api-suite\]/);
   assert.match(yaml, /if: always\(\)/);
   assert.match(yaml, /if: needs\.changes\.outputs\.run == 'true'/);
