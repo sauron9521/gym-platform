@@ -28,11 +28,17 @@ test('successful trainer program mutations invalidate every list filter and page
     'utf8',
   );
   const create = await readFile(
-    new URL('../src/features/training-programs/ui/create-training-program-form.tsx', import.meta.url),
+    new URL(
+      '../src/features/training-programs/ui/create-training-program-form.tsx',
+      import.meta.url,
+    ),
     'utf8',
   );
   const editor = await readFile(
-    new URL('../src/features/training-programs/ui/edit-training-program-draft-form.tsx', import.meta.url),
+    new URL(
+      '../src/features/training-programs/ui/edit-training-program-draft-form.tsx',
+      import.meta.url,
+    ),
     'utf8',
   );
   assert.match(mutations, /useCreateTrainingProgramMutation/);
