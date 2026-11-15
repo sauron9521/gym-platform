@@ -209,7 +209,7 @@ export function WorkoutDetails({ id }: { id: string }) {
                                 key={set.updatedAt}
                                 workoutId={state.workout.id}
                                 set={set}
-                                onSaved={retry}
+                                onSaved={() => setEditingSetId(null)}
                                 onClose={() => setEditingSetId(null)}
                               />
                             ) : (

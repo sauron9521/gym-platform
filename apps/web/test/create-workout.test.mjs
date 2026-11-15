@@ -152,7 +152,12 @@ test('create page is guarded; web form uses typed API, RHF/Zod and stable retrie
   assert.match(mutations, /refetchType: 'none'/);
   assert.match(mutations, /retry: false/);
   assert.doesNotMatch(form, /webApi.POST|setError/);
-  assert.match(picker, /\.GET\('\/exercises'/);
+  assert.match(picker, /useQuery\(\{/);
+  assert.match(picker, /exerciseListQueryOptions\(\{/);
+  assert.match(picker, /useAuthFailure\(\)/);
+  assert.match(picker, /enabled: !searching/);
+  assert.match(picker, /query.refetch\(\)/);
+  assert.doesNotMatch(picker, /webApi.GET|setAttempt|setState|router.replace/);
   assert.match(editor, /createEmptyWorkoutSet/);
   assert.match(list, /href="\/workouts\/new"/);
   assert.doesNotMatch(form + picker, /localStorage|sessionStorage|dangerouslySetInnerHTML/);
