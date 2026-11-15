@@ -20,7 +20,10 @@ const sets = [
 
 test('full permutation swaps adjacent saved IDs without mutating source data', () => {
   const before = structuredClone(sets);
-  assert.deepEqual(sortProgramSets(sets).map((set) => set.id), [a, b, c]);
+  assert.deepEqual(
+    sortProgramSets(sets).map((set) => set.id),
+    [a, b, c],
+  );
   assert.deepEqual(buildReorderProgramSetsPayload(sets, b, 'up'), {
     setIds: [b, a, c],
   });
@@ -59,10 +62,7 @@ test('draft-only controls persist the full typed order and disable while pending
     new URL(root + 'program-exercise-item.tsx', import.meta.url),
     'utf8',
   );
-  const item = await readFile(
-    new URL(root + 'program-set-item.tsx', import.meta.url),
-    'utf8',
-  );
+  const item = await readFile(new URL(root + 'program-set-item.tsx', import.meta.url), 'utf8');
   const parent = await readFile(
     new URL(root + 'training-program-workouts.tsx', import.meta.url),
     'utf8',
