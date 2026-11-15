@@ -7,15 +7,12 @@ export type CreateTrainingProgramPayload =
 const durationWeeksSchema = z
   .string()
   .trim()
-  .refine(
-    (value) => {
-      if (value === '') return true;
-      if (!/^\d+$/.test(value)) return false;
-      const weeks = Number(value);
-      return weeks >= 1 && weeks <= 52;
-    },
-    'Вкажіть ціле число від 1 до 52 або залиште поле порожнім.',
-  );
+  .refine((value) => {
+    if (value === '') return true;
+    if (!/^\d+$/.test(value)) return false;
+    const weeks = Number(value);
+    return weeks >= 1 && weeks <= 52;
+  }, 'Вкажіть ціле число від 1 до 52 або залиште поле порожнім.');
 
 export const createTrainingProgramFormSchema = z.object({
   title: z.string().trim().min(2, 'Мінімум 2 символи.').max(120, 'Максимум 120 символів.'),
