@@ -95,7 +95,7 @@ test('protected trainer page verifies identity and role before showing private d
   assert.match(page, /force-dynamic/);
 });
 
-test('relationships UI uses typed filters and pagination, retry, and request cleanup', async () => {
+test('relationships UI uses typed cached filters, pagination, retry and 401 protection', async () => {
   const ui = await readFile(
     new URL('../src/features/trainer-athletes/ui/trainer-athletes-list.tsx', import.meta.url),
     'utf8',
@@ -104,15 +104,25 @@ test('relationships UI uses typed filters and pagination, retry, and request cle
     new URL('../src/widgets/dashboard/ui/dashboard-screen.tsx', import.meta.url),
     'utf8',
   );
-  assert.match(ui, /\.GET\('\/trainer-athletes'/);
-  assert.match(ui, /filter === 'ALL'/);
-  assert.match(ui, /status: filter/);
-  assert.match(ui, /limit: PAGE_SIZE/);
-  assert.match(ui, /data.meta.totalPages/);
-  assert.match(ui, /response.status === 401/);
+  const api = await readFile(
+    new URL('../src/features/trainer-athletes/api/trainer-athlete-list-query.ts', import.meta.url),
+    'utf8',
+  );
+  assert.match(ui, /useQuery\(trainerAthleteListQueryOptions\(actorId, actorRole, filter, page\)\)/);
+  assert.match(ui, /query.refetch\(\)/);
+  assert.match(ui, /queryClient.invalidateQueries/);
+  assert.match(ui, /trainerAthleteQueryKeys.lists\(\)/);
+  assert.match(ui, /queryClient.clear\(\)/);
   assert.match(ui, /router.replace\('\/login'\)/);
-  assert.match(ui, /if \(!active\) return/);
-  assert.match(ui, /active = false/);
+  assert.match(ui, /if \(unauthenticated\) return null/);
+  assert.match(ui, /onUpdated=\{refreshRelationships\}/);
+  assert.match(api, /GET\('\/trainer-athletes'/);
+  assert.match(api, /filter === 'ALL'/);
+  assert.match(api, /status: filter/);
+  assert.match(api, /limit: PAGE_SIZE/);
+  assert.match(api, /data.meta.totalPages/);
+  assert.match(api, /signal,/);
+  assert.match(api, /retry: false/);
   assert.match(ui, /aria-label="Сторінки підопічних"/);
   assert.match(ui, /Пошук контакту на поточній сторінці/);
   assert.match(dashboard, /initialUser.role === 'TRAINER'/);
