@@ -76,7 +76,7 @@ test('profile errors do not disclose raw backend body', () => {
   assert.match(getProfileErrorMessage(500), /Спробуйте/);
 });
 
-test('profile remains protected, uses RHF and re-reads API after PATCH', async () => {
+test('profile remains protected and uses shared TanStack query and mutation flows', async () => {
   const page = await readFile(
     new URL('../src/app/(protected)/profile/page.tsx', import.meta.url),
     'utf8',
@@ -85,13 +85,42 @@ test('profile remains protected, uses RHF and re-reads API after PATCH', async (
     new URL('../src/features/profile/ui/profile-editor.tsx', import.meta.url),
     'utf8',
   );
+  const query = await readFile(
+    new URL('../src/features/profile/api/profile-query.ts', import.meta.url),
+    'utf8',
+  );
+  const mutations = await readFile(
+    new URL('../src/features/profile/api/profile-mutations.ts', import.meta.url),
+    'utf8',
+  );
   assert.match(page, /verifyServerSession/);
   assert.match(page, /force-dynamic/);
   assert.match(ui, /useForm<ProfileDraft>/);
   assert.match(ui, /zodResolver\(profileSchema\)/);
   assert.match(ui, /handleSubmit\(submit\)/);
-  assert.match(ui, /webApi.GET\('\/users\/me'\)/);
-  assert.match(ui, /webApi.PATCH\('\/users\/me'/);
-  assert.match(ui, /await loadProfile\(\)/);
-  assert.doesNotMatch(ui, /localStorage|sessionStorage|document.cookie/);
+  assert.match(ui, /useQuery\(profileQueryOptions\(\)\)/);
+  assert.match(ui, /useUpdateProfileMutation\(\)/);
+  assert.match(ui, /await mutation.mutateAsync\(result.data\)/);
+  assert.match(ui, /const updated = await query.refetch\(\)/);
+  assert.match(ui, /reset\(toProfileDraft\(updated.data\)\)/);
+  assert.match(ui, /keepDirtyValues: true/);
+  assert.match(ui, /onChanged=\{loadProfile\}/);
+  assert.match(ui, /useAuthFailure\(\)/);
+  assert.match(ui, /if \(!account \|\| mutation.isPending\) return/);
+  assert.match(query, /webApi.GET\('\/users\/me', \{ signal \}\)/);
+  assert.match(query, /retry: false/);
+  assert.match(mutations, /webApi.PATCH\('\/users\/me'/);
+  assert.match(mutations, /response.status !== 200/);
+  assert.match(mutations, /queryClient.cancelQueries/);
+  assert.match(mutations, /refetchType: 'none'/);
+  assert.match(mutations, /useAuthFailure\(\)/);
+  assert.match(mutations, /retry: false/);
+  assert.doesNotMatch(ui, /webApi.GET|webApi.PATCH|localStorage|sessionStorage|document.cookie/);
+});
+
+
+test('profile query key is scoped to the signed-in account view', async () => {
+  const { profileQueryKeys } = await import('../src/features/profile/lib/profile-query-keys.ts');
+  assert.deepEqual(profileQueryKeys.all, ['profile']);
+  assert.deepEqual(profileQueryKeys.me(), ['profile', 'me']);
 });
