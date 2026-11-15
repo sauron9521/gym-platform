@@ -42,8 +42,12 @@ test('real API: published program details are read-only and PATCH is rejected', 
   const version: { workouts: Array<{ id: string }> } = await versionResponse.json();
   const workoutId = version.workouts[0]!.id;
   const workoutPath =
-    '/backend/training-programs/' + published.id + '/versions/' +
-    published.versionId + '/workouts/' + workoutId;
+    '/backend/training-programs/' +
+    published.id +
+    '/versions/' +
+    published.versionId +
+    '/workouts/' +
+    workoutId;
   const immutableEdit = await page.request.patch(workoutPath, {
     headers: { origin },
     data: { title: 'Змінений день' },
