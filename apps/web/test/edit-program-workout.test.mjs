@@ -44,16 +44,28 @@ test('typed PATCH payload trims data and explicitly clears notes with null', () 
 });
 
 test('mutation error messages do not surface untrusted API response details', () => {
-  assert.equal(getProgramWorkoutMutationError('edit', 404), getProgramWorkoutMutationError('edit', 403));
-  assert.notEqual(getProgramWorkoutMutationError('edit', 409), getProgramWorkoutMutationError('edit'));
+  assert.equal(
+    getProgramWorkoutMutationError('edit', 404),
+    getProgramWorkoutMutationError('edit', 403),
+  );
+  assert.notEqual(
+    getProgramWorkoutMutationError('edit', 409),
+    getProgramWorkoutMutationError('edit'),
+  );
   assert.notEqual(getProgramWorkoutMutationError('delete'), getProgramWorkoutMutationError('edit'));
 });
 
 test('draft-only edit/delete UI uses typed operations and explicit delete confirmation', async () => {
   const base = '../src/features/training-programs/ui/';
-  const list = await readFile(new URL(base + 'training-program-workouts.tsx', import.meta.url), 'utf8');
+  const list = await readFile(
+    new URL(base + 'training-program-workouts.tsx', import.meta.url),
+    'utf8',
+  );
   const item = await readFile(new URL(base + 'program-workout-item.tsx', import.meta.url), 'utf8');
-  const edit = await readFile(new URL(base + 'edit-program-workout-form.tsx', import.meta.url), 'utf8');
+  const edit = await readFile(
+    new URL(base + 'edit-program-workout-form.tsx', import.meta.url),
+    'utf8',
+  );
 
   assert.match(list, /editable=\{editable && version.status === 'DRAFT'\}/);
   assert.match(item, /confirmDelete &&/);
