@@ -122,7 +122,7 @@ test('relationship mutation hooks own typed writes and destructive confirmations
   assert.match(invite, /mutation.isError/);
   assert.match(invite, /form.reset\(\)/);
   assert.match(invite, /onCreated\(\)/);
-  assert.doesNotMatch(invite, /webApi.POST|setError|setBusy/);
+  assert.doesNotMatch(invite, /webApi.POST|setBusy|useState\(/);
 
   assert.match(actions, /useRelationshipActionMutation\(\)/);
   assert.match(actions, /getAvailableRelationshipActions/);
