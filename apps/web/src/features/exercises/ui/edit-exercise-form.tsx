@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
 import { useFieldArray, useForm } from 'react-hook-form';
@@ -13,6 +14,7 @@ import {
   type CustomExerciseActorRole,
 } from '../lib/create-exercise';
 import type { ExerciseDetailsData } from '../lib/exercise-catalog';
+import { exerciseQueryKeys } from '../lib/exercise-query-keys';
 import {
   buildUpdateExercisePayload,
   getEditExerciseDefaults,
@@ -35,6 +37,7 @@ export function EditExerciseForm({
   onReload: () => void;
 }) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { state: taxonomy, retry: retryTaxonomy } = useExerciseTaxonomy();
   const [error, setError] = useState<string | null>(null);
   const [selectedMuscle, setSelectedMuscle] = useState('');
@@ -78,6 +81,7 @@ export function EditExerciseForm({
         setError(getExerciseMutationErrorMessage(response.status));
         return;
       }
+      await queryClient.invalidateQueries({ queryKey: exerciseQueryKeys.lists() });
       onSaved(data);
     } catch {
       setError(getExerciseMutationErrorMessage());
