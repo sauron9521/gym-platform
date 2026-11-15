@@ -1,8 +1,10 @@
 'use client';
+
 import React, { useEffect, useLayoutEffect } from 'react';
 import { OverlayProvider } from '@gluestack-ui/core/overlay/creator';
 import { ToastProvider } from '@gluestack-ui/core/toast/creator';
 import { Uniwind } from 'uniwind';
+
 import { script } from './script';
 
 export type ModeType = 'light' | 'dark' | 'system';
@@ -16,36 +18,31 @@ export function GluestackUIProvider({
   mode?: ModeType;
   children?: React.ReactNode;
 }) {
-  const handleMediaQuery = React.useCallback((e: MediaQueryListEvent) => {
-    const resolvedMode = e.matches ? 'dark' : 'light';
-    script(resolvedMode);
-    Uniwind.setTheme(resolvedMode);
-  }, []);
-
   useSafeLayoutEffect(() => {
-    if (mode === 'system') return;
-    script(mode);
-    Uniwind.setTheme(mode);
+    const applyMode = (resolvedMode: 'light' | 'dark') => {
+      script(resolvedMode);
+      Uniwind.setTheme(resolvedMode);
+    };
+
+    if (mode !== 'system') {
+      applyMode(mode);
+      return;
+    }
+
+    const media = window.matchMedia('(prefers-color-scheme: dark)');
+    const syncSystemMode = () => applyMode(media.matches ? 'dark' : 'light');
+
+    // The previous inline script initialized this before React mounted.
+    // On client-rendered Expo Web, initialize here to avoid React 19's
+    // client-side script-element warning and still honor the current system theme.
+    syncSystemMode();
+    media.addEventListener('change', syncSystemMode);
+    return () => media.removeEventListener('change', syncSystemMode);
   }, [mode]);
 
-  useSafeLayoutEffect(() => {
-    if (mode !== 'system') return;
-    const media = window.matchMedia('(prefers-color-scheme: dark)');
-    media.addListener(handleMediaQuery);
-    return () => media.removeListener(handleMediaQuery);
-  }, [handleMediaQuery, mode]);
-
   return (
-    <>
-      <script
-        suppressHydrationWarning
-        dangerouslySetInnerHTML={{
-          __html: `(${script.toString()})('${mode}')`,
-        }}
-      />
-      <OverlayProvider>
-        <ToastProvider>{props.children}</ToastProvider>
-      </OverlayProvider>
-    </>
+    <OverlayProvider>
+      <ToastProvider>{props.children}</ToastProvider>
+    </OverlayProvider>
   );
 }
