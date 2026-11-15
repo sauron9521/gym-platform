@@ -1,10 +1,14 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
-import { webApi } from '@/shared/api/client';
+import {
+  trainerProgramDetailsQueryOptions,
+  TrainerProgramDetailsRequestError,
+} from '../api/trainer-program-details-query';
 import { Button } from '@/shared/ui/button';
 import {
   formatProgramDate,
@@ -16,6 +20,7 @@ import {
   type TrainingProgramVersionItem,
 } from '../lib/training-programs-list';
 import { getTrainingProgramDetailsError } from '../lib/edit-training-program-draft';
+import { trainingProgramQueryKeys } from '../lib/training-program-query-keys';
 import { EditTrainingProgramDraftForm } from './edit-training-program-draft-form';
 import { TrainingProgramWorkouts } from './training-program-workouts';
 
@@ -26,58 +31,57 @@ type DetailsState =
 
 export function TrainerProgramDetails({ programId }: { programId: string }) {
   const router = useRouter();
-  const [attempt, setAttempt] = useState(0);
-  const [state, setState] = useState<DetailsState>({ kind: 'loading' });
+  const queryClient = useQueryClient();
+  const redirecting = useRef(false);
+  const query = useQuery(trainerProgramDetailsQueryOptions(programId));
+  const unauthenticated =
+    query.error instanceof TrainerProgramDetailsRequestError && query.error.status === 401;
 
   useEffect(() => {
-    let active = true;
-    void webApi
-      .GET('/training-programs/{programId}', {
-        params: { path: { programId } },
-      })
-      .then(({ response, data }) => {
-        if (!active) return;
-        if (response.status === 401) {
-          router.replace('/login');
-          return;
-        }
-        if (response.status !== 200 || !data) {
-          setState({ kind: 'error', message: getTrainingProgramDetailsError(response.status) });
-          return;
-        }
-        setState({ kind: 'ready', program: data });
-      })
-      .catch(() => {
-        if (active) setState({ kind: 'error', message: getTrainingProgramDetailsError() });
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [programId, attempt, router]);
+    if (unauthenticated && !redirecting.current) {
+      redirecting.current = true;
+      queryClient.clear();
+      router.replace('/login');
+    }
+  }, [unauthenticated, queryClient, router]);
 
   function retry() {
-    setState({ kind: 'loading' });
-    setAttempt((value) => value + 1);
+    void query.refetch();
   }
 
   function onUpdated(version: TrainingProgramVersionItem) {
-    setState((previous) => {
-      if (previous.kind !== 'ready') return previous;
-      return {
-        kind: 'ready',
-        program: {
-          ...previous.program,
-          versions: previous.program.versions.map((item) =>
-            item.id === version.id ? version : item,
-          ),
-        },
-      };
-    });
+    queryClient.setQueryData<TrainingProgramItem>(
+      trainingProgramQueryKeys.detail(programId),
+      (current) =>
+        current
+          ? {
+              ...current,
+              versions: current.versions.map((item) => (item.id === version.id ? version : item)),
+            }
+          : current,
+    );
+  }
+
+  let state: DetailsState;
+  if (query.isPending || unauthenticated) {
+    state = { kind: 'loading' };
+  } else if (query.isError) {
+    state = {
+      kind: 'error',
+      message:
+        query.error instanceof TrainerProgramDetailsRequestError
+          ? query.error.message
+          : getTrainingProgramDetailsError(),
+    };
+  } else {
+    state = { kind: 'ready', program: query.data };
   }
 
   const program = state.kind === 'ready' ? state.program : null;
   const latest = program ? sortProgramVersions(program.versions)[0] : undefined;
+
+  // Never render cached private data after the server returns 401.
+  if (unauthenticated) return null;
 
   return (
     <main className="mx-auto max-w-4xl space-y-7 px-6 py-12">
