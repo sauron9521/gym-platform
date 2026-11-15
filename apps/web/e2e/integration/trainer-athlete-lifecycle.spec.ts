@@ -1,5 +1,11 @@
 import { expect, test } from '@playwright/test';
-import { login, promoteTestTrainer, register, relationship, origin } from '../support/real-api-accounts';
+import {
+  login,
+  promoteTestTrainer,
+  register,
+  relationship,
+  origin,
+} from '../support/real-api-accounts';
 
 test('real API: trainer invites athlete, athlete accepts and trainer terminates with redaction', async ({
   page: athletePage,
@@ -86,7 +92,6 @@ test('real API: trainer invites athlete, athlete accepts and trainer terminates 
     expect(await relationship(athletePage, invitationId)).toMatchObject({
       status: 'TERMINATED',
     });
-
   } finally {
     await trainerContext.close();
   }
