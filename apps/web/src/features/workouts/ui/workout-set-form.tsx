@@ -51,7 +51,7 @@ export function WorkoutSetForm({
   const busy = isSubmitting || mutation.isPending;
 
   async function send(status: 'COMPLETED' | 'SKIPPED', values: WorkoutSetFormValues) {
-    if (busy) return;
+    if (mutation.isPending) return;
     mutation.reset();
     try {
       await mutation.mutateAsync({
