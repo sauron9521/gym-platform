@@ -22,10 +22,7 @@ import type {
 } from '../lib/training-programs-list';
 
 export class TrainingProgramMutationRequestError extends Error {
-  constructor(
-    readonly operation: 'create' | 'update',
-    readonly status?: number,
-  ) {
+  constructor(readonly operation: 'create' | 'update', readonly status?: number) {
     super(
       operation === 'create'
         ? getCreateTrainingProgramErrorMessage(status)
@@ -67,8 +64,7 @@ export function useCreateTrainingProgramMutation() {
         throw new TrainingProgramMutationRequestError('create');
       }
     },
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: trainingProgramQueryKeys.lists() }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: trainingProgramQueryKeys.lists() }),
     onError,
     retry: false,
   });
@@ -107,9 +103,7 @@ export function useUpdateTrainingProgramDraftMutation(programId: string, version
           current
             ? {
                 ...current,
-                versions: current.versions.map((item) =>
-                  item.id === version.id ? version : item,
-                ),
+                versions: current.versions.map((item) => (item.id === version.id ? version : item)),
               }
             : current,
       );
