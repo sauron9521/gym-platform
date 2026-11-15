@@ -92,3 +92,21 @@ Commit the generated component and the updated `pnpm-lock.yaml`. Keep the
 
 The home tab includes a gluestack-powered UI card and a button to the profile.
 The next PRs will introduce TanStack Query, React Hook Form and Zod.
+
+## Mobile TanStack Query v5
+
+The mobile app wraps authentication and navigation in `MobileQueryProvider`,
+creating one isolated QueryClient. Defaults: 30 seconds stale time, 5 minutes
+cache garbage collection and one retry for reads (none for mutations).
+Android/iOS app focus events use React Native `AppState`; the web build uses
+normal browser focus handling.
+
+The profile uses the shared typed API via `useAccountQuery`, scoped to a user ID.
+Successful login seeds the account cache from the verified `GET /users/me` call.
+Logout clears tokens and **all query cache data** synchronously before remote
+token revocation, avoiding cross-user data leaks. A genuine 401 signs the user
+out; transient network errors and HTTP 5xx do not discard their credentials.
+
+Future features should use feature-owned query hooks and query keys; do not
+persist private query data in AsyncStorage or localStorage. Automatic token
+refresh and offline detection will be handled separately.
