@@ -265,7 +265,13 @@ jobs:
 
   quality:
     name: Quality / Node 24
-    needs: [changes, quality-workspaces, prepush-windows, web-browser-e2e, dependency-security, mobile-ios-dev-windows]
+    needs:
+      - changes
+      - quality-workspaces
+      - prepush-windows
+      - web-browser-e2e
+      - dependency-security
+      - mobile-ios-dev-windows
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5
