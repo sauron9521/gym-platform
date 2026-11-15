@@ -97,15 +97,32 @@ test('program details loads version workouts; creation uses the typed API path',
     'utf8',
   );
 
+  const query = await readFile(
+    new URL(
+      '../src/features/training-programs/api/training-program-version-query.ts',
+      import.meta.url,
+    ),
+    'utf8',
+  );
   assert.match(details, /TrainingProgramWorkouts/);
-  assert.match(list, /GET\('\/training-programs\/\{programId\}\/versions\/\{versionId\}'/);
+  assert.match(list, /useQuery\(trainingProgramVersionQueryOptions\(programId, versionId\)\)/);
+  assert.match(list, /query.refetch\(\)/);
+  assert.match(list, /queryClient.clear\(\)/);
+  assert.match(list, /router.replace\('\/login'\)/);
+  assert.match(list, /if \(unauthenticated\) return null/);
+  assert.match(list, /queryClient.setQueryData/);
   assert.match(list, /editable && version.status === 'DRAFT'/);
+  assert.match(query, /GET\(/);
+  assert.match(query, /'\/training-programs\/\{programId\}\/versions\/\{versionId\}'/);
+  assert.match(query, /signal,/);
+  assert.match(query, /response.status !== 200/);
+  assert.match(query, /retry: false/);
   assert.match(form, /zodResolver\(createProgramWorkoutSchema\)/);
   assert.match(form, /POST\(/);
   assert.match(form, /'\/training-programs\/\{programId\}\/versions\/\{versionId\}\/workouts'/);
   assert.match(form, /response.status !== 201/);
   assert.match(form, /isWeekWithinDuration/);
-  for (const source of [details, list, form]) {
+  for (const source of [details, list, form, query]) {
     assert.doesNotMatch(source, /localStorage|sessionStorage|dangerouslySetInnerHTML/);
   }
 });

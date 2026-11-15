@@ -96,3 +96,49 @@ test('athlete assignment keys separate status, page and trainer-owned program da
     trainingProgramQueryKeys.detail('program-1'),
   );
 });
+
+test('workout version keys isolate programs, versions, details and athlete assignments', () => {
+  assert.deepEqual(trainingProgramQueryKeys.versions(), ['training-programs', 'version']);
+  assert.deepEqual(trainingProgramQueryKeys.version('program-1', 'version-1'), [
+    'training-programs',
+    'version',
+    'program-1',
+    'version-1',
+  ]);
+  assert.notDeepEqual(
+    trainingProgramQueryKeys.version('program-1', 'version-1'),
+    trainingProgramQueryKeys.version('program-1', 'version-2'),
+  );
+  assert.notDeepEqual(
+    trainingProgramQueryKeys.version('program-1', 'version-1'),
+    trainingProgramQueryKeys.version('program-2', 'version-1'),
+  );
+  assert.notDeepEqual(
+    trainingProgramQueryKeys.version('program-1', 'version-1'),
+    trainingProgramQueryKeys.detail('program-1'),
+  );
+  assert.notDeepEqual(
+    trainingProgramQueryKeys.version('program-1', 'version-1'),
+    trainingProgramQueryKeys.assignmentList('ALL', 1),
+  );
+});
+
+test('workout and nested exercise/set mutations share the version write-through cache', async () => {
+  const parent = await readFile(
+    new URL('../src/features/training-programs/ui/training-program-workouts.tsx', import.meta.url),
+    'utf8',
+  );
+  assert.match(parent, /queryClient.setQueryData/);
+  assert.match(parent, /trainingProgramQueryKeys.version\(programId, versionId\)/);
+  assert.match(parent, /onChanged=\{/);
+  assert.match(parent, /onCreated=\{/);
+
+  for (const path of [
+    '../src/features/training-programs/ui/program-workout-item.tsx',
+    '../src/features/training-programs/ui/program-exercise-item.tsx',
+    '../src/features/training-programs/ui/program-set-item.tsx',
+  ]) {
+    const child = await readFile(new URL(path, import.meta.url), 'utf8');
+    assert.match(child, /onChanged/);
+  }
+});
