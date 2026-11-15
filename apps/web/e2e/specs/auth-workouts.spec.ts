@@ -149,6 +149,34 @@ test('athlete cannot view trainer-only programs even with a valid session', asyn
   await expect(page.getByRole('region', { name: 'Список тренувальних програм' })).toHaveCount(0);
 });
 
+test('program creation mutation handles 409 then 401 without losing form state', async ({ page }) => {
+  await signIn(page, 'trainer@example.test');
+  let attempts = 0;
+  await page.route('**/backend/training-programs', (route) => {
+    if (route.request().method() !== 'POST') return route.continue();
+    attempts += 1;
+    return route.fulfill({
+      status: attempts === 1 ? 409 : 401,
+      contentType: 'application/json',
+      body: '{}',
+    });
+  });
+
+  await page.goto('/trainer/programs/new');
+  const title = 'Тестова чернетка без повторного створення';
+  await page.getByLabel('Назва програми').fill(title);
+  await page.getByRole('button', { name: 'Створити чернетку' }).click();
+  await expect(page.getByText('Конфлікт під час створення програми. Оновіть список.')).toBeVisible();
+  await expect(page.getByLabel('Назва програми')).toHaveValue(title);
+  await expect(page).toHaveURL(/\/trainer\/programs\/new$/);
+  expect(attempts).toBe(1);
+
+  await page.getByRole('button', { name: 'Створити чернетку' }).click();
+  await expect(page).toHaveURL(/\/login$/);
+  await expect(page.getByRole('heading', { name: 'Створити програму' })).toHaveCount(0);
+  expect(attempts).toBe(2);
+});
+
 test('trainer programs query redirects on 401 without showing cached program content', async ({
   page,
 }) => {
