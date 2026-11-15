@@ -10,7 +10,6 @@ import { Button } from '@/shared/ui/button';
 import {
   formatWorkoutDate,
   getWorkoutListErrorMessage,
-  getWorkoutListErrorMessage,
   getWorkoutStatusLabel,
   WORKOUT_FILTERS,
   type WorkoutFilter,
