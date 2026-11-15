@@ -71,3 +71,28 @@ test('editing a draft refreshes the list and updates only the matching cached de
   assert.match(detail, /trainingProgramQueryKeys.detail\(programId\)/);
   assert.match(detail, /item.id === version.id \? version : item/);
 });
+
+test('athlete assignment keys separate status, page and trainer-owned program data', () => {
+  assert.deepEqual(trainingProgramQueryKeys.assignments(), ['training-programs', 'assignments']);
+  assert.deepEqual(trainingProgramQueryKeys.assignmentList('ALL', 1), [
+    'training-programs',
+    'assignments',
+    { status: 'ALL', page: 1 },
+  ]);
+  assert.notDeepEqual(
+    trainingProgramQueryKeys.assignmentList('ALL', 1),
+    trainingProgramQueryKeys.assignmentList('ACTIVE', 1),
+  );
+  assert.notDeepEqual(
+    trainingProgramQueryKeys.assignmentList('ACTIVE', 1),
+    trainingProgramQueryKeys.assignmentList('ACTIVE', 2),
+  );
+  assert.notDeepEqual(
+    trainingProgramQueryKeys.assignmentList('ALL', 1),
+    trainingProgramQueryKeys.list('ALL', 1),
+  );
+  assert.notDeepEqual(
+    trainingProgramQueryKeys.assignmentList('ALL', 1),
+    trainingProgramQueryKeys.detail('program-1'),
+  );
+});
