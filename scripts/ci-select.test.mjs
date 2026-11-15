@@ -132,7 +132,6 @@ test('non-Markdown infrastructure, manifests, CI and unknown Markdown fail close
     assert.equal(actual.deps, true);
   }
 
-
   const manifest = classifyChangedPaths(['infra/docker/README.md', 'apps/api/package.json']);
   assert.equal(manifest.full, false);
   assert.equal(manifest.api, true);
