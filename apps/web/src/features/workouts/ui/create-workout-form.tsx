@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useFieldArray, useForm, useWatch } from 'react-hook-form';
+import { toast } from 'sonner';
 
 import { Button } from '@/shared/ui/button';
 import {
@@ -51,6 +52,7 @@ export function CreateWorkoutForm() {
         idempotencyKey: requestKey.current.key,
       });
       setCreated(true);
+      toast.success('Тренування створено.');
       router.push(`/workouts/${data.id}`);
       router.refresh();
     } catch {
