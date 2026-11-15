@@ -56,24 +56,36 @@ test('catalog and detail routes independently guard the user session', async () 
   }
 });
 
-test('catalog uses typed API, filters, pagination, retries and archived protection', async () => {
+test('catalog uses TanStack Query with filters, pagination, retries and private-data protection', async () => {
   const catalog = await readFile(
     new URL('../src/features/exercises/ui/exercise-catalog.tsx', import.meta.url),
     'utf8',
   );
-  assert.match(catalog, /\.GET\('\/exercises'/);
-  for (const field of ['search', 'exerciseType', 'muscleGroup', 'equipment', 'page', 'limit']) {
-    assert.ok(catalog.includes(field));
-  }
-  assert.match(catalog, /data\.meta\.totalPages/);
-  assert.match(catalog, /!exercise\.isArchived/);
+  const api = await readFile(
+    new URL('../src/features/exercises/api/exercise-list-query.ts', import.meta.url),
+    'utf8',
+  );
+
+  assert.match(catalog, /useQuery\(/);
+  assert.match(catalog, /exerciseListQueryOptions/);
+  assert.match(catalog, /setDebouncedSearch/);
   assert.match(catalog, /setTimeout/);
   assert.match(catalog, /clearTimeout/);
-  assert.match(catalog, /active = false/);
+  assert.match(catalog, /enabled: !searching/);
+  assert.match(catalog, /query\.refetch\(/);
   assert.match(catalog, /router\.replace\('\/login'\)/);
-  assert.match(catalog, /setAttempt/);
+  assert.match(catalog, /queryClient\.clear\(\)/);
   assert.match(catalog, /href=\{/);
-  assert.doesNotMatch(catalog, /localStorage|sessionStorage|dangerouslySetInnerHTML/);
+
+  assert.match(api, /webApi\.GET\('\/exercises'/);
+  assert.match(api, /queryOptions\(/);
+  assert.match(api, /signal,/);
+  assert.match(api, /!exercise\.isArchived/);
+  assert.match(api, /data\.meta\.totalPages/);
+  for (const field of ['search', 'exerciseType', 'muscleGroup', 'equipment', 'page', 'limit']) {
+    assert.ok(api.includes(field));
+  }
+  assert.doesNotMatch(catalog + api, /localStorage|sessionStorage|dangerouslySetInnerHTML/);
 });
 
 test('exercise details handle inaccessible and archived records', async () => {

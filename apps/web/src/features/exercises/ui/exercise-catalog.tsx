@@ -1,15 +1,15 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
-import { webApi } from '@/shared/api/client';
+import { exerciseListQueryOptions, ExerciseListRequestError } from '../api/exercise-list-query';
 import { Button } from '@/shared/ui/button';
 import {
   EXERCISE_TYPES,
   getExerciseErrorMessage,
-  getExercisePageCount,
   getExerciseSourceLabel,
   getExerciseTypeLabel,
   type ExerciseListItem,
@@ -18,8 +18,6 @@ import {
 
 import { useExerciseTaxonomy } from './use-exercise-taxonomy';
 
-const PAGE_SIZE = 20;
-
 type CatalogState =
   | { kind: 'loading' }
   | { kind: 'error'; message: string }
@@ -27,74 +25,76 @@ type CatalogState =
 
 export function ExerciseCatalog({ role }: { role: 'ATHLETE' | 'TRAINER' | 'ADMIN' }) {
   const router = useRouter();
+  const queryClient = useQueryClient();
+  const redirecting = useRef(false);
   const { state: taxonomy, retry: retryTaxonomy } = useExerciseTaxonomy();
   const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [exerciseType, setExerciseType] = useState<ExerciseTypeFilter>('ALL');
   const [muscleGroup, setMuscleGroup] = useState('');
   const [equipment, setEquipment] = useState('');
   const [page, setPage] = useState(1);
-  const [attempt, setAttempt] = useState(0);
-  const [state, setState] = useState<CatalogState>({ kind: 'loading' });
 
   useEffect(() => {
-    let active = true;
-    const timer = setTimeout(() => {
-      void webApi
-        .GET('/exercises', {
-          params: {
-            query: {
-              page,
-              limit: PAGE_SIZE,
-              ...(search.trim() ? { search: search.trim() } : {}),
-              ...(exerciseType === 'ALL' ? {} : { exerciseType }),
-              ...(muscleGroup.trim() ? { muscleGroup: muscleGroup.trim() } : {}),
-              ...(equipment.trim() ? { equipment: equipment.trim() } : {}),
-            },
-          },
-        })
-        .then(({ data, response }) => {
-          if (!active) return;
-          if (response.status === 401) {
-            router.replace('/login');
-            return;
-          }
-          if (response.status !== 200 || !data) {
-            setState({ kind: 'error', message: getExerciseErrorMessage(response.status) });
-            return;
-          }
-          setState({
-            kind: 'ready',
-            exercises: data.data.filter((exercise) => !exercise.isArchived),
-            total: data.meta.total,
-            pages: getExercisePageCount(data.meta.totalPages),
-          });
-        })
-        .catch(() => {
-          if (active) setState({ kind: 'error', message: getExerciseErrorMessage() });
-        });
-    }, 250);
+    const timer = setTimeout(() => setDebouncedSearch(search.trim()), 250);
+    return () => clearTimeout(timer);
+  }, [search]);
 
-    return () => {
-      active = false;
-      clearTimeout(timer);
-    };
-  }, [search, exerciseType, muscleGroup, equipment, page, attempt, router]);
+  const searching = search.trim() !== debouncedSearch;
+  const query = useQuery({
+    ...exerciseListQueryOptions({
+      search: debouncedSearch,
+      exerciseType,
+      muscleGroup,
+      equipment,
+      page,
+    }),
+    enabled: !searching,
+  });
+  const unauthenticated =
+    query.error instanceof ExerciseListRequestError && query.error.status === 401;
+
+  useEffect(() => {
+    if (unauthenticated && !redirecting.current) {
+      redirecting.current = true;
+      queryClient.clear();
+      router.replace('/login');
+    }
+  }, [unauthenticated, queryClient, router]);
 
   function resetAndFilter(action: () => void) {
     action();
     setPage(1);
-    setState({ kind: 'loading' });
   }
 
   function changePage(next: number) {
     setPage(next);
-    setState({ kind: 'loading' });
   }
 
   function retry() {
-    setState({ kind: 'loading' });
-    setAttempt((value) => value + 1);
+    void query.refetch();
   }
+
+  const state: CatalogState =
+    searching || query.isPending
+      ? { kind: 'loading' }
+      : query.isError
+        ? {
+            kind: 'error',
+            message:
+              query.error instanceof ExerciseListRequestError
+                ? query.error.message
+                : getExerciseErrorMessage(),
+          }
+        : {
+            kind: 'ready',
+            exercises: query.data.exercises,
+            total: query.data.total,
+            pages: query.data.pages,
+          };
+
+  // Do not expose cached private results after an authentication failure.
+  if (unauthenticated) return null;
 
   return (
     <main className="mx-auto max-w-5xl space-y-7 px-6 py-12">
