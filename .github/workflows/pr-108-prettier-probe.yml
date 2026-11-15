@@ -1,0 +1,40 @@
+name: PR 108 temporary Prettier diagnostics
+on:
+  pull_request:
+    paths:
+      - 'apps/web/**'
+      - '.github/workflows/pr-108-prettier-probe.yml'
+permissions:
+  contents: read
+jobs:
+  exact-format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 12.18.0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - run: pnpm install --frozen-lockfile
+      - name: Emit exact Prettier-formatted files
+        shell: bash
+        run: |
+          files=(
+            apps/web/src/features/training-programs/lib/edit-program-set.ts
+            apps/web/src/features/training-programs/ui/add-program-set-form.tsx
+            apps/web/src/features/training-programs/ui/program-set-item.tsx
+            apps/web/src/features/training-programs/ui/program-exercise-item.tsx
+            apps/web/e2e/integration/trainer-program-set-edit-delete.spec.ts
+            apps/web/e2e/integration/trainer-program-published-readonly.spec.ts
+            apps/web/test/edit-program-set.test.mjs
+            apps/web/test/add-program-set.test.mjs
+            apps/web/README.md
+          )
+          pnpm exec prettier --write "${files[@]}"
+          for file in "${files[@]}"; do
+            echo "FORMAT_START:${file}"
+            base64 "$file"
+            echo "FORMAT_END:${file}"
+          done
