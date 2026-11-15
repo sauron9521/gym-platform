@@ -1,12 +1,14 @@
 'use client';
 
 import { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 
 import { webApi } from '@/shared/api/client';
 import { Button } from '@/shared/ui/button';
+import { trainingProgramQueryKeys } from '../lib/training-program-query-keys';
 import { createTrainingProgramFormSchema } from '../lib/create-training-program';
 import {
   buildUpdateTrainingProgramDraftPayload,
@@ -26,6 +28,7 @@ export function EditTrainingProgramDraftForm({
   onUpdated: (version: TrainingProgramVersionItem) => void;
 }) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const [hasChanged, setHasChanged] = useState(false);
@@ -68,6 +71,7 @@ export function EditTrainingProgramDraftForm({
         return;
       }
 
+      await queryClient.invalidateQueries({ queryKey: trainingProgramQueryKeys.lists() });
       onUpdated(data);
       form.reset(toTrainingProgramDraftValues(data));
       setHasChanged(false);
