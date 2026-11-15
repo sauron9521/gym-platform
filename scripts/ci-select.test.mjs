@@ -1,3 +1,9 @@
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { test } from 'node:test';
+
+import { classifyChangedPaths, selectFromGitHubEnvironment } from './ci-select.mjs';
+
 test('workspace quality executes independently before long integration suites finish', () => {
   const yaml = readFileSync(new URL('../.github/workflows/ci.yml', import.meta.url), 'utf8');
   const checks = yaml.split('  quality-workspaces:\n')[1]?.split('\n  quality:\n')[0];
@@ -12,12 +18,6 @@ test('workspace quality executes independently before long integration suites fi
   assert.match(gate, /test "\$QUALITY_WORKSPACES_RESULT" = success/);
   assert.doesNotMatch(gate, /pnpm install --frozen-lockfile/);
 });
-
-import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import { test } from 'node:test';
-
-import { classifyChangedPaths, selectFromGitHubEnvironment } from './ci-select.mjs';
 
 test('Web-only change skips API E2E, Docker and Mobile', () => {
   assert.deepEqual(classifyChangedPaths(['apps/web/src/app/page.tsx']), {
@@ -367,7 +367,7 @@ test('dependency-security job is an enforced prerequisite of the protected Quali
   assert.ok(audit, 'Dependency security job must exist');
   assert.match(
     quality,
-    /needs: \\[changes, quality-workspaces, prepush-windows, web-browser-e2e, dependency-security, mobile-ios-dev-windows\\]/,
+    /needs: \[changes, quality-workspaces, prepush-windows, web-browser-e2e, dependency-security, mobile-ios-dev-windows\]/,
   );
   assert.match(quality, /if: always\(\)/);
   assert.match(quality, /QUALITY_WORKSPACES_RESULT:/);
