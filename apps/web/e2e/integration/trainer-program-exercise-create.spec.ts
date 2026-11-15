@@ -53,7 +53,7 @@ test('real API: trainer adds a catalogue exercise to a draft workout and another
     const form = ownerPage.getByRole('form', {
       name: 'Додавання вправи до тренування ' + workoutTitle,
     });
-    await form.getByRole('button', { name: 'Додати обрану вправу' }).isDisabled();
+    await expect(form.getByRole('button', { name: 'Додати обрану вправу' })).toBeDisabled();
     await form.getByLabel('Пошук вправи').fill('bench');
     await expect(form.getByRole('button', { name: 'Обрати вправу ' + exercise!.name })).toBeVisible();
     await form.getByRole('button', { name: 'Обрати вправу ' + exercise!.name }).click();
