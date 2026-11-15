@@ -44,6 +44,8 @@ test('real API: edit, conflict, cancel/delete and cross-trainer isolation for wo
       data: { weekNumber: 1, dayNumber: 2, title: otherTitle },
     });
     expect(second.status()).toBe(201);
+    const secondVersion: { workouts: Array<{ id: string; title: string }> } = await second.json();
+    const otherWorkoutId = secondVersion.workouts.find((item) => item.title === otherTitle)!.id;
 
     await ownerPage.goto('/trainer/programs/' + program.id);
     await expect(ownerPage.getByRole('heading', { name: initialTitle })).toBeVisible();
@@ -122,12 +124,12 @@ test('real API: edit, conflict, cancel/delete and cross-trainer isolation for wo
     await expect(ownerPage.getByRole('heading', { name: updatedTitle })).toHaveCount(0);
     await expect(ownerPage.getByRole('heading', { name: otherTitle })).toBeVisible();
 
-    const deniedPatch = await otherPage.request.patch(path + '/' + workoutId, {
+    const deniedPatch = await otherPage.request.patch(path + '/' + otherWorkoutId, {
       headers: { origin },
       data: { title: 'Чуже тренування' },
     });
     expect(deniedPatch.status()).toBe(404);
-    const deniedDelete = await otherPage.request.delete(path + '/' + workoutId, {
+    const deniedDelete = await otherPage.request.delete(path + '/' + otherWorkoutId, {
       headers: { origin },
     });
     expect(deniedDelete.status()).toBe(404);
