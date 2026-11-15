@@ -1,17 +1,11 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 
-import { webApi } from '@/shared/api/client';
+import { useInviteRelationshipMutation } from '../api/trainer-athlete-mutations';
 import { Button } from '@/shared/ui/button';
-import {
-  getRelationshipMutationError,
-  invitationSchema,
-  type InvitationValues,
-} from '../lib/trainer-athlete-actions';
+import { invitationSchema, type InvitationValues } from '../lib/trainer-athlete-actions';
 
 export function InviteRelationshipForm({
   actorId,
@@ -22,8 +16,7 @@ export function InviteRelationshipForm({
   actorRole: 'ATHLETE' | 'TRAINER';
   onCreated: () => void;
 }) {
-  const router = useRouter();
-  const [error, setError] = useState<string | null>(null);
+  const mutation = useInviteRelationshipMutation();
   const form = useForm<InvitationValues>({
     resolver: zodResolver(invitationSchema),
     defaultValues: { userId: '' },
@@ -36,23 +29,13 @@ export function InviteRelationshipForm({
       return;
     }
 
-    setError(null);
+    mutation.reset();
     try {
-      const { data, response } = await webApi.POST('/trainer-athletes', {
-        body: { userId: values.userId },
-      });
-      if (response.status === 401) {
-        router.replace('/login');
-        return;
-      }
-      if (response.status !== 201 || !data) {
-        setError(getRelationshipMutationError(response.status));
-        return;
-      }
+      await mutation.mutateAsync(values.userId);
       form.reset();
       onCreated();
     } catch {
-      setError(getRelationshipMutationError());
+      // The mutation owns safe error messages and handles 401 redirects.
     }
   }
 
@@ -79,7 +62,7 @@ export function InviteRelationshipForm({
             type="text"
             autoComplete="off"
             spellCheck={false}
-            disabled={form.formState.isSubmitting}
+            disabled={mutation.isPending || form.formState.isSubmitting}
             aria-invalid={Boolean(form.formState.errors.userId)}
             {...form.register('userId')}
             placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
@@ -91,13 +74,13 @@ export function InviteRelationshipForm({
             </p>
           )}
         </div>
-        {error && (
+        {mutation.isError && mutation.error.status !== 401 && (
           <p role="alert" className="text-sm text-destructive">
-            {error}
+            {mutation.error.message}
           </p>
         )}
-        <Button type="submit" disabled={form.formState.isSubmitting}>
-          {form.formState.isSubmitting ? 'Надсилаємо…' : 'Надіслати запрошення'}
+        <Button type="submit" disabled={mutation.isPending || form.formState.isSubmitting}>
+          {mutation.isPending ? 'Надсилаємо…' : 'Надіслати запрошення'}
         </Button>
       </form>
     </section>
