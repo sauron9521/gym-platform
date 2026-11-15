@@ -302,9 +302,22 @@ Published plans display all saved targets but never offer edit/delete controls,
 and the backend refuses direct mutation requests. Browser E2E covers editing,
 null clears, persistence after reload, cancel/confirm deletion, and ownership.
 
+In editable DRAFT program exercises, trainers can move a planned set up or
+down via the typed same-origin `PATCH /training-programs/{programId}/versions/{versionId}/workouts/{workoutId}/exercises/{exerciseId}/sets/reorder`.
+The client sends an exact permutation of **all** set IDs (not partial
+positions), and the API transaction atomically updates set numbers.
+The first/last move buttons are disabled at their respective boundaries,
+and pending changes disable competing set actions. On HTTP 200, the full
+returned version refreshes the displayed list; errors derived from HTTP
+statuses are shown without raw server details. Published programs display
+the saved set order but provide no move controls; NestJS also rejects
+reorder requests against published versions.
+The browser+real API tests check both directions, preservation after reload,
+ownership, and invalid permutations.
+
 The Web still shows only the **latest version**, not the full version history.
-Editing/removing/reordering individual exercises, reordering sets, publishing
-versions and assigning programs are separate future features.
+Editing/removing/reordering individual exercises, publishing versions and
+assigning programs are separate future features.
 
 ## Browser E2E (Playwright + Chromium)
 
