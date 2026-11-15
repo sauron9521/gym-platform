@@ -35,8 +35,8 @@ function useRelationshipMutationCallbacks() {
 export function useInviteRelationshipMutation() {
   const { queryClient, onError } = useRelationshipMutationCallbacks();
 
-  return useMutation({
-    mutationFn: async (userId: string) => {
+  return useMutation<unknown, RelationshipMutationRequestError, string>({
+    mutationFn: async (userId) => {
       try {
         const { response, data } = await webApi.POST('/trainer-athletes', {
           body: { userId },
@@ -72,8 +72,8 @@ type RelationshipActionInput = {
 export function useRelationshipActionMutation() {
   const { queryClient, onError } = useRelationshipMutationCallbacks();
 
-  return useMutation({
-    mutationFn: async ({ id, action, reason }: RelationshipActionInput) => {
+  return useMutation<unknown, RelationshipMutationRequestError, RelationshipActionInput>({
+    mutationFn: async ({ id, action, reason }) => {
       try {
         const body = { reason };
         const result =
