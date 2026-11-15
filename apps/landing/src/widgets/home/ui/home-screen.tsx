@@ -32,9 +32,7 @@ export function HomeScreen() {
           className="pointer-events-none absolute top-0 right-0 -z-10 h-full w-2/3 bg-[radial-gradient(ellipse_at_top_right,oklch(0.87_0.2_125/0.15),transparent_65%)]"
         />
         <div className="mx-auto max-w-6xl px-6 py-24 sm:py-32">
-          <span
-            className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-2 text-xs font-bold tracking-[0.18em] text-primary uppercase"
-          >
+          <span className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-2 text-xs font-bold tracking-[0.18em] text-primary uppercase">
             <span aria-hidden="true" className="size-2 rounded-full bg-primary" />
             Gym Platform
           </span>
@@ -42,8 +40,8 @@ export function HomeScreen() {
             Тренуйся розумніше. <span className="text-primary">Прогресуй далі.</span>
           </h1>
           <p className="mt-7 max-w-2xl text-lg leading-8 text-muted-foreground">
-            Розвиваємо єдину платформу для спортсменів і персональних тренерів:
-            планування тренувань, бібліотека вправ, програми та відстеження прогресу.
+            Розвиваємо єдину платформу для спортсменів і персональних тренерів: планування
+            тренувань, бібліотека вправ, програми та відстеження прогресу.
           </p>
           <div className="mt-10 flex flex-wrap gap-3">
             <Button asChild size="lg">
