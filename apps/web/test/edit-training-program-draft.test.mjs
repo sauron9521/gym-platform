@@ -115,6 +115,7 @@ test('program detail/editor use typed paths and allow only active draft updates'
   assert.match(details, /latest\?\.status === 'DRAFT' && program.status !== 'ARCHIVED'/);
   assert.match(details, /queryClient.clear\(\)/);
   assert.match(mutations, /queryClient.setQueryData/);
+  assert.match(mutations, /useAuthFailure\(\)/);
   assert.match(details, /router.replace\('\/login'\)/);
   assert.match(details, /if \(unauthenticated\) return null/);
   assert.match(details, /query.refetch\(\)/);
@@ -133,7 +134,6 @@ test('program detail/editor use typed paths and allow only active draft updates'
   assert.match(mutations, /'\/training-programs\/\{programId\}\/versions\/\{versionId\}'/);
   assert.match(mutations, /response.status !== 200/);
   assert.match(mutations, /getUpdateTrainingProgramDraftError/);
-  assert.match(mutations, /queryClient.clear\(\)/);
   assert.match(mutations, /trainingProgramQueryKeys.detail\(programId\)/);
   assert.match(mutations, /trainingProgramQueryKeys.lists\(\)/);
   assert.match(mutations, /trainingProgramQueryKeys.version\(programId, versionId\)/);

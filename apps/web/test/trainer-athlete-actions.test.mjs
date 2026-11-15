@@ -137,11 +137,10 @@ test('relationship mutation hooks own typed writes and destructive confirmations
 
   assert.match(mutations, /useMutation</);
   assert.match(mutations, /RelationshipMutationRequestError/);
-  assert.match(mutations, /queryClient.clear\(\)/);
-  assert.match(mutations, /router.replace\('\/login'\)/);
   assert.match(mutations, /invalidateRelationships\('none'\)/);
   assert.match(mutations, /invalidateRelationships\(\)/);
   assert.match(mutations, /trainerAthleteQueryKeys.lists\(\)/);
+  assert.match(mutations, /useAuthFailure\(\)/);
   assert.match(mutations, /retry: false/);
   assert.match(mutations, /response.status !== 201/);
   assert.match(mutations, /result.response.status !== 200/);
