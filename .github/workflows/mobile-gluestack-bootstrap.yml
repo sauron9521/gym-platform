@@ -1,0 +1,47 @@
+name: Mobile UI bootstrap (temporary)
+
+on:
+  push:
+    branches:
+      - feat/mobile-gluestack-v5-foundation
+
+permissions:
+  contents: write
+
+jobs:
+  scaffold:
+    if: ${{ !contains(github.event.head_commit.message, '[gluestack bootstrap]') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: true
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+      - name: Install existing workspace
+        run: pnpm install --frozen-lockfile
+      - name: Generate gluestack-ui v5 and UniWind for Expo
+        working-directory: apps/mobile
+        run: |
+          pnpm dlx gluestack-ui@latest init --uniwind --use-pnpm --path src/shared/ui/gluestack -y
+          pnpm dlx gluestack-ui@latest add button --use-pnpm -y
+          pnpm dlx gluestack-ui@latest add box --use-pnpm -y
+          pnpm dlx gluestack-ui@latest add text --use-pnpm -y
+      - name: Update pnpm lock and format generated UI
+        run: |
+          pnpm install --lockfile-only
+          pnpm exec prettier --write apps/mobile/src/shared/ui/gluestack apps/mobile/global.css apps/mobile/metro.config.js apps/mobile/package.json || true
+      - name: Commit generated files on feature branch only
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if ! git diff --cached --quiet; then
+            git commit -m "chore(mobile): [gluestack bootstrap] scaffold v5 UI and pnpm lockfile"
+            git push origin HEAD:feat/mobile-gluestack-v5-foundation
+          fi
