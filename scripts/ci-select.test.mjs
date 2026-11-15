@@ -119,7 +119,6 @@ test('non-Markdown infrastructure, manifests, CI and unknown Markdown fail close
     'infra/docker/.env.example',
     'infra/docker/init/01-create-test-db.sh',
     'infra/docker/production/compose.prod.yaml',
-    'apps/api/package.json',
     'apps/api/src/modules/auth/README.md',
     'packages/unknown/README.md',
     'scripts/README.md',
@@ -132,6 +131,13 @@ test('non-Markdown infrastructure, manifests, CI and unknown Markdown fail close
     assert.equal(actual.api, true);
     assert.equal(actual.deps, true);
   }
+
+
+  const manifest = classifyChangedPaths(['infra/docker/README.md', 'apps/api/package.json']);
+  assert.equal(manifest.full, false);
+  assert.equal(manifest.api, true);
+  assert.equal(manifest.deps, true);
+  assert.equal(manifest.web, false);
 
   for (const invalid of [
     ['infra/../docker/README.md'],
