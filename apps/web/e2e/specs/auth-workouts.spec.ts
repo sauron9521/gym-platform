@@ -388,3 +388,15 @@ test('workout edit mutation preserves unsaved values after a 409 conflict', asyn
   await expect(editor.getByLabel('Назва', { exact: true })).toHaveValue(title);
   expect(attempts).toBe(1);
 });
+
+test('workout exercise picker redirects on 401 without exposing private options', async ({
+  page,
+}) => {
+  await signIn(page);
+  await page.route('**/backend/exercises*', (route) =>
+    route.fulfill({ status: 401, contentType: 'application/json', body: '{}' }),
+  );
+  await page.goto('/workouts/new');
+  await expect(page).toHaveURL(/\/login$/);
+  await expect(page.getByRole('button', { name: 'Додати', exact: true })).toHaveCount(0);
+});
