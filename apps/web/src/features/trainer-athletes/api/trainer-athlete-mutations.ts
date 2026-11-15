@@ -29,11 +29,18 @@ function useRelationshipMutationCallbacks() {
     }
   }
 
-  return { queryClient, onError };
+  function invalidateRelationships(refetchType: 'active' | 'none' = 'active') {
+    return queryClient.invalidateQueries({
+      queryKey: trainerAthleteQueryKeys.lists(),
+      refetchType,
+    });
+  }
+
+  return { invalidateRelationships, onError };
 }
 
 export function useInviteRelationshipMutation() {
-  const { queryClient, onError } = useRelationshipMutationCallbacks();
+  const { invalidateRelationships, onError } = useRelationshipMutationCallbacks();
 
   return useMutation<unknown, RelationshipMutationRequestError, string>({
     mutationFn: async (userId) => {
@@ -53,11 +60,7 @@ export function useInviteRelationshipMutation() {
     },
     // Inviting changes which filter is displayed. Invalidate the old lists
     // without refetching the old filter and spending extra rate-limit budget.
-    onSuccess: () =>
-      queryClient.invalidateQueries({
-        queryKey: trainerAthleteQueryKeys.lists(),
-        refetchType: 'none',
-      }),
+    onSuccess: () => invalidateRelationships('none'),
     onError,
     retry: false,
   });
@@ -102,7 +105,7 @@ export function useRelationshipActionMutation() {
     },
     // Only successful server responses may invalidate a relationship cache.
     // Refetch active lists once; other status/page entries become stale.
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: trainerAthleteQueryKeys.lists() }),
+    onSuccess: () => invalidateRelationships(),
     onError,
     retry: false,
   });
