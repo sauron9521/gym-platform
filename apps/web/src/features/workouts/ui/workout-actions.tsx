@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { toast } from 'sonner';
 
 import { Button } from '@/shared/ui/button';
 import { useWorkoutActionMutation } from '../api/workout-mutations';
@@ -35,6 +36,13 @@ export function WorkoutActions({
     setActiveAction(action);
     try {
       await mutation.mutateAsync(action);
+      toast.success(
+        action === 'start'
+          ? 'Тренування розпочато.'
+          : action === 'complete'
+            ? 'Тренування завершено.'
+            : 'Тренування скасовано.',
+      );
     } catch {
       // The mutation keeps safe status-derived errors for display.
     } finally {
