@@ -7,7 +7,10 @@ import { useForm } from 'react-hook-form';
 
 import { webApi } from '@/shared/api/client';
 import { Button } from '@/shared/ui/button';
-import { isWeekWithinDuration, type ProgramVersionWithWorkouts } from '../lib/create-program-workout';
+import {
+  isWeekWithinDuration,
+  type ProgramVersionWithWorkouts,
+} from '../lib/create-program-workout';
 import {
   buildUpdateProgramWorkoutPayload,
   editProgramWorkoutSchema,
