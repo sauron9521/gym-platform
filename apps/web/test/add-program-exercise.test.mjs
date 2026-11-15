@@ -66,7 +66,10 @@ test('workout day renders persisted exercises and uses typed draft-only POST', a
     'utf8',
   );
   const mutation = await readFile(
-    new URL('../src/features/training-programs/api/add-program-exercise-mutation.ts', import.meta.url),
+    new URL(
+      '../src/features/training-programs/api/add-program-exercise-mutation.ts',
+      import.meta.url,
+    ),
     'utf8',
   );
   const cache = await readFile(
