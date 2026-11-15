@@ -1,9 +1,9 @@
 'use client';
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useRouter } from 'next/navigation';
 
 import { webApi } from '@/shared/api/client';
+import { useAuthFailure } from '@/shared/api/use-auth-failure';
 
 import {
   buildCreateTrainingProgramPayload,
@@ -37,14 +37,7 @@ export class TrainingProgramMutationRequestError extends Error {
 
 function useTrainingProgramMutationContext() {
   const queryClient = useQueryClient();
-  const router = useRouter();
-
-  function onError(error: TrainingProgramMutationRequestError) {
-    if (error.status === 401) {
-      queryClient.clear();
-      router.replace('/login');
-    }
-  }
+  const onError = useAuthFailure();
 
   return { queryClient, onError };
 }
