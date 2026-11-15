@@ -8,7 +8,10 @@ import { useAuthFailure } from '@/shared/api/use-auth-failure';
 import { getCreateExerciseErrorMessage, type CreateExercisePayload } from '../lib/create-exercise';
 import type { ExerciseDetailsData } from '../lib/exercise-catalog';
 import { exerciseQueryKeys } from '../lib/exercise-query-keys';
-import { getExerciseMutationErrorMessage, type UpdateExercisePayload } from '../lib/manage-exercise';
+import {
+  getExerciseMutationErrorMessage,
+  type UpdateExercisePayload,
+} from '../lib/manage-exercise';
 
 type ExerciseMutationOperation = 'create' | 'edit' | 'archive';
 
