@@ -1,15 +1,20 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 
-import { webApi } from '@/shared/api/client';
+import {
+  trainingProgramVersionQueryOptions,
+  TrainingProgramVersionRequestError,
+} from '../api/training-program-version-query';
 import { Button } from '@/shared/ui/button';
 import {
   getProgramWorkoutsLoadError,
   sortProgramWorkouts,
   type ProgramVersionWithWorkouts,
 } from '../lib/create-program-workout';
+import { trainingProgramQueryKeys } from '../lib/training-program-query-keys';
 import { CreateProgramWorkoutForm } from './create-program-workout-form';
 import { ProgramWorkoutItem } from './program-workout-item';
 
@@ -30,39 +35,50 @@ export function TrainingProgramWorkouts({
   editable: boolean;
 }) {
   const router = useRouter();
-  const [attempt, setAttempt] = useState(0);
+  const queryClient = useQueryClient();
+  const redirecting = useRef(false);
   const [notice, setNotice] = useState<string | null>(null);
-  const [state, setState] = useState<WorkoutsState>({ kind: 'loading' });
+  const query = useQuery(trainingProgramVersionQueryOptions(programId, versionId));
+  const unauthenticated =
+    query.error instanceof TrainingProgramVersionRequestError && query.error.status === 401;
 
   useEffect(() => {
-    let active = true;
-    void webApi
-      .GET('/training-programs/{programId}/versions/{versionId}', {
-        params: { path: { programId, versionId } },
-      })
-      .then(({ response, data }) => {
-        if (!active) return;
-        if (response.status === 401) {
-          router.replace('/login');
-          return;
-        }
-        if (response.status !== 200 || !data) {
-          setState({ kind: 'error', message: getProgramWorkoutsLoadError(response.status) });
-          return;
-        }
-        setState({ kind: 'ready', version: data });
-      })
-      .catch(() => {
-        if (active) setState({ kind: 'error', message: getProgramWorkoutsLoadError() });
-      });
+    if (unauthenticated && !redirecting.current) {
+      redirecting.current = true;
+      queryClient.clear();
+      router.replace('/login');
+    }
+  }, [unauthenticated, queryClient, router]);
 
-    return () => {
-      active = false;
+  function retry() {
+    void query.refetch();
+  }
+
+  function updateVersion(updatedVersion: ProgramVersionWithWorkouts, message: string | null) {
+    queryClient.setQueryData(trainingProgramQueryKeys.version(programId, versionId), updatedVersion);
+    setNotice(message);
+  }
+
+  let state: WorkoutsState;
+  if (query.isPending || unauthenticated) {
+    state = { kind: 'loading' };
+  } else if (query.isError) {
+    state = {
+      kind: 'error',
+      message:
+        query.error instanceof TrainingProgramVersionRequestError
+          ? query.error.message
+          : getProgramWorkoutsLoadError(),
     };
-  }, [programId, versionId, attempt, router]);
+  } else {
+    state = { kind: 'ready', version: query.data };
+  }
 
   const version = state.kind === 'ready' ? state.version : null;
   const workouts = version ? sortProgramWorkouts(version.workouts) : [];
+
+  // Prevent showing cached trainer-only workouts after a failed authentication check.
+  if (unauthenticated) return null;
 
   return (
     <section className="space-y-4" aria-label="Тренувальні дні">
@@ -78,10 +94,7 @@ export function TrainingProgramWorkouts({
           <Button
             type="button"
             variant="outline"
-            onClick={() => {
-              setState({ kind: 'loading' });
-              setAttempt((value) => value + 1);
-            }}
+            onClick={retry}
           >
             Спробувати ще раз
           </Button>
@@ -109,8 +122,7 @@ export function TrainingProgramWorkouts({
                   durationWeeks={durationWeeks}
                   editable={editable && version.status === 'DRAFT'}
                   onChanged={(updatedVersion, message) => {
-                    setState({ kind: 'ready', version: updatedVersion });
-                    setNotice(message);
+                    updateVersion(updatedVersion, message);
                   }}
                 />
               ))}
@@ -122,8 +134,7 @@ export function TrainingProgramWorkouts({
               versionId={versionId}
               durationWeeks={durationWeeks}
               onCreated={(updatedVersion) => {
-                setState({ kind: 'ready', version: updatedVersion });
-                setNotice(null);
+                updateVersion(updatedVersion, null);
               }}
             />
           )}
