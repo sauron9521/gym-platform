@@ -527,6 +527,63 @@ test('workout details retry is explicit and preserves 403 privacy errors', async
   await expect(page).toHaveURL(new RegExp('/workouts/' + id + '$'));
 });
 
+test('Sonner notifies successful workout edit and start without duplicating form errors', async ({
+  page,
+}) => {
+  await signIn(page);
+  const id = '00000000-0000-4000-8000-000000000201';
+  const workout = {
+    id,
+    title: 'План на сьогодні',
+    status: 'PLANNED',
+    scheduledAt: null,
+    startedAt: null,
+    completedAt: null,
+    notes: null,
+    exercises: [],
+  };
+
+  await page.route('**/backend/workouts/' + id, (route) => {
+    if (route.request().method() === 'PATCH') {
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ ...workout, title: 'Оновлений план' }),
+      });
+    }
+    return route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(workout),
+    });
+  });
+  await page.route('**/backend/workouts/' + id + '/start', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ ...workout, title: 'Оновлений план', status: 'IN_PROGRESS' }),
+    }),
+  );
+
+  await page.goto('/workouts/' + id);
+  await page.getByRole('button', { name: 'Редагувати', exact: true }).click();
+  const editor = page.getByRole('region', { name: 'Редагування тренування' });
+  await editor.getByLabel('Назва', { exact: true }).fill('Оновлений план');
+  await editor.getByRole('button', { name: 'Зберегти зміни' }).click();
+  await expect(
+    page.locator('[data-sonner-toast][data-type="success"]').filter({
+      hasText: 'Зміни тренування збережено.',
+    }),
+  ).toBeVisible();
+
+  await page.getByRole('button', { name: 'Розпочати тренування', exact: true }).click();
+  await expect(
+    page.locator('[data-sonner-toast][data-type="success"]').filter({
+      hasText: 'Тренування розпочато.',
+    }),
+  ).toBeVisible();
+});
+
 test('workout edit mutation preserves unsaved values after a 409 conflict', async ({ page }) => {
   await signIn(page);
   const id = '00000000-0000-4000-8000-000000000101';
