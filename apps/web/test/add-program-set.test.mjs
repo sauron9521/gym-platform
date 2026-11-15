@@ -83,7 +83,10 @@ test('saved decimal strings are displayed without losing their meaning', () => {
 
 test('draft-only typed POST is separate from saved set read-only display', async () => {
   const root = '../src/features/training-programs/ui/';
-  const parent = await readFile(new URL(root + 'program-workout-item.tsx', import.meta.url), 'utf8');
+  const parent = await readFile(
+    new URL(root + 'program-workout-item.tsx', import.meta.url),
+    'utf8',
+  );
   const item = await readFile(new URL(root + 'program-exercise-item.tsx', import.meta.url), 'utf8');
   const form = await readFile(new URL(root + 'add-program-set-form.tsx', import.meta.url), 'utf8');
   assert.match(parent, /ProgramExerciseItem/);
