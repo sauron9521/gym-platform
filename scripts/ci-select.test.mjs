@@ -367,7 +367,7 @@ test('dependency-security job is an enforced prerequisite of the protected Quali
   assert.ok(audit, 'Dependency security job must exist');
   assert.match(
     quality,
-    /needs: \[changes, quality-workspaces, prepush-windows, web-browser-e2e, dependency-security, mobile-ios-dev-windows\]/,
+    /needs:\n\s+- changes\n\s+- quality-workspaces\n\s+- prepush-windows\n\s+- web-browser-e2e\n\s+- dependency-security\n\s+- mobile-ios-dev-windows/,
   );
   assert.match(quality, /if: always\(\)/);
   assert.match(quality, /QUALITY_WORKSPACES_RESULT:/);
