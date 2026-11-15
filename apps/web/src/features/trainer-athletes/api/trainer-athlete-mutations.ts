@@ -1,9 +1,9 @@
 'use client';
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useRouter } from 'next/navigation';
 
 import { webApi } from '@/shared/api/client';
+import { useAuthFailure } from '@/shared/api/use-auth-failure';
 
 import { trainerAthleteQueryKeys } from '../lib/trainer-athlete-query-keys';
 import {
@@ -20,14 +20,7 @@ export class RelationshipMutationRequestError extends Error {
 
 function useRelationshipMutationCallbacks() {
   const queryClient = useQueryClient();
-  const router = useRouter();
-
-  function onError(error: RelationshipMutationRequestError) {
-    if (error.status === 401) {
-      queryClient.clear();
-      router.replace('/login');
-    }
-  }
+  const onError = useAuthFailure();
 
   function invalidateRelationships(refetchType: 'active' | 'none' = 'active') {
     return queryClient.invalidateQueries({
