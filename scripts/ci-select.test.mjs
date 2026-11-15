@@ -329,9 +329,11 @@ test('dependency-security job is an enforced prerequisite of the protected Quali
   assert.ok(audit, 'Dependency security job must exist');
   assert.match(
     quality,
-    /needs: \[changes, prepush-windows, web-browser-e2e, dependency-security\]/,
+    /needs: \[changes, prepush-windows, web-browser-e2e, dependency-security, mobile-ios-dev-windows\]/,
   );
   assert.match(quality, /if: always\(\)/);
+  assert.match(quality, /MOBILE_IOS_DEV_RESULT:/);
+  assert.match(quality, /test "\$MOBILE_IOS_DEV_RESULT" = success/);
   assert.match(quality, /DEPS_REQUIRED: \$\{\{ needs\.changes\.outputs\.deps \}\}/);
   assert.match(quality, /SECURITY_RESULT: \$\{\{ needs\.dependency-security\.result \}\}/);
   assert.match(quality, /if \[ "\$DEPS_REQUIRED" = true \]; then/);

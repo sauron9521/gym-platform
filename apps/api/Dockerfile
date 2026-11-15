@@ -18,7 +18,7 @@ FROM build AS migrate
 ENV NODE_ENV=production
 WORKDIR /workspace/apps/api
 USER node
-CMD ["./node_modules/.bin/prisma", "migrate", "deploy", "--config", "prisma7.config.ts"]
+CMD ["../../node_modules/.bin/prisma", "migrate", "deploy", "--config", "prisma7.config.ts"]
 
 # pnpm 12 deploy creates a self-contained isolated production dependency tree.
 # Built dist/ is copied explicitly: the repository gitignore excludes it.
