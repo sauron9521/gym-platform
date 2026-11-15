@@ -115,20 +115,36 @@ test('owner-only UI uses typed mutation endpoints and inline confirmation', asyn
     new URL('../src/features/exercises/ui/edit-exercise-form.tsx', import.meta.url),
     'utf8',
   );
+  const mutations = await readFile(
+    new URL('../src/features/exercises/api/exercise-mutations.ts', import.meta.url),
+    'utf8',
+  );
   const route = await readFile(
     new URL('../src/app/(protected)/exercises/[id]/page.tsx', import.meta.url),
     'utf8',
   );
   assert.match(route, /actor=\{session.user\}/);
   assert.match(details, /canManageCustomExercise/);
-  assert.match(details, /webApi.DELETE\('\/exercises\/\{id\}'/);
+  assert.match(details, /useArchiveExerciseMutation\(id\)/);
+  assert.match(details, /archiveMutation.mutateAsync\(\)/);
+  assert.match(mutations, /webApi.DELETE\('\/exercises\/\{id\}'/);
+  assert.match(mutations, /onSuccess: async \(\) => removeArchivedDetails\(id\)/);
+  assert.match(mutations, /queryClient.removeQueries/);
+  assert.match(mutations, /queryClient.setQueryData\(queryKey, exercise\)/);
+  assert.match(mutations, /refetchType: 'none'/);
+  assert.match(mutations, /useAuthFailure\(\)/);
+  assert.match(mutations, /retry: false/);
+  assert.doesNotMatch(details, /webApi.DELETE/);
   assert.match(details, /archiveConfirmation/);
-  assert.match(details, /data\?\.isArchived/);
+  assert.match(mutations, /data\?\.isArchived/);
   assert.match(details, /router.replace\('\/exercises'\)/);
   assert.match(edit, /useFieldArray/);
   assert.match(edit, /zodResolver\(editExerciseSchema\)/);
-  assert.match(edit, /webApi.PATCH\('\/exercises\/\{id\}'/);
-  assert.match(edit, /response.status === 401/);
+  assert.match(edit, /useEditExerciseMutation\(exercise.id\)/);
+  assert.match(edit, /mutation.mutateAsync\(body\)/);
   assert.match(edit, /onSaved\(data\)/);
+  assert.match(mutations, /webApi.PATCH\('\/exercises\/\{id\}'/);
+  assert.match(mutations, /response.status !== 200/);
+  assert.doesNotMatch(edit, /webApi.PATCH|router.replace|queryClient/);
   assert.doesNotMatch(details + edit, /localStorage|sessionStorage|window.confirm/);
 });

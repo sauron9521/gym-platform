@@ -130,16 +130,25 @@ test('creation uses typed POST and RHF/Zod, with state and auth handling', async
     new URL('../src/features/exercises/ui/create-exercise-form.tsx', import.meta.url),
     'utf8',
   );
+  const mutations = await readFile(
+    new URL('../src/features/exercises/api/exercise-mutations.ts', import.meta.url),
+    'utf8',
+  );
   const catalog = await readFile(
     new URL('../src/features/exercises/ui/exercise-catalog.tsx', import.meta.url),
     'utf8',
   );
   assert.match(form, /useFieldArray/);
   assert.match(form, /zodResolver\(createExerciseFormSchema\)/);
-  assert.match(form, /webApi.POST\('\/exercises'/);
-  assert.match(form, /response.status === 401/);
-  assert.match(form, /router.replace\('\/login'\)/);
-  assert.match(form, /response.status !== 201/);
+  assert.match(form, /useCreateExerciseMutation\(\)/);
+  assert.match(form, /mutation.mutateAsync\(buildCreateExercisePayload\(values, role\)\)/);
+  assert.match(form, /mutation.isPending/);
+  assert.match(mutations, /webApi.POST\('\/exercises'/);
+  assert.match(mutations, /response.status !== 201/);
+  assert.match(mutations, /useAuthFailure\(\)/);
+  assert.match(mutations, /retry: false/);
+  assert.match(mutations, /exerciseQueryKeys.lists\(\)/);
+  assert.doesNotMatch(form, /webApi.POST|router.replace|queryClient/);
   assert.match(form, /router.push/);
   assert.match(form, /role === 'ATHLETE'/);
   assert.match(form, /disabled=\{busy\}/);

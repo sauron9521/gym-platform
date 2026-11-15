@@ -1,20 +1,17 @@
 'use client';
 
 import { useState } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useFieldArray, useForm } from 'react-hook-form';
 
-import { webApi } from '@/shared/api/client';
-import { exerciseQueryKeys } from '../lib/exercise-query-keys';
 import { Button } from '@/shared/ui/button';
+import { useCreateExerciseMutation } from '../api/exercise-mutations';
 import {
   buildCreateExercisePayload,
   CREATE_EXERCISE_TYPES,
   createExerciseFormSchema,
-  getCreateExerciseErrorMessage,
   type CreateExerciseValues,
   type CustomExerciseActorRole,
 } from '../lib/create-exercise';
@@ -22,8 +19,8 @@ import { useExerciseTaxonomy } from './use-exercise-taxonomy';
 
 export function CreateExerciseForm({ role }: { role: CustomExerciseActorRole }) {
   const router = useRouter();
-  const queryClient = useQueryClient();
   const { state: taxonomy, retry: retryTaxonomy } = useExerciseTaxonomy();
+  const mutation = useCreateExerciseMutation();
   const [selectedMuscle, setSelectedMuscle] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [created, setCreated] = useState(false);
@@ -46,7 +43,7 @@ export function CreateExerciseForm({ role }: { role: CustomExerciseActorRole }) 
     name: 'muscleGroups',
   });
   const { errors, isSubmitting } = form.formState;
-  const busy = isSubmitting || created;
+  const busy = isSubmitting || mutation.isPending || created;
   const muscleOptions = taxonomy.kind === 'ready' ? taxonomy.muscleGroups : [];
   const equipmentOptions = taxonomy.kind === 'ready' ? taxonomy.equipment : [];
 
@@ -69,24 +66,14 @@ export function CreateExerciseForm({ role }: { role: CustomExerciseActorRole }) 
       return;
     }
     setError(null);
+    mutation.reset();
     try {
-      const { data, response } = await webApi.POST('/exercises', {
-        body: buildCreateExercisePayload(values, role),
-      });
-      if (response.status === 401) {
-        router.replace('/login');
-        return;
-      }
-      if (response.status !== 201 || !data) {
-        setError(getCreateExerciseErrorMessage(response.status));
-        return;
-      }
+      const data = await mutation.mutateAsync(buildCreateExercisePayload(values, role));
       setCreated(true);
-      await queryClient.invalidateQueries({ queryKey: exerciseQueryKeys.lists() });
       router.push(`/exercises/${data.id}`);
       router.refresh();
     } catch {
-      setError(getCreateExerciseErrorMessage());
+      // The mutation retains a safe error message; preserve form values for retry.
     }
   }
 
@@ -313,14 +300,14 @@ export function CreateExerciseForm({ role }: { role: CustomExerciseActorRole }) 
           </section>
         )}
 
-        {error && (
+        {(error || mutation.isError) && (
           <p role="alert" className="text-sm text-destructive">
-            {error}
+            {error ?? mutation.error?.message}
           </p>
         )}
         <div className="flex flex-wrap gap-3">
           <Button type="submit" disabled={busy || taxonomy.kind !== 'ready'}>
-            {created ? 'Вправу створено' : isSubmitting ? 'Створюємо…' : 'Створити вправу'}
+            {created ? 'Вправу створено' : busy ? 'Створюємо…' : 'Створити вправу'}
           </Button>
           <Button asChild variant="outline">
             <Link href="/exercises">До каталогу</Link>
