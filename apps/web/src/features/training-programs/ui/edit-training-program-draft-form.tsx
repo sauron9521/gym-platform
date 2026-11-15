@@ -43,6 +43,11 @@ export function EditTrainingProgramDraftForm({
     setHasChanged(true);
   }
 
+  function invalid() {
+    setSaved(false);
+    setError('Перевірте поля форми та виправте помилки.');
+  }
+
   async function submit(values: EditTrainingProgramDraftValues) {
     setError(null);
     setSaved(false);
@@ -81,7 +86,7 @@ export function EditTrainingProgramDraftForm({
         </p>
       </div>
       <form
-        onSubmit={(event) => void form.handleSubmit(submit)(event)}
+        onSubmit={(event) => void form.handleSubmit(submit, invalid)(event)}
         noValidate
         className="space-y-4"
       >
@@ -155,7 +160,11 @@ export function EditTrainingProgramDraftForm({
             Зміни збережено
           </p>
         )}
-        <Button type="submit" disabled={!hasChanged || isSubmitting}>
+        <Button
+          type="button"
+          disabled={!hasChanged || isSubmitting}
+          onClick={() => void form.handleSubmit(submit, invalid)()}
+        >
           {isSubmitting ? 'Зберігаємо…' : 'Зберегти зміни'}
         </Button>
       </form>
