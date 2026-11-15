@@ -94,13 +94,16 @@ test('role-specific program pages independently verify sessions', async () => {
   }
 });
 
-test('trainer journal uses TanStack Query with owner-scoped API and version summaries', async () => {
+test('trainer journal uses TanStack Query and preserves the owner-scoped API', async () => {
   const trainer = await readFile(
     new URL('../src/features/training-programs/ui/trainer-programs-list.tsx', import.meta.url),
     'utf8',
   );
   const request = await readFile(
-    new URL('../src/features/training-programs/api/trainer-programs-list-query.ts', import.meta.url),
+    new URL(
+      '../src/features/training-programs/api/trainer-programs-list-query.ts',
+      import.meta.url,
+    ),
     'utf8',
   );
   assert.match(trainer, /useQuery\(trainerProgramsListQueryOptions\(status, page\)\)/);
