@@ -97,6 +97,10 @@ test('program details loads version workouts; creation uses the typed API path',
     'utf8',
   );
 
+  const mutations = await readFile(
+    new URL('../src/features/training-programs/api/program-workout-mutations.ts', import.meta.url),
+    'utf8',
+  );
   const query = await readFile(
     new URL(
       '../src/features/training-programs/api/training-program-version-query.ts',
@@ -118,11 +122,19 @@ test('program details loads version workouts; creation uses the typed API path',
   assert.match(query, /response.status !== 200/);
   assert.match(query, /retry: false/);
   assert.match(form, /zodResolver\(createProgramWorkoutSchema\)/);
-  assert.match(form, /POST\(/);
-  assert.match(form, /'\/training-programs\/\{programId\}\/versions\/\{versionId\}\/workouts'/);
-  assert.match(form, /response.status !== 201/);
+  assert.match(form, /useCreateProgramWorkoutMutation\(programId, versionId\)/);
+  assert.match(form, /mutation.mutateAsync\(payload\)/);
+  assert.match(form, /mutation.isPending/);
+  assert.match(mutations, /webApi.POST\(/);
+  assert.match(mutations, /'\/training-programs\/\{programId\}\/versions\/\{versionId\}\/workouts'/);
+  assert.match(mutations, /response.status !== 201/);
+  assert.match(mutations, /useAuthFailure\(\)/);
+  assert.match(mutations, /trainingProgramQueryKeys.version\(programId, versionId\)/);
+  assert.match(mutations, /queryClient.setQueryData\(queryKey, version\)/);
+  assert.match(mutations, /retry: false/);
+  assert.doesNotMatch(form, /webApi.POST|router.replace|setError\(/);
   assert.match(form, /isWeekWithinDuration/);
-  for (const source of [details, list, form, query]) {
+  for (const source of [details, list, form, query, mutations]) {
     assert.doesNotMatch(source, /localStorage|sessionStorage|dangerouslySetInnerHTML/);
   }
 });
