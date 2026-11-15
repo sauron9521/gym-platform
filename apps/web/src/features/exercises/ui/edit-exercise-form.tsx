@@ -202,9 +202,7 @@ export function EditExerciseForm({
             <Button
               type="button"
               variant="outline"
-              disabled={
-                busy || taxonomy.kind !== 'ready' || !selectedMuscle || fields.length >= 10
-              }
+              disabled={busy || taxonomy.kind !== 'ready' || !selectedMuscle || fields.length >= 10}
               onClick={addMuscle}
             >
               Додати
