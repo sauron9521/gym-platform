@@ -5,16 +5,15 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
-import { webApi } from '@/shared/api/client';
 import {
   exerciseDetailsQueryOptions,
   ExerciseDetailsRequestError,
 } from '../api/exercise-details-query';
 import type { AuthenticatedUser } from '@/shared/api/server-session';
 import { Button } from '@/shared/ui/button';
+import { useArchiveExerciseMutation } from '../api/exercise-mutations';
 import { EditExerciseForm } from './edit-exercise-form';
-import { exerciseQueryKeys } from '../lib/exercise-query-keys';
-import { canManageCustomExercise, getExerciseMutationErrorMessage } from '../lib/manage-exercise';
+import { canManageCustomExercise } from '../lib/manage-exercise';
 import {
   getExerciseDetailsErrorMessage,
   getExerciseSourceLabel,
@@ -32,10 +31,9 @@ export function ExerciseDetails({ id, actor }: { id: string; actor: Authenticate
   const queryClient = useQueryClient();
   const redirecting = useRef(false);
   const query = useQuery(exerciseDetailsQueryOptions(id));
+  const archiveMutation = useArchiveExerciseMutation(id);
   const [editing, setEditing] = useState(false);
   const [archiveConfirmation, setArchiveConfirmation] = useState(false);
-  const [archiving, setArchiving] = useState(false);
-  const [archiveError, setArchiveError] = useState<string | null>(null);
   const unauthenticated =
     query.error instanceof ExerciseDetailsRequestError && query.error.status === 401;
 
@@ -50,7 +48,7 @@ export function ExerciseDetails({ id, actor }: { id: string; actor: Authenticate
   function retry() {
     setEditing(false);
     setArchiveConfirmation(false);
-    setArchiveError(null);
+    archiveMutation.reset();
     void query.refetch();
   }
 
@@ -71,7 +69,7 @@ export function ExerciseDetails({ id, actor }: { id: string; actor: Authenticate
 
   async function archive() {
     if (
-      archiving ||
+      archiveMutation.isPending ||
       !archiveConfirmation ||
       state.kind !== 'ready' ||
       !canManageCustomExercise(state.exercise, actor)
@@ -79,31 +77,13 @@ export function ExerciseDetails({ id, actor }: { id: string; actor: Authenticate
       return;
     }
 
-    setArchiving(true);
-    setArchiveError(null);
+    archiveMutation.reset();
     try {
-      const { data, response } = await webApi.DELETE('/exercises/{id}', {
-        params: { path: { id: state.exercise.id } },
-      });
-      if (response.status === 401) {
-        router.replace('/login');
-        return;
-      }
-      if (response.status !== 200 || !data?.isArchived) {
-        setArchiveError(getExerciseMutationErrorMessage(response.status));
-        return;
-      }
-      await queryClient.invalidateQueries({ queryKey: exerciseQueryKeys.lists() });
-      await queryClient.invalidateQueries({
-        queryKey: exerciseQueryKeys.detail(id),
-        refetchType: 'none',
-      });
+      await archiveMutation.mutateAsync();
       router.replace('/exercises');
       router.refresh();
     } catch {
-      setArchiveError(getExerciseMutationErrorMessage());
-    } finally {
-      setArchiving(false);
+      // Keep the confirmation open so the owner can retry explicitly.
     }
   }
 
@@ -136,11 +116,11 @@ export function ExerciseDetails({ id, actor }: { id: string; actor: Authenticate
                 <Button
                   type="button"
                   variant="outline"
-                  disabled={archiving}
+                  disabled={archiveMutation.isPending}
                   onClick={() => {
                     setEditing(true);
                     setArchiveConfirmation(false);
-                    setArchiveError(null);
+                    archiveMutation.reset();
                   }}
                 >
                   Редагувати
@@ -148,10 +128,10 @@ export function ExerciseDetails({ id, actor }: { id: string; actor: Authenticate
                 <Button
                   type="button"
                   variant="outline"
-                  disabled={archiving}
+                  disabled={archiveMutation.isPending}
                   onClick={() => {
                     setArchiveConfirmation(true);
-                    setArchiveError(null);
+                    archiveMutation.reset();
                   }}
                 >
                   Архівувати
@@ -168,16 +148,16 @@ export function ExerciseDetails({ id, actor }: { id: string; actor: Authenticate
                     додавання в нові тренування.
                   </p>
                   <div className="flex flex-wrap gap-2">
-                    <Button type="button" disabled={archiving} onClick={() => void archive()}>
-                      {archiving ? 'Архівуємо…' : 'Так, архівувати'}
+                    <Button type="button" disabled={archiveMutation.isPending} onClick={() => void archive()}>
+                      {archiveMutation.isPending ? 'Архівуємо…' : 'Так, архівувати'}
                     </Button>
                     <Button
                       type="button"
                       variant="outline"
-                      disabled={archiving}
+                      disabled={archiveMutation.isPending}
                       onClick={() => {
                         setArchiveConfirmation(false);
-                        setArchiveError(null);
+                        archiveMutation.reset();
                       }}
                     >
                       Ні, залишити
@@ -185,10 +165,15 @@ export function ExerciseDetails({ id, actor }: { id: string; actor: Authenticate
                   </div>
                 </div>
               )}
-              {archiveError && (
+              {archiveMutation.isError && (
                 <div role="alert" className="space-y-2">
-                  <p className="text-sm text-destructive">{archiveError}</p>
-                  <Button type="button" variant="outline" disabled={archiving} onClick={retry}>
+                  <p className="text-sm text-destructive">{archiveMutation.error.message}</p>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={archiveMutation.isPending}
+                    onClick={retry}
+                  >
                     Оновити дані
                   </Button>
                 </div>
@@ -202,10 +187,7 @@ export function ExerciseDetails({ id, actor }: { id: string; actor: Authenticate
               <EditExerciseForm
                 exercise={state.exercise}
                 role={actor.role}
-                onSaved={(exercise) => {
-                  queryClient.setQueryData(exerciseQueryKeys.detail(id), exercise);
-                  setEditing(false);
-                }}
+                onSaved={() => setEditing(false)}
                 onCancel={() => setEditing(false)}
                 onReload={retry}
               />
