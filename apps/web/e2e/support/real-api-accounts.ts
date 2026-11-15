@@ -79,4 +79,3 @@ export async function relationship(page: Page, id: string) {
   expect(result.status()).toBe(200);
   return result.json();
 }
-
