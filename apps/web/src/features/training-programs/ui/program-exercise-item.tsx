@@ -84,29 +84,29 @@ export function ProgramExerciseItem({
       {exercise.sets.length > 0 ? (
         <ol aria-label={`Підходи вправи ${exercise.exerciseNameSnapshot}`} className="space-y-2">
           {sortedSets.map((set, index) => (
-              <ProgramSetItem
-                key={set.id}
-                programId={programId}
-                versionId={versionId}
-                workoutId={workoutId}
-                exerciseId={exercise.id}
-                exerciseName={exercise.exerciseNameSnapshot}
-                set={set}
-                editable={editable}
-                moveDisabled={reordering || addingSet || editingSetId !== null}
-                canMoveUp={index > 0}
-                canMoveDown={index < sortedSets.length - 1}
-                onMoveUp={() => void moveSet(set.id, 'up')}
-                onMoveDown={() => void moveSet(set.id, 'down')}
-                editing={editingSetId === set.id}
-                onEdit={() => {
-                  setAddingSet(false);
-                  setEditingSetId(set.id);
-                }}
-                onCancelEdit={() => setEditingSetId(null)}
-                onChanged={onChanged}
-              />
-            ))}
+            <ProgramSetItem
+              key={set.id}
+              programId={programId}
+              versionId={versionId}
+              workoutId={workoutId}
+              exerciseId={exercise.id}
+              exerciseName={exercise.exerciseNameSnapshot}
+              set={set}
+              editable={editable}
+              moveDisabled={reordering || addingSet || editingSetId !== null}
+              canMoveUp={index > 0}
+              canMoveDown={index < sortedSets.length - 1}
+              onMoveUp={() => void moveSet(set.id, 'up')}
+              onMoveDown={() => void moveSet(set.id, 'down')}
+              editing={editingSetId === set.id}
+              onEdit={() => {
+                setAddingSet(false);
+                setEditingSetId(set.id);
+              }}
+              onCancelEdit={() => setEditingSetId(null)}
+              onChanged={onChanged}
+            />
+          ))}
         </ol>
       ) : (
         <p className="text-xs text-muted-foreground">Підходів поки немає.</p>
