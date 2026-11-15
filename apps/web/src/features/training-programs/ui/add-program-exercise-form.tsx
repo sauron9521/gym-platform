@@ -6,17 +6,16 @@ import { useRouter } from 'next/navigation';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 
-import { webApi } from '@/shared/api/client';
 import {
   exerciseListQueryOptions,
   ExerciseListRequestError,
 } from '../../exercises/api/exercise-list-query';
 import { Button } from '@/shared/ui/button';
+import { useAddProgramExerciseMutation } from '../api/add-program-exercise-mutation';
 import type { ProgramVersionWithWorkouts } from '../lib/create-program-workout';
 import {
   addProgramExerciseSchema,
   buildAddProgramExercisePayload,
-  getAddProgramExerciseError,
   getProgramExerciseListError,
   isProgramExerciseSelectable,
   type AddProgramExerciseValues,
@@ -52,13 +51,14 @@ export function AddProgramExerciseForm({
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [page, setPage] = useState(1);
   const [selected, setSelected] = useState<ProgramExerciseOption | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const mutation = useAddProgramExerciseMutation(programId, versionId, workoutId);
   const form = useForm<AddProgramExerciseValues>({
     resolver: zodResolver(addProgramExerciseSchema),
     defaultValues: { exerciseId: '', notes: '' },
     mode: 'onSubmit',
   });
   const { errors, isSubmitting } = form.formState;
+  const busy = isSubmitting || mutation.isPending;
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(search.trim()), 250);
@@ -125,7 +125,7 @@ export function AddProgramExerciseForm({
   if (unauthenticated) return null;
 
   async function submit(values: AddProgramExerciseValues) {
-    setError(null);
+    mutation.reset();
     if (
       !selected ||
       selected.id !== values.exerciseId ||
@@ -136,24 +136,10 @@ export function AddProgramExerciseForm({
     }
 
     try {
-      const { response, data } = await webApi.POST(
-        '/training-programs/{programId}/versions/{versionId}/workouts/{workoutId}/exercises',
-        {
-          params: { path: { programId, versionId, workoutId } },
-          body: buildAddProgramExercisePayload(values),
-        },
-      );
-      if (response.status === 401) {
-        router.replace('/login');
-        return;
-      }
-      if (response.status !== 201 || !data) {
-        setError(getAddProgramExerciseError(response.status));
-        return;
-      }
-      onAdded(data);
+      const version = await mutation.mutateAsync(buildAddProgramExercisePayload(values));
+      onAdded(version);
     } catch {
-      setError(getAddProgramExerciseError());
+      // Keep the selected exercise and notes available for an explicit retry.
     }
   }
 
@@ -177,7 +163,7 @@ export function AddProgramExerciseForm({
           type="search"
           maxLength={100}
           value={search}
-          disabled={isSubmitting}
+          disabled={busy}
           onChange={(event) => updateSearch(event.target.value)}
           className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
         />
@@ -190,7 +176,7 @@ export function AddProgramExerciseForm({
       {catalog.kind === 'error' && (
         <div role="alert" className="space-y-2">
           <p className="text-sm text-destructive">{catalog.message}</p>
-          <Button type="button" variant="outline" disabled={isSubmitting} onClick={retry}>
+          <Button type="button" variant="outline" disabled={busy} onClick={retry}>
             Повторити пошук
           </Button>
         </div>
@@ -210,12 +196,12 @@ export function AddProgramExerciseForm({
                     type="button"
                     variant="outline"
                     size="sm"
-                    disabled={isSubmitting || !available}
+                    disabled={busy || !available}
                     aria-label={`Обрати вправу ${exercise.name}`}
                     onClick={() => {
                       setSelected(exercise);
                       form.setValue('exerciseId', exercise.id, { shouldValidate: true });
-                      setError(null);
+                      mutation.reset();
                     }}
                   >
                     {!available ? 'Вже є' : selected?.id === exercise.id ? 'Обрано' : 'Обрати'}
@@ -232,7 +218,7 @@ export function AddProgramExerciseForm({
               <Button
                 type="button"
                 variant="outline"
-                disabled={isSubmitting || page <= 1}
+                disabled={busy || page <= 1}
                 onClick={() => changePage(page - 1)}
               >
                 Назад
@@ -243,7 +229,7 @@ export function AddProgramExerciseForm({
               <Button
                 type="button"
                 variant="outline"
-                disabled={isSubmitting || page >= catalog.pages}
+                disabled={busy || page >= catalog.pages}
                 onClick={() => changePage(page + 1)}
               >
                 Далі
@@ -269,7 +255,7 @@ export function AddProgramExerciseForm({
           id={`program-exercise-notes-${workoutId}`}
           rows={2}
           maxLength={5000}
-          disabled={isSubmitting}
+          disabled={busy}
           aria-invalid={Boolean(errors.notes)}
           {...form.register('notes')}
           className="w-full rounded-md border border-input bg-background p-3 text-sm"
@@ -280,16 +266,16 @@ export function AddProgramExerciseForm({
           </p>
         )}
       </div>
-      {error && (
+      {mutation.isError && (
         <p role="alert" className="text-sm text-destructive">
-          {error}
+          {mutation.error.message}
         </p>
       )}
       <div className="flex flex-wrap gap-2">
-        <Button type="submit" disabled={isSubmitting || !selected}>
-          {isSubmitting ? 'Додаємо…' : 'Додати обрану вправу'}
+        <Button type="submit" disabled={busy || !selected}>
+          {busy ? 'Додаємо…' : 'Додати обрану вправу'}
         </Button>
-        <Button type="button" variant="outline" disabled={isSubmitting} onClick={onCancel}>
+        <Button type="button" variant="outline" disabled={busy} onClick={onCancel}>
           Скасувати додавання
         </Button>
       </div>
