@@ -72,7 +72,10 @@ test('draft-only edit/delete UI uses typed operations and explicit delete confir
     'utf8',
   );
   const cache = await readFile(
-    new URL('../src/features/training-programs/api/program-version-mutation-context.ts', import.meta.url),
+    new URL(
+      '../src/features/training-programs/api/program-version-mutation-context.ts',
+      import.meta.url,
+    ),
     'utf8',
   );
 
