@@ -387,8 +387,22 @@ disposable API/Web servers between files to preserve the real API's per-IP
 registration rate limit. Do not bypass throttling, reuse an existing server or
 point the test database at production. The `Web / Real API and PostgreSQL`
 required CI check provisions disposable PostgreSQL, applies the initial Prisma
-baseline and seeds exercise taxonomy. Failure traces are retained; no existing
-database is reset.
+baseline and seeds exercise taxonomy. On GitHub Actions, four matrix jobs run
+disjoint groups of spec files in parallel. Each job has its **own runner and
+disposable PostgreSQL**, while API and Web servers are still restarted between
+spec files to retain the original per-IP rate limits. The stable required gate
+passes only when **all four** shards pass; failed shards retain distinct trace
+artifacts. No existing database is reset.
+
+Local runs are unsharded by default. To run just one CI shard for debugging, set
+both environment variables before the same command, for example:
+
+```bash
+WEB_E2E_SHARD_INDEX=1 WEB_E2E_SHARD_COUNT=4 pnpm --filter @gym/web test:e2e:integration
+```
+
+Invalid shard values and empty shard assignments fail rather than silently
+skipping tests. Run `pnpm --filter @gym/web test` to verify the shard contract.
 
 ## Browser server-state queries (TanStack Query)
 
