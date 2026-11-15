@@ -67,7 +67,7 @@ test('workout day renders persisted exercises and uses typed draft-only POST', a
   );
   assert.match(day, /workout.exercises.map/);
   assert.match(day, /AddProgramExerciseForm/);
-  assert.match(form, /webApi.GET\('\/exercises'/);
+  assert.match(form, /webApi\s*\.GET\('\/exercises'/);
   assert.match(form, /webApi.POST\(/);
   assert.match(form, /zodResolver\(addProgramExerciseSchema\)/);
   assert.match(form, /response.status !== 201/);
