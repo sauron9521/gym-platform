@@ -60,14 +60,13 @@ test('real API: edit, conflict, cancel/delete and cross-trainer isolation for wo
 
     const updatedTitle = 'Оновлене тренування ' + randomUUID();
     await editForm.getByLabel('Тиждень редагування').fill('2');
-    await editForm.getByLabel('День редагування').fill('1');
+    await editForm.getByLabel('День редагування', { exact: true }).fill('1');
     await editForm.getByLabel('Нова назва тренування').fill(updatedTitle);
     await editForm.getByLabel('Примітки до дня (необов’язково)').fill('  ');
 
     const patchedResponse = ownerPage.waitForResponse(
       (response) =>
-        response.url().includes(path + '/' + workoutId) &&
-        response.request().method() === 'PATCH',
+        response.url().includes(path + '/' + workoutId) && response.request().method() === 'PATCH',
     );
     await editForm.getByRole('button', { name: 'Зберегти день' }).click();
     const patched = await patchedResponse;
@@ -97,7 +96,7 @@ test('real API: edit, conflict, cancel/delete and cross-trainer isolation for wo
       name: 'Редагування тренувального дня ' + updatedTitle,
     });
     await conflictForm.getByLabel('Тиждень редагування').fill('1');
-    await conflictForm.getByLabel('День редагування').fill('2');
+    await conflictForm.getByLabel('День редагування', { exact: true }).fill('2');
     await conflictForm.getByRole('button', { name: 'Зберегти день' }).click();
     await expect(conflictForm.getByText(/День уже зайнятий або чернетка/)).toBeVisible();
     await conflictForm.getByRole('button', { name: 'Скасувати редагування' }).click();
@@ -113,8 +112,7 @@ test('real API: edit, conflict, cancel/delete and cross-trainer isolation for wo
     await ownerPage.getByRole('button', { name: 'Видалити день ' + updatedTitle }).click();
     const deletedResponse = ownerPage.waitForResponse(
       (response) =>
-        response.url().includes(path + '/' + workoutId) &&
-        response.request().method() === 'DELETE',
+        response.url().includes(path + '/' + workoutId) && response.request().method() === 'DELETE',
     );
     await ownerPage.getByRole('button', { name: 'Підтвердити видалення' }).click();
     expect((await deletedResponse).status()).toBe(200);
