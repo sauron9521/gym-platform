@@ -4,7 +4,7 @@ Monorepo for Gym App, powered by pnpm Workspaces and Turborepo.
 
 ## Repository layout
 
-- `apps/` — NestJS API, Next.js Web, and Expo Mobile (added incrementally).
+- `apps/` — NestJS API, Next.js Web, Next.js Landing, and Expo Mobile.
 - `packages/` — shared libraries, types, and generated API clients.
 - `tooling/` — shared development configuration.
 - `infra/` — Docker and deployment infrastructure.
@@ -37,13 +37,13 @@ pnpm --filter @gym/api db:seed
 pnpm dev
 ```
 
-Web: http://localhost:3000 · API: http://localhost:3001 · Mailpit inbox: http://localhost:8025.
+Web: http://localhost:3000 · Landing: http://localhost:3002 · API: http://localhost:3001 · Mailpit inbox: http://localhost:8025.
 The sample credentials are local placeholders; customize matching passwords
 in both untracked `.env` files. See [local services](infra/docker/README.md)
 for stopping services, persistent volumes and safety notes.
 
-To start applications individually, use `pnpm dev:web`, `pnpm dev:api`,
-or `pnpm dev:mobile`.
+To start applications individually, use `pnpm dev:web`, `pnpm dev:landing`,
+`pnpm dev:api`, or `pnpm dev:mobile`.
 
 ## Fresh database migration baseline
 

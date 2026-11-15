@@ -9,12 +9,32 @@ test('Web-only change skips API E2E, Docker and Mobile', () => {
     full: false,
     api: false,
     web: true,
+    landing: false,
     mobile: false,
     client: false,
     deps: false,
     workspaces: true,
     redis: false,
   });
+});
+
+test('Landing-only changes check landing without requiring API or Web browser suites', () => {
+  assert.deepEqual(classifyChangedPaths(['apps/landing/src/app/page.tsx']), {
+    full: false,
+    api: false,
+    web: false,
+    landing: true,
+    mobile: false,
+    client: false,
+    deps: false,
+    workspaces: true,
+    redis: false,
+  });
+
+  const manifest = classifyChangedPaths(['apps/landing/package.json']);
+  assert.equal(manifest.landing, true);
+  assert.equal(manifest.deps, true);
+  assert.equal(manifest.web, false);
 });
 
 test('Mobile-only change skips API E2E and Web', () => {
@@ -70,6 +90,7 @@ test('application handbooks and nested infrastructure Markdown skip expensive PR
     'apps/api/README.md',
     'apps/api/test/README.md',
     'apps/web/README.md',
+    'apps/landing/README.md',
     'apps/mobile/README.md',
     'packages/api-client/README.md',
     'infra/docker/README.md',
@@ -81,6 +102,7 @@ test('application handbooks and nested infrastructure Markdown skip expensive PR
     full: false,
     api: false,
     web: false,
+    landing: false,
     mobile: false,
     client: false,
     deps: false,
@@ -276,6 +298,7 @@ test('real API browser suite runs only for API, Web, shared client, or cross-cut
     { paths: ['pnpm-lock.yaml'], run: true },
     { paths: ['.github/workflows/web-integration.yml'], run: true },
     { paths: ['apps/mobile/app/index.tsx'], run: false },
+    { paths: ['apps/landing/src/app/page.tsx'], run: false },
     { paths: ['README.md', 'docs/api/testing.md'], run: false },
     { paths: ['apps/api/README.md', 'apps/web/README.md', 'infra/docker/README.md'], run: false },
     { paths: ['infra/docker/production/README.md'], run: false },
@@ -349,6 +372,7 @@ test('dependency audit runs for changed manifests and lockfile, not unrelated so
   for (const path of [
     'apps/api/package.json',
     'apps/web/package.json',
+    'apps/landing/package.json',
     'apps/mobile/package.json',
     'packages/api-client/package.json',
     'package.json',
