@@ -1,4 +1,6 @@
-import { useState } from 'react';
+import { useCallback, useRef } from 'react';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Controller, useForm } from 'react-hook-form';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -11,27 +13,50 @@ import {
   View,
 } from 'react-native';
 
+import { signInSchema, type SignInValues } from '@/features/auth/lib/login-flow';
 import { useAuth } from '@/features/auth/model/auth-context';
 import { palette } from '@/shared/config/theme';
 
 export function SignInScreen() {
   const { signIn } = useAuth();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState<string | null>(null);
-  const [submitting, setSubmitting] = useState(false);
+  const submitLock = useRef(false);
+  const {
+    control,
+    handleSubmit,
+    clearErrors,
+    setError,
+    formState: { errors, isSubmitting },
+  } = useForm<SignInValues>({
+    resolver: zodResolver(signInSchema),
+    defaultValues: { email: '', password: '' },
+    mode: 'onSubmit',
+    reValidateMode: 'onChange',
+  });
 
-  async function submit() {
-    if (submitting) return;
-    setSubmitting(true);
-    setError(null);
-    try {
-      const result = await signIn(email, password);
-      if (!result.success) setError(result.message);
-    } finally {
-      setSubmitting(false);
-    }
-  }
+  const onValidSubmit = useCallback(
+    async ({ email, password }: SignInValues) => {
+      // React Hook Form validates first; this protects against concurrent API calls.
+      if (submitLock.current) return;
+      submitLock.current = true;
+      clearErrors('root.server');
+      try {
+        const result = await signIn(email, password);
+        if (!result.success) {
+          setError('root.server', { type: 'server', message: result.message });
+        }
+      } catch {
+        setError('root.server', {
+          type: 'server',
+          message: 'Не вдалося увійти. Спробуйте ще раз.',
+        });
+      } finally {
+        submitLock.current = false;
+      }
+    },
+    [clearErrors, setError, signIn],
+  );
+
+  const submit = () => void handleSubmit(onValidSubmit)();
 
   return (
     <KeyboardAvoidingView
@@ -44,49 +69,74 @@ export function SignInScreen() {
         <Text style={styles.description}>Увійдіть, щоб переглянути свій профіль.</Text>
         <View style={styles.form}>
           <Text style={styles.label}>Електронна пошта</Text>
-          <TextInput
-            accessibilityLabel="Електронна пошта"
-            autoCapitalize="none"
-            autoComplete="email"
-            keyboardType="email-address"
-            maxLength={254}
-            editable={!submitting}
-            value={email}
-            onChangeText={(value) => {
-              setEmail(value);
-              setError(null);
-            }}
-            placeholder="name@example.com"
-            style={styles.input}
+          <Controller
+            control={control}
+            name="email"
+            render={({ field: { onBlur, onChange, value } }) => (
+              <TextInput
+                accessibilityLabel="Електронна пошта"
+                autoCapitalize="none"
+                autoComplete="email"
+                autoCorrect={false}
+                keyboardType="email-address"
+                maxLength={254}
+                editable={!isSubmitting}
+                value={value}
+                onBlur={onBlur}
+                onChangeText={(nextValue) => {
+                  onChange(nextValue);
+                  clearErrors('root.server');
+                }}
+                placeholder="name@example.com"
+                style={[styles.input, errors.email && styles.inputError]}
+              />
+            )}
           />
-          <Text style={styles.label}>Пароль</Text>
-          <TextInput
-            accessibilityLabel="Пароль"
-            autoCapitalize="none"
-            autoComplete="current-password"
-            secureTextEntry
-            editable={!submitting}
-            value={password}
-            onChangeText={(value) => {
-              setPassword(value);
-              setError(null);
-            }}
-            onSubmitEditing={() => void submit()}
-            placeholder="Введіть пароль"
-            style={styles.input}
-          />
-          {error ? (
+          {errors.email?.message ? (
             <Text accessibilityRole="alert" style={styles.error}>
-              {error}
+              {errors.email.message}
+            </Text>
+          ) : null}
+          <Text style={styles.label}>Пароль</Text>
+          <Controller
+            control={control}
+            name="password"
+            render={({ field: { onBlur, onChange, value } }) => (
+              <TextInput
+                accessibilityLabel="Пароль"
+                autoCapitalize="none"
+                autoComplete="current-password"
+                secureTextEntry
+                editable={!isSubmitting}
+                value={value}
+                onBlur={onBlur}
+                onChangeText={(nextValue) => {
+                  onChange(nextValue);
+                  clearErrors('root.server');
+                }}
+                onSubmitEditing={() => void submit()}
+                placeholder="Введіть пароль"
+                style={[styles.input, errors.password && styles.inputError]}
+              />
+            )}
+          />
+          {errors.password?.message ? (
+            <Text accessibilityRole="alert" style={styles.error}>
+              {errors.password.message}
+            </Text>
+          ) : null}
+          {errors.root?.server?.message ? (
+            <Text accessibilityRole="alert" style={styles.error}>
+              {errors.root.server.message}
             </Text>
           ) : null}
           <Pressable
             accessibilityRole="button"
-            disabled={submitting}
+            disabled={isSubmitting}
             onPress={() => void submit()}
-            style={[styles.button, submitting && styles.disabled]}
+            style={[styles.button, isSubmitting && styles.disabled]}
           >
-            {submitting ? (
+            {isSubmitting ? (
               <ActivityIndicator color={palette.surface} />
             ) : (
               <Text style={styles.buttonText}>Увійти</Text>
@@ -117,6 +167,7 @@ const styles = StyleSheet.create({
     color: palette.text,
     fontSize: 16,
   },
+  inputError: { borderColor: '#b91c1c' },
   error: { color: '#b91c1c', fontSize: 14 },
   button: {
     backgroundColor: palette.primary,
