@@ -572,7 +572,7 @@ test('Sonner notifies successful workout edit and start without duplicating form
     }),
   ).toBeVisible();
 
-  await page.getByRole('button', { name: 'Розпочати', exact: true }).click();
+  await page.getByRole('button', { name: 'Розпочати тренування', exact: true }).click();
   await expect(
     page.locator('[data-sonner-toast][data-type="success"]').filter({
       hasText: 'Тренування розпочато.',
