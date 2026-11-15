@@ -1,57 +1,49 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 
-import { webApi } from '@/shared/api/client';
+import {
+  exerciseTaxonomyQueryOptions,
+  ExerciseTaxonomyRequestError,
+} from '../api/exercise-taxonomy-query';
 import { getTaxonomyErrorMessage, type ExerciseTaxonomyState } from '../lib/exercise-taxonomy';
 
 export function useExerciseTaxonomy() {
   const router = useRouter();
-  const [attempt, setAttempt] = useState(0);
-  const [state, setState] = useState<ExerciseTaxonomyState>({ kind: 'loading' });
+  const queryClient = useQueryClient();
+  const redirecting = useRef(false);
+  const query = useQuery(exerciseTaxonomyQueryOptions());
+  const unauthenticated =
+    query.error instanceof ExerciseTaxonomyRequestError && query.error.status === 401;
 
   useEffect(() => {
-    let active = true;
-    void Promise.all([webApi.GET('/exercises/muscle-groups'), webApi.GET('/exercises/equipment')])
-      .then(([muscles, equipment]) => {
-        if (!active) return;
+    if (unauthenticated && !redirecting.current) {
+      redirecting.current = true;
+      queryClient.clear();
+      router.replace('/login');
+    }
+  }, [unauthenticated, queryClient, router]);
 
-        if (muscles.response.status === 401 || equipment.response.status === 401) {
-          router.replace('/login');
-          return;
+  const state: ExerciseTaxonomyState = query.isPending || unauthenticated
+    ? { kind: 'loading' }
+    : query.isError
+      ? {
+          kind: 'error',
+          message:
+            query.error instanceof ExerciseTaxonomyRequestError
+              ? query.error.message
+              : getTaxonomyErrorMessage(),
         }
-
-        if (
-          muscles.response.status !== 200 ||
-          equipment.response.status !== 200 ||
-          !muscles.data ||
-          !equipment.data
-        ) {
-          const status =
-            muscles.response.status !== 200 ? muscles.response.status : equipment.response.status;
-          setState({ kind: 'error', message: getTaxonomyErrorMessage(status) });
-          return;
-        }
-
-        setState({
+      : {
           kind: 'ready',
-          muscleGroups: muscles.data,
-          equipment: equipment.data,
-        });
-      })
-      .catch(() => {
-        if (active) setState({ kind: 'error', message: getTaxonomyErrorMessage() });
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [attempt, router]);
+          muscleGroups: query.data.muscleGroups,
+          equipment: query.data.equipment,
+        };
 
   function retry() {
-    setState({ kind: 'loading' });
-    setAttempt((current) => current + 1);
+    void query.refetch();
   }
 
   return { state, retry };
