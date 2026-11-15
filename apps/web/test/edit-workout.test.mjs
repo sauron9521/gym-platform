@@ -74,17 +74,26 @@ test('planned-only UI uses typed PATCH, Zod/RHF and handles unauthorized access'
     new URL('../src/features/workouts/ui/edit-workout-form.tsx', import.meta.url),
     'utf8',
   );
+  const mutations = await readFile(
+    new URL('../src/features/workouts/api/workout-mutations.ts', import.meta.url),
+    'utf8',
+  );
   const details = await readFile(
     new URL('../src/features/workouts/ui/workout-details.tsx', import.meta.url),
     'utf8',
   );
   assert.match(form, /zodResolver\(editWorkoutSchema\)/);
-  assert.match(form, /webApi\.PATCH\('\/workouts\/\{id\}'/);
+  assert.match(form, /useUpdateWorkoutMutation\(workout.id\)/);
+  assert.match(form, /mutation.mutateAsync\(body\)/);
   assert.match(form, /workout.status !== 'PLANNED'/);
-  assert.match(form, /response.status === 401/);
-  assert.match(form, /router.replace\('\/login'\)/);
-  assert.match(form, /disabled=\{isSubmitting \|\| !isDirty\}/);
-  assert.match(form, /onSaved\(data\)/);
+  assert.match(form, /mutation.isPending/);
+  assert.match(form, /onSaved\(\)/);
+  assert.match(mutations, /webApi.PATCH\('\/workouts\/\{id\}'/);
+  assert.match(mutations, /response.status !== 200/);
+  assert.match(mutations, /useAuthFailure\(\)/);
+  assert.match(mutations, /workoutQueryKeys.detail\(workout.id\)/);
+  assert.doesNotMatch(form, /webApi.PATCH|router.replace|setError/);
+  assert.match(form, /workout.status !== 'PLANNED'/);
   assert.match(details, /state.workout.status === 'PLANNED'/);
   assert.match(details, /<EditWorkoutForm/);
   assert.match(details, /!editingWorkout/);

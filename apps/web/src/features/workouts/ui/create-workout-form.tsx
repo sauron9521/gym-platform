@@ -6,21 +6,20 @@ import { useRouter } from 'next/navigation';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useFieldArray, useForm, useWatch } from 'react-hook-form';
 
-import { webApi } from '@/shared/api/client';
 import { Button } from '@/shared/ui/button';
 import {
   buildCreateWorkoutPayload,
   createWorkoutExercise,
   createWorkoutFormSchema,
-  getCreateWorkoutErrorMessage,
   type CreateWorkoutValues,
 } from '../lib/create-workout';
+import { useCreateWorkoutMutation } from '../api/workout-mutations';
 import { WorkoutExerciseEditor } from './workout-exercise-editor';
 import { WorkoutExercisePicker } from './workout-exercise-picker';
 
 export function CreateWorkoutForm() {
   const router = useRouter();
-  const [error, setError] = useState<string | null>(null);
+  const mutation = useCreateWorkoutMutation();
   const [created, setCreated] = useState(false);
   const submitting = useRef(false);
   const requestKey = useRef<{ body: string; key: string } | null>(null);
@@ -35,35 +34,27 @@ export function CreateWorkoutForm() {
     name: 'exercises',
   });
   const selectedExercises = useWatch({ control: form.control, name: 'exercises' });
-  const busy = form.formState.isSubmitting || created;
+  const busy = form.formState.isSubmitting || mutation.isPending || created;
 
   async function submit(values: CreateWorkoutValues) {
     if (submitting.current || created) return;
     submitting.current = true;
-    setError(null);
+    mutation.reset();
     try {
       const body = buildCreateWorkoutPayload(values);
       const serialized = JSON.stringify(body);
       if (requestKey.current?.body !== serialized) {
         requestKey.current = { body: serialized, key: crypto.randomUUID() };
       }
-      const { data, response } = await webApi.POST('/workouts', {
+      const data = await mutation.mutateAsync({
         body,
-        params: { header: { 'Idempotency-Key': requestKey.current.key } },
+        idempotencyKey: requestKey.current.key,
       });
-      if (response.status === 401) {
-        router.replace('/login');
-        return;
-      }
-      if (response.status !== 201 || !data) {
-        setError(getCreateWorkoutErrorMessage(response.status));
-        return;
-      }
       setCreated(true);
       router.push(`/workouts/${data.id}`);
       router.refresh();
     } catch {
-      setError(getCreateWorkoutErrorMessage());
+      // Mutation state renders safe API errors and preserves the form for retry.
     } finally {
       submitting.current = false;
     }
@@ -96,7 +87,7 @@ export function CreateWorkoutForm() {
               maxLength={120}
               disabled={busy}
               aria-invalid={Boolean(form.formState.errors.title)}
-              {...form.register('title', { onChange: () => setError(null) })}
+              {...form.register('title', { onChange: () => mutation.reset() })}
               className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
             />
             {form.formState.errors.title && (
@@ -113,7 +104,7 @@ export function CreateWorkoutForm() {
               id="workout-scheduled"
               type="datetime-local"
               disabled={busy}
-              {...form.register('scheduledAt', { onChange: () => setError(null) })}
+              {...form.register('scheduledAt', { onChange: () => mutation.reset() })}
               className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
             />
             {form.formState.errors.scheduledAt && (
@@ -131,7 +122,7 @@ export function CreateWorkoutForm() {
               rows={2}
               maxLength={5000}
               disabled={busy}
-              {...form.register('notes', { onChange: () => setError(null) })}
+              {...form.register('notes', { onChange: () => mutation.reset() })}
               className="w-full rounded-md border border-input bg-background p-3 text-sm"
             />
             {form.formState.errors.notes && (
@@ -150,7 +141,7 @@ export function CreateWorkoutForm() {
             if (selectedExercises.some((item) => item.exerciseId === exercise.id)) return;
             append(createWorkoutExercise(exercise));
             form.clearErrors('exercises');
-            setError(null);
+            mutation.reset();
           }}
         />
 
@@ -172,9 +163,9 @@ export function CreateWorkoutForm() {
           ))}
         </section>
 
-        {error && (
+        {mutation.isError && (
           <p role="alert" className="text-sm text-destructive">
-            {error}
+            {mutation.error.message}
           </p>
         )}
         <Button type="submit" disabled={busy || fields.length === 0}>

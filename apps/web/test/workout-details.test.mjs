@@ -54,8 +54,18 @@ test('workout detail route enforces session, and client uses typed cookie API', 
   assert.match(ui, /useQuery\(workoutDetailsQueryOptions\(id\)\)/);
   assert.match(ui, /useAuthFailure\(\)/);
   assert.match(ui, /query\.refetch\(\)/);
-  assert.match(ui, /queryClient\.setQueryData\(workoutQueryKeys\.detail\(id\), workout\)/);
-  assert.match(ui, /refetchType: 'none'/);
+  const mutations = await readFile(
+    new URL('../src/features/workouts/api/workout-mutations.ts', import.meta.url),
+    'utf8',
+  );
+  assert.match(
+    mutations,
+    /queryClient.setQueryData\(workoutQueryKeys.detail\(workout.id\), workout\)/,
+  );
+  assert.match(ui, /<WorkoutActions/);
+  assert.match(ui, /<EditWorkoutForm/);
+  assert.doesNotMatch(ui, /queryClient.setQueryData/);
+  assert.match(mutations, /refetchType: 'none'/);
   assert.doesNotMatch(ui, /webApi\.GET|setAttempt|setState|if \(!active\) return/);
   assert.match(list, /href=\{\`\/workouts\/\$\{workout.id\}\`\}/);
   assert.doesNotMatch(ui, /localStorage|sessionStorage|document.cookie|dangerouslySetInnerHTML/);

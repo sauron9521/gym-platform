@@ -347,3 +347,44 @@ test('workout details retry is explicit and preserves 403 privacy errors', async
   expect(requests).toBeGreaterThan(requestsBeforeRetry);
   await expect(page).toHaveURL(new RegExp('/workouts/' + id + '$'));
 });
+
+test('workout edit mutation preserves unsaved values after a 409 conflict', async ({ page }) => {
+  await signIn(page);
+  const id = '00000000-0000-4000-8000-000000000101';
+  let attempts = 0;
+  await page.route('**/backend/workouts/' + id, (route) => {
+    if (route.request().method() === 'PATCH') {
+      attempts += 1;
+      return route.fulfill({ status: 409, contentType: 'application/json', body: '{}' });
+    }
+    return route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        id,
+        title: 'Жим лежачи',
+        status: 'PLANNED',
+        scheduledAt: '2026-11-15T10:00:00.000Z',
+        startedAt: null,
+        completedAt: null,
+        notes: null,
+        exercises: [],
+      }),
+    });
+  });
+
+  await page.goto('/workouts/' + id);
+  await expect(page.getByRole('button', { name: 'Редагувати', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Редагувати', exact: true }).click();
+  const editor = page.getByRole('region', { name: 'Редагування тренування' });
+  const title = 'Незбережені зміни після конфлікту';
+  await editor.getByLabel('Назва', { exact: true }).fill(title);
+  await editor.getByRole('button', { name: 'Зберегти зміни' }).click();
+  await expect(
+    editor.getByText(
+      'Тренування вже змінило стан або дані застаріли. Оновіть сторінку та спробуйте ще раз.',
+    ),
+  ).toBeVisible();
+  await expect(editor.getByLabel('Назва', { exact: true })).toHaveValue(title);
+  expect(attempts).toBe(1);
+});

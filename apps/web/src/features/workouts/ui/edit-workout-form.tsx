@@ -1,20 +1,17 @@
 'use client';
 
-import { useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 
-import { webApi } from '@/shared/api/client';
 import { Button } from '@/shared/ui/button';
 import {
   buildWorkoutEditPayload,
   editWorkoutSchema,
   getWorkoutEditDefaults,
-  getWorkoutEditErrorMessage,
   type EditWorkoutValues,
 } from '../lib/edit-workout';
 import type { WorkoutDetailsData } from '../lib/workout-details';
+import { useUpdateWorkoutMutation } from '../api/workout-mutations';
 
 export function EditWorkoutForm({
   workout,
@@ -23,12 +20,11 @@ export function EditWorkoutForm({
   onReload,
 }: {
   workout: WorkoutDetailsData;
-  onSaved: (workout: WorkoutDetailsData) => void;
+  onSaved: () => void;
   onCancel: () => void;
   onReload: () => void;
 }) {
-  const router = useRouter();
-  const [error, setError] = useState<string | null>(null);
+  const mutation = useUpdateWorkoutMutation(workout.id);
   const {
     register,
     handleSubmit,
@@ -48,25 +44,13 @@ export function EditWorkoutForm({
       return;
     }
 
-    setError(null);
+    mutation.reset();
 
     try {
-      const { data, response } = await webApi.PATCH('/workouts/{id}', {
-        params: { path: { id: workout.id } },
-        body,
-      });
-
-      if (response.status === 401) {
-        router.replace('/login');
-        return;
-      }
-      if (response.status !== 200 || !data) {
-        setError(getWorkoutEditErrorMessage(response.status));
-        return;
-      }
-      onSaved(data);
+      await mutation.mutateAsync(body);
+      onSaved();
     } catch {
-      setError(getWorkoutEditErrorMessage());
+      // The mutation retains a safe error; preserve form values for retry.
     }
   }
 
@@ -85,10 +69,10 @@ export function EditWorkoutForm({
             id="edit-workout-title"
             type="text"
             maxLength={120}
-            disabled={isSubmitting}
+            disabled={isSubmitting || mutation.isPending}
             aria-invalid={Boolean(errors.title)}
             aria-describedby={errors.title ? 'edit-workout-title-error' : undefined}
-            {...register('title', { onChange: () => setError(null) })}
+            {...register('title', { onChange: () => mutation.reset() })}
             className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
           />
           {errors.title && (
@@ -104,10 +88,10 @@ export function EditWorkoutForm({
           <input
             id="edit-workout-date"
             type="datetime-local"
-            disabled={isSubmitting}
+            disabled={isSubmitting || mutation.isPending}
             aria-invalid={Boolean(errors.scheduledAt)}
             aria-describedby={errors.scheduledAt ? 'edit-workout-date-error' : undefined}
-            {...register('scheduledAt', { onChange: () => setError(null) })}
+            {...register('scheduledAt', { onChange: () => mutation.reset() })}
             className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
           />
           {errors.scheduledAt && (
@@ -124,10 +108,10 @@ export function EditWorkoutForm({
             id="edit-workout-notes"
             rows={3}
             maxLength={5000}
-            disabled={isSubmitting}
+            disabled={isSubmitting || mutation.isPending}
             aria-invalid={Boolean(errors.notes)}
             aria-describedby={errors.notes ? 'edit-workout-notes-error' : undefined}
-            {...register('notes', { onChange: () => setError(null) })}
+            {...register('notes', { onChange: () => mutation.reset() })}
             className="w-full rounded-md border border-input bg-background p-3 text-sm"
           />
           {errors.notes && (
@@ -136,19 +120,29 @@ export function EditWorkoutForm({
             </p>
           )}
         </div>
-        {error && (
+        {mutation.isError && (
           <div className="space-y-2" role="alert">
-            <p className="text-sm text-destructive">{error}</p>
-            <Button type="button" variant="outline" disabled={isSubmitting} onClick={onReload}>
+            <p className="text-sm text-destructive">{mutation.error.message}</p>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={isSubmitting || mutation.isPending}
+              onClick={onReload}
+            >
               Оновити дані
             </Button>
           </div>
         )}
         <div className="flex flex-wrap gap-3">
-          <Button type="submit" disabled={isSubmitting || !isDirty}>
+          <Button type="submit" disabled={isSubmitting || mutation.isPending || !isDirty}>
             {isSubmitting ? 'Зберігаємо…' : 'Зберегти зміни'}
           </Button>
-          <Button type="button" variant="outline" disabled={isSubmitting} onClick={onCancel}>
+          <Button
+            type="button"
+            variant="outline"
+            disabled={isSubmitting || mutation.isPending}
+            onClick={onCancel}
+          >
             Скасувати редагування
           </Button>
         </div>

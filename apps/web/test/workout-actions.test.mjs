@@ -46,17 +46,24 @@ test('workout lifecycle controls use typed endpoints and inline confirmations', 
     new URL('../src/features/workouts/ui/workout-actions.tsx', import.meta.url),
     'utf8',
   );
+  const mutations = await readFile(
+    new URL('../src/features/workouts/api/workout-mutations.ts', import.meta.url),
+    'utf8',
+  );
   const details = await readFile(
     new URL('../src/features/workouts/ui/workout-details.tsx', import.meta.url),
     'utf8',
   );
   for (const action of ['start', 'complete', 'cancel']) {
-    assert.ok(ui.includes(`webApi.POST('/workouts/{id}/${action}'`));
+    assert.ok(mutations.includes(`webApi.POST('/workouts/{id}/${action}'`));
   }
-  assert.match(ui, /response.status === 401/);
-  assert.match(ui, /router.replace\('\/login'\)/);
-  assert.match(ui, /disabled=\{inProgress\}/);
+  assert.match(ui, /useWorkoutActionMutation\(workout.id\)/);
+  assert.match(ui, /mutation.mutateAsync\(action\)/);
+  assert.match(ui, /mutation.isPending/);
   assert.match(ui, /setConfirmation/);
+  assert.match(mutations, /useAuthFailure\(\)/);
+  assert.match(mutations, /onSuccess: updateDetails/);
+  assert.doesNotMatch(ui, /webApi.POST|router.replace|setError/);
   assert.match(details, /<WorkoutActions/);
   assert.doesNotMatch(ui, /localStorage|sessionStorage|window.confirm|dangerouslySetInnerHTML/);
 });
