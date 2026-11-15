@@ -447,6 +447,15 @@ cache entries; stale results are revalidated on revisit. On HTTP 401, the
 query cache is cleared and private results are hidden before redirecting
 to /login. No assignment write actions are introduced in this PR.
 
+Each training-program version's workouts also use a typed TanStack Query with a
+key scoped to both program and version IDs. The fetch is abortable, while
+successful draft workout creation, editing and deletion write the server's full
+updated version into that key immediately. The same callback updates this
+version cache after exercise, set and set-order edits, so nested changes stay
+in sync without duplicating local copies. HTTP 401 clears the session-specific
+query cache and hides the affected workout list before redirecting; 403/404
+retain the existing generic permission message.
+
 On successful login or sign-out, the browser query cache is cleared to avoid
 cross-account data exposure. When moving workout write actions to mutations,
 invalidate the workout list query keys on successful server responses.
