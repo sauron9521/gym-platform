@@ -5,7 +5,7 @@ import {
   createProgramWorkoutSchema,
   type CreateProgramWorkoutValues,
   type ProgramVersionWithWorkouts,
-} from './create-program-workout';
+} from './create-program-workout.ts';
 
 export type ProgramWorkout = ProgramVersionWithWorkouts['workouts'][number];
 
