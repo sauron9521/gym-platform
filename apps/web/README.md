@@ -229,9 +229,15 @@ validated by NestJS, not merely by hidden Web controls.
 `/trainer/athletes` and `/athlete/trainers` provide role-specific relationship
 lists with invitations, status filters and available relationship actions.
 `/trainer/programs` lists a trainer's programs and versions with pagination and
-status filters; `/athlete/programs` lists assigned programs. The current Web
-screens are **list views**, not complete visual program builders; the broader
-program versioning and assignment operations belong to the NestJS API.
+status filters; `/athlete/programs` lists assigned programs. The trainer-only
+`/trainer/programs/new` page uses React Hook Form + Zod and the typed same-origin
+`POST /training-programs` operation to create version 1 as a **DRAFT**. Title
+is required (2–120 characters), while description (up to 5000 characters) and
+duration (1–52 weeks) are optional. The API remains authoritative for role
+checks and validation; 401 redirects to login and other errors never expose
+raw server messages. A successful create returns to the owned program list.
+The Web does not yet provide a full visual workout/version builder; advanced
+versioning and program assignment operations are still managed by NestJS API.
 
 ## Browser E2E (Playwright + Chromium)
 
