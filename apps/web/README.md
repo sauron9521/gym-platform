@@ -418,8 +418,15 @@ TanStack Query: each list key includes search, exercise type, muscle group, equi
 and page. Search input is debounced by 250 ms; request cancellation prevents stale
 results from replacing newer filters. Successful exercise creation, editing and
 archiving invalidate the exercise-list cache so returning to the catalog reflects
-server changes. Exercise taxonomy and individual details retain their existing
-request handling for now.
+server changes. Individual exercise details now use an ID-scoped query, and
+successful edits update the detail cache immediately. Archiving invalidates the
+detail without refetching an archived record during navigation.
+
+The muscle-group and equipment catalogues share one cancellable TanStack Query
+with a five-minute stale time. Catalog, creation and editing screens reuse the
+same taxonomy data instead of triggering duplicate API calls on each mount.
+Request errors retain safe retry messages; a 401 clears session-specific query
+state and redirects to login. Exercise details remain private and unpersisted.
 
 On successful login or sign-out, the browser query cache is cleared to avoid
 cross-account data exposure. When moving workout write actions to mutations,
