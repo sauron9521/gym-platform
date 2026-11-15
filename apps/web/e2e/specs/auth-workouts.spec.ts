@@ -227,9 +227,8 @@ test('invitation mutation keeps the form open after a 409 conflict', async ({ pa
   const invitedId = '11111111-1111-4111-8111-111111111111';
   await page.locator('#relationship-target-id').fill(invitedId);
   await page.getByRole('button', { name: 'Надіслати запрошення' }).click();
-  await expect(
-    page.getByText('Запрошення або стан співпраці вже змінився. Оновіть список.'),
-  ).toBeVisible();
+  const conflictMessage = 'Запрошення або стан співпраці вже змінився. Оновіть список.';
+  await expect(page.getByText(conflictMessage)).toBeVisible();
   await expect(page.locator('#relationship-target-id')).toHaveValue(invitedId);
   await expect(page).toHaveURL(/\/trainer\/athletes$/);
   expect(invitations).toBe(1);
@@ -252,7 +251,8 @@ test('invitation mutation on 401 clears private UI and redirects to login', asyn
   });
 
   await page.goto('/trainer/athletes');
-  await page.locator('#relationship-target-id').fill('11111111-1111-4111-8111-111111111111');
+  const invitedId = '11111111-1111-4111-8111-111111111111';
+  await page.locator('#relationship-target-id').fill(invitedId);
   await page.getByRole('button', { name: 'Надіслати запрошення' }).click();
   await expect(page).toHaveURL(/\/login$/);
   await expect(page.getByRole('region', { name: 'Список підопічних' })).toHaveCount(0);
