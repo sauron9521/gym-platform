@@ -174,6 +174,18 @@ test('trainer program details query redirects on 401 without exposing private co
   await expect(page.getByRole('region', { name: 'Редагування чернетки' })).toHaveCount(0);
 });
 
+test('trainer relationships query redirects on 401 without showing private contacts', async ({
+  page,
+}) => {
+  await signIn(page, 'trainer@example.test');
+  await page.route('**/backend/trainer-athletes*', (route) =>
+    route.fulfill({ status: 401, contentType: 'application/json', body: '{}' }),
+  );
+  await page.goto('/trainer/athletes');
+  await expect(page).toHaveURL(/\/login$/);
+  await expect(page.getByRole('region', { name: 'Список підопічних' })).toHaveCount(0);
+});
+
 test('trainer can access own programs but not athlete-only pages', async ({ page }) => {
   await signIn(page, 'trainer@example.test');
   await page.goto('/trainer/programs');
