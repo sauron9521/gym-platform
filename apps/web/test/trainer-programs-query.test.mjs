@@ -54,7 +54,10 @@ test('program detail cache keys distinguish program IDs from trainer lists', () 
 
 test('editing a draft refreshes the list and updates only the matching cached detail', async () => {
   const editor = await readFile(
-    new URL('../src/features/training-programs/ui/edit-training-program-draft-form.tsx', import.meta.url),
+    new URL(
+      '../src/features/training-programs/ui/edit-training-program-draft-form.tsx',
+      import.meta.url,
+    ),
     'utf8',
   );
   const detail = await readFile(
