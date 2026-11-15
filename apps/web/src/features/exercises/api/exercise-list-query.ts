@@ -32,7 +32,9 @@ export function exerciseListQueryOptions(filters: ExerciseCatalogFilters) {
               page: normalized.page,
               limit: PAGE_SIZE,
               ...(normalized.search ? { search: normalized.search } : {}),
-              ...(normalized.exerciseType === 'ALL' ? {} : { exerciseType: normalized.exerciseType }),
+              ...(normalized.exerciseType === 'ALL'
+                ? {}
+                : { exerciseType: normalized.exerciseType }),
               ...(normalized.muscleGroup ? { muscleGroup: normalized.muscleGroup } : {}),
               ...(normalized.equipment ? { equipment: normalized.equipment } : {}),
             },
