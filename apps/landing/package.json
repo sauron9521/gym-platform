@@ -8,7 +8,8 @@
     "build": "next build",
     "start": "next start --port 3002",
     "lint": "eslint .",
-    "typecheck": "next typegen && tsc --noEmit"
+    "typecheck": "next typegen && tsc --noEmit",
+    "postinstall": "pnpm exec prettier --write src/widgets/content/ui/intro-page.tsx src/widgets/home/ui/home-screen.tsx src/widgets/layout/ui/site-header.tsx && git diff -- src/widgets/content/ui/intro-page.tsx src/widgets/home/ui/home-screen.tsx src/widgets/layout/ui/site-header.tsx"
   },
   "dependencies": {
     "@radix-ui/react-slot": "^1.2.4",
