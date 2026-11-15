@@ -102,7 +102,10 @@ test('program details loads version workouts; creation uses the typed API path',
     'utf8',
   );
   const cache = await readFile(
-    new URL('../src/features/training-programs/api/program-version-mutation-context.ts', import.meta.url),
+    new URL(
+      '../src/features/training-programs/api/program-version-mutation-context.ts',
+      import.meta.url,
+    ),
     'utf8',
   );
   const query = await readFile(
