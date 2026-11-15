@@ -2,7 +2,10 @@ import { queryOptions } from '@tanstack/react-query';
 
 import { webApi } from '@/shared/api/client';
 
-import { trainerAthleteQueryKeys, type RelationshipActorRole } from '../lib/trainer-athlete-query-keys';
+import {
+  trainerAthleteQueryKeys,
+  type RelationshipActorRole,
+} from '../lib/trainer-athlete-query-keys';
 import {
   getTrainerAthleteListErrorMessage,
   getTrainerAthletePageCount,
