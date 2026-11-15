@@ -291,9 +291,20 @@ sets render read-only with their targets, including in published versions.
 For declined/immutable requests, Web shows status-based errors, not raw API
 payloads. Browser tests cover real API persistence and trainer isolation.
 
+Editable DRAFTs also support editing or deleting existing planned sets using typed
+same-origin `PATCH/DELETE /training-programs/{programId}/versions/{versionId}/workouts/{workoutId}/exercises/{exerciseId}/sets/{setId}`.
+Editing reuses the existing React Hook Form + Zod validation; blank numeric
+fields or notes are explicitly sent as `null` to clear previously planned
+targets. The saved version is displayed immediately, and cancellation does not
+issue a mutation. Deletion is gated by a separate in-page confirmation; 401
+redirects to login, while access and stale-draft failures show safe errors.
+Published plans display all saved targets but never offer edit/delete controls,
+and the backend refuses direct mutation requests. Browser E2E covers editing,
+null clears, persistence after reload, cancel/confirm deletion, and ownership.
+
 The Web still shows only the **latest version**, not the full version history.
-Editing/removing/reordering individual exercises and sets, publishing versions
-and assigning programs are separate future features.
+Editing/removing/reordering individual exercises, reordering sets, publishing
+versions and assigning programs are separate future features.
 
 ## Browser E2E (Playwright + Chromium)
 
