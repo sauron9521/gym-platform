@@ -16,6 +16,7 @@ export const metadata: Metadata = {
     template: '%s | Gym Platform',
   },
   description: siteDescription,
+  alternates: origin ? { canonical: origin } : undefined,
   openGraph: {
     type: 'website',
     locale: 'uk_UA',

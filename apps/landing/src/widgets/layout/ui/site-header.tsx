@@ -12,7 +12,10 @@ export function SiteHeader() {
           className="inline-flex items-center gap-3 text-lg font-bold tracking-tight focus-visible:rounded-md focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"
           aria-label="Gym Platform — головна сторінка"
         >
-          <span aria-hidden="true" className="flex size-9 items-center justify-center rounded-lg bg-primary text-xl font-black text-primary-foreground">
+          <span
+            aria-hidden="true"
+            className="flex size-9 items-center justify-center rounded-lg bg-primary text-xl font-black text-primary-foreground"
+          >
             G
           </span>
           <span>Gym Platform</span>
@@ -37,7 +40,9 @@ export function SiteHeader() {
         </div>
 
         <details className="group relative lg:hidden">
-          <summary className="flex cursor-pointer list-none items-center gap-2 rounded-md border border-border px-3 py-2 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary [&::-webkit-details-marker]:hidden">
+          <summary
+            className="flex cursor-pointer list-none items-center gap-2 rounded-md border border-border px-3 py-2 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary [&::-webkit-details-marker]:hidden"
+          >
             <span aria-hidden="true" className="text-lg leading-none">☰</span>
             Меню
           </summary>
