@@ -9,6 +9,18 @@ export const editTrainingProgramDraftSchema = createTrainingProgramFormSchema;
 
 export type EditTrainingProgramDraftValues = CreateTrainingProgramValues;
 
+export function toTrainingProgramDraftValues(version: {
+  title: string;
+  description: string | null;
+  durationWeeks: number | null;
+}): EditTrainingProgramDraftValues {
+  return {
+    title: version.title,
+    description: version.description ?? '',
+    durationWeeks: version.durationWeeks === null ? '' : String(version.durationWeeks),
+  };
+}
+
 export type UpdateTrainingProgramDraftPayload =
   operations['TrainingProgramVersionsController_updateDraftVersion']['requestBody']['content']['application/json'];
 
