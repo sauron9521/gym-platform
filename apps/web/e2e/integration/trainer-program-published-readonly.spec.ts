@@ -26,6 +26,7 @@ test('real API: published program details are read-only and PATCH is rejected', 
   await expect(page.getByRole('button', { name: /Додати підхід до вправи/ })).toHaveCount(0);
   await expect(page.getByRole('button', { name: /Редагувати підхід/ })).toHaveCount(0);
   await expect(page.getByRole('button', { name: /Видалити підхід/ })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: /Перемістити підхід/ })).toHaveCount(0);
   await expect(
     page.getByRole('list', { name: 'Підходи вправи Barbell Bench Press' }),
   ).toBeVisible();
@@ -91,4 +92,9 @@ test('real API: published program details are read-only and PATCH is rejected', 
     headers: { origin },
   });
   expect(immutableSetDelete.status()).toBe(409);
+  const immutableReorder = await page.request.patch(
+    workoutPath + '/exercises/' + programExerciseId + '/sets/reorder',
+    { headers: { origin }, data: { setIds: [setId] } },
+  );
+  expect(immutableReorder.status()).toBe(409);
 });
