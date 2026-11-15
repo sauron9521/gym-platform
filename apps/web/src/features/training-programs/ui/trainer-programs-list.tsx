@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 import { webApi } from '@/shared/api/client';
@@ -95,6 +96,12 @@ export function TrainerProgramsList() {
           Ваші програми, чернетки, опубліковані та архівні версії.
         </p>
       </header>
+
+      <div>
+        <Button asChild>
+          <Link href="/trainer/programs/new">Створити програму</Link>
+        </Button>
+      </div>
 
       <section className="space-y-2 rounded-xl border bg-card p-5" aria-label="Фільтри програм">
         <label htmlFor="training-program-status" className="block text-sm font-medium">
