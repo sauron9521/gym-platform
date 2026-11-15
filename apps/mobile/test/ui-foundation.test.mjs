@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import test from 'node:test';
 
 const read = (relativePath) => readFileSync(new URL(relativePath, import.meta.url), 'utf8');
@@ -20,9 +20,8 @@ test('Gluestack root provider preserves authenticated route guards', () => {
   assert.match(layout, /<Stack\.Protected guard=\{!account\}>/);
 });
 
-test('Babel and TypeScript aliases both point to mobile src', () => {
-  const babel = read('../babel.config.js');
+test('Expo uses its default Babel setup and TypeScript resolves aliases to src', () => {
   const tsconfig = JSON.parse(read('../tsconfig.json'));
-  assert.match(babel, /'@': '\.\/src'/);
+  assert.equal(existsSync(new URL('../babel.config.js', import.meta.url)), false);
   assert.deepEqual(tsconfig.compilerOptions.paths['@/*'], ['./src/*']);
 });
