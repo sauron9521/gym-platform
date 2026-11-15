@@ -16,8 +16,12 @@ export function HomeScreen() {
     <div className="min-h-screen bg-background text-foreground">
       <header className="border-b">
         <div className="mx-auto flex max-w-6xl justify-between px-6 py-5">
-          <Link href="/" className="text-lg font-semibold">Gym Platform</Link>
-          <Link href="#platform" className="text-sm text-muted-foreground">Про платформу</Link>
+          <Link href="/" className="text-lg font-semibold">
+            Gym Platform
+          </Link>
+          <Link href="#platform" className="text-sm text-muted-foreground">
+            Про платформу
+          </Link>
         </div>
       </header>
 
