@@ -8,7 +8,10 @@ import { useForm } from 'react-hook-form';
 
 import { useCreateTrainingProgramMutation } from '../api/training-program-mutations';
 import { Button } from '@/shared/ui/button';
-import { createTrainingProgramFormSchema, type CreateTrainingProgramValues } from '../lib/create-training-program';
+import {
+  createTrainingProgramFormSchema,
+  type CreateTrainingProgramValues,
+} from '../lib/create-training-program';
 
 export function CreateTrainingProgramForm() {
   const router = useRouter();
