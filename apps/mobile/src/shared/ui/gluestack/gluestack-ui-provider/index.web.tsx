@@ -34,7 +34,7 @@ export function GluestackUIProvider({
 
     // The previous inline script initialized this before React mounted.
     // On client-rendered Expo Web, initialize here to avoid React 19's
-    // client-side <script> warning and still honor the current system theme.
+    // client-side script-element warning and still honor the current system theme.
     syncSystemMode();
     media.addEventListener('change', syncSystemMode);
     return () => media.removeEventListener('change', syncSystemMode);
