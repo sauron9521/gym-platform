@@ -122,6 +122,10 @@ test('create page is guarded; web form uses typed API, RHF/Zod and stable retrie
     new URL('../src/features/workouts/ui/create-workout-form.tsx', import.meta.url),
     'utf8',
   );
+  const mutations = await readFile(
+    new URL('../src/features/workouts/api/workout-mutations.ts', import.meta.url),
+    'utf8',
+  );
   const picker = await readFile(
     new URL('../src/features/workouts/ui/workout-exercise-picker.tsx', import.meta.url),
     'utf8',
@@ -138,9 +142,16 @@ test('create page is guarded; web form uses typed API, RHF/Zod and stable retrie
   assert.match(page, /robots: \{ index: false \}/);
   assert.match(form, /zodResolver\(createWorkoutFormSchema\)/);
   assert.match(form, /useFieldArray/);
-  assert.match(form, /webApi.POST\('\/workouts'/);
-  assert.match(form, /'Idempotency-Key'/);
+  assert.match(form, /useCreateWorkoutMutation\(\)/);
+  assert.match(form, /mutation.mutateAsync\(\{/);
   assert.match(form, /submitting.current/);
+  assert.match(form, /requestKey.current/);
+  assert.match(mutations, /webApi.POST\('\/workouts'/);
+  assert.match(mutations, /'Idempotency-Key'/);
+  assert.match(mutations, /workoutQueryKeys.lists\(\)/);
+  assert.match(mutations, /refetchType: 'none'/);
+  assert.match(mutations, /retry: false/);
+  assert.doesNotMatch(form, /webApi.POST|setError/);
   assert.match(picker, /\.GET\('\/exercises'/);
   assert.match(editor, /createEmptyWorkoutSet/);
   assert.match(list, /href="\/workouts\/new"/);
