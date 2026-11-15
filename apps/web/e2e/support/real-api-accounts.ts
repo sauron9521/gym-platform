@@ -8,10 +8,16 @@ const password = 'BrowserTest123!';
 // Resolve the database driver from the API workspace. The Web app gains no
 // runtime dependency and this file only executes against a disposable test DB.
 const requireApi = createRequire(new URL('../../../api/package.json', import.meta.url));
+export type DisposableDatabaseClient = {
+  query(
+    sql: string,
+    values: string[],
+  ): Promise<{ rowCount: number | null; rows: Record<string, unknown>[] }>;
+};
+
 const { Client } = requireApi('pg') as {
-  Client: new (options: { connectionString: string }) => {
+  Client: new (options: { connectionString: string }) => DisposableDatabaseClient & {
     connect(): Promise<void>;
-    query(sql: string, values: string[]): Promise<{ rowCount: number | null }>;
     end(): Promise<void>;
   };
 };
@@ -48,18 +54,26 @@ export async function register(page: Page, prefix: string) {
   return { email, id: user.id };
 }
 
-export async function promoteTestTrainer(userId: string) {
+export async function withDisposableDatabase<T>(
+  run: (client: DisposableDatabaseClient) => Promise<T>,
+): Promise<T> {
   const client = new Client({ connectionString: disposableDatabaseUrl() });
   await client.connect();
   try {
+    return await run(client);
+  } finally {
+    await client.end();
+  }
+}
+
+export async function promoteTestTrainer(userId: string) {
+  await withDisposableDatabase(async (client) => {
     const result = await client.query(
       'UPDATE "users" SET "role" = $1 WHERE "id" = $2 AND "role" = $3',
       ['TRAINER', userId, 'ATHLETE'],
     );
     expect(result.rowCount).toBe(1);
-  } finally {
-    await client.end();
-  }
+  });
 }
 
 export async function login(page: Page, email: string, role: 'ATHLETE' | 'TRAINER') {
