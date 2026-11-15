@@ -118,7 +118,6 @@ test('profile remains protected and uses shared TanStack query and mutation flow
   assert.doesNotMatch(ui, /webApi.GET|webApi.PATCH|localStorage|sessionStorage|document.cookie/);
 });
 
-
 test('profile query key is scoped to the signed-in account view', async () => {
   const { profileQueryKeys } = await import('../src/features/profile/lib/profile-query-keys.ts');
   assert.deepEqual(profileQueryKeys.all, ['profile']);
