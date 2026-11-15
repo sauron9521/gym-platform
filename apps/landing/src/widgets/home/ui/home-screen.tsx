@@ -2,65 +2,87 @@ import Link from 'next/link';
 
 import { Button } from '@/shared/ui/button';
 
-const applications = [
-  { title: 'Вебзастосунок', description: 'Тренування, вправи та прогрес.', status: 'У розробці' },
-  { title: 'Для тренерів', description: 'Програми для спортсменів.', status: 'У розробці' },
-  { title: 'Мобільний застосунок', description: 'Тренування зі смартфона.', status: 'У розробці' },
+const audiences = [
+  {
+    title: 'Для спортсменів',
+    description: 'Записуйте тренування, працюйте з вправами й стежте за прогресом.',
+    href: '/for-athletes',
+    action: 'Можливості спортсмена',
+  },
+  {
+    title: 'Для тренерів',
+    description: 'Організовуйте тренувальні програми та взаємодію зі спортсменами.',
+    href: '/for-trainers',
+    action: 'Можливості тренера',
+  },
+  {
+    title: 'Web і Mobile',
+    description: 'Знайомтеся з продуктами, які разом формують Gym Platform.',
+    href: '/apps',
+    action: 'Усі застосунки',
+  },
 ] as const;
-
-const introduction =
-  'Створюємо єдину екосистему для спортсменів і тренерів: від планування до результатів.';
 
 export function HomeScreen() {
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <header className="border-b">
-        <div className="mx-auto flex max-w-6xl justify-between px-6 py-5">
-          <Link href="/" className="text-lg font-semibold">
+    <main id="main-content" className="flex-1">
+      <section className="relative isolate overflow-hidden border-b border-border/70">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute top-0 right-0 -z-10 h-full w-2/3 bg-[radial-gradient(ellipse_at_top_right,oklch(0.87_0.2_125/0.15),transparent_65%)]"
+        />
+        <div className="mx-auto max-w-6xl px-6 py-24 sm:py-32">
+          <span className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-2 text-xs font-bold tracking-[0.18em] text-primary uppercase">
+            <span aria-hidden="true" className="size-2 rounded-full bg-primary" />
             Gym Platform
-          </Link>
-          <Link href="#platform" className="text-sm text-muted-foreground">
-            Про платформу
-          </Link>
-        </div>
-      </header>
-
-      <main>
-        <section className="mx-auto max-w-6xl px-6 py-24">
-          <p className="text-sm font-semibold uppercase tracking-widest">Gym Platform</p>
-          <h1 className="mt-5 max-w-4xl text-4xl font-semibold sm:text-6xl">
-            Одна платформа для тренувань і прогресу
+          </span>
+          <h1 className="mt-8 max-w-4xl text-5xl font-bold tracking-tight text-balance sm:text-7xl">
+            Тренуйся розумніше. <span className="text-primary">Прогресуй далі.</span>
           </h1>
-          <p className="mt-6 max-w-2xl text-lg text-muted-foreground">{introduction}</p>
-          <div className="mt-8">
+          <p className="mt-7 max-w-2xl text-lg leading-8 text-muted-foreground">
+            Розвиваємо єдину платформу для спортсменів і персональних тренерів:
+            планування тренувань, бібліотека вправ, програми та відстеження прогресу.
+          </p>
+          <div className="mt-10 flex flex-wrap gap-3">
             <Button asChild size="lg">
-              <Link href="#platform">Огляд платформи</Link>
+              <Link href="/features">Дізнатися більше</Link>
+            </Button>
+            <Button asChild size="lg" variant="outline">
+              <Link href="/apps">Переглянути застосунки</Link>
             </Button>
           </div>
-        </section>
+          <p className="mt-6 text-xs font-medium text-muted-foreground">
+            Платформа в активній розробці. Опис можливостей буде доповнюватися.
+          </p>
+        </div>
+      </section>
 
-        <section id="platform" className="border-t bg-muted/30">
-          <div className="mx-auto max-w-6xl px-6 py-20">
-            <h2 className="text-3xl font-semibold">Застосунки платформи</h2>
-            <p className="mt-4 text-muted-foreground">
-              Детальні сторінки та структуру сайту погодимо окремо.
-            </p>
-            <div className="mt-10 grid gap-4 md:grid-cols-3">
-              {applications.map((item) => (
-                <article key={item.title} className="rounded-xl border bg-card p-6">
-                  <p className="text-xs text-muted-foreground">{item.status}</p>
-                  <h3 className="mt-4 text-xl font-semibold">{item.title}</h3>
-                  <p className="mt-3 text-muted-foreground">{item.description}</p>
-                </article>
-              ))}
-            </div>
-          </div>
-        </section>
-      </main>
-
-      <footer className="border-t px-6 py-8 text-center text-sm text-muted-foreground">
-        Gym Platform · Презентаційний сайт у розробці
-      </footer>
-    </div>
+      <section className="mx-auto max-w-6xl px-6 py-20 sm:py-24" aria-labelledby="audiences">
+        <div className="max-w-2xl">
+          <p className="text-sm font-bold tracking-widest text-primary uppercase">Єдина екосистема</p>
+          <h2 id="audiences" className="mt-4 text-3xl font-bold tracking-tight sm:text-4xl">
+            Платформа для твоїх цілей
+          </h2>
+          <p className="mt-4 text-muted-foreground">
+            Окремі інструменти для різних сценаріїв тренувань — в одному проєкті.
+          </p>
+        </div>
+        <div className="mt-10 grid gap-5 md:grid-cols-3">
+          {audiences.map(({ title, description, href, action }) => (
+            <article key={href} className="flex flex-col rounded-2xl border border-border bg-card p-7">
+              <span aria-hidden="true" className="mb-7 h-1 w-12 rounded-full bg-primary" />
+              <h3 className="text-xl font-bold">{title}</h3>
+              <p className="mt-3 flex-1 text-sm leading-7 text-muted-foreground">{description}</p>
+              <Link
+                href={href}
+                className="mt-7 text-sm font-semibold text-primary underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"
+              >
+                {action} <span aria-hidden="true">→</span>
+              </Link>
+            </article>
+          ))}
+        </div>
+      </section>
+    </main>
   );
 }
