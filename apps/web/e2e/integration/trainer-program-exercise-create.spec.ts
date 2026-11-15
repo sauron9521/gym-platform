@@ -54,10 +54,33 @@ test('real API: trainer adds a catalogue exercise to a draft workout and another
       name: 'Додавання вправи до тренування ' + workoutTitle,
     });
     await expect(form.getByRole('button', { name: 'Додати обрану вправу' })).toBeDisabled();
+    let benchSearchRequests = 0;
+    ownerPage.on('request', (request) => {
+      const url = new URL(request.url());
+      if (
+        request.method() === 'GET' &&
+        url.pathname === '/backend/exercises' &&
+        url.searchParams.get('search') === 'bench'
+      ) {
+        benchSearchRequests += 1;
+      }
+    });
+
     await form.getByLabel('Пошук вправи').fill('bench');
     await expect(
       form.getByRole('button', { name: 'Обрати вправу ' + exercise!.name }),
     ).toBeVisible();
+    const requestsAfterFirstSearch = benchSearchRequests;
+    expect(requestsAfterFirstSearch).toBeGreaterThan(0);
+
+    await form.getByLabel('Пошук вправи').fill('no-such-exercise-' + randomUUID());
+    await expect(form.getByText('Доступних вправ не знайдено.')).toBeVisible();
+    await form.getByLabel('Пошук вправи').fill('bench');
+    await expect(
+      form.getByRole('button', { name: 'Обрати вправу ' + exercise!.name }),
+    ).toBeVisible();
+    expect(benchSearchRequests).toBe(requestsAfterFirstSearch);
+
     await form.getByRole('button', { name: 'Обрати вправу ' + exercise!.name }).click();
     await form.getByLabel('Примітки до вправи (необов’язково)').fill('  Контроль руху  ');
 
@@ -112,6 +135,16 @@ test('real API: trainer adds a catalogue exercise to a draft workout and another
       data: { exerciseId: exercise!.id },
     });
     expect(denied.status()).toBe(404);
+
+    // The picker must not keep rendering private results when its GET returns 401.
+    await ownerPage.reload();
+    await expect(ownerPage.getByRole('heading', { name: workoutTitle })).toBeVisible();
+    await ownerPage.route('**/backend/exercises*', (route) =>
+      route.fulfill({ status: 401, contentType: 'application/json', body: '{}' }),
+    );
+    await ownerPage.getByRole('button', { name: 'Додати вправу до дня ' + workoutTitle }).click();
+    await expect(ownerPage).toHaveURL(/\/login$/);
+    await expect(ownerPage.getByRole('list', { name: 'Результати пошуку вправ' })).toHaveCount(0);
   } finally {
     await outsiderContext.close();
   }
