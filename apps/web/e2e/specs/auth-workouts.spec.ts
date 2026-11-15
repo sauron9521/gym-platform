@@ -174,7 +174,7 @@ test('trainer program details query redirects on 401 without exposing private co
   await expect(page.getByRole('region', { name: 'Редагування чернетки' })).toHaveCount(0);
 });
 
-test('relationship status filters request isolated cached lists without real API throttling', async ({
+test('relationship filters use isolated cached lists without API throttling', async ({
   page,
 }) => {
   await signIn(page, 'trainer@example.test');
@@ -227,7 +227,9 @@ test('invitation mutation keeps the form open after a 409 conflict', async ({ pa
   const invitedId = '11111111-1111-4111-8111-111111111111';
   await page.locator('#relationship-target-id').fill(invitedId);
   await page.getByRole('button', { name: 'Надіслати запрошення' }).click();
-  await expect(page.getByText('Запрошення або стан співпраці вже змінився. Оновіть список.')).toBeVisible();
+  await expect(
+    page.getByText('Запрошення або стан співпраці вже змінився. Оновіть список.'),
+  ).toBeVisible();
   await expect(page.locator('#relationship-target-id')).toHaveValue(invitedId);
   await expect(page).toHaveURL(/\/trainer\/athletes$/);
   expect(invitations).toBe(1);
