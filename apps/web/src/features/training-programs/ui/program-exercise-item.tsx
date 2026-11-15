@@ -3,10 +3,10 @@
 import { useState } from 'react';
 
 import { Button } from '@/shared/ui/button';
-import { describeProgramSet } from '../lib/add-program-set';
 import type { ProgramVersionWithWorkouts } from '../lib/create-program-workout';
 import type { ProgramWorkout } from '../lib/edit-program-workout';
 import { AddProgramSetForm } from './add-program-set-form';
+import { ProgramSetItem } from './program-set-item';
 
 type ProgramExercise = ProgramWorkout['exercises'][number];
 
@@ -26,6 +26,7 @@ export function ProgramExerciseItem({
   onChanged: (version: ProgramVersionWithWorkouts, notice: string) => void;
 }) {
   const [addingSet, setAddingSet] = useState(false);
+  const [editingSetId, setEditingSetId] = useState<string | null>(null);
 
   return (
     <li className="space-y-3 rounded-md border p-3">
@@ -41,14 +42,23 @@ export function ProgramExerciseItem({
           {[...exercise.sets]
             .sort((first, second) => first.setNumber - second.setNumber)
             .map((set) => (
-              <li key={set.id} className="space-y-1 rounded-md bg-muted p-2 text-sm">
-                <p>
-                  Підхід {set.setNumber}: {describeProgramSet(set)}
-                </p>
-                {set.notes && (
-                  <p className="whitespace-pre-wrap text-muted-foreground">{set.notes}</p>
-                )}
-              </li>
+              <ProgramSetItem
+                key={set.id}
+                programId={programId}
+                versionId={versionId}
+                workoutId={workoutId}
+                exerciseId={exercise.id}
+                exerciseName={exercise.exerciseNameSnapshot}
+                set={set}
+                editable={editable}
+                editing={editingSetId === set.id}
+                onEdit={() => {
+                  setAddingSet(false);
+                  setEditingSetId(set.id);
+                }}
+                onCancelEdit={() => setEditingSetId(null)}
+                onChanged={onChanged}
+              />
             ))}
         </ol>
       ) : (
@@ -74,7 +84,10 @@ export function ProgramExerciseItem({
             size="sm"
             variant="outline"
             aria-label={`Додати підхід до вправи ${exercise.exerciseNameSnapshot}`}
-            onClick={() => setAddingSet(true)}
+            onClick={() => {
+              setEditingSetId(null);
+              setAddingSet(true);
+            }}
           >
             Додати підхід
           </Button>
