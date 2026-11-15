@@ -1,11 +1,16 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 
-import { webApi } from '@/shared/api/client';
+import { useAuthFailure } from '@/shared/api/use-auth-failure';
 import { Button } from '@/shared/ui/button';
+import {
+  workoutDetailsQueryOptions,
+  WorkoutDetailsRequestError,
+} from '../api/workout-details-query';
+import { workoutQueryKeys } from '../lib/workout-query-keys';
 import { WorkoutActions } from './workout-actions';
 import { EditWorkoutForm } from './edit-workout-form';
 import { WorkoutSetForm } from './workout-set-form';
@@ -33,43 +38,53 @@ function SetMetric({ label, value }: { label: string; value: string }) {
 }
 
 export function WorkoutDetails({ id }: { id: string }) {
-  const router = useRouter();
-  const [attempt, setAttempt] = useState(0);
+  const queryClient = useQueryClient();
+  const onAuthFailure = useAuthFailure();
   const [editingSetId, setEditingSetId] = useState<string | null>(null);
   const [editingWorkout, setEditingWorkout] = useState(false);
-  const [state, setState] = useState<DetailsState>({ kind: 'loading' });
+  const query = useQuery(workoutDetailsQueryOptions(id));
+  const unauthenticated =
+    query.error instanceof WorkoutDetailsRequestError && query.error.status === 401;
 
   useEffect(() => {
-    let active = true;
-    void webApi
-      .GET('/workouts/{id}', { params: { path: { id } } })
-      .then(({ data, response }) => {
-        if (!active) return;
-        if (response.status === 401) {
-          router.replace('/login');
-          return;
-        }
-        if (response.status !== 200 || !data) {
-          setState({ kind: 'error', message: getWorkoutDetailsErrorMessage(response.status) });
-          return;
-        }
-        setState({ kind: 'ready', workout: data });
-      })
-      .catch(() => {
-        if (active) setState({ kind: 'error', message: getWorkoutDetailsErrorMessage() });
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [id, attempt, router]);
+    if (query.error instanceof WorkoutDetailsRequestError) {
+      onAuthFailure(query.error);
+    }
+  }, [query.error, onAuthFailure]);
 
   function retry() {
     setEditingWorkout(false);
     setEditingSetId(null);
-    setState({ kind: 'loading' });
-    setAttempt((current) => current + 1);
+    void query.refetch();
   }
+
+  function updateWorkout(workout: WorkoutDetailsData) {
+    queryClient.setQueryData(workoutQueryKeys.detail(id), workout);
+    // A changed status or title affects list summaries, but should not
+    // trigger an immediate redundant GET of another list filter.
+    void queryClient.invalidateQueries({
+      queryKey: workoutQueryKeys.lists(),
+      refetchType: 'none',
+    });
+  }
+
+  let state: DetailsState;
+  if (query.isPending || query.isFetching || unauthenticated) {
+    state = { kind: 'loading' };
+  } else if (query.isError) {
+    state = {
+      kind: 'error',
+      message:
+        query.error instanceof WorkoutDetailsRequestError
+          ? query.error.message
+          : getWorkoutDetailsErrorMessage(),
+    };
+  } else {
+    state = { kind: 'ready', workout: query.data };
+  }
+
+  // Do not render cached private workout data after an HTTP 401.
+  if (unauthenticated) return null;
 
   return (
     <main className="mx-auto max-w-5xl space-y-7 px-6 py-12">
@@ -122,7 +137,7 @@ export function WorkoutDetails({ id }: { id: string }) {
             <EditWorkoutForm
               workout={state.workout}
               onSaved={(workout) => {
-                setState({ kind: 'ready', workout });
+                updateWorkout(workout);
                 setEditingWorkout(false);
               }}
               onCancel={() => setEditingWorkout(false)}
@@ -133,7 +148,7 @@ export function WorkoutDetails({ id }: { id: string }) {
           {!editingWorkout && (
             <WorkoutActions
               workout={state.workout}
-              onUpdated={(workout) => setState({ kind: 'ready', workout })}
+              onUpdated={updateWorkout}
               onReload={retry}
             />
           )}
