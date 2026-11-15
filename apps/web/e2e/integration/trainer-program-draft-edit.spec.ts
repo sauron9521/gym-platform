@@ -48,8 +48,11 @@ test('real API: owner edits draft v1 and another trainer cannot read or change i
     await ownerPage.getByLabel('Тривалість у тижнях (необов’язково)').fill('');
     const patch = ownerPage.waitForResponse(
       (response) =>
-        response.url().includes('/backend/training-programs/' + programId + '/versions/' + versionId) &&
+        response
+          .url()
+          .includes('/backend/training-programs/' + programId + '/versions/' + versionId) &&
         response.request().method() === 'PATCH',
+      { timeout: 15_000 },
     );
     await ownerPage.getByRole('button', { name: 'Зберегти зміни' }).click();
     const updated = await patch;
