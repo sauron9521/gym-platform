@@ -109,6 +109,20 @@ test('web-only push skips API and Mobile checks', () => {
   assert.ok(!plan.commands.some((cmd) => cmd.includes('@gym/mobile')));
 });
 
+test('landing-only push checks Landing but not other workspaces', () => {
+  const plan = createPrePushPlan({ full: false, files: ['apps/landing/src/app/page.tsx'] });
+  assert.equal(plan.scopes.landing, true);
+  assert.equal(plan.scopes.web, false);
+  assert.equal(plan.scopes.mobile, false);
+  assert.deepEqual(
+    plan.commands.filter((cmd) => cmd.includes('--filter')).map((cmd) => cmd.slice(2)),
+    [['@gym/landing', 'lint'], ['@gym/landing', 'typecheck']],
+  );
+  for (const command of plan.commands.filter((cmd) => cmd.includes('@gym/landing'))) {
+    assert.equal(resolvePrePushCommand(command, { platform: 'win32' }).shell, true);
+  }
+});
+
 test('mobile-only push checks only Mobile and selected formatting', () => {
   const plan = createPrePushPlan({ full: false, files: ['apps/mobile/app/index.tsx'] });
   assert.deepEqual(
@@ -169,6 +183,7 @@ test('pre-push never rewrites committed source files', () => {
     ['apps/web/src/app/page.tsx'],
     ['apps/api/src/main.ts'],
     ['apps/mobile/app/index.tsx'],
+    ['apps/landing/src/app/page.tsx'],
     ['docs/readme.md'],
   ];
   for (const files of scenarios) {
