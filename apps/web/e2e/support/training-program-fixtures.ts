@@ -25,11 +25,11 @@ export async function seedTrainingProgram(
     await db.query('BEGIN', []);
     try {
       await db.query(
-        'INSERT INTO "training_programs" ("id", "trainer_id", "status") VALUES ($1, $2, $3)',
+        'INSERT INTO "training_programs" ("id", "trainer_id", "status", "updated_at") VALUES ($1, $2, $3, NOW())',
         [id, trainerId, status],
       );
       await db.query(
-        'INSERT INTO "training_program_versions" ("id", "program_id", "version", "title", "description", "duration_weeks", "status") VALUES ($1, $2, 1, $3, $4, 2, $5)',
+        'INSERT INTO "training_program_versions" ("id", "program_id", "version", "title", "description", "duration_weeks", "status", "updated_at") VALUES ($1, $2, 1, $3, $4, 2, $5, NOW())',
         [versionId, id, title, 'Real browser E2E program', status],
       );
 
@@ -48,15 +48,15 @@ export async function seedTrainingProgram(
         const workoutId = randomUUID();
         const programExerciseId = randomUUID();
         await db.query(
-          'INSERT INTO "training_program_workouts" ("id", "version_id", "week_number", "day_number", "title") VALUES ($1, $2, 1, 1, $3)',
+          'INSERT INTO "training_program_workouts" ("id", "version_id", "week_number", "day_number", "title", "updated_at") VALUES ($1, $2, 1, 1, $3, NOW())',
           [workoutId, versionId, 'Day 1'],
         );
         await db.query(
-          'INSERT INTO "training_program_exercises" ("id", "workout_id", "exercise_id", "exercise_name_snapshot", "exercise_type_snapshot", "sort_order") VALUES ($1, $2, $3, $4, $5, 0)',
+          'INSERT INTO "training_program_exercises" ("id", "workout_id", "exercise_id", "exercise_name_snapshot", "exercise_type_snapshot", "sort_order", "updated_at") VALUES ($1, $2, $3, $4, $5, 0, NOW())',
           [programExerciseId, workoutId, exerciseId, 'Barbell Bench Press', 'STRENGTH'],
         );
         await db.query(
-          'INSERT INTO "training_program_sets" ("id", "program_exercise_id", "set_number", "planned_reps") VALUES ($1, $2, 1, 8)',
+          'INSERT INTO "training_program_sets" ("id", "program_exercise_id", "set_number", "planned_reps", "updated_at") VALUES ($1, $2, 1, 8, NOW())',
           [randomUUID(), programExerciseId],
         );
         await db.query(
@@ -79,7 +79,7 @@ export async function seedReferenceTrainer(): Promise<string> {
   const id = randomUUID();
   await withDisposableDatabase(async (db) => {
     const result = await db.query(
-      'INSERT INTO "users" ("id", "email", "password_hash", "role") VALUES ($1, $2, $3, $4)',
+      'INSERT INTO "users" ("id", "email", "password_hash", "role", "updated_at") VALUES ($1, $2, $3, $4, NOW())',
       [id, 'program-fixture-' + id + '@example.test', 'not-a-usable-password-hash', 'TRAINER'],
     );
     if (result.rowCount !== 1) throw new Error('Could not insert reference trainer');
@@ -99,11 +99,11 @@ export async function seedActiveAssignment(
     await db.query('BEGIN', []);
     try {
       await db.query(
-        'INSERT INTO "trainer_athletes" ("id", "trainer_id", "athlete_id", "initiated_by_id", "status", "responded_at") VALUES ($1, $2, $3, $2, $4, NOW())',
+        'INSERT INTO "trainer_athletes" ("id", "trainer_id", "athlete_id", "initiated_by_id", "status", "responded_at", "updated_at") VALUES ($1, $2, $3, $2, $4, NOW(), NOW())',
         [relationshipId, trainerId, athleteId, 'ACTIVE'],
       );
       await db.query(
-        'INSERT INTO "training_program_assignments" ("id", "version_id", "trainer_athlete_id", "athlete_id", "assigned_by_id", "status") VALUES ($1, $2, $3, $4, $5, $6)',
+        'INSERT INTO "training_program_assignments" ("id", "version_id", "trainer_athlete_id", "athlete_id", "assigned_by_id", "status", "updated_at") VALUES ($1, $2, $3, $4, $5, $6, NOW())',
         [assignmentId, versionId, relationshipId, athleteId, trainerId, 'ACTIVE'],
       );
       await db.query('COMMIT', []);
