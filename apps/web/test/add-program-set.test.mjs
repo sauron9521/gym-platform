@@ -96,7 +96,7 @@ test('draft-only typed POST is separate from saved set read-only display', async
   assert.match(item, /\{editable &&/);
   assert.match(form, /webApi.POST\(/);
   assert.match(form, /zodResolver\(addProgramSetSchema\)/);
-  assert.match(form, /response.status !== 201/);
+  assert.match(form, /response.status !== \(set \? 200 : 201\)/);
   for (const source of [parent, item, form]) {
     assert.doesNotMatch(source, /localStorage|sessionStorage|dangerouslySetInnerHTML/);
   }
