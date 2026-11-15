@@ -71,6 +71,13 @@ test('draft-only edit/delete UI uses typed operations and explicit delete confir
     new URL('../src/features/training-programs/api/program-workout-mutations.ts', import.meta.url),
     'utf8',
   );
+  const cache = await readFile(
+    new URL(
+      '../src/features/training-programs/api/program-version-mutation-context.ts',
+      import.meta.url,
+    ),
+    'utf8',
+  );
 
   assert.match(list, /editable=\{editable && version.status === 'DRAFT'\}/);
   assert.match(item, /confirmDelete &&/);
@@ -82,13 +89,13 @@ test('draft-only edit/delete UI uses typed operations and explicit delete confir
   assert.match(mutations, /webApi.DELETE\(/);
   assert.match(mutations, /webApi.PATCH\(/);
   assert.match(mutations, /onSuccess: updateVersion/);
-  assert.match(mutations, /useAuthFailure\(\)/);
+  assert.match(cache, /useAuthFailure\(\)/);
   assert.match(mutations, /retry: false/);
   assert.doesNotMatch(item + edit, /webApi.PATCH|webApi.DELETE|router.replace/);
   assert.match(edit, /zodResolver\(editProgramWorkoutSchema\)/);
   assert.match(edit, /isWeekWithinDuration/);
   assert.match(mutations, /response.status !== 200/);
-  for (const source of [list, item, edit, mutations]) {
+  for (const source of [list, item, edit, mutations, cache]) {
     assert.doesNotMatch(source, /localStorage|sessionStorage|dangerouslySetInnerHTML/);
   }
 });
