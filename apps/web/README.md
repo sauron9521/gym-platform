@@ -269,9 +269,19 @@ the rendered list after successful mutations, including when days reorder.
 server errors. Published or archived versions remain read-only in the Web and
 are rejected by the API even if called directly.
 
+An editable DRAFT training day can also gain a catalogue exercise through the
+typed same-origin `POST /training-programs/{programId}/versions/{versionId}/workouts/{workoutId}/exercises`.
+A searchable and paginated catalogue offers global or trainer-created,
+non-archived exercises; the backend remains authoritative for ownership and
+availability. The browser uses React Hook Form + Zod, excludes duplicates in
+the current workout and supports optional notes. On HTTP 201, the full returned
+program version updates exercise names, types and set counts immediately.
+Existing published exercises remain visible but cannot be added to. Errors are
+mapped from HTTP status without exposing raw backend responses.
+
 The Web still shows only the **latest version**, not the full version history.
-Adding exercises and sets, publishing versions, and assigning programs are
-separate future features.
+Editing/removing/reordering individual exercises, adding their sets, publishing
+versions and assigning programs are separate future features.
 
 ## Browser E2E (Playwright + Chromium)
 
