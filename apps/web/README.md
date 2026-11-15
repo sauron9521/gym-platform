@@ -279,9 +279,21 @@ program version updates exercise names, types and set counts immediately.
 Existing published exercises remain visible but cannot be added to. Errors are
 mapped from HTTP status without exposing raw backend responses.
 
+An editable DRAFT program exercise can now add planned sets via typed same-origin
+`POST /training-programs/{programId}/versions/{versionId}/workouts/{workoutId}/exercises/{exerciseId}/sets`
+(where the path exercise ID is the **program exercise record**, not the global
+catalogue exercise ID). React Hook Form + Zod validates set type, integer
+repetitions/duration/rest/RIR, decimal weight/distance (two places), RPE
+(one place), and optional notes. Omitted fields remain unspecified; the API
+allocates monotonically increasing set numbers and enforces authorization.
+The full version response updates the visible workout immediately; existing
+sets render read-only with their targets, including in published versions.
+For declined/immutable requests, Web shows status-based errors, not raw API
+payloads. Browser tests cover real API persistence and trainer isolation.
+
 The Web still shows only the **latest version**, not the full version history.
-Editing/removing/reordering individual exercises, adding their sets, publishing
-versions and assigning programs are separate future features.
+Editing/removing/reordering individual exercises and sets, publishing versions
+and assigning programs are separate future features.
 
 ## Browser E2E (Playwright + Chromium)
 
