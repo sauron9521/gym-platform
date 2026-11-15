@@ -2,7 +2,6 @@
 @import 'tw-animate-css';
 @import '@gym/design-tokens/dark.css';
 
-
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
