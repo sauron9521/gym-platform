@@ -73,7 +73,7 @@ type RelationshipActionInput = {
 };
 
 export function useRelationshipActionMutation() {
-  const { queryClient, onError } = useRelationshipMutationCallbacks();
+  const { invalidateRelationships, onError } = useRelationshipMutationCallbacks();
 
   return useMutation<unknown, RelationshipMutationRequestError, RelationshipActionInput>({
     mutationFn: async ({ id, action, reason }) => {
