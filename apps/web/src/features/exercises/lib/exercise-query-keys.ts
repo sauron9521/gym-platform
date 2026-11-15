@@ -22,4 +22,7 @@ export const exerciseQueryKeys = {
   lists: () => [...exerciseQueryKeys.all, 'list'] as const,
   list: (filters: ExerciseCatalogFilters) =>
     [...exerciseQueryKeys.lists(), normalizeExerciseCatalogFilters(filters)] as const,
+  details: () => [...exerciseQueryKeys.all, 'detail'] as const,
+  detail: (id: string) => [...exerciseQueryKeys.details(), id] as const,
+  taxonomy: () => [...exerciseQueryKeys.all, 'taxonomy'] as const,
 };
