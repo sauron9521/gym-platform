@@ -32,16 +32,57 @@ jobs:
           pnpm dlx gluestack-ui@latest add button --use-pnpm -y
           pnpm dlx gluestack-ui@latest add box --use-pnpm -y
           pnpm dlx gluestack-ui@latest add text --use-pnpm -y
+      - name: Repair Expo Router root layout (gluestack CLI does not handle Stack.Protected)
+        run: |
+          cat > apps/mobile/src/app/_layout.tsx <<'EOF'
+          import '../../global.css';
+
+          import { Stack } from 'expo-router';
+          import { StatusBar } from 'expo-status-bar';
+          import { GestureHandlerRootView } from 'react-native-gesture-handler';
+
+          import { AuthProvider, useAuth } from '@/features/auth/model/auth-context';
+          import { GluestackUIProvider } from '@/shared/ui/gluestack/gluestack-ui-provider';
+
+          function Navigation() {
+            const { account } = useAuth();
+            return (
+              <>
+                <Stack screenOptions={{ headerShown: false }}>
+                  <Stack.Protected guard={Boolean(account)}>
+                    <Stack.Screen name="(tabs)" />
+                  </Stack.Protected>
+                  <Stack.Protected guard={!account}>
+                    <Stack.Screen name="sign-in" />
+                  </Stack.Protected>
+                </Stack>
+                <StatusBar style="auto" />
+              </>
+            );
+          }
+
+          export default function RootLayout() {
+            return (
+              <GestureHandlerRootView style={{ flex: 1 }}>
+                <GluestackUIProvider mode="light">
+                  <AuthProvider>
+                    <Navigation />
+                  </AuthProvider>
+                </GluestackUIProvider>
+              </GestureHandlerRootView>
+            );
+          }
+          EOF
       - name: Update pnpm lock and format generated UI
         run: |
           pnpm install --lockfile-only
-          pnpm exec prettier --write apps/mobile/src/shared/ui/gluestack apps/mobile/global.css apps/mobile/metro.config.js apps/mobile/package.json || true
+          pnpm exec prettier --write apps/mobile/src/app/_layout.tsx apps/mobile/src/shared/ui/gluestack apps/mobile/global.css apps/mobile/metro.config.js apps/mobile/package.json
       - name: Commit generated files on feature branch only
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
           if ! git diff --cached --quiet; then
-            git commit -m "chore(mobile): [gluestack bootstrap] scaffold v5 UI and pnpm lockfile"
+            HUSKY=0 git commit -m "chore(mobile): [gluestack bootstrap] scaffold v5 UI and pnpm lockfile"
             git push origin HEAD:feat/mobile-gluestack-v5-foundation
           fi
