@@ -19,11 +19,7 @@ test('real API: trainer sees only owned programs and can filter published versio
     await promoteTestTrainer(outsider.id);
 
     const draft = await seedTrainingProgram(owner.id, 'Draft ' + randomUUID(), 'DRAFT');
-    const published = await seedTrainingProgram(
-      owner.id,
-      'Published ' + randomUUID(),
-      'PUBLISHED',
-    );
+    const published = await seedTrainingProgram(owner.id, 'Published ' + randomUUID(), 'PUBLISHED');
 
     await login(ownerPage, owner.email, 'TRAINER');
     await login(otherPage, outsider.email, 'TRAINER');
