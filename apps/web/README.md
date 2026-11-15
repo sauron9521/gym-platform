@@ -428,6 +428,14 @@ same taxonomy data instead of triggering duplicate API calls on each mount.
 Request errors retain safe retry messages; a 401 clears session-specific query
 state and redirects to login. Exercise details remain private and unpersisted.
 
+The trainer training-program list also uses TanStack Query with separate keys for
+status and page. Each request carries an AbortSignal and is scoped to the
+authenticated trainer by the API. Creating a program or editing a draft invalidates
+the entire trainer-program list namespace; cached entries are refetched on
+navigation. HTTP 401 clears the browser query cache and redirects to /login.
+Individual program details and athlete assignments keep their existing fetching
+implementation for separate follow-up PRs.
+
 On successful login or sign-out, the browser query cache is cleared to avoid
 cross-account data exposure. When moving workout write actions to mutations,
 invalidate the workout list query keys on successful server responses.
