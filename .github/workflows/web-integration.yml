@@ -37,11 +37,16 @@ jobs:
         run: node scripts/ci-select.mjs --github-output "$GITHUB_OUTPUT"
 
   browser-api-suite:
-    name: Web / Real API and PostgreSQL suite
+    name: Web / Real API and PostgreSQL suite (${{ matrix.shard }}/4)
     needs: changes
     if: needs.changes.outputs.run == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
+    # Each matrix job runs on its own VM with a disposable PostgreSQL container.
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 15
     services:
       postgres:
         image: postgres:17-alpine
@@ -54,6 +59,8 @@ jobs:
           --health-cmd "pg_isready -U postgres -d gym_browser_test"
           --health-interval 5s --health-timeout 5s --health-retries 10
     env:
+      WEB_E2E_SHARD_INDEX: ${{ matrix.shard }}
+      WEB_E2E_SHARD_COUNT: '4'
       NODE_ENV: test
       DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/gym_browser_test
       TEST_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/gym_browser_test
@@ -69,6 +76,8 @@ jobs:
           node-version: '24'
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - name: Verify all specs are assigned to exactly one CI shard
+        run: node --test apps/web/test/real-api-e2e-shards.test.mjs
       - name: Guard disposable database before migrations
         run: |
           node --input-type=module -e '
@@ -93,7 +102,7 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v7
         with:
-          name: real-api-browser-failures
+          name: real-api-browser-failures-${{ matrix.shard }}
           path: apps/web/test-results/integration/
           if-no-files-found: ignore
           retention-days: 7
