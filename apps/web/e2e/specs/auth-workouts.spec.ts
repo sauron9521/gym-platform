@@ -149,7 +149,7 @@ test('athlete cannot view trainer-only programs even with a valid session', asyn
   await expect(page.getByRole('region', { name: 'Список тренувальних програм' })).toHaveCount(0);
 });
 
-test('program creation mutation handles 409 then 401 without losing form state', async ({ page }) => {
+test('program creation mutation handles 409 and 401 safely', async ({ page }) => {
   await signIn(page, 'trainer@example.test');
   let attempts = 0;
   await page.route('**/backend/training-programs', (route) => {
@@ -166,7 +166,8 @@ test('program creation mutation handles 409 then 401 without losing form state',
   const title = 'Тестова чернетка без повторного створення';
   await page.getByLabel('Назва програми').fill(title);
   await page.getByRole('button', { name: 'Створити чернетку' }).click();
-  await expect(page.getByText('Конфлікт під час створення програми. Оновіть список.')).toBeVisible();
+  const conflictMessage = 'Конфлікт під час створення програми. Оновіть список.';
+  await expect(page.getByText(conflictMessage)).toBeVisible();
   await expect(page.getByLabel('Назва програми')).toHaveValue(title);
   await expect(page).toHaveURL(/\/trainer\/programs\/new$/);
   expect(attempts).toBe(1);
