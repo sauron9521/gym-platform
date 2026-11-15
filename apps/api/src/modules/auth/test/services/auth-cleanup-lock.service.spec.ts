@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { AppConfigService } from '#src/common/config/app-config.types';
-import { AuthCleanupLockService } from '../services/auth-cleanup-lock.service.js';
+import { AuthCleanupLockService } from '../../services/auth-cleanup-lock.service.js';
 
 const pg = vi.hoisted(() => ({
   connect: vi.fn(),
