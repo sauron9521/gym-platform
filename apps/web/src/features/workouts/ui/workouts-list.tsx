@@ -1,22 +1,21 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
-import { webApi } from '@/shared/api/client';
+import { workoutListQueryOptions, WorkoutListRequestError } from '../api/workouts-list-query';
 import { Button } from '@/shared/ui/button';
 import {
   formatWorkoutDate,
   getWorkoutListErrorMessage,
-  getWorkoutPageCount,
+  getWorkoutListErrorMessage,
   getWorkoutStatusLabel,
   WORKOUT_FILTERS,
   type WorkoutFilter,
   type WorkoutListItem,
 } from '../lib/workouts-list';
-
-const PAGE_SIZE = 10;
 
 type WorkoutsState =
   | { kind: 'loading' }
@@ -25,69 +24,53 @@ type WorkoutsState =
 
 export function WorkoutsList() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [filter, setFilter] = useState<WorkoutFilter>('ALL');
   const [page, setPage] = useState(1);
-  const [attempt, setAttempt] = useState(0);
-  const [state, setState] = useState<WorkoutsState>({ kind: 'loading' });
+  const query = useQuery(workoutListQueryOptions(filter, page));
+
+  const unauthenticated =
+    query.error instanceof WorkoutListRequestError && query.error.status === 401;
 
   useEffect(() => {
-    let active = true;
-
-    void webApi
-      .GET('/workouts', {
-        params: {
-          query: {
-            page,
-            limit: PAGE_SIZE,
-            view: 'summary',
-            ...(filter === 'ALL' ? {} : { status: filter }),
-          },
-        },
-      })
-      .then(({ data, response }) => {
-        if (!active) return;
-
-        if (response.status === 401) {
-          router.replace('/login');
-          return;
-        }
-
-        if (response.status !== 200 || !data) {
-          setState({ kind: 'error', message: getWorkoutListErrorMessage(response.status) });
-          return;
-        }
-
-        setState({
-          kind: 'ready',
-          workouts: data.data,
-          total: data.meta.total,
-          totalPages: getWorkoutPageCount(data.meta.totalPages),
-        });
-      })
-      .catch(() => {
-        if (active) setState({ kind: 'error', message: getWorkoutListErrorMessage() });
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [filter, page, attempt, router]);
+    if (unauthenticated) {
+      queryClient.clear();
+      router.replace('/login');
+    }
+  }, [unauthenticated, queryClient, router]);
 
   function selectFilter(next: WorkoutFilter) {
     setFilter(next);
     setPage(1);
-    setState({ kind: 'loading' });
   }
 
   function changePage(next: number) {
     setPage(next);
-    setState({ kind: 'loading' });
   }
 
   function retry() {
-    setState({ kind: 'loading' });
-    setAttempt((current) => current + 1);
+    void query.refetch();
   }
+
+  const state: WorkoutsState = query.isPending
+    ? { kind: 'loading' }
+    : query.isError
+      ? {
+          kind: 'error',
+          message:
+            query.error instanceof WorkoutListRequestError
+              ? query.error.message
+              : getWorkoutListErrorMessage(),
+        }
+      : {
+          kind: 'ready',
+          workouts: query.data.workouts,
+          total: query.data.total,
+          totalPages: query.data.totalPages,
+        };
+
+  // No cached private content is rendered after the server responds with 401.
+  if (unauthenticated) return null;
 
   return (
     <main className="mx-auto max-w-5xl space-y-7 px-6 py-12">
