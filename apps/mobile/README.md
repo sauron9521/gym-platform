@@ -70,3 +70,25 @@ For a physical device, copy `apps/mobile/.env.example` to `.env.local`
 and set `EXPO_PUBLIC_API_URL` to the development computer's reachable LAN IP.
 The Android emulator typically uses `http://10.0.2.2:3001`, rather than
 `localhost`. Never put a secret in an `EXPO_PUBLIC_*` variable.
+
+## UI foundation (gluestack-ui v5)
+
+Mobile UI components live under `src/shared/ui/gluestack` and are copied into the
+app instead of being shared with the Next.js workspace. The stack uses gluestack-ui
+v5, UniWind and Tailwind CSS v4; styling tokens are defined in `global.css`.
+`metro.config.js` wires UniWind only into the mobile Metro bundler. The root
+layout wraps Expo Router with the UI provider without removing auth route guards.
+
+To add a component, run this from `apps/mobile` in a Unix shell or WSL
+(the gluestack CLI still has limited native Windows support):
+
+```bash
+pnpm dlx gluestack-ui@latest add input --use-pnpm -y
+```
+
+Commit the generated component and the updated `pnpm-lock.yaml`. Keep the
+`@/*` alias rooted at `src`; re-check `src/app/_layout.tsx` after running
+`init` because the generator does not handle Expo Router guarded routes.
+
+The home tab includes a gluestack-powered UI card and a button to the profile.
+The next PRs will introduce TanStack Query, React Hook Form and Zod.

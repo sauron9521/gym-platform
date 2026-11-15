@@ -1,7 +1,11 @@
+import '../../global.css';
+
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { AuthProvider, useAuth } from '@/features/auth/model/auth-context';
+import { GluestackUIProvider } from '@/shared/ui/gluestack/gluestack-ui-provider';
 
 function Navigation() {
   const { account } = useAuth();
@@ -22,8 +26,12 @@ function Navigation() {
 
 export default function RootLayout() {
   return (
-    <AuthProvider>
-      <Navigation />
-    </AuthProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <GluestackUIProvider mode="system">
+        <AuthProvider>
+          <Navigation />
+        </AuthProvider>
+      </GluestackUIProvider>
+    </GestureHandlerRootView>
   );
 }
