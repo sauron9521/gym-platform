@@ -4,11 +4,11 @@ NestJS 12 / Prisma 7 API, migrated from the existing standalone repository.
 
 ## Migration status
 
-- Prisma multi-file schemas and **all original SQL migrations** are preserved.
+- Prisma multi-file schemas are preserved. The **active** migration history is now one fresh initial baseline (`20261114000000_initial_baseline`); historical SQL migration hashes are retained as audit metadata, not executable migrations.
 - NestJS `src/`, unit tests, and e2e/integration test files have been imported.
 - API configuration, Prisma seed, ESM package aliases, and pnpm dependencies are restored.
 - The root monorepo CI generates Prisma, then runs format, lint, typecheck, unit tests and build.
-- Database-backed integration/e2e tests run on disposable PostgreSQL 17 and Redis 7 in CI.
+- Database-backed integration/e2e tests run on disposable PostgreSQL 17 and Redis 7 in CI. Local Docker Compose uses Redis 8 (see the infrastructure guide).
 - Production deployment is **not enabled yet**.
 
 ## Local development
@@ -29,9 +29,10 @@ PostgreSQL password aligned with `infra/docker/.env`. Development API uses port
 
 ## Integration / e2e tests
 
-The `API e2e / PostgreSQL 17` GitHub Actions job creates a disposable
-`gym_app_test` database, generates Prisma Client, applies all migrations,
-seeds test exercise data, typechecks e2e sources and executes the full suite.
+The `API e2e / PostgreSQL 17` required GitHub Actions gate verifies two
+PostgreSQL 17 test shards and API coverage. Test jobs use a disposable
+`gym_app_test` database, generate Prisma Client, apply the active initial
+baseline, seed exercise data, typecheck e2e sources and execute the suite.
 
 To run the suite locally, start PostgreSQL and Redis and configure both
 `TEST_DATABASE_URL` and `DATABASE_URL` to point to the **same disposable
@@ -66,11 +67,15 @@ separately by `test/migration-baseline.test.mjs`.
 ## Migration parity and cutover
 
 All 302 source and 48 test paths from the recorded legacy commit were imported;
-all ten Prisma schema files and 25 historical migration files match their
-original Git blobs. Modified source/test blobs still require staging review.
+the original schema and historical migration hashes are archived in
+migration provenance metadata. Only the generated initial baseline is active;
+legacy SQL migration files must **not** be applied to a new database.
+Modified source/test blobs still require staging review.
 The read-only [cutover audit](../../docs/api-migration-audit.md) explicitly
 lists remaining staging/rollback/approval blockers. **Production NO-GO:**
 merging the repository audit does not transfer operational ownership.
+
+For the fresh-schema migration rules, see the [baseline reset and verification guide](../../docs/database-baseline-reset.md).
 
 ## Signed GHCR staging rehearsal
 
