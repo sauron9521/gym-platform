@@ -42,10 +42,13 @@ test('real API: edit and clear set targets, cancel/delete sets, and enforce trai
     expect(day.status()).toBe(201);
     const version: { workouts: Array<{ id: string }> } = await day.json();
     const workoutId = version.workouts[0]!.id;
-    const withExercise = await ownerPage.request.post(workoutsPath + '/' + workoutId + '/exercises', {
-      headers: { origin },
-      data: { exerciseId: exercise!.id },
-    });
+    const withExercise = await ownerPage.request.post(
+      workoutsPath + '/' + workoutId + '/exercises',
+      {
+        headers: { origin },
+        data: { exerciseId: exercise!.id },
+      },
+    );
     expect(withExercise.status()).toBe(201);
     const populated: { workouts: Array<{ exercises: Array<{ id: string }> }> } =
       await withExercise.json();
@@ -135,9 +138,7 @@ test('real API: edit and clear set targets, cancel/delete sets, and enforce trai
         }>;
       }>;
     } = await patched.json();
-    const updatedSet = edited.workouts[0]!.exercises[0]!.sets.find(
-      (set) => set.id === firstSetId,
-    )!;
+    const updatedSet = edited.workouts[0]!.exercises[0]!.sets.find((set) => set.id === firstSetId)!;
     expect(updatedSet).toMatchObject({
       setType: 'DROP_SET',
       plannedReps: 8,
@@ -152,7 +153,8 @@ test('real API: edit and clear set targets, cancel/delete sets, and enforce trai
     await expect(ownerPage.getByText('Старі примітки')).toHaveCount(0);
     await ownerPage.reload();
     await expect(
-      ownerPage.getByRole('list', { name: 'Підходи вправи ' + exercise!.name })
+      ownerPage
+        .getByRole('list', { name: 'Підходи вправи ' + exercise!.name })
         .getByText(/Підхід 1:.*70.25 кг/),
     ).toBeVisible();
 
