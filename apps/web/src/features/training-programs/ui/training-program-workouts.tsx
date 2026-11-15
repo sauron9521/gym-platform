@@ -104,9 +104,7 @@ export function TrainingProgramWorkouts({
                       {workout.notes}
                     </p>
                   )}
-                  <p className="text-sm text-muted-foreground">
-                    Вправ: {workout.exercises.length}
-                  </p>
+                  <p className="text-sm text-muted-foreground">Вправ: {workout.exercises.length}</p>
                 </li>
               ))}
             </ol>
