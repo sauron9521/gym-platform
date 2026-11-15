@@ -87,7 +87,11 @@ export function AddProgramSetForm({
         return;
       }
       if (response.status !== (set ? 200 : 201) || !data) {
-        setError(set ? getProgramSetMutationError('edit', response.status) : getAddProgramSetError(response.status));
+        setError(
+          set
+            ? getProgramSetMutationError('edit', response.status)
+            : getAddProgramSetError(response.status),
+        );
         return;
       }
       onAdded(data);
@@ -98,14 +102,22 @@ export function AddProgramSetForm({
 
   return (
     <form
-      aria-label={set ? `Редагування підходу ${set.setNumber} вправи ${exerciseName}` : `Додавання підходу до вправи ${exerciseName}`}
+      aria-label={
+        set
+          ? `Редагування підходу ${set.setNumber} вправи ${exerciseName}`
+          : `Додавання підходу до вправи ${exerciseName}`
+      }
       onSubmit={(event) => void form.handleSubmit(submit)(event)}
       noValidate
       className="space-y-4 rounded-lg border p-4"
     >
-      <h5 className="font-semibold">{set ? `Редагувати підхід ${set.setNumber}` : 'Додати підхід'}</h5>
+      <h5 className="font-semibold">
+        {set ? `Редагувати підхід ${set.setNumber}` : 'Додати підхід'}
+      </h5>
       <p className="text-xs text-muted-foreground">
-        {set ? 'Порожні поля очищають відповідні цілі.' : 'Номер підходу визначає сервер. Заповни потрібні цільові параметри.'}
+        {set
+          ? 'Порожні поля очищають відповідні цілі.'
+          : 'Номер підходу визначає сервер. Заповни потрібні цільові параметри.'}
       </p>
       <div className="space-y-1">
         <label htmlFor={fieldId('type')} className="block text-sm font-medium">
