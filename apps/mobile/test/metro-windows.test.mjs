@@ -13,7 +13,7 @@ test('pnpm uses Expo-recommended linker for Windows native Metro compatibility',
 
 test('CI guards the native iOS development bundle, not just production export', () => {
   assert.match(ci, /name: Mobile iOS Dev \/ Windows Metro/);
-  assert.match(ci, /node scripts\/smoke-ios-dev\.mjs/);
+  assert.match(ci, /node apps\/mobile\/scripts\/smoke-ios-dev\.mjs/);
   assert.match(ci, /MOBILE_IOS_DEV_RESULT/);
   assert.ok(smoke.includes('/apps/mobile/index.bundle?platform=ios&dev=true&hot=true'));
   assert.match(smoke, /expo\/bin\/cli/);
