@@ -65,6 +65,14 @@ test('workout day renders persisted exercises and uses typed draft-only POST', a
     new URL(base + 'training-program-workouts.tsx', import.meta.url),
     'utf8',
   );
+  const mutation = await readFile(
+    new URL('../src/features/training-programs/api/add-program-exercise-mutation.ts', import.meta.url),
+    'utf8',
+  );
+  const cache = await readFile(
+    new URL('../src/features/training-programs/api/program-version-mutation-context.ts', import.meta.url),
+    'utf8',
+  );
   assert.match(day, /workout.exercises.map/);
   assert.match(day, /AddProgramExerciseForm/);
   const query = await readFile(
@@ -88,11 +96,20 @@ test('workout day renders persisted exercises and uses typed draft-only POST', a
   assert.match(query, /queryKey: exerciseQueryKeys.list\(normalized\)/);
   assert.match(query, /signal,/);
   assert.doesNotMatch(form, /webApi\s*\.GET\('\/exercises'/);
-  assert.match(form, /webApi.POST\(/);
+  assert.match(form, /useAddProgramExerciseMutation\(programId, versionId, workoutId\)/);
+  assert.match(form, /mutation.mutateAsync\(buildAddProgramExercisePayload\(values\)\)/);
+  assert.match(form, /mutation.isPending/);
+  assert.match(mutation, /webApi.POST\(/);
+  assert.match(mutation, /onSuccess: updateVersion/);
+  assert.match(mutation, /retry: false/);
+  assert.match(cache, /useAuthFailure\(\)/);
+  assert.match(cache, /queryClient.setQueryData\(queryKey, version\)/);
+  assert.match(cache, /refetchType: 'none'/);
+  assert.doesNotMatch(form, /webApi.POST|setError\(getAddProgramExerciseError/);
   assert.match(form, /zodResolver\(addProgramExerciseSchema\)/);
-  assert.match(form, /response.status !== 201/);
+  assert.match(mutation, /response.status !== 201/);
   assert.match(list, /editable=\{editable && version.status === 'DRAFT'\}/);
-  for (const source of [day, form]) {
+  for (const source of [day, form, mutation, cache]) {
     assert.doesNotMatch(source, /localStorage|sessionStorage|dangerouslySetInnerHTML/);
   }
 });
