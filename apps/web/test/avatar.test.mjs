@@ -40,19 +40,35 @@ test('initials and errors do not disclose upstream content', () => {
   assert.match(avatarErrorMessage(429), /Забагато/);
 });
 
-test('avatar requests are same-origin and never set multipart Content-Type', async () => {
+test('avatar writes use typed TanStack mutation, one profile refetch and browser multipart', async () => {
   const ui = await readFile(
     new URL('../src/features/profile/ui/profile-avatar.tsx', import.meta.url),
+    'utf8',
+  );
+  const mutations = await readFile(
+    new URL('../src/features/profile/api/avatar-mutations.ts', import.meta.url),
     'utf8',
   );
   const contract = await readFile(
     new URL('../../../packages/api-client/src/generated/schema.d.ts', import.meta.url),
     'utf8',
   );
-  assert.match(ui, /fetch\('\/backend\/users\/me\/avatar'/);
-  assert.match(ui, /form.append\('file', file\)/);
-  assert.match(ui, /credentials: 'include'/);
-  assert.doesNotMatch(ui, /Content-Type|localStorage|sessionStorage|document.cookie/);
+  assert.match(ui, /useAvatarMutation\(\)/);
+  assert.match(ui, /mutation.mutateAsync\(\{ action: 'upload', file \}\)/);
+  assert.match(ui, /mutation.mutateAsync\(\{ action: 'delete' \}\)/);
+  assert.match(ui, /await onChanged\(\)/);
+  assert.match(ui, /mutation.isPending/);
+  assert.match(mutations, /fetch\('\/backend\/users\/me\/avatar'/);
+  assert.match(mutations, /form.append\('file', input.file\)/);
+  assert.match(mutations, /credentials: 'include'/);
+  assert.match(mutations, /response.status !== 200/);
+  assert.match(mutations, /useAuthFailure\(\)/);
+  assert.match(mutations, /profileQueryKeys.me\(\)/);
+  assert.match(mutations, /queryClient.cancelQueries/);
+  assert.match(mutations, /refetchType: 'none'/);
+  assert.match(mutations, /retry: false/);
+  assert.doesNotMatch(mutations, /Content-Type|localStorage|sessionStorage|document.cookie/);
+  assert.doesNotMatch(ui, /fetch\(|setSignedOut|setBusy\(/);
   assert.match(contract, /UsersController_uploadAvatar:/);
   assert.match(contract, /UsersController_deleteAvatar:/);
 });
