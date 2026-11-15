@@ -101,6 +101,10 @@ test('program details loads version workouts; creation uses the typed API path',
     new URL('../src/features/training-programs/api/program-workout-mutations.ts', import.meta.url),
     'utf8',
   );
+  const cache = await readFile(
+    new URL('../src/features/training-programs/api/program-version-mutation-context.ts', import.meta.url),
+    'utf8',
+  );
   const query = await readFile(
     new URL(
       '../src/features/training-programs/api/training-program-version-query.ts',
@@ -131,13 +135,13 @@ test('program details loads version workouts; creation uses the typed API path',
     /'\/training-programs\/\{programId\}\/versions\/\{versionId\}\/workouts'/,
   );
   assert.match(mutations, /response.status !== 201/);
-  assert.match(mutations, /useAuthFailure\(\)/);
-  assert.match(mutations, /trainingProgramQueryKeys.version\(programId, versionId\)/);
-  assert.match(mutations, /queryClient.setQueryData\(queryKey, version\)/);
+  assert.match(cache, /useAuthFailure\(\)/);
+  assert.match(cache, /trainingProgramQueryKeys.version\(programId, versionId\)/);
+  assert.match(cache, /queryClient.setQueryData\(queryKey, version\)/);
   assert.match(mutations, /retry: false/);
   assert.doesNotMatch(form, /webApi.POST|router.replace/);
   assert.match(form, /isWeekWithinDuration/);
-  for (const source of [details, list, form, query, mutations]) {
+  for (const source of [details, list, form, query, mutations, cache]) {
     assert.doesNotMatch(source, /localStorage|sessionStorage|dangerouslySetInnerHTML/);
   }
 });
