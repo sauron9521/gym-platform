@@ -167,7 +167,9 @@ test('real API: another athlete and a guest cannot read or mutate private exerci
     expect((await list.json()).data).toEqual([]);
 
     await otherPage.goto('/exercises/' + id);
-    await expect(otherPage.getByRole('alert')).toBeVisible();
+    await expect(
+      otherPage.getByRole('alert').filter({ hasText: 'Вправу не знайдено або немає доступу.' }),
+    ).toBeVisible();
     await expect(otherPage.getByRole('button', { name: 'Редагувати' })).toHaveCount(0);
 
     // A foreign ID must be indistinguishable from a nonexistent ID for writes.
