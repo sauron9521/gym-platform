@@ -86,6 +86,33 @@ test('real API: owner edits draft v1 and another trainer cannot read or change i
     await expect(ownerPage.getByLabel('Опис (необов’язково)')).toHaveValue('');
     await expect(ownerPage.getByLabel('Тривалість у тижнях (необов’язково)')).toHaveValue('');
 
+    // Mock only the write endpoint to cover stale draft and expired session
+    // errors without spending additional NestJS API rate-limit budget.
+    let rejectedPatches = 0;
+    await ownerPage.route('**/backend/training-programs/' + programId + '/versions/' + versionId, (route) => {
+      if (route.request().method() !== 'PATCH') return route.continue();
+      rejectedPatches += 1;
+      return route.fulfill({
+        status: rejectedPatches === 1 ? 409 : 401,
+        contentType: 'application/json',
+        body: '{}',
+      });
+    });
+    const rejectedTitle = 'Конфлікт версії ' + randomUUID();
+    await ownerPage.getByLabel('Назва програми').fill(rejectedTitle);
+    await ownerPage.getByRole('button', { name: 'Зберегти зміни' }).click();
+    await expect(
+      ownerPage.getByText('Чернетку вже змінено, опубліковано або архівовано. Оновіть сторінку.'),
+    ).toBeVisible();
+    await expect(ownerPage.getByLabel('Назва програми')).toHaveValue(rejectedTitle);
+    await expect(ownerPage.getByRole('heading', { name: updatedTitle, exact: true })).toBeVisible();
+    expect(rejectedPatches).toBe(1);
+
+    await ownerPage.getByRole('button', { name: 'Зберегти зміни' }).click();
+    await expect(ownerPage).toHaveURL(/\/login$/);
+    await expect(ownerPage.getByRole('region', { name: 'Редагування чернетки' })).toHaveCount(0);
+    expect(rejectedPatches).toBe(2);
+
     const denied = await outsiderPage.request.get('/backend/training-programs/' + programId);
     expect(denied.status()).toBe(404);
     const deniedPatch = await outsiderPage.request.patch(
