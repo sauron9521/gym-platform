@@ -99,6 +99,10 @@ test('program detail/editor use typed paths and allow only active draft updates'
     'utf8',
   );
   const list = await readFile(new URL(root + 'trainer-programs-list.tsx', import.meta.url), 'utf8');
+  const mutations = await readFile(
+    new URL('../src/features/training-programs/api/training-program-mutations.ts', import.meta.url),
+    'utf8',
+  );
 
   const query = await readFile(
     new URL(
@@ -110,7 +114,7 @@ test('program detail/editor use typed paths and allow only active draft updates'
   assert.match(details, /useQuery\(trainerProgramDetailsQueryOptions\(programId\)\)/);
   assert.match(details, /latest\?\.status === 'DRAFT' && program.status !== 'ARCHIVED'/);
   assert.match(details, /queryClient.clear\(\)/);
-  assert.match(details, /queryClient.setQueryData/);
+  assert.match(mutations, /queryClient.setQueryData/);
   assert.match(details, /router.replace\('\/login'\)/);
   assert.match(details, /if \(unauthenticated\) return null/);
   assert.match(details, /query.refetch\(\)/);
@@ -120,13 +124,22 @@ test('program detail/editor use typed paths and allow only active draft updates'
   assert.match(query, /getTrainingProgramDetailsError/);
   assert.match(query, /retry: false/);
   assert.match(editor, /zodResolver\(createTrainingProgramFormSchema\)/);
-  assert.match(editor, /PATCH\(/);
-  assert.match(editor, /'\/training-programs\/\{programId\}\/versions\/\{versionId\}'/);
-  assert.match(editor, /response.status === 401/);
-  assert.match(editor, /response.status !== 200/);
+  assert.match(editor, /useUpdateTrainingProgramDraftMutation\(programId, version.id\)/);
+  assert.match(editor, /mutation.mutateAsync\(values\)/);
+  assert.match(editor, /mutation.isPending/);
+  assert.match(editor, /mutation.isError/);
   assert.match(editor, /form.reset/);
+  assert.match(mutations, /PATCH\(/);
+  assert.match(mutations, /'\/training-programs\/\{programId\}\/versions\/\{versionId\}'/);
+  assert.match(mutations, /response.status !== 200/);
+  assert.match(mutations, /getUpdateTrainingProgramDraftError/);
+  assert.match(mutations, /queryClient.clear\(\)/);
+  assert.match(mutations, /trainingProgramQueryKeys.detail\(programId\)/);
+  assert.match(mutations, /trainingProgramQueryKeys.lists\(\)/);
+  assert.match(mutations, /trainingProgramQueryKeys.version\(programId, versionId\)/);
+  assert.doesNotMatch(editor, /webApi.PATCH/);
   assert.match(list, /Деталі програми/);
-  for (const file of [details, editor, query]) {
+  for (const file of [details, editor, query, mutations]) {
     assert.doesNotMatch(file, /localStorage|sessionStorage|dangerouslySetInnerHTML/);
   }
 });

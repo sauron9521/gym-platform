@@ -1,28 +1,22 @@
 'use client';
 
-import { useRef, useState } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 
-import { webApi } from '@/shared/api/client';
+import { useCreateTrainingProgramMutation } from '../api/training-program-mutations';
 import { Button } from '@/shared/ui/button';
-import { trainingProgramQueryKeys } from '../lib/training-program-query-keys';
 import {
-  buildCreateTrainingProgramPayload,
   createTrainingProgramFormSchema,
-  getCreateTrainingProgramErrorMessage,
   type CreateTrainingProgramValues,
 } from '../lib/create-training-program';
 
 export function CreateTrainingProgramForm() {
   const router = useRouter();
-  const queryClient = useQueryClient();
-  const submitting = useRef(false);
+  const mutation = useCreateTrainingProgramMutation();
   const [created, setCreated] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const form = useForm<CreateTrainingProgramValues>({
     resolver: zodResolver(createTrainingProgramFormSchema),
     defaultValues: { title: '', description: '', durationWeeks: '' },
@@ -30,34 +24,19 @@ export function CreateTrainingProgramForm() {
     reValidateMode: 'onChange',
   });
   const { errors, isSubmitting } = form.formState;
-  const busy = isSubmitting || created;
+  const busy = isSubmitting || mutation.isPending || created;
 
   async function submit(values: CreateTrainingProgramValues) {
-    if (submitting.current || created) return;
-    submitting.current = true;
-    setError(null);
+    if (mutation.isPending || created) return;
+    mutation.reset();
     try {
-      const { data, response } = await webApi.POST('/training-programs', {
-        body: buildCreateTrainingProgramPayload(values),
-      });
-      if (response.status === 401) {
-        router.replace('/login');
-        return;
-      }
-      if (response.status !== 201 || !data) {
-        setError(getCreateTrainingProgramErrorMessage(response.status));
-        return;
-      }
+      await mutation.mutateAsync(values);
       setCreated(true);
-      await queryClient.invalidateQueries({ queryKey: trainingProgramQueryKeys.lists() });
-      // The API creates v1 as a draft. The owned list already displays this
-      // version; a visual workout/program builder is a separate feature.
+      // The API creates v1 as a draft; the list cache is invalidated on success.
       router.push('/trainer/programs');
       router.refresh();
     } catch {
-      setError(getCreateTrainingProgramErrorMessage());
-    } finally {
-      submitting.current = false;
+      // Safe mutation errors remain visible and 401 redirects are handled centrally.
     }
   }
 
@@ -92,7 +71,7 @@ export function CreateTrainingProgramForm() {
               disabled={busy}
               aria-invalid={Boolean(errors.title)}
               aria-describedby={errors.title ? 'training-program-title-error' : undefined}
-              {...form.register('title', { onChange: () => setError(null) })}
+              {...form.register('title', { onChange: () => mutation.reset() })}
               className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
             />
             {errors.title && (
@@ -118,7 +97,7 @@ export function CreateTrainingProgramForm() {
               aria-describedby={
                 errors.description ? 'training-program-description-error' : undefined
               }
-              {...form.register('description', { onChange: () => setError(null) })}
+              {...form.register('description', { onChange: () => mutation.reset() })}
               className="w-full rounded-md border border-input bg-background p-3 text-sm"
             />
             {errors.description && (
@@ -147,7 +126,7 @@ export function CreateTrainingProgramForm() {
               aria-describedby={
                 errors.durationWeeks ? 'training-program-duration-error' : undefined
               }
-              {...form.register('durationWeeks', { onChange: () => setError(null) })}
+              {...form.register('durationWeeks', { onChange: () => mutation.reset() })}
               className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
             />
             {errors.durationWeeks && (
@@ -162,14 +141,14 @@ export function CreateTrainingProgramForm() {
           </div>
         </section>
 
-        {error && (
+        {mutation.isError && mutation.error.status !== 401 && (
           <p role="alert" className="text-sm text-destructive">
-            {error}
+            {mutation.error.message}
           </p>
         )}
         <div className="flex flex-wrap items-center gap-3">
           <Button type="submit" disabled={busy}>
-            {created ? 'Чернетку створено' : isSubmitting ? 'Створюємо…' : 'Створити чернетку'}
+            {created ? 'Чернетку створено' : busy ? 'Створюємо…' : 'Створити чернетку'}
           </Button>
           <Button type="button" variant="outline" asChild>
             <Link href="/trainer/programs">Скасувати</Link>

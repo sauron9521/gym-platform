@@ -90,6 +90,10 @@ test('new program page protects trainer role and creation calls the same-origin 
     new URL(featureRoot + 'ui/trainer-programs-list.tsx', import.meta.url),
     'utf8',
   );
+  const mutations = await readFile(
+    new URL(featureRoot + 'api/training-program-mutations.ts', import.meta.url),
+    'utf8',
+  );
 
   assert.match(page, /verifyServerSession/);
   assert.match(page, /session.user.role !== 'TRAINER'/);
@@ -98,9 +102,17 @@ test('new program page protects trainer role and creation calls the same-origin 
   assert.match(page, /robots: \{ index: false \}/);
   assert.match(page, /force-dynamic/);
   assert.match(form, /zodResolver\(createTrainingProgramFormSchema\)/);
-  assert.match(form, /POST\('\/training-programs'/);
-  assert.match(form, /response.status === 401/);
-  assert.match(form, /response.status !== 201/);
+  assert.match(form, /useCreateTrainingProgramMutation\(\)/);
+  assert.match(form, /mutation.mutateAsync\(values\)/);
+  assert.match(form, /mutation.isPending/);
+  assert.match(form, /mutation.isError/);
+  assert.match(mutations, /POST\('\/training-programs'/);
+  assert.match(mutations, /response.status !== 201/);
+  assert.match(mutations, /queryClient.clear\(\)/);
+  assert.match(mutations, /router.replace\('\/login'\)/);
+  assert.match(mutations, /trainingProgramQueryKeys.lists\(\)/);
+  assert.match(mutations, /retry: false/);
+  assert.doesNotMatch(form, /webApi.POST|setError|setSubmitting/);
   assert.match(form, /router.push\('\/trainer\/programs'\)/);
   assert.ok(list.includes('href="/trainer/programs/new"'));
   assert.doesNotMatch(form, /localStorage|sessionStorage|dangerouslySetInnerHTML/);

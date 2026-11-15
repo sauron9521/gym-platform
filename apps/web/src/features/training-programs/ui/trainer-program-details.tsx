@@ -17,10 +17,8 @@ import {
   getProgramVersionStatusLabel,
   sortProgramVersions,
   type TrainingProgramItem,
-  type TrainingProgramVersionItem,
 } from '../lib/training-programs-list';
 import { getTrainingProgramDetailsError } from '../lib/edit-training-program-draft';
-import { trainingProgramQueryKeys } from '../lib/training-program-query-keys';
 import { EditTrainingProgramDraftForm } from './edit-training-program-draft-form';
 import { TrainingProgramWorkouts } from './training-program-workouts';
 
@@ -47,19 +45,6 @@ export function TrainerProgramDetails({ programId }: { programId: string }) {
 
   function retry() {
     void query.refetch();
-  }
-
-  function onUpdated(version: TrainingProgramVersionItem) {
-    queryClient.setQueryData<TrainingProgramItem>(
-      trainingProgramQueryKeys.detail(programId),
-      (current) =>
-        current
-          ? {
-              ...current,
-              versions: current.versions.map((item) => (item.id === version.id ? version : item)),
-            }
-          : current,
-    );
   }
 
   let state: DetailsState;
@@ -152,12 +137,7 @@ export function TrainerProgramDetails({ programId }: { programId: string }) {
           )}
 
           {latest?.status === 'DRAFT' && program.status !== 'ARCHIVED' ? (
-            <EditTrainingProgramDraftForm
-              key={latest.id}
-              programId={program.id}
-              version={latest}
-              onUpdated={onUpdated}
-            />
+            <EditTrainingProgramDraftForm key={latest.id} programId={program.id} version={latest} />
           ) : (
             <p className="rounded-xl border bg-card p-5 text-sm text-muted-foreground">
               Редагування недоступне: можна змінювати лише активні чернетки.
