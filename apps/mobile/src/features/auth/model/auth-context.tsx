@@ -29,7 +29,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
   const tokens = useRef<TokenPair | null>(null);
   const baseUrl = process.env.EXPO_PUBLIC_API_URL?.trim();
 
-  const api = useMemo(() => {
+  const getApi = useCallback(() => {
     if (!baseUrl) return null;
     try {
       return createMobileApi(baseUrl, () => tokens.current?.accessToken ?? null);
@@ -42,6 +42,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
     async (email: string, password: string): Promise<Result> => {
       const validation = validateMobileCredentials(email, password);
       if (validation) return { success: false, message: validation };
+      const api = getApi();
       if (!api) return { success: false, message: 'Налаштуйте EXPO_PUBLIC_API_URL.' };
 
       let issuedRefreshToken: string | null = null;
@@ -86,10 +87,11 @@ export function AuthProvider({ children }: PropsWithChildren) {
         }
       }
     },
-    [api],
+    [getApi],
   );
 
   const signOut = useCallback(async () => {
+    const api = getApi();
     const refreshToken = tokens.current?.refreshToken;
     tokens.current = null;
     setAccount(null);
@@ -100,9 +102,10 @@ export function AuthProvider({ children }: PropsWithChildren) {
         // Local session has already been discarded.
       }
     }
-  }, [api]);
+  }, [getApi]);
 
   const refreshProfile = useCallback(async (): Promise<string | null> => {
+    const api = getApi();
     if (!api || !tokens.current) return 'Потрібно увійти ще раз.';
     try {
       const me = await api.GET('/users/me');
@@ -116,7 +119,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
     } catch {
       return 'Не вдалося зв’язатися з API.';
     }
-  }, [api, signOut]);
+  }, [getApi, signOut]);
 
   const value = useMemo(
     () => ({ account, signIn, signOut, refreshProfile }),
