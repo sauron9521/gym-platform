@@ -119,10 +119,7 @@ test('landing-only push checks Landing but not other workspaces', () => {
     [['@gym/landing', 'lint'], ['@gym/landing', 'typecheck']],
   );
   for (const command of plan.commands.filter((cmd) => cmd.includes('@gym/landing'))) {
-    assert.equal(
-      resolvePrePushCommand(command, { platform: 'win32' }).shell,
-      true,
-    );
+    assert.equal(resolvePrePushCommand(command, { platform: 'win32' }).shell, true);
   }
 });
 
