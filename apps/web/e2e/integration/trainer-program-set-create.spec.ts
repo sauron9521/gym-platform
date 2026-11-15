@@ -104,12 +104,12 @@ test('real API: trainer adds validated sets to a program exercise; values persis
       setNumber: 1,
       setType: 'WORKING',
       plannedReps: 8,
-      plannedWeightKg: '62.5',
       restSeconds: 90,
-      targetRpe: '8.5',
       targetRir: 2,
       notes: 'Контроль темпу',
     });
+    expect(Number(firstSet.plannedWeightKg)).toBe(62.5);
+    expect(Number(firstSet.targetRpe)).toBe(8.5);
 
     await expect(ownerPage.getByText('Підхід додано до вправи')).toBeVisible();
     const setList = ownerPage.getByRole('list', { name: 'Підходи вправи ' + exercise!.name });
