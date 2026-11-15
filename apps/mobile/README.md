@@ -31,8 +31,9 @@ pnpm --filter @gym/mobile test
 pnpm --filter @gym/mobile build
 ```
 
-The `build` script exports the Expo web target for CI. It is **not** an iOS/Android binary
-build. Native builds will be added later with EAS.
+The `build` script exports both Expo web and **iOS JavaScript bundles** for CI. It does
+not produce an iOS/Android binary or exercise an iOS simulator. Native binaries will be
+built later with EAS.
 
 Web export stores Metro's temporary bundles in `apps/mobile/.cache/expo-tmp/`
 on the workspace drive. This avoids filling the Windows system temp drive when
@@ -110,3 +111,29 @@ out; transient network errors and HTTP 5xx do not discard their credentials.
 Future features should use feature-owned query hooks and query keys; do not
 persist private query data in AsyncStorage or localStorage. Automatic token
 refresh and offline detection will be handled separately.
+
+## Windows + pnpm Expo Router entry
+
+The mobile package uses its own `apps/mobile/index.js` entry file, which imports
+`expo-router/entry`. Do not replace `main: "index.js"` with
+`main: "expo-router/entry"`: resolving the package entry directly can cause
+Metro to look for `./apps/mobile/node_modules/expo-router/entry` from the
+**monorepo root** on Windows. Keep Expo Router's plugin and `src/app` routes.
+
+If an existing local Metro server still uses a stale path, stop it and from
+the repository root run:
+
+```powershell
+pnpm install --frozen-lockfile
+pnpm --filter @gym/mobile exec expo start --clear
+```
+
+To confirm the local pnpm installation exposes Expo Router:
+
+```powershell
+pnpm --filter @gym/mobile exec node -p "require.resolve('expo-router/entry')"
+```
+
+The `pnpm --filter @gym/mobile build:ios` command bundles **iOS JavaScript**
+without Xcode, so CI detects native Metro entry failures as well as web errors.
+It is not a substitute for device/simulator testing or an EAS build.
