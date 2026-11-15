@@ -3,13 +3,7 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": [
-        "dist/**",
-        "build/**",
-        ".next/**",
-        "!.next/cache/**",
-        ".cache/expo-ios/**"
-      ]
+      "outputs": ["dist/**", "build/**", ".next/**", "!.next/cache/**", ".cache/expo-ios/**"]
     },
     "lint": {},
     "typecheck": {
