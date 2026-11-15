@@ -92,6 +92,12 @@ jobs:
       - name: Install locked dependencies
         run: pnpm install --frozen-lockfile
 
+      # Catch compile/lint regressions before starting a browser or dev server.
+      - name: Fast Web lint and typecheck gate
+        run: |
+          pnpm --filter @gym/web lint
+          pnpm --filter @gym/web typecheck
+
       - name: Restore Playwright Chromium browser cache
         uses: actions/cache@v6
         with:
