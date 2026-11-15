@@ -273,7 +273,11 @@ An editable DRAFT training day can also gain a catalogue exercise through the
 typed same-origin `POST /training-programs/{programId}/versions/{versionId}/workouts/{workoutId}/exercises`.
 A searchable and paginated catalogue offers global or trainer-created,
 non-archived exercises; the backend remains authoritative for ownership and
-availability. The browser uses React Hook Form + Zod, excludes duplicates in
+availability. The picker reuses the main exercise catalog's cancellable TanStack
+Query and normalized search/page keys, with a 250 ms input debounce and 30-second
+freshness window to avoid repeated requests. Athlete-only, archived, and already
+added exercises stay unavailable for selection; the backend still validates all
+writes. HTTP 401 clears private cached data and redirects to login. The browser uses React Hook Form + Zod, excludes duplicates in
 the current workout and supports optional notes. On HTTP 201, the full returned
 program version updates exercise names, types and set counts immediately.
 Existing published exercises remain visible but cannot be added to. Errors are
