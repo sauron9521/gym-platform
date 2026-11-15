@@ -32,42 +32,52 @@ test('real API: owner edits draft v1 and another trainer cannot read or change i
 
     await ownerPage.goto('/trainer/programs');
     await ownerPage.getByRole('link', { name: 'Деталі програми' }).click();
-    await expect(ownerPage).toHaveURL(new RegExp('/trainer/programs/' + programId));
-    await expect(ownerPage.getByRole('heading', { name: updatedTitle, exact: true })).toBeVisible();
+    await expect(ownerPage).toHaveURL(new RegExp('/trainer/programs/' + programId + '$'));
+    await expect(ownerPage.getByRole('heading', { name: title, exact: true })).toBeVisible();
+    await expect(ownerPage.getByRole('heading', { name: 'Редагувати чернетку v1' })).toBeVisible();
 
-    await ownerPage.reload();
-    await expect(ownerPage.getByLabel('Назва програми')).toHaveValue(updatedTitle);
-    await expect(ownerPage.getByLabel('Опис (необов’язково)')).toHaveValue('');
-    await expect(ownerPage.getByLabel('Тривалість у тижнях (необов’язково)')).toHaveValue('');
+    await expect(ownerPage.getByLabel('Назва програми')).toHaveValue(title);
+    await expect(ownerPage.getByLabel('Тривалість у тижнях (необов’язково)')).toHaveValue('12');
+    await ownerPage.getByLabel('Тривалість у тижнях (необов’язково)').fill('53');
+    await ownerPage.getByRole('button', { name: 'Зберегти зміни' }).click();
+    await expect(ownerPage.getByText(/ціле число від 1 до 52/)).toBeVisible();
 
-    const denied = await outsiderPage.request.get('/backend/training-programs/' + programId);
-    expect(denied.status()).toBe(404);
-    const deniedPatch = await outsiderPage.request.patch(
-      '/backend/training-programs/' + programId + '/versions/' + versionId,
-      { headers: { origin }, data: { title: 'Forbidden' } },
+    const updatedTitle = 'Оновлена програма ' + randomUUID();
+    await ownerPage.getByLabel('Назва програми').fill(updatedTitle);
+    await ownerPage.getByLabel('Опис (необов’язково)').fill('');
+    await ownerPage.getByLabel('Тривалість у тижнях (необов’язково)').fill('');
+    await ownerPage.getByLabel('Тривалість у тижнях (необов’язково)').blur();
+    await expect(ownerPage.getByText(/ціле число від 1 до 52/)).toHaveCount(0);
+    await expect(ownerPage.getByRole('button', { name: 'Зберегти зміни' })).toBeEnabled();
+    const patch = ownerPage.waitForResponse(
+      (response) =>
+        response
+          .url()
+          .includes('/backend/training-programs/' + programId + '/versions/' + versionId) &&
+        response.request().method() === 'PATCH',
+      { timeout: 15_000 },
     );
-    expect(deniedPatch.status()).toBe(404);
+    await ownerPage.getByRole('button', { name: 'Зберегти зміни' }).click();
+    const updated = await patch;
+    expect(updated.status()).toBe(200);
+    expect(await updated.json()).toMatchObject({
+      id: versionId,
+      status: 'DRAFT',
+      title: updatedTitle,
+      description: null,
+      durationWeeks: null,
+    });
+    await expect(ownerPage.getByText('Зміни збережено')).toBeVisible();
+    await expect(ownerPage.getByRole('heading', { name: updatedTitle, exact: true })).toBeVisible();
+    await expect(ownerPage.getByRole('button', { name: 'Зберегти зміни' })).toBeDisabled();
 
-    await outsiderPage.goto('/trainer/programs/' + programId);
-    await expect(
-      outsiderPage.getByRole('heading', { name: 'Не вдалося відкрити програму' }),
-    ).toBeVisible();
-    await expect(outsiderPage.getByText('Програму не знайдено або немає доступу.')).toBeVisible();
-    await expect(outsiderPage.getByText(updatedTitle)).toHaveCount(0);
+    // The trainer list must reflect the saved draft after invalidation.
+    await ownerPage.getByRole('link', { name: /До тренувальних програм/ }).click();
+    await expect(ownerPage).toHaveURL(/\/trainer\/programs/);
+    await expect(ownerPage.getByRole('heading', { name: updatedTitle })).toBeVisible();
 
-    const guestContext = await browser.newContext();
-    try {
-      const guest = await guestContext.newPage();
-      await guest.goto('/trainer/programs/' + programId);
-      await expect(guest).toHaveURL(/\/login$/);
-    } finally {
-      await guestContext.close();
-    }
-  } finally {
-    await outsiderContext.close();
-  }
-});
-));
+    // Returning to details should preserve the updated draft in its per-ID cache.
+    await ownerPage.getByRole('link', { name: 'Деталі програми' }).click();
     await expect(ownerPage.getByRole('heading', { name: updatedTitle, exact: true })).toBeVisible();
 
     await ownerPage.reload();
