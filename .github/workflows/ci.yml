@@ -26,6 +26,7 @@ jobs:
       full: ${{ steps.select.outputs.full }}
       api: ${{ steps.select.outputs.api }}
       web: ${{ steps.select.outputs.web }}
+      landing: ${{ steps.select.outputs.landing }}
       mobile: ${{ steps.select.outputs.mobile }}
       client: ${{ steps.select.outputs.client }}
       deps: ${{ steps.select.outputs.deps }}
@@ -218,6 +219,7 @@ jobs:
           path: |
             .turbo/cache
             apps/web/.next/cache
+            apps/landing/.next/cache
           key: ${{ runner.os }}-node24-build-${{ hashFiles('pnpm-lock.yaml', 'turbo.json', 'apps/**/package.json', 'packages/**/package.json') }}-${{ github.sha }}
           restore-keys: |
             ${{ runner.os }}-node24-build-${{ hashFiles('pnpm-lock.yaml', 'turbo.json', 'apps/**/package.json', 'packages/**/package.json') }}-
@@ -277,6 +279,7 @@ jobs:
         env:
           CI_API: ${{ needs.changes.outputs.api }}
           CI_WEB: ${{ needs.changes.outputs.web }}
+          CI_LANDING: ${{ needs.changes.outputs.landing }}
           CI_MOBILE: ${{ needs.changes.outputs.mobile }}
           CI_CLIENT: ${{ needs.changes.outputs.client }}
         run: |
@@ -284,6 +287,7 @@ jobs:
           filters=()
           if [ "$CI_API" = true ]; then filters+=(--filter=@gym/api); fi
           if [ "$CI_WEB" = true ]; then filters+=(--filter=@gym/web); fi
+          if [ "$CI_LANDING" = true ]; then filters+=(--filter=@gym/landing); fi
           if [ "$CI_MOBILE" = true ]; then filters+=(--filter=@gym/mobile); fi
           if [ "$CI_CLIENT" = true ]; then filters+=(--filter=@gym/api-client); fi
           test "${#filters[@]}" -gt 0
