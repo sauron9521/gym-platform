@@ -137,11 +137,7 @@ export function TrainerProgramDetails({ programId }: { programId: string }) {
           )}
 
           {latest?.status === 'DRAFT' && program.status !== 'ARCHIVED' ? (
-            <EditTrainingProgramDraftForm
-              key={latest.id}
-              programId={program.id}
-              version={latest}
-            />
+            <EditTrainingProgramDraftForm key={latest.id} programId={program.id} version={latest} />
           ) : (
             <p className="rounded-xl border bg-card p-5 text-sm text-muted-foreground">
               Редагування недоступне: можна змінювати лише активні чернетки.
