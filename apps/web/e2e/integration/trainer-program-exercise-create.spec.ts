@@ -82,7 +82,26 @@ test('real API: trainer adds a catalogue exercise to a draft workout and another
     expect(benchSearchRequests).toBe(requestsAfterFirstSearch);
 
     await form.getByRole('button', { name: 'Обрати вправу ' + exercise!.name }).click();
-    await form.getByLabel('Примітки до вправи (необов’язково)').fill('  Контроль руху  ');
+    const notes = form.getByLabel('Примітки до вправи (необов’язково)');
+    await notes.fill('  Контроль руху  ');
+
+    // A server-side draft conflict must keep the selected exercise and form
+    // input intact. The next explicit submit may succeed; writes never retry.
+    await ownerPage.route(
+      '**' + addPath,
+      (route) => route.fulfill({ status: 409, contentType: 'application/json', body: '{}' }),
+      { times: 1 },
+    );
+    const conflictResponse = ownerPage.waitForResponse(
+      (response) => response.url().includes(addPath) && response.status() === 409,
+    );
+    await form.getByRole('button', { name: 'Додати обрану вправу' }).click();
+    expect((await conflictResponse).status()).toBe(409);
+    await expect(
+      form.getByText('Чернетка змінилася. Оновіть сторінку і повторіть дію.'),
+    ).toBeVisible();
+    await expect(notes).toHaveValue('  Контроль руху  ');
+    await expect(form.getByText('Обрана вправа: ' + exercise!.name)).toBeVisible();
 
     const savedPromise = ownerPage.waitForResponse(
       (response) => response.url().includes(addPath) && response.request().method() === 'POST',
