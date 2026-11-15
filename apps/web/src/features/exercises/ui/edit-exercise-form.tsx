@@ -1,24 +1,20 @@
 'use client';
 
 import { useState } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useRouter } from 'next/navigation';
 import { useFieldArray, useForm } from 'react-hook-form';
 
-import { webApi } from '@/shared/api/client';
 import { Button } from '@/shared/ui/button';
+import { useEditExerciseMutation } from '../api/exercise-mutations';
 import {
   CREATE_EXERCISE_TYPES,
   createExerciseFormSchema as editExerciseSchema,
   type CustomExerciseActorRole,
 } from '../lib/create-exercise';
 import type { ExerciseDetailsData } from '../lib/exercise-catalog';
-import { exerciseQueryKeys } from '../lib/exercise-query-keys';
 import {
   buildUpdateExercisePayload,
   getEditExerciseDefaults,
-  getExerciseMutationErrorMessage,
   type EditExerciseValues,
 } from '../lib/manage-exercise';
 import { useExerciseTaxonomy } from './use-exercise-taxonomy';
@@ -36,8 +32,7 @@ export function EditExerciseForm({
   onCancel: () => void;
   onReload: () => void;
 }) {
-  const router = useRouter();
-  const queryClient = useQueryClient();
+  const mutation = useEditExerciseMutation(exercise.id);
   const { state: taxonomy, retry: retryTaxonomy } = useExerciseTaxonomy();
   const [error, setError] = useState<string | null>(null);
   const [selectedMuscle, setSelectedMuscle] = useState('');
@@ -52,11 +47,11 @@ export function EditExerciseForm({
     name: 'muscleGroups',
   });
   const { errors, isSubmitting, isDirty } = form.formState;
+  const busy = isSubmitting || mutation.isPending;
   const muscleOptions = taxonomy.kind === 'ready' ? taxonomy.muscleGroups : [];
   const equipmentOptions = taxonomy.kind === 'ready' ? taxonomy.equipment : [];
 
   async function submit(values: EditExerciseValues) {
-    if (isSubmitting) return;
     if (taxonomy.kind !== 'ready') {
       setError('Довідники ще не завантажено. Спробуйте оновити їх.');
       return;
@@ -67,29 +62,18 @@ export function EditExerciseForm({
       return;
     }
     setError(null);
+    mutation.reset();
 
     try {
-      const { data, response } = await webApi.PATCH('/exercises/{id}', {
-        params: { path: { id: exercise.id } },
-        body,
-      });
-      if (response.status === 401) {
-        router.replace('/login');
-        return;
-      }
-      if (response.status !== 200 || !data) {
-        setError(getExerciseMutationErrorMessage(response.status));
-        return;
-      }
-      await queryClient.invalidateQueries({ queryKey: exerciseQueryKeys.lists() });
+      const data = await mutation.mutateAsync(body);
       onSaved(data);
     } catch {
-      setError(getExerciseMutationErrorMessage());
+      // Keep form values; the mutation owns the status-specific error.
     }
   }
 
   function addMuscle() {
-    if (!selectedMuscle || isSubmitting || taxonomy.kind !== 'ready' || fields.length >= 10) return;
+    if (!selectedMuscle || busy || taxonomy.kind !== 'ready' || fields.length >= 10) return;
     if (fields.some((field) => field.slug === selectedMuscle)) {
       setError('Цю групу вже додано.');
       return;
@@ -125,7 +109,7 @@ export function EditExerciseForm({
             id="edit-exercise-name"
             type="text"
             maxLength={120}
-            disabled={isSubmitting}
+            disabled={busy}
             {...form.register('name')}
             aria-invalid={Boolean(errors.name)}
             className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
@@ -143,7 +127,7 @@ export function EditExerciseForm({
           </label>
           <select
             id="edit-exercise-type"
-            disabled={isSubmitting}
+            disabled={busy}
             {...form.register('exerciseType')}
             className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
           >
@@ -163,7 +147,7 @@ export function EditExerciseForm({
             id="edit-exercise-description"
             rows={3}
             maxLength={5000}
-            disabled={isSubmitting}
+            disabled={busy}
             {...form.register('description')}
             className="w-full rounded-md border border-input bg-background p-3 text-sm"
           />
@@ -182,7 +166,7 @@ export function EditExerciseForm({
             id="edit-exercise-instructions"
             rows={4}
             maxLength={10000}
-            disabled={isSubmitting}
+            disabled={busy}
             {...form.register('instructions')}
             className="w-full rounded-md border border-input bg-background p-3 text-sm"
           />
@@ -203,7 +187,7 @@ export function EditExerciseForm({
               <select
                 id="edit-exercise-muscle"
                 value={selectedMuscle}
-                disabled={isSubmitting || taxonomy.kind !== 'ready' || fields.length >= 10}
+                disabled={busy || taxonomy.kind !== 'ready' || fields.length >= 10}
                 onChange={(event) => setSelectedMuscle(event.target.value)}
                 className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
               >
@@ -219,7 +203,7 @@ export function EditExerciseForm({
               type="button"
               variant="outline"
               disabled={
-                isSubmitting || taxonomy.kind !== 'ready' || !selectedMuscle || fields.length >= 10
+                busy || taxonomy.kind !== 'ready' || !selectedMuscle || fields.length >= 10
               }
               onClick={addMuscle}
             >
@@ -237,7 +221,7 @@ export function EditExerciseForm({
               </label>
               <select
                 id={`edit-exercise-role-${index}`}
-                disabled={isSubmitting}
+                disabled={busy}
                 {...form.register(`muscleGroups.${index}.role`)}
                 className="h-10 rounded-md border border-input bg-background px-3 text-sm"
               >
@@ -248,7 +232,7 @@ export function EditExerciseForm({
                 type="button"
                 variant="outline"
                 size="sm"
-                disabled={isSubmitting}
+                disabled={busy}
                 onClick={() => remove(index)}
               >
                 Прибрати
@@ -270,7 +254,7 @@ export function EditExerciseForm({
                 <input
                   type="checkbox"
                   value={item.slug}
-                  disabled={isSubmitting}
+                  disabled={busy}
                   {...form.register('equipment')}
                 />
                 {item.name}
@@ -291,7 +275,7 @@ export function EditExerciseForm({
             </label>
             <select
               id="edit-exercise-visibility"
-              disabled={isSubmitting}
+              disabled={busy}
               {...form.register('visibility')}
               className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
             >
@@ -304,19 +288,19 @@ export function EditExerciseForm({
           </div>
         )}
 
-        {error && (
+        {(error || mutation.isError) && (
           <div role="alert" className="space-y-2">
-            <p className="text-sm text-destructive">{error}</p>
-            <Button type="button" variant="outline" disabled={isSubmitting} onClick={onReload}>
+            <p className="text-sm text-destructive">{error ?? mutation.error?.message}</p>
+            <Button type="button" variant="outline" disabled={busy} onClick={onReload}>
               Оновити вправу
             </Button>
           </div>
         )}
         <div className="flex flex-wrap gap-2">
-          <Button type="submit" disabled={isSubmitting || !isDirty || taxonomy.kind !== 'ready'}>
-            {isSubmitting ? 'Зберігаємо…' : 'Зберегти зміни'}
+          <Button type="submit" disabled={busy || !isDirty || taxonomy.kind !== 'ready'}>
+            {busy ? 'Зберігаємо…' : 'Зберегти зміни'}
           </Button>
-          <Button type="button" variant="outline" disabled={isSubmitting} onClick={onCancel}>
+          <Button type="button" variant="outline" disabled={busy} onClick={onCancel}>
             Скасувати
           </Button>
         </div>
