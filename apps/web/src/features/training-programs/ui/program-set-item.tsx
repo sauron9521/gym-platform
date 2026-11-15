@@ -18,6 +18,11 @@ export function ProgramSetItem({
   exerciseName,
   set,
   editable,
+  moveDisabled,
+  canMoveUp,
+  canMoveDown,
+  onMoveUp,
+  onMoveDown,
   editing,
   onEdit,
   onCancelEdit,
@@ -30,6 +35,11 @@ export function ProgramSetItem({
   exerciseName: string;
   set: SavedProgramSet;
   editable: boolean;
+  moveDisabled: boolean;
+  canMoveUp: boolean;
+  canMoveDown: boolean;
+  onMoveUp: () => void;
+  onMoveDown: () => void;
   editing: boolean;
   onEdit: () => void;
   onCancelEdit: () => void;
@@ -81,6 +91,27 @@ export function ProgramSetItem({
                 type="button"
                 variant="outline"
                 size="sm"
+                aria-label={`Перемістити підхід ${set.setNumber} вгору у вправі ${exerciseName}`}
+                disabled={moveDisabled || !canMoveUp}
+                onClick={onMoveUp}
+              >
+                Вгору
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                aria-label={`Перемістити підхід ${set.setNumber} вниз у вправі ${exerciseName}`}
+                disabled={moveDisabled || !canMoveDown}
+                onClick={onMoveDown}
+              >
+                Вниз
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={moveDisabled}
                 aria-label={`Редагувати підхід ${set.setNumber} вправи ${exerciseName}`}
                 onClick={() => {
                   setError(null);
@@ -94,6 +125,7 @@ export function ProgramSetItem({
                 variant="outline"
                 size="sm"
                 aria-label={`Видалити підхід ${set.setNumber} вправи ${exerciseName}`}
+                disabled={moveDisabled}
                 onClick={() => {
                   setError(null);
                   setConfirmDelete(true);
