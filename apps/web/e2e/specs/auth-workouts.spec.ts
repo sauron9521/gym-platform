@@ -305,3 +305,45 @@ test('trainer can access own programs but not athlete-only pages', async ({ page
   await page.goto('/athlete/programs');
   await expect(page.getByRole('heading', { name: 'Доступ заборонено' })).toBeVisible();
 });
+
+test('workout details query handles 401 without revealing private workout data', async ({
+  page,
+}) => {
+  await signIn(page);
+  const id = '00000000-0000-4000-8000-000000000001';
+  await page.route('**/backend/workouts/' + id, (route) =>
+    route.fulfill({ status: 401, contentType: 'application/json', body: '{}' }),
+  );
+  await page.goto('/workouts/' + id);
+  await expect(page).toHaveURL(/\/login$/);
+  await expect(page.getByRole('heading', { name: 'Жим лежачи' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Редагувати', exact: true })).toHaveCount(0);
+});
+
+test('workout details retry is explicit and preserves 403 privacy errors', async ({ page }) => {
+  await signIn(page);
+  const id = '00000000-0000-4000-8000-000000000001';
+  // React development mode can issue more than one initial request. Keep
+  // the server error stable until the user explicitly asks to retry.
+  let responseStatus = 503;
+  let requests = 0;
+  await page.route('**/backend/workouts/' + id, (route) => {
+    requests += 1;
+    return route.fulfill({
+      status: responseStatus,
+      contentType: 'application/json',
+      body: '{}',
+    });
+  });
+
+  await page.goto('/workouts/' + id);
+  await expect(
+    page.getByText('Не вдалося завантажити тренування. Спробуйте ще раз.'),
+  ).toBeVisible();
+  const requestsBeforeRetry = requests;
+  responseStatus = 403;
+  await page.getByRole('button', { name: 'Спробувати ще раз' }).click();
+  await expect(page.getByText('Тренування не знайдено або немає доступу.')).toBeVisible();
+  expect(requests).toBeGreaterThan(requestsBeforeRetry);
+  await expect(page).toHaveURL(new RegExp('/workouts/' + id + '$'));
+});
