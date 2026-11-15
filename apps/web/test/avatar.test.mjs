@@ -40,7 +40,7 @@ test('initials and errors do not disclose upstream content', () => {
   assert.match(avatarErrorMessage(429), /Забагато/);
 });
 
-test('avatar writes use typed TanStack mutation, one profile refetch and browser multipart', async () => {
+test('avatar writes use typed TanStack mutation with safe cache handling', async () => {
   const ui = await readFile(
     new URL('../src/features/profile/ui/profile-avatar.tsx', import.meta.url),
     'utf8',
