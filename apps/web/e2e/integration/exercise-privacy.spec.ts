@@ -128,8 +128,7 @@ test('real API: athlete creates and edits a private exercise with persisted taxo
 
   const archivedResponse = page.waitForResponse(
     (response) =>
-      response.url().endsWith('/exercises/' + id) &&
-      response.request().method() === 'DELETE',
+      response.url().endsWith('/exercises/' + id) && response.request().method() === 'DELETE',
   );
   await confirmation.getByRole('button', { name: 'Так, архівувати' }).click();
   expect((await archivedResponse).status()).toBe(200);
