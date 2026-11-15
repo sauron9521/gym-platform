@@ -96,6 +96,18 @@ test('workouts query redirects on 401 without rendering private results', async 
   await expect(page.getByText('Жим лежачи')).toHaveCount(0);
 });
 
+test('exercise catalog query redirects after a 401 without showing private results', async ({
+  page,
+}) => {
+  await signIn(page);
+  await page.route('**/backend/exercises*', (route) =>
+    route.fulfill({ status: 401, contentType: 'application/json', body: '{}' }),
+  );
+  await page.goto('/exercises');
+  await expect(page).toHaveURL(/\/login$/);
+  await expect(page.getByRole('article')).toHaveCount(0);
+});
+
 test('athlete cannot view trainer-only programs even with a valid session', async ({ page }) => {
   await signIn(page);
   await page.goto('/trainer/programs');
