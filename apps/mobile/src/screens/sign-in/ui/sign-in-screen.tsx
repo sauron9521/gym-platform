@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useCallback, useRef } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Controller, useForm } from 'react-hook-form';
 import {
@@ -33,22 +33,30 @@ export function SignInScreen() {
     reValidateMode: 'onChange',
   });
 
-  const submit = handleSubmit(async ({ email, password }) => {
-    // React Hook Form validates before this callback; keep the API call single-flight.
-    if (submitLock.current) return;
-    submitLock.current = true;
-    clearErrors('root.server');
-    try {
-      const result = await signIn(email, password);
-      if (!result.success) {
-        setError('root.server', { type: 'server', message: result.message });
+  const onValidSubmit = useCallback(
+    async ({ email, password }: SignInValues) => {
+      // React Hook Form validates first; this protects against concurrent API calls.
+      if (submitLock.current) return;
+      submitLock.current = true;
+      clearErrors('root.server');
+      try {
+        const result = await signIn(email, password);
+        if (!result.success) {
+          setError('root.server', { type: 'server', message: result.message });
+        }
+      } catch {
+        setError('root.server', {
+          type: 'server',
+          message: 'Не вдалося увійти. Спробуйте ще раз.',
+        });
+      } finally {
+        submitLock.current = false;
       }
-    } catch {
-      setError('root.server', { type: 'server', message: 'Не вдалося увійти. Спробуйте ще раз.' });
-    } finally {
-      submitLock.current = false;
-    }
-  });
+    },
+    [clearErrors, setError, signIn],
+  );
+
+  const submit = handleSubmit(onValidSubmit);
 
   return (
     <KeyboardAvoidingView
