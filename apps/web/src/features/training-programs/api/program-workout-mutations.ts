@@ -60,7 +60,11 @@ function useProgramWorkoutMutationContext(programId: string, versionId: string) 
 export function useCreateProgramWorkoutMutation(programId: string, versionId: string) {
   const { onError, updateVersion } = useProgramWorkoutMutationContext(programId, versionId);
 
-  return useMutation<ProgramVersionWithWorkouts, ProgramWorkoutMutationError, CreateProgramWorkoutPayload>({
+  return useMutation<
+    ProgramVersionWithWorkouts,
+    ProgramWorkoutMutationError,
+    CreateProgramWorkoutPayload
+  >({
     mutationFn: async (body) => {
       try {
         const { response, data } = await webApi.POST(
@@ -87,7 +91,11 @@ type EditProgramWorkoutInput = { workoutId: string; body: UpdateProgramWorkoutPa
 export function useEditProgramWorkoutMutation(programId: string, versionId: string) {
   const { onError, updateVersion } = useProgramWorkoutMutationContext(programId, versionId);
 
-  return useMutation<ProgramVersionWithWorkouts, ProgramWorkoutMutationError, EditProgramWorkoutInput>({
+  return useMutation<
+    ProgramVersionWithWorkouts,
+    ProgramWorkoutMutationError,
+    EditProgramWorkoutInput
+  >({
     mutationFn: async ({ workoutId, body }) => {
       try {
         const { response, data } = await webApi.PATCH(
