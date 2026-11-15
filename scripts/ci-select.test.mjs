@@ -63,6 +63,86 @@ test('docs-only PR still runs required quality gate and formatting', () => {
   assert.equal(actual.deps, false);
 });
 
+test('application handbooks and nested infrastructure Markdown skip expensive PR jobs', () => {
+  const paths = [
+    'README.md',
+    'docs/api/testing.md',
+    'apps/api/README.md',
+    'apps/api/test/README.md',
+    'apps/web/README.md',
+    'apps/mobile/README.md',
+    'packages/api-client/README.md',
+    'infra/docker/README.md',
+    'infra/docker/production/README.md',
+    'infra/new-component/guide.md',
+  ];
+  const actual = classifyChangedPaths(paths);
+  assert.deepEqual(actual, {
+    full: false,
+    api: false,
+    web: false,
+    mobile: false,
+    client: false,
+    deps: false,
+    workspaces: false,
+    redis: false,
+  });
+
+  assert.deepEqual(classifyChangedPaths(['infra\\docker\\README.md']), actual);
+});
+
+test('documentation changes never override real affected workspace checks', () => {
+  const docs = ['apps/api/README.md', 'apps/web/README.md', 'infra/docker/README.md'];
+
+  const api = classifyChangedPaths([...docs, 'apps/api/src/main.ts']);
+  assert.equal(api.api, true);
+  assert.equal(api.full, false);
+  assert.equal(api.web, false);
+  assert.equal(api.deps, false);
+
+  const web = classifyChangedPaths([...docs, 'apps/web/src/app/page.tsx']);
+  assert.equal(web.api, false);
+  assert.equal(web.web, true);
+  assert.equal(web.full, false);
+
+  const infra = classifyChangedPaths([...docs, 'infra/docker/compose.yaml']);
+  assert.equal(infra.full, true);
+  assert.equal(infra.api, true);
+  assert.equal(infra.web, true);
+  assert.equal(infra.deps, true);
+  assert.equal(infra.redis, true);
+});
+
+test('non-Markdown infrastructure, manifests, CI and unknown Markdown fail closed', () => {
+  for (const path of [
+    'infra/docker/compose.yaml',
+    'infra/docker/.env.example',
+    'infra/docker/init/01-create-test-db.sh',
+    'infra/docker/production/compose.prod.yaml',
+    'apps/api/package.json',
+    'apps/api/src/modules/auth/README.md',
+    'packages/unknown/README.md',
+    'scripts/README.md',
+    '.github/README.md',
+    '.github/workflows/ci.yml',
+    'infra/docker/readme.MD',
+  ]) {
+    const actual = classifyChangedPaths(['infra/docker/README.md', path]);
+    assert.equal(actual.full, true, 'Expected full CI for ' + path);
+    assert.equal(actual.api, true);
+    assert.equal(actual.deps, true);
+  }
+
+  for (const invalid of [
+    ['infra/../docker/README.md'],
+    ['/infra/docker/README.md'],
+    ['infra/docker/README.md', ''],
+    ['infra/docker/README.md', null],
+  ]) {
+    assert.equal(classifyChangedPaths(invalid).full, true);
+  }
+});
+
 test('root dependencies and cross-cutting changes force full regression', () => {
   for (const file of [
     'pnpm-lock.yaml',
@@ -185,6 +265,8 @@ test('real API browser suite runs only for API, Web, shared client, or cross-cut
     { paths: ['.github/workflows/web-integration.yml'], run: true },
     { paths: ['apps/mobile/app/index.tsx'], run: false },
     { paths: ['README.md', 'docs/api/testing.md'], run: false },
+    { paths: ['apps/api/README.md', 'apps/web/README.md', 'infra/docker/README.md'], run: false },
+    { paths: ['infra/docker/production/README.md'], run: false },
     { paths: ['apps/mobile/app/index.tsx', 'apps/web/src/app/page.tsx'], run: true },
     { paths: [], run: true },
   ];
