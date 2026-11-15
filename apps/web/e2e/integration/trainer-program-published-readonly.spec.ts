@@ -17,10 +17,19 @@ test('real API: published program details are read-only and PATCH is rejected', 
   await expect(page.getByText('Опублікована', { exact: true })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Редагувати чернетку v1' })).toHaveCount(0);
   await expect(page.getByText(/Редагування недоступне/)).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Тренувальні дні' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Day 1' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Додати тренувальний день' })).toHaveCount(0);
 
   const immutable = await page.request.patch(
     '/backend/training-programs/' + published.id + '/versions/' + published.versionId,
     { headers: { origin }, data: { title: 'Should be blocked' } },
   );
   expect(immutable.status()).toBe(409);
+
+  const immutableWorkout = await page.request.post(
+    '/backend/training-programs/' + published.id + '/versions/' + published.versionId + '/workouts',
+    { headers: { origin }, data: { weekNumber: 2, dayNumber: 1, title: 'Недоступний день' } },
+  );
+  expect(immutableWorkout.status()).toBe(409);
 });
