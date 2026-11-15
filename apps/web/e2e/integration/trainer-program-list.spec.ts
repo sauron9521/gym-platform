@@ -40,6 +40,11 @@ test('real API: trainer sees only owned programs and can filter published versio
     await expect(ownerPage.getByRole('heading', { name: draft.title })).toBeVisible();
     await expect(ownerPage.getByRole('heading', { name: published.title })).toHaveCount(0);
 
+    // Returning to ALL must read the correctly scoped query, not the DRAFT cache.
+    await ownerPage.locator('#training-program-status').selectOption('ALL');
+    await expect(ownerPage.getByRole('heading', { name: published.title })).toBeVisible();
+    await expect(ownerPage.getByRole('heading', { name: draft.title })).toBeVisible();
+
     await otherPage.goto('/trainer/programs');
     await expect(otherPage.getByRole('heading', { name: 'Програм не знайдено' })).toBeVisible();
     await expect(otherPage.getByRole('heading', { name: draft.title })).toHaveCount(0);

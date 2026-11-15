@@ -94,22 +94,34 @@ test('role-specific program pages independently verify sessions', async () => {
   }
 });
 
-test('trainer journal uses only owner-scoped API with version summaries', async () => {
+test('trainer journal uses TanStack Query and preserves the owner-scoped API', async () => {
   const trainer = await readFile(
     new URL('../src/features/training-programs/ui/trainer-programs-list.tsx', import.meta.url),
     'utf8',
   );
-  assert.match(trainer, /GET\('\/training-programs'/);
-  assert.match(trainer, /status === 'ALL'/);
-  assert.match(trainer, /limit: PAGE_SIZE/);
-  assert.match(trainer, /data.meta.totalPages/);
+  const request = await readFile(
+    new URL(
+      '../src/features/training-programs/api/trainer-programs-list-query.ts',
+      import.meta.url,
+    ),
+    'utf8',
+  );
+  assert.match(trainer, /useQuery\(trainerProgramsListQueryOptions\(status, page\)\)/);
+  assert.match(trainer, /query.refetch\(\)/);
   assert.match(trainer, /sortProgramVersions/);
   assert.match(trainer, /getProgramVersionStatusLabel/);
-  assert.match(trainer, /response.status === 401/);
-  assert.match(trainer, /if \(!active\) return/);
-  assert.match(trainer, /active = false/);
+  assert.match(trainer, /queryClient.clear\(\)/);
+  assert.match(trainer, /router.replace\('\/login'\)/);
+  assert.match(trainer, /if \(unauthenticated\) return null/);
   assert.match(trainer, /onClick=\{retry\}/);
-  assert.doesNotMatch(trainer, /localStorage|sessionStorage|dangerouslySetInnerHTML/);
+
+  assert.match(request, /GET\('\/training-programs'/);
+  assert.match(request, /status === 'ALL'/);
+  assert.match(request, /limit: PAGE_SIZE/);
+  assert.match(request, /data.meta.totalPages/);
+  assert.match(request, /signal,/);
+  assert.match(request, /retry: false/);
+  assert.doesNotMatch(trainer + request, /localStorage|sessionStorage|dangerouslySetInnerHTML/);
 });
 
 test('athlete journal uses assignment summary view, not the trainer program library', async () => {

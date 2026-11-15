@@ -137,6 +137,18 @@ test('athlete cannot view trainer-only programs even with a valid session', asyn
   await expect(page.getByRole('region', { name: 'Список тренувальних програм' })).toHaveCount(0);
 });
 
+test('trainer programs query redirects on 401 without showing cached program content', async ({
+  page,
+}) => {
+  await signIn(page, 'trainer@example.test');
+  await page.route('**/backend/training-programs*', (route) =>
+    route.fulfill({ status: 401, contentType: 'application/json', body: '{}' }),
+  );
+  await page.goto('/trainer/programs');
+  await expect(page).toHaveURL(/\/login$/);
+  await expect(page.getByRole('region', { name: 'Список тренувальних програм' })).toHaveCount(0);
+});
+
 test('trainer can access own programs but not athlete-only pages', async ({ page }) => {
   await signIn(page, 'trainer@example.test');
   await page.goto('/trainer/programs');

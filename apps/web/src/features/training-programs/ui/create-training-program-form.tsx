@@ -1,6 +1,7 @@
 'use client';
 
 import { useRef, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -8,6 +9,7 @@ import { useForm } from 'react-hook-form';
 
 import { webApi } from '@/shared/api/client';
 import { Button } from '@/shared/ui/button';
+import { trainingProgramQueryKeys } from '../lib/training-program-query-keys';
 import {
   buildCreateTrainingProgramPayload,
   createTrainingProgramFormSchema,
@@ -17,6 +19,7 @@ import {
 
 export function CreateTrainingProgramForm() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const submitting = useRef(false);
   const [created, setCreated] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -46,6 +49,7 @@ export function CreateTrainingProgramForm() {
         return;
       }
       setCreated(true);
+      await queryClient.invalidateQueries({ queryKey: trainingProgramQueryKeys.lists() });
       // The API creates v1 as a draft. The owned list already displays this
       // version; a visual workout/program builder is a separate feature.
       router.push('/trainer/programs');
