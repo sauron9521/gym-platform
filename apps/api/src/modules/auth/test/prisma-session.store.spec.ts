@@ -181,4 +181,83 @@ describe('PrismaSessionStore', () => {
       where: { userId: session.userId },
     });
   });
+
+  describe('failure-safe session access and retention', () => {
+    it('does not hide session read outages as an invalid session', async () => {
+      const failure = new Error('Session database read failed');
+      prisma.session.findUnique.mockRejectedValueOnce(failure);
+
+      await expect(store.getSession(session.id)).rejects.toBe(failure);
+      expect(prisma.session.findUnique).toHaveBeenCalledExactlyOnceWith({
+        where: { id: session.id, user: { deletedAt: null } },
+        select: authSessionSelect,
+      });
+    });
+
+    it('never lists a soft-deleted user’s sessions', async () => {
+      prisma.session.findMany.mockResolvedValueOnce([]);
+
+      await expect(store.listUserSessions('deleted-user')).resolves.toEqual([]);
+      expect(prisma.session.findMany).toHaveBeenCalledExactlyOnceWith({
+        where: { userId: 'deleted-user', user: { deletedAt: null } },
+        orderBy: { createdAt: 'desc' },
+        select: authSessionSelect,
+      });
+    });
+
+    it('propagates a session-create failure rather than claiming a session exists', async () => {
+      const failure = new Error('Session insert failed');
+      prisma.session.create.mockRejectedValueOnce(failure);
+
+      await expect(store.createSession(session)).rejects.toBe(failure);
+      expect(prisma.session.create).toHaveBeenCalledOnce();
+      expect(prisma.session.updateMany).not.toHaveBeenCalled();
+    });
+
+    it('treats a missing or stale session touch as a no-op without creating a new row', async () => {
+      prisma.session.updateMany.mockResolvedValueOnce({ count: 0 });
+      const earlier = new Date('2026-09-30T10:00:00.000Z');
+
+      await expect(store.touchSession(session.id, earlier)).resolves.toBeUndefined();
+      expect(prisma.session.updateMany).toHaveBeenCalledExactlyOnceWith({
+        where: {
+          id: session.id,
+          user: { deletedAt: null },
+          lastActiveAt: { lt: earlier },
+        },
+        data: { lastActiveAt: earlier },
+      });
+      expect(prisma.session.create).not.toHaveBeenCalled();
+    });
+
+    it('does not claim successful revocation if session deletion fails', async () => {
+      const failure = new Error('Session delete failed');
+      prisma.session.deleteMany.mockRejectedValueOnce(failure);
+
+      await expect(store.deleteSession(session.id)).rejects.toBe(failure);
+      expect(prisma.session.deleteMany).toHaveBeenCalledExactlyOnceWith({
+        where: { id: session.id },
+      });
+    });
+
+    it('propagates batch-cleanup errors without treating active sessions as expired', async () => {
+      const cutoff = new Date('2026-11-15T03:00:00.000Z');
+      const failure = new Error('Session cleanup failed');
+      prisma.$executeRaw.mockRejectedValueOnce(failure);
+
+      await expect(store.deleteExpiredSessionsBatch(cutoff, 200)).rejects.toBe(failure);
+      const [sql, date, batchSize] = prisma.$executeRaw.mock.calls[0] as unknown as [
+        TemplateStringsArray,
+        Date,
+        number,
+      ];
+      expect(sql.join('?')).toContain('"expires_at" <= ?');
+      expect(sql.join('?')).toContain('ORDER BY "expires_at", "id"');
+      expect(sql.join('?')).toContain('LIMIT ?');
+      expect(sql.join('?')).toContain('FOR UPDATE SKIP LOCKED');
+      expect(date).toBe(cutoff);
+      expect(batchSize).toBe(200);
+      expect(prisma.session.deleteMany).not.toHaveBeenCalled();
+    });
+  });
 });
