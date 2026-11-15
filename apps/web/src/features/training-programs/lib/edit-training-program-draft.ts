@@ -1,11 +1,6 @@
 import type { operations } from '@gym/api-client';
 
-import {
-  createTrainingProgramFormSchema,
-  type CreateTrainingProgramValues,
-} from './create-training-program';
-
-export const editTrainingProgramDraftSchema = createTrainingProgramFormSchema;
+import type { CreateTrainingProgramValues } from './create-training-program';
 
 export type EditTrainingProgramDraftValues = CreateTrainingProgramValues;
 
