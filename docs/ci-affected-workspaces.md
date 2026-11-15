@@ -6,18 +6,34 @@ complete Git history (`actions/checkout` with `fetch-depth: 0`).
 
 ## Pull request routing
 
-| Changed files                                          | Quality checks                       | API E2E / coverage / Docker | Vulnerability audit                    |
-| ------------------------------------------------------ | ------------------------------------ | --------------------------- | -------------------------------------- |
-| `apps/api/**`                                          | API                                  | Yes                         | If the API package manifest changed    |
-| `apps/web/**`                                          | Web                                  | No                          | If the Web package manifest changed    |
-| `apps/mobile/**`                                       | Mobile                               | No                          | If the Mobile package manifest changed |
-| `packages/api-client/**`                               | API client + Web + Mobile            | No                          | If the client package manifest changed |
-| `apps/api/openapi/**`                                  | API + client + Web + Mobile          | Yes                         | No                                     |
-| `docs/**`, root `*.md`                                 | Prettier formatting + required gates | No                          | No                                     |
-| Root lockfile, root config, CI, infra or unknown files | All workspaces                       | Yes                         | Yes                                    |
+| Changed files                                                  | Quality checks                       | API E2E / coverage / Docker | Vulnerability audit                    |
+| -------------------------------------------------------------- | ------------------------------------ | --------------------------- | -------------------------------------- |
+| `apps/api/**`                                                  | API                                  | Yes                         | If the API package manifest changed    |
+| `apps/web/**`                                                  | Web                                  | No                          | If the Web package manifest changed    |
+| `apps/mobile/**`                                               | Mobile                               | No                          | If the Mobile package manifest changed |
+| `packages/api-client/**`                                       | API client + Web + Mobile            | No                          | If the client package manifest changed |
+| `apps/api/openapi/**`                                          | API + client + Web + Mobile          | Yes                         | No                                     |
+| `docs/**`, root `*.md`                                         | Prettier formatting + required gates | No                          | No                                     |
+| Known app/client `README.md`, `apps/api/test/README.md`        | Prettier formatting + required gates | No                          | No                                     |
+| `infra/**/*.md`                                                | Prettier formatting + required gates | No                          | No                                     |
+| Root lockfile, root config, CI, non-doc infra or unknown files | All workspaces                       | Yes                         | Yes                                    |
 
 For mixed PRs, all relevant workspaces run. Unknown paths, empty diffs, missing
 commits and cross-cutting files must never silently bypass API checks.
+
+Only **known documentation locations** are exempt: top-level `README.md` in
+`apps/api`, `apps/web`, `apps/mobile` and `packages/api-client`, the API test
+`README.md`, and Markdown files under `infra/` (including Docker runbooks).
+Markdown files nested in application source directories still trigger that
+app's checks; Markdown in unrecognized packages forces full CI. Changing an actual
+`infra/` Compose file, init script or environment template, even alongside a
+README, still forces full CI. Docs-only PRs retain the always-required Quality,
+API E2E and Web integration **result gates**, which validate intentional skips.
+
+The selector script itself (`scripts/ci-select.mjs`) and its tests remain
+cross-cutting changes: a PR modifying the classifier runs the full CI matrix,
+including the Redis upgrade rehearsal. Every push to `main` also still runs
+all checks, even if it only changes documentation.
 
 The root `pnpm-lock.yaml` is deliberately a global invalidation boundary:
 dependency changes may affect any workspace, so full CI runs.

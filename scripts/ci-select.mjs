@@ -54,8 +54,21 @@ export function classifyChangedPaths(paths, { forceFull = false } = {}) {
       return allScopes();
     }
 
-    // Root Markdown and docs never alter application/runtime behavior.
-    if (path.startsWith('docs/') || /^[^/]+\.md$/.test(path)) {
+    // Documentation-only changes do not alter app/runtime behavior.
+    // Keep this narrow: Markdown outside these known documentation locations
+    // (including unknown packages, tooling and GitHub config) fails closed.
+    if (
+      path.startsWith('docs/') ||
+      /^[^/]+\.md$/.test(path) ||
+      /^infra\/(?:[^/]+\/)*[^/]+\.md$/.test(path) ||
+      [
+        'apps/api/README.md',
+        'apps/api/test/README.md',
+        'apps/web/README.md',
+        'apps/mobile/README.md',
+        'packages/api-client/README.md',
+      ].includes(path)
+    ) {
       continue;
     }
 
