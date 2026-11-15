@@ -1,29 +1,20 @@
-import { useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { useAuth } from '@/features/auth/model/auth-context';
+import { useAccountQuery } from '@/features/profile/model/account-query';
 import { palette } from '@/shared/config/theme';
 
 export function ProfileScreen() {
-  const { account, refreshProfile, signOut } = useAuth();
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { account, signOut } = useAuth();
+  const { data, isFetching, isError, error, refetch } = useAccountQuery();
+
   if (!account) return null;
 
+  const currentAccount = data ?? account;
   const name =
-    account.profile?.displayName ||
-    [account.profile?.firstName, account.profile?.lastName].filter(Boolean).join(' ') ||
+    currentAccount.profile?.displayName ||
+    [currentAccount.profile?.firstName, currentAccount.profile?.lastName].filter(Boolean).join(' ') ||
     'Мій профіль';
-
-  async function refresh() {
-    setBusy(true);
-    setError(null);
-    try {
-      setError(await refreshProfile());
-    } finally {
-      setBusy(false);
-    }
-  }
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
@@ -31,38 +22,38 @@ export function ProfileScreen() {
       <Text style={styles.subheading}>Дані з Gym API</Text>
       <View style={styles.card}>
         <Text style={styles.label}>Електронна пошта</Text>
-        <Text style={styles.value}>{account.email}</Text>
+        <Text style={styles.value}>{currentAccount.email}</Text>
         <Text style={styles.label}>Роль</Text>
-        <Text style={styles.value}>{account.role}</Text>
+        <Text style={styles.value}>{currentAccount.role}</Text>
         <Text style={styles.label}>Пошта</Text>
         <Text style={styles.value}>
-          {account.emailVerified ? 'Підтверджена' : 'Не підтверджена'}
+          {currentAccount.emailVerified ? 'Підтверджена' : 'Не підтверджена'}
         </Text>
-        {account.profile?.height != null ? (
+        {currentAccount.profile?.height != null ? (
           <>
             <Text style={styles.label}>Зріст</Text>
-            <Text style={styles.value}>{account.profile.height} см</Text>
+            <Text style={styles.value}>{currentAccount.profile.height} см</Text>
           </>
         ) : null}
-        {account.profile?.weight != null ? (
+        {currentAccount.profile?.weight != null ? (
           <>
             <Text style={styles.label}>Вага</Text>
-            <Text style={styles.value}>{account.profile.weight} кг</Text>
+            <Text style={styles.value}>{currentAccount.profile.weight} кг</Text>
           </>
         ) : null}
       </View>
-      {error ? (
+      {isError ? (
         <Text accessibilityRole="alert" style={styles.error}>
-          {error}
+          {error.message}
         </Text>
       ) : null}
       <Pressable
         accessibilityRole="button"
-        disabled={busy}
-        onPress={() => void refresh()}
+        disabled={isFetching}
+        onPress={() => void refetch()}
         style={styles.button}
       >
-        {busy ? (
+        {isFetching ? (
           <ActivityIndicator color={palette.surface} />
         ) : (
           <Text style={styles.buttonText}>Оновити профіль</Text>

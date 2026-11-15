@@ -6,6 +6,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { AuthProvider, useAuth } from '@/features/auth/model/auth-context';
 import { GluestackUIProvider } from '@/shared/ui/gluestack/gluestack-ui-provider';
+import { MobileQueryProvider } from '@/shared/api/query-provider';
 
 function Navigation() {
   const { account } = useAuth();
@@ -28,9 +29,11 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <GluestackUIProvider mode="system">
-        <AuthProvider>
-          <Navigation />
-        </AuthProvider>
+        <MobileQueryProvider>
+          <AuthProvider>
+            <Navigation />
+          </AuthProvider>
+        </MobileQueryProvider>
       </GluestackUIProvider>
     </GestureHandlerRootView>
   );
