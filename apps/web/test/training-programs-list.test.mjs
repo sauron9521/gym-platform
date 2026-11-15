@@ -124,24 +124,40 @@ test('trainer journal uses TanStack Query and preserves the owner-scoped API', a
   assert.doesNotMatch(trainer + request, /localStorage|sessionStorage|dangerouslySetInnerHTML/);
 });
 
-test('athlete journal uses assignment summary view, not the trainer program library', async () => {
+test('athlete journal uses a privacy-safe TanStack Query assignment summary', async () => {
   const athlete = await readFile(
     new URL('../src/features/training-programs/ui/athlete-programs-list.tsx', import.meta.url),
+    'utf8',
+  );
+  const api = await readFile(
+    new URL(
+      '../src/features/training-programs/api/athlete-assignments-list-query.ts',
+      import.meta.url,
+    ),
     'utf8',
   );
   const dashboard = await readFile(
     new URL('../src/widgets/dashboard/ui/dashboard-screen.tsx', import.meta.url),
     'utf8',
   );
-  assert.match(athlete, /GET\('\/training-programs\/assignments'/);
-  assert.match(athlete, /view: 'summary'/);
-  assert.match(athlete, /status === 'ALL'/);
+
+  assert.match(athlete, /useQuery\(athleteAssignmentsListQueryOptions\(status, page\)\)/);
+  assert.match(athlete, /query.refetch\(\)/);
   assert.match(athlete, /assignment.version.title/);
-  assert.match(athlete, /response.status === 401/);
+  assert.match(athlete, /queryClient.clear\(\)/);
   assert.match(athlete, /router.replace\('\/login'\)/);
-  assert.match(athlete, /active = false/);
-  assert.doesNotMatch(athlete, /GET\('\/training-programs'/);
-  assert.doesNotMatch(athlete, /assignedBy.email|athlete.email/);
+  assert.match(athlete, /if \(unauthenticated\) return null/);
+  assert.doesNotMatch(athlete, /localStorage|sessionStorage|dangerouslySetInnerHTML/);
+
+  assert.match(api, /GET\('\/training-programs\/assignments'/);
+  assert.match(api, /view: 'summary'/);
+  assert.match(api, /status === 'ALL'/);
+  assert.match(api, /limit: PAGE_SIZE/);
+  assert.match(api, /data.meta.totalPages/);
+  assert.match(api, /signal,/);
+  assert.match(api, /retry: false/);
+  assert.doesNotMatch(api, /GET\('\/training-programs'/);
+  assert.doesNotMatch(athlete + api, /assignedBy.email|athlete.email/);
   assert.ok(dashboard.includes("'/trainer/programs'"));
   assert.ok(dashboard.includes("'/athlete/programs'"));
 });

@@ -1,22 +1,23 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
-import { webApi } from '@/shared/api/client';
+import {
+  athleteAssignmentsListQueryOptions,
+  AthleteAssignmentsListRequestError,
+} from '../api/athlete-assignments-list-query';
 import { Button } from '@/shared/ui/button';
 import {
   ASSIGNMENT_STATUSES,
   formatProgramDate,
   getAssignmentStatusLabel,
   getProgramListError,
-  getProgramPageCount,
   type AssignmentStatusFilter,
   type TrainingAssignmentItem,
 } from '../lib/training-programs-list';
-
-const PAGE_SIZE = 20;
 
 type ListState =
   | { kind: 'loading' }
@@ -25,65 +26,57 @@ type ListState =
 
 export function AthleteProgramsList() {
   const router = useRouter();
+  const queryClient = useQueryClient();
+  const redirecting = useRef(false);
   const [status, setStatus] = useState<AssignmentStatusFilter>('ALL');
   const [page, setPage] = useState(1);
-  const [attempt, setAttempt] = useState(0);
-  const [state, setState] = useState<ListState>({ kind: 'loading' });
+  const query = useQuery(athleteAssignmentsListQueryOptions(status, page));
+  const unauthenticated =
+    query.error instanceof AthleteAssignmentsListRequestError && query.error.status === 401;
 
   useEffect(() => {
-    let active = true;
-    void webApi
-      .GET('/training-programs/assignments', {
-        params: {
-          query: {
-            page,
-            limit: PAGE_SIZE,
-            view: 'summary',
-            ...(status === 'ALL' ? {} : { status }),
-          },
-        },
-      })
-      .then(({ response, data }) => {
-        if (!active) return;
-        if (response.status === 401) {
-          router.replace('/login');
-          return;
-        }
-        if (response.status !== 200 || !data) {
-          setState({ kind: 'error', message: getProgramListError(response.status) });
-          return;
-        }
-        setState({
-          kind: 'ready',
-          assignments: data.data,
-          total: data.meta.total,
-          pages: getProgramPageCount(data.meta.totalPages),
-        });
-      })
-      .catch(() => {
-        if (active) setState({ kind: 'error', message: getProgramListError() });
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [status, page, attempt, router]);
+    if (unauthenticated && !redirecting.current) {
+      redirecting.current = true;
+      queryClient.clear();
+      router.replace('/login');
+    }
+  }, [unauthenticated, queryClient, router]);
 
   function changeStatus(next: AssignmentStatusFilter) {
     setStatus(next);
     setPage(1);
-    setState({ kind: 'loading' });
   }
 
   function changePage(next: number) {
     setPage(next);
-    setState({ kind: 'loading' });
   }
 
   function retry() {
-    setState({ kind: 'loading' });
-    setAttempt((value) => value + 1);
+    void query.refetch();
   }
+
+  let state: ListState;
+  if (query.isPending || unauthenticated) {
+    state = { kind: 'loading' };
+  } else if (query.isError) {
+    state = {
+      kind: 'error',
+      message:
+        query.error instanceof AthleteAssignmentsListRequestError
+          ? query.error.message
+          : getProgramListError(),
+    };
+  } else {
+    state = {
+      kind: 'ready',
+      assignments: query.data.assignments,
+      total: query.data.total,
+      pages: query.data.pages,
+    };
+  }
+
+  // Do not render cached private assignment data after an authentication failure.
+  if (unauthenticated) return null;
 
   return (
     <main className="mx-auto max-w-5xl space-y-7 px-6 py-12">
