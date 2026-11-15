@@ -190,12 +190,7 @@ export function AddProgramExerciseForm({
       {catalog.kind === 'error' && (
         <div role="alert" className="space-y-2">
           <p className="text-sm text-destructive">{catalog.message}</p>
-          <Button
-            type="button"
-            variant="outline"
-            disabled={isSubmitting}
-            onClick={retry}
-          >
+          <Button type="button" variant="outline" disabled={isSubmitting} onClick={retry}>
             Повторити пошук
           </Button>
         </div>
