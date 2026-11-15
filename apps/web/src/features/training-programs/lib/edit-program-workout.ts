@@ -28,10 +28,7 @@ export function buildUpdateProgramWorkoutPayload(
   };
 }
 
-export function getProgramWorkoutMutationError(
-  action: 'edit' | 'delete',
-  status?: number,
-): string {
+export function getProgramWorkoutMutationError(action: 'edit' | 'delete', status?: number): string {
   if (status === 400) return 'Перевірте дані тренувального дня.';
   if (status === 403 || status === 404) {
     return 'Тренувальний день не знайдено або немає доступу.';
