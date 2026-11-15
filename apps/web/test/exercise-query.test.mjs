@@ -54,16 +54,26 @@ test('query keys normalize whitespace so equivalent filters share one cache entr
   );
 });
 
-test('exercise mutations invalidate list cache only after a successful response', async () => {
-  for (const path of [
-    '../src/features/exercises/ui/create-exercise-form.tsx',
-    '../src/features/exercises/ui/edit-exercise-form.tsx',
-    '../src/features/exercises/ui/exercise-details.tsx',
+test('exercise write hooks invalidate the shared list cache only after successful responses', async () => {
+  const mutation = await readFile(
+    new URL('../src/features/exercises/api/exercise-mutations.ts', import.meta.url),
+    'utf8',
+  );
+  assert.match(mutation, /useQueryClient/);
+  assert.match(mutation, /queryClient\.invalidateQueries/);
+  assert.match(mutation, /exerciseQueryKeys\.lists\(\)/);
+  assert.match(mutation, /onSuccess: invalidateLists/);
+  assert.match(mutation, /onSuccess: updateDetails/);
+  assert.match(mutation, /retry: false/);
+
+  for (const [path, hook] of [
+    ['../src/features/exercises/ui/create-exercise-form.tsx', 'useCreateExerciseMutation'],
+    ['../src/features/exercises/ui/edit-exercise-form.tsx', 'useEditExerciseMutation'],
+    ['../src/features/exercises/ui/exercise-details.tsx', 'useArchiveExerciseMutation'],
   ]) {
     const content = await readFile(new URL(path, import.meta.url), 'utf8');
-    assert.match(content, /useQueryClient/);
-    assert.match(content, /queryClient\.invalidateQueries/);
-    assert.match(content, /exerciseQueryKeys\.lists\(\)/);
+    assert.ok(content.includes(hook));
+    assert.doesNotMatch(content, /webApi\.(?:POST|PATCH|DELETE)/);
   }
 });
 
@@ -79,13 +89,20 @@ test('detail keys isolate exercise IDs and taxonomy never aliases a private list
   assert.notDeepEqual(exerciseQueryKeys.taxonomy(), exerciseQueryKeys.lists());
 });
 
-test('successful edits sync detail cache and archive invalidates the detail ID', async () => {
+test('successful edits sync detail cache and archiving evicts its private entry', async () => {
+  const mutations = await readFile(
+    new URL('../src/features/exercises/api/exercise-mutations.ts', import.meta.url),
+    'utf8',
+  );
   const details = await readFile(
     new URL('../src/features/exercises/ui/exercise-details.tsx', import.meta.url),
     'utf8',
   );
-  assert.match(details, /queryClient.setQueryData/);
-  assert.match(details, /exerciseQueryKeys.detail\(id\)/);
-  assert.match(details, /refetchType: 'none'/);
-  assert.match(details, /queryClient.invalidateQueries/);
+  assert.match(mutations, /queryClient\.setQueryData\(queryKey, exercise\)/);
+  assert.match(mutations, /exerciseQueryKeys\.detail\(exercise.id\)/);
+  assert.match(mutations, /queryClient\.removeQueries/);
+  assert.match(mutations, /exerciseQueryKeys\.detail\(id\)/);
+  assert.match(mutations, /refetchType: 'none'/);
+  assert.match(details, /useArchiveExerciseMutation\(id\)/);
+  assert.doesNotMatch(details, /queryClient\.setQueryData/);
 });
