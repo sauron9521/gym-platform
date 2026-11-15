@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, type ChangeEvent } from 'react';
+
 import { Button } from '@/shared/ui/button';
 import { useAvatarMutation } from '../api/avatar-mutations';
 import {
@@ -82,59 +83,59 @@ export function ProfileAvatar({ avatarUrl, displayName, email, onChanged }: Prop
           <p className="text-sm text-muted-foreground">PNG, JPEG або WebP до 2 МіБ.</p>
         </div>
       </div>
-        <div className="space-y-3">
-          <label htmlFor="avatar-file" className="block text-sm font-medium">
-            Обрати фотографію
-          </label>
-          <input
-            id="avatar-file"
-            type="file"
-            accept="image/png,image/jpeg,image/webp"
-            onChange={selectFile}
-            disabled={busy}
-            className="block w-full text-sm"
-          />
-          {file && <p className="text-sm">Обрано: {file.name}</p>}
-          <div className="flex flex-wrap gap-3">
+      <div className="space-y-3">
+        <label htmlFor="avatar-file" className="block text-sm font-medium">
+          Обрати фотографію
+        </label>
+        <input
+          id="avatar-file"
+          type="file"
+          accept="image/png,image/jpeg,image/webp"
+          onChange={selectFile}
+          disabled={busy}
+          className="block w-full text-sm"
+        />
+        {file && <p className="text-sm">Обрано: {file.name}</p>}
+        <div className="flex flex-wrap gap-3">
+          <Button
+            type="button"
+            disabled={!file || busy}
+            onClick={() => void changeAvatar('upload')}
+          >
+            {busy ? 'Обробка…' : 'Завантажити фото'}
+          </Button>
+          {source && !confirmDelete && (
             <Button
               type="button"
-              disabled={!file || busy}
-              onClick={() => void changeAvatar('upload')}
+              variant="outline"
+              disabled={busy}
+              onClick={() => setConfirmDelete(true)}
             >
-              {busy ? 'Обробка…' : 'Завантажити фото'}
+              Видалити фото
             </Button>
-            {source && !confirmDelete && (
+          )}
+          {source && confirmDelete && (
+            <>
+              <Button
+                type="button"
+                variant="destructive"
+                disabled={busy}
+                onClick={() => void changeAvatar('delete')}
+              >
+                Підтвердити видалення
+              </Button>
               <Button
                 type="button"
                 variant="outline"
                 disabled={busy}
-                onClick={() => setConfirmDelete(true)}
+                onClick={() => setConfirmDelete(false)}
               >
-                Видалити фото
+                Скасувати
               </Button>
-            )}
-            {source && confirmDelete && (
-              <>
-                <Button
-                  type="button"
-                  variant="destructive"
-                  disabled={busy}
-                  onClick={() => void changeAvatar('delete')}
-                >
-                  Підтвердити видалення
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  disabled={busy}
-                  onClick={() => setConfirmDelete(false)}
-                >
-                  Скасувати
-                </Button>
-              </>
-            )}
-          </div>
+            </>
+          )}
         </div>
+      </div>
       {(error || mutation.isError) && (
         <p role="alert" className="text-sm text-destructive">
           {error ?? mutation.error?.message}
