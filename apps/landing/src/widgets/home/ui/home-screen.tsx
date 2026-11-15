@@ -4,7 +4,7 @@ import { Button } from '@/shared/ui/button';
 
 const applications = [
   { title: 'Вебзастосунок', description: 'Тренування, вправи та прогрес.', status: 'У розробці' },
-  { title: 'Для тренерів', description: 'Програми та робота зі спортсменами.', status: 'У розробці' },
+  { title: 'Для тренерів', description: 'Програми для спортсменів.', status: 'У розробці' },
   { title: 'Мобільний застосунок', description: 'Тренування зі смартфона.', status: 'У розробці' },
 ] as const;
 
@@ -16,12 +16,8 @@ export function HomeScreen() {
     <div className="min-h-screen bg-background text-foreground">
       <header className="border-b">
         <div className="mx-auto flex max-w-6xl justify-between px-6 py-5">
-          <Link href="/" className="text-lg font-semibold">
-            Gym Platform
-          </Link>
-          <Link href="#platform" className="text-sm text-muted-foreground">
-            Про платформу
-          </Link>
+          <Link href="/" className="text-lg font-semibold">Gym Platform</Link>
+          <Link href="#platform" className="text-sm text-muted-foreground">Про платформу</Link>
         </div>
       </header>
 
