@@ -55,7 +55,10 @@ export function TrainingProgramWorkouts({
   }
 
   function updateVersion(updatedVersion: ProgramVersionWithWorkouts, message: string | null) {
-    queryClient.setQueryData(trainingProgramQueryKeys.version(programId, versionId), updatedVersion);
+    queryClient.setQueryData(
+      trainingProgramQueryKeys.version(programId, versionId),
+      updatedVersion,
+    );
     setNotice(message);
   }
 
