@@ -14,10 +14,26 @@ complete Git history (`actions/checkout` with `fetch-depth: 0`).
 | `packages/api-client/**`                               | API client + Web + Mobile            | No                          | If the client package manifest changed |
 | `apps/api/openapi/**`                                  | API + client + Web + Mobile          | Yes                         | No                                     |
 | `docs/**`, root `*.md`                                 | Prettier formatting + required gates | No                          | No                                     |
-| Root lockfile, root config, CI, infra or unknown files | All workspaces                       | Yes                         | Yes                                    |
+| Known app/client `README.md`, `apps/api/test/README.md` | Prettier formatting + required gates | No                          | No                                     |
+| `infra/**/*.md`                                        | Prettier formatting + required gates | No                          | No                                     |
+| Root lockfile, root config, CI, non-doc infra or unknown files | All workspaces              | Yes                         | Yes                                    |
 
 For mixed PRs, all relevant workspaces run. Unknown paths, empty diffs, missing
 commits and cross-cutting files must never silently bypass API checks.
+
+Only **known documentation locations** are exempt: top-level `README.md` in
+`apps/api`, `apps/web`, `apps/mobile` and `packages/api-client`, the API test
+`README.md`, and Markdown files under `infra/` (including Docker runbooks).
+Other Markdown files nested in application source directories or unrecognized
+packages remain full-scope until intentionally classified. Changing an actual
+`infra/` Compose file, init script or environment template, even alongside a
+README, still forces full CI. Docs-only PRs retain the always-required Quality,
+API E2E and Web integration **result gates**, which validate intentional skips.
+
+The selector script itself (`scripts/ci-select.mjs`) and its tests remain
+cross-cutting changes: a PR modifying the classifier runs the full CI matrix,
+including the Redis upgrade rehearsal. Every push to `main` also still runs
+all checks, even if it only changes documentation.
 
 The root `pnpm-lock.yaml` is deliberately a global invalidation boundary:
 dependency changes may affect any workspace, so full CI runs.
