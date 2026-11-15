@@ -9,9 +9,7 @@ test('one app-level Sonner toaster is mounted within the browser provider', asyn
     'utf8',
   );
   const root = await readFile(new URL('../src/app/layout.tsx', import.meta.url), 'utf8');
-  const manifest = JSON.parse(
-    await readFile(new URL('../package.json', import.meta.url), 'utf8'),
-  );
+  const manifest = JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8'));
 
   assert.equal(manifest.dependencies.sonner, '2.0.8');
   assert.match(provider, /<QueryClientProvider client=\{queryClient\}>/);
