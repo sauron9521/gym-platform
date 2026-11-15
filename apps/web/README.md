@@ -413,9 +413,16 @@ status filter and page number; requests use the generated OpenAPI client and abo
 signals. A 401 clears query state, redirects to /login, and hides private content.
 
 Queries are considered stale immediately, so navigating back to the workout list
-revalidates after existing create and edit routes. On successful login or sign-out,
-the browser query cache is cleared to avoid cross-account data exposure. When moving
-write actions to mutations, invalidate the workout list query keys on successful
-server responses.
+revalidates after existing create and edit routes. The exercise catalog also uses
+TanStack Query: each list key includes search, exercise type, muscle group, equipment
+and page. Search input is debounced by 250 ms; request cancellation prevents stale
+results from replacing newer filters. Successful exercise creation, editing and
+archiving invalidate the exercise-list cache so returning to the catalog reflects
+server changes. Exercise taxonomy and individual details retain their existing
+request handling for now.
+
+On successful login or sign-out, the browser query cache is cleared to avoid
+cross-account data exposure. When moving workout write actions to mutations,
+invalidate the workout list query keys on successful server responses.
 
 Run `pnpm --filter @gym/web test` and `pnpm --filter @gym/web test:e2e`.
