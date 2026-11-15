@@ -89,15 +89,34 @@ test('draft-only typed POST is separate from saved set read-only display', async
   );
   const item = await readFile(new URL(root + 'program-exercise-item.tsx', import.meta.url), 'utf8');
   const form = await readFile(new URL(root + 'add-program-set-form.tsx', import.meta.url), 'utf8');
+  const mutations = await readFile(
+    new URL('../src/features/training-programs/api/program-set-mutations.ts', import.meta.url),
+    'utf8',
+  );
+  const cache = await readFile(
+    new URL(
+      '../src/features/training-programs/api/program-version-mutation-context.ts',
+      import.meta.url,
+    ),
+    'utf8',
+  );
   assert.match(parent, /ProgramExerciseItem/);
   assert.match(parent, /editable=\{editable\}/);
   assert.match(item, /exercise.sets/);
   assert.match(item, /key=\{set.id\}/);
   assert.match(item, /\{editable &&/);
-  assert.match(form, /webApi.POST\(/);
+  assert.match(form, /useCreateProgramSetMutation\(path\)/);
+  assert.match(form, /createMutation.mutateAsync\(buildAddProgramSetPayload\(values\)\)/);
+  assert.match(mutations, /webApi.POST\(/);
+  assert.match(mutations, /response.status !== 201/);
+  assert.match(mutations, /retry: false/);
+  assert.match(cache, /useAuthFailure\(\)/);
+  assert.match(cache, /queryClient.setQueryData\(queryKey, version\)/);
+  assert.match(cache, /refetchType: 'none'/);
+  assert.doesNotMatch(form, /webApi.POST|webApi.PATCH|router.replace/);
   assert.match(form, /zodResolver\(addProgramSetSchema\)/);
-  assert.match(form, /response.status !== \(set \? 200 : 201\)/);
-  for (const source of [parent, item, form]) {
+  assert.match(form, /mutation.isPending/);
+  for (const source of [parent, item, form, mutations, cache]) {
     assert.doesNotMatch(source, /localStorage|sessionStorage|dangerouslySetInnerHTML/);
   }
 });
