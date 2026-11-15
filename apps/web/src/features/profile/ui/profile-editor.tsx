@@ -2,18 +2,19 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 
-import { webApi } from '@/shared/api/client';
+import { useAuthFailure } from '@/shared/api/use-auth-failure';
 import { Button } from '@/shared/ui/button';
+import { useUpdateProfileMutation, ProfileMutationError } from '../api/profile-mutations';
+import { profileQueryOptions, ProfileRequestError } from '../api/profile-query';
 import { ProfileAvatar } from './profile-avatar';
 import {
   buildProfilePatch,
-  getProfileErrorMessage,
   profileSchema,
   toProfileDraft,
-  type Account,
   type ProfileDraft,
 } from '../lib/profile-form';
 
@@ -38,11 +39,25 @@ const emptyProfile: ProfileDraft = {
 };
 
 export function ProfileEditor() {
-  const [account, setAccount] = useState<Account | null>(null);
-  const [loading, setLoading] = useState(true);
+  const query = useQuery(profileQueryOptions());
+  const mutation = useUpdateProfileMutation();
+  const onAuthFailure = useAuthFailure();
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
-  const [unauthenticated, setUnauthenticated] = useState(false);
+  const account = query.data ?? null;
+  const unauthenticated =
+    (query.error instanceof ProfileRequestError && query.error.status === 401) ||
+    (mutation.error instanceof ProfileMutationError && mutation.error.status === 401);
+  const loading = query.isPending || (query.isFetching && !account);
+  const message =
+    error ??
+    (mutation.isError
+      ? mutation.error.message
+      : query.isError
+        ? query.error instanceof ProfileRequestError
+          ? query.error.message
+          : 'Не вдалося завантажити профіль.'
+        : null);
 
   const {
     register,
@@ -56,81 +71,48 @@ export function ProfileEditor() {
     reValidateMode: 'onChange',
   });
 
-  async function loadProfile(): Promise<boolean> {
-    try {
-      const { data, response } = await webApi.GET('/users/me');
-      if (response.status === 401) {
-        setUnauthenticated(true);
-        return false;
-      }
-      if (response.status !== 200 || !data) {
-        setError(getProfileErrorMessage(response.status));
-        return false;
-      }
-      setAccount(data);
-      reset(toProfileDraft(data), { keepDirtyValues: true });
-      setError(null);
-      return true;
-    } catch {
-      setError('Немає з’єднання з API. Спробуйте пізніше.');
-      return false;
-    } finally {
-      setLoading(false);
-    }
-  }
+  const busy = isSubmitting || mutation.isPending;
 
   useEffect(() => {
-    let active = true;
-    void webApi
-      .GET('/users/me')
-      .then(({ data, response }) => {
-        if (!active) return;
-        if (response.status === 401) {
-          setUnauthenticated(true);
-        } else if (response.status !== 200 || !data) {
-          setError(getProfileErrorMessage(response.status));
-        } else {
-          setAccount(data);
-          reset(toProfileDraft(data));
-          setError(null);
-        }
-      })
-      .catch(() => {
-        if (active) setError('Немає з’єднання з API. Спробуйте пізніше.');
-      })
-      .finally(() => {
-        if (active) setLoading(false);
-      });
-    return () => {
-      active = false;
-    };
-  }, [reset]);
+    if (query.data) {
+      // Avatar reloads must not overwrite unsaved form changes.
+      reset(toProfileDraft(query.data), { keepDirtyValues: true });
+    }
+  }, [query.data, reset]);
+
+  useEffect(() => {
+    if (query.error instanceof ProfileRequestError) {
+      onAuthFailure(query.error);
+    }
+  }, [query.error, onAuthFailure]);
+
+  async function loadProfile(): Promise<boolean> {
+    const result = await query.refetch();
+    return result.isSuccess;
+  }
 
   async function submit(values: ProfileDraft) {
-    if (!account) return;
+    if (!account || busy) return;
     const result = buildProfilePatch(values);
     if (!result.data) {
       setError(result.error ?? 'Некоректні дані.');
       return;
     }
+
     setSuccess(false);
     setError(null);
+    mutation.reset();
     try {
-      const { response } = await webApi.PATCH('/users/me', { body: result.data });
-      if (response.status === 401) {
-        setUnauthenticated(true);
+      await mutation.mutateAsync(result.data);
+      const updated = await query.refetch();
+      if (!updated.isSuccess) {
+        setError('Профіль збережено, але перечитати актуальні дані не вдалося.');
         return;
       }
-      if (response.status !== 200) {
-        setError(getProfileErrorMessage(response.status));
-        return;
-      }
-      if (await loadProfile()) {
-        reset(values);
-        setSuccess(true);
-      }
+      reset(toProfileDraft(updated.data));
+      setSuccess(true);
     } catch {
-      setError('Немає з’єднання з API. Спробуйте пізніше.');
+      // Mutation state holds safe status-specific errors and preserves user edits.
     }
   }
 
@@ -147,12 +129,12 @@ export function ProfileEditor() {
           .
         </p>
       )}
-      {error && (
+      {message && !unauthenticated && (
         <p role="alert" className="text-sm text-destructive">
-          {error}
+          {message}
         </p>
       )}
-      {success && !error && (
+      {success && !message && (
         <p role="status" className="text-sm">
           Профіль оновлено.
         </p>
@@ -186,10 +168,16 @@ export function ProfileEditor() {
                   min={key === 'height' ? 50 : key === 'weight' ? 1 : undefined}
                   max={key === 'height' ? 300 : key === 'weight' ? 600 : undefined}
                   maxLength={type === 'text' ? 100 : undefined}
-                  disabled={isSubmitting}
+                  disabled={busy}
                   aria-invalid={Boolean(errors[key])}
                   aria-describedby={errors[key] ? `${key}-error` : undefined}
-                  {...register(key, { onChange: () => setSuccess(false) })}
+                  {...register(key, {
+                    onChange: () => {
+                      setSuccess(false);
+                      setError(null);
+                      mutation.reset();
+                    },
+                  })}
                   className="h-11 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
                 />
                 {errors[key] && (
@@ -200,19 +188,13 @@ export function ProfileEditor() {
               </div>
             ))}
           </div>
-          <Button disabled={isSubmitting || !isDirty} type="submit">
-            {isSubmitting ? 'Зберігаємо…' : 'Зберегти зміни'}
+          <Button disabled={busy || !isDirty} type="submit">
+            {busy ? 'Зберігаємо…' : 'Зберегти зміни'}
           </Button>
         </form>
       )}
       {!loading && !account && !unauthenticated && (
-        <Button
-          variant="outline"
-          onClick={() => {
-            setLoading(true);
-            void loadProfile();
-          }}
-        >
+        <Button variant="outline" onClick={() => void query.refetch()}>
           Спробувати знову
         </Button>
       )}
