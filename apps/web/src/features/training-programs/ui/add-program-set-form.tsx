@@ -153,7 +153,11 @@ export function AddProgramSetForm({
           </p>
         )}
       </div>
-      {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
+      {error && (
+        <p role="alert" className="text-sm text-destructive">
+          {error}
+        </p>
+      )}
       <div className="flex flex-wrap gap-2">
         <Button type="submit" disabled={isSubmitting}>
           {isSubmitting ? 'Додаємо…' : 'Зберегти підхід'}
