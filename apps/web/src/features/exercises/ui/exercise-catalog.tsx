@@ -94,7 +94,7 @@ export function ExerciseCatalog({ role }: { role: 'ATHLETE' | 'TRAINER' | 'ADMIN
           };
 
   // Do not expose cached private results after an authentication failure.
-  if (unauthenticated || redirecting.current) return null;
+  if (unauthenticated) return null;
 
   return (
     <main className="mx-auto max-w-5xl space-y-7 px-6 py-12">
