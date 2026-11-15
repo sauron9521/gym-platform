@@ -113,15 +113,9 @@ export function ProgramWorkoutItem({
               aria-label={`Підтвердження видалення ${workout.title}`}
               className="space-y-3 rounded-md border p-3"
             >
-              <p className="text-sm">
-                Видалити «{workout.title}»? Дію не можна скасувати.
-              </p>
+              <p className="text-sm">Видалити «{workout.title}»? Дію не можна скасувати.</p>
               <div className="flex flex-wrap gap-2">
-                <Button
-                  type="button"
-                  disabled={deleting}
-                  onClick={() => void deleteWorkout()}
-                >
+                <Button type="button" disabled={deleting} onClick={() => void deleteWorkout()}>
                   {deleting ? 'Видаляємо…' : 'Підтвердити видалення'}
                 </Button>
                 <Button
