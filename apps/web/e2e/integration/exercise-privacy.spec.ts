@@ -77,6 +77,27 @@ test('real API: athlete creates and edits a private exercise with persisted taxo
   const updatedName = name + ' updated';
   await editor.getByLabel('Назва', { exact: true }).fill(updatedName);
   await editor.getByLabel('Опис').fill('Updated by real browser E2E');
+
+  // Conflict responses keep the draft intact; PATCH is only retried on submit.
+  await page.route(
+    '**/backend/exercises/' + id,
+    (route) =>
+      route.request().method() === 'PATCH'
+        ? route.fulfill({ status: 409, contentType: 'application/json', body: '{}' })
+        : route.continue(),
+    { times: 1 },
+  );
+  const conflict = page.waitForResponse(
+    (response) => response.url().endsWith('/exercises/' + id) && response.status() === 409,
+  );
+  await editor.getByRole('button', { name: 'Зберегти зміни' }).click();
+  expect((await conflict).status()).toBe(409);
+  await expect(
+    editor.getByText('Вправа вже змінилася. Оновіть дані й спробуйте ще раз.'),
+  ).toBeVisible();
+  await expect(editor.getByLabel('Назва', { exact: true })).toHaveValue(updatedName);
+  await expect(editor.getByLabel('Опис')).toHaveValue('Updated by real browser E2E');
+
   await editor.getByRole('button', { name: 'Зберегти зміни' }).click();
 
   await expect(page.getByRole('heading', { name: updatedName })).toBeVisible();
@@ -153,4 +174,27 @@ test('real API: another athlete and a guest cannot read or mutate private exerci
     await other.close();
     await guest.close();
   }
+});
+
+test('real API: owner archives a custom exercise and it disappears from details and catalog', async ({
+  page,
+}) => {
+  const { id, name } = await createPrivateExercise(page);
+  await page.getByRole('button', { name: 'Архівувати', exact: true }).click();
+  const confirmation = page.getByRole('group', { name: 'Підтвердження архівування' });
+  await expect(confirmation).toBeVisible();
+
+  const archivedResponse = page.waitForResponse(
+    (response) =>
+      response.url().endsWith('/exercises/' + id) &&
+      response.request().method() === 'DELETE',
+  );
+  await confirmation.getByRole('button', { name: 'Так, архівувати' }).click();
+  expect((await archivedResponse).status()).toBe(200);
+  await expect(page).toHaveURL(/\/exercises$/);
+  expect((await page.request.get('/backend/exercises/' + id)).status()).toBe(404);
+
+  await page.getByLabel('Пошук за назвою').fill(name);
+  await expect(page.getByRole('article').filter({ hasText: name })).toHaveCount(0);
+  await expect(page.getByText('Вправ не знайдено')).toBeVisible();
 });
