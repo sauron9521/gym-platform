@@ -16,6 +16,14 @@ test('workout query keys separate filter, pagination and list namespace', () => 
   assert.notDeepEqual(workoutQueryKeys.list('ALL', 1), workoutQueryKeys.list('COMPLETED', 1));
 });
 
+test('workout detail keys isolate distinct workouts from list filters', () => {
+  assert.deepEqual(workoutQueryKeys.details(), ['workouts', 'detail']);
+  assert.deepEqual(workoutQueryKeys.detail('workout-1'), ['workouts', 'detail', 'workout-1']);
+  assert.notDeepEqual(workoutQueryKeys.detail('workout-1'), workoutQueryKeys.detail('workout-2'));
+  assert.notDeepEqual(workoutQueryKeys.detail('workout-1'), workoutQueryKeys.list('ALL', 1));
+});
+
+
 test('query provider is browser-scoped and cache clears on session changes', async () => {
   const provider = await readFile(new URL('../src/app/providers.tsx', import.meta.url), 'utf8');
   const layout = await readFile(new URL('../src/app/layout.tsx', import.meta.url), 'utf8');
