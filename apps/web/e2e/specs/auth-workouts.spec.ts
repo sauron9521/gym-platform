@@ -551,7 +551,11 @@ test('Sonner notifies successful workout edit and start without duplicating form
         body: JSON.stringify({ ...workout, title: 'Оновлений план' }),
       });
     }
-    return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(workout) });
+    return route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(workout),
+    });
   });
   await page.route('**/backend/workouts/' + id + '/start', (route) =>
     route.fulfill({
