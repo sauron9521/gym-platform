@@ -126,7 +126,10 @@ test('program details loads version workouts; creation uses the typed API path',
   assert.match(form, /mutation.mutateAsync\(payload\)/);
   assert.match(form, /mutation.isPending/);
   assert.match(mutations, /webApi.POST\(/);
-  assert.match(mutations, /'\/training-programs\/\{programId\}\/versions\/\{versionId\}\/workouts'/);
+  assert.match(
+    mutations,
+    /'\/training-programs\/\{programId\}\/versions\/\{versionId\}\/workouts'/,
+  );
   assert.match(mutations, /response.status !== 201/);
   assert.match(mutations, /useAuthFailure\(\)/);
   assert.match(mutations, /trainingProgramQueryKeys.version\(programId, versionId\)/);
