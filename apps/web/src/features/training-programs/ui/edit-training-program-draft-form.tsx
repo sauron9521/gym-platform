@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useForm } from 'react-hook-form';
+import { useForm, type FieldErrors } from 'react-hook-form';
 
 import { webApi } from '@/shared/api/client';
 import { Button } from '@/shared/ui/button';
@@ -41,7 +41,12 @@ export function EditTrainingProgramDraftForm({
     setSaved(false);
   }
 
+  function invalid(fields: FieldErrors<EditTrainingProgramDraftValues>) {
+    console.info('DRAFT_E2E_DIAGNOSTIC invalid', Object.keys(fields).join(','));
+  }
+
   async function submit(values: EditTrainingProgramDraftValues) {
+    console.info('DRAFT_E2E_DIAGNOSTIC valid-submit');
     setError(null);
     setSaved(false);
     try {
@@ -78,7 +83,10 @@ export function EditTrainingProgramDraftForm({
         </p>
       </div>
       <form
-        onSubmit={(event) => void form.handleSubmit(submit)(event)}
+        onSubmit={(event) => {
+          console.info('DRAFT_E2E_DIAGNOSTIC native-submit');
+          void form.handleSubmit(submit, invalid)(event);
+        }}
         noValidate
         className="space-y-4"
       >
