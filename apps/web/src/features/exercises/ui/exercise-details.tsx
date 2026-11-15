@@ -54,17 +54,20 @@ export function ExerciseDetails({ id, actor }: { id: string; actor: Authenticate
     void query.refetch();
   }
 
-  const state: DetailsState = query.isPending || unauthenticated
-    ? { kind: 'loading' }
-    : query.isError
-      ? {
-          kind: 'error',
-          message:
-            query.error instanceof ExerciseDetailsRequestError
-              ? query.error.message
-              : getExerciseDetailsErrorMessage(),
-        }
-      : { kind: 'ready', exercise: query.data };
+  let state: DetailsState;
+  if (query.isPending || unauthenticated) {
+    state = { kind: 'loading' };
+  } else if (query.isError) {
+    state = {
+      kind: 'error',
+      message:
+        query.error instanceof ExerciseDetailsRequestError
+          ? query.error.message
+          : getExerciseDetailsErrorMessage(),
+    };
+  } else {
+    state = { kind: 'ready', exercise: query.data };
+  }
 
   async function archive() {
     if (
