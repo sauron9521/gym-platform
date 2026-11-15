@@ -52,20 +52,36 @@ No additional Metro monorepo overrides are needed with modern Expo SDKs.
 
 ## Next steps
 
-Implement SecureStore-backed refresh-token rotation, training programs and workout sessions in small PRs.
+Implement training programs and workout sessions in small PRs.
 
-## Native authentication (first functional slice)
+## Native authentication and refresh-token rotation
 
-- The sign-in screen calls `POST /auth/token` with the shared typed bearer client.
-- Protected routes unlock only after `GET /users/me` successfully verifies the token.
-- Profile shows authenticated user data, supports refresh and sign-out.
-- Sign-out clears tokens locally and best-effort revokes the refresh token via
-  `POST /auth/token/revoke`.
-- Access and refresh tokens remain **in memory only**. This first PR deliberately
-  avoids insecure storage; restarting the app requires another login and there
-  is **no automatic token refresh yet**.
-- A follow-up PR will add `expo-secure-store`, safe refresh rotation,
-  persisted login and native authentication lifecycle tests.
+- On iOS/Android, only the opaque **refresh token** persists in Expo SecureStore
+  (iOS Keychain / encrypted Android Keystore). Access tokens stay in memory.
+- On startup, the app reads the stored token and performs exactly one
+  `POST /auth/token/refresh` rotation. Only a verified `GET /users/me` response
+  unlocks protected navigation; a full-screen loading overlay hides sign-in
+  during the attempt.
+- When an access token approaches expiry, concurrent API requests share one
+  refresh operation. Refreshes are **never automatically retried**: NestJS
+  invalidates the entire token family if a spent token is reused.
+- Rejected refresh tokens (401/403) clear the local session and all private
+  TanStack Query caches. Network/5xx failures do not erase possibly valid
+  stored credentials; they leave protected screens locked until revalidation.
+- Logout clears tokens in memory and query caches immediately, deletes the
+  stored credential, and best-effort revokes it via the API.
+- On Expo Web, the token store is deliberately **memory-only**; no bearer
+  credentials are written to browser storage.
+- If a rotated refresh token cannot be stored, the local session is invalidated
+  and the successor is revoked on a best-effort basis.
+- iOS Keychain data can survive reinstalling the same app; use explicit logout
+  and server revocation where appropriate.
+
+The SDK 58 `expo-secure-store` native config plugin is enabled; Android Auto
+Backup excludes SecureStore data automatically. A compatible development build
+or Expo Go runtime is required on physical devices. JS-bundle CI does not
+exercise actual iOS Keychain or Android Keystore behavior. Use HTTPS for
+non-local API endpoints.
 
 For a physical device, copy `apps/mobile/.env.example` to `.env.local`
 and set `EXPO_PUBLIC_API_URL` to the development computer's reachable LAN IP.
