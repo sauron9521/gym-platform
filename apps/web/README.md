@@ -258,9 +258,20 @@ and draft immutability after publication; the Web shows safe error messages
 for conflicts or access failures. Adding a day updates the visible list
 without requiring a reload.
 
+For editable DRAFTs, trainers can also update or remove an existing workout day
+via the typed same-origin `PATCH/DELETE
+/training-programs/{programId}/versions/{versionId}/workouts/{workoutId}`
+operations. React Hook Form + Zod validates editing, and PATCH sends
+`notes: null` to clear existing notes. Deletion requires an explicit inline
+confirmation; cancellation performs no request. The returned version replaces
+the rendered list after successful mutations, including when days reorder.
+409 conflicts and revoked draft permissions are handled without displaying raw
+server errors. Published or archived versions remain read-only in the Web and
+are rejected by the API even if called directly.
+
 The Web still shows only the **latest version**, not the full version history.
-Editing/removing workout days, adding exercises and sets, publishing versions,
-and assigning programs are separate future features.
+Adding exercises and sets, publishing versions, and assigning programs are
+separate future features.
 
 ## Browser E2E (Playwright + Chromium)
 
