@@ -42,10 +42,21 @@ test('workout detail route enforces session, and client uses typed cookie API', 
   assert.match(page, /verifyServerSession/);
   assert.match(page, /force-dynamic/);
   assert.match(page, /robots: \{ index: false \}/);
-  assert.match(ui, /webApi\s*\.GET\('\/workouts\/\{id\}'/);
-  assert.match(ui, /response.status === 401/);
-  assert.match(ui, /router.replace\('\/login'\)/);
-  assert.match(ui, /if \(!active\) return/);
+  const query = await readFile(
+    new URL('../src/features/workouts/api/workout-details-query.ts', import.meta.url),
+    'utf8',
+  );
+  assert.match(query, /webApi\.GET\('\/workouts\/\{id\}'/);
+  assert.match(query, /signal,/);
+  assert.match(query, /response.status !== 200/);
+  assert.match(query, /WorkoutDetailsRequestError/);
+  assert.match(query, /retry: false/);
+  assert.match(ui, /useQuery\(workoutDetailsQueryOptions\(id\)\)/);
+  assert.match(ui, /useAuthFailure\(\)/);
+  assert.match(ui, /query\.refetch\(\)/);
+  assert.match(ui, /queryClient\.setQueryData\(workoutQueryKeys\.detail\(id\), workout\)/);
+  assert.match(ui, /refetchType: 'none'/);
+  assert.doesNotMatch(ui, /webApi\.GET|setAttempt|setState|if \(!active\) return/);
   assert.match(list, /href=\{\`\/workouts\/\$\{workout.id\}\`\}/);
   assert.doesNotMatch(ui, /localStorage|sessionStorage|document.cookie|dangerouslySetInnerHTML/);
 });
