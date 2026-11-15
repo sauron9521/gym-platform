@@ -13,9 +13,7 @@ test('real API: published program details are read-only and PATCH is rejected', 
   await login(page, trainer.email, 'TRAINER');
 
   await page.goto('/trainer/programs/' + published.id);
-  await expect(
-    page.getByRole('heading', { name: published.title, exact: true }),
-  ).toBeVisible();
+  await expect(page.getByRole('heading', { name: published.title, exact: true })).toBeVisible();
   await expect(page.getByText('Опублікована', { exact: true })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Редагувати чернетку v1' })).toHaveCount(0);
   await expect(page.getByText(/Редагування недоступне/)).toBeVisible();
