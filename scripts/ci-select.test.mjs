@@ -441,7 +441,7 @@ test('Redis 7 to 8 migration check is selected only on relevant pull requests', 
   assert.equal(selectFromGitHubEnvironment({ CI_FORCE_ALL: 'true' }).redis, false);
 
   const workflow = readFileSync(new URL('../.github/workflows/ci.yml', import.meta.url), 'utf8');
-  const quality = workflow.split('  quality:\n')[1]?.split('\n  api-coverage:\n')[0];
+  const quality = workflow.split('  quality-workspaces:\n')[1]?.split('\n  quality:\n')[0];
   assert.ok(quality);
   assert.ok(workflow.includes('redis: $' + '{{ steps.select.outputs.redis }}'));
   assert.match(quality, /Rehearse isolated Redis 7 to Redis 8 AOF and backup recovery/);
