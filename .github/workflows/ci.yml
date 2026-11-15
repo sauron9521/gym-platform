@@ -68,6 +68,33 @@ jobs:
       - name: Validate Windows-safe pre-push argument handling
         run: node --test scripts/pre-push-checks.test.mjs
 
+  mobile-ios-dev-windows:
+    name: Mobile iOS Dev / Windows Metro
+    needs: changes
+    if: needs.changes.outputs.mobile == 'true'
+    runs-on: windows-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install locked dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Bundle iOS in Metro dev mode (HMR and pnpm link resolution)
+        run: node apps/mobile/scripts/smoke-ios-dev.mjs
+
   web-browser-e2e:
     name: Web Browser E2E / Chromium
     needs: changes
@@ -125,7 +152,7 @@ jobs:
 
   quality:
     name: Quality / Node 24
-    needs: [changes, prepush-windows, web-browser-e2e, dependency-security]
+    needs: [changes, prepush-windows, web-browser-e2e, dependency-security, mobile-ios-dev-windows]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -140,6 +167,8 @@ jobs:
           WINDOWS_RESULT: ${{ needs.prepush-windows.result }}
           WEB_E2E_RESULT: ${{ needs.web-browser-e2e.result }}
           SECURITY_RESULT: ${{ needs.dependency-security.result }}
+          MOBILE_REQUIRED: ${{ needs.changes.outputs.mobile }}
+          MOBILE_IOS_DEV_RESULT: ${{ needs.mobile-ios-dev-windows.result }}
         run: |
           set -euo pipefail
           test "$CHANGE_DETECTION_RESULT" = success
@@ -160,6 +189,12 @@ jobs:
           else
             test "$DEPS_REQUIRED" = false
             test "$SECURITY_RESULT" = skipped
+          fi
+          if [ "$MOBILE_REQUIRED" = true ]; then
+            test "$MOBILE_IOS_DEV_RESULT" = success
+          else
+            test "$MOBILE_REQUIRED" = false
+            test "$MOBILE_IOS_DEV_RESULT" = skipped
           fi
 
       - name: Checkout
