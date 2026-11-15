@@ -143,7 +143,11 @@ export function ProgramSetItem({
             >
               <p>Видалити підхід {set.setNumber}? Дію не можна скасувати.</p>
               <div className="flex flex-wrap gap-2">
-                <Button type="button" disabled={deleteMutation.isPending} onClick={() => void deleteSet()}>
+                <Button
+                  type="button"
+                  disabled={deleteMutation.isPending}
+                  onClick={() => void deleteSet()}
+                >
                   {deleteMutation.isPending ? 'Видаляємо…' : 'Підтвердити видалення підходу'}
                 </Button>
                 <Button
