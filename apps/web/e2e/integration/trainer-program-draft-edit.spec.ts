@@ -8,9 +8,6 @@ test('real API: owner edits draft v1 and another trainer cannot read or change i
   browser,
 }) => {
   test.setTimeout(120_000);
-  ownerPage.on('console', (message) => {
-    if (message.text().includes('DRAFT_E2E_DIAGNOSTIC')) console.log(message.text());
-  });
 
   const outsiderContext = await browser.newContext();
   try {
@@ -61,9 +58,6 @@ test('real API: owner edits draft v1 and another trainer cannot read or change i
       { timeout: 15_000 },
     );
     await ownerPage.getByRole('button', { name: 'Зберегти зміни' }).click();
-    await expect(ownerPage.getByTestId('draft-debug-stage')).toHaveText('valid', {
-      timeout: 3000,
-    });
     const updated = await patch;
     expect(updated.status()).toBe(200);
     expect(await updated.json()).toMatchObject({
