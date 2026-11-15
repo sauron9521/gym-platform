@@ -56,7 +56,7 @@ export function SignInScreen() {
     [clearErrors, setError, signIn],
   );
 
-  const submit = handleSubmit(onValidSubmit);
+  const submit = () => void handleSubmit(onValidSubmit)();
 
   return (
     <KeyboardAvoidingView

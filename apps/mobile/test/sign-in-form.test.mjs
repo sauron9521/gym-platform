@@ -64,7 +64,7 @@ test('native TextInputs use RHF Controller with accessible field and server erro
   assert.match(form, /name="email"/);
   assert.match(form, /name="password"/);
   assert.match(form, /onChangeText=\{\(nextValue\) =>/);
-  assert.match(form, /handleSubmit\(onValidSubmit\)/);
+  assert.match(form, /submit = \(\) => void handleSubmit\(onValidSubmit\)\(\)/);
   assert.match(form, /submitLock\.current/);
   assert.match(form, /disabled=\{isSubmitting\}/);
   assert.match(form, /errors\.root\.server\.message/);
