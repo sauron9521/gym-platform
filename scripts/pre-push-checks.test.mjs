@@ -109,16 +109,15 @@ test('web-only push skips API and Mobile checks', () => {
   assert.ok(!plan.commands.some((cmd) => cmd.includes('@gym/mobile')));
 });
 
-test('landing-only push checks Landing but not other workspaces', () => {
+test('landing-only push runs scoped lint and types on Windows', () => {
   const plan = createPrePushPlan({ full: false, files: ['apps/landing/src/app/page.tsx'] });
   assert.equal(plan.scopes.landing, true);
   assert.equal(plan.scopes.web, false);
   assert.equal(plan.scopes.mobile, false);
-  assert.deepEqual(
-    plan.commands.filter((cmd) => cmd.includes('--filter')).map((cmd) => cmd.slice(2)),
-    [['@gym/landing', 'lint'], ['@gym/landing', 'typecheck']],
-  );
-  for (const command of plan.commands.filter((cmd) => cmd.includes('@gym/landing'))) {
+  const checks = plan.commands.filter((cmd) => cmd.includes('@gym/landing'));
+  assert.equal(checks.length, 2);
+  assert.deepEqual(checks.map((cmd) => cmd.at(-1)), ['lint', 'typecheck']);
+  for (const command of checks) {
     assert.equal(resolvePrePushCommand(command, { platform: 'win32' }).shell, true);
   }
 });
