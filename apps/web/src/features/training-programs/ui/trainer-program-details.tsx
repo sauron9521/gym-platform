@@ -115,7 +115,10 @@ export function TrainerProgramDetails({ programId }: { programId: string }) {
           </header>
 
           {latest ? (
-            <section className="space-y-3 rounded-xl border bg-card p-5" aria-label="Остання версія">
+            <section
+              className="space-y-3 rounded-xl border bg-card p-5"
+              aria-label="Остання версія"
+            >
               <div className="flex flex-wrap justify-between gap-3">
                 <h2 className="text-xl font-semibold">
                   v{latest.version} — {latest.title}
@@ -128,7 +131,8 @@ export function TrainerProgramDetails({ programId }: { programId: string }) {
                 {latest.description || 'Опис не вказано'}
               </p>
               <p className="text-sm">
-                Тривалість: {latest.durationWeeks === null ? 'Не вказано' : `${latest.durationWeeks} тиж.`}
+                Тривалість:{' '}
+                {latest.durationWeeks === null ? 'Не вказано' : `${latest.durationWeeks} тиж.`}
               </p>
               {latest.publishedAt && (
                 <p className="text-sm text-muted-foreground">
