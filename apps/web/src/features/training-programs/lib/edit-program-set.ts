@@ -46,10 +46,7 @@ export function defaultEditProgramSetValues(set: SavedProgramSet): EditProgramSe
   };
 }
 
-export function getProgramSetMutationError(
-  action: 'edit' | 'delete',
-  status?: number,
-): string {
+export function getProgramSetMutationError(action: 'edit' | 'delete', status?: number): string {
   if (status === 400) return 'Перевірте значення параметрів підходу.';
   if (status === 403 || status === 404) {
     return 'Немає доступу до підходу або чернетки.';
