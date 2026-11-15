@@ -18,10 +18,7 @@ import {
   type AddProgramSetValues,
   type SavedProgramSet,
 } from '../lib/add-program-set';
-import {
-  buildUpdateProgramSetPayload,
-  defaultEditProgramSetValues,
-} from '../lib/edit-program-set';
+import { buildUpdateProgramSetPayload, defaultEditProgramSetValues } from '../lib/edit-program-set';
 
 const targetFields = [
   { name: 'plannedReps', label: 'Повторення', mode: 'numeric' },
