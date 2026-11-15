@@ -205,9 +205,9 @@ remains authoritative for access controls. HTTP 401 returns to sign-in; HTTP
 
 The list distinguishes PLANNED, IN_PROGRESS, COMPLETED and CANCELLED workouts,
 shows scheduled dates and exercise counts when available, and handles loading,
-empty, error and retry states. At `/workouts/new`, an authenticated athlete
-can choose exercises and planned sets, then persist a workout through `POST
-/workouts`. `/workouts/:id` shows details and supports editing name/notes for
+empty, error and retry states. At `/workouts/new`, an authenticated user with workout permissions
+can choose exercises and planned sets, then persist a workout through
+`POST /workouts`. `/workouts/:id` shows details and supports editing name/notes for
 PLANNED workouts, starting/cancelling/completing a workout, and recording or
 correcting actual set results while it is IN_PROGRESS. These writes go through
 the typed same-origin API; the backend enforces ownership and state transitions.
