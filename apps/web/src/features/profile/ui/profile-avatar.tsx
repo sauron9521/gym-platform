@@ -1,11 +1,9 @@
 'use client';
 
 import { useState, type ChangeEvent } from 'react';
-import Link from 'next/link';
-
 import { Button } from '@/shared/ui/button';
+import { useAvatarMutation } from '../api/avatar-mutations';
 import {
-  avatarErrorMessage,
   getAvatarInitials,
   getAvatarSource,
   validateAvatarFile,
@@ -20,10 +18,10 @@ type Props = {
 
 export function ProfileAvatar({ avatarUrl, displayName, email, onChanged }: Props) {
   const [file, setFile] = useState<File | null>(null);
-  const [busy, setBusy] = useState(false);
+  const mutation = useAvatarMutation();
+  const busy = mutation.isPending;
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
-  const [signedOut, setSignedOut] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const source = getAvatarSource(avatarUrl);
 
@@ -31,6 +29,7 @@ export function ProfileAvatar({ avatarUrl, displayName, email, onChanged }: Prop
     const selected = event.target.files?.[0] ?? null;
     event.currentTarget.value = '';
     setMessage(null);
+    mutation.reset();
     setConfirmDelete(false);
     const validation = selected ? validateAvatarFile(selected) : null;
     setFile(validation ? null : selected);
@@ -39,25 +38,17 @@ export function ProfileAvatar({ avatarUrl, displayName, email, onChanged }: Prop
 
   async function changeAvatar(action: 'upload' | 'delete') {
     if (busy || (action === 'upload' && !file)) return;
-    setBusy(true);
     setError(null);
     setMessage(null);
+    mutation.reset();
     try {
-      const form = new FormData();
-      if (action === 'upload' && file) form.append('file', file);
-      const response = await fetch('/backend/users/me/avatar', {
-        method: action === 'upload' ? 'POST' : 'DELETE',
-        credentials: 'include',
-        body: action === 'upload' ? form : undefined,
-      });
-      if (response.status === 401) {
-        setSignedOut(true);
-        return;
+      if (action === 'upload') {
+        if (!file) return;
+        await mutation.mutateAsync({ action: 'upload', file });
+      } else {
+        await mutation.mutateAsync({ action: 'delete' });
       }
-      if (response.status !== 200) {
-        setError(avatarErrorMessage(response.status));
-        return;
-      }
+
       if (!(await onChanged())) {
         setError('Аватар змінено, але оновити профіль не вдалося.');
         return;
@@ -66,9 +57,7 @@ export function ProfileAvatar({ avatarUrl, displayName, email, onChanged }: Prop
       setConfirmDelete(false);
       setMessage(action === 'upload' ? 'Фото профілю оновлено.' : 'Фото профілю видалено.');
     } catch {
-      setError('Немає з’єднання з API. Спробуйте пізніше.');
-    } finally {
-      setBusy(false);
+      // Preserve the file and confirmation for an explicit retry.
     }
   }
 
@@ -93,14 +82,6 @@ export function ProfileAvatar({ avatarUrl, displayName, email, onChanged }: Prop
           <p className="text-sm text-muted-foreground">PNG, JPEG або WebP до 2 МіБ.</p>
         </div>
       </div>
-      {signedOut ? (
-        <p role="alert">
-          Сесію завершено.{' '}
-          <Link href="/login" className="underline">
-            Увійти повторно
-          </Link>
-        </p>
-      ) : (
         <div className="space-y-3">
           <label htmlFor="avatar-file" className="block text-sm font-medium">
             Обрати фотографію
@@ -154,10 +135,9 @@ export function ProfileAvatar({ avatarUrl, displayName, email, onChanged }: Prop
             )}
           </div>
         </div>
-      )}
-      {error && (
+      {(error || mutation.isError) && (
         <p role="alert" className="text-sm text-destructive">
-          {error}
+          {error ?? mutation.error?.message}
         </p>
       )}
       {message && (
