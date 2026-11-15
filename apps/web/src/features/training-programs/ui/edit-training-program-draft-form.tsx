@@ -1,18 +1,13 @@
 'use client';
 
 import { useState } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
-import { useRouter } from 'next/navigation';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 
-import { webApi } from '@/shared/api/client';
+import { useUpdateTrainingProgramDraftMutation } from '../api/training-program-mutations';
 import { Button } from '@/shared/ui/button';
-import { trainingProgramQueryKeys } from '../lib/training-program-query-keys';
 import { createTrainingProgramFormSchema } from '../lib/create-training-program';
 import {
-  buildUpdateTrainingProgramDraftPayload,
-  getUpdateTrainingProgramDraftError,
   toTrainingProgramDraftValues,
   type EditTrainingProgramDraftValues,
 } from '../lib/edit-training-program-draft';
@@ -21,15 +16,12 @@ import type { TrainingProgramVersionItem } from '../lib/training-programs-list';
 export function EditTrainingProgramDraftForm({
   programId,
   version,
-  onUpdated,
 }: {
   programId: string;
   version: TrainingProgramVersionItem;
-  onUpdated: (version: TrainingProgramVersionItem) => void;
 }) {
-  const router = useRouter();
-  const queryClient = useQueryClient();
-  const [error, setError] = useState<string | null>(null);
+  const mutation = useUpdateTrainingProgramDraftMutation(programId, version.id);
+  const [validationError, setValidationError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const [hasChanged, setHasChanged] = useState(false);
   const form = useForm<EditTrainingProgramDraftValues>({
@@ -39,45 +31,35 @@ export function EditTrainingProgramDraftForm({
     reValidateMode: 'onChange',
   });
   const { errors, isSubmitting } = form.formState;
+  const busy = isSubmitting || mutation.isPending;
+  const error =
+    validationError ??
+    (mutation.isError && mutation.error.status !== 401 ? mutation.error.message : null);
 
   function changed() {
-    setError(null);
+    setValidationError(null);
+    mutation.reset();
     setSaved(false);
     setHasChanged(true);
   }
 
   function invalid() {
     setSaved(false);
-    setError('Перевірте поля форми та виправте помилки.');
+    setValidationError('Перевірте поля форми та виправте помилки.');
   }
 
   async function submit(values: EditTrainingProgramDraftValues) {
-    setError(null);
+    if (mutation.isPending) return;
+    setValidationError(null);
+    mutation.reset();
     setSaved(false);
     try {
-      const { data, response } = await webApi.PATCH(
-        '/training-programs/{programId}/versions/{versionId}',
-        {
-          params: { path: { programId, versionId: version.id } },
-          body: buildUpdateTrainingProgramDraftPayload(values),
-        },
-      );
-      if (response.status === 401) {
-        router.replace('/login');
-        return;
-      }
-      if (response.status !== 200 || !data) {
-        setError(getUpdateTrainingProgramDraftError(response.status));
-        return;
-      }
-
-      await queryClient.invalidateQueries({ queryKey: trainingProgramQueryKeys.lists() });
-      onUpdated(data);
-      form.reset(toTrainingProgramDraftValues(data));
+      const updated = await mutation.mutateAsync(values);
+      form.reset(toTrainingProgramDraftValues(updated));
       setHasChanged(false);
       setSaved(true);
     } catch {
-      setError(getUpdateTrainingProgramDraftError());
+      // Safe mutation errors remain in the hook; 401 clears private state and redirects.
     }
   }
 
@@ -102,7 +84,7 @@ export function EditTrainingProgramDraftForm({
             id="program-draft-title"
             type="text"
             maxLength={120}
-            disabled={isSubmitting}
+            disabled={busy}
             aria-invalid={Boolean(errors.title)}
             {...form.register('title', { onChange: changed })}
             className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
@@ -121,7 +103,7 @@ export function EditTrainingProgramDraftForm({
             id="program-draft-description"
             rows={4}
             maxLength={5000}
-            disabled={isSubmitting}
+            disabled={busy}
             aria-invalid={Boolean(errors.description)}
             {...form.register('description', { onChange: changed })}
             className="w-full rounded-md border border-input bg-background p-3 text-sm"
@@ -142,7 +124,7 @@ export function EditTrainingProgramDraftForm({
             inputMode="numeric"
             maxLength={2}
             placeholder="Наприклад, 8"
-            disabled={isSubmitting}
+            disabled={busy}
             aria-invalid={Boolean(errors.durationWeeks)}
             {...form.register('durationWeeks', { onChange: changed })}
             className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
@@ -166,10 +148,10 @@ export function EditTrainingProgramDraftForm({
         )}
         <Button
           type="button"
-          disabled={!hasChanged || isSubmitting}
+          disabled={!hasChanged || busy}
           onClick={() => void form.handleSubmit(submit, invalid)()}
         >
-          {isSubmitting ? 'Зберігаємо…' : 'Зберегти зміни'}
+          {busy ? 'Зберігаємо…' : 'Зберегти зміни'}
         </Button>
       </form>
     </section>
