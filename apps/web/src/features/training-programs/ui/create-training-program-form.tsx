@@ -65,8 +65,8 @@ export function CreateTrainingProgramForm() {
       <header className="space-y-2">
         <h1 className="text-3xl font-semibold tracking-tight">Створити програму</h1>
         <p className="text-sm text-muted-foreground">
-          Збережіть назву, опис і тривалість. Перша версія створюється як чернетка.
-          Наступним кроком можна буде додати тренування та вправи.
+          Збережіть назву, опис і тривалість. Перша версія створюється як чернетка. Наступним кроком
+          можна буде додати тренування та вправи.
         </p>
       </header>
 
@@ -161,11 +161,7 @@ export function CreateTrainingProgramForm() {
         )}
         <div className="flex flex-wrap items-center gap-3">
           <Button type="submit" disabled={busy}>
-            {created
-              ? 'Чернетку створено'
-              : isSubmitting
-                ? 'Створюємо…'
-                : 'Створити чернетку'}
+            {created ? 'Чернетку створено' : isSubmitting ? 'Створюємо…' : 'Створити чернетку'}
           </Button>
           <Button type="button" variant="outline" asChild>
             <Link href="/trainer/programs">Скасувати</Link>
