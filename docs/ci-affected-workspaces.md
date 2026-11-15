@@ -24,8 +24,8 @@ commits and cross-cutting files must never silently bypass API checks.
 Only **known documentation locations** are exempt: top-level `README.md` in
 `apps/api`, `apps/web`, `apps/mobile` and `packages/api-client`, the API test
 `README.md`, and Markdown files under `infra/` (including Docker runbooks).
-Other Markdown files nested in application source directories or unrecognized
-packages remain full-scope until intentionally classified. Changing an actual
+Markdown files nested in application source directories still trigger that
+app's checks; Markdown in unrecognized packages forces full CI. Changing an actual
 `infra/` Compose file, init script or environment template, even alongside a
 README, still forces full CI. Docs-only PRs retain the always-required Quality,
 API E2E and Web integration **result gates**, which validate intentional skips.
