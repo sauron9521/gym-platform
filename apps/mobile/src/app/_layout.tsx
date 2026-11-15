@@ -27,7 +27,7 @@ function Navigation() {
 export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <GluestackUIProvider mode="light">
+      <GluestackUIProvider mode="system">
         <AuthProvider>
           <Navigation />
         </AuthProvider>
