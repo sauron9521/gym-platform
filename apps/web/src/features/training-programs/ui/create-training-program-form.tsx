@@ -24,7 +24,7 @@ export function CreateTrainingProgramForm() {
   const busy = isSubmitting || mutation.isPending || created;
 
   async function submit(values: CreateTrainingProgramValues) {
-    if (busy) return;
+    if (mutation.isPending || created) return;
     mutation.reset();
     try {
       await mutation.mutateAsync(values);
