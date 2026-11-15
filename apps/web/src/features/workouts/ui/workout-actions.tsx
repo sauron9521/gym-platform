@@ -1,36 +1,29 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 
-import { webApi } from '@/shared/api/client';
 import { Button } from '@/shared/ui/button';
+import { useWorkoutActionMutation } from '../api/workout-mutations';
 import type { WorkoutDetailsData } from '../lib/workout-details';
 import {
   availableWorkoutActions,
   canCompleteWorkout,
-  getWorkoutActionErrorMessage,
   WORKOUT_ACTION_LABELS,
   type WorkoutAction,
 } from '../lib/workout-actions';
 
-type ActionState = { kind: 'idle' } | { kind: 'busy'; action: WorkoutAction };
-
 export function WorkoutActions({
   workout,
-  onUpdated,
   onReload,
 }: {
   workout: WorkoutDetailsData;
-  onUpdated: (workout: WorkoutDetailsData) => void;
   onReload: () => void;
 }) {
-  const router = useRouter();
-  const [state, setState] = useState<ActionState>({ kind: 'idle' });
+  const mutation = useWorkoutActionMutation(workout.id);
+  const [activeAction, setActiveAction] = useState<WorkoutAction | null>(null);
   const [confirmation, setConfirmation] = useState<WorkoutAction | null>(null);
-  const [error, setError] = useState<string | null>(null);
   const actions = availableWorkoutActions(workout);
-  const inProgress = state.kind === 'busy';
+  const inProgress = mutation.isPending;
   const hasPendingSets = workout.exercises.some((exercise) =>
     exercise.sets.some((set) => set.status === 'PENDING'),
   );
@@ -38,37 +31,20 @@ export function WorkoutActions({
   async function execute(action: WorkoutAction) {
     if (inProgress || !actions.includes(action)) return;
     setConfirmation(null);
-    setError(null);
-    setState({ kind: 'busy', action });
-
+    mutation.reset();
+    setActiveAction(action);
     try {
-      const params = { path: { id: workout.id } };
-      const result =
-        action === 'start'
-          ? await webApi.POST('/workouts/{id}/start', { params })
-          : action === 'complete'
-            ? await webApi.POST('/workouts/{id}/complete', { params })
-            : await webApi.POST('/workouts/{id}/cancel', { params });
-
-      if (result.response.status === 401) {
-        router.replace('/login');
-        return;
-      }
-      if (result.response.status !== 200 || !result.data) {
-        setError(getWorkoutActionErrorMessage(result.response.status));
-        return;
-      }
-      onUpdated(result.data);
+      await mutation.mutateAsync(action);
     } catch {
-      setError(getWorkoutActionErrorMessage());
+      // The mutation keeps safe status-derived errors for display.
     } finally {
-      setState({ kind: 'idle' });
+      setActiveAction(null);
     }
   }
 
   function requestAction(action: WorkoutAction) {
     if (inProgress) return;
-    setError(null);
+    mutation.reset();
     if (action === 'start') {
       void execute(action);
     } else {
@@ -97,7 +73,7 @@ export function WorkoutActions({
             disabled={inProgress}
             onClick={() => requestAction(action)}
           >
-            {inProgress && state.action === action ? 'Виконується…' : WORKOUT_ACTION_LABELS[action]}
+            {inProgress && activeAction === action ? 'Виконується…' : WORKOUT_ACTION_LABELS[action]}
           </Button>
         ))}
       </div>
@@ -127,10 +103,10 @@ export function WorkoutActions({
           </div>
         </div>
       )}
-      {error && (
+      {mutation.isError && (
         <div className="space-y-2" role="alert">
-          <p className="text-sm text-destructive">{error}</p>
-          <Button type="button" variant="outline" disabled={inProgress} onClick={onReload}>
+          <p className="text-sm text-destructive">{mutation.error.message}</p>
+          <Button type="button" variant="outline" disabled={inProgress} onClick={() => { mutation.reset(); onReload(); }}>
             Оновити дані
           </Button>
         </div>
