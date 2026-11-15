@@ -16,7 +16,10 @@ import {
   type EditTrainingProgramDraftValues,
 } from '../lib/edit-training-program-draft';
 import { trainingProgramQueryKeys } from '../lib/training-program-query-keys';
-import type { TrainingProgramItem, TrainingProgramVersionItem } from '../lib/training-programs-list';
+import type {
+  TrainingProgramItem,
+  TrainingProgramVersionItem,
+} from '../lib/training-programs-list';
 
 export class TrainingProgramMutationRequestError extends Error {
   constructor(
