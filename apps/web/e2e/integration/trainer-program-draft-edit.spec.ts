@@ -8,6 +8,9 @@ test('real API: owner edits draft v1 and another trainer cannot read or change i
   browser,
 }) => {
   test.setTimeout(120_000);
+  ownerPage.on('console', (message) => {
+    if (message.text().includes('DRAFT_E2E_DIAGNOSTIC')) console.log(message.text());
+  });
 
   const outsiderContext = await browser.newContext();
   try {
