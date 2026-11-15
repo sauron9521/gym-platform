@@ -91,11 +91,7 @@ export function TrainingProgramWorkouts({
       {state.kind === 'error' && (
         <div role="alert" className="space-y-3 rounded-xl border bg-card p-5">
           <p className="text-sm text-destructive">{state.message}</p>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={retry}
-          >
+          <Button type="button" variant="outline" onClick={retry}>
             Спробувати ще раз
           </Button>
         </div>
