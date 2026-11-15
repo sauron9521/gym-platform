@@ -39,19 +39,23 @@ test('draft editor reuses API-aligned create validation', () => {
 
 test('draft PATCH payload trims title and explicitly clears optional values', () => {
   assert.deepEqual(
-    buildUpdateTrainingProgramDraftPayload(editTrainingProgramDraftSchema.parse({
-      title: '  Нова назва  ',
-      description: '   ',
-      durationWeeks: '  ',
-    })),
+    buildUpdateTrainingProgramDraftPayload(
+      editTrainingProgramDraftSchema.parse({
+        title: '  Нова назва  ',
+        description: '   ',
+        durationWeeks: '  ',
+      }),
+    ),
     { title: 'Нова назва', description: null, durationWeeks: null },
   );
   assert.deepEqual(
-    buildUpdateTrainingProgramDraftPayload(editTrainingProgramDraftSchema.parse({
-      title: ' Назва ',
-      description: '  Деталі  ',
-      durationWeeks: '12',
-    })),
+    buildUpdateTrainingProgramDraftPayload(
+      editTrainingProgramDraftSchema.parse({
+        title: ' Назва ',
+        description: '  Деталі  ',
+        durationWeeks: '12',
+      }),
+    ),
     { title: 'Назва', description: 'Деталі', durationWeeks: 12 },
   );
   assert.deepEqual(
@@ -84,8 +88,14 @@ test('trainer detail route verifies its own session and protects invalid IDs', a
 
 test('program detail/editor use typed paths and allow only active draft updates', async () => {
   const root = '../src/features/training-programs/ui/';
-  const details = await readFile(new URL(root + 'trainer-program-details.tsx', import.meta.url), 'utf8');
-  const editor = await readFile(new URL(root + 'edit-training-program-draft-form.tsx', import.meta.url), 'utf8');
+  const details = await readFile(
+    new URL(root + 'trainer-program-details.tsx', import.meta.url),
+    'utf8',
+  );
+  const editor = await readFile(
+    new URL(root + 'edit-training-program-draft-form.tsx', import.meta.url),
+    'utf8',
+  );
   const list = await readFile(new URL(root + 'trainer-programs-list.tsx', import.meta.url), 'utf8');
 
   assert.match(details, /GET\('\/training-programs\/\{programId\}'/);
