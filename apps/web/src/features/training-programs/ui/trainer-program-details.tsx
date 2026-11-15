@@ -17,6 +17,7 @@ import {
 } from '../lib/training-programs-list';
 import { getTrainingProgramDetailsError } from '../lib/edit-training-program-draft';
 import { EditTrainingProgramDraftForm } from './edit-training-program-draft-form';
+import { TrainingProgramWorkouts } from './training-program-workouts';
 
 type DetailsState =
   | { kind: 'loading' }
@@ -157,6 +158,16 @@ export function TrainerProgramDetails({ programId }: { programId: string }) {
             <p className="rounded-xl border bg-card p-5 text-sm text-muted-foreground">
               Редагування недоступне: можна змінювати лише активні чернетки.
             </p>
+          )}
+
+          {latest && (
+            <TrainingProgramWorkouts
+              key={latest.id}
+              programId={program.id}
+              versionId={latest.id}
+              durationWeeks={latest.durationWeeks}
+              editable={latest.status === 'DRAFT' && program.status !== 'ARCHIVED'}
+            />
           )}
         </>
       )}

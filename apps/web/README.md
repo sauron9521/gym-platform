@@ -247,9 +247,20 @@ and week-duration consistency. Only a successfully saved version updates the
 display; HTTP 409 prompts a reload, and 401 redirects to login. The page
 verifies its own server session and hides foreign or unavailable programs.
 
-This first details view only shows the **latest version summary**, not the
-complete version history or a visual workout/version builder. Program
-workout composition, publishing, and assignment remain future Web work.
+The latest-version details screen also loads its workout days from the typed
+`GET /training-programs/{programId}/versions/{versionId}` response. Trainers
+can see workout days ordered by week and day (including existing published
+days), and add a day to an editable DRAFT using React Hook Form + Zod and
+`POST /training-programs/{programId}/versions/{versionId}/workouts`.
+Week numbers are 1–52, days 1–7, and the week must not exceed the configured
+program duration. The API enforces unique (week, day) pairs, trainer ownership,
+and draft immutability after publication; the Web shows safe error messages
+for conflicts or access failures. Adding a day updates the visible list
+without requiring a reload.
+
+The Web still shows only the **latest version**, not the full version history.
+Editing/removing workout days, adding exercises and sets, publishing versions,
+and assigning programs are separate future features.
 
 ## Browser E2E (Playwright + Chromium)
 
