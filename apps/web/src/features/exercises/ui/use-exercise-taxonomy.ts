@@ -26,21 +26,24 @@ export function useExerciseTaxonomy() {
     }
   }, [unauthenticated, queryClient, router]);
 
-  const state: ExerciseTaxonomyState = query.isPending || unauthenticated
-    ? { kind: 'loading' }
-    : query.isError
-      ? {
-          kind: 'error',
-          message:
-            query.error instanceof ExerciseTaxonomyRequestError
-              ? query.error.message
-              : getTaxonomyErrorMessage(),
-        }
-      : {
-          kind: 'ready',
-          muscleGroups: query.data.muscleGroups,
-          equipment: query.data.equipment,
-        };
+  let state: ExerciseTaxonomyState;
+  if (query.isPending || unauthenticated) {
+    state = { kind: 'loading' };
+  } else if (query.isError) {
+    state = {
+      kind: 'error',
+      message:
+        query.error instanceof ExerciseTaxonomyRequestError
+          ? query.error.message
+          : getTaxonomyErrorMessage(),
+    };
+  } else {
+    state = {
+      kind: 'ready',
+      muscleGroups: query.data.muscleGroups,
+      equipment: query.data.equipment,
+    };
+  }
 
   function retry() {
     void query.refetch();
