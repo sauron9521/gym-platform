@@ -84,8 +84,8 @@ export function HomeScreen() {
         </section>
       </main>
 
-      <footer className="border-t border-border">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-6 py-7 text-sm text-muted-foreground">
+      <footer className="border-t border-border text-muted-foreground">
+        <div className="mx-auto flex max-w-6xl flex-wrap justify-between gap-3 px-6 py-7 text-sm">
           <span>Gym Platform</span>
           <span>Презентаційний сайт у розробці</span>
         </div>
