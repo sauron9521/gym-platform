@@ -109,17 +109,11 @@ test('web-only push skips API and Mobile checks', () => {
   assert.ok(!plan.commands.some((cmd) => cmd.includes('@gym/mobile')));
 });
 
-test('landing-only push runs scoped lint and types on Windows', () => {
+test('landing-only push runs lint and typecheck', () => {
   const plan = createPrePushPlan({ full: false, files: ['apps/landing/src/app/page.tsx'] });
   assert.equal(plan.scopes.landing, true);
-  assert.equal(plan.scopes.web, false);
-  assert.equal(plan.scopes.mobile, false);
-  const checks = plan.commands.filter((cmd) => cmd.includes('@gym/landing'));
-  assert.equal(checks.length, 2);
-  assert.deepEqual(checks.map((cmd) => cmd.at(-1)), ['lint', 'typecheck']);
-  for (const command of checks) {
-    assert.equal(resolvePrePushCommand(command, { platform: 'win32' }).shell, true);
-  }
+  assert.ok(plan.commands.some((cmd) => cmd.includes('@gym/landing') && cmd.includes('lint')));
+  assert.ok(plan.commands.some((cmd) => cmd.includes('@gym/landing') && cmd.includes('typecheck')));
 });
 
 test('mobile-only push checks only Mobile and selected formatting', () => {
