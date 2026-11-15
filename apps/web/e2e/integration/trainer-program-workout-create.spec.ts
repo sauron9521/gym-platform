@@ -31,7 +31,9 @@ test('real API: trainer creates a workout day, persists it and another trainer i
     await ownerPage.goto('/trainer/programs/' + program.id);
     await expect(ownerPage.getByRole('heading', { name: 'Тренувальні дні' })).toBeVisible();
     await expect(ownerPage.getByText('Тренувальних днів поки немає.')).toBeVisible();
-    await expect(ownerPage.getByRole('heading', { name: 'Додати тренувальний день' })).toBeVisible();
+    await expect(
+      ownerPage.getByRole('heading', { name: 'Додати тренувальний день' }),
+    ).toBeVisible();
 
     // The client rejects weeks beyond the program's declared duration.
     await ownerPage.getByLabel('Тиждень', { exact: true }).fill('3');
@@ -49,8 +51,11 @@ test('real API: trainer creates a workout day, persists it and another trainer i
 
     const savedResponse = ownerPage.waitForResponse(
       (response) =>
-        response.url().includes('/backend/training-programs/' + program.id + '/versions/' + versionId + '/workouts') &&
-        response.request().method() === 'POST',
+        response
+          .url()
+          .includes(
+            '/backend/training-programs/' + program.id + '/versions/' + versionId + '/workouts',
+          ) && response.request().method() === 'POST',
       { timeout: 15_000 },
     );
     await ownerPage.getByRole('button', { name: 'Додати день' }).click();
