@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { trainerAthleteQueryKeys } from '../src/features/trainer-athletes/lib/trainer-athlete-query-keys.ts';
+import {
+  trainerAthleteQueryKeys,
+} from '../src/features/trainer-athletes/lib/trainer-athlete-query-keys.ts';
 
 test('relationship list keys isolate actors, roles, filters and pagination', () => {
   assert.deepEqual(trainerAthleteQueryKeys.all, ['trainer-athletes']);
