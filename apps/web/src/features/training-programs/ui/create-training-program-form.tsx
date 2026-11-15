@@ -88,7 +88,11 @@ export function CreateTrainingProgramForm() {
               className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
             />
             {errors.title && (
-              <p id="training-program-title-error" role="alert" className="text-xs text-destructive">
+              <p
+                id="training-program-title-error"
+                role="alert"
+                className="text-xs text-destructive"
+              >
                 {errors.title.message}
               </p>
             )}
@@ -157,7 +161,11 @@ export function CreateTrainingProgramForm() {
         )}
         <div className="flex flex-wrap items-center gap-3">
           <Button type="submit" disabled={busy}>
-            {created ? 'Чернетку створено' : isSubmitting ? 'Створюємо…' : 'Створити чернетку'}
+            {created
+              ? 'Чернетку створено'
+              : isSubmitting
+                ? 'Створюємо…'
+                : 'Створити чернетку'}
           </Button>
           <Button type="button" variant="outline" asChild>
             <Link href="/trainer/programs">Скасувати</Link>
