@@ -128,9 +128,7 @@ describe('AuthCleanupLockService', () => {
 
   it('closes the dedicated connection even if the unlock query fails', async () => {
     const failure = new Error('Advisory unlock failed');
-    pg.query
-      .mockResolvedValueOnce({ rows: [{ acquired: true }] })
-      .mockRejectedValueOnce(failure);
+    pg.query.mockResolvedValueOnce({ rows: [{ acquired: true }] }).mockRejectedValueOnce(failure);
     const work = vi.fn().mockResolvedValue(undefined);
 
     await expect(lock.runExclusive(work)).rejects.toBe(failure);
