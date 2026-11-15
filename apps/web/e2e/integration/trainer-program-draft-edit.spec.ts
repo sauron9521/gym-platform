@@ -89,7 +89,8 @@ test('real API: owner edits draft v1 and another trainer cannot read or change i
     // Mock only the write endpoint to cover stale draft and expired session
     // errors without spending additional NestJS API rate-limit budget.
     let rejectedPatches = 0;
-    await ownerPage.route('**/backend/training-programs/' + programId + '/versions/' + versionId, (route) => {
+    const draftPatchUrl = '**/backend/training-programs/' + programId + '/versions/' + versionId;
+    await ownerPage.route(draftPatchUrl, (route) => {
       if (route.request().method() !== 'PATCH') return route.continue();
       rejectedPatches += 1;
       return route.fulfill({
