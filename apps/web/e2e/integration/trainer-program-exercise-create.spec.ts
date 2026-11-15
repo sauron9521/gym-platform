@@ -55,7 +55,9 @@ test('real API: trainer adds a catalogue exercise to a draft workout and another
     });
     await expect(form.getByRole('button', { name: 'Додати обрану вправу' })).toBeDisabled();
     await form.getByLabel('Пошук вправи').fill('bench');
-    await expect(form.getByRole('button', { name: 'Обрати вправу ' + exercise!.name })).toBeVisible();
+    await expect(
+      form.getByRole('button', { name: 'Обрати вправу ' + exercise!.name }),
+    ).toBeVisible();
     await form.getByRole('button', { name: 'Обрати вправу ' + exercise!.name }).click();
     await form.getByLabel('Примітки до вправи (необов’язково)').fill('  Контроль руху  ');
 
@@ -68,7 +70,11 @@ test('real API: trainer adds a catalogue exercise to a draft workout and another
     const updated: {
       workouts: Array<{
         id: string;
-        exercises: Array<{ exerciseId: string; exerciseNameSnapshot: string; notes: string | null }>;
+        exercises: Array<{
+          exerciseId: string;
+          exerciseNameSnapshot: string;
+          notes: string | null;
+        }>;
       }>;
     } = await saved.json();
     const exercises = updated.workouts.find((item) => item.id === workoutId)!.exercises;
