@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useQueryClient } from '@tanstack/react-query';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 
@@ -12,6 +13,7 @@ import { loginSchema, type LoginValues } from '../lib/login-schema';
 
 export function SignInForm() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [error, setError] = useState<string | null>(null);
   const {
     register,
@@ -61,6 +63,7 @@ export function SignInForm() {
         return;
       }
 
+      queryClient.clear();
       router.replace('/dashboard');
       router.refresh();
     } catch {
