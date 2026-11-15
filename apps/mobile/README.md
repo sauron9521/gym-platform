@@ -170,3 +170,20 @@ on client-rendered pages. The web provider now applies theme classes in a
 client layout effect, including immediately reading the OS theme on mount and
 subscribing to its changes. This keeps the theme synchronized without rendering
 a script element. Native iOS and Android provider logic is unchanged.
+
+## React Hook Form + Zod 4 (sign-in)
+
+The mobile app uses the same dependency versions as the Next.js web workspace:
+`react-hook-form@7.92.0`, `@hookform/resolvers@7.0.5` and `zod@4.6.7`.
+For React Native `TextInput`, use React Hook Form `Controller` (not DOM-style
+`register`) together with `zodResolver` and a feature-owned Zod schema.
+The sign-in schema lives in `src/features/auth/lib/login-flow.ts` and is also
+used by the imperative auth service so input rules cannot drift.
+
+Login shows **field-level** email/password errors and a separate **server**
+error for HTTP/connection failures. Submitting or pressing the password keyboard
+action validates first; subsequent edits clear stale server errors. Email is
+trimmed but **passwords are never trimmed or persisted**. While the request runs,
+the fields/button are disabled and a synchronous guard prevents duplicate API
+requests. The existing verification-before-navigation and token handling remain
+unchanged. Follow the same pattern for future React Native forms.
