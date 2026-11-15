@@ -42,16 +42,20 @@ export function ProgramExerciseItem({
             .sort((first, second) => first.setNumber - second.setNumber)
             .map((set) => (
               <li key={set.id} className="space-y-1 rounded-md bg-muted p-2 text-sm">
-                <p>Підхід {set.setNumber}: {describeProgramSet(set)}</p>
-                {set.notes && <p className="whitespace-pre-wrap text-muted-foreground">{set.notes}</p>}
+                <p>
+                  Підхід {set.setNumber}: {describeProgramSet(set)}
+                </p>
+                {set.notes && (
+                  <p className="whitespace-pre-wrap text-muted-foreground">{set.notes}</p>
+                )}
               </li>
             ))}
         </ol>
       ) : (
         <p className="text-xs text-muted-foreground">Підходів поки немає.</p>
       )}
-      {editable && (
-        addingSet ? (
+      {editable &&
+        (addingSet ? (
           <AddProgramSetForm
             programId={programId}
             versionId={versionId}
@@ -74,8 +78,7 @@ export function ProgramExerciseItem({
           >
             Додати підхід
           </Button>
-        )
-      )}
+        ))}
     </li>
   );
 }
