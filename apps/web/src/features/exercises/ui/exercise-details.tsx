@@ -1,11 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
+import { useEffect, useRef, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 import { webApi } from '@/shared/api/client';
+import { exerciseDetailsQueryOptions, ExerciseDetailsRequestError } from '../api/exercise-details-query';
 import type { AuthenticatedUser } from '@/shared/api/server-session';
 import { Button } from '@/shared/ui/button';
 import { EditExerciseForm } from './edit-exercise-form';
@@ -26,48 +27,41 @@ type DetailsState =
 export function ExerciseDetails({ id, actor }: { id: string; actor: AuthenticatedUser }) {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const [attempt, setAttempt] = useState(0);
-  const [state, setState] = useState<DetailsState>({ kind: 'loading' });
+  const redirecting = useRef(false);
+  const query = useQuery(exerciseDetailsQueryOptions(id));
   const [editing, setEditing] = useState(false);
   const [archiveConfirmation, setArchiveConfirmation] = useState(false);
   const [archiving, setArchiving] = useState(false);
   const [archiveError, setArchiveError] = useState<string | null>(null);
+  const unauthenticated =
+    query.error instanceof ExerciseDetailsRequestError && query.error.status === 401;
 
   useEffect(() => {
-    let active = true;
-    void webApi
-      .GET('/exercises/{id}', { params: { path: { id } } })
-      .then(({ data, response }) => {
-        if (!active) return;
-        if (response.status === 401) {
-          router.replace('/login');
-          return;
-        }
-        if (response.status !== 200 || !data || data.isArchived) {
-          setState({
-            kind: 'error',
-            message: getExerciseDetailsErrorMessage(data?.isArchived ? 404 : response.status),
-          });
-          return;
-        }
-        setState({ kind: 'ready', exercise: data });
-      })
-      .catch(() => {
-        if (active) setState({ kind: 'error', message: getExerciseDetailsErrorMessage() });
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [id, attempt, router]);
+    if (unauthenticated && !redirecting.current) {
+      redirecting.current = true;
+      queryClient.clear();
+      router.replace('/login');
+    }
+  }, [unauthenticated, queryClient, router]);
 
   function retry() {
     setEditing(false);
     setArchiveConfirmation(false);
     setArchiveError(null);
-    setState({ kind: 'loading' });
-    setAttempt((current) => current + 1);
+    void query.refetch();
   }
+
+  const state: DetailsState = query.isPending || unauthenticated
+    ? { kind: 'loading' }
+    : query.isError
+      ? {
+          kind: 'error',
+          message:
+            query.error instanceof ExerciseDetailsRequestError
+              ? query.error.message
+              : getExerciseDetailsErrorMessage(),
+        }
+      : { kind: 'ready', exercise: query.data };
 
   async function archive() {
     if (
@@ -94,6 +88,10 @@ export function ExerciseDetails({ id, actor }: { id: string; actor: Authenticate
         return;
       }
       await queryClient.invalidateQueries({ queryKey: exerciseQueryKeys.lists() });
+      await queryClient.invalidateQueries({
+        queryKey: exerciseQueryKeys.detail(id),
+        refetchType: 'none',
+      });
       router.replace('/exercises');
       router.refresh();
     } catch {
@@ -199,7 +197,7 @@ export function ExerciseDetails({ id, actor }: { id: string; actor: Authenticate
                 exercise={state.exercise}
                 role={actor.role}
                 onSaved={(exercise) => {
-                  setState({ kind: 'ready', exercise });
+                  queryClient.setQueryData(exerciseQueryKeys.detail(id), exercise);
                   setEditing(false);
                 }}
                 onCancel={() => setEditing(false)}
