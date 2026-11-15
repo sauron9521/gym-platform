@@ -22,7 +22,10 @@ import type {
 } from '../lib/training-programs-list';
 
 export class TrainingProgramMutationRequestError extends Error {
-  constructor(readonly operation: 'create' | 'update', readonly status?: number) {
+  constructor(
+    readonly operation: 'create' | 'update',
+    readonly status?: number,
+  ) {
     super(
       operation === 'create'
         ? getCreateTrainingProgramErrorMessage(status)
