@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
@@ -8,6 +9,7 @@ import { webApi } from '@/shared/api/client';
 import type { AuthenticatedUser } from '@/shared/api/server-session';
 import { Button } from '@/shared/ui/button';
 import { EditExerciseForm } from './edit-exercise-form';
+import { exerciseQueryKeys } from '../lib/exercise-query-keys';
 import { canManageCustomExercise, getExerciseMutationErrorMessage } from '../lib/manage-exercise';
 import {
   getExerciseDetailsErrorMessage,
@@ -23,6 +25,7 @@ type DetailsState =
 
 export function ExerciseDetails({ id, actor }: { id: string; actor: AuthenticatedUser }) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [attempt, setAttempt] = useState(0);
   const [state, setState] = useState<DetailsState>({ kind: 'loading' });
   const [editing, setEditing] = useState(false);
@@ -90,6 +93,7 @@ export function ExerciseDetails({ id, actor }: { id: string; actor: Authenticate
         setArchiveError(getExerciseMutationErrorMessage(response.status));
         return;
       }
+      await queryClient.invalidateQueries({ queryKey: exerciseQueryKeys.lists() });
       router.replace('/exercises');
       router.refresh();
     } catch {
