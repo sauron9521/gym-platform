@@ -1,9 +1,15 @@
+import { useRouter } from 'expo-router';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { palette } from '@/shared/config/theme';
 import { StatusTile } from '@/shared/ui/status-tile';
+import { Box } from '@/shared/ui/gluestack/box';
+import { Button, ButtonText } from '@/shared/ui/gluestack/button';
+import { Text as UiText } from '@/shared/ui/gluestack/text';
 
 export function HomeScreen() {
+  const router = useRouter();
+
   return (
     <ScrollView
       contentContainerStyle={styles.content}
@@ -22,6 +28,16 @@ export function HomeScreen() {
         <StatusTile label="API" detail="NestJS integration" status="Planned" />
         <StatusTile label="Programs" detail="Workouts and exercises" status="Planned" />
       </View>
+
+      <Box className="gap-3 rounded-xl border border-border bg-card p-4">
+        <UiText className="text-lg font-semibold text-foreground">Мобільний інтерфейс</UiText>
+        <UiText className="text-muted-foreground">
+          Базові компоненти gluestack-ui v5 готові для наступних функцій Gym Platform.
+        </UiText>
+        <Button onPress={() => router.push('/profile')} accessibilityLabel="Відкрити профіль">
+          <ButtonText>Відкрити профіль</ButtonText>
+        </Button>
+      </Box>
     </ScrollView>
   );
 }
