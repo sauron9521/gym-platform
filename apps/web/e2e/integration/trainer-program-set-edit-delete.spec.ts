@@ -107,6 +107,24 @@ test('real API: edit and clear set targets, cancel/delete sets, and enforce trai
     await form.getByLabel('Примітки до підходу (необов’язково)').fill('  ');
     await form.getByLabel('Тип підходу').selectOption('DROP_SET');
 
+    // A stale draft response must not discard edits or retry PATCH implicitly.
+    await ownerPage.route(
+      '**' + setsPath + '/' + firstSetId,
+      (route) => route.fulfill({ status: 409, contentType: 'application/json', body: '{}' }),
+      { times: 1 },
+    );
+    const conflictResponse = ownerPage.waitForResponse(
+      (response) =>
+        response.url().includes(setsPath + '/' + firstSetId) && response.status() === 409,
+    );
+    await form.getByRole('button', { name: 'Зберегти зміни' }).click();
+    expect((await conflictResponse).status()).toBe(409);
+    await expect(
+      form.getByText('Чернетка більше не редагується або змінилася. Оновіть сторінку.'),
+    ).toBeVisible();
+    await expect(form.getByLabel('Вага (кг)')).toHaveValue('70.25');
+    await expect(form.getByLabel('Повторення')).toHaveValue('8');
+
     const updatedResponse = ownerPage.waitForResponse(
       (response) =>
         response.url().includes(setsPath + '/' + firstSetId) &&

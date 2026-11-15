@@ -67,15 +67,24 @@ test('draft-only controls persist the full typed order and disable while pending
     new URL(root + 'training-program-workouts.tsx', import.meta.url),
     'utf8',
   );
+  const mutations = await readFile(
+    new URL('../src/features/training-programs/api/program-set-mutations.ts', import.meta.url),
+    'utf8',
+  );
   assert.match(parent, /editable=\{editable && version.status === 'DRAFT'\}/);
-  assert.match(exercise, /webApi.PATCH\(/);
+  assert.match(exercise, /useReorderProgramSetsMutation\(\{/);
+  assert.match(exercise, /reorderMutation.mutateAsync\(payload\)/);
+  assert.match(mutations, /webApi.PATCH\(/);
+  assert.match(mutations, /sets\/reorder'/);
+  assert.match(mutations, /retry: false/);
+  assert.doesNotMatch(exercise, /webApi.PATCH|router.replace/);
   assert.match(exercise, /buildReorderProgramSetsPayload/);
-  assert.match(exercise, /response.status !== 200/);
-  assert.match(exercise, /moveDisabled=\{reordering/);
+  assert.match(mutations, /response.status !== 200/);
+  assert.match(exercise, /moveDisabled=\{reorderMutation.isPending/);
   assert.match(item, /disabled=\{moveDisabled \|\| !canMoveUp\}/);
   assert.match(item, /disabled=\{moveDisabled \|\| !canMoveDown\}/);
   assert.match(item, /\{editable &&/);
-  for (const source of [exercise, item]) {
+  for (const source of [exercise, item, mutations]) {
     assert.doesNotMatch(source, /localStorage|sessionStorage|dangerouslySetInnerHTML/);
   }
 });

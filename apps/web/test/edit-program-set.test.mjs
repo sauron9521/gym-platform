@@ -97,15 +97,35 @@ test('draft-only controls, typed PATCH/DELETE and confirmed deletion', async () 
   );
   const item = await readFile(new URL(root + 'program-set-item.tsx', import.meta.url), 'utf8');
   const form = await readFile(new URL(root + 'add-program-set-form.tsx', import.meta.url), 'utf8');
+  const mutations = await readFile(
+    new URL('../src/features/training-programs/api/program-set-mutations.ts', import.meta.url),
+    'utf8',
+  );
+  const cache = await readFile(
+    new URL(
+      '../src/features/training-programs/api/program-version-mutation-context.ts',
+      import.meta.url,
+    ),
+    'utf8',
+  );
   assert.match(parent, /editable=\{editable\}/);
   assert.match(item, /\{editable &&/);
   assert.match(item, /confirmDelete &&/);
-  assert.match(item, /if \(!confirmDelete \|\| deleting \|\| !editable\) return/);
-  assert.match(item, /webApi.DELETE\(/);
-  assert.match(item, /response.status !== 200/);
-  assert.match(form, /webApi.PATCH\(/);
+  assert.match(item, /if \(!confirmDelete \|\| deleteMutation.isPending \|\| !editable\) return/);
+  assert.match(item, /useDeleteProgramSetMutation\(\{/);
+  assert.match(item, /deleteMutation.mutateAsync\(set.id\)/);
+  assert.match(mutations, /webApi.DELETE\(/);
+  assert.match(mutations, /webApi.PATCH\(/);
+  assert.match(mutations, /onSuccess: updateVersion/);
+  assert.match(mutations, /retry: false/);
+  assert.match(cache, /useAuthFailure\(\)/);
+  assert.doesNotMatch(item + form, /webApi.DELETE|webApi.PATCH|router.replace/);
+  assert.match(mutations, /response.status !== 200/);
+  assert.match(form, /useUpdateProgramSetMutation\(path\)/);
+  assert.match(form, /updateMutation.mutateAsync\(\{/);
+  assert.match(form, /mutation.isPending/);
   assert.match(form, /zodResolver\(addProgramSetSchema\)/);
-  for (const source of [parent, item, form]) {
+  for (const source of [parent, item, form, mutations, cache]) {
     assert.doesNotMatch(source, /localStorage|sessionStorage|dangerouslySetInnerHTML/);
   }
 });
