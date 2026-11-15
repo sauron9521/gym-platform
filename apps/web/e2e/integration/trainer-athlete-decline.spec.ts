@@ -1,5 +1,11 @@
 import { expect, test } from '@playwright/test';
-import { login, promoteTestTrainer, register, relationship, origin } from '../support/real-api-accounts';
+import {
+  login,
+  promoteTestTrainer,
+  register,
+  relationship,
+  origin,
+} from '../support/real-api-accounts';
 
 test('real API: athlete invites trainer, trainer declines and archived contact stays private', async ({
   page: athletePage,
@@ -47,9 +53,7 @@ test('real API: athlete invites trainer, trainer declines and archived contact s
       .getByRole('form', { name: 'Підтвердження дії' })
       .getByRole('button', { name: 'Підтвердити' })
       .click();
-    await expect(
-      trainerPage.getByRole('button', { name: 'Відхилити запрошення' }),
-    ).toHaveCount(0);
+    await expect(trainerPage.getByRole('button', { name: 'Відхилити запрошення' })).toHaveCount(0);
 
     expect(await relationship(athletePage, id)).toMatchObject({
       id,
