@@ -74,6 +74,68 @@ test('athlete can view and update the profile after server-side session verifica
   await expect(page.getByLabel('Вага (кг)')).toHaveValue('82.5');
 });
 
+test('profile update conflict preserves the unsaved draft and only retries on click', async ({
+  page,
+}) => {
+  await signIn(page);
+  await page.goto('/profile');
+  const displayName = page.getByLabel('Відображуване ім’я');
+  await expect(displayName).toBeVisible();
+
+  let conflict = true;
+  let patches = 0;
+  await page.route('**/backend/users/me', (route) => {
+    if (route.request().method() !== 'PATCH') return route.continue();
+    patches += 1;
+    if (conflict) {
+      return route.fulfill({ status: 409, contentType: 'application/json', body: '{}' });
+    }
+    return route.continue();
+  });
+
+  await displayName.fill('Профіль після конфлікту');
+  await page.getByRole('button', { name: 'Зберегти зміни' }).click();
+  await expect(
+    page.getByRole('alert').filter({ hasText: 'Не вдалося виконати запит. Спробуйте пізніше.' }),
+  ).toBeVisible();
+  await expect(displayName).toHaveValue('Профіль після конфлікту');
+  expect(patches).toBe(1);
+
+  conflict = false;
+  await page.getByRole('button', { name: 'Зберегти зміни' }).click();
+  await expect(page.getByRole('status').filter({ hasText: 'Профіль оновлено.' })).toBeVisible();
+  expect(patches).toBe(2);
+});
+
+test('profile query retries an unavailable GET only after user action', async ({ page }) => {
+  await signIn(page);
+  let available = false;
+  await page.route('**/backend/users/me', (route) => {
+    if (route.request().method() !== 'GET' || available) return route.continue();
+    return route.fulfill({ status: 503, contentType: 'application/json', body: '{}' });
+  });
+
+  await page.goto('/profile');
+  await expect(page.getByText('Не вдалося виконати запит. Спробуйте пізніше.')).toBeVisible();
+  const retry = page.getByRole('button', { name: 'Спробувати знову' });
+  await expect(retry).toBeVisible();
+  await expect(page.getByText('Пошта: athlete@example.test')).toHaveCount(0);
+
+  available = true;
+  await retry.click();
+  await expect(page.getByText('Пошта: athlete@example.test')).toBeVisible();
+});
+
+test('profile query 401 clears private data and redirects to sign-in', async ({ page }) => {
+  await signIn(page);
+  await page.route('**/backend/users/me', (route) =>
+    route.fulfill({ status: 401, contentType: 'application/json', body: '{}' }),
+  );
+  await page.goto('/profile');
+  await expect(page).toHaveURL(/\/login$/);
+  await expect(page.getByText('Пошта: athlete@example.test')).toHaveCount(0);
+});
+
 test('workout list loads from the same-origin API and filters by status', async ({ page }) => {
   await signIn(page);
   await page.goto('/workouts');
