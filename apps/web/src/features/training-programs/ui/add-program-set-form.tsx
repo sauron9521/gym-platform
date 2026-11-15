@@ -16,7 +16,13 @@ import {
   programSetTypeLabels,
   programSetTypes,
   type AddProgramSetValues,
+  type SavedProgramSet,
 } from '../lib/add-program-set';
+import {
+  buildUpdateProgramSetPayload,
+  defaultEditProgramSetValues,
+  getProgramSetMutationError,
+} from '../lib/edit-program-set';
 
 const targetFields = [
   { name: 'plannedReps', label: 'Повторення', mode: 'numeric' },
@@ -34,6 +40,7 @@ export function AddProgramSetForm({
   workoutId,
   exerciseId,
   exerciseName,
+  set,
   onAdded,
   onCancel,
 }: {
@@ -42,6 +49,7 @@ export function AddProgramSetForm({
   workoutId: string;
   exerciseId: string;
   exerciseName: string;
+  set?: SavedProgramSet;
   onAdded: (version: ProgramVersionWithWorkouts) => void;
   onCancel: () => void;
 }) {
@@ -49,7 +57,7 @@ export function AddProgramSetForm({
   const [error, setError] = useState<string | null>(null);
   const form = useForm<AddProgramSetValues>({
     resolver: zodResolver(addProgramSetSchema),
-    defaultValues: defaultProgramSetValues,
+    defaultValues: set ? defaultEditProgramSetValues(set) : defaultProgramSetValues,
     mode: 'onBlur',
     reValidateMode: 'onChange',
   });
@@ -59,37 +67,45 @@ export function AddProgramSetForm({
   async function submit(values: AddProgramSetValues) {
     setError(null);
     try {
-      const { response, data } = await webApi.POST(
-        '/training-programs/{programId}/versions/{versionId}/workouts/{workoutId}/exercises/{exerciseId}/sets',
-        {
-          params: { path: { programId, versionId, workoutId, exerciseId } },
-          body: buildAddProgramSetPayload(values),
-        },
-      );
+      const { response, data } = set
+        ? await webApi.PATCH(
+            '/training-programs/{programId}/versions/{versionId}/workouts/{workoutId}/exercises/{exerciseId}/sets/{setId}',
+            {
+              params: { path: { programId, versionId, workoutId, exerciseId, setId: set.id } },
+              body: buildUpdateProgramSetPayload(values),
+            },
+          )
+        : await webApi.POST(
+            '/training-programs/{programId}/versions/{versionId}/workouts/{workoutId}/exercises/{exerciseId}/sets',
+            {
+              params: { path: { programId, versionId, workoutId, exerciseId } },
+              body: buildAddProgramSetPayload(values),
+            },
+          );
       if (response.status === 401) {
         router.replace('/login');
         return;
       }
-      if (response.status !== 201 || !data) {
-        setError(getAddProgramSetError(response.status));
+      if (response.status !== (set ? 200 : 201) || !data) {
+        setError(set ? getProgramSetMutationError('edit', response.status) : getAddProgramSetError(response.status));
         return;
       }
       onAdded(data);
     } catch {
-      setError(getAddProgramSetError());
+      setError(set ? getProgramSetMutationError('edit') : getAddProgramSetError());
     }
   }
 
   return (
     <form
-      aria-label={`Додавання підходу до вправи ${exerciseName}`}
+      aria-label={set ? `Редагування підходу ${set.setNumber} вправи ${exerciseName}` : `Додавання підходу до вправи ${exerciseName}`}
       onSubmit={(event) => void form.handleSubmit(submit)(event)}
       noValidate
       className="space-y-4 rounded-lg border p-4"
     >
-      <h5 className="font-semibold">Додати підхід</h5>
+      <h5 className="font-semibold">{set ? `Редагувати підхід ${set.setNumber}` : 'Додати підхід'}</h5>
       <p className="text-xs text-muted-foreground">
-        Номер підходу визначає сервер. Заповни потрібні цільові параметри.
+        {set ? 'Порожні поля очищають відповідні цілі.' : 'Номер підходу визначає сервер. Заповни потрібні цільові параметри.'}
       </p>
       <div className="space-y-1">
         <label htmlFor={fieldId('type')} className="block text-sm font-medium">
@@ -160,10 +176,10 @@ export function AddProgramSetForm({
       )}
       <div className="flex flex-wrap gap-2">
         <Button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? 'Додаємо…' : 'Зберегти підхід'}
+          {isSubmitting ? 'Зберігаємо…' : set ? 'Зберегти зміни' : 'Зберегти підхід'}
         </Button>
         <Button type="button" variant="outline" onClick={onCancel} disabled={isSubmitting}>
-          Скасувати додавання підходу
+          {set ? 'Скасувати редагування підходу' : 'Скасувати додавання підходу'}
         </Button>
       </div>
     </form>
