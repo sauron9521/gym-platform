@@ -87,15 +87,27 @@ test('set logging uses RHF, Zod and the typed PATCH endpoint, only during active
     new URL('../src/features/workouts/ui/workout-set-form.tsx', import.meta.url),
     'utf8',
   );
+  const mutation = await readFile(
+    new URL('../src/features/workouts/api/workout-set-mutation.ts', import.meta.url),
+    'utf8',
+  );
   const details = await readFile(
     new URL('../src/features/workouts/ui/workout-details.tsx', import.meta.url),
     'utf8',
   );
   assert.match(form, /useForm<WorkoutSetFormValues>/);
   assert.match(form, /zodResolver\(workoutSetFormSchema\)/);
-  assert.match(form, /webApi\.PATCH\('\/workouts\/\{id\}\/sets\/\{setId\}'/);
-  assert.match(form, /response.status === 401/);
+  assert.match(form, /useUpdateWorkoutSetMutation\(workoutId\)/);
+  assert.match(form, /mutation.mutateAsync\(\{/);
+  assert.match(mutation, /webApi.PATCH\('\/workouts\/\{id\}\/sets\/\{setId\}'/);
+  assert.match(mutation, /response.status !== 200/);
+  assert.match(mutation, /useAuthFailure\(\)/);
+  assert.match(mutation, /workoutQueryKeys.detail\(workoutId\)/);
+  assert.match(mutation, /exact: true/);
+  assert.match(mutation, /retry: false/);
   assert.match(form, /disabled=\{busy\}/);
+  assert.doesNotMatch(form, /webApi.PATCH|router.replace|setError/);
+  assert.match(details, /onSaved=\{\(\) => setEditingSetId\(null\)\}/);
   assert.match(details, /state.workout.status === 'IN_PROGRESS'/);
   assert.match(details, /<WorkoutSetForm/);
   assert.doesNotMatch(form, /localStorage|sessionStorage|dangerouslySetInnerHTML/);
