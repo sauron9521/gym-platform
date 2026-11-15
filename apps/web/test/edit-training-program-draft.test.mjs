@@ -101,7 +101,10 @@ test('program detail/editor use typed paths and allow only active draft updates'
   const list = await readFile(new URL(root + 'trainer-programs-list.tsx', import.meta.url), 'utf8');
 
   const query = await readFile(
-    new URL('../src/features/training-programs/api/trainer-program-details-query.ts', import.meta.url),
+    new URL(
+      '../src/features/training-programs/api/trainer-program-details-query.ts',
+      import.meta.url,
+    ),
     'utf8',
   );
   assert.match(details, /useQuery\(trainerProgramDetailsQueryOptions\(programId\)\)/);
