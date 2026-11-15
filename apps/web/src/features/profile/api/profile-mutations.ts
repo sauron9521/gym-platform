@@ -35,14 +35,17 @@ export function useUpdateProfileMutation() {
         throw new ProfileMutationError();
       }
     },
-    onSuccess: () =>
-      queryClient.invalidateQueries({
-        queryKey: profileQueryKeys.me(),
+    onSuccess: async () => {
+      const queryKey = profileQueryKeys.me();
+      await queryClient.cancelQueries({ queryKey, exact: true });
+      await queryClient.invalidateQueries({
+        queryKey,
         exact: true,
         // The editor explicitly refetches after PATCH and resets the form
         // from canonical GET data. Avoid a redundant automatic request.
         refetchType: 'none',
-      }),
+      });
+    },
     onError,
     retry: false,
   });
