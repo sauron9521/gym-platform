@@ -149,6 +149,19 @@ test('trainer programs query redirects on 401 without showing cached program con
   await expect(page.getByRole('region', { name: 'Список тренувальних програм' })).toHaveCount(0);
 });
 
+test('trainer program details query redirects on 401 without exposing private content', async ({
+  page,
+}) => {
+  await signIn(page, 'trainer@example.test');
+  const programId = '00000000-0000-4000-8000-000000000001';
+  await page.route('**/backend/training-programs/' + programId, (route) =>
+    route.fulfill({ status: 401, contentType: 'application/json', body: '{}' }),
+  );
+  await page.goto('/trainer/programs/' + programId);
+  await expect(page).toHaveURL(/\/login$/);
+  await expect(page.getByRole('region', { name: 'Редагування чернетки' })).toHaveCount(0);
+});
+
 test('trainer can access own programs but not athlete-only pages', async ({ page }) => {
   await signIn(page, 'trainer@example.test');
   await page.goto('/trainer/programs');
