@@ -2,13 +2,15 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { test } from 'node:test';
 
+import { createTrainingProgramFormSchema } from '../src/features/training-programs/lib/create-training-program.ts';
 import {
   buildUpdateTrainingProgramDraftPayload,
-  editTrainingProgramDraftSchema,
   getTrainingProgramDetailsError,
   getUpdateTrainingProgramDraftError,
   toTrainingProgramDraftValues,
 } from '../src/features/training-programs/lib/edit-training-program-draft.ts';
+
+const editTrainingProgramDraftSchema = createTrainingProgramFormSchema;
 
 const version = {
   title: 'Тренування для сили',
@@ -102,7 +104,7 @@ test('program detail/editor use typed paths and allow only active draft updates'
   assert.match(details, /latest\?\.status === 'DRAFT' && program.status !== 'ARCHIVED'/);
   assert.match(details, /response.status === 401/);
   assert.match(details, /active = false/);
-  assert.match(editor, /zodResolver\(editTrainingProgramDraftSchema\)/);
+  assert.match(editor, /zodResolver\(createTrainingProgramFormSchema\)/);
   assert.match(editor, /PATCH\(/);
   assert.match(editor, /'\/training-programs\/\{programId\}\/versions\/\{versionId\}'/);
   assert.match(editor, /response.status === 401/);
