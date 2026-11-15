@@ -27,10 +27,10 @@ test('exercise list keys include every filter, the page and the list namespace',
     { equipment: 'barbell' },
     { page: 2 },
   ]) {
-    assert.notDeepEqual(exerciseQueryKeys.list(filters), exerciseQueryKeys.list({
-      ...filters,
-      ...change,
-    }));
+    assert.notDeepEqual(
+      exerciseQueryKeys.list(filters),
+      exerciseQueryKeys.list({ ...filters, ...change }),
+    );
   }
 });
 
