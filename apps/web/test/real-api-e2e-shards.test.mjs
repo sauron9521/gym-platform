@@ -1,10 +1,12 @@
 import assert from 'node:assert/strict';
 import { readdirSync } from 'node:fs';
 import { test } from 'node:test';
+import { fileURLToPath } from 'node:url';
 
 import { parseRealApiShardConfig, selectRealApiSpecs } from '../scripts/real-api-e2e-shards.mjs';
 
-const specs = readdirSync(new URL('../e2e/integration/', import.meta.url), { recursive: true })
+const integrationDir = fileURLToPath(new URL('../e2e/integration/', import.meta.url));
+const specs = readdirSync(integrationDir, { recursive: true })
   .filter((file) => file.endsWith('.spec.ts'))
   .map((file) => file.replaceAll('\\', '/'))
   .sort();
