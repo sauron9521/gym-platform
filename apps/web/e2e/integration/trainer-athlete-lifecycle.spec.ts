@@ -40,7 +40,9 @@ test('real API: trainer invitation, acceptance, termination and privacy', async 
 
     // Query keys must isolate status filters and restore PENDING after visiting ACTIVE.
     await trainerPage.locator('#trainer-athletes-status').selectOption('ACTIVE');
-    await expect(trainerPage.getByRole('heading', { name: 'Підопічних не знайдено' })).toBeVisible();
+    await expect(
+      trainerPage.getByRole('heading', { name: 'Підопічних не знайдено' }),
+    ).toBeVisible();
     await trainerPage.locator('#trainer-athletes-status').selectOption('PENDING');
     await expect(trainerPage.getByRole('button', { name: 'Скасувати запрошення' })).toBeVisible();
     await trainerPage.locator('#trainer-athletes-status').selectOption('ALL');
@@ -82,7 +84,9 @@ test('real API: trainer invitation, acceptance, termination and privacy', async 
     await athletePage.locator('#trainer-athletes-status').selectOption('ACTIVE');
     await expect(athletePage.getByRole('button', { name: 'Завершити співпрацю' })).toBeVisible();
     await athletePage.locator('#trainer-athletes-status').selectOption('PENDING');
-    await expect(athletePage.getByRole('heading', { name: 'Підопічних не знайдено' })).toBeVisible();
+    await expect(
+      athletePage.getByRole('heading', { name: 'Підопічних не знайдено' }),
+    ).toBeVisible();
 
     // Both participants now see the active relationship, but only one
     // participant needs to terminate it.
@@ -96,7 +100,9 @@ test('real API: trainer invitation, acceptance, termination and privacy', async 
 
     // Termination must invalidate both the old ACTIVE and historical status caches.
     await trainerPage.locator('#trainer-athletes-status').selectOption('ACTIVE');
-    await expect(trainerPage.getByRole('heading', { name: 'Підопічних не знайдено' })).toBeVisible();
+    await expect(
+      trainerPage.getByRole('heading', { name: 'Підопічних не знайдено' }),
+    ).toBeVisible();
     await trainerPage.locator('#trainer-athletes-status').selectOption('TERMINATED');
     await expect(trainerPage.getByText('Користувач (контакти приховані)')).toBeVisible();
 
