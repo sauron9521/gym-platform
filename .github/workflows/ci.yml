@@ -617,7 +617,7 @@ jobs:
             node --version
           '
           docker run --rm --entrypoint sh gym-platform-api:migrate-ci -ec '
-            test -x ./node_modules/.bin/prisma
+            test -x ../../node_modules/.bin/prisma
             test -d prisma/migrations
             test "$(id -u)" -ne 0
           '

@@ -17,7 +17,7 @@ let recentLogs = '';
 
 const server = spawn(
   process.execPath,
-  [cli, 'start', '--offline', '--localhost', '--port', String(port), '--clear'],
+  [cli, 'start', '--localhost', '--port', String(port), '--clear'],
   {
     cwd: appDirectory,
     env: {
