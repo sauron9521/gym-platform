@@ -161,3 +161,12 @@ The required `Mobile iOS Dev / Windows Metro` CI job now requests an actual
 `dev=true` iOS JavaScript bundle on a Windows runner. A successful Linux
 production `expo export --platform ios` alone does **not** test Fast Refresh
 HMR or SHA-1 file-map resolution on Windows.
+
+## Expo Web / React 19 theme initialization
+
+The generated gluestack-ui v5 web provider originally rendered an executable
+`<script>` tag inside its React component, which React 19 warns is not executed
+on client-rendered pages. The web provider now applies theme classes in a
+client layout effect, including immediately reading the OS theme on mount and
+subscribing to its changes. This keeps the theme synchronized without rendering
+a script element. Native iOS and Android provider logic is unchanged.
