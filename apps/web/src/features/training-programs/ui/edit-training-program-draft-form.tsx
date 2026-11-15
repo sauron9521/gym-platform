@@ -29,6 +29,7 @@ export function EditTrainingProgramDraftForm({
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const [hasChanged, setHasChanged] = useState(false);
+  const [debugStage, setDebugStage] = useState('initial');
   const form = useForm<EditTrainingProgramDraftValues>({
     resolver: zodResolver(createTrainingProgramFormSchema),
     defaultValues: toTrainingProgramDraftValues(version),
@@ -44,11 +45,13 @@ export function EditTrainingProgramDraftForm({
   }
 
   function invalid() {
+    setDebugStage('invalid');
     setSaved(false);
     setError('Перевірте поля форми та виправте помилки.');
   }
 
   async function submit(values: EditTrainingProgramDraftValues) {
+    setDebugStage('valid');
     setError(null);
     setSaved(false);
     try {
@@ -163,11 +166,15 @@ export function EditTrainingProgramDraftForm({
         <Button
           type="button"
           disabled={!hasChanged || isSubmitting}
-          onClick={() => void form.handleSubmit(submit, invalid)()}
+          onClick={() => {
+            setDebugStage('clicked');
+            void form.handleSubmit(submit, invalid)();
+          }}
         >
           {isSubmitting ? 'Зберігаємо…' : 'Зберегти зміни'}
         </Button>
       </form>
+      <output data-testid="draft-debug-stage">{debugStage}</output>
     </section>
   );
 }
