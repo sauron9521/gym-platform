@@ -106,7 +106,15 @@ export function WorkoutActions({
       {mutation.isError && (
         <div className="space-y-2" role="alert">
           <p className="text-sm text-destructive">{mutation.error.message}</p>
-          <Button type="button" variant="outline" disabled={inProgress} onClick={() => { mutation.reset(); onReload(); }}>
+          <Button
+            type="button"
+            variant="outline"
+            disabled={inProgress}
+            onClick={() => {
+              mutation.reset();
+              onReload();
+            }}
+          >
             Оновити дані
           </Button>
         </div>
