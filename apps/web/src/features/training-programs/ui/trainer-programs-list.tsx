@@ -162,6 +162,11 @@ export function TrainerProgramsList() {
                     Оновлено: {formatProgramDate(program.updatedAt)} · Версій:{' '}
                     {program.versions.length}
                   </p>
+                  <div>
+                    <Button asChild variant="outline" size="sm">
+                      <Link href={`/trainer/programs/${program.id}`}>Деталі програми</Link>
+                    </Button>
+                  </div>
                   {program.versions.length > 0 && (
                     <details className="space-y-3">
                       <summary className="cursor-pointer text-sm font-medium">

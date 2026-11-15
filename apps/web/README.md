@@ -236,8 +236,20 @@ is required (2–120 characters), while description (up to 5000 characters) and
 duration (1–52 weeks) are optional. The API remains authoritative for role
 checks and validation; 401 redirects to login and other errors never expose
 raw server messages. A successful create returns to the owned program list.
-The Web does not yet provide a full visual workout/version builder; advanced
-versioning and program assignment operations are still managed by NestJS API.
+
+Trainers can open `/trainer/programs/[programId]` to see the latest version,
+status, description and duration. For an active DRAFT, React Hook Form + Zod
+validates edits and uses the generated API client for
+`PATCH /training-programs/{programId}/versions/{versionId}`. Empty description
+and duration fields intentionally send `null` to clear saved values. The
+backend enforces ownership, immutable published versions, archive restrictions
+and week-duration consistency. Only a successfully saved version updates the
+display; HTTP 409 prompts a reload, and 401 redirects to login. The page
+verifies its own server session and hides foreign or unavailable programs.
+
+This first details view only shows the **latest version summary**, not the
+complete version history or a visual workout/version builder. Program
+workout composition, publishing, and assignment remain future Web work.
 
 ## Browser E2E (Playwright + Chromium)
 
