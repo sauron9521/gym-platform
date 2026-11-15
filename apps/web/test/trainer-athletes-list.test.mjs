@@ -95,7 +95,7 @@ test('protected trainer page verifies identity and role before showing private d
   assert.match(page, /force-dynamic/);
 });
 
-test('relationships UI uses typed cached filters, pagination, retry and 401 protection', async () => {
+test('relationship UI uses cached filters, retry and 401 protection', async () => {
   const ui = await readFile(
     new URL('../src/features/trainer-athletes/ui/trainer-athletes-list.tsx', import.meta.url),
     'utf8',
@@ -108,7 +108,10 @@ test('relationships UI uses typed cached filters, pagination, retry and 401 prot
     new URL('../src/features/trainer-athletes/api/trainer-athlete-list-query.ts', import.meta.url),
     'utf8',
   );
-  assert.match(ui, /useQuery\(trainerAthleteListQueryOptions\(actorId, actorRole, filter, page\)\)/);
+  assert.match(
+    ui,
+    /useQuery\(trainerAthleteListQueryOptions\(actorId, actorRole, filter, page\)\)/,
+  );
   assert.match(ui, /query.refetch\(\)/);
   assert.match(ui, /queryClient.invalidateQueries/);
   assert.match(ui, /trainerAthleteQueryKeys.lists\(\)/);
