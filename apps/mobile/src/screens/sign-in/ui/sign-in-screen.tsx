@@ -1,7 +1,14 @@
 import { useState } from 'react';
 import {
-  ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView,
-  StyleSheet, Text, TextInput, View,
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
 } from 'react-native';
 
 import { useAuth } from '@/features/auth/model/auth-context';
@@ -45,7 +52,10 @@ export function SignInScreen() {
             maxLength={254}
             editable={!submitting}
             value={email}
-            onChangeText={(value) => { setEmail(value); setError(null); }}
+            onChangeText={(value) => {
+              setEmail(value);
+              setError(null);
+            }}
             placeholder="name@example.com"
             style={styles.input}
           />
@@ -57,19 +67,28 @@ export function SignInScreen() {
             secureTextEntry
             editable={!submitting}
             value={password}
-            onChangeText={(value) => { setPassword(value); setError(null); }}
+            onChangeText={(value) => {
+              setPassword(value);
+              setError(null);
+            }}
             onSubmitEditing={() => void submit()}
             placeholder="Введіть пароль"
             style={styles.input}
           />
-          {error ? <Text accessibilityRole="alert" style={styles.error}>{error}</Text> : null}
+          {error ? (
+            <Text accessibilityRole="alert" style={styles.error}>
+              {error}
+            </Text>
+          ) : null}
           <Pressable
             accessibilityRole="button"
             disabled={submitting}
             onPress={() => void submit()}
             style={[styles.button, submitting && styles.disabled]}
           >
-            {submitting ? <ActivityIndicator color={palette.surface} /> : (
+            {submitting ? (
+              <ActivityIndicator color={palette.surface} />
+            ) : (
               <Text style={styles.buttonText}>Увійти</Text>
             )}
           </Pressable>
@@ -91,13 +110,24 @@ const styles = StyleSheet.create({
   form: { gap: 12, marginTop: 18 },
   label: { color: palette.text, fontSize: 14, fontWeight: '600' },
   input: {
-    backgroundColor: palette.surface, borderWidth: 1, borderColor: palette.border,
-    borderRadius: 12, minHeight: 48, paddingHorizontal: 14, color: palette.text, fontSize: 16,
+    backgroundColor: palette.surface,
+    borderWidth: 1,
+    borderColor: palette.border,
+    borderRadius: 12,
+    minHeight: 48,
+    paddingHorizontal: 14,
+    color: palette.text,
+    fontSize: 16,
   },
   error: { color: '#b91c1c', fontSize: 14 },
   button: {
-    backgroundColor: palette.primary, padding: 14, borderRadius: 12,
-    minHeight: 50, justifyContent: 'center', alignItems: 'center', marginTop: 8,
+    backgroundColor: palette.primary,
+    padding: 14,
+    borderRadius: 12,
+    minHeight: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 8,
   },
   disabled: { opacity: 0.65 },
   buttonText: { color: palette.surface, fontSize: 16, fontWeight: '700' },

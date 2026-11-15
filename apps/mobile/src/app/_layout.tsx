@@ -21,5 +21,9 @@ function Navigation() {
 }
 
 export default function RootLayout() {
-  return <AuthProvider><Navigation /></AuthProvider>;
+  return (
+    <AuthProvider>
+      <Navigation />
+    </AuthProvider>
+  );
 }

@@ -1,5 +1,10 @@
 import {
-  createContext, useCallback, useContext, useMemo, useRef, useState,
+  createContext,
+  useCallback,
+  useContext,
+  useMemo,
+  useRef,
+  useState,
   type PropsWithChildren,
 } from 'react';
 import type { paths } from '@gym/api-client';
@@ -33,53 +38,56 @@ export function AuthProvider({ children }: PropsWithChildren) {
     }
   }, [baseUrl]);
 
-  const signIn = useCallback(async (email: string, password: string): Promise<Result> => {
-    const validation = validateMobileCredentials(email, password);
-    if (validation) return { success: false, message: validation };
-    if (!api) return { success: false, message: 'Налаштуйте EXPO_PUBLIC_API_URL.' };
+  const signIn = useCallback(
+    async (email: string, password: string): Promise<Result> => {
+      const validation = validateMobileCredentials(email, password);
+      if (validation) return { success: false, message: validation };
+      if (!api) return { success: false, message: 'Налаштуйте EXPO_PUBLIC_API_URL.' };
 
-    let issuedRefreshToken: string | null = null;
-    let verified = false;
-    try {
-      const issued = await api.POST('/auth/token', {
-        body: { email: email.trim(), password },
-      });
-      if (issued.response.status !== 200 || !issued.data) {
-        return { success: false, message: getMobileLoginError(issued.response.status) };
-      }
+      let issuedRefreshToken: string | null = null;
+      let verified = false;
+      try {
+        const issued = await api.POST('/auth/token', {
+          body: { email: email.trim(), password },
+        });
+        if (issued.response.status !== 200 || !issued.data) {
+          return { success: false, message: getMobileLoginError(issued.response.status) };
+        }
 
-      tokens.current = {
-        accessToken: issued.data.accessToken,
-        refreshToken: issued.data.refreshToken,
-      };
-      issuedRefreshToken = issued.data.refreshToken;
+        tokens.current = {
+          accessToken: issued.data.accessToken,
+          refreshToken: issued.data.refreshToken,
+        };
+        issuedRefreshToken = issued.data.refreshToken;
 
-      // Token issuance alone must not unlock protected navigation.
-      const me = await api.GET('/users/me');
-      if (me.response.status !== 200 || !me.data) {
-        return { success: false, message: 'Не вдалося підтвердити вхід.' };
-      }
-      setAccount(me.data);
-      verified = true;
-      return { success: true };
-    } catch {
-      return { success: false, message: 'Немає з’єднання з API.' };
-    } finally {
-      if (!verified) {
-        tokens.current = null;
-        setAccount(null);
-        if (issuedRefreshToken) {
-          try {
-            await api.POST('/auth/token/revoke', {
-              body: { refreshToken: issuedRefreshToken },
-            });
-          } catch {
-            // Best effort: no credential is retained locally.
+        // Token issuance alone must not unlock protected navigation.
+        const me = await api.GET('/users/me');
+        if (me.response.status !== 200 || !me.data) {
+          return { success: false, message: 'Не вдалося підтвердити вхід.' };
+        }
+        setAccount(me.data);
+        verified = true;
+        return { success: true };
+      } catch {
+        return { success: false, message: 'Немає з’єднання з API.' };
+      } finally {
+        if (!verified) {
+          tokens.current = null;
+          setAccount(null);
+          if (issuedRefreshToken) {
+            try {
+              await api.POST('/auth/token/revoke', {
+                body: { refreshToken: issuedRefreshToken },
+              });
+            } catch {
+              // Best effort: no credential is retained locally.
+            }
           }
         }
       }
-    }
-  }, [api]);
+    },
+    [api],
+  );
 
   const signOut = useCallback(async () => {
     const refreshToken = tokens.current?.refreshToken;

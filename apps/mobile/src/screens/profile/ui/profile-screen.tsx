@@ -10,7 +10,8 @@ export function ProfileScreen() {
   const [error, setError] = useState<string | null>(null);
   if (!account) return null;
 
-  const name = account.profile?.displayName ||
+  const name =
+    account.profile?.displayName ||
     [account.profile?.firstName, account.profile?.lastName].filter(Boolean).join(' ') ||
     'Мій профіль';
 
@@ -50,14 +51,20 @@ export function ProfileScreen() {
           </>
         ) : null}
       </View>
-      {error ? <Text accessibilityRole="alert" style={styles.error}>{error}</Text> : null}
+      {error ? (
+        <Text accessibilityRole="alert" style={styles.error}>
+          {error}
+        </Text>
+      ) : null}
       <Pressable
         accessibilityRole="button"
         disabled={busy}
         onPress={() => void refresh()}
         style={styles.button}
       >
-        {busy ? <ActivityIndicator color={palette.surface} /> : (
+        {busy ? (
+          <ActivityIndicator color={palette.surface} />
+        ) : (
           <Text style={styles.buttonText}>Оновити профіль</Text>
         )}
       </Pressable>
@@ -74,20 +81,32 @@ const styles = StyleSheet.create({
   heading: { fontSize: 30, fontWeight: '700', color: palette.text },
   subheading: { color: palette.muted, fontSize: 15 },
   card: {
-    backgroundColor: palette.surface, borderColor: palette.border,
-    borderWidth: 1, borderRadius: 16, padding: 22, gap: 10,
+    backgroundColor: palette.surface,
+    borderColor: palette.border,
+    borderWidth: 1,
+    borderRadius: 16,
+    padding: 22,
+    gap: 10,
   },
   label: { color: palette.muted, fontSize: 13 },
   value: { color: palette.text, fontWeight: '600', fontSize: 16, marginBottom: 8 },
   error: { color: '#b91c1c', fontSize: 14 },
   button: {
-    minHeight: 48, borderRadius: 12, backgroundColor: palette.primary,
-    justifyContent: 'center', alignItems: 'center', padding: 12,
+    minHeight: 48,
+    borderRadius: 12,
+    backgroundColor: palette.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 12,
   },
   buttonText: { color: palette.surface, fontWeight: '700', fontSize: 16 },
   secondary: {
-    minHeight: 48, borderRadius: 12, borderColor: palette.border,
-    borderWidth: 1, justifyContent: 'center', alignItems: 'center',
+    minHeight: 48,
+    borderRadius: 12,
+    borderColor: palette.border,
+    borderWidth: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   secondaryText: { color: palette.text, fontWeight: '600', fontSize: 16 },
 });

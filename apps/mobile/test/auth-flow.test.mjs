@@ -3,7 +3,8 @@ import { test } from 'node:test';
 import { readFileSync } from 'node:fs';
 
 import {
-  getMobileLoginError, validateMobileCredentials,
+  getMobileLoginError,
+  validateMobileCredentials,
 } from '../src/features/auth/lib/login-flow.ts';
 
 test('credentials validation rejects malformed emails and whitespace passwords', () => {
@@ -21,7 +22,8 @@ test('auth errors distinguish invalid credentials from throttling', () => {
 test('native token flow guards protected routes and avoids plaintext storage', () => {
   const layout = readFileSync(new URL('../src/app/_layout.tsx', import.meta.url), 'utf8');
   const auth = readFileSync(
-    new URL('../src/features/auth/model/auth-context.tsx', import.meta.url), 'utf8',
+    new URL('../src/features/auth/model/auth-context.tsx', import.meta.url),
+    'utf8',
   );
   assert.match(layout, /Stack\.Protected/);
   assert.match(layout, /guard=\{Boolean\(account\)\}/);
