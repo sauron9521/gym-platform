@@ -73,5 +73,5 @@ test('native TextInputs use RHF Controller with accessible field and server erro
   assert.doesNotMatch(form, /useState\(/);
   assert.doesNotMatch(form, /console\.log|password\.trim\(/);
   assert.match(context, /validateMobileCredentials\(email, password\)/);
-  assert.match(context, /api\.POST\('\/auth\/token'/);
+  assert.match(context, /guestApi\.POST\('\/auth\/token'/);
 });

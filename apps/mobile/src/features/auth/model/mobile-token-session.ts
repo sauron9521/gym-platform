@@ -25,13 +25,25 @@ export class MobileTokenSession {
   private restorePromise: Promise<boolean> | null = null;
   private refreshPromise: Promise<boolean> | null = null;
 
+  private readonly store: RefreshTokenStore;
+  private readonly refreshRequest: Refresh;
+  private readonly revokeRequest: Revoke;
+  private readonly onInvalidated: () => void;
+  private readonly now: () => number;
+
   constructor(
-    private readonly store: RefreshTokenStore,
-    private readonly refreshRequest: Refresh,
-    private readonly revokeRequest: Revoke,
-    private readonly onInvalidated: () => void,
-    private readonly now: () => number = Date.now,
-  ) {}
+    store: RefreshTokenStore,
+    refreshRequest: Refresh,
+    revokeRequest: Revoke,
+    onInvalidated: () => void,
+    now: () => number = Date.now,
+  ) {
+    this.store = store;
+    this.refreshRequest = refreshRequest;
+    this.revokeRequest = revokeRequest;
+    this.onInvalidated = onInvalidated;
+    this.now = now;
+  }
 
   get revision() {
     return this.generation;
