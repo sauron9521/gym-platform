@@ -13,7 +13,9 @@ export function ProfileScreen() {
   const currentAccount = data ?? account;
   const name =
     currentAccount.profile?.displayName ||
-    [currentAccount.profile?.firstName, currentAccount.profile?.lastName].filter(Boolean).join(' ') ||
+    [currentAccount.profile?.firstName, currentAccount.profile?.lastName]
+      .filter(Boolean)
+      .join(' ') ||
     'Мій профіль';
 
   return (

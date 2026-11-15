@@ -29,7 +29,6 @@ export function useAccountQuery() {
 
       return response.data;
     },
-    retry: (failureCount, error) =>
-      !(error instanceof SessionExpiredError) && failureCount < 1,
+    retry: (failureCount, error) => !(error instanceof SessionExpiredError) && failureCount < 1,
   });
 }
