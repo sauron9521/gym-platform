@@ -108,9 +108,8 @@ test('new program page protects trainer role and creation calls the same-origin 
   assert.match(form, /mutation.isError/);
   assert.match(mutations, /POST\('\/training-programs'/);
   assert.match(mutations, /response.status !== 201/);
-  assert.match(mutations, /queryClient.clear\(\)/);
-  assert.match(mutations, /router.replace\('\/login'\)/);
   assert.match(mutations, /trainingProgramQueryKeys.lists\(\)/);
+  assert.match(mutations, /useAuthFailure\(\)/);
   assert.match(mutations, /retry: false/);
   assert.doesNotMatch(form, /webApi.POST|setError|setSubmitting/);
   assert.match(form, /router.push\('\/trainer\/programs'\)/);
