@@ -130,6 +130,18 @@ test('exercise taxonomy query redirects on 401 when creating an exercise', async
   await expect(page).toHaveURL(/\/login$/);
 });
 
+test('athlete assignment query redirects on 401 without exposing private summaries', async ({
+  page,
+}) => {
+  await signIn(page);
+  await page.route('**/backend/training-programs/assignments*', (route) =>
+    route.fulfill({ status: 401, contentType: 'application/json', body: '{}' }),
+  );
+  await page.goto('/athlete/programs');
+  await expect(page).toHaveURL(/\/login$/);
+  await expect(page.getByRole('region', { name: 'Призначені програми' })).toHaveCount(0);
+});
+
 test('athlete cannot view trainer-only programs even with a valid session', async ({ page }) => {
   await signIn(page);
   await page.goto('/trainer/programs');
