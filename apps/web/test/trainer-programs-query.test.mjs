@@ -22,17 +22,31 @@ test('program query keys isolate status filters and pagination', () => {
   );
 });
 
-test('successful trainer program creation and draft edits invalidate all list variants', async () => {
-  for (const path of [
-    '../src/features/training-programs/ui/create-training-program-form.tsx',
-    '../src/features/training-programs/ui/edit-training-program-draft-form.tsx',
-  ]) {
-    const form = await readFile(new URL(path, import.meta.url), 'utf8');
-    assert.match(form, /useQueryClient/);
-    assert.match(form, /queryClient.invalidateQueries/);
-    assert.match(form, /trainingProgramQueryKeys.lists\(\)/);
-    assert.doesNotMatch(form, /localStorage|sessionStorage/);
-  }
+test('successful trainer program mutations invalidate every list filter and page', async () => {
+  const mutations = await readFile(
+    new URL('../src/features/training-programs/api/training-program-mutations.ts', import.meta.url),
+    'utf8',
+  );
+  const create = await readFile(
+    new URL('../src/features/training-programs/ui/create-training-program-form.tsx', import.meta.url),
+    'utf8',
+  );
+  const editor = await readFile(
+    new URL('../src/features/training-programs/ui/edit-training-program-draft-form.tsx', import.meta.url),
+    'utf8',
+  );
+  assert.match(mutations, /useCreateTrainingProgramMutation/);
+  assert.match(mutations, /useUpdateTrainingProgramDraftMutation/);
+  assert.match(mutations, /trainingProgramQueryKeys.lists\(\)/);
+  assert.match(mutations, /queryClient.invalidateQueries/);
+  assert.match(mutations, /queryClient.setQueryData/);
+  assert.match(mutations, /trainingProgramQueryKeys.detail\(programId\)/);
+  assert.match(mutations, /item.id === version.id \? version : item/);
+  assert.match(mutations, /trainingProgramQueryKeys.version\(programId, versionId\)/);
+  assert.match(mutations, /refetchType: 'none'/);
+  assert.match(create, /mutation.mutateAsync\(values\)/);
+  assert.match(editor, /mutation.mutateAsync\(values\)/);
+  assert.doesNotMatch(create + editor + mutations, /localStorage|sessionStorage/);
 });
 
 test('program detail cache keys distinguish program IDs from trainer lists', () => {
@@ -52,7 +66,7 @@ test('program detail cache keys distinguish program IDs from trainer lists', () 
   );
 });
 
-test('editing a draft refreshes the list and updates only the matching cached detail', async () => {
+test('draft editor updates only the matching cached program without parent callbacks', async () => {
   const editor = await readFile(
     new URL(
       '../src/features/training-programs/ui/edit-training-program-draft-form.tsx',
@@ -64,12 +78,16 @@ test('editing a draft refreshes the list and updates only the matching cached de
     new URL('../src/features/training-programs/ui/trainer-program-details.tsx', import.meta.url),
     'utf8',
   );
-  assert.match(editor, /queryClient.invalidateQueries/);
-  assert.match(editor, /trainingProgramQueryKeys.lists\(\)/);
-  assert.match(editor, /onUpdated\(data\)/);
-  assert.match(detail, /queryClient.setQueryData/);
-  assert.match(detail, /trainingProgramQueryKeys.detail\(programId\)/);
-  assert.match(detail, /item.id === version.id \? version : item/);
+  const mutations = await readFile(
+    new URL('../src/features/training-programs/api/training-program-mutations.ts', import.meta.url),
+    'utf8',
+  );
+  assert.match(editor, /form.reset\(toTrainingProgramDraftValues\(updated\)\)/);
+  assert.match(mutations, /queryClient.setQueryData/);
+  assert.match(mutations, /trainingProgramQueryKeys.detail\(programId\)/);
+  assert.match(mutations, /item.id === version.id \? version : item/);
+  assert.match(detail, /<EditTrainingProgramDraftForm/);
+  assert.doesNotMatch(detail, /onUpdated=\{onUpdated\}/);
 });
 
 test('athlete assignment keys separate status, page and trainer-owned program data', () => {
