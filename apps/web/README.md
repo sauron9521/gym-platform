@@ -227,7 +227,14 @@ validated by NestJS, not merely by hidden Web controls.
 ## Trainer–athlete relationships and training programs
 
 `/trainer/athletes` and `/athlete/trainers` provide role-specific relationship
-lists with invitations, status filters and available relationship actions.
+lists with invitations, status filters and available relationship actions. Both
+views share a typed TanStack Query: each list key includes actor ID, actor role,
+status and page, while contact search remains local to the loaded page.
+Successful invites, acceptance, decline, cancellation and termination invalidate
+all relationship list filters, so switching statuses does not restore stale
+private records. Request cancellation, retry and session-expiry handling are
+preserved. HTTP 401 clears the browser query cache and hides private contacts
+before redirecting to login; historical relationships still redact contacts.
 `/trainer/programs` lists a trainer's programs and versions with pagination and
 status filters; `/athlete/programs` lists assigned programs. The trainer-only
 `/trainer/programs/new` page uses React Hook Form + Zod and the typed same-origin

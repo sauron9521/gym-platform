@@ -1,9 +1,14 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 
-import { webApi } from '@/shared/api/client';
+import {
+  trainerAthleteListQueryOptions,
+  TrainerAthleteListRequestError,
+} from '../api/trainer-athlete-list-query';
+import { trainerAthleteQueryKeys } from '../lib/trainer-athlete-query-keys';
 import { Button } from '@/shared/ui/button';
 import { InviteRelationshipForm } from './invite-relationship-form';
 import { RelationshipActions } from './relationship-actions';
@@ -12,15 +17,12 @@ import {
   getRelationshipContact,
   getTrainerAthleteInvitationLabel,
   getTrainerAthleteListErrorMessage,
-  getTrainerAthletePageCount,
   getTrainerAthleteStatusLabel,
   searchTrainerAthletesOnPage,
   TRAINER_ATHLETE_FILTERS,
   type TrainerAthleteFilter,
   type TrainerAthleteListItem,
 } from '../lib/trainer-athletes-list';
-
-const PAGE_SIZE = 20;
 
 type ListState =
   | { kind: 'loading' }
@@ -40,81 +42,80 @@ export function TrainerAthletesList({
   actorRole: 'TRAINER' | 'ATHLETE';
 }) {
   const router = useRouter();
+  const queryClient = useQueryClient();
+  const redirecting = useRef(false);
   const [filter, setFilter] = useState<TrainerAthleteFilter>('ALL');
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
-  const [attempt, setAttempt] = useState(0);
-  const [state, setState] = useState<ListState>({ kind: 'loading' });
+  const query = useQuery(trainerAthleteListQueryOptions(actorId, actorRole, filter, page));
+  const unauthenticated =
+    query.error instanceof TrainerAthleteListRequestError && query.error.status === 401;
 
   useEffect(() => {
-    let active = true;
-
-    void webApi
-      .GET('/trainer-athletes', {
-        params: {
-          query: {
-            page,
-            limit: PAGE_SIZE,
-            ...(filter === 'ALL' ? {} : { status: filter }),
-          },
-        },
-      })
-      .then(({ data, response }) => {
-        if (!active) return;
-        if (response.status === 401) {
-          router.replace('/login');
-          return;
-        }
-        if (response.status !== 200 || !data) {
-          setState({
-            kind: 'error',
-            message: getTrainerAthleteListErrorMessage(response.status),
-          });
-          return;
-        }
-        setState({
-          kind: 'ready',
-          relationships: data.data,
-          total: data.meta.total,
-          pages: getTrainerAthletePageCount(data.meta.totalPages),
-        });
-      })
-      .catch(() => {
-        if (active) {
-          setState({ kind: 'error', message: getTrainerAthleteListErrorMessage() });
-        }
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [filter, page, attempt, router]);
+    if (unauthenticated && !redirecting.current) {
+      redirecting.current = true;
+      queryClient.clear();
+      router.replace('/login');
+    }
+  }, [unauthenticated, queryClient, router]);
 
   function chooseStatus(next: TrainerAthleteFilter) {
     setFilter(next);
     setPage(1);
     setSearch('');
-    setState({ kind: 'loading' });
   }
 
   function changePage(next: number) {
     setPage(next);
     setSearch('');
-    setState({ kind: 'loading' });
+  }
+
+  function refreshRelationships() {
+    void queryClient.invalidateQueries({ queryKey: trainerAthleteQueryKeys.lists() });
   }
 
   function inviteCreated() {
+    // Mark every status/page stale without an unnecessary GET for the old filter.
+    // Switching to PENDING will load the new key; if it is already selected,
+    // refresh that active query explicitly.
+    void queryClient.invalidateQueries({
+      queryKey: trainerAthleteQueryKeys.lists(),
+      refetchType: 'none',
+    });
+    if (filter === 'PENDING' && page === 1) {
+      void query.refetch();
+    }
     setFilter('PENDING');
     setPage(1);
     setSearch('');
-    setState({ kind: 'loading' });
-    setAttempt((value) => value + 1);
   }
 
   function retry() {
-    setState({ kind: 'loading' });
-    setAttempt((current) => current + 1);
+    void query.refetch();
   }
+
+  let state: ListState;
+  if (query.isPending || unauthenticated) {
+    state = { kind: 'loading' };
+  } else if (query.isError) {
+    state = {
+      kind: 'error',
+      message:
+        query.error instanceof TrainerAthleteListRequestError
+          ? query.error.message
+          : getTrainerAthleteListErrorMessage(),
+    };
+  } else {
+    state = {
+      kind: 'ready',
+      relationships: query.data.relationships,
+      total: query.data.total,
+      pages: query.data.pages,
+    };
+  }
+
+  // Do not render cached relationship data after an authentication failure.
+  if (unauthenticated) return null;
 
   const visible =
     state.kind === 'ready'
@@ -258,7 +259,7 @@ export function TrainerAthletesList({
                     <RelationshipActions
                       relationship={relationship}
                       actorId={actorId}
-                      onUpdated={retry}
+                      onUpdated={refreshRelationships}
                     />
                   </article>
                 );
