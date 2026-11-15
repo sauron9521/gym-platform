@@ -113,8 +113,11 @@ export function AddProgramExerciseForm({
 
   async function submit(values: AddProgramExerciseValues) {
     setError(null);
-    if (!selected || selected.id !== values.exerciseId ||
-        !isProgramExerciseSelectable(selected, existingExerciseIds)) {
+    if (
+      !selected ||
+      selected.id !== values.exerciseId ||
+      !isProgramExerciseSelectable(selected, existingExerciseIds)
+    ) {
       form.setError('exerciseId', { message: 'Оберіть доступну вправу з каталогу.' });
       return;
     }
@@ -150,7 +153,10 @@ export function AddProgramExerciseForm({
     >
       <h4 className="font-semibold">Додати вправу до дня</h4>
       <div className="space-y-1">
-        <label htmlFor={`program-exercise-search-${workoutId}`} className="block text-sm font-medium">
+        <label
+          htmlFor={`program-exercise-search-${workoutId}`}
+          className="block text-sm font-medium"
+        >
           Пошук вправи
         </label>
         <input
@@ -164,7 +170,9 @@ export function AddProgramExerciseForm({
         />
       </div>
       {catalog.kind === 'loading' && (
-        <p role="status" className="text-sm text-muted-foreground">Завантажуємо каталог…</p>
+        <p role="status" className="text-sm text-muted-foreground">
+          Завантажуємо каталог…
+        </p>
       )}
       {catalog.kind === 'error' && (
         <div role="alert" className="space-y-2">
@@ -212,7 +220,10 @@ export function AddProgramExerciseForm({
             })}
           </ul>
           {catalog.pages > 1 && (
-            <nav aria-label="Сторінки вправ для програми" className="flex items-center justify-between gap-2">
+            <nav
+              aria-label="Сторінки вправ для програми"
+              className="flex items-center justify-between gap-2"
+            >
               <Button
                 type="button"
                 variant="outline"
@@ -221,7 +232,9 @@ export function AddProgramExerciseForm({
               >
                 Назад
               </Button>
-              <span className="text-sm">{page} / {catalog.pages}</span>
+              <span className="text-sm">
+                {page} / {catalog.pages}
+              </span>
               <Button
                 type="button"
                 variant="outline"
@@ -236,10 +249,15 @@ export function AddProgramExerciseForm({
       )}
       <p className="text-sm">Обрана вправа: {selected?.name ?? 'не обрана'}</p>
       {errors.exerciseId && (
-        <p role="alert" className="text-sm text-destructive">{errors.exerciseId.message}</p>
+        <p role="alert" className="text-sm text-destructive">
+          {errors.exerciseId.message}
+        </p>
       )}
       <div className="space-y-1">
-        <label htmlFor={`program-exercise-notes-${workoutId}`} className="block text-sm font-medium">
+        <label
+          htmlFor={`program-exercise-notes-${workoutId}`}
+          className="block text-sm font-medium"
+        >
           Примітки до вправи (необов’язково)
         </label>
         <textarea
@@ -252,10 +270,16 @@ export function AddProgramExerciseForm({
           className="w-full rounded-md border border-input bg-background p-3 text-sm"
         />
         {errors.notes && (
-          <p role="alert" className="text-sm text-destructive">{errors.notes.message}</p>
+          <p role="alert" className="text-sm text-destructive">
+            {errors.notes.message}
+          </p>
         )}
       </div>
-      {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
+      {error && (
+        <p role="alert" className="text-sm text-destructive">
+          {error}
+        </p>
+      )}
       <div className="flex flex-wrap gap-2">
         <Button type="submit" disabled={isSubmitting || !selected}>
           {isSubmitting ? 'Додаємо…' : 'Додати обрану вправу'}
