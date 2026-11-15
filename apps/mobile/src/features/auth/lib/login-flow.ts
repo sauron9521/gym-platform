@@ -1,3 +1,23 @@
+import { z } from 'zod';
+
+const INVALID_EMAIL = 'Вкажіть коректну електронну адресу.';
+const INVALID_PASSWORD = 'Вкажіть пароль.';
+
+/** Single source of truth for sign-in validation on iOS, Android and Expo Web. */
+export const signInSchema = z.object({
+  email: z
+    .string()
+    .trim()
+    .max(254, { error: INVALID_EMAIL })
+    .pipe(z.email({ error: INVALID_EMAIL })),
+  // Do not trim passwords: leading/trailing spaces may be intentional.
+  password: z.string().refine((value) => /\S/.test(value), {
+    error: INVALID_PASSWORD,
+  }),
+});
+
+export type SignInValues = z.infer<typeof signInSchema>;
+
 export function getMobileLoginError(status: number): string {
   switch (status) {
     case 400:
@@ -13,10 +33,8 @@ export function getMobileLoginError(status: number): string {
   }
 }
 
+/** Keep the imperative auth API protected for callers outside React forms. */
 export function validateMobileCredentials(email: string, password: string): string | null {
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()) || email.trim().length > 254) {
-    return 'Вкажіть коректну електронну адресу.';
-  }
-  if (!/\S/.test(password)) return 'Вкажіть пароль.';
-  return null;
+  const result = signInSchema.safeParse({ email, password });
+  return result.success ? null : (result.error.issues[0]?.message ?? INVALID_EMAIL);
 }
