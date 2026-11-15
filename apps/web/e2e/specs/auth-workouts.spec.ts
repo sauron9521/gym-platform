@@ -136,6 +136,123 @@ test('profile query 401 clears private data and redirects to sign-in', async ({ 
   await expect(page.getByText('Пошта: athlete@example.test')).toHaveCount(0);
 });
 
+const avatarPng = {
+  name: 'avatar.png',
+  mimeType: 'image/png',
+  buffer: Buffer.from(
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9ZkKoD4AAAAASUVORK5CYII=',
+    'base64',
+  ),
+};
+
+test('avatar upload and delete refresh the canonical profile once per mutation', async ({
+  page,
+}) => {
+  await signIn(page);
+  const uploadedAvatar = '/avatars/123e4567-e89b-42d3-a456-426614174000.png';
+  let avatarUrl: string | null = null;
+  let profileGets = 0;
+  const methods: string[] = [];
+
+  await page.route('**/backend/users/me', async (route) => {
+    if (route.request().method() !== 'GET') return route.continue();
+    profileGets += 1;
+    const response = await route.fetch();
+    const account = await response.json();
+    await route.fulfill({
+      response,
+      json: { ...account, profile: { ...account.profile, avatarUrl } },
+    });
+  });
+
+  await page.route('**/backend/users/me/avatar', (route) => {
+    const request = route.request();
+    methods.push(request.method());
+    if (request.method() === 'POST') {
+      expect(request.headers()['content-type']).toContain('multipart/form-data; boundary=');
+      expect(request.postDataBuffer()?.includes(Buffer.from('avatar.png'))).toBe(true);
+      avatarUrl = uploadedAvatar;
+    } else if (request.method() === 'DELETE') {
+      avatarUrl = null;
+    }
+    return route.fulfill({ status: 200, contentType: 'application/json', body: '{}' });
+  });
+
+  await page.goto('/profile');
+  await expect(page.getByText('Пошта: athlete@example.test')).toBeVisible();
+  const initialGets = profileGets;
+  await page.getByLabel('Обрати фотографію').setInputFiles(avatarPng);
+  await page.getByRole('button', { name: 'Завантажити фото' }).click();
+  await expect(
+    page.getByRole('status').filter({ hasText: 'Фото профілю оновлено.' }),
+  ).toBeVisible();
+  await expect(page.getByRole('img', { name: 'Фото профілю' })).toHaveAttribute(
+    'src',
+    '/backend' + uploadedAvatar,
+  );
+  expect(profileGets).toBe(initialGets + 1);
+
+  await page.getByRole('button', { name: 'Видалити фото' }).click();
+  await page.getByRole('button', { name: 'Підтвердити видалення' }).click();
+  await expect(
+    page.getByRole('status').filter({ hasText: 'Фото профілю видалено.' }),
+  ).toBeVisible();
+  await expect(page.getByLabel('Ініціали користувача')).toBeVisible();
+  expect(profileGets).toBe(initialGets + 2);
+  expect(methods).toEqual(['POST', 'DELETE']);
+});
+
+test('avatar file validation and 429 preserve selected file for explicit retry', async ({
+  page,
+}) => {
+  await signIn(page);
+  await page.goto('/profile');
+  await expect(page.getByLabel('Обрати фотографію')).toBeVisible();
+
+  let requests = 0;
+  await page.route('**/backend/users/me/avatar', (route) => {
+    requests += 1;
+    return route.fulfill({
+      status: requests === 1 ? 429 : 200,
+      contentType: 'application/json',
+      body: '{}',
+    });
+  });
+
+  await page.getByLabel('Обрати фотографію').setInputFiles({
+    name: 'invalid.svg',
+    mimeType: 'image/svg+xml',
+    buffer: Buffer.from('<svg/>'),
+  });
+  await expect(page.getByText('Дозволено лише PNG, JPEG або WebP.')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Завантажити фото' })).toBeDisabled();
+  expect(requests).toBe(0);
+
+  await page.getByLabel('Обрати фотографію').setInputFiles(avatarPng);
+  await page.getByRole('button', { name: 'Завантажити фото' }).click();
+  await expect(page.getByText('Забагато спроб. Спробуйте пізніше.')).toBeVisible();
+  await expect(page.getByText('Обрано: avatar.png')).toBeVisible();
+  expect(requests).toBe(1);
+
+  await page.getByRole('button', { name: 'Завантажити фото' }).click();
+  await expect(page.getByText('Фото профілю оновлено.')).toBeVisible();
+  await expect(page.getByText('Обрано: avatar.png')).toHaveCount(0);
+  expect(requests).toBe(2);
+});
+
+test('avatar mutation 401 clears the session and redirects to sign-in', async ({ page }) => {
+  await signIn(page);
+  await page.route('**/backend/users/me/avatar', (route) =>
+    route.fulfill({ status: 401, contentType: 'application/json', body: '{}' }),
+  );
+  await page.goto('/profile');
+  await expect(page.getByLabel('Обрати фотографію')).toBeVisible();
+  await page.getByLabel('Обрати фотографію').setInputFiles(avatarPng);
+  await page.getByRole('button', { name: 'Завантажити фото' }).click();
+  await expect(page).toHaveURL(/\/login$/);
+  await expect(page.getByText('Пошта: athlete@example.test')).toHaveCount(0);
+});
+
 test('workout list loads from the same-origin API and filters by status', async ({ page }) => {
   await signIn(page);
   await page.goto('/workouts');
