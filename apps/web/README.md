@@ -432,9 +432,12 @@ The trainer training-program list also uses TanStack Query with separate keys fo
 status and page. Each request carries an AbortSignal and is scoped to the
 authenticated trainer by the API. Creating a program or editing a draft invalidates
 the entire trainer-program list namespace; cached entries are refetched on
-navigation. HTTP 401 clears the browser query cache and redirects to /login.
-Individual program details and athlete assignments keep their existing fetching
-implementation for separate follow-up PRs.
+navigation. Individual trainer program details now use a program-ID query key
+and a cancellable typed request. Successful draft edits update only the
+matching version in the detail cache; list invalidation remains in the editor.
+HTTP 401 clears the browser query cache and redirects to /login, while
+404/403 errors do not reveal another trainer's private programs. Athlete
+assignments retain their existing fetching implementation for a separate PR.
 
 On successful login or sign-out, the browser query cache is cleared to avoid
 cross-account data exposure. When moving workout write actions to mutations,

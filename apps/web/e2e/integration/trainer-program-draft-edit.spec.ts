@@ -71,6 +71,16 @@ test('real API: owner edits draft v1 and another trainer cannot read or change i
     await expect(ownerPage.getByRole('heading', { name: updatedTitle, exact: true })).toBeVisible();
     await expect(ownerPage.getByRole('button', { name: 'Зберегти зміни' })).toBeDisabled();
 
+    // The trainer list must reflect the saved draft after invalidation.
+    await ownerPage.getByRole('link', { name: /До тренувальних програм/ }).click();
+    await expect(ownerPage).toHaveURL(/\/trainer\/programs/);
+    await expect(ownerPage.getByRole('heading', { name: updatedTitle, exact: true })).toBeVisible();
+
+    // Returning to details should preserve the updated draft in its per-ID cache.
+    await ownerPage.getByRole('link', { name: 'Деталі програми' }).click();
+    await expect(ownerPage).toHaveURL(/\/trainer\/programs\/[0-9a-f-]{36}/);
+    await expect(ownerPage.getByRole('heading', { name: updatedTitle, exact: true })).toBeVisible();
+
     await ownerPage.reload();
     await expect(ownerPage.getByLabel('Назва програми')).toHaveValue(updatedTitle);
     await expect(ownerPage.getByLabel('Опис (необов’язково)')).toHaveValue('');

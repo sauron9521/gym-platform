@@ -34,3 +34,40 @@ test('successful trainer program creation and draft edits invalidate all list va
     assert.doesNotMatch(form, /localStorage|sessionStorage/);
   }
 });
+
+test('program detail cache keys distinguish program IDs from trainer lists', () => {
+  assert.deepEqual(trainingProgramQueryKeys.details(), ['training-programs', 'detail']);
+  assert.deepEqual(trainingProgramQueryKeys.detail('program-1'), [
+    'training-programs',
+    'detail',
+    'program-1',
+  ]);
+  assert.notDeepEqual(
+    trainingProgramQueryKeys.detail('program-1'),
+    trainingProgramQueryKeys.detail('program-2'),
+  );
+  assert.notDeepEqual(
+    trainingProgramQueryKeys.detail('program-1'),
+    trainingProgramQueryKeys.list('ALL', 1),
+  );
+});
+
+test('editing a draft refreshes the list and updates only the matching cached detail', async () => {
+  const editor = await readFile(
+    new URL(
+      '../src/features/training-programs/ui/edit-training-program-draft-form.tsx',
+      import.meta.url,
+    ),
+    'utf8',
+  );
+  const detail = await readFile(
+    new URL('../src/features/training-programs/ui/trainer-program-details.tsx', import.meta.url),
+    'utf8',
+  );
+  assert.match(editor, /queryClient.invalidateQueries/);
+  assert.match(editor, /trainingProgramQueryKeys.lists\(\)/);
+  assert.match(editor, /onUpdated\(data\)/);
+  assert.match(detail, /queryClient.setQueryData/);
+  assert.match(detail, /trainingProgramQueryKeys.detail\(programId\)/);
+  assert.match(detail, /item.id === version.id \? version : item/);
+});
