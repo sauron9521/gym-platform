@@ -11,6 +11,7 @@ function allScopes() {
     full: true,
     api: true,
     web: true,
+    landing: true,
     mobile: true,
     client: true,
     deps: true,
@@ -28,6 +29,7 @@ export function classifyChangedPaths(paths, { forceFull = false } = {}) {
     full: false,
     api: false,
     web: false,
+    landing: false,
     mobile: false,
     client: false,
     deps: false,
@@ -65,6 +67,7 @@ export function classifyChangedPaths(paths, { forceFull = false } = {}) {
         'apps/api/README.md',
         'apps/api/test/README.md',
         'apps/web/README.md',
+        'apps/landing/README.md',
         'apps/mobile/README.md',
         'packages/api-client/README.md',
       ].includes(path)
@@ -93,6 +96,12 @@ export function classifyChangedPaths(paths, { forceFull = false } = {}) {
       continue;
     }
 
+    if (path.startsWith('apps/landing/')) {
+      selected.landing = true;
+      if (path === 'apps/landing/package.json') selected.deps = true;
+      continue;
+    }
+
     if (path.startsWith('apps/mobile/')) {
       selected.mobile = true;
       if (path === 'apps/mobile/package.json') selected.deps = true;
@@ -112,7 +121,8 @@ export function classifyChangedPaths(paths, { forceFull = false } = {}) {
     return { ...allScopes(), redis: selected.redis };
   }
 
-  selected.workspaces = selected.api || selected.web || selected.mobile || selected.client;
+  selected.workspaces =
+    selected.api || selected.web || selected.landing || selected.mobile || selected.client;
   return selected;
 }
 
