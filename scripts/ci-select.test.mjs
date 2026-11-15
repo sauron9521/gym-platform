@@ -114,6 +114,35 @@ test('branch protection names stay stable and API E2E is a real gate', () => {
   assert.match(yaml, /CI_FORCE_ALL:/);
 });
 
+test('PostgreSQL E2E is split across isolated runners and all shards remain required', () => {
+  const yaml = readFileSync(new URL('../.github/workflows/ci.yml', import.meta.url), 'utf8');
+  const suite = yaml.split('  api-e2e-suite:\n')[1]?.split('\n  api-e2e:\n')[0];
+  const gate = yaml.split('  api-e2e:\n')[1];
+  assert.ok(suite);
+  assert.ok(gate);
+  assert.match(suite, /strategy:\n\s+fail-fast: false\n\s+matrix:\n\s+shard: \[1, 2\]/);
+  assert.match(
+    suite,
+    /run: pnpm --filter @gym\/api exec vitest run --config \.\/vitest\.config\.e2e\.ts --shard=\$\{\{ matrix\.shard \}\}\/2/,
+  );
+  assert.match(suite, /if: matrix\.shard == 1\n\s+run: pnpm api:contract:check/);
+  assert.match(
+    suite,
+    /Rehearse isolated PostgreSQL 17 and avatar restore \(disposable CI only\)\n\s+if: matrix\.shard == 1/,
+  );
+  assert.match(gate, /needs: \[changes, api-e2e-suite, api-coverage\]/);
+  assert.match(gate, /test "\$SUITE_RESULT" = success/);
+  assert.doesNotMatch(suite, /--passWithNoTests/);
+
+  // The volume test runs inside normal E2E (not a separate, optional gate).
+  const volumePath =
+    '../apps/api/test/integration/auth/auth-cleanup-volume.integration.e2e-spec.ts';
+  const volumeTest = readFileSync(new URL(volumePath, import.meta.url), 'utf8');
+  assert.match(volumeTest, /EXPIRED_PER_TABLE = 1_200/);
+  assert.match(volumeTest, /\[500, 500, 500\]/);
+  assert.match(volumeTest, /\[200, 200, 200\]/);
+});
+
 test('API coverage replaces duplicate API unit tests without weakening required checks', () => {
   const yaml = readFileSync(new URL('../.github/workflows/ci.yml', import.meta.url), 'utf8');
   const turbo = JSON.parse(readFileSync(new URL('../turbo.json', import.meta.url), 'utf8'));

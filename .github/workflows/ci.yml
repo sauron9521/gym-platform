@@ -587,6 +587,12 @@ jobs:
     if: needs.changes.outputs.api == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 35
+    # Independent runners provide separate PostgreSQL test databases.
+    # Both shards must pass before the stable API e2e gate succeeds.
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2]
 
     services:
       postgres:
@@ -672,12 +678,14 @@ jobs:
 
       # Build NestJS with decorator metadata; fail if generated client types drift.
       - name: Verify generated OpenAPI contract is committed and current
+        if: matrix.shard == 1
         run: pnpm api:contract:check
 
-      - name: Integration and HTTP e2e tests
-        run: pnpm --filter @gym/api test:e2e
+      - name: Integration and HTTP e2e tests (shard ${{ matrix.shard }}/2)
+        run: pnpm --filter @gym/api exec vitest run --config ./vitest.config.e2e.ts --shard=${{ matrix.shard }}/2
 
       - name: Rehearse isolated PostgreSQL 17 and avatar restore (disposable CI only)
+        if: matrix.shard == 1
         run: |
           set -euo pipefail
           work="$RUNNER_TEMP/gym-platform-api-restore-drill"
