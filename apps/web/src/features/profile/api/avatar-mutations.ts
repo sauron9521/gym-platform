@@ -7,9 +7,7 @@ import { useAuthFailure } from '@/shared/api/use-auth-failure';
 import { avatarErrorMessage } from '../lib/avatar';
 import { profileQueryKeys } from '../lib/profile-query-keys';
 
-export type AvatarMutationInput =
-  | { action: 'upload'; file: File }
-  | { action: 'delete' };
+export type AvatarMutationInput = { action: 'upload'; file: File } | { action: 'delete' };
 
 export class AvatarMutationError extends Error {
   constructor(readonly status?: number) {
