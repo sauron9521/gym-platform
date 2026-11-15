@@ -123,7 +123,12 @@ export function EditWorkoutForm({
         {mutation.isError && (
           <div className="space-y-2" role="alert">
             <p className="text-sm text-destructive">{mutation.error.message}</p>
-            <Button type="button" variant="outline" disabled={isSubmitting || mutation.isPending} onClick={onReload}>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={isSubmitting || mutation.isPending}
+              onClick={onReload}
+            >
               Оновити дані
             </Button>
           </div>
@@ -132,7 +137,12 @@ export function EditWorkoutForm({
           <Button type="submit" disabled={isSubmitting || mutation.isPending || !isDirty}>
             {isSubmitting ? 'Зберігаємо…' : 'Зберегти зміни'}
           </Button>
-          <Button type="button" variant="outline" disabled={isSubmitting || mutation.isPending} onClick={onCancel}>
+          <Button
+            type="button"
+            variant="outline"
+            disabled={isSubmitting || mutation.isPending}
+            onClick={onCancel}
+          >
             Скасувати редагування
           </Button>
         </div>
