@@ -70,9 +70,10 @@ test('typed create payload trims fields and omits empty optional properties', ()
 });
 
 test('creation errors are status-derived without exposing API response content', () => {
-  assert.notEqual(getCreateTrainingProgramErrorMessage(400), getCreateTrainingProgramErrorMessage(403));
-  assert.notEqual(getCreateTrainingProgramErrorMessage(429), getCreateTrainingProgramErrorMessage(500));
-  assert.equal(getCreateTrainingProgramErrorMessage(), getCreateTrainingProgramErrorMessage(500));
+  const error = getCreateTrainingProgramErrorMessage;
+  assert.notEqual(error(400), error(403));
+  assert.notEqual(error(429), error(500));
+  assert.equal(error(), error(500));
 });
 
 test('new program page protects trainer role and creation calls the same-origin API', async () => {
@@ -80,12 +81,13 @@ test('new program page protects trainer role and creation calls the same-origin 
     new URL('../src/app/(protected)/trainer/programs/new/page.tsx', import.meta.url),
     'utf8',
   );
+  const featureRoot = '../src/features/training-programs/';
   const form = await readFile(
-    new URL('../src/features/training-programs/ui/create-training-program-form.tsx', import.meta.url),
+    new URL(featureRoot + 'ui/create-training-program-form.tsx', import.meta.url),
     'utf8',
   );
   const list = await readFile(
-    new URL('../src/features/training-programs/ui/trainer-programs-list.tsx', import.meta.url),
+    new URL(featureRoot + 'ui/trainer-programs-list.tsx', import.meta.url),
     'utf8',
   );
 
