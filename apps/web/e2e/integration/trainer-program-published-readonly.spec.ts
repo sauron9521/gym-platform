@@ -22,6 +22,7 @@ test('real API: published program details are read-only and PATCH is rejected', 
   await expect(page.getByRole('heading', { name: 'Додати тренувальний день' })).toHaveCount(0);
   await expect(page.getByRole('button', { name: /Редагувати день/ })).toHaveCount(0);
   await expect(page.getByRole('button', { name: /Видалити день/ })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: /Додати вправу до дня/ })).toHaveCount(0);
 
   const immutable = await page.request.patch(
     '/backend/training-programs/' + published.id + '/versions/' + published.versionId,
@@ -57,4 +58,12 @@ test('real API: published program details are read-only and PATCH is rejected', 
     headers: { origin },
   });
   expect(immutableDelete.status()).toBe(409);
+  const publishedExercise = version.workouts[0] as {
+    exercises: Array<{ exerciseId: string }>;
+  };
+  const immutableExercise = await page.request.post(workoutPath + '/exercises', {
+    headers: { origin },
+    data: { exerciseId: publishedExercise.exercises[0]!.exerciseId },
+  });
+  expect(immutableExercise.status()).toBe(409);
 });
