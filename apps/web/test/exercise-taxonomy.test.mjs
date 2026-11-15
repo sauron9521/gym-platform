@@ -13,16 +13,24 @@ test('taxonomy errors are safe and rate limits offer a useful retry message', ()
   assert.notEqual(getTaxonomyErrorMessage(429), getTaxonomyErrorMessage(500));
 });
 
-test('taxonomy hook reads both typed routes, prevents stale updates and retries', async () => {
+test('taxonomy uses one cancellable shared query with safe retry and 401 redirect', async () => {
   const hook = await source('../src/features/exercises/ui/use-exercise-taxonomy.ts');
-  assert.match(hook, /webApi.GET\('\/exercises\/muscle-groups'\)/);
-  assert.match(hook, /webApi.GET\('\/exercises\/equipment'\)/);
-  assert.match(hook, /Promise.all/);
-  assert.match(hook, /active = false/);
-  assert.match(hook, /response.status === 401/);
+  const api = await source('../src/features/exercises/api/exercise-taxonomy-query.ts');
+
+  assert.match(api, /webApi.GET\('\/exercises\/muscle-groups'/);
+  assert.match(api, /webApi.GET\('\/exercises\/equipment'/);
+  assert.match(api, /Promise.all/);
+  assert.match(api, /signal/);
+  assert.match(api, /staleTime: 5 \* 60_000/);
+  assert.match(api, /queryKey: exerciseQueryKeys.taxonomy\(\)/);
+  assert.match(api, /ExerciseTaxonomyRequestError/);
+  assert.match(api, /muscles.response.status === 401 \|\| equipment.response.status === 401/);
+
+  assert.match(hook, /useQuery\(exerciseTaxonomyQueryOptions\(\)\)/);
+  assert.match(hook, /query.refetch\(\)/);
+  assert.match(hook, /queryClient.clear\(\)/);
   assert.match(hook, /router.replace\('\/login'\)/);
-  assert.match(hook, /setAttempt/);
-  assert.doesNotMatch(hook, /localStorage|sessionStorage/);
+  assert.doesNotMatch(hook + api, /localStorage|sessionStorage/);
 });
 
 test('create and edit forms use API-backed choices and disable submission on errors', async () => {

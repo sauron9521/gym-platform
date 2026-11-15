@@ -108,6 +108,28 @@ test('exercise catalog query redirects after a 401 without showing private resul
   await expect(page.getByRole('article')).toHaveCount(0);
 });
 
+test('exercise detail query redirects on 401 without rendering private content', async ({
+  page,
+}) => {
+  await signIn(page);
+  const id = '00000000-0000-4000-8000-000000000001';
+  await page.route('**/backend/exercises/' + id, (route) =>
+    route.fulfill({ status: 401, contentType: 'application/json', body: '{}' }),
+  );
+  await page.goto('/exercises/' + id);
+  await expect(page).toHaveURL(/\/login$/);
+  await expect(page.getByRole('button', { name: 'Редагувати', exact: true })).toHaveCount(0);
+});
+
+test('exercise taxonomy query redirects on 401 when creating an exercise', async ({ page }) => {
+  await signIn(page);
+  await page.route('**/backend/exercises/muscle-groups', (route) =>
+    route.fulfill({ status: 401, contentType: 'application/json', body: '{}' }),
+  );
+  await page.goto('/exercises/new');
+  await expect(page).toHaveURL(/\/login$/);
+});
+
 test('athlete cannot view trainer-only programs even with a valid session', async ({ page }) => {
   await signIn(page);
   await page.goto('/trainer/programs');

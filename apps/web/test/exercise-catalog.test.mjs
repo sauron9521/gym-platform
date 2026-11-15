@@ -88,20 +88,33 @@ test('catalog uses TanStack Query with filters, pagination, retries and private-
   assert.doesNotMatch(catalog + api, /localStorage|sessionStorage|dangerouslySetInnerHTML/);
 });
 
-test('exercise details handle inaccessible and archived records', async () => {
+test('exercise details use an ID-scoped query, reject inaccessible records and update cache', async () => {
   const details = await readFile(
     new URL('../src/features/exercises/ui/exercise-details.tsx', import.meta.url),
     'utf8',
   );
-  assert.match(details, /\.GET\('\/exercises\/\{id\}'/);
-  assert.match(details, /response.status === 401/);
-  assert.match(details, /response.status !== 200/);
-  assert.match(details, /data\.isArchived/);
-  assert.match(details, /state\.exercise\.instructions/);
-  assert.match(details, /state\.exercise\.muscleGroups/);
-  assert.match(details, /state\.exercise\.equipment/);
+  const api = await readFile(
+    new URL('../src/features/exercises/api/exercise-details-query.ts', import.meta.url),
+    'utf8',
+  );
+
+  assert.match(details, /useQuery\(exerciseDetailsQueryOptions\(id\)\)/);
+  assert.match(details, /query.refetch\(\)/);
+  assert.match(details, /ExerciseDetailsRequestError/);
+  assert.match(details, /queryClient.setQueryData\(exerciseQueryKeys.detail\(id\), exercise\)/);
+  assert.match(details, /queryClient.clear\(\)/);
+  assert.match(details, /router.replace\('\/login'\)/);
+  assert.match(details, /state.exercise.instructions/);
+  assert.match(details, /state.exercise.muscleGroups/);
+  assert.match(details, /state.exercise.equipment/);
   assert.match(details, /href="\/workouts\/new"/);
-  assert.doesNotMatch(details, /localStorage|sessionStorage|dangerouslySetInnerHTML/);
+
+  assert.match(api, /GET\('\/exercises\/\{id\}'/);
+  assert.match(api, /signal/);
+  assert.match(api, /response.status !== 200/);
+  assert.match(api, /data.isArchived/);
+  assert.match(api, /retry: false/);
+  assert.doesNotMatch(details + api, /localStorage|sessionStorage|dangerouslySetInnerHTML/);
 });
 
 test('protected navigation links to exercise catalog', async () => {

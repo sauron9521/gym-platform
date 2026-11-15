@@ -66,3 +66,26 @@ test('exercise mutations invalidate list cache only after a successful response'
     assert.match(content, /exerciseQueryKeys\.lists\(\)/);
   }
 });
+
+test('detail keys isolate exercise IDs and taxonomy never aliases a private list', () => {
+  assert.deepEqual(exerciseQueryKeys.details(), ['exercises', 'detail']);
+  assert.deepEqual(exerciseQueryKeys.detail('exercise-1'), ['exercises', 'detail', 'exercise-1']);
+  assert.deepEqual(exerciseQueryKeys.taxonomy(), ['exercises', 'taxonomy']);
+  assert.notDeepEqual(
+    exerciseQueryKeys.detail('exercise-1'),
+    exerciseQueryKeys.detail('exercise-2'),
+  );
+  assert.notDeepEqual(exerciseQueryKeys.detail('exercise-1'), exerciseQueryKeys.list(filters));
+  assert.notDeepEqual(exerciseQueryKeys.taxonomy(), exerciseQueryKeys.lists());
+});
+
+test('successful edits sync detail cache and archive invalidates the detail ID', async () => {
+  const details = await readFile(
+    new URL('../src/features/exercises/ui/exercise-details.tsx', import.meta.url),
+    'utf8',
+  );
+  assert.match(details, /queryClient.setQueryData/);
+  assert.match(details, /exerciseQueryKeys.detail\(id\)/);
+  assert.match(details, /refetchType: 'none'/);
+  assert.match(details, /queryClient.invalidateQueries/);
+});
