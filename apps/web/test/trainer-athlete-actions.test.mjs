@@ -96,7 +96,7 @@ test('athlete page has an independent authenticated session and role guard', asy
   assert.match(page, /robots: \{ index: false \}/);
 });
 
-test('mutation UI calls all typed routes and keeps destructive actions confirmed', async () => {
+test('relationship mutation hooks own typed writes and destructive confirmations', async () => {
   const invite = await readFile(
     new URL('../src/features/trainer-athletes/ui/invite-relationship-form.tsx', import.meta.url),
     'utf8',
@@ -105,26 +105,54 @@ test('mutation UI calls all typed routes and keeps destructive actions confirmed
     new URL('../src/features/trainer-athletes/ui/relationship-actions.tsx', import.meta.url),
     'utf8',
   );
+  const mutations = await readFile(
+    new URL('../src/features/trainer-athletes/api/trainer-athlete-mutations.ts', import.meta.url),
+    'utf8',
+  );
   const list = await readFile(
     new URL('../src/features/trainer-athletes/ui/trainer-athletes-list.tsx', import.meta.url),
     'utf8',
   );
+
   assert.match(invite, /zodResolver\(invitationSchema\)/);
-  assert.match(invite, /webApi.POST\('\/trainer-athletes'/);
+  assert.match(invite, /useInviteRelationshipMutation\(\)/);
   assert.match(invite, /values.userId === actorId/);
-  assert.doesNotMatch(invite, /if \(form\.formState\.isSubmitting\) return;/);
-  assert.match(invite, /response.status === 401/);
-  assert.match(invite, /response.status !== 201/);
+  assert.match(invite, /mutation.mutateAsync\(values.userId\)/);
+  assert.match(invite, /mutation.isPending/);
+  assert.match(invite, /mutation.isError/);
+  assert.match(invite, /form.reset\(\)/);
+  assert.match(invite, /onCreated\(\)/);
+  assert.doesNotMatch(invite, /webApi.POST|setBusy|useState\(/);
+
+  assert.match(actions, /useRelationshipActionMutation\(\)/);
   assert.match(actions, /getAvailableRelationshipActions/);
   assert.match(actions, /zodResolver\(endRelationshipSchema\)/);
-  for (const action of ['accept', 'decline', 'cancel', 'terminate']) {
-    assert.ok(actions.includes(`'/trainer-athletes/{id}/${action}'`));
-  }
   assert.match(actions, /onSubmit=\{form.handleSubmit\(confirm\)\}/);
+  assert.match(actions, /mutation.mutateAsync\(\{/);
+  assert.match(actions, /mutation.isPending/);
+  assert.match(actions, /mutation.isError/);
   assert.match(actions, /setSelected\(action\)/);
   assert.match(actions, /Сервер зберігає/);
-  assert.match(actions, /response.status === 401/);
+  assert.doesNotMatch(actions, /webApi.POST|setBusy|setError/);
+
+  assert.match(mutations, /useMutation</);
+  assert.match(mutations, /RelationshipMutationRequestError/);
+  assert.match(mutations, /queryClient.clear\(\)/);
+  assert.match(mutations, /router.replace\('\/login'\)/);
+  assert.match(mutations, /invalidateRelationships\('none'\)/);
+  assert.match(mutations, /invalidateRelationships\(\)/);
+  assert.match(mutations, /trainerAthleteQueryKeys.lists\(\)/);
+  assert.match(mutations, /retry: false/);
+  assert.match(mutations, /response.status !== 201/);
+  assert.match(mutations, /result.response.status !== 200/);
+  for (const action of ['accept', 'decline', 'cancel', 'terminate']) {
+    assert.ok(mutations.includes("'/trainer-athletes/{id}/" + action + "'"));
+  }
+
   assert.match(list, /<InviteRelationshipForm/);
   assert.match(list, /<RelationshipActions/);
-  assert.doesNotMatch(actions + invite, /localStorage|sessionStorage|dangerouslySetInnerHTML/);
+  assert.doesNotMatch(
+    mutations + actions + invite,
+    /localStorage|sessionStorage|dangerouslySetInnerHTML/,
+  );
 });

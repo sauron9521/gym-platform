@@ -1,16 +1,14 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 
-import { webApi } from '@/shared/api/client';
+import { useRelationshipActionMutation } from '../api/trainer-athlete-mutations';
 import { Button } from '@/shared/ui/button';
 import {
   endRelationshipSchema,
   getAvailableRelationshipActions,
-  getRelationshipMutationError,
   RELATIONSHIP_ACTION_LABELS,
   type EndRelationshipValues,
   type RelationshipAction,
@@ -26,10 +24,9 @@ export function RelationshipActions({
   actorId: string;
   onUpdated: () => void;
 }) {
-  const router = useRouter();
   const [selected, setSelected] = useState<RelationshipAction | null>(null);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const mutation = useRelationshipActionMutation();
+  const busy = mutation.isPending;
   const form = useForm<EndRelationshipValues>({
     resolver: zodResolver(endRelationshipSchema),
     defaultValues: { reason: '' },
@@ -40,46 +37,22 @@ export function RelationshipActions({
 
   function close() {
     setSelected(null);
-    setError(null);
+    mutation.reset();
     form.reset();
   }
 
   async function confirm(values: EndRelationshipValues) {
     if (!selected || busy || !allowed.includes(selected)) return;
-    setBusy(true);
-    setError(null);
+    mutation.reset();
     try {
-      const id = relationship.id;
-      const body = { reason: values.reason.trim() || null };
-      const result =
-        selected === 'accept'
-          ? await webApi.POST('/trainer-athletes/{id}/accept', { params: { path: { id } } })
-          : selected === 'decline'
-            ? await webApi.POST('/trainer-athletes/{id}/decline', { params: { path: { id } } })
-            : selected === 'cancel'
-              ? await webApi.POST('/trainer-athletes/{id}/cancel', {
-                  params: { path: { id } },
-                  body,
-                })
-              : await webApi.POST('/trainer-athletes/{id}/terminate', {
-                  params: { path: { id } },
-                  body,
-                });
-
-      if (result.response.status === 401) {
-        router.replace('/login');
-        return;
-      }
-      if (result.response.status !== 200 || !result.data) {
-        setError(getRelationshipMutationError(result.response.status));
-        return;
-      }
+      await mutation.mutateAsync({
+        id: relationship.id,
+        action: selected,
+        reason: values.reason.trim() || null,
+      });
       close();
-      onUpdated();
     } catch {
-      setError(getRelationshipMutationError());
-    } finally {
-      setBusy(false);
+      // The mutation exposes a safe error and clears private state on 401.
     }
   }
 
@@ -95,7 +68,7 @@ export function RelationshipActions({
             disabled={busy}
             onClick={() => {
               form.reset();
-              setError(null);
+              mutation.reset();
               setSelected(action);
             }}
           >
@@ -139,9 +112,9 @@ export function RelationshipActions({
               )}
             </div>
           )}
-          {error && (
+          {mutation.isError && mutation.error.status !== 401 && (
             <div className="space-y-2" role="alert">
-              <p className="text-sm text-destructive">{error}</p>
+              <p className="text-sm text-destructive">{mutation.error.message}</p>
               <Button type="button" size="sm" variant="outline" disabled={busy} onClick={onUpdated}>
                 Оновити список
               </Button>

@@ -174,9 +174,7 @@ test('trainer program details query redirects on 401 without exposing private co
   await expect(page.getByRole('region', { name: 'Редагування чернетки' })).toHaveCount(0);
 });
 
-test('relationship status filters request isolated cached lists without real API throttling', async ({
-  page,
-}) => {
+test('relationship filters use isolated cached lists without API throttling', async ({ page }) => {
   await signIn(page, 'trainer@example.test');
   const requested: string[] = [];
   await page.route('**/backend/trainer-athletes*', (route) => {
@@ -203,6 +201,59 @@ test('relationship status filters request isolated cached lists without real API
   await expect.poll(() => requested.at(-1)).toBe('ACTIVE');
   await filter.selectOption('ALL');
   await expect.poll(() => requested.at(-1)).toBe('ALL');
+});
+
+test('invitation mutation keeps the form open after a 409 conflict', async ({ page }) => {
+  await signIn(page, 'trainer@example.test');
+  let invitations = 0;
+  await page.route('**/backend/trainer-athletes*', (route) => {
+    if (route.request().method() === 'POST') {
+      invitations += 1;
+      return route.fulfill({ status: 409, contentType: 'application/json', body: '{}' });
+    }
+    return route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        data: [],
+        meta: { page: 1, limit: 20, total: 0, totalPages: 1 },
+      }),
+    });
+  });
+
+  await page.goto('/trainer/athletes');
+  const invitedId = '11111111-1111-4111-8111-111111111111';
+  await page.locator('#relationship-target-id').fill(invitedId);
+  await page.getByRole('button', { name: 'Надіслати запрошення' }).click();
+  const conflictMessage = 'Запрошення або стан співпраці вже змінився. Оновіть список.';
+  await expect(page.getByText(conflictMessage)).toBeVisible();
+  await expect(page.locator('#relationship-target-id')).toHaveValue(invitedId);
+  await expect(page).toHaveURL(/\/trainer\/athletes$/);
+  expect(invitations).toBe(1);
+});
+
+test('invitation mutation on 401 clears private UI and redirects to login', async ({ page }) => {
+  await signIn(page, 'trainer@example.test');
+  await page.route('**/backend/trainer-athletes*', (route) => {
+    if (route.request().method() === 'POST') {
+      return route.fulfill({ status: 401, contentType: 'application/json', body: '{}' });
+    }
+    return route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        data: [],
+        meta: { page: 1, limit: 20, total: 0, totalPages: 1 },
+      }),
+    });
+  });
+
+  await page.goto('/trainer/athletes');
+  const invitedId = '11111111-1111-4111-8111-111111111111';
+  await page.locator('#relationship-target-id').fill(invitedId);
+  await page.getByRole('button', { name: 'Надіслати запрошення' }).click();
+  await expect(page).toHaveURL(/\/login$/);
+  await expect(page.getByRole('region', { name: 'Список підопічних' })).toHaveCount(0);
 });
 
 test('trainer relationships query redirects on 401 without showing private contacts', async ({
