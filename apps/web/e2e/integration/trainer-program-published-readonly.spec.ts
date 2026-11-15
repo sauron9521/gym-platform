@@ -47,7 +47,10 @@ test('real API: published program details are read-only and PATCH is rejected', 
   );
   expect(versionResponse.status()).toBe(200);
   const version: {
-    workouts: Array<{ id: string; exercises: Array<{ id: string; exerciseId: string; sets: Array<{ id: string }> }> }>;
+    workouts: Array<{
+      id: string;
+      exercises: Array<{ id: string; exerciseId: string; sets: Array<{ id: string }> }>;
+    }>;
   } = await versionResponse.json();
   const workoutId = version.workouts[0]!.id;
   const workoutPath =
