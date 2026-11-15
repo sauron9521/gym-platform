@@ -130,9 +130,7 @@ export function WorkoutDetails({ id }: { id: string }) {
             />
           )}
 
-          {!editingWorkout && (
-            <WorkoutActions workout={state.workout} onReload={retry} />
-          )}
+          {!editingWorkout && <WorkoutActions workout={state.workout} onReload={retry} />}
 
           <section className="space-y-4" aria-label="Вправи тренування">
             <h2 className="text-xl font-semibold">Вправи ({state.workout.exercises.length})</h2>
