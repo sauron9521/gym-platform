@@ -58,7 +58,10 @@ test('workout detail route enforces session, and client uses typed cookie API', 
     new URL('../src/features/workouts/api/workout-mutations.ts', import.meta.url),
     'utf8',
   );
-  assert.match(mutations, /queryClient.setQueryData\(workoutQueryKeys.detail\(workout.id\), workout\)/);
+  assert.match(
+    mutations,
+    /queryClient.setQueryData\(workoutQueryKeys.detail\(workout.id\), workout\)/,
+  );
   assert.match(ui, /<WorkoutActions/);
   assert.match(ui, /<EditWorkoutForm/);
   assert.doesNotMatch(ui, /queryClient.setQueryData/);
