@@ -47,7 +47,6 @@ export function TrainerProgramDetails({ programId }: { programId: string }) {
     void query.refetch();
   }
 
-
   let state: DetailsState;
   if (query.isPending || unauthenticated) {
     state = { kind: 'loading' };
