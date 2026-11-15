@@ -174,6 +174,37 @@ test('trainer program details query redirects on 401 without exposing private co
   await expect(page.getByRole('region', { name: 'Редагування чернетки' })).toHaveCount(0);
 });
 
+test('relationship status filters request isolated cached lists without real API throttling', async ({
+  page,
+}) => {
+  await signIn(page, 'trainer@example.test');
+  const requested: string[] = [];
+  await page.route('**/backend/trainer-athletes*', (route) => {
+    const url = new URL(route.request().url());
+    requested.push(url.searchParams.get('status') ?? 'ALL');
+    return route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        data: [],
+        meta: { page: 1, limit: 20, total: 0, totalPages: 1 },
+      }),
+    });
+  });
+
+  await page.goto('/trainer/athletes');
+  await expect(page.getByRole('heading', { name: 'Підопічних не знайдено' })).toBeVisible();
+  await expect.poll(() => requested.at(-1)).toBe('ALL');
+
+  const filter = page.locator('#trainer-athletes-status');
+  await filter.selectOption('PENDING');
+  await expect.poll(() => requested.at(-1)).toBe('PENDING');
+  await filter.selectOption('ACTIVE');
+  await expect.poll(() => requested.at(-1)).toBe('ACTIVE');
+  await filter.selectOption('ALL');
+  await expect.poll(() => requested.at(-1)).toBe('ALL');
+});
+
 test('trainer relationships query redirects on 401 without showing private contacts', async ({
   page,
 }) => {
