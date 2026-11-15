@@ -100,10 +100,22 @@ test('program detail/editor use typed paths and allow only active draft updates'
   );
   const list = await readFile(new URL(root + 'trainer-programs-list.tsx', import.meta.url), 'utf8');
 
-  assert.match(details, /GET\('\/training-programs\/\{programId\}'/);
+  const query = await readFile(
+    new URL('../src/features/training-programs/api/trainer-program-details-query.ts', import.meta.url),
+    'utf8',
+  );
+  assert.match(details, /useQuery\(trainerProgramDetailsQueryOptions\(programId\)\)/);
   assert.match(details, /latest\?\.status === 'DRAFT' && program.status !== 'ARCHIVED'/);
-  assert.match(details, /response.status === 401/);
-  assert.match(details, /active = false/);
+  assert.match(details, /queryClient.clear\(\)/);
+  assert.match(details, /queryClient.setQueryData/);
+  assert.match(details, /router.replace\('\/login'\)/);
+  assert.match(details, /if \(unauthenticated\) return null/);
+  assert.match(details, /query.refetch\(\)/);
+  assert.match(query, /GET\('\/training-programs\/\{programId\}'/);
+  assert.match(query, /signal,/);
+  assert.match(query, /response.status !== 200/);
+  assert.match(query, /getTrainingProgramDetailsError/);
+  assert.match(query, /retry: false/);
   assert.match(editor, /zodResolver\(createTrainingProgramFormSchema\)/);
   assert.match(editor, /PATCH\(/);
   assert.match(editor, /'\/training-programs\/\{programId\}\/versions\/\{versionId\}'/);
@@ -111,7 +123,7 @@ test('program detail/editor use typed paths and allow only active draft updates'
   assert.match(editor, /response.status !== 200/);
   assert.match(editor, /form.reset/);
   assert.match(list, /Деталі програми/);
-  for (const file of [details, editor]) {
+  for (const file of [details, editor, query]) {
     assert.doesNotMatch(file, /localStorage|sessionStorage|dangerouslySetInnerHTML/);
   }
 });
