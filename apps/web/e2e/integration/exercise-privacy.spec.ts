@@ -81,10 +81,7 @@ test('real API: athlete creates and edits a private exercise with persisted taxo
   // Conflict responses keep the draft intact; PATCH is only retried on submit.
   await page.route(
     '**/backend/exercises/' + id,
-    (route) =>
-      route.request().method() === 'PATCH'
-        ? route.fulfill({ status: 409, contentType: 'application/json', body: '{}' })
-        : route.continue(),
+    (route) => route.fulfill({ status: 409, contentType: 'application/json', body: '{}' }),
     { times: 1 },
   );
   const conflict = page.waitForResponse(
