@@ -34,9 +34,7 @@ test('typed program exercise payload trims notes or omits empty notes', () => {
     { exerciseId: id, notes: 'Контроль' },
   );
   assert.deepEqual(
-    buildAddProgramExercisePayload(
-      addProgramExerciseSchema.parse({ exerciseId: id, notes: '  ' }),
-    ),
+    buildAddProgramExercisePayload(addProgramExerciseSchema.parse({ exerciseId: id, notes: '  ' })),
     { exerciseId: id },
   );
 });
