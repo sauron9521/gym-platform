@@ -146,11 +146,7 @@ export function WorkoutDetails({ id }: { id: string }) {
           )}
 
           {!editingWorkout && (
-            <WorkoutActions
-              workout={state.workout}
-              onUpdated={updateWorkout}
-              onReload={retry}
-            />
+            <WorkoutActions workout={state.workout} onUpdated={updateWorkout} onReload={retry} />
           )}
 
           <section className="space-y-4" aria-label="Вправи тренування">
