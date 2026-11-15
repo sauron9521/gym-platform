@@ -76,7 +76,7 @@ jobs:
       - name: Update pnpm lock and format generated UI
         run: |
           pnpm install --lockfile-only
-          pnpm exec prettier --write apps/mobile/src/app/_layout.tsx apps/mobile/src/shared/ui/gluestack apps/mobile/global.css apps/mobile/metro.config.js apps/mobile/package.json
+          pnpm exec prettier --write apps/mobile/src/app/_layout.tsx apps/mobile/src/shared/ui/gluestack apps/mobile/global.css apps/mobile/metro.config.js apps/mobile/package.json apps/mobile/tsconfig.json apps/mobile/uniwind-types.d.ts apps/mobile/babel.config.js
       - name: Commit generated files on feature branch only
         run: |
           git config user.name "github-actions[bot]"
@@ -84,5 +84,5 @@ jobs:
           git add -A
           if ! git diff --cached --quiet; then
             HUSKY=0 git commit -m "chore(mobile): [gluestack bootstrap] scaffold v5 UI and pnpm lockfile"
-            git push origin HEAD:feat/mobile-gluestack-v5-foundation
+            HUSKY=0 git push origin HEAD:feat/mobile-gluestack-v5-foundation
           fi
