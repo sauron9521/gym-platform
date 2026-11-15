@@ -92,6 +92,14 @@ test('real API: athlete creates and edits a private exercise with persisted taxo
     muscleGroups: [{ role: 'PRIMARY', muscleGroup: { slug: 'chest' } }],
     equipment: [{ equipment: { slug: 'barbell' } }],
   });
+
+  // Query cache must reflect a successful edit, and filtering must use the real API.
+  await page.goto('/exercises');
+  await page.getByLabel('Пошук за назвою').fill(updatedName);
+  await expect(page.getByRole('article').filter({ hasText: updatedName })).toBeVisible();
+  await page.getByLabel('Пошук за назвою').fill('no-such-exercise-' + randomUUID());
+  await expect(page.getByRole('article').filter({ hasText: updatedName })).toHaveCount(0);
+  await expect(page.getByText('Вправ не знайдено')).toBeVisible();
 });
 
 test('real API: another athlete and a guest cannot read or mutate private exercises', async ({
