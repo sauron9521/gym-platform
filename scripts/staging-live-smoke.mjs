@@ -27,17 +27,20 @@ export function validateStagingOrigin(input) {
     host.endsWith('.test') ||
     host.endsWith('.invalid') ||
     /^\d+(?:\.\d+){3}$/.test(host) ||
-    host.includes(':')
+    host.includes(':') ||
+    !host.split('.').includes('staging')
   ) {
-    throw new Error('STAGING_API_URL must use a public staging DNS hostname.');
+    throw new Error('STAGING_API_URL must use a public DNS hostname with a staging subdomain.');
   }
   return url.origin;
 }
 
 export async function checkStagingHealth(origin, send = fetch) {
+  const stagingOrigin = validateStagingOrigin(origin);
   for (const path of ['/health/live', '/health/ready']) {
-    const response = await send(origin + path, {
+    const response = await send(stagingOrigin + path, {
       method: 'GET',
+      credentials: 'omit',
       cache: 'no-store',
       redirect: 'error',
       signal: AbortSignal.timeout(10_000),
