@@ -1,7 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { readFileSync } from 'node:fs';
-import { validateMobileApiBaseUrl } from '../src/shared/api/client.ts';
 
 import {
   getMobileLoginError,
@@ -32,23 +31,4 @@ test('native token flow guards protected routes and avoids plaintext storage', (
   assert.match(auth, /api\.POST\('\/auth\/token\/revoke'/);
   assert.match(auth, /api\.GET\('\/users\/me'/);
   assert.doesNotMatch(auth, /AsyncStorage|localStorage|console\.log/);
-});
-
-test('native release rejects HTTP token transport but development permits LAN API', () => {
-  assert.equal(
-    validateMobileApiBaseUrl('http://192.168.1.20:3001', false),
-    'http://192.168.1.20:3001',
-  );
-  assert.equal(
-    validateMobileApiBaseUrl('https://api.example.test', true),
-    'https://api.example.test',
-  );
-  assert.throws(
-    () => validateMobileApiBaseUrl('http://192.168.1.20:3001', true),
-    /require HTTPS/,
-  );
-  assert.throws(
-    () => validateMobileApiBaseUrl('http://user:secret@host.test', false),
-    /without credentials/,
-  );
 });

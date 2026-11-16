@@ -1,31 +1,7 @@
 import { createBearerTokenClient } from '@gym/api-client';
 import type { AuthFailureListener, TokenGetter } from '@gym/api-client';
 
-/**
- * Reject plaintext transport of refresh/access tokens in release bundles.
- * Expo defines __DEV__; Node-based unit tests can pass an explicit mode.
- */
-export function validateMobileApiBaseUrl(
-  baseUrl: string,
-  production =
-    typeof __DEV__ !== 'undefined' ? !__DEV__ : process.env.NODE_ENV === 'production',
-): string {
-  const url = new URL(baseUrl);
-  if (
-    !['https:', 'http:'].includes(url.protocol) ||
-    !url.hostname ||
-    url.username ||
-    url.password ||
-    url.search ||
-    url.hash
-  ) {
-    throw new Error('Mobile API URL must be an HTTP(S) endpoint without credentials');
-  }
-  if (production && url.protocol !== 'https:') {
-    throw new Error('Mobile release builds require HTTPS for API tokens');
-  }
-  return baseUrl;
-}
+import { validateMobileApiBaseUrl } from './validate-mobile-api-url';
 
 /**
  * Native/API token adapter. Access tokens come from a caller-provided reader.
@@ -37,5 +13,11 @@ export function createMobileApi(
   getAccessToken: TokenGetter,
   onAuthFailure?: AuthFailureListener,
 ) {
-  return createBearerTokenClient({ baseUrl: validateMobileApiBaseUrl(baseUrl), getAccessToken, onAuthFailure });
+  const production =
+    typeof __DEV__ !== 'undefined' ? !__DEV__ : process.env.NODE_ENV === 'production';
+  return createBearerTokenClient({
+    baseUrl: validateMobileApiBaseUrl(baseUrl, production),
+    getAccessToken,
+    onAuthFailure,
+  });
 }
