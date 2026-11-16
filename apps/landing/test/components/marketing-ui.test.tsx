@@ -113,8 +113,6 @@ describe('Landing marketing primitives', () => {
     );
 
     expect(screen.getAllByRole('link')).toHaveLength(1);
-    expect(screen.getByRole('link', { name: 'Про платформу' }).getAttribute('href')).toBe(
-      '/about',
-    );
+    expect(screen.getByRole('link', { name: 'Про платформу' }).getAttribute('href')).toBe('/about');
   });
 });
