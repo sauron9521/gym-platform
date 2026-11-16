@@ -86,6 +86,16 @@ export function AuthProvider({ children }: PropsWithChildren) {
     }
   }, [baseUrl, session]);
 
+  // Use a non-rotating token reader for manual post-startup verification.
+  const getVerificationApi = useCallback(() => {
+    if (!baseUrl) return null;
+    try {
+      return createMobileApi(baseUrl, () => session.getRevalidationToken());
+    } catch {
+      return null;
+    }
+  }, [baseUrl, session]);
+
   useEffect(() => {
     let active = true;
     const bootstrap = async () => {
@@ -104,10 +114,16 @@ export function AuthProvider({ children }: PropsWithChildren) {
           queryClient.setQueryData(accountQueryKeys.me(response.data.id), response.data);
           setAccount(response.data);
           setRecoveryAvailable(false);
-        } else if (response.response.status === 401) {
+        } else if (response.response.status === 401 || response.response.status === 403) {
           await session.clear();
           setRecoveryAvailable(false);
-        } else if (active && session.canRevalidate()) {
+        } else if (
+          active &&
+          (response.response.status === 408 ||
+            response.response.status === 429 ||
+            response.response.status >= 500) &&
+          session.canRevalidate()
+        ) {
           setRecoveryAvailable(true);
         }
         // A transient network/5xx error keeps the newly rotated refresh token
@@ -132,7 +148,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
       setRecoveryAvailable(false);
       return { success: false, message: 'Сесія потребує повторного входу.' };
     }
-    const api = getApi();
+    const api = getVerificationApi();
     if (!api) return { success: false, message: 'Не налаштовано адресу API.' };
 
     const revision = session.revision;
@@ -148,7 +164,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
         setRecoveryAvailable(false);
         return { success: true };
       }
-      if (result.response.status === 401) {
+      if (result.response.status === 401 || result.response.status === 403) {
         await session.clear();
         setRecoveryAvailable(false);
       }
@@ -157,12 +173,11 @@ export function AuthProvider({ children }: PropsWithChildren) {
       // Retain the rotated refresh token; never retry the one-time refresh call.
       return { success: false, message: 'Немає з’єднання з API. Спробуйте ще раз.' };
     }
-  }, [getApi, queryClient, recoveryAvailable, session]);
+  }, [getVerificationApi, queryClient, recoveryAvailable, session]);
 
   const signIn = useCallback(
     async (email: string, password: string): Promise<Result> => {
       if (restoring) return { success: false, message: 'Зачекайте на перевірку сесії.' };
-      setRecoveryAvailable(false);
       const validation = validateMobileCredentials(email, password);
       if (validation) return { success: false, message: validation };
 
@@ -172,6 +187,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
         return { success: false, message: 'Налаштуйте EXPO_PUBLIC_API_URL.' };
       }
 
+      setRecoveryAvailable(false);
       let issuedRefreshToken: string | null = null;
       let verified = false;
       try {
