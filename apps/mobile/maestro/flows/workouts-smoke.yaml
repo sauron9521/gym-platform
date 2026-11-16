@@ -1,0 +1,20 @@
+# Staging-only native smoke: APP_ID, E2E_EMAIL and E2E_PASSWORD are operator-provided.
+appId: ${APP_ID}
+---
+- launchApp:
+    clearState: true
+- assertVisible: З поверненням!
+- tapOn:
+    id: sign-in-email
+- inputText: ${E2E_EMAIL}
+- tapOn:
+    id: sign-in-password
+- inputText: ${E2E_PASSWORD}
+- tapOn: Увійти
+- tapOn: Тренування
+- assertVisible: Мої тренування
+- assertVisible:
+    id: workouts-refresh
+- tapOn: Profile
+- tapOn: Вийти
+- assertVisible: З поверненням!

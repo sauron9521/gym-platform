@@ -29,3 +29,21 @@ test('native smoke requires disposable account and stable native input selectors
   assert.match(signIn, /testID="sign-in-password"/);
   assert.doesNotMatch(smoke, /@example\.com|password123|localhost/);
 });
+
+test('workouts smoke uses native stable selectors and never hardcodes credentials', () => {
+  const flow = readFileSync(
+    new URL('../maestro/flows/workouts-smoke.yaml', import.meta.url),
+    'utf8',
+  );
+  const workouts = readFileSync(
+    new URL('../src/screens/workouts/ui/workouts-screen.tsx', import.meta.url),
+    'utf8',
+  );
+  assert.match(flow, /appId: \$\{APP_ID\}/);
+  assert.match(flow, /\$\{E2E_EMAIL\}/);
+  assert.match(flow, /\$\{E2E_PASSWORD\}/);
+  assert.match(flow, /clearState: true/);
+  assert.match(flow, /id: workouts-refresh/);
+  assert.match(workouts, /testID="workouts-refresh"/);
+  assert.doesNotMatch(flow, /@example\.com|password123|localhost/);
+});

@@ -36,6 +36,7 @@ export function WorkoutsScreen() {
       ))}
 
       <Pressable
+        testID="workouts-refresh"
         accessibilityRole="button"
         disabled={isFetching}
         onPress={() => void refetch()}
