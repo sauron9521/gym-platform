@@ -58,7 +58,13 @@ test('admin session request forwards only the cookie to the fixed uncached API e
 });
 
 test('admin session fails closed on malformed identities, redirects and invalid upstream URLs', async () => {
-  for (const user of [null, [], { id: '', role: 'ADMIN' }, { id: 123, role: 'ADMIN' }, { id: 'member', role: null }]) {
+  for (const user of [
+    null,
+    [],
+    { id: '', role: 'ADMIN' },
+    { id: 123, role: 'ADMIN' },
+    { id: 'member', role: null },
+  ]) {
     assert.deepEqual(await readAdminSession('sid=test', endpoint, reply(200, user)), {
       kind: 'unavailable',
     });
