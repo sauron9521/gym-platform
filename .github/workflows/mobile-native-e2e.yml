@@ -1,0 +1,78 @@
+name: Mobile native E2E / Maestro (manual)
+on:
+  workflow_dispatch:
+    inputs:
+      apk_url:
+        description: "HTTPS download URL for the EAS Android preview APK"
+        required: true
+        type: string
+      app_id:
+        description: "Android application ID (matching the APK manifest)"
+        required: true
+        type: string
+      flow:
+        description: "Staging smoke suite"
+        required: true
+        default: auth
+        type: choice
+        options:
+          - auth
+          - workouts
+          - session-restore
+
+permissions:
+  contents: read
+
+jobs:
+  native-smoke:
+    name: Maestro / Android emulator
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    environment: mobile-staging
+    env:
+      APP_ID: ${{ inputs.app_id }}
+      APK_URL: ${{ inputs.apk_url }}
+      E2E_EMAIL: ${{ secrets.MOBILE_E2E_EMAIL }}
+      E2E_PASSWORD: ${{ secrets.MOBILE_E2E_PASSWORD }}
+      FLOW: ${{ inputs.flow }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Ensure staging credentials and APK URL are present
+        shell: bash
+        run: |
+          test -n "$E2E_EMAIL"
+          test -n "$E2E_PASSWORD"
+          case "$APK_URL" in
+            https://*) ;;
+            *) echo "APK URL must be HTTPS" >&2; exit 1 ;;
+          esac
+
+      - name: Install Maestro CLI
+        shell: bash
+        run: |
+          curl --fail --location --silent --show-error https://get.maestro.mobile.dev | bash
+          echo "$HOME/.maestro/bin" >> "$GITHUB_PATH"
+
+      - name: Run authenticated device flow
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          arch: x86_64
+          script: |
+            curl --fail --location --silent --show-error "$APK_URL" --output /tmp/gym-platform-preview.apk
+            adb install -r /tmp/gym-platform-preview.apk
+            case "$FLOW" in
+              auth) FLOW_FILE=auth-smoke.yaml ;;
+              workouts) FLOW_FILE=workouts-smoke.yaml ;;
+              session-restore) FLOW_FILE=session-restore-smoke.yaml ;;
+              *) exit 1 ;;
+            esac
+            maestro test -e APP_ID="$APP_ID" -e E2E_EMAIL="$E2E_EMAIL" -e E2E_PASSWORD="$E2E_PASSWORD" "apps/mobile/maestro/flows/$FLOW_FILE"
