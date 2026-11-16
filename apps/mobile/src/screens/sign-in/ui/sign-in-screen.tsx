@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useRef } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Controller, useForm } from 'react-hook-form';
 import {
@@ -19,7 +19,6 @@ import { palette } from '@/shared/config/theme';
 
 export function SignInScreen() {
   const { signIn, recoveryAvailable, retryVerification } = useAuth();
-  const [retrying, setRetrying] = useState(false);
   const submitLock = useRef(false);
   const {
     control,
@@ -150,21 +149,24 @@ export function SignInScreen() {
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Повторити перевірку сесії"
-            disabled={retrying || isSubmitting}
-            style={[styles.button, (retrying || isSubmitting) && styles.disabled]}
+            disabled={isSubmitting}
+            style={[styles.button, isSubmitting && styles.disabled]}
             onPress={() => {
-              if (retrying) return;
-              setRetrying(true);
+              if (submitLock.current) return;
+              submitLock.current = true;
+              clearErrors('root.server');
               void retryVerification()
                 .then((result) => {
                   if (!result.success) {
                     setError('root.server', { type: 'server', message: result.message });
                   }
                 })
-                .finally(() => setRetrying(false));
+                .finally(() => {
+                  submitLock.current = false;
+                });
             }}
           >
-            <Text style={styles.buttonText}>{retrying ? 'Перевіряємо…' : 'Відновити сесію'}</Text>
+            <Text style={styles.buttonText}>Відновити сесію</Text>
           </Pressable>
         ) : null}
         <Text style={styles.note}>
