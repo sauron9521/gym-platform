@@ -2,7 +2,10 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 
-const exports = readFileSync(new URL('../../../packages/ui-web/src/index.ts', import.meta.url), 'utf8');
+const exports = readFileSync(
+  new URL('../../../packages/ui-web/src/index.ts', import.meta.url),
+  'utf8',
+);
 const login = readFileSync(
   new URL('../src/features/auth/ui/sign-in-form.tsx', import.meta.url),
   'utf8',
