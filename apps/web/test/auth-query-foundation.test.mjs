@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { test } from 'node:test';
+import { test } from 'vitest';
 
 test('shared auth failure clears private queries only on HTTP 401', async () => {
   const authFailure = await readFile(

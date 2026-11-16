@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { existsSync } from 'node:fs';
-import { test } from 'node:test';
+import { test } from 'vitest';
 
 test('Next.js app router entrypoints exist', () => {
   assert.ok(existsSync(new URL('../src/app/layout.tsx', import.meta.url)));
