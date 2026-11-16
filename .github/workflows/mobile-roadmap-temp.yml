@@ -68,3 +68,9 @@ jobs:
 
       - name: Run mobile unit and contracts tests
         run: pnpm --filter @gym/mobile test
+
+      - name: Lint mobile
+        run: pnpm --filter @gym/mobile lint
+
+      - name: Export Expo Web and iOS JavaScript bundles
+        run: pnpm --filter @gym/mobile build
