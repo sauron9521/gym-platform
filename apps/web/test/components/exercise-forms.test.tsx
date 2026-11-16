@@ -204,6 +204,9 @@ describe('EditExerciseForm interactions', () => {
     expect((screen.getByRole('checkbox', { name: 'Гантелі' }) as HTMLInputElement).checked).toBe(
       true,
     );
+    expect(
+      screen.getAllByRole('combobox', { name: 'Роль' }).map((item) => (item as HTMLSelectElement).value),
+    ).toEqual(['PRIMARY', 'SECONDARY']);
     fireEvent.click(screen.getByRole('button', { name: 'Скасувати' }));
     expect(props.onCancel).toHaveBeenCalledOnce();
     expect(editExercise).not.toHaveBeenCalled();
@@ -256,7 +259,11 @@ describe('EditExerciseForm interactions', () => {
     fireEvent.change(screen.getByRole('textbox', { name: 'Назва' }), {
       target: { value: 'Жим лежачи' },
     });
-    fireEvent.click(screen.getByRole('button', { name: 'Зберегти зміни' }));
+    const saveButton = screen.getByRole('button', {
+      name: 'Зберегти зміни',
+    }) as HTMLButtonElement;
+    await waitFor(() => expect(saveButton.disabled).toBe(false));
+    fireEvent.click(saveButton);
 
     await waitFor(() => expect(editExercise).toHaveBeenCalledOnce());
     expect(editExercise).toHaveBeenCalledWith({ name: 'Жим лежачи' });
@@ -266,7 +273,11 @@ describe('EditExerciseForm interactions', () => {
     const props = editProps();
     render(<EditExerciseForm {...props} />);
     fireEvent.click(screen.getAllByRole('button', { name: 'Прибрати' })[0]);
-    fireEvent.click(screen.getByRole('button', { name: 'Зберегти зміни' }));
+    const saveButton = screen.getByRole('button', {
+      name: 'Зберегти зміни',
+    }) as HTMLButtonElement;
+    await waitFor(() => expect(saveButton.disabled).toBe(false));
+    fireEvent.click(saveButton);
 
     expect(await screen.findByText(/принаймні одну основну/)).toBeTruthy();
     expect(editExercise).not.toHaveBeenCalled();
