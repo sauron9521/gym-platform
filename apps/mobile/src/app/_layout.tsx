@@ -17,7 +17,7 @@ function Navigation() {
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Protected guard={Boolean(account)}>
           <Stack.Screen name="(tabs)" />
-          <Stack.Screen name="profile/edit" options={{ headerShown: true, title: 'Редагувати профіль' }} />
+          <Stack.Screen name="progress/index" options={{ headerShown: true, title: 'Мій прогрес' }} />
           <Stack.Screen name="workouts/[id]" options={{ headerShown: true, title: 'Тренування' }} />
         </Stack.Protected>
         <Stack.Protected guard={!account}>
