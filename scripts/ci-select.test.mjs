@@ -91,6 +91,74 @@ test('app-local manifest changes trigger vulnerability audit', () => {
   assert.equal(actual.deps, true);
 });
 
+test('known shared packages select consumers and avoid unrelated API E2E', () => {
+  for (const [path, mobile] of [
+    ['packages/ui-web/src/button.tsx', false],
+    ['packages/design-tokens/src/dark.css', true],
+    ['tooling/config/eslint-next.mjs', false],
+    ['tooling/config/tsconfig-next.json', false],
+  ]) {
+    assert.deepEqual(classifyChangedPaths([path]), {
+      full: false,
+      api: false,
+      web: true,
+      landing: true,
+      mobile,
+      client: false,
+      deps: false,
+      workspaces: true,
+      redis: false,
+    });
+  }
+});
+
+test('shared package manifests require dependency vulnerability audits', () => {
+  for (const path of ['packages/ui-web/package.json', 'packages/design-tokens/package.json']) {
+    const result = classifyChangedPaths([path]);
+    assert.equal(result.full, false);
+    assert.equal(result.deps, true);
+    assert.equal(result.web, true);
+    assert.equal(result.landing, true);
+    assert.equal(result.api, false);
+  }
+});
+
+test('mixed shared changes union scopes and unknown dependencies fail closed', () => {
+  const mixed = classifyChangedPaths([
+    'packages/ui-web/src/button.tsx',
+    'tooling/config/tsconfig-next.json',
+    'apps/mobile/app/index.tsx',
+  ]);
+  assert.equal(mixed.full, false);
+  assert.equal(mixed.web, true);
+  assert.equal(mixed.landing, true);
+  assert.equal(mixed.mobile, true);
+  assert.equal(mixed.api, false);
+  assert.equal(mixed.deps, false);
+
+  for (const path of [
+    'packages/new-package/src/index.ts',
+    'packages/new-package/package.json',
+    'tooling/config/package.json',
+    'pnpm-lock.yaml',
+  ]) {
+    const result = classifyChangedPaths([path]);
+    assert.equal(result.full, true, path);
+    assert.equal(result.api, true, path);
+    assert.equal(result.deps, true, path);
+  }
+});
+
+test('affected Web quality also typechecks the shared UI workspace', () => {
+  const yaml = readFileSync(new URL('../.github/workflows/ci.yml', import.meta.url), 'utf8');
+  const workspaces = yaml.split('  quality-workspaces:\n')[1]?.split('\n  quality:\n')[0];
+  assert.ok(workspaces);
+  assert.match(
+    workspaces,
+    /if \[ "\$CI_WEB" = true \]; then filters\+=\(--filter=@gym\/ui-web\); fi/,
+  );
+});
+
 test('docs-only PR still runs required quality gate and formatting', () => {
   const actual = classifyChangedPaths(['README.md', 'docs/api/testing.md']);
   assert.equal(actual.full, false);
