@@ -219,3 +219,22 @@ lifecycle controls start a planned workout and attempt to complete an active
 workout. API conflict responses are surfaced safely (for example, unfinished
 sets cannot be completed). Creating workouts, editing sets, cancel flows and
 full history remain future slices. Live native/device testing is still required.
+
+## Vitest + React Native Testing Library pilot
+
+Mobile keeps the existing `node:test` contract suite under `test:contracts`.
+The new opt-in `test:unit` suite runs Vitest 5 + `vitest-native` with
+`engine: 'native'` and React Native Testing Library 14. Running `pnpm test`
+executes **both** suites; Turborepo CI already invokes this script for Mobile.
+
+```bash
+pnpm --filter @gym/mobile test:unit
+pnpm --filter @gym/mobile test
+```
+
+The first component tests render `WorkoutDetailsScreen` through the real
+React Native JavaScript renderer (native platform modules are mocked) and
+exercise the status button with user events. This is not an emulator/device
+or EAS smoke test. Existing Maestro native flows remain operator-driven.
+Keep this pilot isolated to Mobile until CI and local Windows development
+confirm the beta plugin works reliably with Expo SDK 58 / React Native 0.88.

@@ -1,0 +1,25 @@
+name: Mobile Vitest lockfile bootstrap (temporary)
+on:
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  resolve-mobile-test-dependencies:
+    if: github.head_ref == 'test/mobile-vitest-native-pilot'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+      - name: Generate reproducible pnpm dependency diff for review
+        run: |
+          pnpm install --lockfile-only --no-frozen-lockfile
+          echo 'MOBILE_VITEST_LOCK_DIFF_BEGIN'
+          git --no-pager diff -- pnpm-lock.yaml
+          echo 'MOBILE_VITEST_LOCK_DIFF_END'
