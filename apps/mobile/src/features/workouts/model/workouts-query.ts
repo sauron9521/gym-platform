@@ -4,14 +4,10 @@ import type { paths } from '@gym/api-client';
 import { useAuth } from '@/features/auth/model/auth-context';
 import { accountQueryKeys } from '@/shared/api/query-client';
 
-export type WorkoutFilter =
-  | 'PLANNED'
-  | 'IN_PROGRESS'
-  | 'COMPLETED'
-  | 'CANCELLED'
-  | undefined;
+export type WorkoutFilter = 'PLANNED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | undefined;
 
-export type WorkoutsPage = paths['/workouts']['get']['responses'][200]['content']['application/json'];
+export type WorkoutsPage =
+  paths['/workouts']['get']['responses'][200]['content']['application/json'];
 
 class SessionExpiredError extends Error {}
 

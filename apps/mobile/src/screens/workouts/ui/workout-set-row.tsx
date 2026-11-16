@@ -39,7 +39,12 @@ export function WorkoutSetRow({
   return (
     <View style={styles.container}>
       <Text style={styles.title}>
-        Підхід {set.setNumber} · {set.status === 'PENDING' ? 'Очікує' : set.status === 'COMPLETED' ? 'Виконано' : 'Пропущено'}
+        Підхід {set.setNumber} ·{' '}
+        {set.status === 'PENDING'
+          ? 'Очікує'
+          : set.status === 'COMPLETED'
+            ? 'Виконано'
+            : 'Пропущено'}
       </Text>
       <Text style={styles.caption}>
         План: {set.plannedReps ?? '—'} повт. · {set.plannedWeightKg ?? '—'} кг
@@ -65,7 +70,9 @@ export function WorkoutSetRow({
                   />
                 )}
               />
-              {errors.actualReps?.message ? <Text style={styles.error}>{errors.actualReps.message}</Text> : null}
+              {errors.actualReps?.message ? (
+                <Text style={styles.error}>{errors.actualReps.message}</Text>
+              ) : null}
             </View>
             <View style={styles.field}>
               <Text style={styles.caption}>Вага, кг</Text>
@@ -85,7 +92,9 @@ export function WorkoutSetRow({
                   />
                 )}
               />
-              {errors.actualWeightKg?.message ? <Text style={styles.error}>{errors.actualWeightKg.message}</Text> : null}
+              {errors.actualWeightKg?.message ? (
+                <Text style={styles.error}>{errors.actualWeightKg.message}</Text>
+              ) : null}
             </View>
           </View>
           <View style={styles.actions}>
@@ -130,11 +139,34 @@ const styles = StyleSheet.create({
   caption: { fontSize: 13, color: palette.muted },
   inputs: { flexDirection: 'row', gap: 12 },
   field: { flex: 1, gap: 4 },
-  input: { borderWidth: 1, borderColor: palette.border, borderRadius: 8, backgroundColor: palette.background, color: palette.text, minHeight: 42, paddingHorizontal: 10 },
+  input: {
+    borderWidth: 1,
+    borderColor: palette.border,
+    borderRadius: 8,
+    backgroundColor: palette.background,
+    color: palette.text,
+    minHeight: 42,
+    paddingHorizontal: 10,
+  },
   actions: { flexDirection: 'row', gap: 10 },
-  button: { flex: 1, backgroundColor: palette.primary, borderRadius: 10, minHeight: 44, justifyContent: 'center', alignItems: 'center' },
+  button: {
+    flex: 1,
+    backgroundColor: palette.primary,
+    borderRadius: 10,
+    minHeight: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   buttonText: { color: palette.surface, fontWeight: '700' },
-  secondary: { flex: 1, borderWidth: 1, borderColor: palette.border, borderRadius: 10, minHeight: 44, justifyContent: 'center', alignItems: 'center' },
+  secondary: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: palette.border,
+    borderRadius: 10,
+    minHeight: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   secondaryText: { color: palette.text, fontWeight: '600' },
   error: { color: '#b91c1c', fontSize: 13 },
 });
