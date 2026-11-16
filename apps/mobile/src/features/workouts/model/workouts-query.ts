@@ -1,23 +1,31 @@
-import { useQuery } from '@tanstack/react-query';
+import { useInfiniteQuery } from '@tanstack/react-query';
+import type { paths } from '@gym/api-client';
 
 import { useAuth } from '@/features/auth/model/auth-context';
 import { accountQueryKeys } from '@/shared/api/query-client';
+import { nextWorkoutPage } from '../lib/workouts-pagination';
+
+export type WorkoutFilter = 'PLANNED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | undefined;
+
+export type WorkoutsPage =
+  paths['/workouts']['get']['responses'][200]['content']['application/json'];
 
 class SessionExpiredError extends Error {}
 
-/** Read-only paginated workout list; credentials never enter TanStack keys. */
-export function useWorkoutsQuery() {
+/** Paginated results are scoped by authenticated account and selected status. */
+export function useWorkoutsQuery(status?: WorkoutFilter) {
   const { account, getApi, signOut } = useAuth();
 
-  return useQuery({
-    queryKey: accountQueryKeys.workouts(account?.id ?? 'signed-out'),
+  return useInfiniteQuery({
+    queryKey: [...accountQueryKeys.workouts(account?.id ?? 'signed-out'), status ?? 'ALL'],
     enabled: Boolean(account),
-    queryFn: async ({ signal }) => {
+    initialPageParam: 1,
+    queryFn: async ({ signal, pageParam }) => {
       const api = getApi();
       if (!api) throw new Error('Не налаштовано адресу API.');
 
       const response = await api.GET('/workouts', {
-        params: { query: { page: 1, limit: 20, view: 'summary' } },
+        params: { query: { page: pageParam, limit: 20, view: 'summary', status } },
         signal,
       });
 
@@ -32,6 +40,7 @@ export function useWorkoutsQuery() {
 
       return response.data;
     },
+    getNextPageParam: (page, _pages, lastPageParam) => nextWorkoutPage(page, lastPageParam),
     retry: (count, error) => !(error instanceof SessionExpiredError) && count < 1,
   });
 }

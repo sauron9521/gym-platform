@@ -206,10 +206,13 @@ unchanged. Follow the same pattern for future React Native forms.
 
 ## Workouts list foundation
 
-The protected `Тренування` tab fetches the current user's first 20 workouts
-through the generated typed API client, scoped by account ID in TanStack Query.
-It supports loading, empty, error and manual refresh states; 401 clears the
-local session. Editing and workout creation are deliberately separate PRs.
+The protected `Тренування` tab fetches workouts through the generated
+typed API client, scoped by account ID in TanStack Query. Pages load in batches
+of 20 with FlatList infinite scrolling; status filters and pull-to-refresh use
+separate query keys per account and selected status. Initial, empty, failed-page
+and retry states are displayed, and 401 clears the local session. The athlete
+creation action remains available alongside the list. The older manual refresh
+button is also retained for accessibility and Maestro smoke tests.
 
 ## Workout detail and lifecycle (first vertical slice)
 
@@ -261,5 +264,5 @@ The screen is available only for ATHLETE accounts and currently lists the first
 A synchronous submit lock blocks duplicate presses. POST /workouts sends a
 stable Idempotency-Key for manual retries of the same canonical payload:
 a lost response must not create duplicate workouts. TanStack mutations are
-never automatically retried. Complex set editing, pagination/search,
-multiple exercises and cancellation are later PRs.
+never automatically retried. Additional exercise search, multiple
+exercise creation, cancellation and advanced set editing are later PRs.
