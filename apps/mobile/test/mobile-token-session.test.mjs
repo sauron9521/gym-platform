@@ -195,7 +195,7 @@ test('native secure storage and gated profile bootstrap are wired without web pe
   assert.ok(config.expo.plugins.includes('expo-secure-store'));
 });
 
-test('manual verification reads only the unexpired cached access token without refresh', async () => {
+test('manual profile retry reads cached token without rotating refresh', async () => {
   const store = makeStore('refresh-old');
   let now = 0;
   let refreshCalls = 0;
