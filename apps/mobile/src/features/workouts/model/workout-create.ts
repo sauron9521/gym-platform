@@ -15,7 +15,7 @@ export function useWorkoutExerciseOptions() {
   const { account, getApi, signOut } = useAuth();
   return useQuery({
     queryKey: ['account', 'create-workout-exercises', account?.id ?? 'signed-out'],
-    enabled: Boolean(account),
+    enabled: account?.role === 'ATHLETE',
     queryFn: async ({ signal }) => {
       const api = getApi();
       if (!api) throw new Error('Не налаштовано адресу API.');
