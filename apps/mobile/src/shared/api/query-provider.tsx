@@ -35,7 +35,9 @@ function NativeOnlineSync() {
       if (active) onlineManager.setOnline(isConnectionAvailable(state));
     };
 
-    void Network.getNetworkStateAsync().then(updateOnline).catch(() => undefined);
+    void Network.getNetworkStateAsync()
+      .then(updateOnline)
+      .catch(() => undefined);
     const subscription = Network.addNetworkStateListener(updateOnline);
 
     return () => {

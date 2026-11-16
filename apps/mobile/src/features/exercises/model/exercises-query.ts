@@ -20,7 +20,8 @@ export function useExerciseFilters() {
       const api = getApi();
       if (!api) throw new Error('Немає доступу до API.');
       const response = await api.GET('/exercises/muscle-groups', { signal });
-      if (response.response.status !== 200 || !response.data) throw new Error('Не вдалося завантажити групи м’язів.');
+      if (response.response.status !== 200 || !response.data)
+        throw new Error('Не вдалося завантажити групи м’язів.');
       return response.data;
     },
   });
@@ -31,7 +32,8 @@ export function useExerciseFilters() {
       const api = getApi();
       if (!api) throw new Error('Немає доступу до API.');
       const response = await api.GET('/exercises/equipment', { signal });
-      if (response.response.status !== 200 || !response.data) throw new Error('Не вдалося завантажити обладнання.');
+      if (response.response.status !== 200 || !response.data)
+        throw new Error('Не вдалося завантажити обладнання.');
       return response.data;
     },
   });
@@ -63,7 +65,8 @@ export function useExercisesQuery(filters: ExerciseFilters) {
         await signOut();
         throw new Error('Сесію завершено.');
       }
-      if (response.response.status !== 200 || !response.data) throw new Error('Не вдалося завантажити вправи.');
+      if (response.response.status !== 200 || !response.data)
+        throw new Error('Не вдалося завантажити вправи.');
       return response.data;
     },
     getNextPageParam: (page, _pages, index) =>

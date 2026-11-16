@@ -7,7 +7,8 @@ import { useAuth } from '@/features/auth/model/auth-context';
 import { accountQueryKeys } from '@/shared/api/query-client';
 import type { WorkoutDetails } from './workout-details-query';
 
-type SetBody = paths['/workouts/{id}/sets/{setId}']['patch']['requestBody']['content']['application/json'];
+type SetBody =
+  paths['/workouts/{id}/sets/{setId}']['patch']['requestBody']['content']['application/json'];
 type SetResponse =
   paths['/workouts/{id}/sets/{setId}']['patch']['responses'][200]['content']['application/json'];
 
@@ -40,7 +41,9 @@ export function useWorkoutSetMutation(workoutId: string) {
     networkMode: 'always', // Fail fast while offline; never replay set writes implicitly.
     onSuccess: (updated) => {
       if (Platform.OS !== 'web') {
-        void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => undefined);
+        void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(
+          () => undefined,
+        );
       }
       if (!account || !queryClient.getQueryData(accountQueryKeys.me(account.id))) return;
       queryClient.setQueryData<WorkoutDetails>(
