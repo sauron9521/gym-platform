@@ -246,6 +246,11 @@ confirm the beta plugin works reliably with Expo SDK 58 / React Native 0.88.
 A protected `/workouts/new` route uses React Hook Form and Zod for title,
 exercise selection and a single planned-reps set. Exercises are loaded from
 the typed GET /exercises API; POST /workouts writes through the bearer client.
-Only success navigates back and invalidates the current user's workout list.
-Duplicate in-flight submits are blocked and mutations are never retried.
-Complex set editing, multiple exercises and cancellation are later PRs.
+Only verified success navigates back and invalidates the athlete's workout list.
+The screen is available only for ATHLETE accounts and currently lists the first
+20 accessible exercises, with a manual reload action on a read error.
+A synchronous submit lock blocks duplicate presses. POST /workouts sends a
+stable Idempotency-Key for manual retries of the same canonical payload:
+a lost response must not create duplicate workouts. TanStack mutations are
+never automatically retried. Complex set editing, pagination/search,
+multiple exercises and cancellation are later PRs.
