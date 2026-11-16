@@ -17,3 +17,10 @@ until both Web and Landing are migrated to `@gym/ui-web`.
 
 The package build runs Node regression checks for mandatory semantic tokens.
 The existing Next.js build verifies bundler resolution of the workspace CSS.
+
+## Native adapter
+
+Expo imports the `@gym/design-tokens/native` adapter for React Native
+StyleSheet colors. These sRGB values are explicit approximations of the
+canonical OKLCH Dark Performance palette. Mobile UniWind's `.dark` variables
+use the same RGB channels; keep the two in sync when editing the design.
