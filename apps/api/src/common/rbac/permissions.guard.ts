@@ -27,9 +27,8 @@ export class PermissionsGuard implements CanActivate {
 
     // A malformed or empty annotation must never turn a protected route public.
     if (
-      (controller !== undefined && !Array.isArray(controller)) ||
-      (handler !== undefined && !Array.isArray(handler)) ||
-      (controller?.length ?? 0) + (handler?.length ?? 0) === 0
+      (controller !== undefined && (!Array.isArray(controller) || controller.length === 0)) ||
+      (handler !== undefined && (!Array.isArray(handler) || handler.length === 0))
     ) {
       throw new ForbiddenException('Invalid administrative permission requirement');
     }
