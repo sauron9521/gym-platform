@@ -9,3 +9,9 @@ and local semantic CSS themes. The shared package must not import app code.
 Both Next.js apps list `@gym/ui-web` in `transpilePackages` and declare
 a Tailwind CSS 4 `@source` entry so variant utility classes from the
 workspace are retained. Native Expo UI remains separate.
+
+## Shared primitives
+
+The package exports `Button`, `Input`, `Card` and its semantic slots.
+Use semantic design tokens from each consuming Next.js app instead of embedding palette values here.
+Keep business-specific forms, routing and API hooks inside their app; this package is UI-only.

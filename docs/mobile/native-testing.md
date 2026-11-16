@@ -64,7 +64,7 @@ interpret a green JS/Metro export as native E2E validation.
 ## Authenticated workouts native smoke (operator-driven)
 
 A second smoke verifies that an authenticated user can navigate to the real
-workouts tab and see the stable refresh control, even with zero workouts.
+workouts tab, wait for the refresh control, and tap it, even with zero workouts.
 It intentionally avoids assuming a particular seeded workout or staging
 user state. After installing a staging preview build, run:
 

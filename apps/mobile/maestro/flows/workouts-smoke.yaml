@@ -15,6 +15,11 @@ appId: ${APP_ID}
 - assertVisible: Мої тренування
 - assertVisible:
     id: workouts-refresh
+- assertVisible: Оновити список
+- tapOn:
+    id: workouts-refresh
+- assertVisible:
+    id: workouts-refresh
 - tapOn: Profile
 - tapOn: Вийти
 - assertVisible: З поверненням!
