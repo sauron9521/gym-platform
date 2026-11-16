@@ -10,6 +10,11 @@
     "./dark.css": "./src/dark.css"
   },
   "scripts": {
-    "build": "node --test test/*.test.mjs"
+    "build": "pnpm test",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "vite": "8.3.8",
+    "vitest": "5.1.0"
   }
 }
