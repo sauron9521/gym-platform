@@ -106,4 +106,79 @@ describe('DistributedThrottlerStorage', () => {
       await storage.onApplicationShutdown();
     }
   });
+
+  it('atomically returns TTL, throttle state and hashed Redis keys', async () => {
+    const storage = withRedis('redis://127.0.0.1:6379');
+    const evaluate = vi.fn().mockResolvedValueOnce([4, 1501, 1, 0]);
+    (storage as unknown as { redis: unknown }).redis = {
+      status: 'ready',
+      eval: evaluate,
+      disconnect: vi.fn(),
+    };
+    try {
+      const result = await storage.increment('client-ip-private', 60_000, 3, 0, 'login');
+      expect(result).toEqual({
+        totalHits: 4,
+        timeToExpire: 2,
+        isBlocked: true,
+        timeToBlockExpire: 0,
+      });
+      expect(evaluate).toHaveBeenCalledTimes(1);
+      const args = evaluate.mock.calls[0]!;
+      expect(args[1]).toBe(2);
+      expect(args[2]).toMatch(/^gym:throttle:[a-f0-9]{64}$/);
+      expect(args[3]).toMatch(/^gym:throttle:block:[a-f0-9]{64}$/);
+      expect(JSON.stringify(args)).not.toContain('client-ip-private');
+    } finally {
+      await storage.onApplicationShutdown();
+    }
+  });
+
+  it('fails closed on malformed Redis results instead of switching to memory', async () => {
+    const storage = withRedis('redis://127.0.0.1:6379');
+    const evaluate = vi.fn().mockResolvedValue(['bad', 12, 0, 0]);
+    (storage as unknown as { redis: unknown }).redis = {
+      status: 'ready',
+      eval: evaluate,
+      disconnect: vi.fn(),
+    };
+    try {
+      await expect(storage.increment('client-1', 1000, 3, 0, 'default')).rejects.toThrow(
+        ServiceUnavailableException,
+      );
+      expect(evaluate).toHaveBeenCalledTimes(1);
+    } finally {
+      await storage.onApplicationShutdown();
+    }
+  });
+
+  it('emits a single recovery event after Redis outage and healthy readiness probe', async () => {
+    const storage = withRedis('redis://127.0.0.1:6379');
+    const logger = { warn: vi.fn(), log: vi.fn() };
+    (storage as unknown as { logger: typeof logger }).logger = logger;
+    const evaluate = vi.fn().mockRejectedValueOnce(new Error('private Redis error'));
+    (storage as unknown as { redis: unknown }).redis = {
+      status: 'ready',
+      eval: evaluate,
+      ping: vi.fn().mockResolvedValue('PONG'),
+      disconnect: vi.fn(),
+    };
+    try {
+      await expect(storage.increment('client-1', 1000, 3, 0, 'default')).rejects.toThrow(
+        ServiceUnavailableException,
+      );
+      expect(await storage.checkReadiness()).toBe(true);
+      expect(await storage.checkReadiness()).toBe(true);
+      expect(logger.warn).toHaveBeenCalledTimes(1);
+      expect(logger.log).toHaveBeenCalledTimes(1);
+      expect(logger.log).toHaveBeenCalledWith({
+        event: 'RATE_LIMIT_REDIS_RECOVERED',
+        component: 'rate_limiting',
+        backend: 'redis',
+      });
+      expect(JSON.stringify(logger.warn.mock.calls)).not.toContain('private Redis error');
+    } finally {
+      await storage.onApplicationShutdown();
+    }
+  });
 });
