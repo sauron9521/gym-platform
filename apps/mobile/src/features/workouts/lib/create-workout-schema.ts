@@ -35,4 +35,3 @@ export function buildMobileWorkoutBody(input: CreateOneWorkout): CreateWorkoutBo
     ],
   };
 }
-
