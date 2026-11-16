@@ -11,7 +11,7 @@ import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 
 import { ApiExceptionFilter } from '#src/common/filters/api-exception.filter';
 import { RolesGuard } from '#src/common/guards/roles.guard';
-import { PermissionsGuard } from '#src/common/guards/permissions.guard';
+import { PermissionsGuard } from '#src/common/rbac/permissions.guard';
 import { RequestContextMiddleware } from '#src/common/request-context/request-context.middleware';
 import { HttpMetricsRegistry } from '#src/common/http-metrics/http-metrics.registry';
 import { HttpMetricsController } from '#src/common/http-metrics/http-metrics.controller';

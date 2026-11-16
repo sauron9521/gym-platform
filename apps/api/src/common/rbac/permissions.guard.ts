@@ -18,7 +18,10 @@ export class PermissionsGuard implements CanActivate {
     if (!required?.length) return true;
 
     const actor = context.switchToHttp().getRequest<{ user?: { role?: Role } }>().user;
-    if (!actor?.role || !required.every((permission) => hasAdminPermission(actor.role!, permission))) {
+    if (
+      !actor?.role ||
+      !required.every((permission) => hasAdminPermission(actor.role!, permission))
+    ) {
       throw new ForbiddenException('Insufficient administrative permissions');
     }
     return true;

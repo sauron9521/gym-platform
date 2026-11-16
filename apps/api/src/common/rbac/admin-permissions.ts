@@ -16,9 +16,7 @@ export const ADMIN_PERMISSIONS = [
 
 export type AdminPermission = (typeof ADMIN_PERMISSIONS)[number];
 
-const ADMIN_ALLOWED: ReadonlySet<AdminPermission> = new Set([
-  'admin.console.read',
-]);
+const ADMIN_ALLOWED: ReadonlySet<AdminPermission> = new Set(['admin.console.read']);
 
 /**
  * The present ADMIN role can read the administrative shell only.

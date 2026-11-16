@@ -7,7 +7,7 @@ import { PermissionsGuard } from './permissions.guard.js';
 
 function context(role?: 'ATHLETE' | 'TRAINER' | 'ADMIN'): ExecutionContext {
   return {
-    getHandler: () => (() => undefined),
+    getHandler: () => () => undefined,
     getClass: () => class {},
     switchToHttp: () => ({
       getRequest: () => ({ user: role ? { role } : undefined }),
