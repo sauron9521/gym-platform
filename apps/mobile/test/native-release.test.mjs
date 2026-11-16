@@ -44,7 +44,7 @@ test('workouts smoke uses native stable selectors and never hardcodes credential
   assert.match(flow, /\$\{E2E_PASSWORD\}/);
   assert.match(flow, /clearState: true/);
   assert.match(flow, /- assertVisible: Оновити список/);
-  assert.match(flow, /- tapOn:\\n    id: workouts-refresh/);
+  assert.match(flow, /- tapOn:\n    id: workouts-refresh/);
   assert.match(flow, /id: workouts-refresh/);
   assert.match(flow, /- tapOn: Profile/);
   assert.match(flow, /- tapOn: Вийти/);
