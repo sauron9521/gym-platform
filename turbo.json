@@ -1,5 +1,6 @@
 {
   "$schema": "https://turborepo.dev/schema.json",
+  "globalEnv": ["GYM_API_INTERNAL_URL"],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
