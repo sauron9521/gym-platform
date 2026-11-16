@@ -13,13 +13,15 @@
   "scripts": {
     "generate": "openapi-typescript ../../apps/api/openapi/openapi.json -o src/generated/schema.d.ts",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "test": "node --test test/*.test.mjs"
+    "test": "vitest run"
   },
   "dependencies": {
     "openapi-fetch": "0.17.0"
   },
   "devDependencies": {
     "openapi-typescript": "7.13.0",
-    "typescript": "6.0.3"
+    "typescript": "6.0.3",
+    "vite": "8.3.8",
+    "vitest": "5.1.0"
   }
 }
