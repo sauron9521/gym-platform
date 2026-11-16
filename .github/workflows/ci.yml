@@ -153,6 +153,34 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
+  landing-browser-e2e:
+    name: Landing Browser E2E / Chromium
+    needs: changes
+    if: needs.changes.outputs.landing == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @gym/landing exec playwright install --with-deps chromium
+      - name: Browser checks against the real public Next.js app
+        run: pnpm --filter @gym/landing test:e2e
+        env:
+          CI: 'true'
+      - name: Upload traces if Landing smoke fails
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: landing-playwright-failures
+          path: apps/landing/test-results/
+          if-no-files-found: ignore
+          retention-days: 7
+
   quality-workspaces:
     name: Quality workspaces / Node 24
     needs: changes
@@ -279,6 +307,7 @@ jobs:
       - web-browser-e2e
       - dependency-security
       - mobile-ios-dev-windows
+      - landing-browser-e2e
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -295,6 +324,8 @@ jobs:
           WEB_E2E_RESULT: ${{ needs.web-browser-e2e.result }}
           SECURITY_RESULT: ${{ needs.dependency-security.result }}
           MOBILE_REQUIRED: ${{ needs.changes.outputs.mobile }}
+          LANDING_REQUIRED: ${{ needs.changes.outputs.landing }}
+          LANDING_E2E_RESULT: ${{ needs.landing-browser-e2e.result }}
           MOBILE_IOS_DEV_RESULT: ${{ needs.mobile-ios-dev-windows.result }}
         run: |
           set -euo pipefail
@@ -317,6 +348,12 @@ jobs:
           else
             test "$DEPS_REQUIRED" = false
             test "$SECURITY_RESULT" = skipped
+          fi
+          if [ "$LANDING_REQUIRED" = true ]; then
+            test "$LANDING_E2E_RESULT" = success
+          else
+            test "$LANDING_REQUIRED" = false
+            test "$LANDING_E2E_RESULT" = skipped
           fi
           if [ "$MOBILE_REQUIRED" = true ]; then
             test "$MOBILE_IOS_DEV_RESULT" = success
