@@ -4,6 +4,21 @@ import { test } from 'node:test';
 
 import { classifyChangedPaths, selectFromGitHubEnvironment } from './ci-select.mjs';
 
+test('workspace quality executes independently before long integration suites finish', () => {
+  const yaml = readFileSync(new URL('../.github/workflows/ci.yml', import.meta.url), 'utf8');
+  const checks = yaml.split('  quality-workspaces:\n')[1]?.split('\n  quality:\n')[0];
+  const gate = yaml.split('  quality:\n')[1]?.split('\n  api-coverage:\n')[0];
+  assert.ok(checks, 'Workspace quality job missing');
+  assert.ok(gate, 'Required Quality gate missing');
+  assert.match(checks, /name: Quality workspaces \/ Node 24/);
+  assert.match(checks, /needs: changes/);
+  assert.match(checks, /pnpm format:check/);
+  assert.match(checks, /pnpm build/);
+  assert.doesNotMatch(checks, /needs: \[.*web-browser-e2e/);
+  assert.match(gate, /test "\$QUALITY_WORKSPACES_RESULT" = success/);
+  assert.doesNotMatch(gate, /pnpm install --frozen-lockfile/);
+});
+
 test('Web-only change skips API E2E, Docker and Mobile', () => {
   assert.deepEqual(classifyChangedPaths(['apps/web/src/app/page.tsx']), {
     full: false,
@@ -352,9 +367,11 @@ test('dependency-security job is an enforced prerequisite of the protected Quali
   assert.ok(audit, 'Dependency security job must exist');
   assert.match(
     quality,
-    /needs: \[changes, prepush-windows, web-browser-e2e, dependency-security, mobile-ios-dev-windows\]/,
+    /needs:\n\s+- changes\n\s+- quality-workspaces\n\s+- prepush-windows\n\s+- web-browser-e2e\n\s+- dependency-security\n\s+- mobile-ios-dev-windows/,
   );
   assert.match(quality, /if: always\(\)/);
+  assert.match(quality, /QUALITY_WORKSPACES_RESULT:/);
+  assert.match(quality, /test "\$QUALITY_WORKSPACES_RESULT" = success/);
   assert.match(quality, /MOBILE_IOS_DEV_RESULT:/);
   assert.match(quality, /test "\$MOBILE_IOS_DEV_RESULT" = success/);
   assert.match(quality, /DEPS_REQUIRED: \$\{\{ needs\.changes\.outputs\.deps \}\}/);
@@ -424,7 +441,7 @@ test('Redis 7 to 8 migration check is selected only on relevant pull requests', 
   assert.equal(selectFromGitHubEnvironment({ CI_FORCE_ALL: 'true' }).redis, false);
 
   const workflow = readFileSync(new URL('../.github/workflows/ci.yml', import.meta.url), 'utf8');
-  const quality = workflow.split('  quality:\n')[1]?.split('\n  api-coverage:\n')[0];
+  const quality = workflow.split('  quality-workspaces:\n')[1]?.split('\n  quality:\n')[0];
   assert.ok(quality);
   assert.ok(workflow.includes('redis: $' + '{{ steps.select.outputs.redis }}'));
   assert.match(quality, /Rehearse isolated Redis 7 to Redis 8 AOF and backup recovery/);
