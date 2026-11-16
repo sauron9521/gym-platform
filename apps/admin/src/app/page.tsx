@@ -9,17 +9,16 @@ export default async function AdminHomePage() {
   const session = await readAdminSession(cookie);
 
   if (session.kind !== 'admin') {
-    const message =
-      session.kind === 'unauthenticated'
-        ? 'Для доступу потрібна окрема адміністративна сесія.'
-        : session.kind === 'forbidden'
-          ? 'У вас немає адміністративного доступу.'
-          : 'Неможливо перевірити права. Спробуйте пізніше.';
+    const messages = {
+      unauthenticated: 'Для доступу потрібна окрема адміністративна сесія.',
+      forbidden: 'У вас немає адміністративного доступу.',
+      unavailable: 'Неможливо перевірити права. Спробуйте пізніше.',
+    };
 
     return (
       <main className="mx-auto max-w-3xl space-y-3 px-6 py-16" role="alert">
         <h1 className="text-2xl font-semibold">Адмін-панель недоступна</h1>
-        <p className="text-muted-foreground">{message}</p>
+        <p className="text-muted-foreground">{messages[session.kind]}</p>
       </main>
     );
   }
@@ -30,9 +29,9 @@ export default async function AdminHomePage() {
         Gym Platform Admin
       </p>
       <h1 className="text-3xl font-bold">Адміністративна консоль</h1>
+      <p className="max-w-2xl text-muted-foreground">Доступ підтверджено NestJS API.</p>
       <p className="max-w-2xl text-muted-foreground">
-        Доступ підтверджено NestJS API. Управління користувачами, модерація та
-        операційні метрики будуть додані після permission-based RBAC і журналу аудиту.
+        Функції модерації та метрики з’являться після додавання RBAC і журналу аудиту.
       </p>
     </main>
   );
