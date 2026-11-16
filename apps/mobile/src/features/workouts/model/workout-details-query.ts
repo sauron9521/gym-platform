@@ -65,7 +65,9 @@ export function useWorkoutTransition(workoutId: string) {
       return response.data;
     },
     onSuccess: async (workout) => {
-      if (!account) return;
+      // Sign-out clears the verified account cache. An in-flight response must
+      // never restore private workout data after the session was cleared.
+      if (!account || !queryClient.getQueryData(accountQueryKeys.me(account.id))) return;
       queryClient.setQueryData(accountQueryKeys.workoutDetail(account.id, workoutId), workout);
       await queryClient.invalidateQueries({ queryKey: accountQueryKeys.workouts(account.id) });
     },

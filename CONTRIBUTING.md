@@ -27,3 +27,9 @@ git commit -m "feat(web): example"
 
 If a hook is missing after installation, run `pnpm exec husky` or reinstall
 with `pnpm install`, and inspect `git config core.hooksPath`.
+
+## Repository hygiene
+
+The root `.gitignore` excludes `.idea/`, `*.iml`, generated build outputs,
+local environment files and credentials. Never force-add machine-local IDE project
+settings. Keep project-wide formatter/lint settings in versioned root configuration.

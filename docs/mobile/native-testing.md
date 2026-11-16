@@ -60,3 +60,21 @@ running the command; they are not set up by repository CI.
 This PR verifies release-config and flow **contracts only**. Neither EAS
 signed native builds nor real-device Maestro tests run in CI yet; do not
 interpret a green JS/Metro export as native E2E validation.
+
+## Authenticated workouts native smoke (operator-driven)
+
+A second smoke verifies that an authenticated user can navigate to the real
+workouts tab, wait for the refresh control, and tap it, even with zero workouts.
+It intentionally avoids assuming a particular seeded workout or staging
+user state. After installing a staging preview build, run:
+
+```bash
+maestro test \
+  -e APP_ID="$APP_ID" \
+  -e E2E_EMAIL="$E2E_EMAIL" \
+  -e E2E_PASSWORD="$E2E_PASSWORD" \
+  apps/mobile/maestro/flows/workouts-smoke.yaml
+```
+
+This flow is **not** executed by JavaScript CI and requires the same signed
+native binary, staging API, dedicated account and device listed above.
