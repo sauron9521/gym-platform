@@ -20,14 +20,14 @@ const workout = {
   scheduledAt: null,
 };
 
-function mockList(
-  options: {
-    role?: 'ATHLETE' | 'TRAINER';
-    hasNextPage?: boolean;
-    isFetchNextPageError?: boolean;
-    pages?: { data: typeof workout[] }[];
-  } = {},
-) {
+type ListOptions = {
+  role?: 'ATHLETE' | 'TRAINER';
+  hasNextPage?: boolean;
+  isFetchNextPageError?: boolean;
+  pages?: { data: typeof workout[] }[];
+};
+
+function mockList(options: ListOptions = {}) {
   vi.mocked(useAuth).mockReturnValue({
     account: { id: 'athlete-1', role: options.role ?? 'ATHLETE' },
   } as unknown as ReturnType<typeof useAuth>);
