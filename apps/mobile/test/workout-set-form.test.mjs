@@ -1,7 +1,10 @@
 import assert from 'node:assert/strict';
 import { test } from 'vitest';
 
-import { workoutSetFormSchema, workoutSetPayload } from '../src/features/workouts/lib/workout-set-form.ts';
+import {
+  workoutSetFormSchema,
+  workoutSetPayload,
+} from '../src/features/workouts/lib/workout-set-form.ts';
 
 test('workout set validation permits empty planned fields and converts comma decimals', () => {
   const parsed = workoutSetFormSchema.parse({ actualReps: ' 8 ', actualWeightKg: ' 62,5 ' });
