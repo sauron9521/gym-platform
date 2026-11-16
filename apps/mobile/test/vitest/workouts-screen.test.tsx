@@ -13,58 +13,43 @@ vi.mock('expo-router', () => ({ useRouter: () => ({ push }) }));
 vi.mock('@/features/auth/model/auth-context', () => ({ useAuth: vi.fn() }));
 vi.mock('@/features/workouts/model/workouts-query', () => ({ useWorkoutsQuery: vi.fn() }));
 
-const workout = {
-  id: 'workout-1',
-  title: 'Силове тренування',
-  status: 'IN_PROGRESS' as const,
-  scheduledAt: null,
-};
-
-type ListOptions = {
-  role?: 'ATHLETE' | 'TRAINER';
-  hasNextPage?: boolean;
-  isFetchNextPageError?: boolean;
-  pages?: { data: typeof workout[] }[];
-};
-
-function mockList(options: ListOptions = {}) {
+function prepare(role: 'ATHLETE' | 'TRAINER', pageError = false) {
   vi.mocked(useAuth).mockReturnValue({
-    account: { id: 'athlete-1', role: options.role ?? 'ATHLETE' },
+    account: { id: 'user-1', role },
   } as unknown as ReturnType<typeof useAuth>);
+
   vi.mocked(useWorkoutsQuery).mockReturnValue({
-    data: { pages: options.pages ?? [{ data: [workout] }] },
+    data: {
+      pages: [
+        { data: [{ id: 'one', title: 'Силове', status: 'IN_PROGRESS', scheduledAt: null }] },
+        { data: [{ id: 'one', title: 'Силове', status: 'IN_PROGRESS', scheduledAt: null }] },
+      ],
+    },
     isPending: false,
     isError: false,
     isFetching: false,
     isRefetching: false,
-    hasNextPage: options.hasNextPage ?? false,
+    hasNextPage: pageError,
     isFetchingNextPage: false,
-    isFetchNextPageError: options.isFetchNextPageError ?? false,
+    isFetchNextPageError: pageError,
     fetchNextPage,
     refetch,
   } as unknown as ReturnType<typeof useWorkoutsQuery>);
 }
 
-describe('WorkoutsScreen (React Native)', () => {
+describe('WorkoutsScreen native pagination', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    fetchNextPage.mockResolvedValue(undefined);
-    refetch.mockResolvedValue(undefined);
-    mockList();
+    prepare('ATHLETE');
   });
 
-  it('deduplicates pages and preserves athlete creation', async () => {
-    mockList({ pages: [{ data: [workout] }, { data: [workout] }] });
+  it('retains create, status filters and refresh without duplicate rows', async () => {
     const view = await render(<WorkoutsScreen />);
+    expect(view.getAllByText('Силове')).toHaveLength(1);
 
-    expect(view.getAllByText('Силове тренування')).toHaveLength(1);
-    expect(view.getByTestId('workouts-create')).toBeTruthy();
     await fireEvent.press(view.getByTestId('workouts-create'));
     expect(push).toHaveBeenCalledWith('/workouts/new');
-  });
 
-  it('filters status and offers a manual refresh', async () => {
-    const view = await render(<WorkoutsScreen />);
     await fireEvent.press(view.getByTestId('workouts-filter-COMPLETED'));
     expect(useWorkoutsQuery).toHaveBeenCalledWith('COMPLETED');
 
@@ -72,19 +57,15 @@ describe('WorkoutsScreen (React Native)', () => {
     expect(refetch).toHaveBeenCalledTimes(1);
   });
 
-  it('allows recovery after a failed page but disables automatic retry loops', async () => {
-    mockList({ hasNextPage: true, isFetchNextPageError: true });
+  it('guards creation and supports manual retry after a failed page', async () => {
+    prepare('TRAINER', true);
     const view = await render(<WorkoutsScreen />);
+
+    expect(view.queryByTestId('workouts-create')).toBeNull();
     expect(view.getByText('Помилка завантаження. Спробувати ще')).toBeTruthy();
     expect(fetchNextPage).not.toHaveBeenCalled();
 
     await fireEvent.press(view.getByTestId('workouts-load-more'));
-    expect(fetchNextPage).toHaveBeenCalledTimes(1);
-  });
-
-  it('hides athlete-only workout creation for trainers', async () => {
-    mockList({ role: 'TRAINER' });
-    const view = await render(<WorkoutsScreen />);
-    expect(view.queryByTestId('workouts-create')).toBeNull();
+    expect(fetchNextPage).toHaveBeenCalledOnce();
   });
 });
