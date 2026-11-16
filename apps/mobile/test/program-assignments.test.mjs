@@ -7,32 +7,25 @@ import {
   getProgramWorkoutAttempt,
 } from '../src/features/programs/lib/program-workout-attempt.ts';
 
-test('program workout creation keeps a stable key until confirmed success', () => {
+test('program workout keys remain stable until confirmed success', () => {
   const attempts = new Map();
   let created = 0;
   const keyFactory = () => `mobile-attempt-${++created}`;
 
   const first = getProgramWorkoutAttempt(attempts, 'assignment-a', 'day-1', keyFactory);
+  const retry = getProgramWorkoutAttempt(attempts, 'assignment-a', 'day-1', keyFactory);
   assert.equal(first, 'mobile-attempt-1');
-  assert.equal(
-    getProgramWorkoutAttempt(attempts, 'assignment-a', 'day-1', keyFactory),
-    first,
-  );
+  assert.equal(retry, first);
   assert.equal(created, 1, 'manual retry must not create a new key');
-  assert.notEqual(
-    getProgramWorkoutAttempt(attempts, 'assignment-a', 'day-2', keyFactory),
-    first,
-  );
-  assert.notEqual(
-    getProgramWorkoutAttempt(attempts, 'assignment-b', 'day-1', keyFactory),
-    first,
-  );
+
+  const nextDay = getProgramWorkoutAttempt(attempts, 'assignment-a', 'day-2', keyFactory);
+  const otherAssignment = getProgramWorkoutAttempt(attempts, 'assignment-b', 'day-1', keyFactory);
+  assert.notEqual(nextDay, first);
+  assert.notEqual(otherAssignment, first);
 
   clearProgramWorkoutAttempt(attempts, 'assignment-a', 'day-1');
-  assert.notEqual(
-    getProgramWorkoutAttempt(attempts, 'assignment-a', 'day-1', keyFactory),
-    first,
-  );
+  const afterSuccess = getProgramWorkoutAttempt(attempts, 'assignment-a', 'day-1', keyFactory);
+  assert.notEqual(afterSuccess, first);
 });
 
 test('assigned programs use typed API and never retry writes automatically', () => {
