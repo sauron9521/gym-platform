@@ -1,3 +1,4 @@
+import { useRef } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'expo-router';
 import { Controller, useForm, useWatch } from 'react-hook-form';
@@ -24,11 +25,12 @@ export function CreateWorkoutScreen() {
   const router = useRouter();
   const exercises = useWorkoutExerciseOptions();
   const createWorkout = useCreateMobileWorkout();
+  const submitLock = useRef(false);
   const {
     control,
     handleSubmit,
     setValue,
-    formState: { errors },
+    formState: { errors, isSubmitting },
   } = useForm<MobileWorkoutForm>({
     resolver: zodResolver(mobileWorkoutFormSchema),
     defaultValues: { title: '', exerciseId: '', reps: '10' },
@@ -36,6 +38,9 @@ export function CreateWorkoutScreen() {
   const selectedExercise = useWatch({ control, name: 'exerciseId' });
 
   const submit = handleSubmit(async (values) => {
+    // React state does not synchronously prevent a second press before rerender.
+    if (submitLock.current) return;
+    submitLock.current = true;
     try {
       await createWorkout.mutateAsync({
         title: values.title,
@@ -45,6 +50,8 @@ export function CreateWorkoutScreen() {
       router.back();
     } catch {
       // The safe mutation error is displayed below; do not navigate on failure.
+    } finally {
+      submitLock.current = false;
     }
   });
 
@@ -81,11 +88,25 @@ export function CreateWorkoutScreen() {
           {exercises.error.message}
         </Text>
       ) : null}
+      {exercises.isError ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Повторити завантаження вправ"
+          onPress={() => void exercises.refetch()}
+          style={styles.exercise}
+        >
+          <Text style={styles.text}>Спробувати ще раз</Text>
+        </Pressable>
+      ) : null}
+      {exercises.data?.length ? (
+        <Text style={styles.muted}>Показано перші 20 доступних вправ.</Text>
+      ) : null}
       {exercises.data?.map((exercise) => (
         <Pressable
           key={exercise.id}
           accessibilityRole="button"
           accessibilityState={{ selected: selectedExercise === exercise.id }}
+          disabled={createWorkout.isPending || isSubmitting}
           onPress={() => setValue('exerciseId', exercise.id, { shouldValidate: true })}
           style={[styles.exercise, selectedExercise === exercise.id && styles.selected]}
         >
@@ -126,7 +147,7 @@ export function CreateWorkoutScreen() {
       <Pressable
         accessibilityRole="button"
         testID="create-workout-submit"
-        disabled={createWorkout.isPending || !exercises.data?.length}
+        disabled={createWorkout.isPending || isSubmitting || !exercises.data?.length}
         onPress={() => void submit()}
         style={styles.button}
       >
@@ -156,7 +177,7 @@ const styles = StyleSheet.create({
   },
   exercise: { padding: 14, borderWidth: 1, borderColor: palette.border, borderRadius: 12 },
   selected: { borderColor: palette.primary },
-  error: { color: '#b91c1c', fontSize: 14 },
+  error: { color: '#ff6460', fontSize: 14 },
   button: { backgroundColor: palette.primary, padding: 16, borderRadius: 12, marginTop: 8 },
   buttonText: { color: palette.surface, textAlign: 'center', fontWeight: '700' },
 });
