@@ -20,6 +20,8 @@ test('shared UI exposes primitive components without importing app code', () => 
 test('login uses the shared Input while preserving form validation and session gate', () => {
   assert.match(login, /import \{ Input \} from '@\/shared\/ui\/input'/);
   assert.match(login, /<Input/);
+  assert.match(login, /\.\.\.register\('email'/);
+  assert.match(login, /\.\.\.register\('password'/);
   assert.match(login, /zodResolver\(loginSchema\)/);
   assert.match(login, /classifySessionCheck/);
 });

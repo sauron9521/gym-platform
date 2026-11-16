@@ -87,7 +87,6 @@ export function SignInForm() {
           aria-invalid={Boolean(errors.email)}
           aria-describedby={errors.email ? 'login-email-error' : undefined}
           {...register('email', { onChange: () => setError(null) })}
-          className="h-11 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
         />
         {errors.email && (
           <p id="login-email-error" role="alert" className="text-xs text-destructive">
@@ -107,7 +106,6 @@ export function SignInForm() {
           aria-invalid={Boolean(errors.password)}
           aria-describedby={errors.password ? 'login-password-error' : undefined}
           {...register('password', { onChange: () => setError(null) })}
-          className="h-11 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
         />
         {errors.password && (
           <p id="login-password-error" role="alert" className="text-xs text-destructive">
