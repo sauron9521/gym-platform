@@ -113,10 +113,7 @@ test('known shared packages select consumers and avoid unrelated API E2E', () =>
 });
 
 test('shared package manifests require dependency vulnerability audits', () => {
-  for (const path of [
-    'packages/ui-web/package.json',
-    'packages/design-tokens/package.json',
-  ]) {
+  for (const path of ['packages/ui-web/package.json', 'packages/design-tokens/package.json']) {
     const result = classifyChangedPaths([path]);
     assert.equal(result.full, false);
     assert.equal(result.deps, true);
