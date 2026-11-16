@@ -60,7 +60,11 @@ test('same canonical workout reuses the original key after an uncertain response
   const createKey = () => `mobile-attempt-${++keys}`;
   const input = { title: 'День грудей', exerciseId: valid.exerciseId, plannedReps: 12 };
   const initial = resolveWorkoutCreationAttempt(input, null, createKey);
-  const retry = resolveWorkoutCreationAttempt({ ...input, title: ' День грудей ' }, initial, createKey);
+  const retry = resolveWorkoutCreationAttempt(
+    { ...input, title: ' День грудей ' },
+    initial,
+    createKey,
+  );
 
   assert.equal(retry.key, initial.key);
   assert.equal(keys, 1);
