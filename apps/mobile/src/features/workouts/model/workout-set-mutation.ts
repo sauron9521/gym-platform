@@ -5,7 +5,8 @@ import { useAuth } from '@/features/auth/model/auth-context';
 import { accountQueryKeys } from '@/shared/api/query-client';
 import type { WorkoutDetails } from './workout-details-query';
 
-type SetBody = paths['/workouts/{id}/sets/{setId}']['patch']['requestBody']['content']['application/json'];
+type SetBody =
+  paths['/workouts/{id}/sets/{setId}']['patch']['requestBody']['content']['application/json'];
 type SetResponse =
   paths['/workouts/{id}/sets/{setId}']['patch']['responses'][200]['content']['application/json'];
 
