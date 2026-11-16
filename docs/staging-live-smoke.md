@@ -9,8 +9,12 @@ environment. It does **not** create infrastructure or grant production GO.
 2. Deploy a signed, immutable runtime image from the documented GHCR release
    process. Use the regular forward-only migrations and independent backups.
 3. Manually run **Live staging health smoke (manual)** against the explicit
-   HTTPS API origin. The workflow checks only GET /health/live and
-   GET /health/ready; it never changes data or sends a bearer/cookie token.
+   HTTPS API origin, such as `https://staging.gym.example.com`. The hostname
+   must contain a separate `staging` DNS label. **Verify the domain's
+   ownership and environment yourself**: a naming convention is not proof
+   of isolation, and the workflow does not deploy infrastructure.
+   The workflow checks only GET /health/live and GET /health/ready;
+   it never changes data or sends a bearer/cookie token.
 4. Run browser authenticated journeys in an isolated staging test account:
    sign-in, create/edit workout, training program assignment, logout.
 5. Install a native preview binary on an Android/iOS test device. Run the
