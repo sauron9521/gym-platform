@@ -53,7 +53,7 @@ describe('WorkoutsScreen (React Native)', () => {
     mockList();
   });
 
-  it('renders cached workout pages without duplicates and preserves athlete creation', async () => {
+  it('deduplicates pages and preserves athlete creation', async () => {
     mockList({ pages: [{ data: [workout] }, { data: [workout] }] });
     const view = await render(<WorkoutsScreen />);
 
