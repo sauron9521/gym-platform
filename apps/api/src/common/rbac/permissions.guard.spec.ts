@@ -11,8 +11,8 @@ type Role = 'ATHLETE' | 'TRAINER' | 'ADMIN';
 
 function context(
   role?: Role,
-  controller: Function = class {},
-  handler: Function = () => undefined,
+  controller: new (...args: never[]) => object = class {},
+  handler: (...args: never[]) => unknown = () => undefined,
 ): ExecutionContext {
   return {
     getHandler: () => handler,
@@ -49,9 +49,15 @@ describe('PermissionsGuard', () => {
     class AdminController {}
     RequireAdminPermissions('admin.console.read')(AdminController);
 
-    expect(() => guard.canActivate(context(undefined, AdminController))).toThrow(ForbiddenException);
-    expect(() => guard.canActivate(context('ATHLETE', AdminController))).toThrow(ForbiddenException);
-    expect(() => guard.canActivate(context('TRAINER', AdminController))).toThrow(ForbiddenException);
+    expect(() => guard.canActivate(context(undefined, AdminController))).toThrow(
+      ForbiddenException,
+    );
+    expect(() => guard.canActivate(context('ATHLETE', AdminController))).toThrow(
+      ForbiddenException,
+    );
+    expect(() => guard.canActivate(context('TRAINER', AdminController))).toThrow(
+      ForbiddenException,
+    );
     expect(guard.canActivate(context('ADMIN', AdminController))).toBe(true);
   });
 
@@ -59,7 +65,9 @@ describe('PermissionsGuard', () => {
     const handler = () => undefined;
     RequireAdminPermissions('admin.console.read')(handler);
 
-    expect(() => guard.canActivate(context('ATHLETE', class {}, handler))).toThrow(ForbiddenException);
+    expect(() => guard.canActivate(context('ATHLETE', class {}, handler))).toThrow(
+      ForbiddenException,
+    );
     expect(guard.canActivate(context('ADMIN', class {}, handler))).toBe(true);
   });
 
