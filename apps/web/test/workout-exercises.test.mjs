@@ -19,5 +19,8 @@ test('workout details delegates set presentation without changing query/auth bou
   assert.match(exercises, /workout.exercises.map/);
   assert.match(exercises, /editingSetId === set.id/);
   assert.match(exercises, /<WorkoutSetForm/);
+  assert.match(exercises, /workout.status === 'IN_PROGRESS'/);
+  assert.match(exercises, /key=\{set.updatedAt\}/);
   assert.match(exercises, /onSaved=\{\(\) => onEditSet\(null\)\}/);
+  assert.match(exercises, /onClose=\{\(\) => onEditSet\(null\)\}/);
 });
