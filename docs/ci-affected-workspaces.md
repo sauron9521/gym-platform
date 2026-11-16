@@ -12,6 +12,9 @@ complete Git history (`actions/checkout` with `fetch-depth: 0`).
 | `apps/web/**`                                                  | Web                                  | No                          | If the Web package manifest changed    |
 | `apps/mobile/**`                                               | Mobile                               | No                          | If the Mobile package manifest changed |
 | `packages/api-client/**`                                       | API client + Web + Mobile            | No                          | If the client package manifest changed |
+| `packages/ui-web/**`                                             | Web + Landing                        | No                          | If UI package manifest changed         |
+| `packages/design-tokens/**`                                      | Web + Landing + Mobile               | No                          | If token package manifest changed      |
+| `tooling/config/**`                                              | Web + Landing                        | No                          | No (config-only files)                 |
 | `apps/api/openapi/**`                                          | API + client + Web + Mobile          | Yes                         | No                                     |
 | `docs/**`, root `*.md`                                         | Prettier formatting + required gates | No                          | No                                     |
 | Known app/client `README.md`, `apps/api/test/README.md`        | Prettier formatting + required gates | No                          | No                                     |
@@ -22,7 +25,7 @@ For mixed PRs, all relevant workspaces run. Unknown paths, empty diffs, missing
 commits and cross-cutting files must never silently bypass API checks.
 
 Only **known documentation locations** are exempt: top-level `README.md` in
-`apps/api`, `apps/web`, `apps/mobile` and `packages/api-client`, the API test
+`apps/api`, `apps/web`, `apps/landing`, `apps/mobile` and `packages/api-client`, the API test
 `README.md`, and Markdown files under `infra/` (including Docker runbooks).
 Markdown files nested in application source directories still trigger that
 app's checks; Markdown in unrecognized packages forces full CI. Changing an actual
@@ -50,7 +53,8 @@ dependency changes may affect any workspace, so full CI runs.
   verifies that the suite was intentionally skipped, not cancelled or failed.
 - API coverage, Docker, migration, operational, observability, staging and
   readiness jobs run only for API-impacting PRs (and all main pushes).
-- Dependency audits run when package manifests change or changes are shared.
+- Dependency audits run for package manifests and cross-cutting changes;
+  source-only changes in known shared packages do not require an audit.
 
 ## Verify locally
 
@@ -97,3 +101,17 @@ it fails closed unless workspace quality, security audit, Windows checks,
 Mobile Metro and Web fixture-browser suites all have their expected results.
 The required API and real-API browser gates remain independent and unchanged.
 This split does **not** skip tests or change release-source CI requirements.
+
+## Known shared workspaces
+
+`packages/ui-web/**` invalidates Web and Landing; the affected workspace
+quality job also runs the shared UI package's own TypeScript check.
+`packages/design-tokens/**` currently invalidates Web, Landing, and Mobile
+conservatively. `tooling/config/**` invalidates both Next.js apps, not
+NestJS or Expo. An unexpected new manifest in `tooling/config/` forces full
+CI because it may alter workspace topology.
+
+Known shared package `package.json` updates also select the vulnerability
+audit. Unknown package paths and the root `pnpm-lock.yaml` force full CI.
+For combined changes, selected consumer scopes are unioned. Full checks on
+every `main` push remain mandatory.

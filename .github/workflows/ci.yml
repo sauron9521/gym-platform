@@ -247,6 +247,8 @@ jobs:
           filters=()
           if [ "$CI_API" = true ]; then filters+=(--filter=@gym/api); fi
           if [ "$CI_WEB" = true ]; then filters+=(--filter=@gym/web); fi
+          # Include the UI package typecheck when its Web consumer is selected.
+          if [ "$CI_WEB" = true ]; then filters+=(--filter=@gym/ui-web); fi
           if [ "$CI_LANDING" = true ]; then filters+=(--filter=@gym/landing); fi
           if [ "$CI_MOBILE" = true ]; then filters+=(--filter=@gym/mobile); fi
           if [ "$CI_CLIENT" = true ]; then filters+=(--filter=@gym/api-client); fi

@@ -117,6 +117,35 @@ export function classifyChangedPaths(paths, { forceFull = false } = {}) {
       continue;
     }
 
+    // Known shared packages propagate changes to their consumers.
+    // Package manifests also require the dependency vulnerability audit.
+    // Unknown packages still fail closed to full checks.
+    if (path.startsWith('packages/ui-web/')) {
+      selected.web = true;
+      selected.landing = true;
+      if (path === 'packages/ui-web/package.json') selected.deps = true;
+      continue;
+    }
+
+    if (path.startsWith('packages/design-tokens/')) {
+      selected.web = true;
+      selected.landing = true;
+      // Conservative until native design-token consumption is ruled out.
+      selected.mobile = true;
+      if (path === 'packages/design-tokens/package.json') selected.deps = true;
+      continue;
+    }
+
+    if (path.startsWith('tooling/config/')) {
+      // Adding a package manifest changes the workspace topology.
+      if (path === 'tooling/config/package.json') {
+        return { ...allScopes(), redis: selected.redis };
+      }
+      selected.web = true;
+      selected.landing = true;
+      continue;
+    }
+
     // Root manifests, lockfile, CI, infra and unknown files invalidate all.
     return { ...allScopes(), redis: selected.redis };
   }
