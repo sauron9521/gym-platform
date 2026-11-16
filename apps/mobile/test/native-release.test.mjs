@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { test } from 'node:test';
+import { test } from 'vitest';
 
 const profiles = JSON.parse(readFileSync(new URL('../eas.json', import.meta.url), 'utf8'));
 const smoke = readFileSync(new URL('../maestro/flows/auth-smoke.yaml', import.meta.url), 'utf8');

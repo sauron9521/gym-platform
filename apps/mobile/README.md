@@ -220,14 +220,16 @@ workout. API conflict responses are surfaced safely (for example, unfinished
 sets cannot be completed). Creating workouts, editing sets, cancel flows and
 full history remain future slices. Live native/device testing is still required.
 
-## Vitest + React Native Testing Library pilot
+## Vitest contract and React Native component tests
 
-Mobile keeps the existing `node:test` contract suite under `test:contracts`.
-The new opt-in `test:unit` suite runs Vitest 5 + `vitest-native` with
-`engine: 'native'` and React Native Testing Library 14. Running `pnpm test`
-executes **both** suites; Turborepo CI already invokes this script for Mobile.
+Mobile uses Vitest 5 for both suites. `test:contracts` runs the Node-only
+contract tests through `vitest.contracts.config.mts`; `test:unit` runs the
+React Native component tests through `vitest.config.mts` and `vitest-native`
+(`engine: 'native'`) with React Native Testing Library 14. Running `pnpm test`
+executes **both** suites; Turborepo CI invokes this script for Mobile.
 
 ```bash
+pnpm --filter @gym/mobile test:contracts
 pnpm --filter @gym/mobile test:unit
 pnpm --filter @gym/mobile test
 ```

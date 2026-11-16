@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
-import { test } from 'node:test';
+import { test } from 'vitest';
 
 const appConfig = JSON.parse(readFileSync(new URL('../app.json', import.meta.url), 'utf8'));
 const manifest = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
