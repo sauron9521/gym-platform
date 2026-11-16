@@ -291,7 +291,7 @@ jobs:
           pnpm lint
           pnpm typecheck
           # API unit tests with coverage are enforced by the protected E2E gate.
-          pnpm exec turbo run test --filter=@gym/web --filter=@gym/mobile --filter=@gym/api-client
+          pnpm exec turbo run test --filter=@gym/web --filter=@gym/mobile --filter=@gym/api-client --filter=@gym/landing --filter=@gym/admin
           pnpm build
 
       - name: Lint, typecheck, test and build affected workspaces
@@ -322,6 +322,7 @@ jobs:
           if [ "$CI_WEB" = true ]; then test_filters+=(--filter=@gym/web); fi
           if [ "$CI_MOBILE" = true ]; then test_filters+=(--filter=@gym/mobile); fi
           if [ "$CI_CLIENT" = true ]; then test_filters+=(--filter=@gym/api-client); fi
+          if [ "$CI_LANDING" = true ]; then test_filters+=(--filter=@gym/landing); fi
           if [ "$CI_ADMIN" = true ]; then test_filters+=(--filter=@gym/admin); fi
           if [ "${#test_filters[@]}" -gt 0 ]; then
             pnpm exec turbo run test "${test_filters[@]}"
