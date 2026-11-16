@@ -156,7 +156,10 @@ test('affected Web quality also typechecks the shared UI workspace', () => {
   const yaml = readFileSync(new URL('../.github/workflows/ci.yml', import.meta.url), 'utf8');
   const workspaces = yaml.split('  quality-workspaces:\n')[1]?.split('\n  quality:\n')[0];
   assert.ok(workspaces);
-  assert.match(workspaces, /if \[ "\$CI_WEB" = true \]; then filters\+=\(--filter=@gym\/ui-web\); fi/);
+  assert.match(
+    workspaces,
+    /if \[ "\$CI_WEB" = true \]; then filters\+=\(--filter=@gym\/ui-web\); fi/,
+  );
 });
 
 test('docs-only PR still runs required quality gate and formatting', () => {

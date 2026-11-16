@@ -12,9 +12,9 @@ complete Git history (`actions/checkout` with `fetch-depth: 0`).
 | `apps/web/**`                                                  | Web                                  | No                          | If the Web package manifest changed    |
 | `apps/mobile/**`                                               | Mobile                               | No                          | If the Mobile package manifest changed |
 | `packages/api-client/**`                                       | API client + Web + Mobile            | No                          | If the client package manifest changed |
-| `packages/ui-web/**`                                             | Web + Landing                        | No                          | If UI package manifest changed         |
-| `packages/design-tokens/**`                                      | Web + Landing + Mobile               | No                          | If token package manifest changed      |
-| `tooling/config/**`                                              | Web + Landing                        | No                          | No (config-only files)                 |
+| `packages/ui-web/**`                                           | Web + Landing                        | No                          | If UI package manifest changed         |
+| `packages/design-tokens/**`                                    | Web + Landing + Mobile               | No                          | If token package manifest changed      |
+| `tooling/config/**`                                            | Web + Landing                        | No                          | No (config-only files)                 |
 | `apps/api/openapi/**`                                          | API + client + Web + Mobile          | Yes                         | No                                     |
 | `docs/**`, root `*.md`                                         | Prettier formatting + required gates | No                          | No                                     |
 | Known app/client `README.md`, `apps/api/test/README.md`        | Prettier formatting + required gates | No                          | No                                     |
