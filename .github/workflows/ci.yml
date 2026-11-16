@@ -18,6 +18,26 @@ concurrency:
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
+  landing-rtl-validation-temp:
+    name: Temporary Landing RTL validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+      - run: pnpm install --frozen-lockfile
+      - name: Format and print Landing RTL suite
+        run: |
+          pnpm exec prettier --write apps/landing/test/components/landing-ui.test.tsx
+          echo 'LANDING_RTL_FORMAT_BEGIN_170'
+          cat apps/landing/test/components/landing-ui.test.tsx
+          echo 'LANDING_RTL_FORMAT_END_170'
+      - name: Execute Landing component tests
+        run: pnpm --filter @gym/landing test:components
+
   changes:
     name: CI / Determine affected workspaces
     runs-on: ubuntu-latest
