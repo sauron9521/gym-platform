@@ -100,7 +100,7 @@ export function ExercisesScreen() {
       ListEmptyComponent={
         !query.isPending && !query.isError ? (
           <Text style={styles.subtitle}>За такими фільтрами вправ немає.</Text>
-        ) : null
+        ) : undefined
       }
       renderItem={({ item }) => (
         <View style={styles.card}>
@@ -115,7 +115,7 @@ export function ExercisesScreen() {
       ListFooterComponent={
         query.isFetchingNextPage ? (
           <Text style={styles.subtitle}>Завантажуємо наступні вправи…</Text>
-        ) : null
+        ) : undefined
       }
     />
   );
