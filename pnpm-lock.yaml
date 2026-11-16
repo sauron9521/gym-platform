@@ -492,6 +492,9 @@ importers:
       '@gym/api-client':
         specifier: workspace:*
         version: link:../../packages/api-client
+      '@gym/design-tokens':
+        specifier: workspace:*
+        version: link:../../packages/design-tokens
       '@gym/ui-web':
         specifier: workspace:*
         version: link:../../packages/ui-web

@@ -27,9 +27,11 @@ test('SEO exposes canonical URLs and sitemap only for the configured HTTPS origi
 test('narrow viewport offers usable keyboard-accessible navigation', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/');
-  await page.locator('header details > summary').click();
+  const menu = page.locator('header details');
+  await menu.locator('summary').press('Enter');
+  await expect(menu).toHaveAttribute('open', '');
   const mobile = page.getByRole('navigation', { name: 'Мобільна навігація' });
-  await mobile.getByRole('link', { name: 'Про проєкт' }).click();
+  await mobile.getByRole('link', { name: 'Про проєкт' }).press('Enter');
   await expect(page).toHaveURL(/\/about$/);
   await expect(page.getByRole('main')).toBeVisible();
 });

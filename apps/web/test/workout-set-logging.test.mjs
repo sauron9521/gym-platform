@@ -107,8 +107,13 @@ test('set logging uses RHF, Zod and the typed PATCH endpoint, only during active
   assert.match(mutation, /retry: false/);
   assert.match(form, /disabled=\{busy\}/);
   assert.doesNotMatch(form, /webApi.PATCH|router.replace|setError/);
-  assert.match(details, /onSaved=\{\(\) => setEditingSetId\(null\)\}/);
-  assert.match(details, /state.workout.status === 'IN_PROGRESS'/);
-  assert.match(details, /<WorkoutSetForm/);
+  const exercises = await readFile(
+    new URL('../src/features/workouts/ui/workout-exercises.tsx', import.meta.url),
+    'utf8',
+  );
+  assert.match(details, /<WorkoutExercises/);
+  assert.match(exercises, /onSaved=\{\(\) => onEditSet\(null\)\}/);
+  assert.match(exercises, /workout.status === 'IN_PROGRESS'/);
+  assert.match(exercises, /<WorkoutSetForm/);
   assert.doesNotMatch(form, /localStorage|sessionStorage|dangerouslySetInnerHTML/);
 });

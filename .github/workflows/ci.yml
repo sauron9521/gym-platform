@@ -102,6 +102,8 @@ jobs:
     if: needs.changes.outputs.web == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    env:
+      GYM_API_INTERNAL_URL: http://127.0.0.1:3001
 
     steps:
       - name: Checkout
@@ -185,6 +187,9 @@ jobs:
     if: needs.changes.result == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    env:
+      # Build-time fixture only. Production deployment must supply the real API origin.
+      GYM_API_INTERNAL_URL: http://127.0.0.1:3001
     steps:
       - name: Checkout
         uses: actions/checkout@v7
