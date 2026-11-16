@@ -7,6 +7,7 @@ import {
   type WorkoutTransition,
 } from '@/features/workouts/model/workout-details-query';
 import { palette } from '@/shared/config/theme';
+import { WorkoutSetRow } from './workout-set-row';
 
 // Preserve the compact native status-action state machine for focused review.
 // prettier-ignore
@@ -39,6 +40,14 @@ export function WorkoutDetailsScreen({ id }: { id: string }) {
             <View key={exercise.id} style={styles.card}>
               <Text style={styles.heading}>{exercise.exerciseNameSnapshot}</Text>
               <Text style={styles.muted}>Підходів: {exercise.sets.length}</Text>
+              {exercise.sets.map((set) => (
+                <WorkoutSetRow
+                  key={set.id}
+                  workoutId={id}
+                  set={set}
+                  editable={workout.status === 'IN_PROGRESS'}
+                />
+              ))}
             </View>
           ))}
           {nextAction ? (
