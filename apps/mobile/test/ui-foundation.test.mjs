@@ -34,7 +34,12 @@ test('Mobile uses the workspace Dark Performance native palette', () => {
   assert.equal(packageJson.dependencies['@gym/design-tokens'], 'workspace:*');
   const dark = css.split('  .dark {')[1]?.split('  }')[0];
   assert.ok(dark);
-  for (const token of ['--primary: 182 234 58;', '--background: 10 14 19;', '--foreground: 239 242 246;', '--card: 20 25 31;']) {
+  for (const token of [
+    '--primary: 182 234 58;',
+    '--background: 10 14 19;',
+    '--foreground: 239 242 246;',
+    '--card: 20 25 31;',
+  ]) {
     assert.ok(dark.includes(token), token);
   }
 });
