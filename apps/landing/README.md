@@ -63,3 +63,11 @@ Run `pnpm --filter @gym/landing test` to validate public navigation routes,
 SEO origin rules and metadata before building. The Landing build runs these
 regressions first, while the existing Next.js build validates compilation.
 The tests deliberately require no domain, browser, credentials or network.
+
+## Real-browser smoke checks
+
+Run `pnpm --filter @gym/landing test:e2e` to start an isolated Next.js Landing
+server at `127.0.0.1:3302` and verify desktop navigation, mobile menu,
+canonical metadata, robots and sitemap using Playwright Chromium.
+CI runs this only when Landing or its shared dependencies change, and the
+stable Quality gate blocks merging on failed browser checks.

@@ -8,6 +8,7 @@ import { useForm } from 'react-hook-form';
 
 import { webApi } from '@/shared/api/client';
 import { Button } from '@/shared/ui/button';
+import { Input } from '@/shared/ui/input';
 import { classifySessionCheck, getLoginErrorMessage } from '../lib/auth-flow';
 import { loginSchema, type LoginValues } from '../lib/login-schema';
 
@@ -77,7 +78,7 @@ export function SignInForm() {
         <label htmlFor="email" className="block text-sm font-medium">
           Електронна пошта
         </label>
-        <input
+        <Input
           id="email"
           type="email"
           autoComplete="username"
@@ -86,7 +87,6 @@ export function SignInForm() {
           aria-invalid={Boolean(errors.email)}
           aria-describedby={errors.email ? 'login-email-error' : undefined}
           {...register('email', { onChange: () => setError(null) })}
-          className="h-11 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
         />
         {errors.email && (
           <p id="login-email-error" role="alert" className="text-xs text-destructive">
@@ -98,7 +98,7 @@ export function SignInForm() {
         <label htmlFor="password" className="block text-sm font-medium">
           Пароль
         </label>
-        <input
+        <Input
           id="password"
           type="password"
           autoComplete="current-password"
@@ -106,7 +106,6 @@ export function SignInForm() {
           aria-invalid={Boolean(errors.password)}
           aria-describedby={errors.password ? 'login-password-error' : undefined}
           {...register('password', { onChange: () => setError(null) })}
-          className="h-11 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
         />
         {errors.password && (
           <p id="login-password-error" role="alert" className="text-xs text-destructive">

@@ -45,7 +45,7 @@ export async function readAdminSession(
     if (!body || typeof body !== 'object') return { kind: 'unavailable' };
 
     const user = body as Record<string, unknown>;
-    if (typeof user.id !== 'string' || typeof user.role !== 'string') {
+    if (typeof user.id !== 'string' || !user.id.trim() || typeof user.role !== 'string') {
       return { kind: 'unavailable' };
     }
     if (user.role !== 'ADMIN') return { kind: 'forbidden' };
