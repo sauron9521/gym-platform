@@ -2,7 +2,10 @@ import { useMemo, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 
-import { workoutStatusLabel, type WorkoutState } from '@/features/workouts/lib/workout-presentation';
+import {
+  workoutStatusLabel,
+  type WorkoutState,
+} from '@/features/workouts/lib/workout-presentation';
 import { useWorkoutsQuery, type WorkoutFilter } from '@/features/workouts/model/workouts-query';
 import { palette } from '@/shared/config/theme';
 
@@ -30,10 +33,16 @@ export function WorkoutsScreen() {
     refetch,
   } = useWorkoutsQuery(filter);
   const workouts = useMemo(() => {
-    const items: { id: string; title: string; status: WorkoutState; scheduledAt: string | null }[] = [];
+    const items: { id: string; title: string; status: WorkoutState; scheduledAt: string | null }[] =
+      [];
     for (const page of data?.pages ?? []) {
       for (const item of page.data) {
-        items.push({ id: item.id, title: item.title, status: item.status, scheduledAt: item.scheduledAt });
+        items.push({
+          id: item.id,
+          title: item.title,
+          status: item.status,
+          scheduledAt: item.scheduledAt,
+        });
       }
     }
     return items;
