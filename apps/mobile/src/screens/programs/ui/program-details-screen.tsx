@@ -1,3 +1,4 @@
+import { useRef } from 'react';
 import { useRouter } from 'expo-router';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
@@ -11,6 +12,19 @@ export function ProgramDetailsScreen({ id }: { id: string }) {
   const router = useRouter();
   const query = useProgramAssignment(id);
   const create = useCreateWorkoutFromProgram(id);
+  const submitLock = useRef(false);
+  const scheduleWorkout = (programWorkoutId: string) => {
+    // Blocking inside the event protects against two presses before React rerenders.
+    if (submitLock.current || create.isPending) return;
+    submitLock.current = true;
+    create.mutate(programWorkoutId, {
+      onSuccess: (result) =>
+        router.push({ pathname: '/workouts/[id]', params: { id: result.id } }),
+      onSettled: () => {
+        submitLock.current = false;
+      },
+    });
+  };
   const assignment = query.data;
   const workouts =
     assignment && 'workouts' in assignment.version ? assignment.version.workouts : [];
@@ -19,9 +33,14 @@ export function ProgramDetailsScreen({ id }: { id: string }) {
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       {query.isPending ? <ActivityIndicator accessibilityLabel="Завантаження програми" /> : null}
       {query.isError ? (
-        <Text accessibilityRole="alert" style={styles.error}>
-          {query.error.message}
-        </Text>
+        <>
+          <Text accessibilityRole="alert" style={styles.error}>
+            {query.error.message}
+          </Text>
+          <Pressable accessibilityRole="button" style={styles.button} onPress={() => void query.refetch()}>
+            <Text style={styles.buttonText}>Повторити завантаження</Text>
+          </Pressable>
+        </>
       ) : null}
       {assignment ? (
         <>
@@ -39,12 +58,7 @@ export function ProgramDetailsScreen({ id }: { id: string }) {
                   testID={`program-create-workout-${workout.id}`}
                   accessibilityRole="button"
                   disabled={create.isPending}
-                  onPress={() =>
-                    create.mutate(workout.id, {
-                      onSuccess: (result) =>
-                        router.push({ pathname: '/workouts/[id]', params: { id: result.id } }),
-                    })
-                  }
+                  onPress={() => scheduleWorkout(workout.id)}
                   style={styles.button}
                 >
                   <Text style={styles.buttonText}>
@@ -74,7 +88,7 @@ const styles = StyleSheet.create({
   title: { fontSize: 26, fontWeight: '700', color: palette.text },
   heading: { fontSize: 17, fontWeight: '600', color: palette.text },
   muted: { color: palette.muted, fontSize: 14 },
-  error: { color: '#b91c1c', fontSize: 14 },
+  error: { color: '#ff6460', fontSize: 14 },
   card: {
     backgroundColor: palette.surface,
     borderWidth: 1,
