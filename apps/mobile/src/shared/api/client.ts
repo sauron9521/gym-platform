@@ -7,7 +7,8 @@ import type { AuthFailureListener, TokenGetter } from '@gym/api-client';
  */
 export function validateMobileApiBaseUrl(
   baseUrl: string,
-  production = typeof __DEV__ !== 'undefined' ? !__DEV__ : process.env.NODE_ENV === 'production',
+  production =
+    typeof __DEV__ !== 'undefined' ? !__DEV__ : process.env.NODE_ENV === 'production',
 ): string {
   const url = new URL(baseUrl);
   if (

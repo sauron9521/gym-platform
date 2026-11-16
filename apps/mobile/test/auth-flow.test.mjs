@@ -35,8 +35,14 @@ test('native token flow guards protected routes and avoids plaintext storage', (
 });
 
 test('native release rejects HTTP token transport but development permits LAN API', () => {
-  assert.equal(validateMobileApiBaseUrl('http://192.168.1.20:3001', false), 'http://192.168.1.20:3001');
-  assert.equal(validateMobileApiBaseUrl('https://api.example.test', true), 'https://api.example.test');
+  assert.equal(
+    validateMobileApiBaseUrl('http://192.168.1.20:3001', false),
+    'http://192.168.1.20:3001',
+  );
+  assert.equal(
+    validateMobileApiBaseUrl('https://api.example.test', true),
+    'https://api.example.test',
+  );
   assert.throws(
     () => validateMobileApiBaseUrl('http://192.168.1.20:3001', true),
     /require HTTPS/,
