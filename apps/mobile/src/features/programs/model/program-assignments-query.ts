@@ -76,8 +76,11 @@ export function useCreateWorkoutFromProgram(assignmentId: string) {
       if (account?.role !== 'ATHLETE') {
         throw new Error('Створення тренувань із програми доступне лише спортсмену.');
       }
-      const key = getProgramWorkoutAttempt(attempts.current, assignmentId, programWorkoutId, () =>
-        `mobile-${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`,
+      const key = getProgramWorkoutAttempt(
+        attempts.current,
+        assignmentId,
+        programWorkoutId,
+        () => `mobile-${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`,
       );
       const response = await api.POST('/workouts/from-program', {
         body: { assignmentId, programWorkoutId },
