@@ -14,7 +14,18 @@ export default defineConfig([
         {
           patterns: [
             {
-              group: ['@/features/**', '@/widgets/**', '@/app/**'],
+                            group: [
+                '@/entities',
+                '@/entities/**',
+                '@/features',
+                '@/features/**',
+                '@/widgets',
+                '@/widgets/**',
+                '@/pages',
+                '@/pages/**',
+                '@/app',
+                '@/app/**',
+              ],
               message: 'FSD shared code must not depend on higher layers.',
             },
           ],
