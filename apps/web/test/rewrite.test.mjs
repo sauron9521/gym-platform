@@ -7,7 +7,10 @@ import { getApiUpstreamOrigin } from '../src/shared/api/upstream.mjs';
 test('browser API routes use a fixed same-origin rewrite to the backend', async () => {
   const result = await config.rewrites();
   assert.deepEqual(result, [
-    { source: '/backend/:path*', destination: 'http://localhost:3001/:path*' },
+    {
+      source: '/backend/:path*',
+      destination: getApiUpstreamOrigin(process.env.GYM_API_INTERNAL_URL) + '/:path*',
+    },
   ]);
 });
 
