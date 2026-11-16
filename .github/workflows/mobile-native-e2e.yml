@@ -76,4 +76,3 @@ jobs:
               *) exit 1 ;;
             esac
             maestro test -e APP_ID="$APP_ID" -e E2E_EMAIL="$E2E_EMAIL" -e E2E_PASSWORD="$E2E_PASSWORD" "apps/mobile/maestro/flows/$FLOW_FILE"
-2026-11-16T16:28:54.0259400Z
