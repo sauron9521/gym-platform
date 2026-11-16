@@ -57,6 +57,26 @@ LANDING_SITE_URL=https://your-domain.example
 для localhost і не вмикайте індексацію до затвердження контенту.
 Ця конфігурація не забезпечує захист даних або доступу до сайту.
 
+## Marketing UI Kit
+
+Маркетингові компоненти розташовані в `src/shared/ui/marketing`.
+Вони використовують наявні компоненти `@gym/ui-web` (Button і Card),
+кольори з `@gym/design-tokens` та не потребують нових залежностей.
+
+- `Container` — спільна максимальна ширина та адаптивні поля.
+- `MarketingSection` — семантична секція зі стандартними відступами та варіантом `subtle`.
+- `SectionHeading` — заголовок рівня H2 з необов’язковими eyebrow, описом і центруванням.
+- `FeatureCard` — картка продуктового сценарію з доступним внутрішнім посиланням.
+- `CallToAction` — готовий CTA-блок з основним та необов’язковим додатковим посиланням.
+
+У `HomeScreen` вже використовуються `Container`, `MarketingSection`,
+`SectionHeading` і `FeatureCard`. Повноцінний редизайн головної сторінки
+та розширення контенту заплановані окремим PR. Для анімацій поки достатньо
+CSS; повага до `prefers-reduced-motion` залишатиметься обов'язковою
+для майбутніх інтерактивних ефектів.
+
+Компонентні перевірки: `pnpm --filter @gym/landing test:components`.
+
 ## Smoke tests
 
 Run `pnpm --filter @gym/landing test` to validate public navigation routes,
