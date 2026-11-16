@@ -52,7 +52,9 @@ export function WorkoutSetRow({
       () => {
         submitLock.current = false;
       },
-    )();
+    )().catch(() => {
+      // React Query exposes the failure through mutation.error below.
+    });
   };
 
   const skipSet = () => {
