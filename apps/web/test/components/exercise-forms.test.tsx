@@ -259,9 +259,7 @@ describe('EditExerciseForm interactions', () => {
     fireEvent.change(screen.getByRole('textbox', { name: 'Назва' }), {
       target: { value: 'Жим лежачи' },
     });
-    const saveButton = screen.getByRole('button', {
-      name: 'Зберегти зміни',
-    }) as HTMLButtonElement;
+    const saveButton = screen.getByRole('button', { name: 'Зберегти зміни' }) as HTMLButtonElement;
     await waitFor(() => expect(saveButton.disabled).toBe(false));
     fireEvent.click(saveButton);
 
@@ -273,9 +271,7 @@ describe('EditExerciseForm interactions', () => {
     const props = editProps();
     render(<EditExerciseForm {...props} />);
     fireEvent.click(screen.getAllByRole('button', { name: 'Прибрати' })[0]);
-    const saveButton = screen.getByRole('button', {
-      name: 'Зберегти зміни',
-    }) as HTMLButtonElement;
+    const saveButton = screen.getByRole('button', { name: 'Зберегти зміни' }) as HTMLButtonElement;
     await waitFor(() => expect(saveButton.disabled).toBe(false));
     fireEvent.click(saveButton);
 
