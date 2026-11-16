@@ -1,14 +1,19 @@
 # FSD shared-layer import boundaries
 
-Frontend lint checks now enforce a one-way boundary for absolute `@/` imports
+Frontend ESLint checks enforce a one-way boundary for absolute `@/` imports
 from `src/shared`:
 
-- Next Web, Landing and Admin: shared must not import features, widgets or app.
-- Expo Mobile: shared must not import features, screens or app.
+- Next Web, Landing and Admin: shared cannot import `entities`, `features`,
+  `widgets`, `pages` or `app`.
+- Expo Mobile: shared cannot import `entities`, `features`, `widgets`,
+  `screens` or `app`.
 
-These restrictions are enforced by the existing ESLint commands in affected CI.
-They do not ban third-party packages or shared-to-shared imports.
+Both package-barrel imports (for example, `@/features`) and nested imports
+(for example, `@/features/some-feature`) are forbidden. Shared-to-shared
+imports and third-party dependencies remain allowed.
 
-This is the first incremental rule, not a complete dependency graph validator.
-Relative traversals and cross-feature imports require a later resolver-aware rule;
-do not treat this rule alone as proof of full FSD compliance.
+The existing ESLint commands enforce these checks in affected CI.
+
+This is an incremental rule, **not** a complete dependency graph validator.
+Relative traversals and cross-feature imports need a later resolver-aware rule;
+this guard alone does not prove full FSD compliance.
