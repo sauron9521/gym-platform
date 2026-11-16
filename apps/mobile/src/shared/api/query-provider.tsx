@@ -43,7 +43,7 @@ function NativeOnlineSync() {
     return () => {
       active = false;
       subscription.remove();
-      onlineManager.setOnline(undefined);
+      onlineManager.setOnline(true);
     };
   }, []);
 

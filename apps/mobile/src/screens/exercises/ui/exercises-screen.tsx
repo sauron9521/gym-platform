@@ -115,7 +115,7 @@ export function ExercisesScreen() {
       ListFooterComponent={
         query.isFetchingNextPage ? (
           <Text style={styles.subtitle}>Завантажуємо наступні вправи…</Text>
-        ) : null
+        ) : undefined
       }
     />
   );
