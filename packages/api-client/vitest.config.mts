@@ -1,8 +1,4 @@
 import { defineConfig } from 'vitest/config';
+import { nodeTestConfig } from '../../tooling/vitest/node.mts';
 
-export default defineConfig({
-  test: {
-    environment: 'node',
-    include: ['test/**/*.test.mjs'],
-  },
-});
+export default defineConfig(nodeTestConfig(['test/**/*.test.mjs']));

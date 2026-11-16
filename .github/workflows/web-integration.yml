@@ -26,8 +26,6 @@ jobs:
         uses: actions/checkout@v7
         with:
           fetch-depth: 0
-      - name: Test change classification and required-gate contract
-        run: node --test scripts/ci-select.test.mjs
       - name: Classify changed files
         id: select
         env:

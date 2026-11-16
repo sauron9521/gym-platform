@@ -1,10 +1,5 @@
 import { defineConfig } from 'vitest/config';
+import { nodeTestConfig } from '../../tooling/vitest/node.mts';
 
-// Node-only contract checks must not load the React Native transformer.
-export default defineConfig({
-  test: {
-    environment: 'node',
-    include: ['test/*.test.mjs'],
-    clearMocks: true,
-  },
-});
+// Keep Node contracts isolated from the native React renderer test plugin.
+export default defineConfig(nodeTestConfig(['test/*.test.mjs'], { clearMocks: true }));

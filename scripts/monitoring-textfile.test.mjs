@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { rmSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { test } from 'node:test';
+import { test } from 'vitest';
 
 import { buildReport, emptySummary } from './monitoring-report.mjs';
 import { metricsFromReport, parseOutputArg, writeMetricsFile } from './monitoring-textfile.mjs';

@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { chmod, mkdtemp, readFile, rm, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { test } from 'node:test';
+import { onTestFinished, test } from 'vitest';
 
 import { validateIdentity } from './production-digest-guard.mjs';
 import { REQUIRED_CHECKS } from './production-readiness.mjs';
@@ -125,9 +125,9 @@ test('backup manifest must list only fixed archive names and distinct valid SHA 
     assert.throws(() => validateBackupManifest(bad));
 });
 
-test('reject symlinks, world/group-writable backup contents and missing archives', async (t) => {
+test('reject symlinks, world/group-writable backup contents and missing archives', async () => {
   const root = await mkdtemp(join(tmpdir(), 'gym-operator-preflight-'));
-  t.after(() => rm(root, { recursive: true, force: true }));
+  onTestFinished(() => rm(root, { recursive: true, force: true }));
   await chmod(root, 0o700);
   const checksum = join(root, 'SHA256SUMS');
   const dump = join(root, 'postgres.dump');
@@ -146,9 +146,9 @@ test('reject symlinks, world/group-writable backup contents and missing archives
   await assert.rejects(validatePrivateFile(join(root, 'missing.json')));
 });
 
-test('private release report must match selected release and is never itself authorization', async (t) => {
+test('private release report must match selected release and is never itself authorization', async () => {
   const root = await mkdtemp(join(tmpdir(), 'gym-release-preflight-'));
-  t.after(() => rm(root, { recursive: true, force: true }));
+  onTestFinished(() => rm(root, { recursive: true, force: true }));
   await chmod(root, 0o700);
   await writeFile(join(root, 'release.json'), JSON.stringify(receipt()), { mode: 0o600 });
   await writeFile(join(root, 'SHA256SUMS'), sums(), { mode: 0o600 });

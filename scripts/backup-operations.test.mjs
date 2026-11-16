@@ -2,13 +2,13 @@ import assert from 'node:assert/strict';
 import { mkdtemp, readFile, rm, stat } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { test } from 'node:test';
+import { onTestFinished, test } from 'vitest';
 
 import { writeMetricsFile } from './monitoring-textfile.mjs';
 
-test('backup metrics are published atomically and never use arbitrary destinations', async (t) => {
+test('backup metrics are published atomically and never use arbitrary destinations', async () => {
   const directory = await mkdtemp(join(tmpdir(), 'gym-backup-metrics-'));
-  t.after(() => rm(directory, { recursive: true, force: true }));
+  onTestFinished(() => rm(directory, { recursive: true, force: true }));
   const path = join(directory, 'gym_api_backup.prom');
 
   await writeMetricsFile(path, 'gym_api_backup_verified 1\n');

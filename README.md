@@ -50,6 +50,28 @@ To start applications individually, use `pnpm dev:web`, `pnpm dev:landing`,
 
 On 14 November 2026, the pre-production Prisma history was squashed into a single initial baseline. It is for **fresh, empty databases only**; existing local/test/staging databases that used legacy migrations must be explicitly rebuilt. See [database baseline reset](docs/database-baseline-reset.md). No production database is modified automatically.
 
+## Test runner and CI
+
+Unit and contract tests use **Vitest 5** across API, Web, Landing, Admin,
+Mobile, shared packages and root tooling. Web and Landing browser E2E remain
+on Playwright; Mobile uses Vitest Native + React Native Testing Library for
+component tests, with Maestro reserved for device-level E2E.
+
+```bash
+pnpm test:tooling                         # Repository CI, release and ops contracts
+pnpm --filter @gym/api test              # Nest unit tests
+pnpm --filter @gym/api test:architecture # Architecture contracts
+pnpm --filter @gym/mobile test           # Mobile Node contracts + native components
+pnpm --filter @gym/web test              # Web contracts
+pnpm test                                # Turborepo workspace tests
+```
+
+Shared Node test defaults live in `tooling/vitest/node.mts`. Their individual
+Vitest configs scope test discovery to each workspace. CI runs root tooling
+contracts **once** in the required `Tooling contracts / Vitest Node 24` job,
+while retaining specialized integration, Docker, Windows, database and browser
+gates. See [testing conventions](docs/testing.md).
+
 ## Contribution workflow
 
 Open a pull request against `main`. CI verifies formatting and workspace quality tasks.

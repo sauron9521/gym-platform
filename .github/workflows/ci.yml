@@ -39,9 +39,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Test fail-closed change classification
-        run: node --test scripts/ci-select.test.mjs scripts/pre-push-checks.test.mjs
-
       - name: Classify changed files
         id: select
         env:
@@ -49,6 +46,31 @@ jobs:
           CI_BASE_SHA: ${{ github.event.pull_request.base.sha }}
           CI_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: node scripts/ci-select.mjs --github-output "$GITHUB_OUTPUT"
+
+  tooling-contracts:
+    name: Tooling contracts / Vitest Node 24
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install frozen dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Validate root CI, security and operations contracts
+        run: pnpm test:tooling
 
   prepush-windows:
     name: Pre-push / Windows Node 24
@@ -61,13 +83,21 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6
+
       - name: Set up Node.js
         uses: actions/setup-node@v7
         with:
           node-version: '24'
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install frozen dependencies
+        run: pnpm install --frozen-lockfile
 
       - name: Validate Windows-safe pre-push argument handling
-        run: node --test scripts/pre-push-checks.test.mjs
+        run: pnpm exec vitest run --config vitest.config.mts scripts/pre-push-checks.test.mjs
 
   mobile-ios-dev-windows:
     name: Mobile iOS Dev / Windows Metro
@@ -246,10 +276,6 @@ jobs:
           pnpm --filter @gym/api test:architecture
           pnpm --filter @gym/api test:coverage-tools
 
-      - name: Validate release and GHCR safety contracts (offline)
-        if: needs.changes.outputs.api == 'true'
-        run: node --test scripts/release-bundle.test.mjs scripts/ghcr-promotion.test.mjs scripts/release-supply-chain.test.mjs scripts/release-ci-gate.test.mjs
-
       - name: Check formatting
         run: pnpm format:check
 
@@ -303,6 +329,7 @@ jobs:
     needs:
       - changes
       - quality-workspaces
+      - tooling-contracts
       - prepush-windows
       - web-browser-e2e
       - dependency-security
@@ -313,9 +340,10 @@ jobs:
     timeout-minutes: 5
 
     steps:
-      - name: Fail closed if change classification, Windows, browser or dependency audit fails
+      - name: Fail closed if change classification, tooling, Windows, browser or dependency audit fails
         env:
           QUALITY_WORKSPACES_RESULT: ${{ needs.quality-workspaces.result }}
+          TOOLING_CONTRACTS_RESULT: ${{ needs.tooling-contracts.result }}
           CHANGE_DETECTION_RESULT: ${{ needs.changes.result }}
           FULL_SCOPE: ${{ needs.changes.outputs.full }}
           WEB_REQUIRED: ${{ needs.changes.outputs.web }}
@@ -331,6 +359,7 @@ jobs:
           set -euo pipefail
           test "$CHANGE_DETECTION_RESULT" = success
           test "$QUALITY_WORKSPACES_RESULT" = success
+          test "$TOOLING_CONTRACTS_RESULT" = success
           if [ "$FULL_SCOPE" = true ]; then
             test "$WINDOWS_RESULT" = success
           else
@@ -467,7 +496,6 @@ jobs:
           sh -n scripts/restore-drill.sh
           bash scripts/test-backup-production.sh
           bash scripts/test-backup-readiness.sh
-          node --test scripts/monitoring-backup-health.test.mjs scripts/backup-operations.test.mjs
 
       - name: Verify immutable GHCR Compose override and offline operator digest guards
         env:
@@ -484,7 +512,6 @@ jobs:
           SMTP_URL: smtp://mail.example.invalid:2525
           MAIL_FROM: test@example.invalid
         run: |
-          node --test scripts/production-digest-guard.test.mjs
           node scripts/production-digest-guard.mjs refs
           docker compose --env-file infra/docker/.env.example \
             -f infra/docker/compose.prod.yaml \
@@ -495,8 +522,6 @@ jobs:
       - name: Validate operator-only host preflight and private backup contracts offline
         run: |
           bash -n scripts/production-host-preflight.sh
-          node --test scripts/production-host-preflight.test.mjs
-          node --test scripts/production-release-origin.test.mjs
 
       - name: Check opt-in systemd service and timer units
         run: |
@@ -535,16 +560,13 @@ jobs:
         with:
           node-version: '24'
 
-      - name: Validate manual signed staging, two-release upgrade and functional contracts
+      - name: Validate staging operator shell syntax (unit contracts in required tooling job)
         run: |
           bash -n scripts/staging-upgrade-run.sh
-          node --test scripts/staging-smoke.test.mjs
-          node --test scripts/staging-functional-smoke.test.mjs
-          node --test scripts/staging-upgrade-rollback.test.mjs
 
   api-readiness:
     name: API Readiness / Verified release NO-GO
-    needs: changes
+    needs: [changes, tooling-contracts]
     if: needs.changes.outputs.api == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -558,8 +580,10 @@ jobs:
         with:
           node-version: '24'
 
-      - name: Validate signed release, exact-source CI, staging and operator NO-GO contracts
-        run: node --test scripts/production-readiness.test.mjs
+      - name: Enforce passed signed release and operator NO-GO contracts
+        env:
+          TOOLING_CONTRACTS_RESULT: ${{ needs.tooling-contracts.result }}
+        run: test "$TOOLING_CONTRACTS_RESULT" = success
 
   api-migration:
     name: API Migration / Source inventory and cutover NO-GO
@@ -586,7 +610,6 @@ jobs:
       - name: Verify imported source and immutable Prisma history
         run: |
           pnpm --filter @gym/api exec vitest run --config vitest.config.tools.ts test/migration-baseline.test.mjs
-          node --test scripts/api-migration-readiness.test.mjs
 
       - name: Publish read-only migration inventory and missing-gates report
         run: node scripts/api-migration-readiness.mjs --report >> "$GITHUB_STEP_SUMMARY"
@@ -610,14 +633,6 @@ jobs:
       - name: Validate shell runners and monitor privilege boundaries
         run: |
           bash -n scripts/monitoring-collect.sh scripts/monitoring-forward.sh
-          node --test \
-            scripts/monitoring-docker-forwarder.test.mjs \
-            scripts/monitoring-log-window.test.mjs \
-            scripts/monitoring-report.test.mjs \
-            scripts/monitoring-textfile.test.mjs \
-            scripts/monitoring-docker-resources.test.mjs \
-            scripts/monitoring-docker-signals.test.mjs \
-            scripts/monitoring-platform.test.mjs
 
       - name: Validate opt-in monitoring systemd units and timer syntax
         run: |

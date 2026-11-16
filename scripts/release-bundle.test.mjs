@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { test } from 'node:test';
+import { onTestFinished, test } from 'vitest';
 
 import {
   archiveFingerprint,
@@ -117,9 +117,9 @@ test('manifest generation is SHA-bound to commit, base and docker config IDs', (
   );
 });
 
-test('release bundle hashes archive bytes, catches corruption and prevents overwrite', async (t) => {
+test('release bundle hashes archive bytes, catches corruption and prevents overwrite', async () => {
   const dir = await mkdtemp(join(tmpdir(), 'gym-release-'));
-  t.after(() => rm(dir, { recursive: true, force: true }));
+  onTestFinished(() => rm(dir, { recursive: true, force: true }));
   const archive = join(dir, 'images.tar.gz');
   const path = join(dir, 'manifest.json');
   const args = { ...options, archive, manifest: path };
