@@ -18,6 +18,24 @@ concurrency:
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
+  exercise-format-temp:
+    name: Temporary exercise format output
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+      - run: pnpm install --frozen-lockfile
+      - name: Emit formatted test
+        run: |
+          pnpm exec prettier --write apps/web/test/components/exercise-forms.test.tsx
+          echo 'FMT_EXERCISE_V2_BEGIN'
+          cat apps/web/test/components/exercise-forms.test.tsx
+          echo 'FMT_EXERCISE_V2_END'
+
   changes:
     name: CI / Determine affected workspaces
     runs-on: ubuntu-latest
