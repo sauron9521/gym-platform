@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'vitest';
 
-import { nextWorkoutPage } from '../src/features/workouts/model/workouts-query.ts';
+import { nextWorkoutPage } from '../src/features/workouts/lib/workouts-pagination.ts';
 
 test('pagination stops at last page and does not request an extra page', () => {
   assert.equal(nextWorkoutPage({ meta: { totalPages: 4 } }, 1), 2);

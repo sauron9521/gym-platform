@@ -3,6 +3,7 @@ import type { paths } from '@gym/api-client';
 
 import { useAuth } from '@/features/auth/model/auth-context';
 import { accountQueryKeys } from '@/shared/api/query-client';
+import { nextWorkoutPage } from '../lib/workouts-pagination';
 
 export type WorkoutFilter =
   | 'PLANNED'
@@ -14,10 +15,6 @@ export type WorkoutFilter =
 export type WorkoutsPage = paths['/workouts']['get']['responses'][200]['content']['application/json'];
 
 class SessionExpiredError extends Error {}
-
-export function nextWorkoutPage(page: { meta: { totalPages: number } }, current: number) {
-  return current < page.meta.totalPages ? current + 1 : undefined;
-}
 
 /** Paginated results are scoped by authenticated account and selected status. */
 export function useWorkoutsQuery(status?: WorkoutFilter) {
