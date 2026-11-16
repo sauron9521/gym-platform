@@ -31,6 +31,14 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="programs"
+        options={{
+          title: 'Програми',
+          headerTitle: 'Мої програми',
+          tabBarIcon: () => <Text accessible={false}>📅</Text>,
+        }}
+      />
+      <Tabs.Screen
         name="profile"
         options={{
           title: 'Profile',

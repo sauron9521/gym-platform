@@ -17,6 +17,7 @@ function Navigation() {
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Protected guard={Boolean(account)}>
           <Stack.Screen name="(tabs)" />
+          <Stack.Screen name="programs/[id]" options={{ headerShown: true, title: 'Програма' }} />
           <Stack.Screen name="workouts/[id]" options={{ headerShown: true, title: 'Тренування' }} />
         </Stack.Protected>
         <Stack.Protected guard={!account}>
