@@ -155,16 +155,16 @@ export function SignInScreen() {
             onPress={() => {
               if (retrying) return;
               setRetrying(true);
-              void retryVerification().then((result) => {
-                if (!result.success) {
-                  setError('root.server', { type: 'server', message: result.message });
-                }
-              }).finally(() => setRetrying(false));
+              void retryVerification()
+                .then((result) => {
+                  if (!result.success) {
+                    setError('root.server', { type: 'server', message: result.message });
+                  }
+                })
+                .finally(() => setRetrying(false));
             }}
           >
-            <Text style={styles.buttonText}>
-              {retrying ? 'Перевіряємо…' : 'Відновити сесію'}
-            </Text>
+            <Text style={styles.buttonText}>{retrying ? 'Перевіряємо…' : 'Відновити сесію'}</Text>
           </Pressable>
         ) : null}
         <Text style={styles.note}>

@@ -215,8 +215,14 @@ test('revalidation is allowed only while a rotated access token remains fresh', 
 });
 
 test('transient profile failure exposes a safe retry without replaying one-time refresh', () => {
-  const auth = readFileSync(new URL('../src/features/auth/model/auth-context.tsx', import.meta.url), 'utf8');
-  const screen = readFileSync(new URL('../src/screens/sign-in/ui/sign-in-screen.tsx', import.meta.url), 'utf8');
+  const auth = readFileSync(
+    new URL('../src/features/auth/model/auth-context.tsx', import.meta.url),
+    'utf8',
+  );
+  const screen = readFileSync(
+    new URL('../src/screens/sign-in/ui/sign-in-screen.tsx', import.meta.url),
+    'utf8',
+  );
   assert.match(auth, /session\.canRevalidate\(\)/);
   assert.match(auth, /retryVerification/);
   assert.match(screen, /Відновити сесію/);
