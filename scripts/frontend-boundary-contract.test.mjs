@@ -14,4 +14,14 @@ test('Next and Mobile ESLint configurations enforce downward-only FSD shared imp
   }
   assert.match(next, /@\/widgets\/\*\*/);
   assert.match(mobile, /@\/screens\/\*\*/);
+
+  for (const [name, config, layers] of [
+    ['Next', next, ['entities', 'features', 'widgets', 'pages', 'app']],
+    ['Mobile', mobile, ['entities', 'features', 'widgets', 'screens', 'app']],
+  ]) {
+    for (const layer of layers) {
+      assert.ok(config.includes(`'@/${layer}',`), `${name} must block the ${layer} barrel`);
+      assert.ok(config.includes(`'@/${layer}/**',`), `${name} must block nested ${layer} imports`);
+    }
+  }
 });
