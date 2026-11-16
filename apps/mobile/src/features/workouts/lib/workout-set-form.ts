@@ -6,7 +6,10 @@ export const workoutSetFormSchema = z.object({
     .string()
     .trim()
     .regex(/^\d*$/, 'Повторення мають бути цілим невід’ємним числом.')
-    .refine((value) => !value || (Number(value) >= 1 && Number(value) <= 1000), 'Кількість повторень має бути від 1 до 1000.'),
+    .refine(
+      (value) => !value || (Number(value) >= 1 && Number(value) <= 1000),
+      'Кількість повторень має бути від 1 до 1000.',
+    ),
   actualWeightKg: z
     .string()
     .trim()
