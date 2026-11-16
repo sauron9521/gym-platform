@@ -8,6 +8,7 @@ import { useForm } from 'react-hook-form';
 
 import { webApi } from '@/shared/api/client';
 import { Button } from '@/shared/ui/button';
+import { Input } from '@/shared/ui/input';
 import { classifySessionCheck, getLoginErrorMessage } from '../lib/auth-flow';
 import { loginSchema, type LoginValues } from '../lib/login-schema';
 
@@ -77,7 +78,7 @@ export function SignInForm() {
         <label htmlFor="email" className="block text-sm font-medium">
           Електронна пошта
         </label>
-        <input
+        <Input
           id="email"
           type="email"
           autoComplete="username"
@@ -98,7 +99,7 @@ export function SignInForm() {
         <label htmlFor="password" className="block text-sm font-medium">
           Пароль
         </label>
-        <input
+        <Input
           id="password"
           type="password"
           autoComplete="current-password"
