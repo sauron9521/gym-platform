@@ -94,7 +94,9 @@ export function CreateWorkoutScreen() {
         </Pressable>
       ))}
       {errors.exerciseId ? (
-        <Text accessibilityRole="alert" style={styles.error}>{errors.exerciseId.message}</Text>
+        <Text accessibilityRole="alert" style={styles.error}>
+          {errors.exerciseId.message}
+        </Text>
       ) : null}
       <Text style={styles.label}>Повторення</Text>
       <Controller
