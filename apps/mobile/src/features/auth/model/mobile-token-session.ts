@@ -53,6 +53,16 @@ export class MobileTokenSession {
     return this.refreshToken;
   }
 
+  /** Re-verify a freshly rotated access token without replaying a refresh token. */
+  canRevalidate(): boolean {
+    return this.accessToken !== null && this.now() < this.expiresAt - REFRESH_LEEWAY_MS;
+  }
+
+  /** Peek at the fresh token only: profile retries must never trigger refresh rotation. */
+  getRevalidationToken(): string | null {
+    return this.canRevalidate() ? this.accessToken : null;
+  }
+
   private enqueueStorage(operation: () => Promise<void>): Promise<void> {
     const next = this.storageQueue.then(operation, operation);
     this.storageQueue = next.catch(() => undefined);
