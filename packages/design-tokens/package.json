@@ -7,7 +7,8 @@
     "**/*.css"
   ],
   "exports": {
-    "./dark.css": "./src/dark.css"
+    "./dark.css": "./src/dark.css",
+    "./native": "./src/native.ts"
   },
   "scripts": {
     "build": "pnpm test",
