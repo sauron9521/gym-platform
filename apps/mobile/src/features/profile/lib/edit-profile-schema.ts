@@ -8,7 +8,7 @@ export const editProfileSchema = z.object({
     .string()
     .trim()
     .refine(
-      (value) => !value || (/^\\d+$/.test(value) && Number(value) >= 50 && Number(value) <= 300),
+      (value) => !value || (/^\d+$/.test(value) && Number(value) >= 50 && Number(value) <= 300),
       'Зріст має бути 50–300 см.',
     ),
   weight: z
@@ -17,7 +17,7 @@ export const editProfileSchema = z.object({
     .refine(
       (value) =>
         !value ||
-        (/^\\d+(?:[.,]\\d{0,2})?$/.test(value) &&
+        (/^\d+(?:[.,]\d{0,2})?$/.test(value) &&
           Number(value.replace(',', '.')) >= 10 &&
           Number(value.replace(',', '.')) <= 500),
       'Вага має бути 10–500 кг.',
