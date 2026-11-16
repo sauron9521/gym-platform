@@ -49,10 +49,14 @@ describe('ProgramDetailsScreen native workout scheduling', () => {
     await fireEvent.press(schedule);
     await fireEvent.press(schedule);
     expect(mutate).toHaveBeenCalledTimes(1);
-    expect(mutate.mock.calls[0][0]).toBe('day-1');
+    const firstCall = mutate.mock.calls[0];
+    if (!firstCall) throw new Error('Expected the scheduling mutation to run');
+    expect(firstCall[0]).toBe('day-1');
     expect(push).not.toHaveBeenCalled();
 
-    mutate.mock.calls[0][1].onSuccess({ id: 'created-workout' });
+    const callbacks = firstCall[1];
+    if (!callbacks) throw new Error('Missing scheduling callbacks');
+    callbacks.onSuccess({ id: 'created-workout' });
     expect(push).toHaveBeenCalledWith({
       pathname: '/workouts/[id]',
       params: { id: 'created-workout' },
