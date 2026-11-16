@@ -27,6 +27,7 @@ jobs:
       api: ${{ steps.select.outputs.api }}
       web: ${{ steps.select.outputs.web }}
       landing: ${{ steps.select.outputs.landing }}
+      admin: ${{ steps.select.outputs.admin }}
       mobile: ${{ steps.select.outputs.mobile }}
       client: ${{ steps.select.outputs.client }}
       deps: ${{ steps.select.outputs.deps }}
@@ -299,6 +300,7 @@ jobs:
           CI_API: ${{ needs.changes.outputs.api }}
           CI_WEB: ${{ needs.changes.outputs.web }}
           CI_LANDING: ${{ needs.changes.outputs.landing }}
+          CI_ADMIN: ${{ needs.changes.outputs.admin }}
           CI_MOBILE: ${{ needs.changes.outputs.mobile }}
           CI_CLIENT: ${{ needs.changes.outputs.client }}
         run: |
@@ -309,6 +311,7 @@ jobs:
           # Include the UI package typecheck when its Web consumer is selected.
           if [ "$CI_WEB" = true ]; then filters+=(--filter=@gym/ui-web); fi
           if [ "$CI_LANDING" = true ]; then filters+=(--filter=@gym/landing); fi
+          if [ "$CI_ADMIN" = true ]; then filters+=(--filter=@gym/admin); fi
           if [ "$CI_MOBILE" = true ]; then filters+=(--filter=@gym/mobile); fi
           if [ "$CI_CLIENT" = true ]; then filters+=(--filter=@gym/api-client); fi
           test "${#filters[@]}" -gt 0
@@ -320,6 +323,7 @@ jobs:
           if [ "$CI_MOBILE" = true ]; then test_filters+=(--filter=@gym/mobile); fi
           if [ "$CI_CLIENT" = true ]; then test_filters+=(--filter=@gym/api-client); fi
           if [ "$CI_LANDING" = true ]; then test_filters+=(--filter=@gym/landing); fi
+          if [ "$CI_ADMIN" = true ]; then test_filters+=(--filter=@gym/admin); fi
           if [ "${#test_filters[@]}" -gt 0 ]; then
             pnpm exec turbo run test "${test_filters[@]}"
           fi
