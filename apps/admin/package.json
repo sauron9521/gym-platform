@@ -9,7 +9,9 @@
     "start": "next start --port 3003",
     "lint": "eslint .",
     "typecheck": "next typegen && tsc --noEmit",
-    "test": "vitest run"
+    "test": "pnpm test:contracts && pnpm test:components",
+    "test:contracts": "vitest run --config vitest.config.mts",
+    "test:components": "vitest run --config vitest.components.config.mts"
   },
   "dependencies": {
     "@gym/api-client": "workspace:*",
@@ -31,6 +33,9 @@
     "tailwindcss": "4.3.5",
     "typescript": "^6.0.3",
     "vite": "8.3.8",
-    "vitest": "5.1.0"
+    "vitest": "5.1.0",
+    "@testing-library/dom": "10.4.2",
+    "@testing-library/react": "16.3.3",
+    "happy-dom": "21.0.4"
   }
 }
