@@ -87,3 +87,13 @@ tests always execute on pushes to `main`. Builds, lint and typechecks
 may reuse correctly hashed Turborepo results. The vulnerability audit
 does not restore the pnpm package store because it only reads the
 lockfile and queries the registry.
+
+## Parallel fast feedback
+
+The expensive workspace formatting, lint, typecheck, tests, and build run in the
+`Quality workspaces / Node 24` job as soon as change classification succeeds.
+The existing branch-protected `Quality / Node 24` name remains the result gate:
+it fails closed unless workspace quality, security audit, Windows checks,
+Mobile Metro and Web fixture-browser suites all have their expected results.
+The required API and real-API browser gates remain independent and unchanged.
+This split does **not** skip tests or change release-source CI requirements.

@@ -27,6 +27,8 @@ const trustedPnpmCommands = new Set(
     ['pnpm', '--filter', '@gym/api-client', 'typecheck'],
     ['pnpm', '--filter', '@gym/web', 'lint'],
     ['pnpm', '--filter', '@gym/web', 'typecheck'],
+    ['pnpm', '--filter', '@gym/landing', 'lint'],
+    ['pnpm', '--filter', '@gym/landing', 'typecheck'],
     ['pnpm', '--filter', '@gym/mobile', 'lint'],
     ['pnpm', '--filter', '@gym/mobile', 'typecheck'],
   ].map((args) => JSON.stringify(args)),
@@ -112,6 +114,7 @@ export function createPrePushPlan({ full, files }) {
         full: false,
         api: false,
         web: false,
+        landing: false,
         mobile: false,
         client: false,
         deps: false,
@@ -162,6 +165,10 @@ export function createPrePushPlan({ full, files }) {
   if (scopes.web) {
     commands.push(['pnpm', '--filter', '@gym/web', 'lint']);
     commands.push(['pnpm', '--filter', '@gym/web', 'typecheck']);
+  }
+  if (scopes.landing) {
+    commands.push(['pnpm', '--filter', '@gym/landing', 'lint']);
+    commands.push(['pnpm', '--filter', '@gym/landing', 'typecheck']);
   }
   if (scopes.mobile) {
     commands.push(['pnpm', '--filter', '@gym/mobile', 'lint']);

@@ -151,53 +151,13 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
-  quality:
-    name: Quality / Node 24
-    needs: [changes, prepush-windows, web-browser-e2e, dependency-security, mobile-ios-dev-windows]
-    if: always()
+  quality-workspaces:
+    name: Quality workspaces / Node 24
+    needs: changes
+    if: needs.changes.result == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 20
-
     steps:
-      - name: Fail closed if change classification, Windows, browser or dependency audit fails
-        env:
-          CHANGE_DETECTION_RESULT: ${{ needs.changes.result }}
-          FULL_SCOPE: ${{ needs.changes.outputs.full }}
-          WEB_REQUIRED: ${{ needs.changes.outputs.web }}
-          DEPS_REQUIRED: ${{ needs.changes.outputs.deps }}
-          WINDOWS_RESULT: ${{ needs.prepush-windows.result }}
-          WEB_E2E_RESULT: ${{ needs.web-browser-e2e.result }}
-          SECURITY_RESULT: ${{ needs.dependency-security.result }}
-          MOBILE_REQUIRED: ${{ needs.changes.outputs.mobile }}
-          MOBILE_IOS_DEV_RESULT: ${{ needs.mobile-ios-dev-windows.result }}
-        run: |
-          set -euo pipefail
-          test "$CHANGE_DETECTION_RESULT" = success
-          if [ "$FULL_SCOPE" = true ]; then
-            test "$WINDOWS_RESULT" = success
-          else
-            test "$FULL_SCOPE" = false
-            test "$WINDOWS_RESULT" = skipped
-          fi
-          if [ "$WEB_REQUIRED" = true ]; then
-            test "$WEB_E2E_RESULT" = success
-          else
-            test "$WEB_REQUIRED" = false
-            test "$WEB_E2E_RESULT" = skipped
-          fi
-          if [ "$DEPS_REQUIRED" = true ]; then
-            test "$SECURITY_RESULT" = success
-          else
-            test "$DEPS_REQUIRED" = false
-            test "$SECURITY_RESULT" = skipped
-          fi
-          if [ "$MOBILE_REQUIRED" = true ]; then
-            test "$MOBILE_IOS_DEV_RESULT" = success
-          else
-            test "$MOBILE_REQUIRED" = false
-            test "$MOBILE_IOS_DEV_RESULT" = skipped
-          fi
-
       - name: Checkout
         uses: actions/checkout@v7
 
@@ -302,6 +262,61 @@ jobs:
             pnpm exec turbo run test "${test_filters[@]}"
           fi
           pnpm exec turbo run build "${filters[@]}"
+
+  quality:
+    name: Quality / Node 24
+    needs:
+      - changes
+      - quality-workspaces
+      - prepush-windows
+      - web-browser-e2e
+      - dependency-security
+      - mobile-ios-dev-windows
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Fail closed if change classification, Windows, browser or dependency audit fails
+        env:
+          QUALITY_WORKSPACES_RESULT: ${{ needs.quality-workspaces.result }}
+          CHANGE_DETECTION_RESULT: ${{ needs.changes.result }}
+          FULL_SCOPE: ${{ needs.changes.outputs.full }}
+          WEB_REQUIRED: ${{ needs.changes.outputs.web }}
+          DEPS_REQUIRED: ${{ needs.changes.outputs.deps }}
+          WINDOWS_RESULT: ${{ needs.prepush-windows.result }}
+          WEB_E2E_RESULT: ${{ needs.web-browser-e2e.result }}
+          SECURITY_RESULT: ${{ needs.dependency-security.result }}
+          MOBILE_REQUIRED: ${{ needs.changes.outputs.mobile }}
+          MOBILE_IOS_DEV_RESULT: ${{ needs.mobile-ios-dev-windows.result }}
+        run: |
+          set -euo pipefail
+          test "$CHANGE_DETECTION_RESULT" = success
+          test "$QUALITY_WORKSPACES_RESULT" = success
+          if [ "$FULL_SCOPE" = true ]; then
+            test "$WINDOWS_RESULT" = success
+          else
+            test "$FULL_SCOPE" = false
+            test "$WINDOWS_RESULT" = skipped
+          fi
+          if [ "$WEB_REQUIRED" = true ]; then
+            test "$WEB_E2E_RESULT" = success
+          else
+            test "$WEB_REQUIRED" = false
+            test "$WEB_E2E_RESULT" = skipped
+          fi
+          if [ "$DEPS_REQUIRED" = true ]; then
+            test "$SECURITY_RESULT" = success
+          else
+            test "$DEPS_REQUIRED" = false
+            test "$SECURITY_RESULT" = skipped
+          fi
+          if [ "$MOBILE_REQUIRED" = true ]; then
+            test "$MOBILE_IOS_DEV_RESULT" = success
+          else
+            test "$MOBILE_REQUIRED" = false
+            test "$MOBILE_IOS_DEV_RESULT" = skipped
+          fi
 
   api-coverage:
     name: API Coverage / Critical modules
