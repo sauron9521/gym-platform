@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "@gym/api-client": "workspace:*",
+    "@gym/ui-web": "workspace:*",
     "@radix-ui/react-slot": "^1.2.4",
     "@tanstack/react-query": "5.107.1",
     "class-variance-authority": "^0.7.1",

@@ -305,6 +305,9 @@ importers:
       '@gym/design-tokens':
         specifier: workspace:*
         version: link:../../packages/design-tokens
+      '@gym/ui-web':
+        specifier: workspace:*
+        version: link:../../packages/ui-web
       '@hookform/resolvers':
         specifier: 7.0.5
         version: 7.0.5(@standard-schema/spec@1.1.0)(ajv-formats@3.0.1(ajv@8.20.0))(ajv@8.20.0)(react-hook-form@7.92.0(@types/react@19.3.0)(react@19.3.1))(valibot@1.4.2(typescript@6.0.3))(zod@4.6.7)
@@ -486,6 +489,9 @@ importers:
       '@gym/api-client':
         specifier: workspace:*
         version: link:../../packages/api-client
+      '@gym/ui-web':
+        specifier: workspace:*
+        version: link:../../packages/ui-web
       '@hookform/resolvers':
         specifier: 7.0.5
         version: 7.0.5(@standard-schema/spec@1.1.0)(ajv-formats@3.0.1(ajv@8.20.0))(ajv@8.20.0)(react-hook-form@7.92.0(@types/react@19.3.0)(react@19.3.1))(valibot@1.4.2(typescript@6.0.3))(zod@4.6.7)
@@ -570,6 +576,31 @@ importers:
         version: 7.13.0(typescript@6.0.3)
       typescript:
         specifier: 6.0.3
+        version: 6.0.3
+
+  packages/ui-web:
+    dependencies:
+      '@radix-ui/react-slot':
+        specifier: ^1.2.4
+        version: 1.5.0(@types/react@19.3.0)(react@19.3.1)
+      class-variance-authority:
+        specifier: ^0.7.1
+        version: 0.7.1
+      clsx:
+        specifier: ^2.1.1
+        version: 2.1.1
+      tailwind-merge:
+        specifier: ^3.3.1
+        version: 3.7.0
+    devDependencies:
+      '@types/react':
+        specifier: ^19.0.0
+        version: 19.3.0
+      react:
+        specifier: 19.3.1
+        version: 19.3.1
+      typescript:
+        specifier: ^6.0.3
         version: 6.0.3
 
 packages:

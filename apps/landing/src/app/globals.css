@@ -1,6 +1,7 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
 @import '@gym/design-tokens/dark.css';
+@source "../../../../packages/ui-web/src";
 
 @theme inline {
   --color-background: var(--background);
