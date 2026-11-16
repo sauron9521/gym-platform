@@ -206,10 +206,13 @@ unchanged. Follow the same pattern for future React Native forms.
 
 ## Workouts list foundation
 
-The protected `Тренування` tab fetches the current user's first 20 workouts
-through the generated typed API client, scoped by account ID in TanStack Query.
-It supports loading, empty, error and manual refresh states; 401 clears the
-local session. Editing and workout creation are deliberately separate PRs.
+The protected `Тренування` tab fetches workouts through the generated
+typed API client, scoped by account ID in TanStack Query. Pages load in batches
+of 20 with FlatList infinite scrolling; status filters and pull-to-refresh use
+separate query keys per account and selected status. Initial, empty, failed-page
+and retry states are displayed, and 401 clears the local session. The athlete
+creation action remains available alongside the list. The older manual refresh
+button is also retained for accessibility and Maestro smoke tests.
 
 ## Workout detail and lifecycle (first vertical slice)
 
@@ -240,3 +243,26 @@ exercise the status button with user events. This is not an emulator/device
 or EAS smoke test. Existing Maestro native flows remain operator-driven.
 Keep this pilot isolated to Mobile until CI and local Windows development
 confirm the beta plugin works reliably with Expo SDK 58 / React Native 0.88.
+
+## Retry profile verification after an offline launch
+
+When refresh-token rotation succeeded but `GET /users/me` failed due to a transient
+network/server outage, the sign-in screen offers a manual **Відновити сесію**
+action. It reuses only the still-fresh in-memory access token for verification.
+It never replays the already-consumed refresh token; expired or invalid sessions
+require a normal sign-in. Protected navigation remains locked until a successful
+verified profile response.
+
+## Create workout (first native write journey)
+
+A protected `/workouts/new` route uses React Hook Form and Zod for title,
+exercise selection and a single planned-reps set. Exercises are loaded from
+the typed GET /exercises API; POST /workouts writes through the bearer client.
+Only verified success navigates back and invalidates the athlete's workout list.
+The screen is available only for ATHLETE accounts and currently lists the first
+20 accessible exercises, with a manual reload action on a read error.
+A synchronous submit lock blocks duplicate presses. POST /workouts sends a
+stable Idempotency-Key for manual retries of the same canonical payload:
+a lost response must not create duplicate workouts. TanStack mutations are
+never automatically retried. Additional exercise search, multiple
+exercise creation, cancellation and advanced set editing are later PRs.
