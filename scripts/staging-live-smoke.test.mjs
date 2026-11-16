@@ -1,13 +1,13 @@
 import assert from 'node:assert/strict';
 import { test } from 'vitest';
 
-import {
-  checkStagingHealth,
-  validateStagingOrigin,
-} from './staging-live-smoke.mjs';
+import { checkStagingHealth, validateStagingOrigin } from './staging-live-smoke.mjs';
 
 test('only explicit HTTPS staging origins can be checked', () => {
-  assert.equal(validateStagingOrigin('https://staging.gym.example.com'), 'https://staging.gym.example.com');
+  assert.equal(
+    validateStagingOrigin('https://staging.gym.example.com'),
+    'https://staging.gym.example.com',
+  );
   for (const invalid of [
     '',
     'http://staging.example.com',
