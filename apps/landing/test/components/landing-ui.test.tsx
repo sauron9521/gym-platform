@@ -2,10 +2,7 @@ import type { AnchorHTMLAttributes, ReactNode } from 'react';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 
-import {
-  applicationNavigation,
-  mainNavigation,
-} from '../../src/shared/config/navigation';
+import { applicationNavigation, mainNavigation } from '../../src/shared/config/navigation';
 import { IntroPage } from '../../src/widgets/content/ui/intro-page';
 import { HomeScreen } from '../../src/widgets/home/ui/home-screen';
 import { SiteFooter } from '../../src/widgets/layout/ui/site-footer';
@@ -36,9 +33,7 @@ function expectLinks(
   items: ReadonlyArray<{ label: string; href: string }>,
 ) {
   for (const { label, href } of items) {
-    expect(within(navigation).getByRole('link', { name: label }).getAttribute('href')).toBe(
-      href,
-    );
+    expect(within(navigation).getByRole('link', { name: label }).getAttribute('href')).toBe(href);
   }
 }
 
@@ -91,9 +86,9 @@ describe('Landing home screen', () => {
     expect(within(main).getByRole('heading', { level: 1 }).textContent).toContain(
       'Тренуйся розумніше.',
     );
-    expect(
-      within(main).getByRole('link', { name: 'Дізнатися більше' }).getAttribute('href'),
-    ).toBe('/features');
+    expect(within(main).getByRole('link', { name: 'Дізнатися більше' }).getAttribute('href')).toBe(
+      '/features',
+    );
     expect(
       within(main).getByRole('link', { name: 'Переглянути застосунки' }).getAttribute('href'),
     ).toBe('/apps');
