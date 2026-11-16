@@ -8,6 +8,8 @@ import {
 } from '@/features/workouts/model/workout-details-query';
 import { palette } from '@/shared/config/theme';
 
+// Preserve the compact native status-action state machine for focused review.
+// prettier-ignore
 export function WorkoutDetailsScreen({ id }: { id: string }) {
   const details = useWorkoutDetailsQuery(id);
   const transition = useWorkoutTransition(id);
