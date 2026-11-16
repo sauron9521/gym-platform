@@ -14,10 +14,7 @@ import { WorkoutActions } from './workout-actions';
 import { EditWorkoutForm } from './edit-workout-form';
 import { WorkoutExercises } from './workout-exercises';
 import { SetMetric } from './workout-set-metric';
-import {
-  getWorkoutDetailsErrorMessage,
-  type WorkoutDetailsData,
-} from '../lib/workout-details';
+import { getWorkoutDetailsErrorMessage, type WorkoutDetailsData } from '../lib/workout-details';
 import { formatWorkoutDate, getWorkoutStatusLabel } from '../lib/workouts-list';
 
 type DetailsState =

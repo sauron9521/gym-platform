@@ -100,14 +100,8 @@ export function WorkoutExercises({ workout, editingSetId, onEditSet }: Props) {
                           onClose={() => onEditSet(null)}
                         />
                       ) : (
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={() => onEditSet(set.id)}
-                        >
-                          {set.status === 'PENDING'
-                            ? 'Записати результат'
-                            : 'Змінити результат'}
+                        <Button type="button" variant="outline" onClick={() => onEditSet(set.id)}>
+                          {set.status === 'PENDING' ? 'Записати результат' : 'Змінити результат'}
                         </Button>
                       )}
                     </>
