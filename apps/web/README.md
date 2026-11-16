@@ -480,3 +480,10 @@ cross-account data exposure. When moving workout write actions to mutations,
 invalidate the workout list query keys on successful server responses.
 
 Run `pnpm --filter @gym/web test` and `pnpm --filter @gym/web test:e2e`.
+
+## Production API origin guard
+
+The Next.js rewrite now fails closed in production when `GYM_API_INTERNAL_URL` is missing.
+Set it to the private, trusted API HTTP(S) origin for both **build and runtime**.
+CI uses a loopback fixture origin only during build; it is never a deployment value.
+Development without the variable retains the `http://localhost:3001` default.

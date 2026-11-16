@@ -210,3 +210,9 @@ The protected `Тренування` tab fetches the current user's first 20 wor
 through the generated typed API client, scoped by account ID in TanStack Query.
 It supports loading, empty, error and manual refresh states; 401 clears the
 local session. Editing and workout creation are deliberately separate PRs.
+
+## Release token transport policy
+
+Production Expo bundles reject `http://` API endpoints before creating a bearer client.
+Configure `EXPO_PUBLIC_API_URL` to a trusted **HTTPS** staging/production URL for release builds.
+Development builds may still access a local LAN API over HTTP.
