@@ -1,12 +1,7 @@
 import Link from 'next/link';
 
 import { Button } from '@/shared/ui/button';
-import {
-  Container,
-  FeatureCard,
-  MarketingSection,
-  SectionHeading,
-} from '@/shared/ui/marketing';
+import { Container, FeatureCard, MarketingSection, SectionHeading } from '@/shared/ui/marketing';
 
 const audiences = [
   {
