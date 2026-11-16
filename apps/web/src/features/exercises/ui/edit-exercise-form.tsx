@@ -220,6 +220,7 @@ export function EditExerciseForm({
               <select
                 id={`edit-exercise-role-${index}`}
                 disabled={busy}
+                defaultValue={field.role}
                 {...form.register(`muscleGroups.${index}.role`)}
                 className="h-10 rounded-md border border-input bg-background px-3 text-sm"
               >
