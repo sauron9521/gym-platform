@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import test from 'node:test';
+import { test } from 'vitest';
 
 const root = new URL('../../../', import.meta.url);
 const workspace = readFileSync(new URL('pnpm-workspace.yaml', root), 'utf8');

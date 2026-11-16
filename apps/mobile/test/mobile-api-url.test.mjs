@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { test } from 'node:test';
+import { test } from 'vitest';
 
 import { validateMobileApiBaseUrl } from '../src/shared/api/validate-mobile-api-url.ts';
 

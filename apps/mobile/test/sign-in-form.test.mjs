@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { test } from 'node:test';
+import { test } from 'vitest';
 import { zodResolver } from '@hookform/resolvers/zod';
 
 import { signInSchema } from '../src/features/auth/lib/login-flow.ts';

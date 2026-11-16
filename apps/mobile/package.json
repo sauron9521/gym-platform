@@ -15,7 +15,7 @@
     "typecheck": "tsc --noEmit",
     "test": "pnpm test:contracts && pnpm test:unit",
     "doctor": "expo-doctor",
-    "test:contracts": "node --test test/*.test.mjs",
+    "test:contracts": "vitest run --config vitest.contracts.config.mts",
     "test:unit": "vitest run --config vitest.config.mts"
   },
   "dependencies": {
