@@ -37,7 +37,11 @@ export function ProgramDetailsScreen({ id }: { id: string }) {
           <Text accessibilityRole="alert" style={styles.error}>
             {query.error.message}
           </Text>
-          <Pressable accessibilityRole="button" style={styles.button} onPress={() => void query.refetch()}>
+          <Pressable
+            accessibilityRole="button"
+            style={styles.button}
+            onPress={() => void query.refetch()}
+          >
             <Text style={styles.buttonText}>Повторити завантаження</Text>
           </Pressable>
         </>
