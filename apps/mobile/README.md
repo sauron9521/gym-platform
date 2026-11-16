@@ -211,8 +211,11 @@ through the generated typed API client, scoped by account ID in TanStack Query.
 It supports loading, empty, error and manual refresh states; 401 clears the
 local session. Editing and workout creation are deliberately separate PRs.
 
-## Release token transport policy
+## Workout detail and lifecycle (first vertical slice)
 
-Production Expo bundles reject `http://` API endpoints before creating a bearer client.
-Configure `EXPO_PUBLIC_API_URL` to a trusted **HTTPS** staging/production URL for release builds.
-Development builds may still access a local LAN API over HTTP.
+The authenticated workouts list now opens an individual workout route.
+A typed, user-scoped TanStack Query loads its details; the first native
+lifecycle controls start a planned workout and attempt to complete an active
+workout. API conflict responses are surfaced safely (for example, unfinished
+sets cannot be completed). Creating workouts, editing sets, cancel flows and
+full history remain future slices. Live native/device testing is still required.

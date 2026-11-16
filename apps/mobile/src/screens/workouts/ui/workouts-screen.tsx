@@ -1,10 +1,12 @@
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text } from 'react-native';
+import { useRouter } from 'expo-router';
 
 import { workoutStatusLabel } from '@/features/workouts/lib/workout-presentation';
 import { useWorkoutsQuery } from '@/features/workouts/model/workouts-query';
 import { palette } from '@/shared/config/theme';
 
 export function WorkoutsScreen() {
+  const router = useRouter();
   const { data, isLoading, isError, error, isFetching, refetch } = useWorkoutsQuery();
 
   return (
@@ -24,7 +26,13 @@ export function WorkoutsScreen() {
       ) : null}
 
       {data?.data.map((workout) => (
-        <View key={workout.id} style={styles.card}>
+        <Pressable
+          key={workout.id}
+          accessibilityRole="button"
+          accessibilityLabel={`Відкрити тренування ${workout.title}`}
+          onPress={() => router.push({ pathname: '/workouts/[id]', params: { id: workout.id } })}
+          style={styles.card}
+        >
           <Text style={styles.cardTitle}>{workout.title}</Text>
           <Text style={styles.subtitle}>{workoutStatusLabel(workout.status)}</Text>
           {workout.scheduledAt ? (
@@ -32,7 +40,7 @@ export function WorkoutsScreen() {
               {new Date(workout.scheduledAt).toLocaleDateString('uk-UA')}
             </Text>
           ) : null}
-        </View>
+        </Pressable>
       ))}
 
       <Pressable
