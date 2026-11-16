@@ -48,8 +48,10 @@ export function useCreateMobileWorkout() {
         throw new Error('Створення власного тренування доступне лише спортсмену.');
       }
       // Retain the key after a timeout: a manual retry must not create a duplicate.
-      attempt.current = resolveWorkoutCreationAttempt(input, attempt.current, () =>
-        `mobile-${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`,
+      attempt.current = resolveWorkoutCreationAttempt(
+        input,
+        attempt.current,
+        () => `mobile-${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`,
       );
       const response = await api.POST('/workouts', {
         headers: { 'Idempotency-Key': attempt.current.key },
