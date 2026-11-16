@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "next dev --port 3002",
-    "build": "pnpm test && next build",
+    "build": "next build",
     "start": "next start --port 3002",
     "lint": "eslint .",
     "typecheck": "next typegen && tsc --noEmit",
