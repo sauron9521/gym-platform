@@ -18,24 +18,6 @@ concurrency:
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
-  web-exercise-prettier-temp:
-    name: Temporary component formatter
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@v7
-      - uses: pnpm/action-setup@v6
-      - uses: actions/setup-node@v7
-        with:
-          node-version: '24'
-      - run: pnpm install --frozen-lockfile
-      - name: Format Web exercise component suite
-        run: |
-          pnpm exec prettier --write apps/web/test/components/exercise-forms.test.tsx
-          echo 'FORMATTED_EXERCISE_COMPONENT_BEGIN'
-          cat apps/web/test/components/exercise-forms.test.tsx
-          echo 'FORMATTED_EXERCISE_COMPONENT_END'
-
   changes:
     name: CI / Determine affected workspaces
     runs-on: ubuntu-latest

@@ -63,9 +63,7 @@ const existingExercise = {
     { role: 'PRIMARY', muscleGroup: { id: 'muscle-shoulders', slug: 'shoulders', name: 'Плечі' } },
     { role: 'SECONDARY', muscleGroup: { id: 'muscle-triceps', slug: 'triceps', name: 'Трицепс' } },
   ],
-  equipment: [
-    { equipment: { id: 'equipment-dumbbell', slug: 'dumbbell', name: 'Гантелі' } },
-  ],
+  equipment: [{ equipment: { id: 'equipment-dumbbell', slug: 'dumbbell', name: 'Гантелі' } }],
 } as unknown as ExerciseDetailsData;
 
 beforeEach(() => {
