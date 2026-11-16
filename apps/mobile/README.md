@@ -241,6 +241,15 @@ or EAS smoke test. Existing Maestro native flows remain operator-driven.
 Keep this pilot isolated to Mobile until CI and local Windows development
 confirm the beta plugin works reliably with Expo SDK 58 / React Native 0.88.
 
+## Retry profile verification after an offline launch
+
+When refresh-token rotation succeeded but `GET /users/me` failed due to a transient
+network/server outage, the sign-in screen offers a manual **Відновити сесію**
+action. It reuses only the still-fresh in-memory access token for verification.
+It never replays the already-consumed refresh token; expired or invalid sessions
+require a normal sign-in. Protected navigation remains locked until a successful
+verified profile response.
+
 ## Create workout (first native write journey)
 
 A protected `/workouts/new` route uses React Hook Form and Zod for title,
