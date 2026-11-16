@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { test } from 'vitest';
+
+import { assertRequiredRootVitestGate } from './ci-tooling-guard.mjs';
 import {
   PHASES,
   validateUpgradeRequest,
@@ -176,7 +178,7 @@ test('manual workflow verifies all four attestations and uses only ephemeral tar
   assert.match(run, /expected="\$PREVIOUS_RUNTIME_IMAGE"/);
   assert.match(run, /docker stop --time 25/);
   assert.doesNotMatch(run, /pg_restore|migrate deploy|db reset|ssh |docker push/);
-  assert.match(ci, /node --test scripts\/staging-upgrade-rollback\.test\.mjs/);
+  assertRequiredRootVitestGate(ci);
   assert.match(ci, /bash -n scripts\/staging-upgrade-run\.sh/);
   assert.match(ignore, /^\/staging\/upgrade-phase-state\.json$/m);
   assert.match(ignore, /^\/staging\/upgrade-evidence\.json$/m);

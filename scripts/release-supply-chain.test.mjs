@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { test } from 'vitest';
+
+import { assertRequiredRootVitestGate } from './ci-tooling-guard.mjs';
 import {
   validateSpdx,
   validateGrype,
@@ -130,6 +132,6 @@ test('manual GHCR publish signs provenance and SPDX SBOMs for both exact digests
 
 test('CI never publishes OCI artifacts and still runs offline regression tests', async () => {
   const ci = await readFile(new URL('../.github/workflows/ci.yml', import.meta.url), 'utf8');
-  assert.match(ci, /scripts\/release-supply-chain\.test\.mjs/);
+  assertRequiredRootVitestGate(ci);
   assert.doesNotMatch(ci, /packages: write|id-token: write|docker push/);
 });

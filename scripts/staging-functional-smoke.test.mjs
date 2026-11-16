@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { test } from 'vitest';
+
+import { assertRequiredRootVitestGate } from './ci-tooling-guard.mjs';
 import {
   verifyFunctionalResponse,
   verifyPersistedProfile,
@@ -191,7 +193,7 @@ test('manual workflow executes functional checks between first ready and evidenc
   assert.match(workflow, /node scripts\/staging-functional-smoke\.mjs failed/);
   assert.match(workflow, /rm -f staging\/functional-state\.json/);
   assert.match(workflow, /if: always\(\)/);
-  assert.match(ci, /node --test scripts\/staging-functional-smoke\.test\.mjs/);
+  assertRequiredRootVitestGate(ci);
   assert.match(ignore, /^\/staging\/functional-state\.json$/m);
   assert.match(ignore, /^\/staging\/functional-evidence\.json$/m);
   // Four closely spaced credential issuances exceed POST /auth/token's

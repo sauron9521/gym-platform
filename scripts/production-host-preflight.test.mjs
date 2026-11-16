@@ -4,6 +4,8 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { onTestFinished, test } from 'vitest';
 
+import { assertRequiredRootVitestGate } from './ci-tooling-guard.mjs';
+
 import { validateIdentity } from './production-digest-guard.mjs';
 import { REQUIRED_CHECKS } from './production-readiness.mjs';
 import { PHASES } from './staging-upgrade-rollback.mjs';
@@ -189,7 +191,7 @@ test('operator shell preflight is read-only, opt-in and refuses GitHub Actions',
   assert.match(shell, /scripts\/production-digest-guard\.mjs (refs|images|compose|current)/);
   assert.match(shell, /--source-digest "\$PUBLISH_SHA"/);
   assert.match(shell, /NO-GO/);
-  assert.ok(ci.includes('node --test scripts/production-host-preflight.test.mjs'));
+  assertRequiredRootVitestGate(ci);
   assert.ok(ci.includes('bash -n scripts/production-host-preflight.sh'));
   assert.doesNotMatch(
     shell,

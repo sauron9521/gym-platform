@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { test } from 'vitest';
+
+import { assertRequiredRootVitestGate } from './ci-tooling-guard.mjs';
 import {
   validateStagingRequest,
   verifyPulledImage,
@@ -148,7 +150,7 @@ test('workflow is manual only with signed digest checks and disposable cleanup',
   assert.match(workflow, /docker volume rm -f "\$STAGING_AVATARS"/);
   assert.match(workflow, /docker network rm "\$STAGING_NETWORK"/);
   assert.match(workflow, /if: always\(\)/);
-  assert.match(ci, /node --test scripts\/staging-smoke\.test\.mjs/);
+  assertRequiredRootVitestGate(ci);
 });
 
 test('manual staging PostgreSQL URL is valid YAML and matches disposable credentials', async () => {

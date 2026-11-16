@@ -2,6 +2,8 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { test } from 'vitest';
 
+import { assertRequiredRootVitestGate } from './ci-tooling-guard.mjs';
+
 import { REQUIRED_CHECKS } from './production-readiness.mjs';
 import { PHASES } from './staging-upgrade-rollback.mjs';
 import {
@@ -199,7 +201,7 @@ test('operator preflight requires verified GitHub origin BEFORE backup/OCI/Docke
   assert.match(origin, /release-readiness-/);
   assert.match(origin, /workflow_dispatch/);
   assert.match(origin, /rmSync\(scratch/);
-  assert.ok(ci.includes('node --test scripts/production-release-origin.test.mjs'));
+  assertRequiredRootVitestGate(ci);
   assert.ok(!shell.includes('production-digest-deploy.sh'));
   assert.doesNotMatch(shell, /^\s*docker (pull|run|push|build|stop|start)\b/m);
 });

@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { test } from 'vitest';
+
+import { assertRequiredRootVitestGate } from './ci-tooling-guard.mjs';
 import { PHASES } from './staging-upgrade-rollback.mjs';
 import {
   validateReadOnlyRequest,
@@ -444,7 +446,7 @@ test('read-only GitHub review can verify releases but never operate on a host', 
     workflow,
     /secrets\.|id-token: write|packages: write|ssh |kubectl|docker compose up|docker push|docker run|environment: production/,
   );
-  assert.match(ci, /node --test scripts\/production-readiness\.test\.mjs/);
+  assertRequiredRootVitestGate(ci);
 });
 
 test('exact CI gate list reflects nine blocking monorepo jobs, not standalone CI', async () => {
