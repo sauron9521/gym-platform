@@ -1,0 +1,35 @@
+name: Live staging health smoke (manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      staging_api_url:
+        description: 'Explicit HTTPS staging API origin (not production)'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: live-staging-smoke
+  cancel-in-progress: false
+
+jobs:
+  smoke:
+    name: Live staging / health (NO-GO)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+      - name: Probe live staging liveness and readiness without credentials
+        env:
+          STAGING_API_URL: ${{ inputs.staging_api_url }}
+        run: node scripts/staging-live-smoke.mjs
+      - name: Record limited evidence only
+        run: |
+          echo 'Live staging health endpoints returned HTTP 200 and {status:ok}.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'This smoke does not grant production deployment approval.' >> "$GITHUB_STEP_SUMMARY"

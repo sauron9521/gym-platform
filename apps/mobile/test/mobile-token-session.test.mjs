@@ -194,3 +194,55 @@ test('native secure storage and gated profile bootstrap are wired without web pe
   assert.doesNotMatch(web, /localStorage|sessionStorage|AsyncStorage/);
   assert.ok(config.expo.plugins.includes('expo-secure-store'));
 });
+
+test('manual profile retry reads cached token without rotating refresh', async () => {
+  const store = makeStore('refresh-old');
+  let now = 0;
+  let refreshCalls = 0;
+  const session = new MobileTokenSession(
+    store.storage,
+    async () => {
+      refreshCalls += 1;
+      return pair('next', 60);
+    },
+    async () => undefined,
+    () => undefined,
+    () => now,
+  );
+
+  assert.equal(session.canRevalidate(), false);
+  assert.equal(session.getRevalidationToken(), null);
+  assert.equal(await session.restore(), true);
+  assert.equal(refreshCalls, 1);
+  assert.equal(session.canRevalidate(), true);
+  assert.equal(session.getRevalidationToken(), 'access-next');
+  assert.equal(refreshCalls, 1);
+
+  now = 31_000;
+  assert.equal(session.canRevalidate(), false);
+  assert.equal(session.getRevalidationToken(), null);
+  assert.equal(refreshCalls, 1);
+  await session.clear();
+  assert.equal(session.getRevalidationToken(), null);
+});
+
+test('transient profile failure exposes a safe retry without replaying one-time refresh', () => {
+  const auth = readFileSync(
+    new URL('../src/features/auth/model/auth-context.tsx', import.meta.url),
+    'utf8',
+  );
+  const screen = readFileSync(
+    new URL('../src/screens/sign-in/ui/sign-in-screen.tsx', import.meta.url),
+    'utf8',
+  );
+  assert.match(auth, /session\.canRevalidate\(\)/);
+  assert.match(auth, /retryVerification/);
+  assert.ok(auth.includes('createMobileApi(baseUrl, () => session.getRevalidationToken())'));
+  assert.ok(auth.includes('response.response.status === 401 || response.response.status === 403'));
+  assert.ok(auth.includes('result.response.status === 401 || result.response.status === 403'));
+  const retry = auth.split('const retryVerification =')[1]?.split('const signIn =')[0];
+  assert.ok(retry, 'Verification callback exists');
+  assert.ok(retry.includes('getVerificationApi()'));
+  assert.ok(!retry.includes('getApi()'), 'Verification must not rotate tokens');
+  assert.match(screen, /Відновити сесію/);
+});

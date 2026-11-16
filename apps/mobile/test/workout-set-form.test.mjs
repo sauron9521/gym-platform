@@ -20,8 +20,10 @@ test('workout set validation permits empty planned fields and converts comma dec
   });
 });
 
-test('workout set validation rejects negative, impossible and malformed input', () => {
+test('workout set validation rejects negative, zero, impossible and malformed input', () => {
   for (const invalid of [
+    { actualReps: '0', actualWeightKg: '20' },
+    { actualReps: '000', actualWeightKg: '20' },
     { actualReps: '-5', actualWeightKg: '20' },
     { actualReps: '2.5', actualWeightKg: '' },
     { actualReps: '1500', actualWeightKg: '10' },
