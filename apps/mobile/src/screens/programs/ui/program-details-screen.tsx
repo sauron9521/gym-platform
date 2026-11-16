@@ -18,8 +18,9 @@ export function ProgramDetailsScreen({ id }: { id: string }) {
     if (submitLock.current || create.isPending) return;
     submitLock.current = true;
     create.mutate(programWorkoutId, {
-      onSuccess: (result) =>
-        router.push({ pathname: '/workouts/[id]', params: { id: result.id } }),
+      onSuccess: (result) => {
+        router.push({ pathname: '/workouts/[id]', params: { id: result.id } });
+      },
       onSettled: () => {
         submitLock.current = false;
       },
