@@ -79,13 +79,13 @@ test('manual creation locks submission, sends idempotency header and refreshes s
   const list = read('../src/screens/workouts/ui/workouts-screen.tsx');
   const model = read('../src/features/workouts/model/workout-create.ts');
 
-  assert.match(screen, /submitLock\\.current/);
-  assert.match(screen, /if \\(submitLock\\.current\\) return/);
-  assert.match(screen, /disabled=\\{createWorkout\\.isPending \\|\\| isSubmitting/);
-  assert.match(model, /'Idempotency-Key': attempt\\.current\\.key/);
+  assert.match(screen, /submitLock\.current/);
+  assert.match(screen, /if \(submitLock\.current\) return/);
+  assert.match(screen, /disabled=\{createWorkout\.isPending \|\| isSubmitting/);
+  assert.match(model, /'Idempotency-Key': attempt\.current\.key/);
   assert.match(model, /retry: false/);
-  assert.match(model, /invalidateQueries\\(\\{ queryKey: accountQueryKeys\\.workouts/);
-  assert.doesNotMatch(model, /getQueryData\\(accountQueryKeys\\.me/);
-  assert.match(model, /account\\.role !== 'ATHLETE'/);
-  assert.match(list, /account\\?\\.role === 'ATHLETE'/);
+  assert.match(model, /invalidateQueries\(\{ queryKey: accountQueryKeys\.workouts/);
+  assert.doesNotMatch(model, /getQueryData\(accountQueryKeys\.me/);
+  assert.match(model, /account\.role !== 'ATHLETE'/);
+  assert.match(list, /account\?\.role === 'ATHLETE'/);
 });
