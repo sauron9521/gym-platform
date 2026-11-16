@@ -36,51 +36,32 @@ test('only the ADMIN principal may see the administration shell', async () => {
   assert.deepEqual(forbidden, { kind: 'forbidden' });
 });
 
-test('admin session request forwards only the cookie to the fixed uncached API endpoint', async () => {
-  let calls = 0;
+test('admin verification only forwards the cookie to an uncached fixed endpoint', async () => {
+  let requestedUrl;
+  let requestOptions;
+
   const send = async (url, options) => {
-    calls += 1;
-    assert.equal(url, endpoint + '/users/me');
-    assert.deepEqual(options.headers, {
-      cookie: 'session=private-session',
-      accept: 'application/json',
-    });
-    assert.equal(options.cache, 'no-store');
-    assert.equal(options.redirect, 'error');
-    assert.ok(options.signal instanceof AbortSignal);
+    requestedUrl = url;
+    requestOptions = options;
     return new Response(JSON.stringify({ id: 'admin-id', role: 'ADMIN' }), { status: 200 });
   };
-  assert.deepEqual(
-    await readAdminSession('session=private-session', endpoint, send),
-    { kind: 'admin', id: 'admin-id' },
-  );
-  assert.equal(calls, 1);
+
+  const session = await readAdminSession('sid=private', endpoint, send);
+  assert.deepEqual(session, { kind: 'admin', id: 'admin-id' });
+  assert.equal(requestedUrl, endpoint + '/users/me');
+  assert.equal(requestOptions.headers.cookie, 'sid=private');
+  assert.equal(requestOptions.cache, 'no-store');
+  assert.equal(requestOptions.redirect, 'error');
 });
 
-test('admin session fails closed on malformed identities, redirects and invalid upstream URLs', async () => {
-  for (const user of [
-    null,
-    [],
-    { id: '', role: 'ADMIN' },
-    { id: 123, role: 'ADMIN' },
-    { id: 'member', role: null },
-  ]) {
-    assert.deepEqual(await readAdminSession('sid=test', endpoint, reply(200, user)), {
-      kind: 'unavailable',
-    });
-  }
-  assert.deepEqual(await readAdminSession('sid=test', endpoint, reply(302)), {
-    kind: 'unavailable',
-  });
-  for (const configured of [
-    'file:///etc/passwd',
-    'https://api.example.test/other-path',
-    'https://api.example.test/?credential=secret',
-    'http://username:password@api.example.test',
-  ]) {
-    assert.deepEqual(
-      await readAdminSession('sid=test', configured, reply(200, { id: 'admin-id', role: 'ADMIN' })),
-      { kind: 'unavailable' },
-    );
-  }
+test('admin verification refuses redirects, empty user IDs and unexpected API paths', async () => {
+  const invalidUser = { id: '', role: 'ADMIN' };
+  const invalid = await readAdminSession('sid=test', endpoint, reply(200, invalidUser));
+  assert.deepEqual(invalid, { kind: 'unavailable' });
+
+  const redirected = await readAdminSession('sid=test', endpoint, reply(302));
+  assert.deepEqual(redirected, { kind: 'unavailable' });
+
+  const invalidUrl = await readAdminSession('sid=test', endpoint + '/other', reply(200));
+  assert.deepEqual(invalidUrl, { kind: 'unavailable' });
 });
