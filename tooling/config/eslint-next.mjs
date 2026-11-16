@@ -14,7 +14,7 @@ export default defineConfig([
         {
           patterns: [
             {
-                            group: [
+              group: [
                 '@/entities',
                 '@/entities/**',
                 '@/features',
