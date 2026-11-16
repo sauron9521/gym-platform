@@ -1,3 +1,13 @@
+test('Landing and Admin have single explicit test execution in CI, not build scripts', () => {
+  const yaml = readFileSync(new URL('../.github/workflows/ci.yml', import.meta.url), 'utf8');
+  const admin = JSON.parse(readFileSync(new URL('../apps/admin/package.json', import.meta.url), 'utf8'));
+  const landing = JSON.parse(readFileSync(new URL('../apps/landing/package.json', import.meta.url), 'utf8'));
+  assert.equal(admin.scripts.build, 'next build');
+  assert.equal(landing.scripts.build, 'next build');
+  assert.match(yaml, /--filter=@gym\/landing --filter=@gym\/admin/);
+  assert.match(yaml, /test_filters\+=\(--filter=@gym\/landing\)/);
+});
+
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { test } from 'vitest';
