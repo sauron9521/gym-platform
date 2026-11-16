@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { readdirSync } from 'node:fs';
-import { test } from 'node:test';
+import { test } from 'vitest';
 
 import * as shards from '../scripts/real-api-e2e-shards.mjs';
 

@@ -416,7 +416,9 @@ test('real API browser suite preserves the required gate and fails closed', () =
   assert.ok(suite.includes("WEB_E2E_SHARD_COUNT: '4'"));
   assert.ok(suite.includes('real-api-browser-failures-'));
   assert.ok(suite.includes('POSTGRES_DB: gym_browser_test'));
-  assert.ok(suite.includes('node --test apps/web/test/real-api-e2e-shards.test.mjs'));
+  assert.ok(
+    suite.includes('pnpm --filter @gym/web exec vitest run test/real-api-e2e-shards.test.mjs'),
+  );
   assert.match(yaml, /needs: \[changes, browser-api-suite\]/);
   assert.match(yaml, /if: always\(\)/);
   assert.match(yaml, /if: needs\.changes\.outputs\.run == 'true'/);

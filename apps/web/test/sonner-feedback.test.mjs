@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { test } from 'node:test';
+import { test } from 'vitest';
 
 test('one app-level Sonner toaster is mounted within the browser provider', async () => {
   const provider = await readFile(new URL('../src/app/providers.tsx', import.meta.url), 'utf8');

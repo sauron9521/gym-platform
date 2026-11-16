@@ -77,7 +77,7 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - name: Verify all specs are assigned to exactly one CI shard
-        run: node --test apps/web/test/real-api-e2e-shards.test.mjs
+        run: pnpm --filter @gym/web exec vitest run test/real-api-e2e-shards.test.mjs
       - name: Guard disposable database before migrations
         run: |
           node --input-type=module -e '

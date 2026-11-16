@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { test } from 'node:test';
+import { test } from 'vitest';
 
 import config from '../next.config.ts';
 import { getApiUpstreamOrigin } from '../src/shared/api/upstream.mjs';
