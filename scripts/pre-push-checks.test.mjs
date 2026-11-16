@@ -109,6 +109,13 @@ test('web-only push skips API and Mobile checks', () => {
   assert.ok(!plan.commands.some((cmd) => cmd.includes('@gym/mobile')));
 });
 
+test('landing-only push runs lint and typecheck', () => {
+  const plan = createPrePushPlan({ full: false, files: ['apps/landing/src/app/page.tsx'] });
+  assert.equal(plan.scopes.landing, true);
+  assert.ok(plan.commands.some((cmd) => cmd.includes('@gym/landing') && cmd.includes('lint')));
+  assert.ok(plan.commands.some((cmd) => cmd.includes('@gym/landing') && cmd.includes('typecheck')));
+});
+
 test('mobile-only push checks only Mobile and selected formatting', () => {
   const plan = createPrePushPlan({ full: false, files: ['apps/mobile/app/index.tsx'] });
   assert.deepEqual(
@@ -169,6 +176,7 @@ test('pre-push never rewrites committed source files', () => {
     ['apps/web/src/app/page.tsx'],
     ['apps/api/src/main.ts'],
     ['apps/mobile/app/index.tsx'],
+    ['apps/landing/src/app/page.tsx'],
     ['docs/readme.md'],
   ];
   for (const files of scenarios) {
