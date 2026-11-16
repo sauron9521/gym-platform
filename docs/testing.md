@@ -4,7 +4,7 @@
 
 - Vitest 5 is the unit and contract test runner for API, Web, Landing, Admin,
   Mobile, shared packages and root `scripts/*.test.mjs`.
-- Node-only contracts share `tooling/vitest/node.mts` and use explicit include
+- Node-only contracts share `tooling/vitest/node.mjs` and use explicit include
   patterns in per-workspace config files. The mobile React Native component
   runner stays separate (`apps/mobile/vitest.config.mts` + `vitest-native`).
 - API integration and HTTP E2E stay under `vitest.config.e2e.ts`; use a disposable
