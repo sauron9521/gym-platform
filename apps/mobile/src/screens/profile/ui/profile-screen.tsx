@@ -63,7 +63,11 @@ export function ProfileScreen() {
           <Text style={styles.buttonText}>Оновити профіль</Text>
         )}
       </Pressable>
-      <Pressable accessibilityRole="button" onPress={() => router.push('/profile/edit')} style={styles.secondary}>
+      <Pressable
+        accessibilityRole="button"
+        onPress={() => router.push('/profile/edit')}
+        style={styles.secondary}
+      >
         <Text style={styles.secondaryText}>Редагувати профіль</Text>
       </Pressable>
       <Pressable accessibilityRole="button" onPress={() => void signOut()} style={styles.secondary}>

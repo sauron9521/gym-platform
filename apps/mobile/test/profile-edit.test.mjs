@@ -1,7 +1,10 @@
 import assert from 'node:assert/strict';
 import { test } from 'vitest';
 
-import { editProfileSchema, profilePatch } from '../src/features/profile/lib/edit-profile-schema.ts';
+import {
+  editProfileSchema,
+  profilePatch,
+} from '../src/features/profile/lib/edit-profile-schema.ts';
 
 test('profile edit accepts localized decimal weights and empty optional fields', () => {
   const values = editProfileSchema.parse({

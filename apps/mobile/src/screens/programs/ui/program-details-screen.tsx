@@ -12,12 +12,17 @@ export function ProgramDetailsScreen({ id }: { id: string }) {
   const query = useProgramAssignment(id);
   const create = useCreateWorkoutFromProgram(id);
   const assignment = query.data;
-  const workouts = assignment && 'workouts' in assignment.version ? assignment.version.workouts : [];
+  const workouts =
+    assignment && 'workouts' in assignment.version ? assignment.version.workouts : [];
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       {query.isPending ? <ActivityIndicator accessibilityLabel="Завантаження програми" /> : null}
-      {query.isError ? <Text accessibilityRole="alert" style={styles.error}>{query.error.message}</Text> : null}
+      {query.isError ? (
+        <Text accessibilityRole="alert" style={styles.error}>
+          {query.error.message}
+        </Text>
+      ) : null}
       {assignment ? (
         <>
           <Text style={styles.title}>{assignment.version.title}</Text>
@@ -26,7 +31,9 @@ export function ProgramDetailsScreen({ id }: { id: string }) {
           {workouts.map((workout) => (
             <View key={workout.id} style={styles.card}>
               <Text style={styles.heading}>{workout.title}</Text>
-              <Text style={styles.muted}>Тиждень {workout.weekNumber} · день {workout.dayNumber}</Text>
+              <Text style={styles.muted}>
+                Тиждень {workout.weekNumber} · день {workout.dayNumber}
+              </Text>
               {assignment.status === 'ACTIVE' ? (
                 <Pressable
                   testID={`program-create-workout-${workout.id}`}
@@ -40,15 +47,23 @@ export function ProgramDetailsScreen({ id }: { id: string }) {
                   }
                   style={styles.button}
                 >
-                  <Text style={styles.buttonText}>{create.isPending ? 'Створюємо…' : 'Запланувати тренування'}</Text>
+                  <Text style={styles.buttonText}>
+                    {create.isPending ? 'Створюємо…' : 'Запланувати тренування'}
+                  </Text>
                 </Pressable>
               ) : null}
             </View>
           ))}
-          {workouts.length === 0 ? <Text style={styles.muted}>У цій програмі ще немає тренувань.</Text> : null}
+          {workouts.length === 0 ? (
+            <Text style={styles.muted}>У цій програмі ще немає тренувань.</Text>
+          ) : null}
         </>
       ) : null}
-      {create.isError ? <Text accessibilityRole="alert" style={styles.error}>{create.error.message}</Text> : null}
+      {create.isError ? (
+        <Text accessibilityRole="alert" style={styles.error}>
+          {create.error.message}
+        </Text>
+      ) : null}
     </ScrollView>
   );
 }
@@ -60,7 +75,20 @@ const styles = StyleSheet.create({
   heading: { fontSize: 17, fontWeight: '600', color: palette.text },
   muted: { color: palette.muted, fontSize: 14 },
   error: { color: '#b91c1c', fontSize: 14 },
-  card: { backgroundColor: palette.surface, borderWidth: 1, borderColor: palette.border, borderRadius: 12, padding: 16, gap: 10 },
-  button: { backgroundColor: palette.primary, minHeight: 46, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  card: {
+    backgroundColor: palette.surface,
+    borderWidth: 1,
+    borderColor: palette.border,
+    borderRadius: 12,
+    padding: 16,
+    gap: 10,
+  },
+  button: {
+    backgroundColor: palette.primary,
+    minHeight: 46,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   buttonText: { color: palette.surface, fontWeight: '700' },
 });

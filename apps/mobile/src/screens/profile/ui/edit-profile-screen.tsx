@@ -55,7 +55,13 @@ export function EditProfileScreen() {
                 value={value}
                 onChangeText={onChange}
                 onBlur={onBlur}
-                keyboardType={field.name === 'weight' ? 'decimal-pad' : field.name === 'height' ? 'number-pad' : 'default'}
+                keyboardType={
+                  field.name === 'weight'
+                    ? 'decimal-pad'
+                    : field.name === 'height'
+                      ? 'number-pad'
+                      : 'default'
+                }
                 style={styles.input}
                 editable={!mutation.isPending}
               />
@@ -68,7 +74,11 @@ export function EditProfileScreen() {
           ) : null}
         </View>
       ))}
-      {mutation.isError ? <Text accessibilityRole="alert" style={styles.error}>{mutation.error.message}</Text> : null}
+      {mutation.isError ? (
+        <Text accessibilityRole="alert" style={styles.error}>
+          {mutation.error.message}
+        </Text>
+      ) : null}
       <Pressable
         testID="profile-save"
         accessibilityRole="button"
@@ -92,8 +102,22 @@ const styles = StyleSheet.create({
   title: { color: palette.text, fontSize: 26, fontWeight: '700' },
   field: { gap: 7 },
   label: { color: palette.text, fontSize: 14, fontWeight: '600' },
-  input: { minHeight: 48, color: palette.text, backgroundColor: palette.surface, borderRadius: 10, borderWidth: 1, borderColor: palette.border, paddingHorizontal: 12 },
+  input: {
+    minHeight: 48,
+    color: palette.text,
+    backgroundColor: palette.surface,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: palette.border,
+    paddingHorizontal: 12,
+  },
   error: { color: '#b91c1c', fontSize: 14 },
-  button: { minHeight: 48, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: palette.primary },
+  button: {
+    minHeight: 48,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: palette.primary,
+  },
   buttonText: { color: palette.surface, fontWeight: '700' },
 });
