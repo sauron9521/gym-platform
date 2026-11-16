@@ -34,7 +34,10 @@ export function HomeScreen() {
         <UiText className="text-muted-foreground">
           Базові компоненти gluestack-ui v5 готові для наступних функцій Gym Platform.
         </UiText>
-        <Button onPress={() => router.push('/exercises')} accessibilityLabel="Відкрити каталог вправ">
+        <Button
+          onPress={() => router.push('/exercises')}
+          accessibilityLabel="Відкрити каталог вправ"
+        >
           <ButtonText>Каталог вправ</ButtonText>
         </Button>
         <Button onPress={() => router.push('/profile')} accessibilityLabel="Відкрити профіль">

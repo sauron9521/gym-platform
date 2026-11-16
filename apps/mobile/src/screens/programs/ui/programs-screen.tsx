@@ -12,8 +12,14 @@ export function ProgramsScreen() {
       <Text style={styles.title}>Мої програми</Text>
       <Text style={styles.muted}>Активні програми, призначені тренером</Text>
       {query.isPending ? <ActivityIndicator accessibilityLabel="Завантаження програм" /> : null}
-      {query.isError ? <Text accessibilityRole="alert" style={styles.error}>{query.error.message}</Text> : null}
-      {query.data?.data.length === 0 ? <Text style={styles.muted}>Активних призначень немає.</Text> : null}
+      {query.isError ? (
+        <Text accessibilityRole="alert" style={styles.error}>
+          {query.error.message}
+        </Text>
+      ) : null}
+      {query.data?.data.length === 0 ? (
+        <Text style={styles.muted}>Активних призначень немає.</Text>
+      ) : null}
       {query.data?.data.map((assignment) => (
         <Pressable
           key={assignment.id}
@@ -22,10 +28,16 @@ export function ProgramsScreen() {
           style={styles.card}
         >
           <Text style={styles.heading}>{assignment.version.title}</Text>
-          <Text style={styles.muted}>Версія {assignment.version.version} · {assignment.status}</Text>
+          <Text style={styles.muted}>
+            Версія {assignment.version.version} · {assignment.status}
+          </Text>
         </Pressable>
       ))}
-      <Pressable accessibilityRole="button" onPress={() => void query.refetch()} style={styles.button}>
+      <Pressable
+        accessibilityRole="button"
+        onPress={() => void query.refetch()}
+        style={styles.button}
+      >
         <Text style={styles.buttonText}>Оновити програми</Text>
       </Pressable>
     </ScrollView>
@@ -39,7 +51,20 @@ const styles = StyleSheet.create({
   heading: { fontSize: 17, color: palette.text, fontWeight: '600' },
   muted: { fontSize: 14, color: palette.muted },
   error: { fontSize: 14, color: '#b91c1c' },
-  card: { backgroundColor: palette.surface, borderWidth: 1, borderColor: palette.border, borderRadius: 12, padding: 18, gap: 8 },
-  button: { backgroundColor: palette.primary, minHeight: 48, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
+  card: {
+    backgroundColor: palette.surface,
+    borderWidth: 1,
+    borderColor: palette.border,
+    borderRadius: 12,
+    padding: 18,
+    gap: 8,
+  },
+  button: {
+    backgroundColor: palette.primary,
+    minHeight: 48,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   buttonText: { color: palette.surface, fontWeight: '700' },
 });
