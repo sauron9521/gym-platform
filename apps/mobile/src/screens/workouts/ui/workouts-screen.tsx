@@ -13,6 +13,14 @@ export function WorkoutsScreen() {
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <Text style={styles.title}>Мої тренування</Text>
       <Text style={styles.subtitle}>Останні тренування з Gym API</Text>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Створити тренування"
+        style={styles.button}
+        onPress={() => router.push('/workouts/new')}
+      >
+        <Text style={styles.buttonText}>Нове тренування</Text>
+      </Pressable>
 
       {isLoading ? <ActivityIndicator accessibilityLabel="Завантаження" /> : null}
       {isError ? (

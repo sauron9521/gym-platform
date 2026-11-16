@@ -240,3 +240,12 @@ exercise the status button with user events. This is not an emulator/device
 or EAS smoke test. Existing Maestro native flows remain operator-driven.
 Keep this pilot isolated to Mobile until CI and local Windows development
 confirm the beta plugin works reliably with Expo SDK 58 / React Native 0.88.
+
+## Create workout (first native write journey)
+
+A protected `/workouts/new` route uses React Hook Form and Zod for title,
+exercise selection and a single planned-reps set. Exercises are loaded from
+the typed GET /exercises API; POST /workouts writes through the bearer client.
+Only success navigates back and invalidates the current user's workout list.
+Duplicate in-flight submits are blocked and mutations are never retried.
+Complex set editing, multiple exercises and cancellation are later PRs.
