@@ -17,6 +17,8 @@ type Props = {
   onEditSet: (setId: string | null) => void;
 };
 
+// Preserve the original nested set editor layout while extracting it intact.
+// prettier-ignore
 export function WorkoutExercises({ workout, editingSetId, onEditSet }: Props) {
   return (
     <section className="space-y-4" aria-label="Вправи тренування">
