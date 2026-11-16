@@ -5,12 +5,12 @@ export const workoutSetFormSchema = z.object({
   actualReps: z
     .string()
     .trim()
-    .regex(/^\\d*$/, 'Повторення мають бути цілим невід’ємним числом.')
+    .regex(/^\d*$/, 'Повторення мають бути цілим невід’ємним числом.')
     .refine((value) => !value || Number(value) <= 1000, 'Занадто багато повторень.'),
   actualWeightKg: z
     .string()
     .trim()
-    .regex(/^\\d*(?:[.,]\\d{0,2})?$/, 'Вага має бути невід’ємним числом (до 2 знаків).')
+    .regex(/^\d*(?:[.,]\d{0,2})?$/, 'Вага має бути невід’ємним числом (до 2 знаків).')
     .refine((value) => !value || Number(value.replace(',', '.')) <= 10000, 'Надто велика вага.'),
 });
 
