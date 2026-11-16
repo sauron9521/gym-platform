@@ -14,7 +14,18 @@ module.exports = defineConfig([
         {
           patterns: [
             {
-              group: ['@/features/**', '@/screens/**', '@/app/**'],
+              group: [
+                '@/entities',
+                '@/entities/**',
+                '@/features',
+                '@/features/**',
+                '@/widgets',
+                '@/widgets/**',
+                '@/screens',
+                '@/screens/**',
+                '@/app',
+                '@/app/**',
+              ],
               message: 'Mobile shared code cannot import features, screens or routes.',
             },
           ],
