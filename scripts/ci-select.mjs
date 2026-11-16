@@ -12,6 +12,7 @@ function allScopes() {
     api: true,
     web: true,
     landing: true,
+    admin: true,
     mobile: true,
     client: true,
     deps: true,
@@ -30,6 +31,7 @@ export function classifyChangedPaths(paths, { forceFull = false } = {}) {
     api: false,
     web: false,
     landing: false,
+    admin: false,
     mobile: false,
     client: false,
     deps: false,
@@ -102,6 +104,12 @@ export function classifyChangedPaths(paths, { forceFull = false } = {}) {
       continue;
     }
 
+    if (path.startsWith('apps/admin/')) {
+      selected.admin = true;
+      if (path === 'apps/admin/package.json') selected.deps = true;
+      continue;
+    }
+
     if (path.startsWith('apps/mobile/')) {
       selected.mobile = true;
       if (path === 'apps/mobile/package.json') selected.deps = true;
@@ -112,6 +120,7 @@ export function classifyChangedPaths(paths, { forceFull = false } = {}) {
     if (path.startsWith('packages/api-client/')) {
       selected.client = true;
       selected.web = true;
+      selected.admin = true;
       selected.mobile = true;
       if (path === 'packages/api-client/package.json') selected.deps = true;
       continue;
@@ -122,6 +131,7 @@ export function classifyChangedPaths(paths, { forceFull = false } = {}) {
     // Unknown packages still fail closed to full checks.
     if (path.startsWith('packages/ui-web/')) {
       selected.web = true;
+      selected.admin = true;
       selected.landing = true;
       if (path === 'packages/ui-web/package.json') selected.deps = true;
       continue;
@@ -129,6 +139,7 @@ export function classifyChangedPaths(paths, { forceFull = false } = {}) {
 
     if (path.startsWith('packages/design-tokens/')) {
       selected.web = true;
+      selected.admin = true;
       selected.landing = true;
       // Conservative until native design-token consumption is ruled out.
       selected.mobile = true;
@@ -143,6 +154,7 @@ export function classifyChangedPaths(paths, { forceFull = false } = {}) {
       }
       selected.web = true;
       selected.landing = true;
+      selected.admin = true;
       continue;
     }
 
@@ -151,7 +163,12 @@ export function classifyChangedPaths(paths, { forceFull = false } = {}) {
   }
 
   selected.workspaces =
-    selected.api || selected.web || selected.landing || selected.mobile || selected.client;
+    selected.api ||
+    selected.web ||
+    selected.landing ||
+    selected.admin ||
+    selected.mobile ||
+    selected.client;
   return selected;
 }
 
