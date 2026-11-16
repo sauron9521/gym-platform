@@ -18,7 +18,7 @@ export type MobileWorkoutForm = z.infer<typeof mobileWorkoutFormSchema>;
 export type CreateWorkoutBody =
   operations['WorkoutsController_create']['requestBody']['content']['application/json'];
 
-type CreateOneWorkout = {
+export type CreateOneWorkout = {
   title: string;
   exerciseId: string;
   plannedReps: number;

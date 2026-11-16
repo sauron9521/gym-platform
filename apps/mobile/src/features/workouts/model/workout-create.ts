@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/features/auth/model/auth-context';
 import { accountQueryKeys } from '@/shared/api/query-client';
 
-import { buildMobileWorkoutBody } from '../lib/create-workout-schema';
+import { buildMobileWorkoutBody, type CreateOneWorkout } from '../lib/create-workout-schema';
 
 export function useWorkoutExerciseOptions() {
   const { account, getApi, signOut } = useAuth();

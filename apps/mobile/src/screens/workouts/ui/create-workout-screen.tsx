@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'expo-router';
-import { Controller, useForm } from 'react-hook-form';
+import { Controller, useForm, useWatch } from 'react-hook-form';
 import {
   ActivityIndicator,
   Pressable,
@@ -28,13 +28,12 @@ export function CreateWorkoutScreen() {
     control,
     handleSubmit,
     setValue,
-    watch,
     formState: { errors },
   } = useForm<MobileWorkoutForm>({
     resolver: zodResolver(mobileWorkoutFormSchema),
     defaultValues: { title: '', exerciseId: '', reps: '10' },
   });
-  const selectedExercise = watch('exerciseId');
+  const selectedExercise = useWatch({ control, name: 'exerciseId' });
 
   const submit = handleSubmit(async (values) => {
     try {
