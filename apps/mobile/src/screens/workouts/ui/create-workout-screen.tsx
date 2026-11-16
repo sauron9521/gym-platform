@@ -37,7 +37,7 @@ export function CreateWorkoutScreen() {
   });
   const selectedExercise = useWatch({ control, name: 'exerciseId' });
 
-  const submit = handleSubmit(async (values) => {
+  const onValidSubmit = async (values: MobileWorkoutForm) => {
     // React state does not synchronously prevent a second press before rerender.
     if (submitLock.current) return;
     submitLock.current = true;
@@ -53,7 +53,8 @@ export function CreateWorkoutScreen() {
     } finally {
       submitLock.current = false;
     }
-  });
+  };
+  const submit = () => void handleSubmit(onValidSubmit)();
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
