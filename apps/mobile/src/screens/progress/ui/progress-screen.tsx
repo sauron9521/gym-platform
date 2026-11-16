@@ -2,7 +2,10 @@ import { useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { strengthVolumeHeights } from '@/features/progress/lib/chart';
-import { useWorkoutSummary, type ProgressRange } from '@/features/progress/model/workout-summary-query';
+import {
+  useWorkoutSummary,
+  type ProgressRange,
+} from '@/features/progress/model/workout-summary-query';
 import { palette } from '@/shared/config/theme';
 
 const periods: ProgressRange[] = ['7d', '30d', '90d'];
@@ -30,7 +33,11 @@ export function ProgressScreen() {
         ))}
       </View>
       {query.isPending ? <ActivityIndicator accessibilityLabel="Завантаження статистики" /> : null}
-      {query.isError ? <Text accessibilityRole="alert" style={styles.error}>{query.error.message}</Text> : null}
+      {query.isError ? (
+        <Text accessibilityRole="alert" style={styles.error}>
+          {query.error.message}
+        </Text>
+      ) : null}
       {stats ? (
         <>
           <View style={styles.tiles}>
@@ -66,7 +73,9 @@ export function ProgressScreen() {
           ) : (
             <Text style={styles.subtitle}>Даних за цей період ще немає.</Text>
           )}
-          <Text style={styles.subtitle}>Дані з Gym API, станом на {new Date(stats.asOf).toLocaleDateString('uk-UA')}</Text>
+          <Text style={styles.subtitle}>
+            Дані з Gym API, станом на {new Date(stats.asOf).toLocaleDateString('uk-UA')}
+          </Text>
         </>
       ) : null}
     </ScrollView>
@@ -82,11 +91,35 @@ const styles = StyleSheet.create({
   metric: { fontSize: 25, fontWeight: '700', color: palette.primary },
   text: { color: palette.text, fontWeight: '600' },
   filters: { flexDirection: 'row', gap: 9 },
-  chip: { borderWidth: 1, borderColor: palette.border, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 10 },
+  chip: {
+    borderWidth: 1,
+    borderColor: palette.border,
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+  },
   selected: { backgroundColor: palette.primary },
   tiles: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  tile: { width: '47%', borderWidth: 1, borderColor: palette.border, borderRadius: 12, backgroundColor: palette.surface, padding: 15, gap: 5 },
-  chart: { minHeight: 170, height: 170, backgroundColor: palette.surface, borderRadius: 12, flexDirection: 'row', alignItems: 'flex-end', paddingHorizontal: 10, paddingVertical: 12, gap: 2 },
+  tile: {
+    width: '47%',
+    borderWidth: 1,
+    borderColor: palette.border,
+    borderRadius: 12,
+    backgroundColor: palette.surface,
+    padding: 15,
+    gap: 5,
+  },
+  chart: {
+    minHeight: 170,
+    height: 170,
+    backgroundColor: palette.surface,
+    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    paddingHorizontal: 10,
+    paddingVertical: 12,
+    gap: 2,
+  },
   barCell: { flex: 1, height: '100%', justifyContent: 'flex-end' },
   bar: { width: '100%', backgroundColor: palette.primary, borderRadius: 2 },
   error: { color: '#b91c1c', fontSize: 14 },

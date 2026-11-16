@@ -2,7 +2,10 @@ import { useMemo, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 
-import { workoutStatusLabel, type WorkoutState } from '@/features/workouts/lib/workout-presentation';
+import {
+  workoutStatusLabel,
+  type WorkoutState,
+} from '@/features/workouts/lib/workout-presentation';
 import { useWorkoutsQuery, type WorkoutFilter } from '@/features/workouts/model/workouts-query';
 import { palette } from '@/shared/config/theme';
 
@@ -30,10 +33,16 @@ export function WorkoutsScreen() {
     refetch,
   } = useWorkoutsQuery(filter);
   const workouts = useMemo(() => {
-    const items: { id: string; title: string; status: WorkoutState; scheduledAt: string | null }[] = [];
+    const items: { id: string; title: string; status: WorkoutState; scheduledAt: string | null }[] =
+      [];
     for (const page of data?.pages ?? []) {
       for (const item of page.data) {
-        items.push({ id: item.id, title: item.title, status: item.status, scheduledAt: item.scheduledAt });
+        items.push({
+          id: item.id,
+          title: item.title,
+          status: item.status,
+          scheduledAt: item.scheduledAt,
+        });
       }
     }
     return items;
@@ -100,7 +109,9 @@ export function WorkoutsScreen() {
       )}
       ListFooterComponent={
         <View style={styles.footer}>
-          {isFetchingNextPage ? <Text style={styles.subtitle}>Завантаження наступної сторінки…</Text> : null}
+          {isFetchingNextPage ? (
+            <Text style={styles.subtitle}>Завантаження наступної сторінки…</Text>
+          ) : null}
           <Pressable
             testID="workouts-refresh"
             accessibilityRole="button"
@@ -122,14 +133,34 @@ const styles = StyleSheet.create({
   heading: { gap: 12 },
   title: { fontSize: 28, fontWeight: '700', color: palette.text },
   subtitle: { fontSize: 15, color: palette.muted },
-  card: { backgroundColor: palette.surface, padding: 18, borderRadius: 14, borderColor: palette.border, borderWidth: 1, gap: 8 },
+  card: {
+    backgroundColor: palette.surface,
+    padding: 18,
+    borderRadius: 14,
+    borderColor: palette.border,
+    borderWidth: 1,
+    gap: 8,
+  },
   cardTitle: { fontSize: 18, color: palette.text, fontWeight: '600' },
   filters: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  chip: { borderRadius: 16, borderColor: palette.border, borderWidth: 1, paddingVertical: 8, paddingHorizontal: 12 },
+  chip: {
+    borderRadius: 16,
+    borderColor: palette.border,
+    borderWidth: 1,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+  },
   selectedChip: { backgroundColor: palette.primary },
   chipText: { color: palette.text, fontSize: 13 },
   error: { color: '#b91c1c', fontSize: 14 },
   footer: { gap: 10 },
-  button: { minHeight: 48, borderRadius: 12, backgroundColor: palette.primary, justifyContent: 'center', alignItems: 'center', padding: 12 },
+  button: {
+    minHeight: 48,
+    borderRadius: 12,
+    backgroundColor: palette.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 12,
+  },
   buttonText: { fontWeight: '700', color: palette.surface },
 });

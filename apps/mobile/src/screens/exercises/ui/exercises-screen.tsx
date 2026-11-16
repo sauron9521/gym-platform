@@ -11,7 +11,10 @@ export function ExercisesScreen() {
   const deferredSearch = useDeferredValue(search.trim());
   const query = useExercisesQuery({ search: deferredSearch, muscleGroup, equipment });
   const filters = useExerciseFilters();
-  const exercises = useMemo(() => query.data?.pages.flatMap((page) => page.data) ?? [], [query.data]);
+  const exercises = useMemo(
+    () => query.data?.pages.flatMap((page) => page.data) ?? [],
+    [query.data],
+  );
 
   return (
     <FlatList
@@ -37,8 +40,16 @@ export function ExercisesScreen() {
             style={styles.input}
           />
           <Text style={styles.subtitle}>Група м’язів</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
-            <Pressable accessibilityRole="button" onPress={() => setMuscleGroup(undefined)} style={styles.chip}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.chips}
+          >
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => setMuscleGroup(undefined)}
+              style={styles.chip}
+            >
               <Text style={styles.chipText}>Усі</Text>
             </Pressable>
             {filters.muscleGroups.data?.map((group) => (
@@ -54,8 +65,16 @@ export function ExercisesScreen() {
             ))}
           </ScrollView>
           <Text style={styles.subtitle}>Обладнання</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
-            <Pressable accessibilityRole="button" onPress={() => setEquipment(undefined)} style={styles.chip}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.chips}
+          >
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => setEquipment(undefined)}
+              style={styles.chip}
+            >
               <Text style={styles.chipText}>Усе</Text>
             </Pressable>
             {filters.equipment.data?.map((item) => (
@@ -70,7 +89,11 @@ export function ExercisesScreen() {
               </Pressable>
             ))}
           </ScrollView>
-          {query.isError ? <Text accessibilityRole="alert" style={styles.error}>{query.error.message}</Text> : null}
+          {query.isError ? (
+            <Text accessibilityRole="alert" style={styles.error}>
+              {query.error.message}
+            </Text>
+          ) : null}
           {query.isPending ? <Text style={styles.subtitle}>Завантажуємо каталог…</Text> : null}
         </View>
       }
@@ -90,7 +113,9 @@ export function ExercisesScreen() {
         </View>
       )}
       ListFooterComponent={
-        query.isFetchingNextPage ? <Text style={styles.subtitle}>Завантажуємо наступні вправи…</Text> : null
+        query.isFetchingNextPage ? (
+          <Text style={styles.subtitle}>Завантажуємо наступні вправи…</Text>
+        ) : null
       }
     />
   );
@@ -103,11 +128,26 @@ const styles = StyleSheet.create({
   title: { fontSize: 26, fontWeight: '700', color: palette.text },
   heading: { fontSize: 17, fontWeight: '600', color: palette.text },
   subtitle: { color: palette.muted, fontSize: 14 },
-  input: { borderWidth: 1, borderColor: palette.border, color: palette.text, backgroundColor: palette.surface, borderRadius: 10, paddingHorizontal: 12, minHeight: 46 },
+  input: {
+    borderWidth: 1,
+    borderColor: palette.border,
+    color: palette.text,
+    backgroundColor: palette.surface,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    minHeight: 46,
+  },
   chips: { gap: 8, paddingVertical: 4 },
   chip: { padding: 10, borderWidth: 1, borderColor: palette.border, borderRadius: 20 },
   selected: { backgroundColor: palette.primary },
   chipText: { color: palette.text, fontSize: 13 },
-  card: { padding: 16, backgroundColor: palette.surface, borderWidth: 1, borderColor: palette.border, borderRadius: 12, gap: 6 },
+  card: {
+    padding: 16,
+    backgroundColor: palette.surface,
+    borderWidth: 1,
+    borderColor: palette.border,
+    borderRadius: 12,
+    gap: 6,
+  },
   error: { color: '#b91c1c', fontSize: 14 },
 });
