@@ -10,7 +10,6 @@ complete Git history (`actions/checkout` with `fetch-depth: 0`).
 | -------------------------------------------------------------- | ------------------------------------ | --------------------------- | -------------------------------------- |
 | `apps/api/**`                                                  | API                                  | Yes                         | If the API package manifest changed    |
 | `apps/web/**`                                                  | Web                                  | No                          | If the Web package manifest changed    |
-| `apps/admin/**`                                                | Admin                                | No                          | If Admin package manifest changed     |
 | `apps/mobile/**`                                               | Mobile                               | No                          | If the Mobile package manifest changed |
 | `packages/api-client/**`                                       | API client + Web + Mobile            | No                          | If the client package manifest changed |
 | `packages/ui-web/**`                                           | Web + Landing                        | No                          | If UI package manifest changed         |
@@ -116,5 +115,3 @@ Known shared package `package.json` updates also select the vulnerability
 audit. Unknown package paths and the root `pnpm-lock.yaml` force full CI.
 For combined changes, selected consumer scopes are unioned. Full checks on
 every `main` push remain mandatory.
-
-Admin is also selected when direct shared dependencies (`@gym/api-client`, `@gym/ui-web`, `@gym/design-tokens`) or shared Next tooling change. Required status check names are unchanged.

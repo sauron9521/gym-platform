@@ -163,7 +163,12 @@ export function classifyChangedPaths(paths, { forceFull = false } = {}) {
   }
 
   selected.workspaces =
-    selected.api || selected.web || selected.landing || selected.admin || selected.mobile || selected.client;
+    selected.api ||
+    selected.web ||
+    selected.landing ||
+    selected.admin ||
+    selected.mobile ||
+    selected.client;
   return selected;
 }
 
