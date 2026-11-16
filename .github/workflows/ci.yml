@@ -18,25 +18,6 @@ concurrency:
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
-
-  # Temporary, read-only helper to resolve the component-test lockfile in CI.
-  # Removed before this PR is marked ready for merge.
-  web-component-lockfile:
-    name: Temporary lockfile generator
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@v7
-      - uses: pnpm/action-setup@v6
-      - uses: actions/setup-node@v7
-        with:
-          node-version: '24'
-      - run: pnpm install --lockfile-only --no-frozen-lockfile --ignore-scripts
-      - name: Print generated lockfile
-        run: |
-          echo 'COMPONENT_LOCKFILE_BEGIN_168'
-          cat pnpm-lock.yaml
-          echo 'COMPONENT_LOCKFILE_END_168'
   changes:
     name: CI / Determine affected workspaces
     runs-on: ubuntu-latest
