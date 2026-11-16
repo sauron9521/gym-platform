@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { test } from 'node:test';
+import { test } from 'vitest';
 
 import { classifyChangedPaths, selectFromGitHubEnvironment } from './ci-select.mjs';
 
@@ -437,9 +437,15 @@ test('dependency-security job is an enforced prerequisite of the protected Quali
   assert.ok(audit, 'Dependency security job must exist');
   assert.match(
     quality,
-    /needs:\n\s+- changes\n\s+- quality-workspaces\n\s+- prepush-windows\n\s+- web-browser-e2e\n\s+- dependency-security\n\s+- mobile-ios-dev-windows/,
+    /needs:\n\s+- changes\n\s+- quality-workspaces\n\s+- tooling-contracts\n\s+- prepush-windows\n\s+- web-browser-e2e\n\s+- dependency-security\n\s+- mobile-ios-dev-windows/,
   );
   assert.match(quality, /if: always\(\)/);
+  const tooling = yaml.split('  tooling-contracts:\n')[1]?.split('\n  prepush-windows:\n')[0];
+  assert.ok(tooling, 'Root Vitest contract job must exist');
+  assert.match(tooling, /pnpm install --frozen-lockfile/);
+  assert.match(tooling, /run: pnpm test:tooling/);
+  assert.match(quality, /TOOLING_CONTRACTS_RESULT:/);
+  assert.match(quality, /test "\$TOOLING_CONTRACTS_RESULT" = success/);
   assert.match(quality, /QUALITY_WORKSPACES_RESULT:/);
   assert.match(quality, /test "\$QUALITY_WORKSPACES_RESULT" = success/);
   assert.match(quality, /MOBILE_IOS_DEV_RESULT:/);

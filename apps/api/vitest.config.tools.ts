@@ -1,10 +1,5 @@
 import { defineConfig } from 'vitest/config';
+import { nodeTestConfig } from '../../tooling/vitest/node.mjs';
 
-// Node-only architecture, coverage, migration and Docker contract suites.
-// Keep these separate from the Nest unit and database-backed E2E configs.
-export default defineConfig({
-  test: {
-    environment: 'node',
-    include: ['scripts/*.test.mjs', 'test/*.test.mjs'],
-  },
-});
+// Keep Node tooling contracts separate from Nest units and database E2E.
+export default defineConfig(nodeTestConfig(['scripts/*.test.mjs', 'test/*.test.mjs']));

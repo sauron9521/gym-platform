@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { test } from 'node:test';
+import { test } from 'vitest';
+
+import { assertRequiredRootVitestGate } from './ci-tooling-guard.mjs';
 import {
   validateIdentity,
   validateCompose,
@@ -147,7 +149,7 @@ test('digest-only override is opt-in and future operator deployment is not wired
   assert.equal((override.match(/build: !reset null/g) ?? []).length, 2);
   assert.match(override, /DEPLOY_RUNTIME_IMAGE/);
   assert.match(override, /DEPLOY_MIGRATE_IMAGE/);
-  assert.ok(ci.includes('node --test scripts/production-digest-guard.test.mjs'));
+  assertRequiredRootVitestGate(ci);
   assert.ok(ci.includes('docker compose --env-file infra/docker/.env.example'));
   assert.ok(!ci.includes('production-digest-deploy.sh apply'));
 });
