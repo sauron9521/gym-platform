@@ -75,6 +75,7 @@ export function SignInScreen() {
             render={({ field: { onBlur, onChange, value } }) => (
               <TextInput
                 accessibilityLabel="Електронна пошта"
+                testID="sign-in-email"
                 autoCapitalize="none"
                 autoComplete="email"
                 autoCorrect={false}
@@ -104,6 +105,7 @@ export function SignInScreen() {
             render={({ field: { onBlur, onChange, value } }) => (
               <TextInput
                 accessibilityLabel="Пароль"
+                testID="sign-in-password"
                 autoCapitalize="none"
                 autoComplete="current-password"
                 secureTextEntry

@@ -1,0 +1,19 @@
+# Run only with an installed staging build and disposable test account.
+# APP_ID, E2E_EMAIL and E2E_PASSWORD are injected by the operator.
+appId: ${APP_ID}
+---
+- launchApp:
+    clearState: true
+- assertVisible: З поверненням!
+- tapOn:
+    id: sign-in-email
+- inputText: ${E2E_EMAIL}
+- tapOn:
+    id: sign-in-password
+- inputText: ${E2E_PASSWORD}
+- tapOn: Увійти
+- assertVisible: Gym Platform
+- tapOn: Profile
+- assertVisible: Оновити профіль
+- tapOn: Вийти
+- assertVisible: З поверненням!
