@@ -4,7 +4,7 @@ Monorepo for Gym App, powered by pnpm Workspaces and Turborepo.
 
 ## Repository layout
 
-- `apps/` — NestJS API, Next.js Web, Next.js Landing, and Expo Mobile.
+- `apps/` — NestJS API, Next.js Web, Next.js Landing, protected Next.js Admin scaffold, and Expo Mobile.
 - `packages/` — shared libraries, types, and generated API clients.
 - `tooling/` — shared development configuration.
 - `infra/` — Docker and deployment infrastructure.
