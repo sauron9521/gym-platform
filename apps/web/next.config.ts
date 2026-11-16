@@ -4,7 +4,7 @@ import { getApiUpstreamOrigin } from './src/shared/api/upstream.mjs';
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
-  transpilePackages: ['@gym/api-client'],
+  transpilePackages: ['@gym/api-client', '@gym/ui-web'],
   async rewrites() {
     // Session cookies are scoped to the web origin, even with a separate API host.
     return [
