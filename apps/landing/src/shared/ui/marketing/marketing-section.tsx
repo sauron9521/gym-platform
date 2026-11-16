@@ -6,11 +6,7 @@ type MarketingSectionProps = ComponentProps<'section'> & {
   tone?: 'default' | 'subtle';
 };
 
-export function MarketingSection({
-  className,
-  tone = 'default',
-  ...props
-}: MarketingSectionProps) {
+export function MarketingSection({ className, tone = 'default', ...props }: MarketingSectionProps) {
   return (
     <section
       className={cn(
