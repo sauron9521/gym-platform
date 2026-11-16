@@ -35,3 +35,16 @@ export function buildMobileWorkoutBody(input: CreateOneWorkout): CreateWorkoutBo
     ],
   };
 }
+
+/** Reuse the same key when retrying an uncertain POST response with identical input. */
+export type WorkoutCreationAttempt = { fingerprint: string; key: string };
+
+export function resolveWorkoutCreationAttempt(
+  input: CreateOneWorkout,
+  previous: WorkoutCreationAttempt | null,
+  createKey: () => string,
+): WorkoutCreationAttempt {
+  const fingerprint = JSON.stringify(buildMobileWorkoutBody(input));
+  if (previous?.fingerprint === fingerprint) return previous;
+  return { fingerprint, key: createKey() };
+}
