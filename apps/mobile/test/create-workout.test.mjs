@@ -49,6 +49,7 @@ test('create route is protected and mutation only navigates after success', () =
   const screen = read('../src/screens/workouts/ui/create-workout-screen.tsx');
   const model = read('../src/features/workouts/model/workout-create.ts');
   assert.match(layout, /name="workouts\/new"/);
+  assert.ok(layout.includes("<Stack.Protected guard={account?.role === 'ATHLETE'}>"));
   assert.match(screen, /await createWorkout\.mutateAsync/);
   assert.match(screen, /router\.back\(\)/);
   assert.match(model, /api\.POST\('\/workouts'/);
