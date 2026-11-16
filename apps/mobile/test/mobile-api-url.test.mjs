@@ -12,10 +12,7 @@ test('release clients enforce HTTPS without blocking development LAN APIs', () =
     validateMobileApiBaseUrl('https://api.example.test', true),
     'https://api.example.test',
   );
-  assert.throws(
-    () => validateMobileApiBaseUrl('http://192.168.1.20:3001', true),
-    /require HTTPS/,
-  );
+  assert.throws(() => validateMobileApiBaseUrl('http://192.168.1.20:3001', true), /require HTTPS/);
   assert.throws(
     () => validateMobileApiBaseUrl('http://user:secret@host.test', false),
     /without credentials/,
