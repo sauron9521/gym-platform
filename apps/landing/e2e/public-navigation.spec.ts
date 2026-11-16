@@ -27,7 +27,7 @@ test('SEO exposes canonical URLs and sitemap only for the configured HTTPS origi
 test('narrow viewport offers usable keyboard-accessible navigation', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/');
-  await page.getByText('Меню', { exact: true }).click();
+  await page.locator('header details > summary').click();
   const mobile = page.getByRole('navigation', { name: 'Мобільна навігація' });
   await mobile.getByRole('link', { name: 'Про проєкт' }).click();
   await expect(page).toHaveURL(/\/about$/);
