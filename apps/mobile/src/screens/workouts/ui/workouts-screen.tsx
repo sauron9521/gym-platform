@@ -1,26 +1,30 @@
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text } from 'react-native';
 import { useRouter } from 'expo-router';
 
+import { useAuth } from '@/features/auth/model/auth-context';
 import { workoutStatusLabel } from '@/features/workouts/lib/workout-presentation';
 import { useWorkoutsQuery } from '@/features/workouts/model/workouts-query';
 import { palette } from '@/shared/config/theme';
 
 export function WorkoutsScreen() {
   const router = useRouter();
+  const { account } = useAuth();
   const { data, isLoading, isError, error, isFetching, refetch } = useWorkoutsQuery();
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <Text style={styles.title}>Мої тренування</Text>
       <Text style={styles.subtitle}>Останні тренування з Gym API</Text>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Створити тренування"
-        style={styles.button}
-        onPress={() => router.push('/workouts/new')}
-      >
-        <Text style={styles.buttonText}>Нове тренування</Text>
-      </Pressable>
+      {account?.role === 'ATHLETE' ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Створити тренування"
+          style={styles.button}
+          onPress={() => router.push('/workouts/new')}
+        >
+          <Text style={styles.buttonText}>Нове тренування</Text>
+        </Pressable>
+      ) : null}
 
       {isLoading ? <ActivityIndicator accessibilityLabel="Завантаження" /> : null}
       {isError ? (
