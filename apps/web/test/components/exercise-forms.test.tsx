@@ -205,7 +205,9 @@ describe('EditExerciseForm interactions', () => {
       true,
     );
     expect(
-      screen.getAllByRole('combobox', { name: 'Роль' }).map((item) => (item as HTMLSelectElement).value),
+      screen
+        .getAllByRole('combobox', { name: 'Роль' })
+        .map((item) => (item as HTMLSelectElement).value),
     ).toEqual(['PRIMARY', 'SECONDARY']);
     fireEvent.click(screen.getByRole('button', { name: 'Скасувати' }));
     expect(props.onCancel).toHaveBeenCalledOnce();
