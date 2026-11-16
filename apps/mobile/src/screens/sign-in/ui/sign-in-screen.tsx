@@ -1,4 +1,4 @@
-import { useCallback, useRef } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Controller, useForm } from 'react-hook-form';
 import {
@@ -18,7 +18,8 @@ import { useAuth } from '@/features/auth/model/auth-context';
 import { palette } from '@/shared/config/theme';
 
 export function SignInScreen() {
-  const { signIn } = useAuth();
+  const { signIn, recoveryAvailable, retryVerification } = useAuth();
+  const [retrying, setRetrying] = useState(false);
   const submitLock = useRef(false);
   const {
     control,
@@ -145,6 +146,27 @@ export function SignInScreen() {
             )}
           </Pressable>
         </View>
+        {recoveryAvailable ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Повторити перевірку сесії"
+            disabled={retrying || isSubmitting}
+            style={[styles.button, (retrying || isSubmitting) && styles.disabled]}
+            onPress={() => {
+              if (retrying) return;
+              setRetrying(true);
+              void retryVerification().then((result) => {
+                if (!result.success) {
+                  setError('root.server', { type: 'server', message: result.message });
+                }
+              }).finally(() => setRetrying(false));
+            }}
+          >
+            <Text style={styles.buttonText}>
+              {retrying ? 'Перевіряємо…' : 'Відновити сесію'}
+            </Text>
+          </Pressable>
+        ) : null}
         <Text style={styles.note}>
           На iOS та Android сесія зберігається захищено. У браузері вхід тимчасовий.
         </Text>

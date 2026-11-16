@@ -194,3 +194,30 @@ test('native secure storage and gated profile bootstrap are wired without web pe
   assert.doesNotMatch(web, /localStorage|sessionStorage|AsyncStorage/);
   assert.ok(config.expo.plugins.includes('expo-secure-store'));
 });
+
+test('revalidation is allowed only while a rotated access token remains fresh', async () => {
+  const store = makeStore('refresh-old');
+  let now = 0;
+  const session = new MobileTokenSession(
+    store.storage,
+    async () => pair('next', 60),
+    async () => undefined,
+    () => undefined,
+    () => now,
+  );
+  assert.equal(session.canRevalidate(), false);
+  assert.equal(await session.restore(), true);
+  assert.equal(session.canRevalidate(), true);
+  now = 31_000;
+  assert.equal(session.canRevalidate(), false);
+  await session.clear();
+  assert.equal(session.canRevalidate(), false);
+});
+
+test('transient profile failure exposes a safe retry without replaying one-time refresh', () => {
+  const auth = readFileSync(new URL('../src/features/auth/model/auth-context.tsx', import.meta.url), 'utf8');
+  const screen = readFileSync(new URL('../src/screens/sign-in/ui/sign-in-screen.tsx', import.meta.url), 'utf8');
+  assert.match(auth, /session\.canRevalidate\(\)/);
+  assert.match(auth, /retryVerification/);
+  assert.match(screen, /Відновити сесію/);
+});

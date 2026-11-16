@@ -53,6 +53,11 @@ export class MobileTokenSession {
     return this.refreshToken;
   }
 
+  /** Re-verify a freshly rotated access token without replaying a refresh token. */
+  canRevalidate(): boolean {
+    return this.accessToken !== null && this.now() < this.expiresAt - REFRESH_LEEWAY_MS;
+  }
+
   private enqueueStorage(operation: () => Promise<void>): Promise<void> {
     const next = this.storageQueue.then(operation, operation);
     this.storageQueue = next.catch(() => undefined);

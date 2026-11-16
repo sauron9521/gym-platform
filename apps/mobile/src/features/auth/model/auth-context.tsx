@@ -21,6 +21,8 @@ type Result = { success: true } | { success: false; message: string };
 type AuthValue = {
   account: Account | null;
   restoring: boolean;
+  recoveryAvailable: boolean;
+  retryVerification: () => Promise<Result>;
   signIn: (email: string, password: string) => Promise<Result>;
   signOut: () => Promise<void>;
   getApi: () => ReturnType<typeof createMobileApi> | null;
@@ -34,6 +36,7 @@ const AuthContext = createContext<AuthValue | null>(null);
 export function AuthProvider({ children }: PropsWithChildren) {
   const [account, setAccount] = useState<Account | null>(null);
   const [restoring, setRestoring] = useState(true);
+  const [recoveryAvailable, setRecoveryAvailable] = useState(false);
   const queryClient = useQueryClient();
   const baseUrl = process.env.EXPO_PUBLIC_API_URL?.trim();
 
@@ -100,13 +103,19 @@ export function AuthProvider({ children }: PropsWithChildren) {
           queryClient.clear();
           queryClient.setQueryData(accountQueryKeys.me(response.data.id), response.data);
           setAccount(response.data);
+          setRecoveryAvailable(false);
         } else if (response.response.status === 401) {
           await session.clear();
+          setRecoveryAvailable(false);
+        } else if (active && session.canRevalidate()) {
+          setRecoveryAvailable(true);
         }
         // A transient network/5xx error keeps the newly rotated refresh token
         // in SecureStore for the next launch; never unlock without verification.
       } catch {
-        // Storage locked/unavailable or API offline: keep protected routes closed.
+        // A failed profile check after a successful rotation may be retried
+        // with the same in-memory access token, without replaying refresh.
+        if (active && session.canRevalidate()) setRecoveryAvailable(true);
       } finally {
         if (active) setRestoring(false);
       }
@@ -118,9 +127,42 @@ export function AuthProvider({ children }: PropsWithChildren) {
     };
   }, [baseUrl, getApi, queryClient, session]);
 
+  const retryVerification = useCallback(async (): Promise<Result> => {
+    if (!recoveryAvailable || !session.canRevalidate()) {
+      setRecoveryAvailable(false);
+      return { success: false, message: 'Сесія потребує повторного входу.' };
+    }
+    const api = getApi();
+    if (!api) return { success: false, message: 'Не налаштовано адресу API.' };
+
+    const revision = session.revision;
+    try {
+      const result = await api.GET('/users/me');
+      if (session.revision !== revision) {
+        return { success: false, message: 'Сесія змінилася. Спробуйте ще раз.' };
+      }
+      if (result.response.status === 200 && result.data) {
+        queryClient.clear();
+        queryClient.setQueryData(accountQueryKeys.me(result.data.id), result.data);
+        setAccount(result.data);
+        setRecoveryAvailable(false);
+        return { success: true };
+      }
+      if (result.response.status === 401) {
+        await session.clear();
+        setRecoveryAvailable(false);
+      }
+      return { success: false, message: 'Не вдалося підтвердити сесію.' };
+    } catch {
+      // Retain the rotated refresh token; never retry the one-time refresh call.
+      return { success: false, message: 'Немає з’єднання з API. Спробуйте ще раз.' };
+    }
+  }, [getApi, queryClient, recoveryAvailable, session]);
+
   const signIn = useCallback(
     async (email: string, password: string): Promise<Result> => {
       if (restoring) return { success: false, message: 'Зачекайте на перевірку сесії.' };
+      setRecoveryAvailable(false);
       const validation = validateMobileCredentials(email, password);
       if (validation) return { success: false, message: validation };
 
@@ -184,6 +226,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
     const guestApi = getGuestApi();
     queryClient.clear();
     setAccount(null);
+    setRecoveryAvailable(false);
     await session.clear().catch(() => undefined);
     if (guestApi && refreshToken) {
       try {
@@ -195,8 +238,8 @@ export function AuthProvider({ children }: PropsWithChildren) {
   }, [getGuestApi, queryClient, session]);
 
   const value = useMemo(
-    () => ({ account, restoring, signIn, signOut, getApi }),
-    [account, restoring, signIn, signOut, getApi],
+    () => ({ account, restoring, recoveryAvailable, retryVerification, signIn, signOut, getApi }),
+    [account, restoring, recoveryAvailable, retryVerification, signIn, signOut, getApi],
   );
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
