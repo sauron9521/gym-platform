@@ -23,6 +23,14 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="workouts"
+        options={{
+          title: 'Тренування',
+          headerTitle: 'Мої тренування',
+          tabBarIcon: () => <Text accessible={false}>📋</Text>,
+        }}
+      />
+      <Tabs.Screen
         name="profile"
         options={{
           title: 'Profile',

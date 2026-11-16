@@ -17,6 +17,7 @@ test('expo router is configured as the entry point and plugin', () => {
 test('Expo Router has both application routes', () => {
   assert.ok(existsSync(new URL('../src/app/(tabs)/index.tsx', import.meta.url)));
   assert.ok(existsSync(new URL('../src/app/(tabs)/profile.tsx', import.meta.url)));
+  assert.ok(existsSync(new URL('../src/app/(tabs)/workouts.tsx', import.meta.url)));
 });
 
 test('mobile CI build exports both web and native iOS JavaScript', () => {

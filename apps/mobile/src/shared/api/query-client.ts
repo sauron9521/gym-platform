@@ -4,6 +4,7 @@ import { QueryClient } from '@tanstack/react-query';
 export const accountQueryKeys = {
   all: ['account'] as const,
   me: (userId: string) => ['account', 'me', userId] as const,
+  workouts: (userId: string) => ['account', 'workouts', userId] as const,
 };
 
 export function createMobileQueryClient() {

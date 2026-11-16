@@ -203,3 +203,10 @@ trimmed but **passwords are never trimmed or persisted**. While the request runs
 the fields/button are disabled and a synchronous guard prevents duplicate API
 requests. The existing verification-before-navigation and token handling remain
 unchanged. Follow the same pattern for future React Native forms.
+
+## Workouts list foundation
+
+The protected `Тренування` tab fetches the current user's first 20 workouts
+through the generated typed API client, scoped by account ID in TanStack Query.
+It supports loading, empty, error and manual refresh states; 401 clears the
+local session. Editing and workout creation are deliberately separate PRs.
