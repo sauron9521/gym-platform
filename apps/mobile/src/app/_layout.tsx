@@ -19,6 +19,12 @@ function Navigation() {
           <Stack.Screen name="(tabs)" />
           <Stack.Screen name="workouts/[id]" options={{ headerShown: true, title: 'Тренування' }} />
         </Stack.Protected>
+        <Stack.Protected guard={account?.role === 'ATHLETE'}>
+          <Stack.Screen
+            name="workouts/new"
+            options={{ headerShown: true, title: 'Нове тренування' }}
+          />
+        </Stack.Protected>
         <Stack.Protected guard={!account}>
           <Stack.Screen name="sign-in" />
         </Stack.Protected>

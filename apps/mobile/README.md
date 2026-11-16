@@ -249,3 +249,17 @@ action. It reuses only the still-fresh in-memory access token for verification.
 It never replays the already-consumed refresh token; expired or invalid sessions
 require a normal sign-in. Protected navigation remains locked until a successful
 verified profile response.
+
+## Create workout (first native write journey)
+
+A protected `/workouts/new` route uses React Hook Form and Zod for title,
+exercise selection and a single planned-reps set. Exercises are loaded from
+the typed GET /exercises API; POST /workouts writes through the bearer client.
+Only verified success navigates back and invalidates the athlete's workout list.
+The screen is available only for ATHLETE accounts and currently lists the first
+20 accessible exercises, with a manual reload action on a read error.
+A synchronous submit lock blocks duplicate presses. POST /workouts sends a
+stable Idempotency-Key for manual retries of the same canonical payload:
+a lost response must not create duplicate workouts. TanStack mutations are
+never automatically retried. Complex set editing, pagination/search,
+multiple exercises and cancellation are later PRs.
