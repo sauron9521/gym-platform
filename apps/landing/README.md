@@ -56,3 +56,10 @@ LANDING_SITE_URL=https://your-domain.example
 Значення має бути **HTTPS origin** без шляху чи query. Не задавайте його
 для localhost і не вмикайте індексацію до затвердження контенту.
 Ця конфігурація не забезпечує захист даних або доступу до сайту.
+
+## Smoke tests
+
+Run `pnpm --filter @gym/landing test` to validate public navigation routes,
+SEO origin rules and metadata before building. The Landing build runs these
+regressions first, while the existing Next.js build validates compilation.
+The tests deliberately require no domain, browser, credentials or network.

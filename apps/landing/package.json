@@ -5,10 +5,11 @@
   "type": "module",
   "scripts": {
     "dev": "next dev --port 3002",
-    "build": "next build",
+    "build": "pnpm test && next build",
     "start": "next start --port 3002",
     "lint": "eslint .",
-    "typecheck": "next typegen && tsc --noEmit"
+    "typecheck": "next typegen && tsc --noEmit",
+    "test": "node --test test/*.test.mjs"
   },
   "dependencies": {
     "@gym/design-tokens": "workspace:*",
