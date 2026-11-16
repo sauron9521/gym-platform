@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { test } from 'node:test';
+import { test } from 'vitest';
 
 import { readAdminSession } from '../src/shared/api/admin-session.ts';
 
