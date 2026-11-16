@@ -71,7 +71,9 @@ test('native palette matches UniWind dark color channels and root theme', () => 
       .split(/\s+/)
       .map(Number);
     assert.equal(channels.length, 3, `Invalid RGB channels: ${cssKey}`);
-    assert.ok(channels.every((channel) => Number.isInteger(channel) && channel >= 0 && channel <= 255));
+    assert.ok(
+      channels.every((channel) => Number.isInteger(channel) && channel >= 0 && channel <= 255),
+    );
     const hex = `#${channels.map((channel) => channel.toString(16).padStart(2, '0')).join('')}`;
     assert.equal(nativePalette[paletteKey], hex, `Mismatch for dark color: ${paletteKey}`);
   }
