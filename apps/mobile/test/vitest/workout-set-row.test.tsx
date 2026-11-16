@@ -33,9 +33,9 @@ describe('WorkoutSetRow (React Native)', () => {
 
   it('validates input and submits actual reps with a decimal comma weight', async () => {
     const view = await render(<WorkoutSetRow workoutId="workout-1" set={set} editable />);
-    fireEvent.changeText(view.getByTestId('set-reps-set-1'), '6');
-    fireEvent.changeText(view.getByTestId('set-weight-set-1'), '72,5');
-    fireEvent.press(view.getByTestId('set-complete-set-1'));
+    await fireEvent.changeText(view.getByTestId('set-reps-set-1'), '6');
+    await fireEvent.changeText(view.getByTestId('set-weight-set-1'), '72,5');
+    await fireEvent.press(view.getByTestId('set-complete-set-1'));
 
     await waitFor(() =>
       expect(mutateAsync).toHaveBeenCalledWith({
@@ -47,7 +47,7 @@ describe('WorkoutSetRow (React Native)', () => {
 
   it('skips a set without submitting performance values', async () => {
     const view = await render(<WorkoutSetRow workoutId="workout-1" set={set} editable />);
-    fireEvent.press(view.getByTestId('set-skip-set-1'));
+    await fireEvent.press(view.getByTestId('set-skip-set-1'));
     await waitFor(() =>
       expect(mutateAsync).toHaveBeenCalledWith({
         setId: 'set-1',
@@ -72,8 +72,8 @@ describe('WorkoutSetRow (React Native)', () => {
         }),
     );
     const view = await render(<WorkoutSetRow workoutId="workout-1" set={set} editable />);
-    fireEvent.press(view.getByTestId('set-complete-set-1'));
-    fireEvent.press(view.getByTestId('set-complete-set-1'));
+    await fireEvent.press(view.getByTestId('set-complete-set-1'));
+    await fireEvent.press(view.getByTestId('set-complete-set-1'));
 
     await waitFor(() => expect(mutateAsync).toHaveBeenCalledTimes(1));
     finish({ id: 'set-1' });
