@@ -19,12 +19,6 @@ jobs:
       max-parallel: 2
       matrix:
         branch:
-          - feat/mobile-workout-set-logging
-          - feat/mobile-workout-list-pagination
-          - feat/mobile-program-assignments
-          - feat/mobile-exercise-library
-          - feat/mobile-profile-editor
-          - feat/mobile-progress-analytics
           - test/mobile-eas-maestro-native
           - feat/mobile-offline-connectivity-foundation
     steps:
@@ -47,11 +41,14 @@ jobs:
       - name: Install exact workspace dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Format mobile sources
+      - name: Format mobile files and print formatted native workflow for maintenance
         run: |
           pnpm exec prettier --write apps/mobile
           if test -f .github/workflows/mobile-native-e2e.yml; then
             pnpm exec prettier --write .github/workflows/mobile-native-e2e.yml
+            echo '=== FORMATTED NATIVE WORKFLOW START ==='
+            cat .github/workflows/mobile-native-e2e.yml
+            echo '=== FORMATTED NATIVE WORKFLOW END ==='
           fi
 
       - name: Commit formatting changes
@@ -60,11 +57,8 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          if ! git diff --quiet; then
+          if ! git diff --quiet -- apps/mobile; then
             git add apps/mobile
-            if test -f .github/workflows/mobile-native-e2e.yml; then
-              git add .github/workflows/mobile-native-e2e.yml
-            fi
             HUSKY=0 git commit -m "style(mobile): [roadmap format] apply Prettier"
             HUSKY=0 git push origin HEAD:"$TARGET_BRANCH"
           fi
