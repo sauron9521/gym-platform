@@ -1,29 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { operations } from '@gym/api-client';
 
 import { useAuth } from '@/features/auth/model/auth-context';
 import { accountQueryKeys } from '@/shared/api/query-client';
 
-export type CreateWorkoutBody =
-  operations['WorkoutsController_create']['requestBody']['content']['application/json'];
-
-type CreateOneWorkout = {
-  title: string;
-  exerciseId: string;
-  plannedReps: number;
-};
-
-export function buildMobileWorkoutBody(input: CreateOneWorkout): CreateWorkoutBody {
-  return {
-    title: input.title.trim(),
-    exercises: [
-      {
-        exerciseId: input.exerciseId,
-        sets: [{ setType: 'WORKING', plannedReps: input.plannedReps }],
-      },
-    ],
-  };
-}
+import { buildMobileWorkoutBody } from '../lib/create-workout-schema';
 
 export function useWorkoutExerciseOptions() {
   const { account, getApi, signOut } = useAuth();

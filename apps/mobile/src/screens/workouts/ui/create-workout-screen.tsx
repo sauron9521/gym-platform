@@ -1,9 +1,19 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'expo-router';
 import { Controller, useForm } from 'react-hook-form';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput } from 'react-native';
+import {
+  ActivityIndicator,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+} from 'react-native';
 
-import { mobileWorkoutFormSchema, type MobileWorkoutForm } from '@/features/workouts/lib/create-workout-schema';
+import {
+  mobileWorkoutFormSchema,
+  type MobileWorkoutForm,
+} from '@/features/workouts/lib/create-workout-schema';
 import {
   useCreateMobileWorkout,
   useWorkoutExerciseOptions,
@@ -60,11 +70,17 @@ export function CreateWorkoutScreen() {
           />
         )}
       />
-      {errors.title ? <Text accessibilityRole="alert" style={styles.error}>{errors.title.message}</Text> : null}
+      {errors.title ? (
+        <Text accessibilityRole="alert" style={styles.error}>
+          {errors.title.message}
+        </Text>
+      ) : null}
       <Text style={styles.label}>Вправа</Text>
       {exercises.isPending ? <ActivityIndicator accessibilityLabel="Завантаження вправ" /> : null}
       {exercises.isError ? (
-        <Text accessibilityRole="alert" style={styles.error}>{exercises.error.message}</Text>
+        <Text accessibilityRole="alert" style={styles.error}>
+          {exercises.error.message}
+        </Text>
       ) : null}
       {exercises.data?.map((exercise) => (
         <Pressable
@@ -96,9 +112,15 @@ export function CreateWorkoutScreen() {
           />
         )}
       />
-      {errors.reps ? <Text accessibilityRole="alert" style={styles.error}>{errors.reps.message}</Text> : null}
+      {errors.reps ? (
+        <Text accessibilityRole="alert" style={styles.error}>
+          {errors.reps.message}
+        </Text>
+      ) : null}
       {createWorkout.isError ? (
-        <Text accessibilityRole="alert" style={styles.error}>{createWorkout.error.message}</Text>
+        <Text accessibilityRole="alert" style={styles.error}>
+          {createWorkout.error.message}
+        </Text>
       ) : null}
       <Pressable
         accessibilityRole="button"

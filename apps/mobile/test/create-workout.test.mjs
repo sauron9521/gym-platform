@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { test } from 'vitest';
 
 import { mobileWorkoutFormSchema } from '../src/features/workouts/lib/create-workout-schema.ts';
-import { buildMobileWorkoutBody } from '../src/features/workouts/model/workout-create.ts';
+import { buildMobileWorkoutBody } from '../src/features/workouts/lib/create-workout-schema.ts';
 
 const valid = {
   title: '  День грудей ',
@@ -14,7 +14,10 @@ const valid = {
 test('mobile workout creation requires a title, accessible exercise and valid reps', () => {
   assert.equal(mobileWorkoutFormSchema.safeParse(valid).success, true);
   assert.equal(mobileWorkoutFormSchema.safeParse({ ...valid, reps: '0' }).success, false);
-  assert.equal(mobileWorkoutFormSchema.safeParse({ ...valid, exerciseId: '' }).success, false);
+  assert.equal(
+    mobileWorkoutFormSchema.safeParse({ ...valid, exerciseId: '' }).success,
+    false,
+  );
   assert.equal(mobileWorkoutFormSchema.safeParse({ ...valid, title: 'x' }).success, false);
 });
 
@@ -27,10 +30,12 @@ test('one-exercise typed payload includes no credentials or unrequested fields',
     }),
     {
       title: 'День грудей',
-      exercises: [{
-        exerciseId: valid.exerciseId,
-        sets: [{ setType: 'WORKING', plannedReps: 12 }],
-      }],
+      exercises: [
+        {
+          exerciseId: valid.exerciseId,
+          sets: [{ setType: 'WORKING', plannedReps: 12 }],
+        },
+      ],
     },
   );
 });

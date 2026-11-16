@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import type { operations } from '@gym/api-client';
 
 export const mobileWorkoutFormSchema = z.object({
   title: z.string().trim().min(2, 'Назва повинна містити щонайменше 2 символи.').max(120),
@@ -13,3 +14,25 @@ export const mobileWorkoutFormSchema = z.object({
 });
 
 export type MobileWorkoutForm = z.infer<typeof mobileWorkoutFormSchema>;
+
+export type CreateWorkoutBody =
+  operations['WorkoutsController_create']['requestBody']['content']['application/json'];
+
+type CreateOneWorkout = {
+  title: string;
+  exerciseId: string;
+  plannedReps: number;
+};
+
+export function buildMobileWorkoutBody(input: CreateOneWorkout): CreateWorkoutBody {
+  return {
+    title: input.title.trim(),
+    exercises: [
+      {
+        exerciseId: input.exerciseId,
+        sets: [{ setType: 'WORKING', plannedReps: input.plannedReps }],
+      },
+    ],
+  };
+}
+
