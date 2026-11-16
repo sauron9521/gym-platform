@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { onlineManager, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { useAuth } from '@/features/auth/model/auth-context';
 import { accountQueryKeys } from '@/shared/api/query-client';
@@ -61,6 +61,7 @@ export function useCreateWorkoutFromProgram(assignmentId: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (programWorkoutId: string) => {
+      if (!onlineManager.isOnline()) throw new Error('Немає мережі. Тренування не створено.');
       const api = getApi();
       if (!api) throw new Error('Немає доступу до API.');
       const response = await api.POST('/workouts/from-program', {
@@ -84,6 +85,7 @@ export function useCreateWorkoutFromProgram(assignmentId: string) {
       if (!account || !queryClient.getQueryData(accountQueryKeys.me(account.id))) return;
       void queryClient.invalidateQueries({ queryKey: accountQueryKeys.workouts(account.id) });
     },
+    networkMode: 'always',
     retry: false,
   });
 }

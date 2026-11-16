@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { onlineManager, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { paths } from '@gym/api-client';
 
 import { useAuth } from '@/features/auth/model/auth-context';
@@ -43,6 +43,7 @@ export function useWorkoutTransition(workoutId: string) {
 
   return useMutation({
     mutationFn: async (transition: WorkoutTransition): Promise<WorkoutDetails> => {
+      if (!onlineManager.isOnline()) throw new Error('Немає мережі. Дію не надіслано.');
       const api = getApi();
       if (!api) throw new Error('Не налаштовано адресу API.');
       const params = { path: { id: workoutId } };
@@ -71,6 +72,7 @@ export function useWorkoutTransition(workoutId: string) {
       queryClient.setQueryData(accountQueryKeys.workoutDetail(account.id, workoutId), workout);
       await queryClient.invalidateQueries({ queryKey: accountQueryKeys.workouts(account.id) });
     },
+    networkMode: 'always',
     retry: false,
   });
 }

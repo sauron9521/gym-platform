@@ -1,4 +1,4 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { onlineManager, useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { useAuth } from '@/features/auth/model/auth-context';
 import { accountQueryKeys } from '@/shared/api/query-client';
@@ -9,6 +9,7 @@ export function useEditProfile() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (values: EditProfileValues) => {
+      if (!onlineManager.isOnline()) throw new Error('Немає мережі. Профіль не збережено.');
       const api = getApi();
       if (!api) throw new Error('Немає доступу до API.');
       const response = await api.PATCH('/users/me', { body: profilePatch(values) });
@@ -24,6 +25,7 @@ export function useEditProfile() {
       if (!account) return;
       await queryClient.invalidateQueries({ queryKey: accountQueryKeys.me(account.id) });
     },
+    networkMode: 'always',
     retry: false,
   });
 }

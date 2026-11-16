@@ -9,6 +9,7 @@ import { AuthProvider, useAuth } from '@/features/auth/model/auth-context';
 import { GluestackUIProvider } from '@/shared/ui/gluestack/gluestack-ui-provider';
 import { MobileQueryProvider } from '@/shared/api/query-provider';
 import { palette } from '@/shared/config/theme';
+import { OfflineBanner } from '@/shared/ui/offline-banner';
 
 function Navigation() {
   const { account, restoring } = useAuth();
@@ -25,6 +26,7 @@ function Navigation() {
         </Stack.Protected>
       </Stack>
       <StatusBar style="auto" />
+      <OfflineBanner />
       {restoring ? (
         <View accessibilityLabel="Відновлення сесії" style={styles.loadingOverlay}>
           <ActivityIndicator color={palette.primary} size="large" />

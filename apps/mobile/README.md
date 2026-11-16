@@ -240,3 +240,25 @@ exercise the status button with user events. This is not an emulator/device
 or EAS smoke test. Existing Maestro native flows remain operator-driven.
 Keep this pilot isolated to Mobile until CI and local Windows development
 confirm the beta plugin works reliably with Expo SDK 58 / React Native 0.88.
+
+## Native network awareness and safe offline behavior
+
+- Expo SDK 58 `expo-network@~58.0.5` reports device connectivity and
+  integrates with the TanStack Query `onlineManager` on iOS and Android.
+  Expo Web keeps its browser-native connectivity integration.
+- A small offline banner warns when connectivity is unavailable.
+  Reads pause through TanStack Query while offline and may resume on reconnect.
+- **Mutations fail fast** offline (`networkMode: 'always'` plus an online guard).
+  They are not automatically replayed after reconnect, which avoids duplicate
+  set logging, workout creation, and accidental reuse of one-time credentials.
+- `expo-haptics@~58.0.8` gives native success feedback after saving a set;
+  haptic errors never fail the mutation or affect Web.
+- Private TanStack Query caches remain in memory only; neither tokens nor
+  unverified workout writes are persisted in browser/AsyncStorage.
+- This is connectivity **foundation**, not a durable offline write queue.
+  Durable drafts will require conflict/version handling and explicit
+  confirmation before replaying recorded workout changes.
+
+The new native modules are part of Expo SDK 58 and may require updating a
+development build on devices; a successful JS bundle does not validate Android
+permissions or physical iOS vibration behavior.

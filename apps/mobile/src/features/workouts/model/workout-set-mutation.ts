@@ -1,4 +1,6 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { onlineManager, useMutation, useQueryClient } from '@tanstack/react-query';
+import * as Haptics from 'expo-haptics';
+import { Platform } from 'react-native';
 import type { paths } from '@gym/api-client';
 
 import { useAuth } from '@/features/auth/model/auth-context';
@@ -15,6 +17,7 @@ export function useWorkoutSetMutation(workoutId: string) {
 
   return useMutation({
     mutationFn: async ({ setId, body }: { setId: string; body: SetBody }): Promise<SetResponse> => {
+      if (!onlineManager.isOnline()) throw new Error('Немає мережі. Підхід не надіслано.');
       const api = getApi();
       if (!api) throw new Error('Не налаштовано адресу API.');
       const response = await api.PATCH('/workouts/{id}/sets/{setId}', {
@@ -34,7 +37,11 @@ export function useWorkoutSetMutation(workoutId: string) {
       }
       return response.data;
     },
+    networkMode: 'always', // Fail fast while offline; never replay set writes implicitly.
     onSuccess: (updated) => {
+      if (Platform.OS !== 'web') {
+        void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => undefined);
+      }
       if (!account || !queryClient.getQueryData(accountQueryKeys.me(account.id))) return;
       queryClient.setQueryData<WorkoutDetails>(
         accountQueryKeys.workoutDetail(account.id, workoutId),
