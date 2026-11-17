@@ -11,8 +11,10 @@ test('mobile navigation closes on route selection and Escape restores focus', as
   await expect(details).not.toHaveAttribute('open', '');
   await expect(summary).toBeFocused();
   await summary.press('Enter');
-  await page.getByRole('navigation', { name: 'Мобільна навігація' })
-    .getByRole('link', { name: 'Спортсменам' }).click();
+  await page
+    .getByRole('navigation', { name: 'Мобільна навігація' })
+    .getByRole('link', { name: 'Спортсменам' })
+    .click();
   await expect(page).toHaveURL(/\/for-athletes$/);
   await expect(details).not.toHaveAttribute('open', '');
 });
