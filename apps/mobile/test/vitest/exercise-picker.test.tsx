@@ -43,9 +43,11 @@ describe('ExercisePicker (native)', () => {
     const onSelect = vi.fn();
     const view = await render(<ExercisePicker selectedId="" onSelect={onSelect} />);
 
+    await fireEvent.press(view.getByTestId('workout-exercise-open'));
     expect(view.queryByText('Архівна вправа')).toBeNull();
     await fireEvent.press(view.getByRole('button', { name: 'Жим лежачи' }));
     expect(onSelect).toHaveBeenCalledExactlyOnceWith('exercise-1');
+    expect(view.getByText('Обрати вправу')).toBeTruthy();
   });
 
   it('deduplicates exercises across pages and loads more only on demand', async () => {
@@ -65,7 +67,8 @@ describe('ExercisePicker (native)', () => {
     });
     const view = await render(<ExercisePicker selectedId="exercise-1" onSelect={vi.fn()} />);
 
-    expect(view.getAllByText('Жим лежачи')).toHaveLength(1);
+    await fireEvent.press(view.getByTestId('workout-exercise-open'));
+    expect(view.getByRole('button', { name: 'Жим лежачи' })).toBeTruthy();
     expect(view.getByText('Присідання')).toBeTruthy();
     await fireEvent.press(view.getByTestId('workout-exercises-next'));
     expect(fetchNextPage).toHaveBeenCalledOnce();
@@ -75,6 +78,7 @@ describe('ExercisePicker (native)', () => {
     prepareQuery({ hasNextPage: true, isFetching: true, isFetchingNextPage: true });
     const view = await render(<ExercisePicker selectedId="" onSelect={vi.fn()} />);
 
+    await fireEvent.press(view.getByTestId('workout-exercise-open'));
     expect(
       view.getByRole('button', { name: 'Показати більше вправ', disabled: true }),
     ).toBeTruthy();
@@ -85,6 +89,7 @@ describe('ExercisePicker (native)', () => {
     prepareQuery({ isError: true, error: new Error('Мережева помилка') });
     const view = await render(<ExercisePicker selectedId="" onSelect={vi.fn()} />);
 
+    await fireEvent.press(view.getByTestId('workout-exercise-open'));
     expect(view.getByText('Мережева помилка')).toBeTruthy();
     expect(view.queryByText('Жим лежачи')).toBeNull();
     await fireEvent.press(view.getByRole('button', { name: 'Спробувати ще раз' }));
@@ -93,6 +98,7 @@ describe('ExercisePicker (native)', () => {
 
   it('debounces and trims API search requests', async () => {
     const view = await render(<ExercisePicker selectedId="" onSelect={vi.fn()} />);
+    await fireEvent.press(view.getByTestId('workout-exercise-open'));
     await fireEvent.changeText(view.getByTestId('workout-exercise-search'), '  жим  ');
 
     expect(vi.mocked(useExercisesQuery)).toHaveBeenLastCalledWith({ search: '' });
