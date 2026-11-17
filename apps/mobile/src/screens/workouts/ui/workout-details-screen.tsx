@@ -1,6 +1,7 @@
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { workoutStatusLabel } from '@/features/workouts/lib/workout-presentation';
+import { RestTimer } from '@/features/workouts/ui/rest-timer';
 import {
   useWorkoutDetailsQuery,
   useWorkoutTransition,
@@ -50,6 +51,7 @@ export function WorkoutDetailsScreen({ id }: { id: string }) {
               ))}
             </View>
           ))}
+          {workout.status === 'IN_PROGRESS' ? <RestTimer key={id} /> : null}
           {nextAction ? (
             <Pressable
               accessibilityRole="button"
