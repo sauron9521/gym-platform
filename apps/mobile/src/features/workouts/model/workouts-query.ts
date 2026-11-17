@@ -2,6 +2,12 @@ import { useInfiniteQuery } from '@tanstack/react-query';
 import type { paths } from '@gym/api-client';
 
 import { useAuth } from '@/features/auth/model/auth-context';
+import {
+  isSessionExpired,
+  mobileReadError,
+  MobileSessionExpiredError,
+  shouldRetryMobileRead,
+} from '@/shared/api/api-error-policy';
 import { accountQueryKeys } from '@/shared/api/query-client';
 import { nextWorkoutPage } from '../lib/workouts-pagination';
 
@@ -9,8 +15,6 @@ export type WorkoutFilter = 'PLANNED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED
 
 export type WorkoutsPage =
   paths['/workouts']['get']['responses'][200]['content']['application/json'];
-
-class SessionExpiredError extends Error {}
 
 /** Paginated results are scoped by authenticated account and selected status. */
 export function useWorkoutsQuery(status?: WorkoutFilter) {
@@ -29,18 +33,18 @@ export function useWorkoutsQuery(status?: WorkoutFilter) {
         signal,
       });
 
-      if (response.response.status === 401) {
+      if (isSessionExpired(response.response.status)) {
         await signOut();
-        throw new SessionExpiredError('Термін сесії минув. Увійдіть повторно.');
+        throw new MobileSessionExpiredError('Термін сесії минув. Увійдіть повторно.');
       }
 
       if (response.response.status !== 200 || !response.data) {
-        throw new Error('Не вдалося завантажити тренування.');
+        throw mobileReadError(response.response.status, 'Не вдалося завантажити тренування.');
       }
 
       return response.data;
     },
     getNextPageParam: (page, _pages, lastPageParam) => nextWorkoutPage(page, lastPageParam),
-    retry: (count, error) => !(error instanceof SessionExpiredError) && count < 1,
+    retry: shouldRetryMobileRead,
   });
 }
