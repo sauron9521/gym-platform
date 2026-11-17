@@ -24,6 +24,6 @@ export default defineConfig({
     url: origin,
     reuseExistingServer: false,
     timeout: 180_000,
-    env: { LANDING_SITE_URL: 'https://gym.example.test' },
+    env: { LANDING_SITE_URL: 'https://gym.example.test', LANDING_ALLOW_INDEXING: 'true' },
   },
 });
