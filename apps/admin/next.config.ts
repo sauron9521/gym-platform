@@ -1,8 +1,9 @@
 import type { NextConfig } from 'next';
+import createNextIntlPlugin from 'next-intl/plugin';
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
-  transpilePackages: ['@gym/api-client', '@gym/ui-web'],
+  transpilePackages: ['@gym/api-client', '@gym/i18n', '@gym/ui-web'],
 };
 
-export default nextConfig;
+export default createNextIntlPlugin('./src/i18n/request.ts')(nextConfig);

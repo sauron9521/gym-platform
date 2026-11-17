@@ -1,8 +1,11 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+
+import { listValidatedMigrationNames } from './migration-history.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const migrationPath = join(root, 'prisma/migrations/20261114000000_initial_baseline/migration.sql');
@@ -11,6 +14,24 @@ const marker = '-- Manual PostgreSQL constraints not represented by Prisma Schem
 const at = sql.indexOf(marker);
 assert.ok(at > 0, 'The manual constraint separator must appear once after Prisma-generated SQL');
 assert.equal(sql.indexOf(marker, at + 1), -1, 'Duplicate manual constraint separator');
+
+// Verify the frozen baseline even after incremental migrations are introduced.
+const baselineBytes = readFileSync(migrationPath);
+const manifest = JSON.parse(readFileSync(join(root, 'migration-baseline.json'), 'utf8'));
+const blobSha = createHash('sha1')
+  .update('blob ' + baselineBytes.length + '\0')
+  .update(baselineBytes)
+  .digest('hex');
+assert.equal(blobSha, manifest.current_baseline.git_blob_sha, 'Frozen baseline SQL changed');
+assert.match(sql.slice(at), /CONSTRAINT "body_measurements_at_least_one_metric"/);
+
+// The current schema can differ from the frozen baseline only when subsequent
+// timestamped migrations exist. Their actual application is tested in DB CI.
+const migrationNames = listValidatedMigrationNames(join(root, 'prisma/migrations'));
+if (migrationNames.length > 1) {
+  console.log('Frozen baseline verified; incremental migration history detected.');
+  process.exit(0);
+}
 
 const prismaGenerated = sql.slice(0, at).trimEnd() + '\n';
 const command = [

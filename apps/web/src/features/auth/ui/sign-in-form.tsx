@@ -8,6 +8,7 @@ import { useForm } from 'react-hook-form';
 
 import { webApi } from '@/shared/api/client';
 import { Button } from '@/shared/ui/button';
+import { FormFeedback } from '@/shared/ui/form-feedback';
 import { Input } from '@/shared/ui/input';
 import { classifySessionCheck, getLoginErrorMessage } from '../lib/auth-flow';
 import { loginSchema, type LoginValues } from '../lib/login-schema';
@@ -113,11 +114,7 @@ export function SignInForm() {
           </p>
         )}
       </div>
-      {error && (
-        <p role="alert" className="text-sm text-destructive">
-          {error}
-        </p>
-      )}
+      <FormFeedback message={error} />
       <Button type="submit" disabled={isSubmitting} className="w-full">
         {isSubmitting ? 'Вхід…' : 'Увійти'}
       </Button>
