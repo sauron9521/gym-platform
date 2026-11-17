@@ -38,3 +38,5 @@ export function getFlatMessages(locale: Locale): Record<string, string> {
   visit(catalogs[locale]);
   return result;
 }
+
+export { resolveRequestLocale } from './request-locale.js';
