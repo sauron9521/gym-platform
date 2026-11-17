@@ -7,9 +7,9 @@ import { Injectable } from '@nestjs/common';
 import { Mailable, Mailer } from '@nestjs/mail';
 import { UsersRepository } from '#src/modules/users/repositories/users.repository';
 
-@Injectable()
 type LocalizedVerificationLink = EmailVerificationLink & { locale?: 'uk' | 'en' };
 
+@Injectable()
 export class VerifyEmailMail implements Mailable<LocalizedVerificationLink> {
   render({ url, locale = 'uk' }: LocalizedVerificationLink) {
     return {
