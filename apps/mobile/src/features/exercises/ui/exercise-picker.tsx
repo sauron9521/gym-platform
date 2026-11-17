@@ -43,7 +43,7 @@ export function ExercisePicker({ selectedId, disabled = false, onSelect }: Props
 
   const selectedLabel =
     entries.find((exercise) => exercise.id === selectedId)?.name ??
-    (selectedId ? selectedName ?? 'Вправу обрано' : 'Обрати вправу');
+    (selectedId ? (selectedName ?? 'Вправу обрано') : 'Обрати вправу');
   const visibleEntries = isSearching || query.isError ? [] : entries;
 
   const chooseExercise = (id: string, name: string) => {
@@ -156,7 +156,7 @@ export function ExercisePicker({ selectedId, disabled = false, onSelect }: Props
                         : 'Показати більше вправ'}
                   </Text>
                 </Pressable>
-              ) : null
+              ) : undefined
             }
           />
         </View>
