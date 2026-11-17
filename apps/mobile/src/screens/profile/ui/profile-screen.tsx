@@ -36,7 +36,9 @@ export function ProfileScreen() {
         <Text style={styles.value}>{currentAccount.role}</Text>
         <Text style={styles.label}>{t('mobile.profile.emailStatus')}</Text>
         <Text style={styles.value}>
-          {currentAccount.emailVerified ? t('mobile.profile.verified') : t('mobile.profile.unverified')}
+          {currentAccount.emailVerified
+            ? t('mobile.profile.verified')
+            : t('mobile.profile.unverified')}
         </Text>
         {currentAccount.profile?.height != null ? (
           <>

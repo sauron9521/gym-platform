@@ -72,7 +72,7 @@ export default function RootLayout() {
         <LocaleProvider>
           <MobileQueryProvider>
             <AuthProvider>
-            <Navigation />
+              <Navigation />
             </AuthProvider>
           </MobileQueryProvider>
         </LocaleProvider>
