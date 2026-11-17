@@ -59,20 +59,32 @@ describe('Auth mail handlers', () => {
 
   it('renders English copies for an explicitly selected English locale', () => {
     const url = 'https://app.example.test/verify?token=opaque';
-    expect(new VerifyEmailMail().render({ url, locale: 'en' } as EmailVerificationLink & { locale: 'en' })).toMatchObject({
-      subject: 'Confirm your email address', template: 'verify-email.en',
+    expect(
+      new VerifyEmailMail().render({ url, locale: 'en' } as EmailVerificationLink & {
+        locale: 'en';
+      }),
+    ).toMatchObject({
+      subject: 'Confirm your email address',
+      template: 'verify-email.en',
     });
-    expect(new PasswordResetMail().render({ url, locale: 'en' } as PasswordResetLink & { locale: 'en' })).toMatchObject({
-      subject: 'Reset your password', template: 'password-reset.en',
+    expect(
+      new PasswordResetMail().render({ url, locale: 'en' } as PasswordResetLink & { locale: 'en' }),
+    ).toMatchObject({
+      subject: 'Reset your password',
+      template: 'password-reset.en',
     });
   });
 
   it('reads the stored English preference without trusting link parameters', async () => {
     users.getPreferredMailLocale.mockResolvedValue('en');
-    const link = { url: 'https://app.example.test/verify', email: 'member@example.test' } as EmailVerificationLink;
+    const link = {
+      url: 'https://app.example.test/verify',
+      email: 'member@example.test',
+    } as EmailVerificationLink;
     await verification.send(link);
     expect(mailer.send).toHaveBeenCalledWith(VerifyEmailMail, {
-      to: link.email, data: { ...link, locale: 'en' },
+      to: link.email,
+      data: { ...link, locale: 'en' },
     });
   });
 
