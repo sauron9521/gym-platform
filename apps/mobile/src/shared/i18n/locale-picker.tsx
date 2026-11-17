@@ -1,33 +1,51 @@
+import { useState } from 'react';
 import { useIntl } from 'react-intl';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { useAuth } from '@/features/auth/model/auth-context';
 import { palette } from '@/shared/config/theme';
 import { useLocaleSelection } from './locale-provider';
 
 export function LocalePicker() {
   const { locale, setLocale } = useLocaleSelection();
+  const { account, getApi } = useAuth();
   const intl = useIntl();
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState(false);
+
+  async function select(next: 'uk' | 'en') {
+    if (next === locale || pending) return;
+    setPending(true);
+    setError(false);
+    try {
+      if (account) {
+        const api = getApi();
+        if (!api) throw new Error('API unavailable');
+        const response = await api.PATCH('/users/me/preferences', { body: { preferredLocale: next } });
+        if (response.response.status !== 200) throw new Error('Locale preference rejected');
+      }
+      setLocale(next);
+    } catch {
+      setError(true);
+    } finally {
+      setPending(false);
+    }
+  }
   return (
-    <View
-      style={styles.row}
-      accessibilityLabel={intl.formatMessage({ id: 'mobile.profile.language' })}
-    >
-      <Pressable
-        accessibilityRole="button"
-        accessibilityState={{ selected: locale === 'uk' }}
-        onPress={() => setLocale('uk')}
-        style={styles.button}
-      >
-        <Text style={styles.label}>Українська</Text>
-      </Pressable>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityState={{ selected: locale === 'en' }}
-        onPress={() => setLocale('en')}
-        style={styles.button}
-      >
-        <Text style={styles.label}>English</Text>
-      </Pressable>
+    <View>
+      <View style={styles.row} accessibilityLabel={intl.formatMessage({ id: 'mobile.profile.language' })}>
+        <Pressable accessibilityRole="button" disabled={pending}
+          accessibilityState={{ selected: locale === 'uk', disabled: pending }}
+          onPress={() => void select('uk')} style={styles.button}>
+          <Text style={styles.label}>Українська</Text>
+        </Pressable>
+        <Pressable accessibilityRole="button" disabled={pending}
+          accessibilityState={{ selected: locale === 'en', disabled: pending }}
+          onPress={() => void select('en')} style={styles.button}>
+          <Text style={styles.label}>English</Text>
+        </Pressable>
+      </View>
+      {error ? <Text accessibilityRole="alert" style={styles.label}>{intl.formatMessage({ id: 'common.retry' })}</Text> : null}
     </View>
   );
 }
