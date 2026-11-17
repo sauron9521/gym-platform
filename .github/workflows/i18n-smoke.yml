@@ -1,0 +1,37 @@
+# Temporary branch-only checks. Deleted after verification.
+name: i18n integration smoke
+on:
+  push:
+    branches:
+      - feat/i18n-05-web
+      - feat/i18n-06-admin
+      - feat/i18n-07-mobile
+      - feat/i18n-08-landing-foundation
+permissions:
+  contents: read
+jobs:
+  app-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v6
+        with:
+          version: '12.18.0'
+          run_install: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm format:check
+      - name: Lint, typecheck and test changed app
+        run: |
+          case "$GITHUB_REF_NAME" in
+            feat/i18n-05-web) APP=web ;;
+            feat/i18n-06-admin) APP=admin ;;
+            feat/i18n-07-mobile) APP=mobile ;;
+            feat/i18n-08-landing-foundation) APP=landing ;;
+            *) exit 1 ;;
+          esac
+          pnpm --filter "@gym/$APP" lint
+          pnpm --filter "@gym/$APP" typecheck
+          pnpm --filter "@gym/$APP" test
