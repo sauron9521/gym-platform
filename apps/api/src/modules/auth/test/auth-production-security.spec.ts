@@ -25,10 +25,16 @@ describe('production authentication and transport security boundaries', () => {
     ['insecure JWT issuer', { JWT_ISSUER: 'http://api.example.test' }],
     ['JWT issuer with embedded credentials', { JWT_ISSUER: 'https://user:pass@api.example.test' }],
     ['insecure browser origin', { CORS_ORIGINS: 'http://app.example.test' }],
-    ['mixed-security browser origins', { CORS_ORIGINS: 'https://app.example.test,http://other.example.test' }],
+    [
+      'mixed-security browser origins',
+      { CORS_ORIGINS: 'https://app.example.test,http://other.example.test' },
+    ],
     ['unprotected SMTP', { SMTP_URL: 'smtp://smtp.example.test:25' }],
     ['missing outbound mail', { SMTP_URL: '', MAIL_FROM: '' }],
-    ['mail header injection', { MAIL_FROM: 'Gym Support <support@example.test>\r\nBcc: test@example.test' }],
+    [
+      'mail header injection',
+      { MAIL_FROM: 'Gym Support <support@example.test>\r\nBcc: test@example.test' },
+    ],
     ['unexpected request origin', { CORS_ORIGINS: 'https://app.example.test/path' }],
   ])('rejects %s', (_name, override) => {
     expect(envSchema.safeParse({ ...production, ...override }).success).toBe(false);
