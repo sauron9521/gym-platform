@@ -2,28 +2,18 @@ import { useRef } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'expo-router';
 import { Controller, useForm, useWatch } from 'react-hook-form';
-import {
-  ActivityIndicator,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-} from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, TextInput } from 'react-native';
 
 import {
   mobileWorkoutFormSchema,
   type MobileWorkoutForm,
 } from '@/features/workouts/lib/create-workout-schema';
-import {
-  useCreateMobileWorkout,
-  useWorkoutExerciseOptions,
-} from '@/features/workouts/model/workout-create';
+import { ExercisePicker } from '@/features/exercises/ui/exercise-picker';
+import { useCreateMobileWorkout } from '@/features/workouts/model/workout-create';
 import { palette } from '@/shared/config/theme';
 
 export function CreateWorkoutScreen() {
   const router = useRouter();
-  const exercises = useWorkoutExerciseOptions();
   const createWorkout = useCreateMobileWorkout();
   const submitLock = useRef(false);
   const {
@@ -83,37 +73,11 @@ export function CreateWorkoutScreen() {
         </Text>
       ) : null}
       <Text style={styles.label}>Вправа</Text>
-      {exercises.isPending ? <ActivityIndicator accessibilityLabel="Завантаження вправ" /> : null}
-      {exercises.isError ? (
-        <Text accessibilityRole="alert" style={styles.error}>
-          {exercises.error.message}
-        </Text>
-      ) : null}
-      {exercises.isError ? (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Повторити завантаження вправ"
-          onPress={() => void exercises.refetch()}
-          style={styles.exercise}
-        >
-          <Text style={styles.text}>Спробувати ще раз</Text>
-        </Pressable>
-      ) : null}
-      {exercises.data?.length ? (
-        <Text style={styles.muted}>Показано перші 20 доступних вправ.</Text>
-      ) : null}
-      {exercises.data?.map((exercise) => (
-        <Pressable
-          key={exercise.id}
-          accessibilityRole="button"
-          accessibilityState={{ selected: selectedExercise === exercise.id }}
-          disabled={createWorkout.isPending || isSubmitting}
-          onPress={() => setValue('exerciseId', exercise.id, { shouldValidate: true })}
-          style={[styles.exercise, selectedExercise === exercise.id && styles.selected]}
-        >
-          <Text style={styles.text}>{exercise.name}</Text>
-        </Pressable>
-      ))}
+      <ExercisePicker
+        selectedId={selectedExercise}
+        disabled={createWorkout.isPending || isSubmitting}
+        onSelect={(id) => setValue('exerciseId', id, { shouldValidate: true })}
+      />
       {errors.exerciseId ? (
         <Text accessibilityRole="alert" style={styles.error}>
           {errors.exerciseId.message}
@@ -148,7 +112,7 @@ export function CreateWorkoutScreen() {
       <Pressable
         accessibilityRole="button"
         testID="create-workout-submit"
-        disabled={createWorkout.isPending || isSubmitting || !exercises.data?.length}
+        disabled={createWorkout.isPending || isSubmitting || !selectedExercise}
         onPress={() => void submit()}
         style={styles.button}
       >
@@ -165,7 +129,6 @@ const styles = StyleSheet.create({
   content: { gap: 12, padding: 24 },
   heading: { fontSize: 25, fontWeight: '700', color: palette.text },
   label: { fontSize: 14, fontWeight: '600', color: palette.text },
-  text: { fontSize: 15, color: palette.text },
   muted: { fontSize: 14, color: palette.muted },
   input: {
     minHeight: 48,
@@ -176,8 +139,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     color: palette.text,
   },
-  exercise: { padding: 14, borderWidth: 1, borderColor: palette.border, borderRadius: 12 },
-  selected: { borderColor: palette.primary },
   error: { color: '#ff6460', fontSize: 14 },
   button: { backgroundColor: palette.primary, padding: 16, borderRadius: 12, marginTop: 8 },
   buttonText: { color: palette.surface, textAlign: 'center', fontWeight: '700' },
