@@ -51,11 +51,11 @@ export function resolveWorkoutCreationAttempt(
 
 /** Multiple exercises, each with its own planned working sets. */
 const mobilePlannedSetSchema = z.object({
-  reps: z.string().regex(/^\\d+$/, 'Вкажіть ціле число повторень.').refine(
+  reps: z.string().regex(/^\d+$/, 'Вкажіть ціле число повторень.').refine(
     (value) => Number(value) >= 1 && Number(value) <= 1000,
     'Повторення: 1–1000.',
   ),
-  weightKg: z.string().trim().regex(/^\\d*(?:[.,]\\d{1,2})?$/, 'Вага: до 2 знаків після коми.').refine(
+  weightKg: z.string().trim().regex(/^\d*(?:[.,]\d{1,2})?$/, 'Вага: до 2 знаків після коми.').refine(
     (value) => value === '' || Number(value.replace(',', '.')) <= 999999.99,
     'Вага завелика.',
   ),
