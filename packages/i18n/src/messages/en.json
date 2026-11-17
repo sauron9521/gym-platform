@@ -1,0 +1,35 @@
+{
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "loading": "Loading…",
+    "language": "Language",
+    "changeLanguage": "Change language",
+    "retry": "Try again",
+    "back": "Back",
+    "close": "Close"
+  },
+  "navigation": {
+    "features": "Features",
+    "athletes": "For athletes",
+    "trainers": "For trainers",
+    "about": "About",
+    "apps": "Apps"
+  },
+  "auth": {
+    "signIn": "Sign in",
+    "signOut": "Sign out",
+    "email": "Email",
+    "password": "Password"
+  },
+  "workouts": {
+    "title": "My workouts",
+    "create": "Create workout",
+    "active": "Active",
+    "exerciseCount": "{count, plural, one {# exercise} other {# exercises}}"
+  },
+  "errors": {
+    "unknown": "Something went wrong. Try again.",
+    "network": "Check your internet connection and try again."
+  }
+}
