@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslations } from 'next-intl';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 
@@ -39,6 +40,7 @@ const emptyProfile: ProfileDraft = {
 };
 
 export function ProfileEditor() {
+  const t = useTranslations('web.profile');
   const query = useQuery(profileQueryOptions());
   const mutation = useUpdateProfileMutation();
   const onAuthFailure = useAuthFailure();
@@ -56,7 +58,7 @@ export function ProfileEditor() {
       : query.isError
         ? query.error instanceof ProfileRequestError
           ? query.error.message
-          : 'Не вдалося завантажити профіль.'
+          : t('loadError')
         : null);
 
   const {
@@ -96,7 +98,7 @@ export function ProfileEditor() {
     if (!account || mutation.isPending) return;
     const result = buildProfilePatch(values);
     if (!result.data) {
-      setError(result.error ?? 'Некоректні дані.');
+      setError(result.error ?? t('invalid'));
       return;
     }
 
@@ -107,7 +109,7 @@ export function ProfileEditor() {
       await mutation.mutateAsync(result.data);
       const updated = await query.refetch();
       if (!updated.isSuccess) {
-        setError('Профіль збережено, але перечитати актуальні дані не вдалося.');
+        setError(t('refetchError'));
         return;
       }
       reset(toProfileDraft(updated.data));
@@ -119,8 +121,8 @@ export function ProfileEditor() {
 
   return (
     <main className="mx-auto max-w-3xl space-y-6 px-6 py-12">
-      <h1 className="text-3xl font-semibold">Мій профіль</h1>
-      {loading && <p role="status">Завантаження профілю…</p>}
+      <h1 className="text-3xl font-semibold">{t('title')}</h1>
+      {loading && <p role="status">{t('loading')}</p>}
       {unauthenticated && (
         <p role="alert">
           Сесію завершено.{' '}
@@ -154,17 +156,17 @@ export function ProfileEditor() {
           noValidate
           className="space-y-5 rounded-xl border p-6"
         >
-          <p className="text-sm text-muted-foreground">Пошта: {account.email}</p>
+          <p className="text-sm text-muted-foreground">{t('email')}: {account.email}</p>
           <div className="grid gap-4 sm:grid-cols-2">
-            {fields.map(({ key, label, type = 'text', placeholder }) => (
+            {fields.map(({ key, type = 'text', placeholder }) => (
               <div key={key} className="space-y-2">
                 <label htmlFor={key} className="block text-sm font-medium">
-                  {label}
+                  {t(key)}
                 </label>
                 <input
                   id={key}
                   type={type}
-                  placeholder={placeholder}
+                  placeholder={placeholder && key !== 'timezone' ? t(key) : placeholder}
                   step={type === 'number' ? '0.01' : undefined}
                   min={key === 'height' ? 50 : key === 'weight' ? 1 : undefined}
                   max={key === 'height' ? 300 : key === 'weight' ? 600 : undefined}
@@ -190,7 +192,7 @@ export function ProfileEditor() {
             ))}
           </div>
           <Button disabled={busy || !isDirty} type="submit">
-            {busy ? 'Зберігаємо…' : 'Зберегти зміни'}
+            {busy ? t('saving') : t('save')}
           </Button>
         </form>
       )}

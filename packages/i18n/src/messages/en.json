@@ -98,6 +98,29 @@
       "badLink": "Link not working?",
       "requestNew": "Request another",
       "network": "Cannot reach the API. Try again later."
+    },
+    "profile": {
+      "title": "My profile",
+      "firstName": "First name",
+      "lastName": "Last name",
+      "displayName": "Display name",
+      "birthday": "Date of birth",
+      "height": "Height (cm)",
+      "weight": "Weight (kg)",
+      "timezone": "Time zone",
+      "email": "Email",
+      "saving": "Saving…",
+      "save": "Save changes",
+      "loading": "Loading profile…",
+      "signedOut": "Your session has ended.",
+      "signIn": "Sign in again",
+      "saved": "Profile updated.",
+      "retry": "Try again",
+      "loadError": "Could not load profile.",
+      "invalid": "Invalid information.",
+      "refetchError": "Profile saved, but updated data could not be retrieved.",
+      "forbidden": "Access denied",
+      "sessionUnavailable": "Could not verify session. Try again later."
     }
   },
   "admin": {
