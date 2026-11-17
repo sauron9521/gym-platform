@@ -135,7 +135,7 @@ const baseEnvSchema = z.object({
       .trim()
       .refine(
         (value) => isPublicHttpUrl(value) && new URL(value).origin === value,
-        'Must be an HTTP(S) origin without a path',
+        'Must be an HTTP(S) origin without path, query or credentials',
       )
       .optional(),
   ),
@@ -208,7 +208,7 @@ export const envSchema = baseEnvSchema.superRefine((env, ctx) => {
     ctx.addIssue({
       code: 'custom',
       path: ['ADMIN_APP_URL'],
-      message: 'Production admin origin must use HTTPS',
+      message: 'Production Admin origin must use HTTPS',
     });
   }
 

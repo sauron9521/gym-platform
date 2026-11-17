@@ -23,6 +23,7 @@ describe('UsersModule controller registry', () => {
   it.each([
     [UsersController, 'me', RequestMethod.GET, 'me'],
     [UsersController, 'updateMe', RequestMethod.PATCH, 'me'],
+    [UsersController, 'updatePreferences', RequestMethod.PATCH, 'me/preferences'],
     [UsersController, 'uploadAvatar', RequestMethod.POST, 'me/avatar'],
     [UsersController, 'deleteAvatar', RequestMethod.DELETE, 'me/avatar'],
     [AvatarPublicController, 'get', RequestMethod.GET, ':key'],
@@ -44,7 +45,7 @@ describe('UsersModule controller registry', () => {
     }
   });
 
-  it('has five unique HTTP method/path pairs', () => {
+  it('has six unique HTTP method/path pairs', () => {
     const routes = controllers.flatMap((controller) => {
       const base = Reflect.getMetadata(PATH_METADATA, controller) as string;
       return Object.getOwnPropertyNames(controller.prototype)
@@ -60,7 +61,7 @@ describe('UsersModule controller registry', () => {
           return `${method}:${base}/${path}`;
         });
     });
-    expect(routes).toHaveLength(5);
+    expect(routes).toHaveLength(6);
     expect(new Set(routes).size).toBe(routes.length);
   });
 });

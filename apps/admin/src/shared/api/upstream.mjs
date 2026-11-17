@@ -1,11 +1,10 @@
 /**
- * Resolve a single server-configured NestJS API origin.
- * Untrusted browser input can never influence the rewrite destination.
+ * Fixed server-side NestJS upstream; no browser-provided input can alter the rewrite.
  * @param {string | undefined} configured
  */
 export function getAdminApiOrigin(configured) {
   if (!configured?.trim() && process.env.NODE_ENV === 'production') {
-    throw new Error('GYM_API_INTERNAL_URL is required for the production Admin');
+    throw new Error('Production Admin requires GYM_API_INTERNAL_URL');
   }
   const url = new URL(configured?.trim() || 'http://localhost:3001');
   if (

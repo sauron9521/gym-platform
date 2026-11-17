@@ -1,6 +1,7 @@
 'use client';
 
 import { createBrowserSessionClient } from '@gym/api-client';
+import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { useState, type FormEvent } from 'react';
 
@@ -8,6 +9,8 @@ const api = createBrowserSessionClient({ baseUrl: '/backend' });
 
 export default function AdminSignInPage() {
   const router = useRouter();
+  const admin = useTranslations('admin');
+  const auth = useTranslations('auth');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
@@ -20,26 +23,33 @@ export default function AdminSignInPage() {
     setError('');
 
     try {
-      const { response, data } = await api.POST('/auth/login', {
+      const signedIn = await api.POST('/auth/login', {
         body: { email: email.trim(), password },
       });
-      if (response.status !== 200 || !data || data.mfaRequired) {
-        if (data?.mfaRequired) await api.POST('/auth/sign-out').catch(() => undefined);
-        setError('Не вдалося увійти. Перевірте облікові дані та MFA.');
+
+      if (signedIn.response.status !== 200 || !signedIn.data) {
+        setError(admin('signInFailed'));
+        return;
+      }
+
+      if (signedIn.data.mfaRequired) {
+        // A pending MFA session must never grant Admin UI access.
+        await api.POST('/auth/sign-out').catch(() => undefined);
+        setError(admin('mfaRequired'));
         return;
       }
 
       const verified = await api.GET('/users/me');
       if (verified.response.status !== 200 || verified.data?.role !== 'ADMIN') {
         await api.POST('/auth/sign-out').catch(() => undefined);
-        setError('Цей обліковий запис не має адміністративного доступу.');
+        setError(admin('forbidden'));
         return;
       }
 
       router.replace('/');
       router.refresh();
     } catch {
-      setError('Не вдалося з’єднатися із сервером. Спробуйте пізніше.');
+      setError(admin('signInUnavailable'));
     } finally {
       setBusy(false);
     }
@@ -47,10 +57,10 @@ export default function AdminSignInPage() {
 
   return (
     <main className="mx-auto max-w-md space-y-6 px-6 py-16">
-      <h1 className="text-3xl font-semibold">Вхід адміністратора</h1>
+      <h1 className="text-3xl font-semibold">{admin('signInTitle')}</h1>
       <form onSubmit={handleSubmit} className="space-y-4">
         <label htmlFor="admin-email" className="block text-sm font-medium">
-          Електронна пошта
+          {auth('email')}
         </label>
         <input
           id="admin-email"
@@ -64,7 +74,7 @@ export default function AdminSignInPage() {
           className="h-11 w-full rounded-md border border-input bg-background px-3"
         />
         <label htmlFor="admin-password" className="block text-sm font-medium">
-          Пароль
+          {auth('password')}
         </label>
         <input
           id="admin-password"
@@ -86,7 +96,7 @@ export default function AdminSignInPage() {
           disabled={busy}
           className="h-11 w-full rounded-md bg-primary px-4 font-semibold text-primary-foreground disabled:opacity-50"
         >
-          {busy ? 'Перевіряємо…' : 'Увійти'}
+          {busy ? admin('signingIn') : auth('signIn')}
         </button>
       </form>
     </main>

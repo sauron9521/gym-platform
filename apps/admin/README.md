@@ -1,7 +1,30 @@
-# Gym Platform Admin — authenticated foundation
+# Gym Platform Admin — cookie-session sign-in foundation
 
-The admin panel uses the **admin-origin** `/backend` rewrite to NestJS, keeping a host-only session cookie on the admin origin. The sign-in route verifies the session against `GET /users/me` and **denies non-ADMIN users**. Pages perform fresh server-side verification; no client-side role flag grants access.
+The Next.js Admin app uses port 3003 locally. Browser requests to
+`/backend/*` are rewritten by Next.js to the server-configured NestJS API.
+The browser session cookie therefore remains host-only on the Admin origin
+rather than sharing credentials with the Web site.
 
-Set `GYM_API_INTERNAL_URL` in the Admin app; configure `ADMIN_APP_URL` in NestJS to this exact Admin origin so the API CSRF policy explicitly trusts browser writes. Production requires HTTPS. Run `pnpm dev:admin` (port 3003) and exercise login, denied non-admin, signout, expired session, CSRF and cross-domain cookie behavior on a real staging environment.
+## Local configuration
 
-**This is an authentication foundation only.** No superadmin, fine-grained permissions, moderation endpoints or durable admin audit storage are implemented by this PR. Do not deploy as an operational admin console until native admin E2E and independent security review are complete.
+1. Set `GYM_API_INTERNAL_URL=http://localhost:3001` in `apps/admin/.env.local`.
+   This is a server-only value; never use `NEXT_PUBLIC_*` for it.
+2. Set `ADMIN_APP_URL=http://localhost:3003` in the **API** environment,
+   then restart the Admin and API processes. Production requires HTTPS.
+3. Open `http://localhost:3003/sign-in` and sign in with an existing
+   administrator account. The client verifies `GET /users/me`, and the
+   Admin home page checks role and session **again on the server**.
+
+## Mandatory manual staging checks before deploying an operational console
+
+- Verify host-only, Secure, HttpOnly and SameSite cookie behavior through
+  the actual admin hostname and HTTPS reverse proxy.
+- Ensure a Web host session does not automatically authorize the Admin host.
+- Exercise correct/incorrect credentials, ATHLETE/TRAINER denial, pending MFA,
+  expired sessions, logout, and blocked CSRF from untrusted Origins.
+- Verify session and credential values are never logged or exposed to HTML.
+- Validate cookie scope, secure backend routing and browser E2E with a
+  disposable staging account. Do not deploy privileged workflows before then.
+
+**Foundation only:** no SUPERADMIN permissions, moderation CRUD, durable
+audit history or production admin release is enabled in this PR.
