@@ -10,6 +10,7 @@ import { GluestackUIProvider } from '@/shared/ui/gluestack/gluestack-ui-provider
 import { MobileQueryProvider } from '@/shared/api/query-provider';
 import { palette } from '@/shared/config/theme';
 import { OfflineBanner } from '@/shared/ui/offline-banner';
+import { MobileErrorBoundary } from '@/shared/ui/mobile-error-boundary';
 
 function Navigation() {
   const { account, restoring } = useAuth();
@@ -69,9 +70,11 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <GluestackUIProvider mode="dark">
         <MobileQueryProvider>
-          <AuthProvider>
-            <Navigation />
-          </AuthProvider>
+          <MobileErrorBoundary>
+            <AuthProvider>
+              <Navigation />
+            </AuthProvider>
+          </MobileErrorBoundary>
         </MobileQueryProvider>
       </GluestackUIProvider>
     </GestureHandlerRootView>

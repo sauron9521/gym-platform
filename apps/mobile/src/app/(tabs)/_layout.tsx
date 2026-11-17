@@ -19,7 +19,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Home',
+          title: 'Головна',
           headerTitle: 'Gym Platform',
           tabBarIcon: () => <Text accessible={false}>🏋️</Text>,
         }}
@@ -44,8 +44,8 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="profile"
         options={{
-          title: 'Profile',
-          headerTitle: 'Your Profile',
+          title: 'Профіль',
+          headerTitle: 'Мій профіль',
           tabBarIcon: () => <Text accessible={false}>👤</Text>,
         }}
       />
