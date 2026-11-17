@@ -6,7 +6,11 @@ type ApplicationDetailProps = {
   eyebrow: string;
   title: string;
   description: string;
-  highlights: readonly string[];
+  highlights: ReadonlyArray<{ title: string; description: string }>;
+  audienceLink: {
+    href: '/for-athletes' | '/for-trainers';
+    label: string;
+  };
   relatedApp: {
     href: '/apps/web' | '/apps/mobile';
     label: string;
@@ -18,6 +22,7 @@ export function ApplicationDetail({
   title,
   description,
   highlights,
+  audienceLink,
   relatedApp,
 }: ApplicationDetailProps) {
   return (
@@ -56,22 +61,27 @@ export function ApplicationDetail({
             title="Ключові можливості"
             description="Сценарії, навколо яких розвивається застосунок."
           />
-          <ul className="mt-8 grid gap-4 md:grid-cols-3">
+          <ul className="mt-8 grid gap-4 md:grid-cols-2">
             {highlights.map((feature) => (
-              <li key={feature} className="rounded-xl border border-border bg-card p-6">
-                <span aria-hidden="true" className="text-primary">
-                  ✓{' '}
-                </span>
-                {feature}
+              <li key={feature.title} className="rounded-xl border border-border bg-card p-6">
+                <h3 className="text-lg font-semibold">{feature.title}</h3>
+                <p className="mt-3 text-sm leading-6 text-muted-foreground">
+                  {feature.description}
+                </p>
               </li>
             ))}
           </ul>
+          <p className="mt-7 text-sm leading-6 text-muted-foreground">
+            Платформа активно розвивається. Перелік описує напрямки роботи, а не обіцянку
+            доступності всіх можливостей у публічному релізі.
+          </p>
         </Container>
       </MarketingSection>
       <CallToAction
         title="Ознайомся з іншим застосунком"
         description="Відкрий повну екосистему Gym Platform."
         primary={relatedApp}
+        secondary={audienceLink}
       />
     </main>
   );
