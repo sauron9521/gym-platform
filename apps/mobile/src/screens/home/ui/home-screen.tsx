@@ -40,6 +40,12 @@ export function HomeScreen() {
         >
           <ButtonText>Каталог вправ</ButtonText>
         </Button>
+        <Button
+          onPress={() => router.push('/exercises')}
+          accessibilityLabel="Відкрити каталог вправ"
+        >
+          <ButtonText>Каталог вправ</ButtonText>
+        </Button>
         <Button onPress={() => router.push('/profile')} accessibilityLabel="Відкрити профіль">
           <ButtonText>Відкрити профіль</ButtonText>
         </Button>

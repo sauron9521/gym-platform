@@ -18,7 +18,7 @@ import { useAuth } from '@/features/auth/model/auth-context';
 import { palette } from '@/shared/config/theme';
 
 export function SignInScreen() {
-  const { signIn } = useAuth();
+  const { signIn, recoveryAvailable, retryVerification } = useAuth();
   const submitLock = useRef(false);
   const {
     control,
@@ -145,6 +145,30 @@ export function SignInScreen() {
             )}
           </Pressable>
         </View>
+        {recoveryAvailable ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Повторити перевірку сесії"
+            disabled={isSubmitting}
+            style={[styles.button, isSubmitting && styles.disabled]}
+            onPress={() => {
+              if (submitLock.current) return;
+              submitLock.current = true;
+              clearErrors('root.server');
+              void retryVerification()
+                .then((result) => {
+                  if (!result.success) {
+                    setError('root.server', { type: 'server', message: result.message });
+                  }
+                })
+                .finally(() => {
+                  submitLock.current = false;
+                });
+            }}
+          >
+            <Text style={styles.buttonText}>Відновити сесію</Text>
+          </Pressable>
+        ) : null}
         <Text style={styles.note}>
           На iOS та Android сесія зберігається захищено. У браузері вхід тимчасовий.
         </Text>

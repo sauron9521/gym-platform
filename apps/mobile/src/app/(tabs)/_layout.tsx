@@ -1,9 +1,11 @@
 import { Tabs } from 'expo-router';
 import { Text } from 'react-native';
 
+import { useAuth } from '@/features/auth/model/auth-context';
 import { palette } from '@/shared/config/theme';
 
 export default function TabsLayout() {
+  const { account } = useAuth();
   return (
     <Tabs
       screenOptions={{
@@ -35,6 +37,7 @@ export default function TabsLayout() {
         options={{
           title: 'Програми',
           headerTitle: 'Мої програми',
+          href: account?.role === 'ATHLETE' ? undefined : null,
           tabBarIcon: () => <Text accessible={false}>📅</Text>,
         }}
       />
