@@ -331,3 +331,24 @@ bars and an all-zero range displays an explicit empty-volume message. Offline
 or server errors offer a manual retry; no other chart library is required.
 This is a read-only summary; exercise-level performance charts and a device
 smoke test remain follow-up work.
+
+## Native network awareness and safe offline behavior
+
+- Expo SDK 58 `expo-network@~58.0.5` reports device connectivity and
+  integrates with the TanStack Query `onlineManager` on iOS and Android.
+  Expo Web keeps its browser-native connectivity integration.
+- A small offline banner warns when connectivity is unavailable.
+  Reads pause through TanStack Query while offline and may resume on reconnect.
+- **Mutations fail fast** offline (`networkMode: 'always'` plus an online guard).
+  They are not automatically replayed after reconnect, avoiding duplicate
+  set logging and workout creation.
+- `expo-haptics@~58.0.8` gives native success feedback after saving a set;
+  haptic errors never fail the mutation or affect Web.
+- Private TanStack Query caches remain in memory only; neither tokens nor
+  unverified workout writes are persisted in browser/AsyncStorage.
+- This is a connectivity **foundation**, not a durable offline write queue.
+  Durable drafts require conflict/version handling and explicit confirmation
+  before replaying recorded workout changes.
+
+These native modules may require updating development builds; JavaScript CI
+does not verify the Android native APK or physical iOS vibration behavior.

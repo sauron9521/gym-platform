@@ -1,5 +1,5 @@
 import { useRef } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { onlineManager, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { useAuth } from '@/features/auth/model/auth-context';
 import { accountQueryKeys } from '@/shared/api/query-client';
@@ -71,6 +71,7 @@ export function useCreateWorkoutFromProgram(assignmentId: string) {
   const attempts = useRef(new Map<string, string>());
   return useMutation({
     mutationFn: async (programWorkoutId: string) => {
+      if (!onlineManager.isOnline()) throw new Error('Немає мережі. Тренування не створено.');
       const api = getApi();
       if (!api) throw new Error('Немає доступу до API.');
       if (account?.role !== 'ATHLETE') {
@@ -106,6 +107,7 @@ export function useCreateWorkoutFromProgram(assignmentId: string) {
         void queryClient.invalidateQueries({ queryKey: accountQueryKeys.workouts(account.id) });
       }
     },
+    networkMode: 'always',
     retry: false,
   });
 }
