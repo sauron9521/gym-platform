@@ -2,20 +2,31 @@ import { useMemo } from 'react';
 import { useRouter } from 'expo-router';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { uniqueAssignments } from '@/features/programs/lib/assignment-pagination';
 import { useProgramAssignments } from '@/features/programs/model/program-assignments-query';
 import { palette } from '@/shared/config/theme';
+import { AsyncResourceState } from '@/shared/ui/async-resource-state';
 
 export function ProgramsScreen() {
   const router = useRouter();
   const query = useProgramAssignments();
-  const assignments = useMemo(() => {
-    const seen = new Set<string>();
-    return (query.data?.pages ?? []).flatMap((page) => page.data).filter((assignment) => {
-      if (seen.has(assignment.id)) return false;
-      seen.add(assignment.id);
-      return true;
-    });
-  }, [query.data]);
+  const assignments = useMemo(
+    () => uniqueAssignments(query.data?.pages ?? []),
+    [query.data],
+  );
+  const initialError = query.isError && !query.data;
+  const loading = query.isPending;
+  const fetching = query.isFetching;
+  const canLoadMore = query.hasNextPage && !fetching;
+
+  const refresh = () => {
+    if (!fetching) void query.refetch();
+  };
+
+  const loadMore = () => {
+    if (canLoadMore) void query.fetchNextPage();
+  };
+
   return (
     <FlatList
       style={styles.container}
@@ -23,49 +34,84 @@ export function ProgramsScreen() {
       data={assignments}
       keyExtractor={(item) => item.id}
       refreshing={query.isRefetching && !query.isFetchingNextPage}
-      onRefresh={() => void query.refetch()}
-      onEndReached={() => {
-        if (query.hasNextPage && !query.isFetching && !query.isFetchNextPageError) {
-          void query.fetchNextPage();
-        }
-      }}
-      onEndReachedThreshold={0.4}
+      onRefresh={refresh}
       ListHeaderComponent={
         <View style={styles.header}>
           <Text style={styles.title}>Мої програми</Text>
           <Text style={styles.muted}>Активні програми, призначені тренером</Text>
-          {query.isPending ? <Text style={styles.muted}>Завантаження програм…</Text> : null}
-          {query.isError ? <Text accessibilityRole="alert" style={styles.error}>{query.error.message}</Text> : null}
+          {loading ? (
+            <AsyncResourceState kind="loading" message="Завантаження програм" />
+          ) : null}
+          {initialError ? (
+            <AsyncResourceState
+              kind="error"
+              message={query.error.message}
+              onRetry={refresh}
+              retrying={fetching}
+            />
+          ) : null}
+          {query.isRefetchError && query.data ? (
+            <AsyncResourceState
+              kind="error"
+              message="Не вдалося оновити програми. Показано попередні дані."
+              retryLabel="Повторити оновлення"
+              onRetry={refresh}
+              retrying={fetching}
+            />
+          ) : null}
         </View>
       }
-      ListEmptyComponent={!query.isPending && !query.isError ? <Text style={styles.muted}>Активних призначень немає.</Text> : null}
+      ListEmptyComponent={
+        !loading && !initialError && !query.isRefetchError && assignments.length === 0 ? (
+          <AsyncResourceState kind="empty" message="Активних призначень немає." />
+        ) : null
+      }
       renderItem={({ item }) => (
         <Pressable
           accessibilityRole="button"
+          accessibilityLabel={`Відкрити програму ${item.version.title}`}
           onPress={() => router.push({ pathname: '/programs/[id]', params: { id: item.id } })}
           style={styles.card}
         >
           <Text style={styles.heading}>{item.version.title}</Text>
-          <Text style={styles.muted}>Версія {item.version.version} · {item.status}</Text>
+          <Text style={styles.muted}>
+            Версія {item.version.version} · {item.status}
+          </Text>
         </Pressable>
       )}
       ListFooterComponent={
         <View style={styles.footer}>
-          {query.hasNextPage ? (
+          {query.isFetchNextPageError && query.hasNextPage ? (
+            <AsyncResourceState
+              kind="error"
+              message="Не вдалося завантажити наступну сторінку програм."
+              retryLabel="Повторити сторінку"
+              onRetry={loadMore}
+              retrying={fetching}
+            />
+          ) : null}
+          {query.hasNextPage && !query.isFetchNextPageError ? (
             <Pressable
+              testID="programs-load-more"
               accessibilityRole="button"
-              disabled={query.isFetching}
-              onPress={() => void query.fetchNextPage()}
+              accessibilityLabel="Показати більше програм"
+              accessibilityState={{ disabled: !canLoadMore }}
+              disabled={!canLoadMore}
+              onPress={loadMore}
               style={styles.button}
             >
-              <Text style={styles.buttonText}>{query.isFetchingNextPage ? 'Завантаження…' : 'Показати більше програм'}</Text>
+              <Text style={styles.buttonText}>
+                {query.isFetchingNextPage ? 'Завантаження…' : 'Показати більше програм'}
+              </Text>
             </Pressable>
           ) : null}
           <Pressable
             testID="programs-refresh"
             accessibilityRole="button"
-            disabled={query.isFetching}
-            onPress={() => void query.refetch()}
+            accessibilityLabel="Оновити програми"
+            accessibilityState={{ disabled: fetching }}
+            disabled={fetching}
+            onPress={refresh}
             style={styles.button}
           >
             <Text style={styles.buttonText}>Оновити програми</Text>
@@ -80,12 +126,24 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: palette.background },
   content: { padding: 24, gap: 14 },
   header: { gap: 12 },
+  footer: { gap: 10 },
   title: { fontSize: 26, color: palette.text, fontWeight: '700' },
   heading: { fontSize: 17, color: palette.text, fontWeight: '600' },
   muted: { fontSize: 14, color: palette.muted },
-  error: { fontSize: 14, color: '#ff6460' },
-  card: { backgroundColor: palette.surface, borderWidth: 1, borderColor: palette.border, borderRadius: 12, padding: 18, gap: 8 },
-  footer: { gap: 10 },
-  button: { backgroundColor: palette.primary, minHeight: 48, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
+  card: {
+    backgroundColor: palette.surface,
+    borderWidth: 1,
+    borderColor: palette.border,
+    borderRadius: 12,
+    padding: 18,
+    gap: 8,
+  },
+  button: {
+    backgroundColor: palette.primary,
+    minHeight: 48,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   buttonText: { color: palette.surface, fontWeight: '700' },
 });

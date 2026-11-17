@@ -1,8 +1,14 @@
 import { useRef } from 'react';
-import { onlineManager, useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  onlineManager,
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query';
 
 import { useAuth } from '@/features/auth/model/auth-context';
-import { nextAssignmentPage } from '../lib/assignment-pagination';
+import { nextAssignmentPage } from '@/features/programs/lib/assignment-pagination';
 import { accountQueryKeys } from '@/shared/api/query-client';
 import {
   clearProgramWorkoutAttempt,
