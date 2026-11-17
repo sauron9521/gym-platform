@@ -1,12 +1,7 @@
 import Link from 'next/link';
 
 import { pageMetadata } from '@/shared/lib/seo';
-import {
-  CallToAction,
-  Container,
-  MarketingSection,
-  SectionHeading,
-} from '@/shared/ui/marketing';
+import { CallToAction, Container, MarketingSection, SectionHeading } from '@/shared/ui/marketing';
 
 export const metadata = pageMetadata({
   title: 'Тренерам',
@@ -40,8 +35,8 @@ export default function TrainersPage() {
             Більше уваги спортсменам, менше хаосу з програмами
           </h1>
           <p className="mt-6 max-w-2xl text-lg leading-8 text-muted-foreground">
-            Gym Platform розвиває інструменти для тренерів: тренувальні програми, їхні версії
-            та керовану взаємодію зі спортсменами. Функціонал доповнюється поступово.
+            Gym Platform розвиває інструменти для тренерів: тренувальні програми, їхні версії та
+            керовану взаємодію зі спортсменами. Функціонал доповнюється поступово.
           </p>
           <Link
             href="/features"
