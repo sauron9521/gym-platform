@@ -19,18 +19,21 @@ export default async function ProtectedLayout({ children }: Readonly<{ children:
           </Link>
           <div className="flex items-center gap-4">
             <nav aria-label={t('accountNav')}>
-            <Link href="/dashboard" className="text-sm text-muted-foreground hover:underline">
-              {t('dashboard')}
-            </Link>
-            <Link href="/workouts" className="ml-5 text-sm text-muted-foreground hover:underline">
-              {t('workouts')}
-            </Link>
-            <Link href="/exercises" className="ml-5 text-sm text-muted-foreground hover:underline">
-              {t('exercises')}
-            </Link>
-            <Link href="/profile" className="ml-5 text-sm text-muted-foreground hover:underline">
-              {t('profile')}
-            </Link>
+              <Link href="/dashboard" className="text-sm text-muted-foreground hover:underline">
+                {t('dashboard')}
+              </Link>
+              <Link href="/workouts" className="ml-5 text-sm text-muted-foreground hover:underline">
+                {t('workouts')}
+              </Link>
+              <Link
+                href="/exercises"
+                className="ml-5 text-sm text-muted-foreground hover:underline"
+              >
+                {t('exercises')}
+              </Link>
+              <Link href="/profile" className="ml-5 text-sm text-muted-foreground hover:underline">
+                {t('profile')}
+              </Link>
             </nav>
             <LocaleSwitcher />
           </div>

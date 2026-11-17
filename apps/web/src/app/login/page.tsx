@@ -23,9 +23,7 @@ export default async function LoginPage() {
           <LocaleSwitcher />
         </div>
         <h1 className="mt-6 text-3xl font-semibold">{t('title')}</h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          {t('description')}
-        </p>
+        <p className="mt-2 text-sm text-muted-foreground">{t('description')}</p>
         <SignInForm />
         <p className="mt-5 text-center text-sm text-muted-foreground">
           {t('forgotPrompt')}{' '}
