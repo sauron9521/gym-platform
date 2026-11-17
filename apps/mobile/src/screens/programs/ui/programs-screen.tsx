@@ -1,8 +1,9 @@
 import { useRouter } from 'expo-router';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text } from 'react-native';
 
 import { useProgramAssignments } from '@/features/programs/model/program-assignments-query';
 import { palette } from '@/shared/config/theme';
+import { AsyncResourceState } from '@/shared/ui/async-resource-state';
 
 export function ProgramsScreen() {
   const router = useRouter();
@@ -11,14 +12,12 @@ export function ProgramsScreen() {
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <Text style={styles.title}>Мої програми</Text>
       <Text style={styles.muted}>Активні програми, призначені тренером</Text>
-      {query.isPending ? <ActivityIndicator accessibilityLabel="Завантаження програм" /> : null}
+      {query.isPending ? <AsyncResourceState kind="loading" message="Завантаження програм" /> : null}
       {query.isError ? (
-        <Text accessibilityRole="alert" style={styles.error}>
-          {query.error.message}
-        </Text>
+        <AsyncResourceState kind="error" message={query.error.message} onRetry={() => void query.refetch()} />
       ) : null}
       {!query.isPending && !query.isError && query.data?.data.length === 0 ? (
-        <Text style={styles.muted}>Активних призначень немає.</Text>
+        <AsyncResourceState kind="empty" message="Активних призначень немає." />
       ) : null}
       {query.data?.meta.totalPages && query.data.meta.totalPages > 1 ? (
         <Text style={styles.muted}>Показано перші 20 призначень.</Text>
