@@ -19,7 +19,7 @@ export default async function AdminHomePage() {
 
     return (
       <main className="mx-auto max-w-3xl space-y-3 px-6 py-16" role="alert">
-        <h1 className="text-2xl font-semibold" >{t('unavailableTitle')}</h1>
+        <h1 className="text-2xl font-semibold">{t('unavailableTitle')}</h1>
         <p className="text-muted-foreground">{messages[session.kind]}</p>
       </main>
     );
@@ -30,11 +30,9 @@ export default async function AdminHomePage() {
       <p className="text-xs font-semibold tracking-widest text-primary uppercase">
         Gym Platform Admin
       </p>
-      <h1 className="text-3xl font-bold" >{t('title')}</h1>
-      <p className="max-w-2xl text-muted-foreground" >{t('accessConfirmed')}</p>
-      <p className="max-w-2xl text-muted-foreground">
-        {t('comingSoon')}
-      </p>
+      <h1 className="text-3xl font-bold">{t('title')}</h1>
+      <p className="max-w-2xl text-muted-foreground">{t('accessConfirmed')}</p>
+      <p className="max-w-2xl text-muted-foreground">{t('comingSoon')}</p>
     </main>
   );
 }
