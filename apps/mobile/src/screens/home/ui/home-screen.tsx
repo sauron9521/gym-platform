@@ -20,22 +20,24 @@ function AthleteDashboard() {
   const summary = useWorkoutSummary('7d');
 
   // Gym API returns the first page newest-first (createdAt desc, id desc).
-  const recentWorkouts = workouts.isError ? [] : (workouts.data?.pages[0]?.data.slice(0, 3) ?? []);
+  const recentWorkouts = workouts.isError ? [] : workouts.data?.pages[0]?.data.slice(0, 3);
   const statsError = summary.isError || programs.isError;
   const statsFetching = summary.isFetching || programs.isFetching;
+  const completedCount = summary.data?.workoutCount ?? '—';
+  const activeProgramCount = programs.data?.meta.total ?? '—';
 
   return (
     <>
       <View style={styles.summary} accessibilityLabel="Підсумок активності">
         <View style={styles.stat}>
           <Text style={styles.statValue}>
-            {summary.isPending || summary.isError ? '—' : (summary.data?.workoutCount ?? '—')}
+            {summary.isPending || summary.isError ? '—' : completedCount}
           </Text>
           <Text style={styles.subtitle}>Завершено тренувань за 7 днів</Text>
         </View>
         <View style={styles.stat}>
           <Text style={styles.statValue}>
-            {programs.isPending || programs.isError ? '—' : (programs.data?.meta.total ?? '—')}
+            {programs.isPending || programs.isError ? '—' : activeProgramCount}
           </Text>
           <Text style={styles.subtitle}>Активних призначених програм</Text>
         </View>
@@ -71,7 +73,7 @@ function AthleteDashboard() {
       {!workouts.isPending && !workouts.isError && recentWorkouts.length === 0 ? (
         <AsyncResourceState kind="empty" message="Тренувань ще немає. Створіть перше!" />
       ) : null}
-      {recentWorkouts.map((workout) => (
+      {recentWorkouts?.map((workout) => (
         <Pressable
           key={workout.id}
           accessibilityRole="button"
