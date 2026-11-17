@@ -1,4 +1,4 @@
-import { fireEvent, render } from '@testing-library/react-native';
+import { act, fireEvent, render, waitFor } from '@testing-library/react-native';
 import { AppState, type AppStateStatus } from 'react-native';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
@@ -58,9 +58,13 @@ describe('RestTimer (native)', () => {
     await fireEvent.press(view.getByRole('button', { name: 'Старт' }));
     expect(change).toBeDefined();
 
-    await change?.('background');
+    await act(async () => {
+      change?.('background');
+    });
     clock.mockReturnValue(55000);
-    await change?.('active');
-    expect(view.getByText('00:45')).toBeTruthy();
+    await act(async () => {
+      change?.('active');
+    });
+    await waitFor(() => expect(view.getByText('00:45')).toBeTruthy());
   });
 });
