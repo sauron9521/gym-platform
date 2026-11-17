@@ -194,6 +194,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
       setRecoveryAvailable(false);
       let issuedRefreshToken: string | null = null;
       let verified = false;
+      let stage: 'issue' | 'persist' | 'verify' = 'issue';
       try {
         const issued = await guestApi.POST('/auth/token', {
           body: { email: email.trim(), password },
