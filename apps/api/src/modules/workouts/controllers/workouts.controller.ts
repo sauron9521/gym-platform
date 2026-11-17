@@ -113,6 +113,8 @@ export class WorkoutsController {
     return this.workoutsService.start(id, user);
   }
 
+  // Training sessions involve many legitimate writes; keep a generous per-minute limit.
+  @Throttle({ default: { limit: 120, ttl: 60_000 } })
   @Patch(':id/sets/:setId')
   @ApiOkResponse({ schema: workoutSetResponseSchema })
   updateSet(
