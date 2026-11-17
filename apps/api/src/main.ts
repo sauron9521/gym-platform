@@ -42,7 +42,11 @@ async function bootstrap() {
   app.enableCsrfProtection({
     // Nest's CSRF origin check is separate from CORS. Expo Web uses bearer
     // tokens, but its cross-origin POST /auth/token still passes this check.
-    trustedOrigins: getCsrfTrustedOrigins(config.getOrThrow('APP_URL'), corsOrigins),
+    trustedOrigins: getCsrfTrustedOrigins(
+      config.getOrThrow('APP_URL'),
+      corsOrigins,
+      config.get('ADMIN_APP_URL'),
+    ),
   });
 
   // All request DTOs now use Nest 12 Standard Schema/Zod validation.

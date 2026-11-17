@@ -58,7 +58,12 @@
     "unavailable": "Unable to check permissions. Please try again later.",
     "title": "Administration console",
     "accessConfirmed": "Access confirmed by the NestJS API.",
-    "comingSoon": "Moderation features and metrics will be available after RBAC and audit logging are implemented."
+    "comingSoon": "Moderation features and metrics will be available after RBAC and audit logging are implemented.",
+    "signInTitle": "Administrator sign in",
+    "signingIn": "Signing in…",
+    "signInFailed": "Sign-in failed. Check your credentials.",
+    "mfaRequired": "MFA verification is required. Admin sign-in is not available yet.",
+    "signInUnavailable": "Unable to verify sign-in. Try again later."
   },
   "mobile": {
     "tabs": {

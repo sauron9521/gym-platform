@@ -1,13 +1,30 @@
-# Gym Platform Admin — protected foundation
+# Gym Platform Admin — cookie-session sign-in foundation
 
-This is a **minimal and deliberately read-only** Next.js 16 administrative shell on port 3003.
-Every page request forwards only the incoming cookie to the fixed NestJS API origin
-and checks the actual `ADMIN` role. A client-side role flag is never enough.
+The Next.js Admin app uses port 3003 locally. Browser requests to
+`/backend/*` are rewritten by Next.js to the server-configured NestJS API.
+The browser session cookie therefore remains host-only on the Admin origin
+rather than sharing credentials with the Web site.
 
-Start locally with `pnpm dev:admin` and a trusted `GYM_API_INTERNAL_URL` in
-`apps/admin/.env.local`. There is **no admin-specific sign-in flow yet**;
-a separate production subdomain does not inherit the Web host-only session
-cookie. Do not deploy this scaffold as an operational admin console.
+## Local configuration
 
-Missing: admin sign-in/session domain setup, SUPERADMIN and granular permissions,
-moderation CRUD, audit-log storage, dashboard metrics, end-to-end tests.
+1. Set `GYM_API_INTERNAL_URL=http://localhost:3001` in `apps/admin/.env.local`.
+   This is a server-only value; never use `NEXT_PUBLIC_*` for it.
+2. Set `ADMIN_APP_URL=http://localhost:3003` in the **API** environment,
+   then restart the Admin and API processes. Production requires HTTPS.
+3. Open `http://localhost:3003/sign-in` and sign in with an existing
+   administrator account. The client verifies `GET /users/me`, and the
+   Admin home page checks role and session **again on the server**.
+
+## Mandatory manual staging checks before deploying an operational console
+
+- Verify host-only, Secure, HttpOnly and SameSite cookie behavior through
+  the actual admin hostname and HTTPS reverse proxy.
+- Ensure a Web host session does not automatically authorize the Admin host.
+- Exercise correct/incorrect credentials, ATHLETE/TRAINER denial, pending MFA,
+  expired sessions, logout, and blocked CSRF from untrusted Origins.
+- Verify session and credential values are never logged or exposed to HTML.
+- Validate cookie scope, secure backend routing and browser E2E with a
+  disposable staging account. Do not deploy privileged workflows before then.
+
+**Foundation only:** no SUPERADMIN permissions, moderation CRUD, durable
+audit history or production admin release is enabled in this PR.

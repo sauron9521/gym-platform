@@ -15,6 +15,24 @@ export function getWebAppOrigin(appUrl: AppEnv['APP_URL']): string {
  * Use only explicitly configured origin-only URLs (validated by env.schema).
  * This does not change the session-cookie trusted origins in AppModule.
  */
-export function getCsrfTrustedOrigins(appUrl: AppEnv['APP_URL'], corsOrigins: string[]): string[] {
-  return [...new Set([getWebAppOrigin(appUrl), ...corsOrigins])];
+export function getCsrfTrustedOrigins(
+  appUrl: AppEnv['APP_URL'],
+  corsOrigins: string[],
+  adminUrl?: AppEnv['ADMIN_APP_URL'],
+): string[] {
+  return [
+    ...new Set([
+      getWebAppOrigin(appUrl),
+      ...corsOrigins,
+      ...(adminUrl ? [new URL(adminUrl).origin] : []),
+    ]),
+  ];
+}
+
+/** Session-origin trust is intentionally narrower than the cross-origin API CSRF allowlist. */
+export function getSessionTrustedOrigins(
+  appUrl: AppEnv['APP_URL'],
+  adminUrl?: AppEnv['ADMIN_APP_URL'],
+): string[] {
+  return [...new Set([getWebAppOrigin(appUrl), ...(adminUrl ? [new URL(adminUrl).origin] : [])])];
 }
