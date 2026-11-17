@@ -35,10 +35,14 @@ describe('admin audit logging foundation', () => {
       outcome: 'denied',
     });
     expect(record.actorHash).toBe(
-      createHash('sha256').update('gym.admin.audit.v1:actor:' + actorId).digest('hex'),
+      createHash('sha256')
+        .update('gym.admin.audit.v1:actor:' + actorId)
+        .digest('hex'),
     );
     expect(record.targetHash).toBe(
-      createHash('sha256').update('gym.admin.audit.v1:target:' + targetId).digest('hex'),
+      createHash('sha256')
+        .update('gym.admin.audit.v1:target:' + targetId)
+        .digest('hex'),
     );
     expect(record).not.toHaveProperty('requestId');
     expect(JSON.stringify(record)).not.toContain(actorId);

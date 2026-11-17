@@ -24,7 +24,9 @@ export type AdminAuditOutcome = AdminAuditInput['outcome'];
 function pseudonymize(kind: 'actor' | 'target', value: string): string {
   // Domain-separated hashes prevent actor/target hashes from being identical
   // when a user occurs in both positions. UUID hashes are still linkable.
-  return createHash('sha256').update('gym.admin.audit.v1:' + kind + ':' + value).digest('hex');
+  return createHash('sha256')
+    .update('gym.admin.audit.v1:' + kind + ':' + value)
+    .digest('hex');
 }
 
 @Injectable()
