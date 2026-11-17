@@ -36,9 +36,8 @@ describe('Landing Web and Mobile feature showcases', () => {
     expect(within(region).getAllByRole('listitem')).toHaveLength(4);
     expect(within(region).getByRole('heading', { name: 'Прогрес' })).toBeTruthy();
     expect(screen.getByText(/повний офлайн-режим ще в розробці/)).toBeTruthy();
-    expect(screen.getByRole('link', { name: 'Можливості для спортсменів' }).getAttribute('href')).toBe(
-      '/for-athletes',
-    );
+    const athleteLink = screen.getByRole('link', { name: 'Можливості для спортсменів' });
+    expect(athleteLink.getAttribute('href')).toBe('/for-athletes');
     expect(screen.getByRole('link', { name: 'Про Web' }).getAttribute('href')).toBe('/apps/web');
   });
 
