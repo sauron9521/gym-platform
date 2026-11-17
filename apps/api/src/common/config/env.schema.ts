@@ -78,6 +78,8 @@ function getOrigins(value: string): string[] | null {
   return origins;
 }
 
+const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
 const baseEnvSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   DATABASE_URL: z.string().min(1).refine(isPostgresUrl, 'Must be a PostgreSQL connection URL'),
@@ -126,6 +128,17 @@ const baseEnvSchema = z.object({
     z
       .string()
       .regex(/^[A-Za-z0-9_-]{43,128}$/)
+      .optional(),
+  ),
+  SUPERADMIN_USER_IDS: z.preprocess(
+    emptyToUndefined,
+    z
+      .string()
+      .trim()
+      .refine(
+        (value) => value.split(',').every((id) => uuid.test(id.trim())),
+        'Must be a comma-separated list of UUIDs',
+      )
       .optional(),
   ),
   AVATAR_STORAGE_DIR: optionalString,

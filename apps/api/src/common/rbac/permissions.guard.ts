@@ -1,4 +1,5 @@
-import { CanActivate, ExecutionContext, ForbiddenException, Injectable } from '@nestjs/common';
+import { CanActivate, ExecutionContext, ForbiddenException, Injectable, Optional } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { Reflector } from '@nestjs/core';
 
 import type { Role } from '#prisma/client';
@@ -8,7 +9,10 @@ import { REQUIRED_ADMIN_PERMISSIONS } from './permissions.decorator.js';
 
 @Injectable()
 export class PermissionsGuard implements CanActivate {
-  constructor(private readonly reflector: Reflector) {}
+  constructor(
+    private readonly reflector: Reflector,
+    @Optional() private readonly config?: ConfigService,
+  ) {}
 
   canActivate(context: ExecutionContext): boolean {
     // Class and method requirements are cumulative: a method may never weaken
@@ -34,8 +38,22 @@ export class PermissionsGuard implements CanActivate {
     }
 
     const required = [...(controller ?? []), ...(handler ?? [])];
-    const role = context.switchToHttp().getRequest<{ user?: { role?: Role } }>().user?.role;
-    if (!role || !required.every((permission) => hasAdminPermission(role, permission))) {
+    const principal = context
+      .switchToHttp()
+      .getRequest<{ user?: { id?: string; role?: Role } }>().user;
+    // The user ID must come from the verified NestJS authentication provider.
+    const superAdminIds = new Set(
+      (this.config?.get<string>('SUPERADMIN_USER_IDS') ?? '')
+        .split(',')
+        .map((id) => id.trim())
+        .filter(Boolean),
+    );
+    if (
+      !principal?.role ||
+      !required.every((permission) =>
+        hasAdminPermission(principal.role!, permission, principal.id, superAdminIds),
+      )
+    ) {
       throw new ForbiddenException('Insufficient administrative permissions');
     }
 
