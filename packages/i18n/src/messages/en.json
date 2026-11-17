@@ -63,7 +63,13 @@
     "signingIn": "Signing in…",
     "signInFailed": "Sign-in failed. Check your credentials.",
     "mfaRequired": "MFA verification is required. Admin sign-in is not available yet.",
-    "signInUnavailable": "Unable to verify sign-in. Try again later."
+    "signInUnavailable": "Unable to verify sign-in. Try again later.",
+    "readinessTitle": "API readiness",
+    "readinessHealthy": "API ready: PostgreSQL and rate limiting respond.",
+    "readinessDegraded": "API readiness not confirmed. Check services and logs.",
+    "readinessDisclaimer": "This is a point-in-time check, not an uptime or availability guarantee.",
+    "plannedModulesTitle": "Planned modules",
+    "unavailableFeatures": "Exercise, category, and account management are not available yet."
   },
   "mobile": {
     "tabs": {
