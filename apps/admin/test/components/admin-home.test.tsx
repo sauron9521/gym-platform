@@ -9,6 +9,15 @@ const { headersMock, sessionMock } = vi.hoisted(() => ({
 vi.mock('next/headers', () => ({ headers: headersMock }));
 vi.mock('@/shared/api/admin-session', () => ({ readAdminSession: sessionMock }));
 
+// Test the server component in happy-dom without replacing production next-intl behavior.
+vi.mock('next-intl/server', async () => {
+  const { getMessages } = await import('@gym/i18n');
+  const messages = getMessages('uk').admin;
+  return {
+    getTranslations: async () => (key: keyof typeof messages) => messages[key],
+  };
+});
+
 import AdminHomePage, { dynamic } from '../../src/app/page';
 
 type AccessState = 'unauthenticated' | 'forbidden' | 'unavailable';
