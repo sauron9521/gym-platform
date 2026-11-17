@@ -8,7 +8,7 @@ on:
       - feat/i18n-07-mobile
       - feat/i18n-08-landing-foundation
 permissions:
-  contents: read
+  contents: write
 jobs:
   app-checks:
     runs-on: ubuntu-latest
@@ -22,6 +22,22 @@ jobs:
         with:
           node-version: '24'
       - run: pnpm install --frozen-lockfile
+      - name: Format updated locale files
+        run: |
+          case "$GITHUB_REF_NAME" in
+            feat/i18n-05-web) pnpm exec prettier --write "apps/web/src/app/(protected)/layout.tsx" apps/web/src/app/login/page.tsx ;;
+            feat/i18n-06-admin) pnpm exec prettier --write apps/admin/src/app/page.tsx ;;
+            feat/i18n-07-mobile) pnpm exec prettier --write apps/mobile/app.json apps/mobile/src/app/_layout.tsx apps/mobile/src/screens/profile/ui/profile-screen.tsx apps/mobile/src/shared/i18n ;;
+            feat/i18n-08-landing-foundation) pnpm exec prettier --write apps/landing/src/i18n/README.md ;;
+            *) exit 1 ;;
+          esac
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add apps/web apps/admin apps/mobile apps/landing
+          if ! git diff --cached --quiet; then
+            git commit -m 'style(i18n): format localized application files'
+            git push
+          fi
       - run: pnpm format:check
       - name: Lint, typecheck and test changed app
         run: |
