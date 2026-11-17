@@ -5,11 +5,14 @@ import { accountQueryKeys } from '@/shared/api/query-client';
 
 export type ProgressRange = '7d' | '30d' | '90d';
 
+class SessionExpiredError extends Error {}
+class AccessDeniedError extends Error {}
+
 export function useWorkoutSummary(range: ProgressRange) {
   const { account, getApi, signOut } = useAuth();
   return useQuery({
     queryKey: [...accountQueryKeys.all, account?.id ?? 'signed-out', 'workout-summary', range],
-    enabled: Boolean(account),
+    enabled: account?.role === 'ATHLETE',
     queryFn: async ({ signal }) => {
       const api = getApi();
       if (!api) throw new Error('Немає доступу до API.');
@@ -19,12 +22,17 @@ export function useWorkoutSummary(range: ProgressRange) {
       });
       if (response.response.status === 401) {
         await signOut();
-        throw new Error('Сесію завершено.');
+        throw new SessionExpiredError('Сесію завершено.');
+      }
+      if (response.response.status === 403) {
+        throw new AccessDeniedError('Аналітика доступна лише спортсменам.');
       }
       if (response.response.status !== 200 || !response.data) {
         throw new Error('Не вдалося завантажити статистику.');
       }
       return response.data;
     },
+    retry: (count, error) =>
+      !(error instanceof SessionExpiredError || error instanceof AccessDeniedError) && count < 1,
   });
 }
