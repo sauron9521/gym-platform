@@ -204,6 +204,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
         }
         issuedRefreshToken = issued.data.refreshToken;
 
+        stage = 'persist';
         if (!(await session.accept(issued.data))) {
           return { success: false, message: 'Не вдалося зберегти сесію.' };
         }
