@@ -32,10 +32,7 @@ export function releaseErrors(env = process.env) {
     issues.push('LANDING_ALLOW_INDEXING must be true only after content is approved.');
   }
 
-  const analyticsValues = [
-    env.NEXT_PUBLIC_UMAMI_WEBSITE_ID,
-    env.NEXT_PUBLIC_UMAMI_SCRIPT_URL,
-  ];
+  const analyticsValues = [env.NEXT_PUBLIC_UMAMI_WEBSITE_ID, env.NEXT_PUBLIC_UMAMI_SCRIPT_URL];
   if (analyticsValues.some(Boolean) && !analyticsValues.every(Boolean)) {
     issues.push('Either configure both analytics settings or leave both unset.');
   }
