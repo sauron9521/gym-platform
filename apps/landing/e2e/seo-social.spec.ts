@@ -1,27 +1,21 @@
 import { expect, test } from '@playwright/test';
 
-test('landing serves public social previews and an explicit indexing policy', async ({
-  page,
-  request,
-}) => {
+test('social previews and indexing work', async ({ page, request }) => {
   await page.goto('/');
 
-  await expect(page.locator('meta[property="og:image"]')).toHaveAttribute(
-    'content',
-    /\/opengraph-image/,
-  );
-  await expect(page.locator('meta[name="twitter:card"]')).toHaveAttribute(
-    'content',
-    'summary_large_image',
-  );
-  await expect(page.locator('meta[name="robots"]')).toHaveAttribute(
-    'content',
-    /index, follow/,
-  );
+  const ogImage = page.locator('meta[property="og:image"]');
+  await expect(ogImage).toHaveAttribute('content', /\/opengraph-image/);
+
+  const twitterCard = page.locator('meta[name="twitter:card"]');
+  await expect(twitterCard).toHaveAttribute('content', 'summary_large_image');
+
+  const robotsMeta = page.locator('meta[name="robots"]');
+  await expect(robotsMeta).toHaveAttribute('content', /index, follow/);
 
   const schema = page.locator('script[type="application/ld+json"]');
   await expect(schema).toHaveCount(1);
-  expect(JSON.parse((await schema.textContent()) ?? '{}')).toMatchObject({
+  const jsonLd = (await schema.textContent()) ?? '{}';
+  expect(JSON.parse(jsonLd)).toMatchObject({
     '@type': 'Organization',
     name: 'Gym Platform',
     url: 'https://gym.example.test',
