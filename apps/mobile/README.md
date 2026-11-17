@@ -315,3 +315,19 @@ remains open on any PATCH failure, and navigates back only after server success.
 The successful response immediately updates the account-scoped TanStack cache
 and the profile query is invalidated for eventual refresh. Email, role and
 security settings are intentionally not editable here.
+
+## Workout progress dashboard (athlete only)
+
+The protected `/progress` route reads the generated typed
+GET /workout-analytics/summary endpoint and displays completed training
+statistics for 7, 30 or 90 days. Each period has a separate account-scoped
+TanStack Query cache. The API is athlete-only, so non-athlete users cannot
+open this route or launch analytics requests. HTTP 401 clears the verified
+session; HTTP 403 reports insufficient permissions without logging out.
+
+The dashboard shows workout count, active days, completed sets, total strength
+volume and a lightweight daily volume chart. Zero-volume days have zero-height
+bars and an all-zero range displays an explicit empty-volume message. Offline
+or server errors offer a manual retry; no other chart library is required.
+This is a read-only summary; exercise-level performance charts and a device
+smoke test remain follow-up work.

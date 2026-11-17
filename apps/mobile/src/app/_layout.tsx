@@ -25,6 +25,10 @@ function Navigation() {
           <Stack.Screen name="workouts/[id]" options={{ headerShown: true, title: 'Тренування' }} />
         </Stack.Protected>
         <Stack.Protected guard={account?.role === 'ATHLETE'}>
+          <Stack.Screen
+            name="progress/index"
+            options={{ headerShown: true, title: 'Мій прогрес' }}
+          />
           <Stack.Screen name="programs/[id]" options={{ headerShown: true, title: 'Програма' }} />
           <Stack.Screen
             name="workouts/new"
