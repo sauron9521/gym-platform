@@ -2,22 +2,26 @@ import {
   CanActivate,
   ExecutionContext,
   ForbiddenException,
+  Inject,
   Injectable,
   Optional,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Reflector } from '@nestjs/core';
 
+import type { AppConfigService } from '#src/common/config/app-config.types';
+
 import type { Role } from '#prisma/client';
 import { hasAdminPermission } from './admin-permissions.js';
 import type { AdminPermission } from './admin-permissions.js';
 import { REQUIRED_ADMIN_PERMISSIONS } from './permissions.decorator.js';
+import { parseOperatorSuperAdminIds } from './operator-superadmin-allowlist.js';
 
 @Injectable()
 export class PermissionsGuard implements CanActivate {
   constructor(
     private readonly reflector: Reflector,
-    @Optional() private readonly config?: ConfigService,
+    @Optional() @Inject(ConfigService) private readonly config?: AppConfigService,
   ) {}
 
   canActivate(context: ExecutionContext): boolean {
@@ -44,21 +48,16 @@ export class PermissionsGuard implements CanActivate {
     }
 
     const required = [...(controller ?? []), ...(handler ?? [])];
-    const request = context.switchToHttp().getRequest<{
+    const principal = context.switchToHttp().getRequest<{
       user?: { id?: string; role?: Role };
-    }>();
-    const principal = request.user;
-    // The user ID must come from the verified NestJS authentication provider.
-    const superAdminIds = new Set(
-      (this.config?.get<string>('SUPERADMIN_USER_IDS') ?? '')
-        .split(',')
-        .map((id) => id.trim())
-        .filter(Boolean),
-    );
+    }>().user;
+
+    // Parsing a malformed or unavailable configuration never grants privileges.
+    const elevatedIds = parseOperatorSuperAdminIds(this.config?.get('SUPERADMIN_USER_IDS'));
     if (
       !principal?.role ||
       !required.every((permission) =>
-        hasAdminPermission(principal.role!, permission, principal.id, superAdminIds),
+        hasAdminPermission(principal.role!, permission, principal.id, elevatedIds),
       )
     ) {
       throw new ForbiddenException('Insufficient administrative permissions');

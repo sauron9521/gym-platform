@@ -1,6 +1,12 @@
 @import 'tailwindcss';
 @import 'uniwind';
 
+/* Do not let mobile browsers reload the entire Expo Web app on overscroll. */
+html,
+body {
+  overscroll-behavior-y: none;
+}
+
 /* Keep classes on the theme layer root: UniWind applies light/dark on web. */
 @layer theme {
   .light {

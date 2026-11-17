@@ -1,89 +1,270 @@
+import { useCallback, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+  Platform,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 
 import { useAuth } from '@/features/auth/model/auth-context';
+import { useAccountQuery } from '@/features/profile/model/account-query';
+import { useProgramAssignments } from '@/features/programs/model/program-assignments-query';
+import { useWorkoutSummary } from '@/features/progress/model/workout-summary-query';
+import { workoutStatusLabel } from '@/features/workouts/lib/workout-presentation';
+import { useWorkoutsQuery } from '@/features/workouts/model/workouts-query';
+import { accountQueryKeys } from '@/shared/api/query-client';
 import { palette } from '@/shared/config/theme';
-import { StatusTile } from '@/shared/ui/status-tile';
-import { Box } from '@/shared/ui/gluestack/box';
-import { Button, ButtonText } from '@/shared/ui/gluestack/button';
-import { Text as UiText } from '@/shared/ui/gluestack/text';
+import { AsyncResourceState } from '@/shared/ui/async-resource-state';
+
+/**
+ * Workout and progress API endpoints require an athlete role. Mount queries
+ * only inside this component to avoid unauthorized trainer/admin requests.
+ */
+function AthleteDashboard() {
+  const router = useRouter();
+  const workouts = useWorkoutsQuery();
+  const programs = useProgramAssignments();
+  const summary = useWorkoutSummary('7d');
+
+  // Gym API returns the first page newest-first (createdAt desc, id desc).
+  const recentWorkouts = workouts.isError ? [] : workouts.data?.pages[0]?.data.slice(0, 3);
+  const recentWorkoutCount = recentWorkouts?.length ?? 0;
+  const statsError = summary.isError || programs.isError;
+  const statsFetching = summary.isFetching || programs.isFetching;
+  const completedCount = summary.data?.workoutCount ?? '—';
+  const activeProgramCount = programs.data?.pages[0]?.meta.total ?? '—';
+
+  return (
+    <>
+      <View style={styles.summary} accessibilityLabel="Підсумок активності">
+        <View style={styles.stat}>
+          <Text style={styles.statValue}>
+            {summary.isPending || summary.isError ? '—' : completedCount}
+          </Text>
+          <Text style={styles.subtitle}>Завершено тренувань за 7 днів</Text>
+        </View>
+        <View style={styles.stat}>
+          <Text style={styles.statValue}>
+            {programs.isPending || programs.isError ? '—' : activeProgramCount}
+          </Text>
+          <Text style={styles.subtitle}>Активних призначених програм</Text>
+        </View>
+      </View>
+
+      {summary.isPending || programs.isPending ? (
+        <Text style={styles.subtitle}>Завантаження статистики…</Text>
+      ) : null}
+      {statsError ? (
+        <AsyncResourceState
+          kind="error"
+          message="Не вдалося завантажити частину статистики."
+          retrying={statsFetching}
+          onRetry={() => {
+            if (summary.isError) void summary.refetch();
+            if (programs.isError) void programs.refetch();
+          }}
+        />
+      ) : null}
+
+      <Text style={styles.heading}>Останні тренування</Text>
+      {workouts.isPending ? (
+        <AsyncResourceState kind="loading" message="Завантаження тренувань" />
+      ) : null}
+      {workouts.isError ? (
+        <AsyncResourceState
+          kind="error"
+          message={workouts.error.message}
+          retrying={workouts.isFetching}
+          onRetry={() => void workouts.refetch()}
+        />
+      ) : null}
+      {!workouts.isPending && !workouts.isError && recentWorkoutCount === 0 ? (
+        <AsyncResourceState kind="empty" message="Тренувань ще немає. Створіть перше!" />
+      ) : null}
+      {recentWorkouts?.map((workout) => (
+        <Pressable
+          key={workout.id}
+          accessibilityRole="button"
+          accessibilityLabel={`Відкрити тренування ${workout.title}`}
+          style={styles.action}
+          onPress={() => router.push({ pathname: '/workouts/[id]', params: { id: workout.id } })}
+        >
+          <Text style={styles.actionText}>{workout.title}</Text>
+          <Text style={styles.subtitle}>{workoutStatusLabel(workout.status)}</Text>
+        </Pressable>
+      ))}
+    </>
+  );
+}
 
 export function HomeScreen() {
   const router = useRouter();
   const { account } = useAuth();
+  const { data: accountData } = useAccountQuery();
+  const queryClient = useQueryClient();
+  const [refreshing, setRefreshing] = useState(false);
+  const isAthlete = account?.role === 'ATHLETE';
+  const profile = accountData?.profile ?? account?.profile;
+  const displayName = profile?.displayName?.trim() || profile?.firstName?.trim();
+
+  // Refresh only this screen's active queries; keep the navigation and auth session intact.
+  const onRefresh = useCallback(async () => {
+    if (!account || refreshing) return;
+    setRefreshing(true);
+    try {
+      const requests = [
+        queryClient.refetchQueries({
+          queryKey: accountQueryKeys.me(account.id),
+          exact: true,
+          type: 'active',
+        }),
+      ];
+      if (account.role === 'ATHLETE') {
+        requests.push(
+          queryClient.refetchQueries({
+            queryKey: [...accountQueryKeys.workouts(account.id), 'ALL'],
+            exact: true,
+            type: 'active',
+          }),
+          queryClient.refetchQueries({
+            queryKey: [...accountQueryKeys.all, account.id, 'program-assignments'],
+            exact: true,
+            type: 'active',
+          }),
+          queryClient.refetchQueries({
+            queryKey: [...accountQueryKeys.all, account.id, 'workout-summary', '7d'],
+            exact: true,
+            type: 'active',
+          }),
+        );
+      }
+      await Promise.allSettled(requests);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [account, queryClient, refreshing]);
 
   return (
     <ScrollView
-      contentContainerStyle={styles.content}
       style={styles.container}
-      accessibilityLabel="Gym Platform home"
+      contentContainerStyle={styles.content}
+      accessibilityLabel="Головна Gym Platform"
+      refreshControl={
+        Platform.OS === 'web' ? undefined : (
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => void onRefresh()}
+            tintColor={palette.primary}
+            colors={[palette.primary]}
+          />
+        )
+      }
     >
       <Text style={styles.eyebrow}>GYM PLATFORM</Text>
-      <Text style={styles.title}>Your training starts here.</Text>
-      <Text style={styles.description}>
-        Mobile is ready for development. Next: authentication, training plans, workouts and progress
-        tracking.
+      <Text style={styles.title}>
+        {displayName ? `Вітаємо, ${displayName}!` : 'Вітаємо у Gym Platform!'}
+      </Text>
+      <Text style={styles.subtitle}>
+        {isAthlete
+          ? 'Ваші тренування та прогрес в одному місці.'
+          : 'Відкрийте доступні розділи платформи.'}
       </Text>
 
-      <View style={styles.tiles}>
-        <StatusTile label="Mobile" detail="Expo Router navigation" status="Ready" />
-        <StatusTile label="API" detail="NestJS integration" status="Planned" />
-        <StatusTile label="Programs" detail="Workouts and exercises" status="Planned" />
-      </View>
-
-      <Box className="gap-3 rounded-xl border border-border bg-card p-4">
-        <UiText className="text-lg font-semibold text-foreground">Мобільний інтерфейс</UiText>
-        <UiText className="text-muted-foreground">
-          Базові компоненти gluestack-ui v5 готові для наступних функцій Gym Platform.
-        </UiText>
-        <Button
-          onPress={() => router.push('/exercises')}
-          accessibilityLabel="Відкрити каталог вправ"
+      <Text style={styles.heading}>Швидкі дії</Text>
+      {isAthlete ? (
+        <Pressable
+          testID="home-create-workout"
+          accessibilityRole="button"
+          accessibilityLabel="Створити тренування"
+          style={styles.primary}
+          onPress={() => router.push('/workouts/new')}
         >
-          <ButtonText>Каталог вправ</ButtonText>
-        </Button>
-        {account?.role === 'ATHLETE' ? (
-          <Button onPress={() => router.push('/progress')} accessibilityLabel="Переглянути прогрес">
-            <ButtonText>Мій прогрес</ButtonText>
-          </Button>
-        ) : null}
-        <Button onPress={() => router.push('/profile')} accessibilityLabel="Відкрити профіль">
-          <ButtonText>Відкрити профіль</ButtonText>
-        </Button>
-      </Box>
+          <Text style={styles.primaryText}>Створити тренування</Text>
+        </Pressable>
+      ) : null}
+      {isAthlete ? (
+        <Pressable
+          testID="home-all-workouts"
+          accessibilityRole="button"
+          accessibilityLabel="Мої тренування"
+          style={styles.action}
+          onPress={() => router.push('/workouts')}
+        >
+          <Text style={styles.actionText}>Мої тренування</Text>
+        </Pressable>
+      ) : null}
+      <Pressable
+        testID="home-exercises"
+        accessibilityRole="button"
+        accessibilityLabel="Каталог вправ"
+        style={styles.action}
+        onPress={() => router.push('/exercises')}
+      >
+        <Text style={styles.actionText}>Каталог вправ</Text>
+      </Pressable>
+      {isAthlete ? (
+        <Pressable
+          testID="home-progress"
+          accessibilityRole="button"
+          accessibilityLabel="Мій прогрес"
+          style={styles.action}
+          onPress={() => router.push('/progress')}
+        >
+          <Text style={styles.actionText}>Мій прогрес</Text>
+        </Pressable>
+      ) : null}
+      <Pressable
+        testID="home-profile"
+        accessibilityRole="button"
+        accessibilityLabel="Відкрити профіль"
+        style={styles.action}
+        onPress={() => router.push('/profile')}
+      >
+        <Text style={styles.actionText}>Відкрити профіль</Text>
+      </Pressable>
+
+      {isAthlete ? <AthleteDashboard /> : null}
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    backgroundColor: palette.background,
+  container: { flex: 1, backgroundColor: palette.background },
+  content: { padding: 24, gap: 14, paddingBottom: 40 },
+  eyebrow: { color: palette.primary, fontWeight: '700', letterSpacing: 2, fontSize: 12 },
+  title: { color: palette.text, fontWeight: '700', fontSize: 27 },
+  heading: { color: palette.text, fontWeight: '700', fontSize: 19, marginTop: 10 },
+  subtitle: { color: palette.muted, fontSize: 14 },
+  summary: { flexDirection: 'row', gap: 12, marginVertical: 8 },
+  stat: {
     flex: 1,
+    borderRadius: 12,
+    borderColor: palette.border,
+    borderWidth: 1,
+    padding: 14,
+    gap: 8,
   },
-  content: {
-    gap: 18,
-    paddingHorizontal: 24,
-    paddingVertical: 48,
+  statValue: { color: palette.primary, fontWeight: '700', fontSize: 26 },
+  action: {
+    borderWidth: 1,
+    borderColor: palette.border,
+    borderRadius: 12,
+    padding: 16,
+    gap: 5,
+    minHeight: 50,
   },
-  eyebrow: {
-    color: palette.primary,
-    fontSize: 12,
-    fontWeight: '700',
-    letterSpacing: 2,
+  actionText: { color: palette.text, fontWeight: '600' },
+  primary: {
+    backgroundColor: palette.primary,
+    borderRadius: 12,
+    padding: 16,
+    minHeight: 50,
+    justifyContent: 'center',
   },
-  title: {
-    color: palette.text,
-    fontSize: 34,
-    fontWeight: '700',
-    lineHeight: 40,
-  },
-  description: {
-    color: palette.muted,
-    fontSize: 16,
-    lineHeight: 24,
-  },
-  tiles: {
-    gap: 12,
-    marginTop: 24,
-  },
+  primaryText: { color: palette.background, fontWeight: '700' },
 });

@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { isTrustedProxyList } from './proxy.config.js';
+import { isValidOperatorSuperAdminIds } from '../rbac/operator-superadmin-allowlist.js';
 
 const emptyToUndefined = (value: unknown) => (value === '' ? undefined : value);
 
@@ -78,8 +79,6 @@ function getOrigins(value: string): string[] | null {
   return origins;
 }
 
-const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-
 const baseEnvSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   DATABASE_URL: z.string().min(1).refine(isPostgresUrl, 'Must be a PostgreSQL connection URL'),
@@ -130,14 +129,27 @@ const baseEnvSchema = z.object({
       .regex(/^[A-Za-z0-9_-]{43,128}$/)
       .optional(),
   ),
-  SUPERADMIN_USER_IDS: z.preprocess(
+  ADMIN_APP_URL: z.preprocess(
     emptyToUndefined,
     z
       .string()
       .trim()
       .refine(
-        (value) => value.split(',').every((id) => uuid.test(id.trim())),
-        'Must be a comma-separated list of UUIDs',
+        (value) => isPublicHttpUrl(value) && new URL(value).origin === value,
+        'Must be an HTTP(S) origin without path, query or credentials',
+      )
+      .optional(),
+  ),
+  SUPERADMIN_USER_IDS: z.preprocess(
+    emptyToUndefined,
+    z
+      .string()
+      .trim()
+      .min(1)
+      .max(1024)
+      .refine(
+        isValidOperatorSuperAdminIds,
+        'Must contain 1–20 distinct UUIDs separated by commas',
       )
       .optional(),
   ),
@@ -203,6 +215,14 @@ export const envSchema = baseEnvSchema.superRefine((env, ctx) => {
       code: 'custom',
       path: ['MAIL_FROM'],
       message: 'MAIL_FROM is required in production',
+    });
+  }
+
+  if (env.ADMIN_APP_URL && new URL(env.ADMIN_APP_URL).protocol !== 'https:') {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['ADMIN_APP_URL'],
+      message: 'Production Admin origin must use HTTPS',
     });
   }
 

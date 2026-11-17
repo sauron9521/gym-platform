@@ -23,14 +23,17 @@ const ADMIN_ALLOWED: ReadonlySet<AdminPermission> = new Set(['admin.console.read
  * Future elevated roles and granular grants require an explicit Prisma
  * migration, authorization design, and separately audited endpoints.
  */
+const NO_SUPER_ADMINS: ReadonlySet<string> = new Set();
+
 export function hasAdminPermission(
   role: Role,
   permission: AdminPermission,
   principalId?: string,
-  superAdminIds: ReadonlySet<string> = new Set(),
+  operatorSuperAdmins: ReadonlySet<string> = NO_SUPER_ADMINS,
 ): boolean {
   if (role !== 'ADMIN' || !ADMIN_PERMISSIONS.includes(permission)) return false;
   if (ADMIN_ALLOWED.has(permission)) return true;
-  // Privileges must never be granted by the client's role or by an unverified claim.
-  return typeof principalId === 'string' && superAdminIds.has(principalId);
+
+  // Role comes from the authenticated server principal, never a caller input.
+  return typeof principalId === 'string' && operatorSuperAdmins.has(principalId.toLowerCase());
 }
