@@ -314,6 +314,8 @@ jobs:
           if [ "$CI_ADMIN" = true ]; then filters+=(--filter=@gym/admin); fi
           if [ "$CI_MOBILE" = true ]; then filters+=(--filter=@gym/mobile); fi
           if [ "$CI_CLIENT" = true ]; then filters+=(--filter=@gym/api-client); fi
+          # Verify the shared locale package whenever one of its consumers is selected.
+          if [ "$CI_WEB" = true ] || [ "$CI_LANDING" = true ] || [ "$CI_ADMIN" = true ] || [ "$CI_MOBILE" = true ]; then filters+=(--filter=@gym/i18n); fi
           test "${#filters[@]}" -gt 0
           pnpm exec turbo run lint "${filters[@]}"
           pnpm exec turbo run typecheck "${filters[@]}"
