@@ -1,9 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import {
-  formatRestTime,
-  secondsRemaining,
-} from '../src/features/workouts/lib/rest-timer.ts';
+import { formatRestTime, secondsRemaining } from '../src/features/workouts/lib/rest-timer.ts';
 
 describe('rest timer deadline math', () => {
   it('formats valid values without producing negative or nonfinite text', () => {

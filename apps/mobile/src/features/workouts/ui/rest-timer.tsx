@@ -88,18 +88,15 @@ export function RestTimer() {
   };
 
   const running = timer.deadline !== null;
-  const startLabel = timer.remaining < timer.duration && timer.remaining > 0
-    ? 'Продовжити'
-    : 'Старт';
+  const canResume = timer.remaining > 0 && timer.remaining < timer.duration;
+  const startLabel = canResume ? 'Продовжити' : 'Старт';
+  const remainingText = formatRestTime(timer.remaining);
 
   return (
     <View style={styles.container} accessibilityLabel="Таймер відпочинку">
       <Text style={styles.heading}>Відпочинок між підходами</Text>
-      <Text
-        style={styles.time}
-        accessibilityLabel={`Залишилось ${formatRestTime(timer.remaining)}`}
-      >
-        {formatRestTime(timer.remaining)}
+      <Text style={styles.time} accessibilityLabel={`Залишилось ${remainingText}`}>
+        {remainingText}
       </Text>
       <View style={styles.actions}>
         {PRESETS.map((duration) => (
