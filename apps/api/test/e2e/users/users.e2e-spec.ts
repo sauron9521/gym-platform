@@ -485,6 +485,73 @@ describe('Users /me (HTTP + PostgreSQL)', () => {
     });
   });
 
+  it('persists an authenticated locale preference without modifying another account', async () => {
+    const initial = await request(app.getHttpServer())
+      .get('/users/me')
+      .set('Cookie', athleteCookie)
+      .expect(200);
+    expect(initial.body.preferredLocale).toBeNull();
+
+    const updated = await request(app.getHttpServer())
+      .patch('/users/me/preferences')
+      .set('Cookie', athleteCookie)
+      .send({ preferredLocale: 'en' })
+      .expect(200);
+    expect(updated.body).toMatchObject({ id: athleteId, preferredLocale: 'en' });
+    expect(updated.body).not.toHaveProperty('passwordHash');
+
+    const persisted = await prisma.user.findUniqueOrThrow({
+      where: { id: athleteId },
+      select: { preferredLocale: true },
+    });
+    expect(persisted.preferredLocale).toBe('en');
+
+    const other = await request(app.getHttpServer())
+      .get('/users/me')
+      .set('Cookie', otherCookie)
+      .expect(200);
+    expect(other.body).toMatchObject({ id: otherId, preferredLocale: null });
+
+    const cleared = await request(app.getHttpServer())
+      .patch('/users/me/preferences')
+      .set('Cookie', athleteCookie)
+      .send({ preferredLocale: null })
+      .expect(200);
+    expect(cleared.body.preferredLocale).toBeNull();
+
+    const after = await request(app.getHttpServer())
+      .get('/users/me')
+      .set('Cookie', athleteCookie)
+      .expect(200);
+    expect(after.body.preferredLocale).toBeNull();
+  });
+
+  it('requires authentication and rejects invalid locale preferences', async () => {
+    const unauthenticated = await request(app.getHttpServer())
+      .patch('/users/me/preferences')
+      .send({ preferredLocale: 'en' });
+    expect(unauthenticated.status).toBe(401);
+
+    for (const body of [
+      {},
+      { preferredLocale: 'en-US' },
+      { preferredLocale: 'fr' },
+      { preferredLocale: 'en', role: 'ADMIN' },
+    ]) {
+      const response = await request(app.getHttpServer())
+        .patch('/users/me/preferences')
+        .set('Cookie', athleteCookie)
+        .send(body);
+      expect(response.status).toBe(400);
+    }
+
+    const stored = await prisma.user.findUniqueOrThrow({
+      where: { id: athleteId },
+      select: { preferredLocale: true, role: true },
+    });
+    expect(stored).toEqual({ preferredLocale: null, role: 'ATHLETE' });
+  });
+
   it('rejects a soft-deleted account even with an existing session', async () => {
     await prisma.user.update({
       where: { id: otherId },

@@ -40,6 +40,22 @@ export class UsersRepository {
     });
   }
 
+  /** A null preference returns locale selection to the device/browser. */
+  async updateMyPreferences(userId: string, preferredLocale: 'uk' | 'en' | null) {
+    try {
+      return await this.prisma.user.update({
+        where: { id: userId, deletedAt: null },
+        data: { preferredLocale },
+        select: userWithProfileSelect,
+      });
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+        throw new NotFoundException('User not found');
+      }
+      throw error;
+    }
+  }
+
   async upsertMyProfile(userId: string, data: Prisma.ProfileCreateWithoutUserInput) {
     try {
       // One atomic upsert, safe when two requests create a missing profile.

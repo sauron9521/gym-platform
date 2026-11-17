@@ -1,7 +1,6 @@
-import Link from 'next/link';
-
 import { cn } from '@/shared/lib/utils';
 import { Button } from '@/shared/ui/button';
+import { TrackedLink } from '@/shared/ui/tracked-link';
 import { Container } from './container';
 import { MarketingSection } from './marketing-section';
 
@@ -40,11 +39,15 @@ export function CallToAction({
           <p className="mt-5 max-w-2xl leading-7 text-muted-foreground">{description}</p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Button asChild size="lg">
-              <Link href={primary.href}>{primary.label}</Link>
+              <TrackedLink eventName="landing_primary_cta" href={primary.href}>
+                {primary.label}
+              </TrackedLink>
             </Button>
             {secondary ? (
               <Button asChild size="lg" variant="outline">
-                <Link href={secondary.href}>{secondary.label}</Link>
+                <TrackedLink eventName="landing_secondary_cta" href={secondary.href}>
+                  {secondary.label}
+                </TrackedLink>
               </Button>
             ) : null}
           </div>

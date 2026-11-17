@@ -1,0 +1,112 @@
+{
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "loading": "Loading…",
+    "language": "Language",
+    "changeLanguage": "Change language",
+    "retry": "Try again",
+    "back": "Back",
+    "close": "Close"
+  },
+  "navigation": {
+    "features": "Features",
+    "athletes": "For athletes",
+    "trainers": "For trainers",
+    "about": "About",
+    "apps": "Apps"
+  },
+  "auth": {
+    "signIn": "Sign in",
+    "signOut": "Sign out",
+    "email": "Email",
+    "password": "Password"
+  },
+  "workouts": {
+    "title": "My workouts",
+    "create": "Create workout",
+    "active": "Active",
+    "exerciseCount": "{count, plural, one {# exercise} other {# exercises}}"
+  },
+  "errors": {
+    "unknown": "Something went wrong. Try again.",
+    "network": "Check your internet connection and try again."
+  },
+  "web": {
+    "navigation": {
+      "accountNav": "Account navigation",
+      "dashboard": "Dashboard",
+      "workouts": "Workouts",
+      "exercises": "Exercises",
+      "profile": "Profile"
+    },
+    "login": {
+      "title": "Sign in to your account",
+      "description": "Sign in using your email address and password.",
+      "forgotPrompt": "Forgot your password?",
+      "recover": "Recover access",
+      "verifyPrompt": "Need to verify your email?",
+      "resend": "Resend email",
+      "signUpPrompt": "Don't have an account yet?",
+      "signUp": "Sign up"
+    }
+  },
+  "admin": {
+    "unavailableTitle": "Admin panel unavailable",
+    "unauthenticated": "A separate administrator session is required.",
+    "forbidden": "You do not have administrator access.",
+    "unavailable": "Unable to check permissions. Please try again later.",
+    "title": "Administration console",
+    "accessConfirmed": "Access confirmed by the NestJS API.",
+    "comingSoon": "Moderation features and metrics will be available after RBAC and audit logging are implemented."
+  },
+  "mobile": {
+    "tabs": {
+      "home": "Home",
+      "workouts": "Workouts",
+      "myWorkouts": "My workouts",
+      "programs": "Programs",
+      "myPrograms": "My programs",
+      "profile": "Profile",
+      "myProfile": "My profile"
+    },
+    "profile": {
+      "myProfile": "My profile",
+      "apiData": "Data from Gym API",
+      "email": "Email address",
+      "role": "Role",
+      "emailStatus": "Email status",
+      "verified": "Verified",
+      "unverified": "Not verified",
+      "height": "Height",
+      "weight": "Weight",
+      "refresh": "Refresh profile",
+      "edit": "Edit profile",
+      "signOut": "Sign out",
+      "language": "Language",
+      "myAthletes": "My athletes"
+    },
+    "trainerAthletes": {
+      "title": "My athletes",
+      "subtitle": "Active athlete relationships",
+      "loading": "Loading…",
+      "empty": "No active athletes yet.",
+      "athlete": "Athlete",
+      "loadMore": "Load more",
+      "loadingMore": "Loading…",
+      "retryLoadMore": "Failed to load. Retry"
+    }
+  },
+  "landing": {
+    "common": {
+      "inDevelopment": "In development",
+      "learnMore": "Learn more",
+      "allApplications": "All applications"
+    },
+    "home": {
+      "headlineLead": "Train smarter.",
+      "headlineAccent": "Progress further.",
+      "description": "A platform for athletes and coaches: exercises, training programs, and progress in one ecosystem."
+    }
+  }
+}

@@ -1,11 +1,27 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
-/** Fail closed on preview/production channel crossover. No credentials required. */
+/**
+ * Static configuration gate only: does not prove EAS credentials, API targets,
+ * native identifiers, app signing or a successful native/OTA release.
+ */
 export function validateMobileReleaseChannels(eas) {
   const problems = [];
+  const development = eas?.build?.development;
   const preview = eas?.build?.preview;
   const production = eas?.build?.production;
+
+  if (eas?.cli?.appVersionSource !== 'remote') {
+    problems.push('EAS appVersionSource must be remote.');
+  }
+  if (
+    development?.developmentClient !== true ||
+    development?.distribution !== 'internal' ||
+    development?.environment !== 'development' ||
+    development?.channel !== 'development'
+  ) {
+    problems.push('Development must use an internal dev client in the development channel.');
+  }
   if (preview?.environment !== 'preview' || preview?.channel !== 'preview') {
     problems.push('Preview must use the preview environment and channel.');
   }
@@ -15,22 +31,24 @@ export function validateMobileReleaseChannels(eas) {
   if (production?.environment !== 'production' || production?.channel !== 'production') {
     problems.push('Production must use the production environment and channel.');
   }
-  if (production?.autoIncrement !== true || production?.distribution === 'internal') {
-    problems.push('Production must use increasing versions and non-internal distribution.');
+  if (production?.autoIncrement !== true || production?.distribution !== 'store') {
+    problems.push('Production requires auto-increment and store distribution.');
   }
-  if (preview?.channel === production?.channel) {
-    problems.push('Preview and production channels must differ.');
+
+  const channels = [development?.channel, preview?.channel, production?.channel];
+  if (channels.some((channel) => typeof channel !== 'string') || new Set(channels).size !== 3) {
+    problems.push('Development, preview and production channels must be distinct.');
   }
   return problems;
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const eas = JSON.parse(readFileSync(new URL('../eas.json', import.meta.url), 'utf8'));
-  const errors = validateMobileReleaseChannels(eas);
-  if (errors.length) {
-    console.error('Mobile release NO-GO:\n' + errors.join('\n'));
+  const failures = validateMobileReleaseChannels(eas);
+  if (failures.length) {
+    console.error('Mobile release channels NO-GO:\n' + failures.map((x) => '- ' + x).join('\n'));
     process.exitCode = 1;
   } else {
-    console.log('Channel separation OK (native build/device and API readiness NOT verified).');
+    console.log('Channel configuration OK. Native builds, identifiers and API readiness NOT verified.');
   }
 }
