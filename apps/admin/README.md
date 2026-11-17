@@ -1,13 +1,7 @@
-# Gym Platform Admin — protected foundation
+# Gym Platform Admin — authenticated foundation
 
-This is a **minimal and deliberately read-only** Next.js 16 administrative shell on port 3003.
-Every page request forwards only the incoming cookie to the fixed NestJS API origin
-and checks the actual `ADMIN` role. A client-side role flag is never enough.
+The admin panel uses the **admin-origin** `/backend` rewrite to NestJS, keeping a host-only session cookie on the admin origin. The sign-in route verifies the session against `GET /users/me` and **denies non-ADMIN users**. Pages perform fresh server-side verification; no client-side role flag grants access.
 
-Start locally with `pnpm dev:admin` and a trusted `GYM_API_INTERNAL_URL` in
-`apps/admin/.env.local`. There is **no admin-specific sign-in flow yet**;
-a separate production subdomain does not inherit the Web host-only session
-cookie. Do not deploy this scaffold as an operational admin console.
+Set `GYM_API_INTERNAL_URL` in the Admin app; configure `ADMIN_APP_URL` in NestJS to this exact Admin origin so the API CSRF policy explicitly trusts browser writes. Production requires HTTPS. Run `pnpm dev:admin` (port 3003) and exercise login, denied non-admin, signout, expired session, CSRF and cross-domain cookie behavior on a real staging environment.
 
-Missing: admin sign-in/session domain setup, SUPERADMIN and granular permissions,
-moderation CRUD, audit-log storage, dashboard metrics, end-to-end tests.
+**This is an authentication foundation only.** No superadmin, fine-grained permissions, moderation endpoints or durable admin audit storage are implemented by this PR. Do not deploy as an operational admin console until native admin E2E and independent security review are complete.

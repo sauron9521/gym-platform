@@ -22,7 +22,7 @@ import { PrivateApiNoStoreMiddleware } from '#src/common/http/private-api-no-sto
 import type { AppConfigService } from '#src/common/config/app-config.types';
 import { validateEnv } from '#src/common/config/env.validation';
 import { createMailOptions } from '#src/common/config/mail.config';
-import { getWebAppOrigin } from '#src/common/config/http.config';
+import { getTrustedSessionOrigins } from '#src/common/config/http.config';
 import { PrismaModule } from '#src/infra/database/index';
 import { HealthModule } from '#src/infra/health/health.module';
 import { AuthModule } from '#src/modules/auth/auth.module';
@@ -48,7 +48,10 @@ import { WorkoutAnalyticsModule } from '#src/modules/workout-analytics/workout-a
         session: {
           absoluteTtl: '7d',
           idleTtl: '1d',
-          trustedOrigins: [getWebAppOrigin(config.getOrThrow('APP_URL'))],
+          trustedOrigins: getTrustedSessionOrigins(
+            config.getOrThrow('APP_URL'),
+            config.get('ADMIN_APP_URL'),
+          ),
         },
         emailVerification: {
           url: `${config.getOrThrow('APP_URL')}/verify-email`,

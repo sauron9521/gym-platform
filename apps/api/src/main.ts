@@ -4,7 +4,7 @@ import { NestFactory } from '@nestjs/core';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from '#src/app.module';
 import type { AppConfigService } from '#src/common/config/app-config.types';
-import { getCorsOrigins, getWebAppOrigin } from '#src/common/config/http.config';
+import { getCorsOrigins, getTrustedSessionOrigins } from '#src/common/config/http.config';
 import { getTrustedProxies } from '#src/common/config/proxy.config';
 import { getLogLevels } from '#src/common/config/logger.config';
 import { enableOpenApi } from '#src/infra/openapi/openapi';
@@ -40,7 +40,10 @@ async function bootstrap() {
 
   // Browser writes from the configured web app are permitted; arbitrary origins remain blocked.
   app.enableCsrfProtection({
-    trustedOrigins: [getWebAppOrigin(config.getOrThrow('APP_URL'))],
+    trustedOrigins: getTrustedSessionOrigins(
+      config.getOrThrow('APP_URL'),
+      config.get('ADMIN_APP_URL'),
+    ),
   });
 
   // All request DTOs now use Nest 12 Standard Schema/Zod validation.
