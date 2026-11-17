@@ -44,7 +44,7 @@ function prepareAthlete() {
     refetch: refetchSummary,
   } as unknown as ReturnType<typeof useWorkoutSummary>);
   vi.mocked(useProgramAssignments).mockReturnValue({
-    data: { data: [], meta: { total: 23 } },
+    data: { pages: [{ data: [], meta: { total: 23 } }] },
     isPending: false,
     isError: false,
     isFetching: false,

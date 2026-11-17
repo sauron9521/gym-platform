@@ -10,7 +10,7 @@ test('dashboard reads real workouts, assignments and seven-day analytics', () =>
   expect(screen).toContain('useWorkoutsQuery()');
   expect(screen).toContain('useProgramAssignments()');
   expect(screen).toContain("useWorkoutSummary('7d')");
-  expect(screen).toContain('programs.data?.meta.total');
+  expect(screen).toContain('programs.data?.pages[0]?.meta.total');
   expect(screen).not.toContain('API Planned');
   expect(screen).not.toContain('Mobile is ready for development');
 });

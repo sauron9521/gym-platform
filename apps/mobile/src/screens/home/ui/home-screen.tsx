@@ -25,7 +25,7 @@ function AthleteDashboard() {
   const statsError = summary.isError || programs.isError;
   const statsFetching = summary.isFetching || programs.isFetching;
   const completedCount = summary.data?.workoutCount ?? '—';
-  const activeProgramCount = programs.data?.meta.total ?? '—';
+  const activeProgramCount = programs.data?.pages[0]?.meta.total ?? '—';
 
   return (
     <>
