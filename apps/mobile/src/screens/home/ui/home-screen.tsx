@@ -93,8 +93,7 @@ export function HomeScreen() {
   const router = useRouter();
   const { account } = useAuth();
   const isAthlete = account?.role === 'ATHLETE';
-  const displayName =
-    account?.profile?.displayName?.trim() || account?.profile?.firstName?.trim();
+  const displayName = account?.profile?.displayName?.trim() || account?.profile?.firstName?.trim();
 
   return (
     <ScrollView
