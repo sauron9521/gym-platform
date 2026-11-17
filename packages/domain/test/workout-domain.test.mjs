@@ -16,7 +16,9 @@ test('only planned and in-progress workouts have valid outgoing transitions', ()
   assert.equal(canTransitionWorkout('IN_PROGRESS', 'CANCELLED'), true);
   assert.equal(canTransitionWorkout('PLANNED', 'COMPLETED'), false);
   for (const terminal of ['COMPLETED', 'CANCELLED']) {
-    for (const target of workoutStatuses) assert.equal(canTransitionWorkout(terminal, target), false);
+    for (const target of workoutStatuses) {
+      assert.equal(canTransitionWorkout(terminal, target), false);
+    }
   }
 });
 
@@ -30,7 +32,11 @@ test('completion requires an existing completed set and no pending sets', () => 
 
 test('status progress includes skipped sets without counting them as completed', () => {
   assert.deepEqual(
-    workoutSetProgress([{ status: 'PENDING' }, { status: 'COMPLETED' }, { status: 'SKIPPED' }]),
+    workoutSetProgress([
+      { status: 'PENDING' },
+      { status: 'COMPLETED' },
+      { status: 'SKIPPED' },
+    ]),
     { completed: 1, skipped: 1, pending: 1, total: 3 },
   );
 });
