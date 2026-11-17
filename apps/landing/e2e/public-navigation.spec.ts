@@ -35,3 +35,17 @@ test('narrow viewport offers usable keyboard-accessible navigation', async ({ pa
   await expect(page).toHaveURL(/\/about$/);
   await expect(page.getByRole('main')).toBeVisible();
 });
+
+test('English browser preferences do not expose unfinished English routes or SEO alternates', async ({
+  page,
+}) => {
+  await page.setExtraHTTPHeaders({ 'accept-language': 'en-US,en;q=0.9' });
+  await page.goto('/');
+
+  await expect(page.locator('html')).toHaveAttribute('lang', 'uk');
+  await expect(page.getByRole('heading', { level: 1 })).toContainText('Тренуйся розумніше');
+  await expect(page.locator('link[rel="alternate"][hreflang]')).toHaveCount(0);
+
+  const englishRoute = await page.request.get('/en');
+  expect(englishRoute.status()).toBe(404);
+});

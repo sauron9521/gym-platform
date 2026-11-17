@@ -6,6 +6,7 @@ describe('UsersController', () => {
   const usersService = {
     findMe: vi.fn(),
     updateMe: vi.fn(),
+    updateMyPreferences: vi.fn(),
   };
   const avatarService = {
     upload: vi.fn(),
@@ -37,6 +38,13 @@ describe('UsersController', () => {
 
     await expect(controller.updateMe(actor, body)).resolves.toBe(profile);
     expect(usersService.updateMe).toHaveBeenCalledExactlyOnceWith(actor.id, body);
+  });
+
+  it('updates preferences only for the authenticated actor', async () => {
+    const body = { preferredLocale: 'uk' as const };
+    usersService.updateMyPreferences.mockResolvedValue({ id: actor.id, preferredLocale: 'uk' });
+    await controller.updatePreferences(actor, body);
+    expect(usersService.updateMyPreferences).toHaveBeenCalledExactlyOnceWith(actor.id, body);
   });
 
   it('forwards the multipart upload as-is to the avatar service', async () => {
