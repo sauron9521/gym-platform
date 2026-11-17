@@ -1,9 +1,12 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { readFileSync, readdirSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test } from 'vitest';
 import { fileURLToPath } from 'node:url';
+
+import { initialBaseline, listValidatedMigrationNames } from '../scripts/migration-history.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const manifest = JSON.parse(readFileSync(join(root, 'migration-baseline.json'), 'utf8'));
@@ -34,16 +37,8 @@ test('one Prisma-generated baseline for an empty database is frozen', () => {
     .sort();
   assert.equal(source.length, 24, 'Expected 24 archived legacy source migration hashes');
 
-  const dirs = readdirSync(join(root, 'prisma/migrations'), { withFileTypes: true })
-    .filter((entry) => entry.isDirectory())
-    .map((entry) => entry.name);
-  const ordered = [...dirs].sort((a, b) => a.localeCompare(b));
-  assert.equal(ordered[0], '20261114000000_initial_baseline');
-  assert.equal(new Set(ordered).size, ordered.length);
-  for (const name of ordered.slice(1)) {
-    assert.match(name, /^\\d{14}_[a-z0-9_]+$/);
-    assert.ok(readFileSync(join(root, 'prisma/migrations', name, 'migration.sql'), 'utf8').trim());
-  }
+  const ordered = listValidatedMigrationNames(join(root, 'prisma/migrations'));
+  assert.equal(ordered[0], initialBaseline);
 
   const buffer = readFileSync(join(root, expectedBaseline));
   assert.equal(gitBlobSha(buffer), manifest.current_baseline.git_blob_sha);
@@ -62,6 +57,52 @@ test('one Prisma-generated baseline for an empty database is frozen', () => {
   assert.equal((sql.match(/WHERE \(/g) ?? []).length, 3);
   assert.match(sql, /CONSTRAINT "body_measurements_at_least_one_metric"\s+CHECK\s*\(/);
   assert.match(sql, /ALTER TABLE "body_measurements"/);
+});
+
+function withTemporaryMigrationDirectory(check) {
+  const migrationsRoot = mkdtempSync(join(tmpdir(), 'gym-migration-history-'));
+  try {
+    mkdirSync(join(migrationsRoot, initialBaseline));
+    check(migrationsRoot);
+  } finally {
+    rmSync(migrationsRoot, { recursive: true, force: true });
+  }
+}
+
+test('a valid non-empty incremental migration is accepted after the frozen baseline', () => {
+  withTemporaryMigrationDirectory((migrationsRoot) => {
+    const name = '20261117120000_add_preferred_locale';
+    mkdirSync(join(migrationsRoot, name));
+    writeFileSync(
+      join(migrationsRoot, name, 'migration.sql'),
+      'ALTER TABLE "users" ADD COLUMN "preferredLocale" TEXT;',
+    );
+
+    assert.deepEqual(listValidatedMigrationNames(migrationsRoot), [initialBaseline, name]);
+  });
+});
+
+test.each([
+  [
+    'malformed directory name',
+    '20261117120000-add-locale',
+    'SELECT 1;',
+    /Invalid migration directory/,
+  ],
+  ['empty migration', '20261117120000_add_locale', '   ', /non-empty SQL/],
+])('incremental migration validation rejects %s', (_description, name, sql, expected) => {
+  withTemporaryMigrationDirectory((migrationsRoot) => {
+    mkdirSync(join(migrationsRoot, name));
+    writeFileSync(join(migrationsRoot, name, 'migration.sql'), sql);
+    assert.throws(() => listValidatedMigrationNames(migrationsRoot), expected);
+  });
+});
+
+test('incremental migration validation rejects missing migration.sql', () => {
+  withTemporaryMigrationDirectory((migrationsRoot) => {
+    mkdirSync(join(migrationsRoot, '20261117120000_missing_sql'));
+    assert.throws(() => listValidatedMigrationNames(migrationsRoot), /ENOENT/);
+  });
 });
 
 test('all source Prisma schema files remain intact', () => {

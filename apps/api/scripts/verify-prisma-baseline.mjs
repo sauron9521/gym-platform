@@ -1,8 +1,11 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { readFileSync, readdirSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+
+import { listValidatedMigrationNames } from './migration-history.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const migrationPath = join(root, 'prisma/migrations/20261114000000_initial_baseline/migration.sql');
@@ -12,20 +15,20 @@ const at = sql.indexOf(marker);
 assert.ok(at > 0, 'The manual constraint separator must appear once after Prisma-generated SQL');
 assert.equal(sql.indexOf(marker, at + 1), -1, 'Duplicate manual constraint separator');
 
-// Once additive migrations exist, the *current* schema must no longer be
-// identical to the initial baseline. The frozen SQL is hash-verified by the
-// migration-baseline contract test, while migration application is validated
-// separately against the integration database in CI.
-const migrationNames = readdirSync(join(root, 'prisma/migrations'), { withFileTypes: true })
-  .filter((entry) => entry.isDirectory())
-  .map((entry) => entry.name)
-  .sort();
-assert.equal(migrationNames[0], '20261114000000_initial_baseline');
+// Verify the frozen baseline even after incremental migrations are introduced.
+const baselineBytes = readFileSync(migrationPath);
+const manifest = JSON.parse(readFileSync(join(root, 'migration-baseline.json'), 'utf8'));
+const blobSha = createHash('sha1')
+  .update('blob ' + baselineBytes.length + '\0')
+  .update(baselineBytes)
+  .digest('hex');
+assert.equal(blobSha, manifest.current_baseline.git_blob_sha, 'Frozen baseline SQL changed');
+assert.match(sql.slice(at), /CONSTRAINT "body_measurements_at_least_one_metric"/);
+
+// The current schema can differ from the frozen baseline only when subsequent
+// timestamped migrations exist. Their actual application is tested in DB CI.
+const migrationNames = listValidatedMigrationNames(join(root, 'prisma/migrations'));
 if (migrationNames.length > 1) {
-  for (const name of migrationNames.slice(1)) {
-    assert.match(name, /^\\d{14}_[a-z0-9_]+$/);
-    assert.ok(readFileSync(join(root, 'prisma/migrations', name, 'migration.sql'), 'utf8').trim());
-  }
   console.log('Frozen baseline verified; incremental migration history detected.');
   process.exit(0);
 }
