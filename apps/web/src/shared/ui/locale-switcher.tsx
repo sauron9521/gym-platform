@@ -2,27 +2,58 @@
 
 import { useLocale, useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 
-/** Route-preserving locale selection. Profile synchronization is a separate PR. */
+import { webApi } from '@/shared/api/client';
+
+function rememberLocale(locale: 'uk' | 'en') {
+  document.cookie = `gym-locale=${locale}; Path=/; Max-Age=31536000; SameSite=Lax`;
+}
+
+/** Keep account preference authoritative, with guest choice stored in a cookie. */
 export function LocaleSwitcher() {
   const locale = useLocale();
   const t = useTranslations('common');
   const router = useRouter();
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState(false);
+
+  async function changeLocale(value: string) {
+    if ((value !== 'uk' && value !== 'en') || pending || value === locale) return;
+    setPending(true);
+    setError(false);
+    try {
+      const account = await webApi.GET('/users/me');
+      if (account.response.status === 200 && account.data) {
+        const result = await webApi.PATCH('/users/me/preferences', {
+          body: { preferredLocale: value },
+        });
+        if (result.response.status !== 200) throw new Error('Preference update failed');
+      } else if (account.response.status !== 401 && account.response.status !== 403) {
+        throw new Error('Cannot verify session');
+      }
+      rememberLocale(value);
+      router.refresh();
+    } catch {
+      setError(true);
+    } finally {
+      setPending(false);
+    }
+  }
 
   return (
-    <select
-      aria-label={t('language')}
-      className="rounded-md border border-border bg-background px-2 py-1 text-xs text-foreground"
-      value={locale}
-      onChange={(event) => {
-        const next = event.target.value;
-        if (next !== 'uk' && next !== 'en') return;
-        document.cookie = `gym-locale=${next}; Path=/; Max-Age=31536000; SameSite=Lax`;
-        router.refresh();
-      }}
-    >
-      <option value="uk">Українська</option>
-      <option value="en">English</option>
-    </select>
+    <span className="inline-flex flex-col gap-1">
+      <select
+        aria-label={t('language')}
+        className="rounded-md border border-border bg-background px-2 py-1 text-xs text-foreground"
+        disabled={pending}
+        value={locale}
+        onChange={(event) => void changeLocale(event.target.value)}
+      >
+        <option value="uk">Українська</option>
+        <option value="en">English</option>
+      </select>
+      {error ? <span role="alert" className="text-xs text-destructive">{t('retry')}</span> : null}
+    </span>
   );
 }

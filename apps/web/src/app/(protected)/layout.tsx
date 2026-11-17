@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { getTranslations } from 'next-intl/server';
 
 import { LocaleSwitcher } from '@/shared/ui/locale-switcher';
+import { AccountLocaleSync } from '@/shared/ui/account-locale-sync';
 
 /**
  * Shared visual shell only. Next.js may cache layouts during navigation.
@@ -39,6 +40,7 @@ export default async function ProtectedLayout({ children }: Readonly<{ children:
           </div>
         </div>
       </header>
+      <AccountLocaleSync />
       {children}
     </div>
   );
