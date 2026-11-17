@@ -78,8 +78,6 @@ describe('operator-configured Super-admin permission policy', () => {
     expect(
       hasAdminPermission('ADMIN', 'admin.invalid' as 'admin.roles.assign', first, elevated),
     ).toBe(false);
-      false,
-    );
   });
 
   it('enforces both class- and handler-level requirements for the actual principal', () => {

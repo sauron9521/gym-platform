@@ -147,10 +147,7 @@ const baseEnvSchema = z.object({
       .trim()
       .min(1)
       .max(1024)
-      .refine(
-        isValidOperatorSuperAdminIds,
-        'Must contain 1–20 distinct UUIDs separated by commas',
-      )
+      .refine(isValidOperatorSuperAdminIds, 'Expected 1–20 distinct UUIDs')
       .optional(),
   ),
   AVATAR_STORAGE_DIR: optionalString,
