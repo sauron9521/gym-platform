@@ -2,6 +2,7 @@ import Link from 'next/link';
 
 import { mainNavigation } from '@/shared/config/navigation';
 import { Button } from '@/shared/ui/button';
+import { BrandMark } from '@/shared/ui/brand-mark';
 import { MobileNavigation } from './mobile-navigation';
 
 export function SiteHeader() {
@@ -13,12 +14,7 @@ export function SiteHeader() {
           className="inline-flex items-center gap-3 text-lg font-bold tracking-tight focus-visible:rounded-md focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"
           aria-label="Gym Platform — головна сторінка"
         >
-          <span
-            aria-hidden="true"
-            className="flex size-9 items-center justify-center rounded-lg bg-primary text-xl font-black text-primary-foreground"
-          >
-            G
-          </span>
+          <BrandMark />
           <span>Gym Platform</span>
         </Link>
 
