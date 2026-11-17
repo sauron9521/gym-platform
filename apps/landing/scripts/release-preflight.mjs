@@ -1,52 +1,50 @@
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+const reservedTlds = new Set(['localhost', 'local', 'internal', 'test', 'example', 'invalid']);
+
+function isPublicHostname(hostname) {
+  const labels = hostname.toLowerCase().split('.');
+
+  return (
+    labels.length > 1 &&
+    labels.every((label) => /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/.test(label)) &&
+    !labels.every((label) => /^\d+$/.test(label)) &&
+    !reservedTlds.has(labels.at(-1))
+  );
+}
+
 /**
- * Fail-closed release configuration shape checks.
- * This cannot prove ownership of a domain, certificate health or approval.
+ * Validate configuration shape; domain ownership and launch approval are manual gates.
  */
 export function releaseErrors(env = process.env) {
   const issues = [];
-  const configured = env.LANDING_SITE_URL?.trim();
+  const siteUrl = env.LANDING_SITE_URL?.trim();
 
-  if (!configured) {
-    issues.push('LANDING_SITE_URL must be set to a verified public HTTPS origin.');
+  if (!siteUrl) {
+    issues.push('LANDING_SITE_URL must be set to a verified HTTPS origin.');
   } else {
     try {
-      const url = new URL(configured);
-      const hostname = url.hostname.toLowerCase();
-      const publicHost =
-        /^(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/.test(
-          hostname,
-        ) &&
-        !['.localhost', '.local', '.internal', '.test', '.example', '.invalid'].some(
-          (suffix) => hostname.endsWith(suffix),
-        );
+      const url = new URL(siteUrl);
       if (
         url.protocol !== 'https:' ||
+        !isPublicHostname(url.hostname) ||
         url.username ||
         url.password ||
         url.pathname !== '/' ||
         url.search ||
         url.hash ||
-        url.port ||
-        !publicHost
+        url.port
       ) {
-        issues.push(
-          'LANDING_SITE_URL must be a public HTTPS origin without credentials, port or path.',
-        );
+        issues.push('Use a public HTTPS origin without a path, port or credentials.');
       }
     } catch {
       issues.push('LANDING_SITE_URL is not a valid URL.');
     }
   }
 
-  // A public staging/preview release may intentionally remain noindex.
-  if (
-    env.LANDING_ALLOW_INDEXING !== undefined &&
-    env.LANDING_ALLOW_INDEXING !== 'true' &&
-    env.LANDING_ALLOW_INDEXING !== 'false'
-  ) {
+  const index = env.LANDING_ALLOW_INDEXING;
+  if (index !== undefined && index !== 'true' && index !== 'false') {
     issues.push('LANDING_ALLOW_INDEXING must be true, false or unset.');
   }
 
@@ -70,9 +68,7 @@ export function releaseErrors(env = process.env) {
         url.search ||
         !url.pathname.endsWith('.js')
       ) {
-        issues.push(
-          'Analytics script URL must be a trusted HTTPS .js URL without query or fragment.',
-        );
+        issues.push('Use a trusted HTTPS JavaScript URL for analytics.');
       }
     } catch {
       issues.push('Analytics script URL is invalid.');
@@ -88,8 +84,6 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
     for (const issue of issues) console.error('Release preflight: ' + issue);
     process.exitCode = 1;
   } else {
-    console.log(
-      'Landing release configuration checks passed; manual release gates still apply.',
-    );
+    console.log('Release preflight passed. Manual checks are still required.');
   }
 }
