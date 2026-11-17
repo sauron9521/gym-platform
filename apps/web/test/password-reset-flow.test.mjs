@@ -57,7 +57,7 @@ test('forgot request follows actual 202-only OpenAPI contract with generic succe
   assert.match(ui, /webApi\.POST\('\/auth\/password-reset\/forgot'/);
   assert.match(ui, /body: \{ email: email\.trim\(\) \}/);
   assert.match(ui, /response\.status !== 202/);
-  assert.match(ui, /Якщо обліковий запис із такою адресою існує/);
+  assert.ok(ui.includes("t('accepted')"), 'Generic recovery acknowledgement stays in localized UI');
   assert.doesNotMatch(
     ui,
     /response\.json\(|localStorage|sessionStorage|console\.log|document\.cookie/,
