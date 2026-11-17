@@ -1,6 +1,15 @@
 import { useMemo, useState } from 'react';
 import { useRouter } from 'expo-router';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Platform,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 
 import { ExercisePicker } from '@/features/exercises/ui/exercise-picker';
 import { strengthVolumeHeights } from '@/features/progress/lib/chart';
@@ -21,7 +30,20 @@ export function ProgressScreen() {
   const stats = query.data;
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={styles.content}
+      refreshControl={
+        Platform.OS === 'web' ? undefined : (
+          <RefreshControl
+            refreshing={query.isRefetching}
+            onRefresh={() => void query.refetch()}
+            tintColor={palette.primary}
+            colors={[palette.primary]}
+          />
+        )
+      }
+    >
       <Text style={styles.title}>Мій прогрес</Text>
       <Text style={styles.heading}>Статистика за вправою</Text>
       <ExercisePicker
