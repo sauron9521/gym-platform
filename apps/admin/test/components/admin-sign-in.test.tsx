@@ -1,5 +1,5 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const { post, get, router } = vi.hoisted(() => ({
   post: vi.fn(),
@@ -16,6 +16,8 @@ vi.mock('next-intl', () => ({
 }));
 
 import AdminSignInPage from '../../src/app/sign-in/page';
+
+afterEach(cleanup);
 
 function submit() {
   fireEvent.change(screen.getByLabelText('auth.email'), {
