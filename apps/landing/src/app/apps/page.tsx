@@ -46,7 +46,7 @@ export default function ApplicationsPage() {
           </p>
           <div className="mt-12 grid gap-5 md:grid-cols-2">
             {applications.map((app) => (
-              <div key={app.href} className="rounded-2xl border border-border bg-card p-8">
+              <article key={app.href} className="rounded-2xl border border-border bg-card p-8">
                 <p className="text-xs font-semibold tracking-wider text-primary uppercase">
                   {app.status}
                 </p>
@@ -54,11 +54,11 @@ export default function ApplicationsPage() {
                 <p className="mt-4 leading-7 text-muted-foreground">{app.description}</p>
                 <Link
                   href={app.href}
-                  className="mt-8 inline-flex font-semibold text-primary underline-offset-4 hover:underline"
+                  className="mt-8 inline-flex rounded-sm font-semibold text-primary underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"
                 >
                   {app.action}
                 </Link>
-              </div>
+              </article>
             ))}
           </div>
         </Container>
