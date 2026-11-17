@@ -17,7 +17,7 @@ const trainerBenefits = [
   },
   {
     title: 'Програми та версії',
-    detail: 'Створюй навчальні цикли та поступово змінюй програми.',
+    detail: 'Створюй тренувальні цикли та поступово змінюй програми.',
   },
   {
     title: 'Спільна історія тренувань',
@@ -40,7 +40,7 @@ export default function TrainersPage() {
           </p>
           <Link
             href="/features"
-            className="mt-8 inline-flex font-semibold text-primary underline-offset-4 hover:underline"
+            className="mt-8 inline-flex rounded-sm font-semibold text-primary underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"
           >
             Можливості платформи
           </Link>
