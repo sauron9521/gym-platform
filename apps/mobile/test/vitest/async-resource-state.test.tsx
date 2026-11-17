@@ -18,12 +18,7 @@ describe('AsyncResourceState (native)', () => {
   it('disables retry while a refetch is in flight', async () => {
     const onRetry = vi.fn();
     const view = await render(
-      <AsyncResourceState
-        kind="error"
-        message="Мережева помилка"
-        onRetry={onRetry}
-        retrying
-      />,
+      <AsyncResourceState kind="error" message="Мережева помилка" onRetry={onRetry} retrying />,
     );
     const retry = view.getByRole('button', { name: 'Спробувати ще раз' });
     expect(retry.props.disabled).toBe(true);
