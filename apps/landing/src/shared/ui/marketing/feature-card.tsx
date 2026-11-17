@@ -1,9 +1,9 @@
 import type { ReactNode } from 'react';
-import Link from 'next/link';
 
 import { Card, CardDescription, CardFooter, CardHeader, CardTitle } from '@gym/ui-web';
 
 import { cn } from '@/shared/lib/utils';
+import { TrackedLink } from '@/shared/ui/tracked-link';
 
 type FeatureCardProps = {
   title: string;
@@ -33,12 +33,13 @@ export function FeatureCard({
           <CardDescription className="pt-1 leading-7">{description}</CardDescription>
         </CardHeader>
         <CardFooter>
-          <Link
+          <TrackedLink
+            eventName="landing_feature_card"
             href={href}
             className="inline-flex items-center gap-2 text-sm font-semibold text-primary underline-offset-4 hover:underline focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"
           >
             {linkLabel} <span aria-hidden="true">→</span>
-          </Link>
+          </TrackedLink>
         </CardFooter>
       </Card>
     </article>

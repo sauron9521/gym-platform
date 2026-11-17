@@ -12,9 +12,23 @@ import {
 import { useCreateMultiMobileWorkout } from '@/features/workouts/model/workout-create';
 import { palette } from '@/shared/config/theme';
 
-function WorkoutExerciseFields({ index, onRemove }: { index: number; onRemove: () => void }) {
-  const { control, setValue, formState: { errors, isSubmitting } } = useFormContext<MobileMultiWorkoutForm>();
-  const { fields, append, remove } = useFieldArray({ control, name: `exercises.${index}.sets` as const });
+type ExerciseFieldsProps = {
+  index: number;
+  disabled: boolean;
+  canRemove: boolean;
+  onRemove: () => void;
+};
+
+function WorkoutExerciseFields({ index, disabled, canRemove, onRemove }: ExerciseFieldsProps) {
+  const {
+    control,
+    setValue,
+    formState: { errors },
+  } = useFormContext<MobileMultiWorkoutForm>();
+  const { fields, append, remove } = useFieldArray({
+    control,
+    name: `exercises.${index}.sets` as const,
+  });
   const selectedId = useWatch({ control, name: `exercises.${index}.exerciseId` as const });
   const exerciseErrors = errors.exercises?.[index];
 
@@ -22,21 +36,45 @@ function WorkoutExerciseFields({ index, onRemove }: { index: number; onRemove: (
     <View style={styles.group}>
       <View style={styles.row}>
         <Text style={styles.label}>Вправа {index + 1}</Text>
-        <Pressable accessibilityRole="button" onPress={onRemove} disabled={isSubmitting}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Видалити вправу ${index + 1}`}
+          accessibilityState={{ disabled: disabled || !canRemove }}
+          testID={`workout-exercise-remove-${index}`}
+          disabled={disabled || !canRemove}
+          onPress={onRemove}
+        >
           <Text style={styles.error}>Видалити вправу</Text>
         </Pressable>
       </View>
       <ExercisePicker
         selectedId={selectedId}
-        disabled={isSubmitting}
-        onSelect={(id) => setValue(`exercises.${index}.exerciseId`, id, { shouldValidate: true })}
+        disabled={disabled}
+        onSelect={(id) =>
+          setValue(`exercises.${index}.exerciseId`, id, {
+            shouldValidate: true,
+            shouldDirty: true,
+          })
+        }
       />
-      {exerciseErrors?.exerciseId?.message ? <Text style={styles.error}>{exerciseErrors.exerciseId.message}</Text> : null}
+      {exerciseErrors?.exerciseId?.message ? (
+        <Text accessibilityRole="alert" style={styles.error}>
+          {exerciseErrors.exerciseId.message}
+        </Text>
+      ) : null}
+
       {fields.map((field, setIndex) => (
         <View key={field.id} style={styles.set}>
           <View style={styles.row}>
             <Text style={styles.label}>Підхід {setIndex + 1}</Text>
-            <Pressable accessibilityRole="button" disabled={fields.length <= 1 || isSubmitting} onPress={() => remove(setIndex)}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Прибрати підхід ${setIndex + 1} вправи ${index + 1}`}
+              accessibilityState={{ disabled: disabled || fields.length <= 1 }}
+              testID={`workout-set-remove-${index}-${setIndex}`}
+              disabled={disabled || fields.length <= 1}
+              onPress={() => remove(setIndex)}
+            >
               <Text style={styles.error}>Прибрати</Text>
             </Pressable>
           </View>
@@ -51,11 +89,15 @@ function WorkoutExerciseFields({ index, onRemove }: { index: number; onRemove: (
                 onChangeText={input.onChange}
                 onBlur={input.onBlur}
                 style={styles.input}
-                editable={!isSubmitting}
+                editable={!disabled}
               />
             )}
           />
-          {exerciseErrors?.sets?.[setIndex]?.reps?.message ? <Text style={styles.error}>{exerciseErrors.sets[setIndex]?.reps?.message}</Text> : null}
+          {exerciseErrors?.sets?.[setIndex]?.reps?.message ? (
+            <Text accessibilityRole="alert" style={styles.error}>
+              {exerciseErrors.sets[setIndex]?.reps?.message}
+            </Text>
+          ) : null}
           <Controller
             control={control}
             name={`exercises.${index}.sets.${setIndex}.weightKg` as const}
@@ -69,14 +111,27 @@ function WorkoutExerciseFields({ index, onRemove }: { index: number; onRemove: (
                 onChangeText={input.onChange}
                 onBlur={input.onBlur}
                 style={styles.input}
-                editable={!isSubmitting}
+                editable={!disabled}
               />
             )}
           />
-          {exerciseErrors?.sets?.[setIndex]?.weightKg?.message ? <Text style={styles.error}>{exerciseErrors.sets[setIndex]?.weightKg?.message}</Text> : null}
+          {exerciseErrors?.sets?.[setIndex]?.weightKg?.message ? (
+            <Text accessibilityRole="alert" style={styles.error}>
+              {exerciseErrors.sets[setIndex]?.weightKg?.message}
+            </Text>
+          ) : null}
         </View>
       ))}
-      <Pressable accessibilityRole="button" disabled={isSubmitting || fields.length >= 100} onPress={() => append({ reps: '10', weightKg: '' })} style={styles.secondary}>
+
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`Додати підхід до вправи ${index + 1}`}
+        accessibilityState={{ disabled: disabled || fields.length >= 100 }}
+        testID={`workout-set-add-${index}`}
+        disabled={disabled || fields.length >= 100}
+        onPress={() => append({ reps: '10', weightKg: '' })}
+        style={styles.secondary}
+      >
         <Text style={styles.text}>+ Додати підхід</Text>
       </Pressable>
     </View>
@@ -89,19 +144,28 @@ export function CreateWorkoutScreen() {
   const submitLock = useRef(false);
   const form = useForm<MobileMultiWorkoutForm>({
     resolver: zodResolver(mobileMultiWorkoutFormSchema),
-    defaultValues: { title: '', exercises: [{ exerciseId: '', sets: [{ reps: '10', weightKg: '' }] }] },
+    defaultValues: {
+      title: '',
+      exercises: [{ exerciseId: '', sets: [{ reps: '10', weightKg: '' }] }],
+    },
   });
-  const { control, handleSubmit, formState: { errors, isSubmitting } } = form;
+  const {
+    control,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = form;
   const { fields, append, remove } = useFieldArray({ control, name: 'exercises' });
+  const disabled = isSubmitting || createWorkout.isPending;
 
   const onValidSubmit = async (values: MobileMultiWorkoutForm) => {
+    // React state may not update between repeated presses.
     if (submitLock.current) return;
     submitLock.current = true;
     try {
       await createWorkout.mutateAsync(values);
       router.back();
     } catch {
-      // Keep the draft available for correction and an idempotent manual retry.
+      // Preserve form values for correction or an idempotent manual retry.
     } finally {
       submitLock.current = false;
     }
@@ -124,36 +188,58 @@ export function CreateWorkoutScreen() {
               value={field.value}
               onChangeText={field.onChange}
               onBlur={field.onBlur}
-              editable={!createWorkout.isPending}
+              editable={!disabled}
             />
           )}
         />
-        {errors.title?.message ? <Text style={styles.error}>{errors.title.message}</Text> : null}
+        {errors.title?.message ? (
+          <Text accessibilityRole="alert" style={styles.error}>
+            {errors.title.message}
+          </Text>
+        ) : null}
+
         {fields.map((field, index) => (
           <WorkoutExerciseFields
             key={field.id}
             index={index}
+            disabled={disabled}
+            canRemove={fields.length > 1}
             onRemove={() => remove(index)}
           />
         ))}
-        {errors.exercises?.root?.message ? <Text style={styles.error}>{errors.exercises.root.message}</Text> : null}
+        {errors.exercises?.root?.message ? (
+          <Text accessibilityRole="alert" style={styles.error}>
+            {errors.exercises.root.message}
+          </Text>
+        ) : null}
         <Pressable
           accessibilityRole="button"
-          disabled={isSubmitting || fields.length >= 50}
+          accessibilityLabel="Додати вправу"
+          accessibilityState={{ disabled: disabled || fields.length >= 50 }}
+          testID="workout-exercise-add"
+          disabled={disabled || fields.length >= 50}
           onPress={() => append({ exerciseId: '', sets: [{ reps: '10', weightKg: '' }] })}
           style={styles.secondary}
         >
           <Text style={styles.text}>+ Додати вправу</Text>
         </Pressable>
-        {createWorkout.isError ? <Text accessibilityRole="alert" style={styles.error}>{createWorkout.error.message}</Text> : null}
+
+        {createWorkout.isError ? (
+          <Text accessibilityRole="alert" style={styles.error}>
+            {createWorkout.error.message}
+          </Text>
+        ) : null}
         <Pressable
           accessibilityRole="button"
           testID="create-workout-submit"
-          disabled={createWorkout.isPending || isSubmitting}
+          accessibilityState={{ disabled }}
+          disabled={disabled}
           onPress={() => void handleSubmit(onValidSubmit)()}
           style={styles.button}
         >
-          <Text style={styles.buttonText}>{createWorkout.isPending ? 'Створюємо…' : 'Створити тренування'}</Text>
+          <Text style={styles.buttonText}>
+            {createWorkout.isPending ? 'Створюємо…' : 'Створити тренування'}
+          </Text>
         </Pressable>
       </ScrollView>
     </FormProvider>
@@ -167,11 +253,31 @@ const styles = StyleSheet.create({
   label: { fontSize: 14, fontWeight: '600', color: palette.text },
   text: { color: palette.text, fontWeight: '600' },
   error: { color: '#ff6460', fontSize: 14 },
-  input: { minHeight: 48, borderRadius: 12, backgroundColor: palette.surface, borderColor: palette.border, borderWidth: 1, paddingHorizontal: 14, color: palette.text },
+  input: {
+    minHeight: 48,
+    borderRadius: 12,
+    backgroundColor: palette.surface,
+    borderColor: palette.border,
+    borderWidth: 1,
+    paddingHorizontal: 14,
+    color: palette.text,
+  },
   group: { gap: 12, padding: 14, borderColor: palette.border, borderWidth: 1, borderRadius: 12 },
   set: { gap: 8, padding: 12, borderRadius: 10, backgroundColor: palette.surface },
   row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8 },
-  secondary: { padding: 14, borderRadius: 12, borderColor: palette.border, borderWidth: 1, minHeight: 44 },
-  button: { backgroundColor: palette.primary, padding: 16, borderRadius: 12, marginTop: 8, minHeight: 48 },
+  secondary: {
+    padding: 14,
+    borderRadius: 12,
+    borderColor: palette.border,
+    borderWidth: 1,
+    minHeight: 44,
+  },
+  button: {
+    backgroundColor: palette.primary,
+    padding: 16,
+    borderRadius: 12,
+    marginTop: 8,
+    minHeight: 48,
+  },
   buttonText: { color: palette.surface, textAlign: 'center', fontWeight: '700' },
 });
