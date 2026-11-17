@@ -15,54 +15,55 @@ const form = {
 };
 
 describe('offline workout draft safety contract', () => {
-  it('creates a valid versioned draft and loads it only for its owner', () => {
+  it('creates a versioned draft that is readable only by its owner', () => {
     const draft = createOfflineWorkoutDraft(owner, form, 123);
-    const json = JSON.stringify(draft);
+    const serialized = JSON.stringify(draft);
+
     expect(draft.schemaVersion).toBe(1);
     expect(draft.state).toBe('REQUIRES_REVIEW');
-    expect(parseOwnedWorkoutDraft(json, owner)).toEqual(draft);
-    expect(parseOwnedWorkoutDraft(json, other)).toBeNull();
-    expect(parseOwnedWorkoutDraft(json, '')).toBeNull();
+    expect(parseOwnedWorkoutDraft(serialized, owner)).toEqual(draft);
+    expect(parseOwnedWorkoutDraft(serialized, other)).toBeNull();
+    expect(parseOwnedWorkoutDraft(serialized, '')).toBeNull();
   });
 
-  it('rejects corrupt, unsupported-version, malformed or oversized stored data', () => {
+  it('rejects corrupt, unsupported-version and oversized stored data', () => {
     const draft = createOfflineWorkoutDraft(owner, form, 123);
+    const unsupported = JSON.stringify({ ...draft, schemaVersion: 2 });
+    const badTimestamp = JSON.stringify({ ...draft, savedAt: -1 });
+    const badState = JSON.stringify({ ...draft, state: 'READY' });
+    const extraField = JSON.stringify({ ...draft, token: 'secret' });
+
     expect(parseOwnedWorkoutDraft('{corrupt', owner)).toBeNull();
-    expect(
-      parseOwnedWorkoutDraft(JSON.stringify({ ...draft, schemaVersion: 2 }), owner),
-    ).toBeNull();
-    expect(parseOwnedWorkoutDraft(JSON.stringify({ ...draft, savedAt: -1 }), owner)).toBeNull();
-    expect(parseOwnedWorkoutDraft(JSON.stringify({ ...draft, state: 'READY' }), owner)).toBeNull();
-    expect(parseOwnedWorkoutDraft(JSON.stringify({ ...draft, token: 'secret' }), owner)).toBeNull();
+    expect(parseOwnedWorkoutDraft(unsupported, owner)).toBeNull();
+    expect(parseOwnedWorkoutDraft(badTimestamp, owner)).toBeNull();
+    expect(parseOwnedWorkoutDraft(badState, owner)).toBeNull();
+    expect(parseOwnedWorkoutDraft(extraField, owner)).toBeNull();
     expect(parseOwnedWorkoutDraft(' '.repeat(1_000_001), owner)).toBeNull();
   });
 
   it('validates nested exercise and set limits before storing or restoring', () => {
     const draft = createOfflineWorkoutDraft(owner, form, 123);
-    expect(
-      parseOwnedWorkoutDraft(
-        JSON.stringify({ ...draft, form: { ...form, exercises: [] } }),
-        owner,
-      ),
-    ).toBeNull();
-    expect(
-      parseOwnedWorkoutDraft(
-        JSON.stringify({
-          ...draft,
-          form: {
-            ...form,
-            exercises: [{ exerciseId: exercise, sets: [{ reps: '0', weightKg: '' }] }],
-          },
-        }),
-        owner,
-      ),
-    ).toBeNull();
+    const emptyExercises = {
+      ...draft,
+      form: { ...form, exercises: [] },
+    };
+    const invalidReps = {
+      ...draft,
+      form: {
+        ...form,
+        exercises: [{ exerciseId: exercise, sets: [{ reps: '0', weightKg: '' }] }],
+      },
+    };
+
+    expect(parseOwnedWorkoutDraft(JSON.stringify(emptyExercises), owner)).toBeNull();
+    expect(parseOwnedWorkoutDraft(JSON.stringify(invalidReps), owner)).toBeNull();
     expect(() => createOfflineWorkoutDraft('not-a-uuid', form, 123)).toThrow();
     expect(() => createOfflineWorkoutDraft(owner, form, -1)).toThrow();
   });
 
-  it('never permits unreviewed, offline, signed-out or cross-account replay', () => {
+  it('requires the correct account, connectivity and explicit review', () => {
     const draft = createOfflineWorkoutDraft(owner, form, 123);
+
     expect(canSendReviewedDraft(draft, owner, false, true)).toBe(false);
     expect(canSendReviewedDraft(draft, owner, true, false)).toBe(false);
     expect(canSendReviewedDraft(draft, other, true, true)).toBe(false);
@@ -73,6 +74,7 @@ describe('offline workout draft safety contract', () => {
   it('rejects a corrupted draft passed directly to the eligibility predicate', () => {
     const draft = createOfflineWorkoutDraft(owner, form, 123);
     const corrupted = { ...draft, state: 'READY' };
+
     expect(canSendReviewedDraft(corrupted, owner, true, true)).toBe(false);
   });
 });
