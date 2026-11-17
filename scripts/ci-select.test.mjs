@@ -125,11 +125,11 @@ test('known shared packages select consumers and avoid unrelated API E2E', () =>
   }
 });
 
-test('shared locale changes select all UI consumers without unrelated API E2E', () => {
+test('shared locale changes select API mail and all UI consumers', () => {
   const source = classifyChangedPaths(['packages/i18n/src/messages/en.json']);
   assert.deepEqual(source, {
     full: false,
-    api: false,
+    api: true,
     web: true,
     landing: true,
     admin: true,
@@ -142,7 +142,7 @@ test('shared locale changes select all UI consumers without unrelated API E2E', 
   const manifest = classifyChangedPaths(['packages/i18n/package.json']);
   assert.equal(manifest.full, false);
   assert.equal(manifest.deps, true);
-  assert.equal(manifest.api, false);
+  assert.equal(manifest.api, true);
 });
 
 test('shared package manifests require dependency vulnerability audits', () => {
