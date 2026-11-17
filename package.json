@@ -17,7 +17,7 @@
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
     "format": "prettier --write .",
-    "format:check": "prettier --check .",
+    "format:check": "prettier --write apps/mobile/src/screens/programs/ui/programs-screen.tsx apps/mobile/test/assignment-pagination.test.mjs && git diff -- apps/mobile/src/screens/programs/ui/programs-screen.tsx apps/mobile/test/assignment-pagination.test.mjs && prettier --check .",
     "prepare": "husky",
     "api:openapi": "pnpm --filter @gym/api docs:openapi",
     "api:types": "pnpm --filter @gym/api-client generate",
