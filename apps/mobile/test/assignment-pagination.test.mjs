@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
-import { nextAssignmentPage, uniqueAssignments } from '../src/features/programs/lib/assignment-pagination.ts';
+import {
+  nextAssignmentPage,
+  uniqueAssignments,
+} from '../src/features/programs/lib/assignment-pagination.ts';
 
 describe('assigned program pagination', () => {
   it('never exceeds the server-reported number of pages', () => {

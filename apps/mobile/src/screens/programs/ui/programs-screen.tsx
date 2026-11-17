@@ -7,10 +7,15 @@ import { useProgramAssignments } from '@/features/programs/model/program-assignm
 import { palette } from '@/shared/config/theme';
 import { AsyncResourceState } from '@/shared/ui/async-resource-state';
 
+function EmptyAssignedPrograms() {
+  return <AsyncResourceState kind="empty" message="Активних призначень немає." />;
+}
+
 export function ProgramsScreen() {
   const router = useRouter();
   const query = useProgramAssignments();
-  const assignments = useMemo(() => uniqueAssignments(query.data?.pages ?? []), [query.data]);
+  const pages = query.data?.pages;
+  const assignments = useMemo(() => uniqueAssignments(pages ?? []), [pages]);
   const initialError = query.isError && !query.data;
   const loading = query.isPending;
   const fetching = query.isFetching;
@@ -43,7 +48,7 @@ export function ProgramsScreen() {
           {initialError ? (
             <AsyncResourceState
               kind="error"
-              message={query.error.message}
+              message={query.error?.message ?? 'Не вдалося завантажити програми.'}
               onRetry={refresh}
               retrying={fetching}
             />
@@ -59,9 +64,7 @@ export function ProgramsScreen() {
           ) : null}
         </View>
       }
-      ListEmptyComponent={
-        showEmpty ? <AsyncResourceState kind="empty" message="Активних призначень немає." /> : null
-      }
+      ListEmptyComponent={showEmpty ? EmptyAssignedPrograms : null}
       renderItem={({ item }) => (
         <Pressable
           accessibilityRole="button"
