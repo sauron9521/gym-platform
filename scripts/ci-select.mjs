@@ -138,7 +138,9 @@ export function classifyChangedPaths(paths, { forceFull = false } = {}) {
     }
 
     if (path.startsWith('packages/i18n/')) {
-      // Shared translation catalogs are consumed by the Web, Landing, Admin and Mobile apps.
+      // Locale catalogs are also used by the API transactional email flows.
+      // Conservatively include API until catalogs are split into independent namespaces.
+      selected.api = true;
       selected.web = true;
       selected.landing = true;
       selected.admin = true;
