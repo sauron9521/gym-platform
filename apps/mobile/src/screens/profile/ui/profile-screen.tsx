@@ -1,12 +1,16 @@
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useIntl } from 'react-intl';
 
 import { useAuth } from '@/features/auth/model/auth-context';
 import { useAccountQuery } from '@/features/profile/model/account-query';
 import { palette } from '@/shared/config/theme';
+import { LocalePicker } from '@/shared/i18n/locale-picker';
 
 export function ProfileScreen() {
   const router = useRouter();
+  const intl = useIntl();
+  const t = (id: string) => intl.formatMessage({ id });
   const { account, signOut } = useAuth();
   const { data, isFetching, isError, error, refetch } = useAccountQuery();
 
@@ -18,30 +22,31 @@ export function ProfileScreen() {
     [currentAccount.profile?.firstName, currentAccount.profile?.lastName]
       .filter(Boolean)
       .join(' ') ||
-    'Мій профіль';
+    t('mobile.profile.myProfile');
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <Text style={styles.heading}>{name}</Text>
-      <Text style={styles.subheading}>Дані з Gym API</Text>
+      <Text style={styles.subheading}>{t('mobile.profile.apiData')}</Text>
+      <LocalePicker />
       <View style={styles.card}>
-        <Text style={styles.label}>Електронна пошта</Text>
+        <Text style={styles.label}>{t('mobile.profile.email')}</Text>
         <Text style={styles.value}>{currentAccount.email}</Text>
-        <Text style={styles.label}>Роль</Text>
+        <Text style={styles.label}>{t('mobile.profile.role')}</Text>
         <Text style={styles.value}>{currentAccount.role}</Text>
-        <Text style={styles.label}>Пошта</Text>
+        <Text style={styles.label}>{t('mobile.profile.emailStatus')}</Text>
         <Text style={styles.value}>
-          {currentAccount.emailVerified ? 'Підтверджена' : 'Не підтверджена'}
+          {currentAccount.emailVerified ? >{t('mobile.profile.'verified'')}</Text> : >{t('mobile.profile.'unverified'')}</Text>}
         </Text>
         {currentAccount.profile?.height != null ? (
           <>
-            <Text style={styles.label}>Зріст</Text>
+            <Text style={styles.label}>{t('mobile.profile.height')}</Text>
             <Text style={styles.value}>{currentAccount.profile.height} см</Text>
           </>
         ) : null}
         {currentAccount.profile?.weight != null ? (
           <>
-            <Text style={styles.label}>Вага</Text>
+            <Text style={styles.label}>{t('mobile.profile.weight')}</Text>
             <Text style={styles.value}>{currentAccount.profile.weight} кг</Text>
           </>
         ) : null}
@@ -60,7 +65,7 @@ export function ProfileScreen() {
         {isFetching ? (
           <ActivityIndicator color={palette.surface} />
         ) : (
-          <Text style={styles.buttonText}>Оновити профіль</Text>
+          <Text style={styles.buttonText}>{t('mobile.profile.refresh')}</Text>
         )}
       </Pressable>
       <Pressable
@@ -68,10 +73,10 @@ export function ProfileScreen() {
         onPress={() => router.push('/profile/edit')}
         style={styles.secondary}
       >
-        <Text style={styles.secondaryText}>Редагувати профіль</Text>
+        <Text style={styles.secondaryText}>{t('mobile.profile.edit')}</Text>
       </Pressable>
       <Pressable accessibilityRole="button" onPress={() => void signOut()} style={styles.secondary}>
-        <Text style={styles.secondaryText}>Вийти</Text>
+        <Text style={styles.secondaryText}>{t('mobile.profile.signOut')}</Text>
       </Pressable>
     </ScrollView>
   );
