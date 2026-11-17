@@ -92,15 +92,15 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <GluestackUIProvider mode="dark">
-        <LocaleProvider>
-          <MobileQueryProvider>
-            <MobileErrorBoundary>
-              <AuthProvider>
-                <Navigation />
-              </AuthProvider>
-            </MobileErrorBoundary>
-          </MobileQueryProvider>
-        </LocaleProvider>
+          <LocaleProvider>
+            <MobileQueryProvider>
+              <MobileErrorBoundary>
+                <AuthProvider>
+                  <Navigation />
+                </AuthProvider>
+              </MobileErrorBoundary>
+            </MobileQueryProvider>
+          </LocaleProvider>
         </GluestackUIProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
