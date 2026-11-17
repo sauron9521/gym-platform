@@ -83,10 +83,37 @@ or Expo Go runtime is required on physical devices. JS-bundle CI does not
 exercise actual iOS Keychain or Android Keystore behavior. Use HTTPS for
 non-local API endpoints.
 
-For a physical device, copy `apps/mobile/.env.example` to `.env.local`
-and set `EXPO_PUBLIC_API_URL` to the development computer's reachable LAN IP.
-The Android emulator typically uses `http://10.0.2.2:3001`, rather than
+For a physical device, copy `apps/mobile/.env.example` to `apps/mobile/.env.local`
+and set `EXPO_PUBLIC_API_URL` to the development computer's reachable LAN IP
+(e.g. `http://192.168.1.20:3001`, replacing it with your real address). The
+Android emulator typically uses `http://10.0.2.2:3001`, rather than
 `localhost`. Never put a secret in an `EXPO_PUBLIC_*` variable.
+
+### Login troubleshooting (native and Expo Web)
+
+The Next.js app uses a same-origin `/backend` rewrite and cookie sessions,
+while Expo talks directly to the API using `POST /auth/token`. A working
+Next.js login therefore does **not** prove that Expo can reach the API.
+
+1. For Expo Web at `http://localhost:8081`, add that exact origin to the
+   **actual** `apps/api/.env` `CORS_ORIGINS` list and restart NestJS.
+   The API applies the same explicit list to the built-in CSRF origin check,
+   while retaining the narrower web-only cookie session trust policy.
+   If Expo Web is served from a LAN address, explicitly add that origin too.
+2. For a real phone on Wi-Fi, use your computer's LAN IP in
+   `apps/mobile/.env.local`, not `localhost` or `10.0.2.2`.
+   Make sure the API listens on the LAN interface and Windows Firewall permits
+   inbound connections to the dev API on port 3001.
+3. Restart Expo with `pnpm --filter @gym/mobile exec expo start --clear`
+   after changing `EXPO_PUBLIC_API_URL`. Check that
+   `http://<your-LAN-IP>:3001/health/live` loads from the phone's browser.
+4. The sign-in error now distinguishes token issuance (API/CORS/network),
+   protected storage (SecureStore), and profile verification (`/users/me`).
+   On Expo Web, inspect DevTools Network for `POST /auth/token`; a blocked
+   preflight suggests CORS, while a `403` on POST may indicate CSRF.
+
+Never disable CSRF or configure wildcard CORS for a development workaround.
+Do not post login responses, bearer/refresh tokens or passwords in issue logs.
 
 ## UI foundation (gluestack-ui v5)
 
