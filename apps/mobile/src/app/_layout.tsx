@@ -10,6 +10,7 @@ import { GluestackUIProvider } from '@/shared/ui/gluestack/gluestack-ui-provider
 import { MobileQueryProvider } from '@/shared/api/query-provider';
 import { palette } from '@/shared/config/theme';
 import { OfflineBanner } from '@/shared/ui/offline-banner';
+import { MobileErrorBoundary } from '@/shared/ui/mobile-error-boundary';
 import { LocaleProvider } from '@/shared/i18n/locale-provider';
 
 function Navigation() {
@@ -75,9 +76,11 @@ export default function RootLayout() {
       <GluestackUIProvider mode="dark">
         <LocaleProvider>
           <MobileQueryProvider>
-            <AuthProvider>
-              <Navigation />
-            </AuthProvider>
+            <MobileErrorBoundary>
+              <AuthProvider>
+                <Navigation />
+              </AuthProvider>
+            </MobileErrorBoundary>
           </MobileQueryProvider>
         </LocaleProvider>
       </GluestackUIProvider>
