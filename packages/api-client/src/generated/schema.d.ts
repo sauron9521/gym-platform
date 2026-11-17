@@ -1412,11 +1412,40 @@ export interface operations {
       };
     };
     responses: {
+      /** @description Authenticated account and nullable profile. Never includes credentials. */
       200: {
         headers: {
           [name: string]: unknown;
         };
-        content?: never;
+        content: {
+          'application/json': {
+            /** Format: uuid */
+            id: string;
+            /** Format: email */
+            email: string;
+            emailVerified: boolean;
+            /** @enum {string} */
+            role: 'ATHLETE' | 'TRAINER' | 'ADMIN';
+            /** @enum {string|null} */
+            preferredLocale: 'uk' | 'en' | null;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+            profile: {
+              name?: string | null;
+              firstName?: string | null;
+              lastName?: string | null;
+              displayName?: string | null;
+              avatarUrl?: string | null;
+              timezone?: string;
+              /** Format: date */
+              birthday?: string | null;
+              height?: number | null;
+              weight?: number | null;
+            } | null;
+          };
+        };
       };
     };
   };
