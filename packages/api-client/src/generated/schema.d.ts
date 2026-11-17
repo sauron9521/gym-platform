@@ -228,6 +228,22 @@ export interface paths {
     patch: operations['UsersController_updateMe'];
     trace?: never;
   };
+  '/users/me/preferences': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch: operations['UsersController_updatePreferences'];
+    trace?: never;
+  };
   '/users/me/avatar': {
     parameters: {
       query?: never;
@@ -1324,6 +1340,8 @@ export interface operations {
             emailVerified: boolean;
             /** @enum {string} */
             role: 'ATHLETE' | 'TRAINER' | 'ADMIN';
+            /** @enum {string|null} */
+            preferredLocale: 'uk' | 'en' | null;
             /** Format: date-time */
             createdAt: string;
             /** Format: date-time */
@@ -1375,6 +1393,59 @@ export interface operations {
           [name: string]: unknown;
         };
         content?: never;
+      };
+    };
+  };
+  UsersController_updatePreferences: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          /** @enum {string|null} */
+          preferredLocale: 'uk' | 'en' | null;
+        };
+      };
+    };
+    responses: {
+      /** @description Authenticated account and nullable profile. Never includes credentials. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** Format: uuid */
+            id: string;
+            /** Format: email */
+            email: string;
+            emailVerified: boolean;
+            /** @enum {string} */
+            role: 'ATHLETE' | 'TRAINER' | 'ADMIN';
+            /** @enum {string|null} */
+            preferredLocale: 'uk' | 'en' | null;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+            profile: {
+              name?: string | null;
+              firstName?: string | null;
+              lastName?: string | null;
+              displayName?: string | null;
+              avatarUrl?: string | null;
+              timezone?: string;
+              /** Format: date */
+              birthday?: string | null;
+              height?: number | null;
+              weight?: number | null;
+            } | null;
+          };
+        };
       };
     };
   };
