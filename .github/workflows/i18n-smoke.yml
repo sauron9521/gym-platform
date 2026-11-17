@@ -12,6 +12,8 @@ permissions:
 jobs:
   app-checks:
     runs-on: ubuntu-latest
+    env:
+      GYM_API_INTERNAL_URL: http://127.0.0.1:3001
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v6
@@ -36,7 +38,7 @@ jobs:
           git add apps/web apps/admin apps/mobile apps/landing
           if ! git diff --cached --quiet; then
             git commit -m 'style(i18n): format localized application files'
-            git push
+            HUSKY=0 git push
           fi
       - run: pnpm format:check
       - name: Lint, typecheck and test changed app
