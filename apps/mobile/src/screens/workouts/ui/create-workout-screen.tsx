@@ -3,7 +3,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'expo-router';
 import { Controller, useForm, useWatch } from 'react-hook-form';
 import {
-  ActivityIndicator,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -15,15 +14,12 @@ import {
   mobileWorkoutFormSchema,
   type MobileWorkoutForm,
 } from '@/features/workouts/lib/create-workout-schema';
-import {
-  useCreateMobileWorkout,
-  useWorkoutExerciseOptions,
-} from '@/features/workouts/model/workout-create';
+import { useCreateMobileWorkout } from '@/features/workouts/model/workout-create';
+import { ExercisePicker } from '@/features/exercises/ui/exercise-picker';
 import { palette } from '@/shared/config/theme';
 
 export function CreateWorkoutScreen() {
   const router = useRouter();
-  const exercises = useWorkoutExerciseOptions();
   const createWorkout = useCreateMobileWorkout();
   const submitLock = useRef(false);
   const {
@@ -83,37 +79,11 @@ export function CreateWorkoutScreen() {
         </Text>
       ) : null}
       <Text style={styles.label}>Вправа</Text>
-      {exercises.isPending ? <ActivityIndicator accessibilityLabel="Завантаження вправ" /> : null}
-      {exercises.isError ? (
-        <Text accessibilityRole="alert" style={styles.error}>
-          {exercises.error.message}
-        </Text>
-      ) : null}
-      {exercises.isError ? (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Повторити завантаження вправ"
-          onPress={() => void exercises.refetch()}
-          style={styles.exercise}
-        >
-          <Text style={styles.text}>Спробувати ще раз</Text>
-        </Pressable>
-      ) : null}
-      {exercises.data?.length ? (
-        <Text style={styles.muted}>Показано перші 20 доступних вправ.</Text>
-      ) : null}
-      {exercises.data?.map((exercise) => (
-        <Pressable
-          key={exercise.id}
-          accessibilityRole="button"
-          accessibilityState={{ selected: selectedExercise === exercise.id }}
-          disabled={createWorkout.isPending || isSubmitting}
-          onPress={() => setValue('exerciseId', exercise.id, { shouldValidate: true })}
-          style={[styles.exercise, selectedExercise === exercise.id && styles.selected]}
-        >
-          <Text style={styles.text}>{exercise.name}</Text>
-        </Pressable>
-      ))}
+      <ExercisePicker
+        selectedId={selectedExercise}
+        disabled={createWorkout.isPending || isSubmitting}
+        onSelect={(id) => setValue('exerciseId', id, { shouldValidate: true })}
+      />
       {errors.exerciseId ? (
         <Text accessibilityRole="alert" style={styles.error}>
           {errors.exerciseId.message}
@@ -148,7 +118,7 @@ export function CreateWorkoutScreen() {
       <Pressable
         accessibilityRole="button"
         testID="create-workout-submit"
-        disabled={createWorkout.isPending || isSubmitting || !exercises.data?.length}
+        disabled={createWorkout.isPending || isSubmitting}
         onPress={() => void submit()}
         style={styles.button}
       >
