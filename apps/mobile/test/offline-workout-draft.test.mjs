@@ -28,7 +28,9 @@ describe('offline workout draft safety contract', () => {
   it('rejects corrupt, unsupported-version, malformed or oversized stored data', () => {
     const draft = createOfflineWorkoutDraft(owner, form, 123);
     expect(parseOwnedWorkoutDraft('{corrupt', owner)).toBeNull();
-    expect(parseOwnedWorkoutDraft(JSON.stringify({ ...draft, schemaVersion: 2 }), owner)).toBeNull();
+    expect(
+      parseOwnedWorkoutDraft(JSON.stringify({ ...draft, schemaVersion: 2 }), owner),
+    ).toBeNull();
     expect(parseOwnedWorkoutDraft(JSON.stringify({ ...draft, savedAt: -1 }), owner)).toBeNull();
     expect(parseOwnedWorkoutDraft(JSON.stringify({ ...draft, state: 'READY' }), owner)).toBeNull();
     expect(parseOwnedWorkoutDraft(JSON.stringify({ ...draft, token: 'secret' }), owner)).toBeNull();

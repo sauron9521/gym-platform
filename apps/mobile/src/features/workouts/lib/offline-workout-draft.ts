@@ -1,9 +1,6 @@
 import { z } from 'zod';
 
-import {
-  mobileMultiWorkoutFormSchema,
-  type MobileMultiWorkoutForm,
-} from './create-workout-schema';
+import { mobileMultiWorkoutFormSchema, type MobileMultiWorkoutForm } from './create-workout-schema';
 
 /**
  * Storage-neutral, versioned draft contract for a future offline adapter.
