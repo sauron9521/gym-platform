@@ -42,7 +42,10 @@ test('profile edit rejects invalid measurements', () => {
 test('profile fields follow server bounds and decimal precision', () => {
   const valid = { displayName: 'A', firstName: 'B', lastName: '', height: '50', weight: '1' };
   assert.equal(editProfileSchema.safeParse(valid).success, true);
-  assert.equal(editProfileSchema.safeParse({ ...valid, height: '300', weight: '600' }).success, true);
+  assert.equal(
+    editProfileSchema.safeParse({ ...valid, height: '300', weight: '600' }).success,
+    true,
+  );
   assert.equal(editProfileSchema.safeParse({ ...valid, firstName: 'a'.repeat(100) }).success, true);
 
   for (const invalid of [
@@ -66,6 +69,9 @@ test('profile mutation keeps successful API response in account cache', () => {
   );
   assert.match(mutation, /PATCH\('\/users\/me'/);
   assert.match(mutation, /!response\.data/);
-  assert.match(mutation, /queryClient\.setQueryData\(accountQueryKeys\.me\(account\.id\), updated\)/);
+  assert.match(
+    mutation,
+    /queryClient\.setQueryData\(accountQueryKeys\.me\(account\.id\), updated\)/,
+  );
   assert.match(mutation, /retry: false/);
 });
