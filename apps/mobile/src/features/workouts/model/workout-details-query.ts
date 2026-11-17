@@ -2,14 +2,18 @@ import { onlineManager, useMutation, useQuery, useQueryClient } from '@tanstack/
 import type { paths } from '@gym/api-client';
 
 import { useAuth } from '@/features/auth/model/auth-context';
+import {
+  isSessionExpired,
+  mobileReadError,
+  MobileSessionExpiredError,
+  shouldRetryMobileRead,
+} from '@/shared/api/api-error-policy';
 import { accountQueryKeys } from '@/shared/api/query-client';
 
 export type WorkoutDetails =
   paths['/workouts/{id}']['get']['responses'][200]['content']['application/json'];
 
 export type WorkoutTransition = 'start' | 'complete';
-
-class SessionExpiredError extends Error {}
 
 export function useWorkoutDetailsQuery(workoutId: string) {
   const { account, getApi, signOut } = useAuth();
@@ -24,16 +28,16 @@ export function useWorkoutDetailsQuery(workoutId: string) {
         params: { path: { id: workoutId } },
         signal,
       });
-      if (response.response.status === 401) {
+      if (isSessionExpired(response.response.status)) {
         await signOut();
-        throw new SessionExpiredError('Сесію завершено.');
+        throw new MobileSessionExpiredError('Сесію завершено.');
       }
       if (response.response.status !== 200 || !response.data) {
-        throw new Error('Не вдалося завантажити тренування.');
+        throw mobileReadError(response.response.status, 'Не вдалося завантажити тренування.');
       }
       return response.data;
     },
-    retry: (count, error) => !(error instanceof SessionExpiredError) && count < 1,
+    retry: shouldRetryMobileRead,
   });
 }
 
@@ -52,9 +56,9 @@ export function useWorkoutTransition(workoutId: string) {
           ? await api.POST('/workouts/{id}/start', { params })
           : await api.POST('/workouts/{id}/complete', { params });
 
-      if (response.response.status === 401) {
+      if (isSessionExpired(response.response.status)) {
         await signOut();
-        throw new SessionExpiredError('Сесію завершено.');
+        throw new MobileSessionExpiredError('Сесію завершено.');
       }
       if (response.response.status !== 200 || !response.data) {
         throw new Error(

@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { useExercisesQuery } from '@/features/exercises/model/exercises-query';
 import { palette } from '@/shared/config/theme';
+import { AsyncResourceState } from '@/shared/ui/async-resource-state';
 
 type Props = {
   selectedId: string;
@@ -10,7 +11,10 @@ type Props = {
   onSelect: (id: string) => void;
 };
 
-/** Search and load the full exercise library instead of offering only the first 20. */
+/**
+ * Searches the account-scoped exercise library across all available pages.
+ * Keep selection in the owning form, not inside the picker.
+ */
 export function ExercisePicker({ selectedId, disabled = false, onSelect }: Props) {
   const [input, setInput] = useState('');
   const [search, setSearch] = useState('');
@@ -20,15 +24,20 @@ export function ExercisePicker({ selectedId, disabled = false, onSelect }: Props
   }, [input]);
 
   const query = useExercisesQuery({ search });
+  const isSearching = input.trim() !== search;
   const entries = useMemo(() => {
-    const unique = new Map<string, { id: string; name: string; isArchived: boolean }>();
-    for (const page of query.data?.pages ?? []) {
-      for (const exercise of page.data) {
-        if (!exercise.isArchived) unique.set(exercise.id, exercise);
-      }
-    }
-    return [...unique.values()];
+    const seen = new Set<string>();
+    return (
+      query.data?.pages.flatMap((page) =>
+        page.data.filter((exercise) => {
+          if (exercise.isArchived || seen.has(exercise.id)) return false;
+          seen.add(exercise.id);
+          return true;
+        }),
+      ) ?? []
+    );
   }, [query.data]);
+  const visibleEntries = isSearching || query.isError ? [] : entries;
 
   return (
     <View style={styles.container}>
@@ -39,24 +48,37 @@ export function ExercisePicker({ selectedId, disabled = false, onSelect }: Props
         placeholderTextColor={palette.muted}
         value={input}
         onChangeText={setInput}
+        maxLength={100}
         editable={!disabled}
         autoCorrect={false}
         style={styles.input}
       />
-      {query.isPending ? <ActivityIndicator accessibilityLabel="Завантаження вправ" /> : null}
-      {query.isError ? (
-        <Pressable accessibilityRole="button" onPress={() => void query.refetch()} style={styles.exercise}>
-          <Text style={styles.error}>Не вдалося завантажити вправи. Повторити</Text>
-        </Pressable>
+      {isSearching ? <Text style={styles.muted}>Шукаємо вправи…</Text> : null}
+      {!isSearching && query.isPending ? (
+        <AsyncResourceState kind="loading" message="Завантаження вправ" />
       ) : null}
-      {!query.isPending && !query.isError && entries.length === 0 ? (
-        <Text style={styles.muted}>Вправ не знайдено.</Text>
+      {!isSearching && query.isError ? (
+        <AsyncResourceState
+          kind="error"
+          message={query.error.message}
+          retrying={disabled || query.isFetching}
+          onRetry={() => void query.refetch()}
+        />
       ) : null}
-      {entries.map((exercise) => (
+      {!isSearching &&
+      !query.isPending &&
+      !query.isError &&
+      visibleEntries.length === 0 &&
+      !query.hasNextPage ? (
+        <AsyncResourceState kind="empty" message="Вправ не знайдено." />
+      ) : null}
+
+      {visibleEntries.map((exercise) => (
         <Pressable
           key={exercise.id}
           accessibilityRole="button"
-          accessibilityState={{ selected: selectedId === exercise.id }}
+          accessibilityLabel={exercise.name}
+          accessibilityState={{ selected: selectedId === exercise.id, disabled }}
           disabled={disabled}
           onPress={() => onSelect(exercise.id)}
           style={[styles.exercise, selectedId === exercise.id && styles.selected]}
@@ -64,15 +86,24 @@ export function ExercisePicker({ selectedId, disabled = false, onSelect }: Props
           <Text style={styles.text}>{exercise.name}</Text>
         </Pressable>
       ))}
-      {query.hasNextPage ? (
+
+      {!isSearching && !query.isPending && !query.isError && query.hasNextPage ? (
         <Pressable
           accessibilityRole="button"
+          accessibilityLabel="Показати більше вправ"
+          accessibilityState={{ disabled: disabled || query.isFetching }}
           testID="workout-exercises-next"
-          disabled={disabled || query.isFetchingNextPage}
+          disabled={disabled || query.isFetching}
           style={styles.exercise}
           onPress={() => void query.fetchNextPage()}
         >
-          <Text style={styles.text}>{query.isFetchingNextPage ? 'Завантаження…' : 'Показати більше вправ'}</Text>
+          <Text style={styles.text}>
+            {query.isFetchingNextPage
+              ? 'Завантаження…'
+              : query.isFetchNextPageError
+                ? 'Помилка сторінки. Спробувати ще'
+                : 'Показати більше вправ'}
+          </Text>
         </Pressable>
       ) : null}
     </View>
@@ -81,10 +112,23 @@ export function ExercisePicker({ selectedId, disabled = false, onSelect }: Props
 
 const styles = StyleSheet.create({
   container: { gap: 8 },
-  input: { color: palette.text, borderColor: palette.border, borderWidth: 1, borderRadius: 12, paddingHorizontal: 14, minHeight: 48 },
-  exercise: { padding: 14, borderWidth: 1, borderColor: palette.border, borderRadius: 12, minHeight: 44, justifyContent: 'center' },
+  input: {
+    color: palette.text,
+    borderColor: palette.border,
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    minHeight: 48,
+  },
+  exercise: {
+    padding: 14,
+    borderWidth: 1,
+    borderColor: palette.border,
+    borderRadius: 12,
+    minHeight: 44,
+    justifyContent: 'center',
+  },
   selected: { borderColor: palette.primary, borderWidth: 2 },
   text: { color: palette.text, fontSize: 15 },
   muted: { color: palette.muted },
-  error: { color: '#ff6460' },
 });

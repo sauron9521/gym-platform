@@ -1,22 +1,103 @@
-import { describe, expect, it, vi } from 'vitest';
-import { fireEvent, render } from '@testing-library/react-native';
+import { fireEvent, render, waitFor } from '@testing-library/react-native';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { useExercisesQuery } from '@/features/exercises/model/exercises-query';
 import { ExercisePicker } from '@/features/exercises/ui/exercise-picker';
 
 vi.mock('@/features/exercises/model/exercises-query', () => ({ useExercisesQuery: vi.fn() }));
 
+const refetch = vi.fn();
+const fetchNextPage = vi.fn();
+
+function prepareQuery(overrides: Record<string, unknown> = {}) {
+  vi.mocked(useExercisesQuery).mockReturnValue({
+    data: {
+      pages: [
+        {
+          data: [
+            { id: 'exercise-1', name: 'Жим лежачи', isArchived: false },
+            { id: 'exercise-archived', name: 'Архівна вправа', isArchived: true },
+          ],
+        },
+      ],
+    },
+    isPending: false,
+    isError: false,
+    isFetching: false,
+    isFetchingNextPage: false,
+    isFetchNextPageError: false,
+    hasNextPage: false,
+    refetch,
+    fetchNextPage,
+    ...overrides,
+  } as unknown as ReturnType<typeof useExercisesQuery>);
+}
+
 describe('ExercisePicker (native)', () => {
-  it('allows choosing an exercise from the fetched library', async () => {
-    vi.mocked(useExercisesQuery).mockReturnValue({
-      data: { pages: [{ data: [{ id: 'exercise-1', name: 'Жим лежачи', isArchived: false }] }] },
-      isPending: false,
-      isError: false,
-      hasNextPage: false,
-    } as unknown as ReturnType<typeof useExercisesQuery>);
+  beforeEach(() => {
+    vi.clearAllMocks();
+    prepareQuery();
+  });
+
+  it('selects a non-archived exercise without showing archived options', async () => {
     const onSelect = vi.fn();
     const view = await render(<ExercisePicker selectedId="" onSelect={onSelect} />);
-    await fireEvent.press(view.getByText('Жим лежачи'));
-    expect(onSelect).toHaveBeenCalledWith('exercise-1');
+
+    expect(view.queryByText('Архівна вправа')).toBeNull();
+    await fireEvent.press(view.getByRole('button', { name: 'Жим лежачи' }));
+    expect(onSelect).toHaveBeenCalledExactlyOnceWith('exercise-1');
+  });
+
+  it('deduplicates exercises across pages and loads more only on demand', async () => {
+    prepareQuery({
+      data: {
+        pages: [
+          { data: [{ id: 'exercise-1', name: 'Жим лежачи', isArchived: false }] },
+          {
+            data: [
+              { id: 'exercise-1', name: 'Жим лежачи', isArchived: false },
+              { id: 'exercise-2', name: 'Присідання', isArchived: false },
+            ],
+          },
+        ],
+      },
+      hasNextPage: true,
+    });
+    const view = await render(<ExercisePicker selectedId="exercise-1" onSelect={vi.fn()} />);
+
+    expect(view.getAllByText('Жим лежачи')).toHaveLength(1);
+    expect(view.getByText('Присідання')).toBeTruthy();
+    await fireEvent.press(view.getByTestId('workout-exercises-next'));
+    expect(fetchNextPage).toHaveBeenCalledOnce();
+  });
+
+  it('keeps the pagination button disabled during a page fetch', async () => {
+    prepareQuery({ hasNextPage: true, isFetching: true, isFetchingNextPage: true });
+    const view = await render(<ExercisePicker selectedId="" onSelect={vi.fn()} />);
+
+    expect(
+      view.getByRole('button', { name: 'Показати більше вправ', disabled: true }),
+    ).toBeTruthy();
+    expect(view.getByText('Завантаження…')).toBeTruthy();
+  });
+
+  it('offers an accessible retry instead of stale exercise choices on errors', async () => {
+    prepareQuery({ isError: true, error: new Error('Мережева помилка') });
+    const view = await render(<ExercisePicker selectedId="" onSelect={vi.fn()} />);
+
+    expect(view.getByText('Мережева помилка')).toBeTruthy();
+    expect(view.queryByText('Жим лежачи')).toBeNull();
+    await fireEvent.press(view.getByRole('button', { name: 'Спробувати ще раз' }));
+    expect(refetch).toHaveBeenCalledOnce();
+  });
+
+  it('debounces and trims API search requests', async () => {
+    const view = await render(<ExercisePicker selectedId="" onSelect={vi.fn()} />);
+    await fireEvent.changeText(view.getByTestId('workout-exercise-search'), '  жим  ');
+
+    expect(vi.mocked(useExercisesQuery)).toHaveBeenLastCalledWith({ search: '' });
+    await waitFor(() => {
+      expect(vi.mocked(useExercisesQuery)).toHaveBeenLastCalledWith({ search: 'жим' });
+    });
   });
 });

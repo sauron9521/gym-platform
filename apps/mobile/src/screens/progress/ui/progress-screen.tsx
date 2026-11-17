@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react';
 import { useRouter } from 'expo-router';
-import { ExercisePicker } from '@/features/exercises/ui/exercise-picker';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
+import { ExercisePicker } from '@/features/exercises/ui/exercise-picker';
 import { strengthVolumeHeights } from '@/features/progress/lib/chart';
 import {
   useWorkoutSummary,
@@ -14,8 +14,8 @@ const periods: ProgressRange[] = ['7d', '30d', '90d'];
 
 export function ProgressScreen() {
   const router = useRouter();
-  const [range, setRange] = useState<ProgressRange>('30d');
   const [selectedExerciseId, setSelectedExerciseId] = useState('');
+  const [range, setRange] = useState<ProgressRange>('30d');
   const query = useWorkoutSummary(range);
   const heights = useMemo(() => strengthVolumeHeights(query.data?.daily ?? []), [query.data]);
   const stats = query.data;
