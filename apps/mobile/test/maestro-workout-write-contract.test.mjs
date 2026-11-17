@@ -19,11 +19,14 @@ test('Maestro write journey stays opt-in, approved and bound to the staging pack
 
 test('write flow selectors track the actual multi-exercise workout UI', () => {
   const flow = read('../maestro/flows/workout-write-smoke.yaml');
+  const tabs = read('../src/app/(tabs)/_layout.tsx');
   const workouts = read('../src/screens/workouts/ui/workouts-screen.tsx');
   const create = read('../src/screens/workouts/ui/create-workout-screen.tsx');
   const picker = read('../src/features/exercises/ui/exercise-picker.tsx');
   const details = read('../src/screens/workouts/ui/workout-details-screen.tsx');
   const sets = read('../src/screens/workouts/ui/workout-set-row.tsx');
+  expect(tabs).toContain("tabBarButtonTestID: 'mobile-tab-workouts'");
+  expect(flow).toContain('id: mobile-tab-workouts');
   expect(workouts).toContain('testID="workouts-create"');
   expect(create).toContain('testID="create-workout-submit"');
   expect(picker).toContain('testID="workout-exercise-search"');

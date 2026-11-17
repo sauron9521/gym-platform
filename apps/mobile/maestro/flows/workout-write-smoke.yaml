@@ -12,7 +12,8 @@ appId: ${APP_ID}
 - inputText: ${E2E_PASSWORD}
 - tapOn: Увійти
 - assertVisible: Gym Platform
-- tapOn: Тренування
+- tapOn:
+    id: mobile-tab-workouts
 - assertVisible: Мої тренування
 - tapOn:
     id: workouts-create
