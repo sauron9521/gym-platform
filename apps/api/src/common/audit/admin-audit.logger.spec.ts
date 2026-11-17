@@ -25,9 +25,7 @@ test('emits a versioned structured event without exposing account or target IDs'
     outcome: 'denied',
     requestId: 'req-123',
   });
-  expect(event.actorHash).toBe(
-    createHash('sha256').update('actor-uuid-sensitive').digest('hex'),
-  );
+  expect(event.actorHash).toBe(createHash('sha256').update('actor-uuid-sensitive').digest('hex'));
   expect(JSON.stringify(event)).not.toContain('actor-uuid-sensitive');
   expect(JSON.stringify(event)).not.toContain('target-uuid-sensitive');
 });
