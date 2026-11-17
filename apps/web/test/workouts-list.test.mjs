@@ -61,6 +61,9 @@ test('workouts route has independent server guard and typed summary API request'
   assert.match(ui, /query.error.status === 401/);
   assert.match(ui, /router.replace\('\/login'\)/);
   assert.match(ui, /queryClient.clear\(\)/);
-  assert.ok(ui.includes("aria-label={t('pages')}"), 'Workouts pagination retains its localized navigation label');
+  assert.ok(
+    ui.includes("aria-label={t('pages')}"),
+    'Workouts pagination retains its localized navigation label',
+  );
   assert.doesNotMatch(ui, /localStorage|sessionStorage|document.cookie|dangerouslySetInnerHTML/);
 });
