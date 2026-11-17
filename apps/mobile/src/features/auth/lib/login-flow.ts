@@ -33,6 +33,18 @@ export function getMobileLoginError(status: number): string {
   }
 }
 
+/** Do not show raw fetch errors: they may contain URLs or other sensitive details. */
+export function getMobileLoginTransportError(stage: 'issue' | 'persist' | 'verify'): string {
+  switch (stage) {
+    case 'issue':
+      return 'Не вдалося виконати запит входу до API. Перевірте адресу сервера, з’єднання та CORS (Expo Web).';
+    case 'persist':
+      return 'Не вдалося захищено зберегти сесію на пристрої.';
+    case 'verify':
+      return 'Не вдалося перевірити вхід через API. Перевірте з’єднання із сервером.';
+  }
+}
+
 /** Keep the imperative auth API protected for callers outside React forms. */
 export function validateMobileCredentials(email: string, password: string): string | null {
   const result = signInSchema.safeParse({ email, password });
