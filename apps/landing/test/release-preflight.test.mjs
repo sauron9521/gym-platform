@@ -45,9 +45,18 @@ test('analytics settings are optional but must match client validation', () => {
     }),
   ).toEqual([]);
   for (const bad of [
-    { NEXT_PUBLIC_UMAMI_WEBSITE_ID: 'not-a-uuid', NEXT_PUBLIC_UMAMI_SCRIPT_URL: script },
-    { NEXT_PUBLIC_UMAMI_WEBSITE_ID: id, NEXT_PUBLIC_UMAMI_SCRIPT_URL: 'http://cloud.umami.is/script.js' },
-    { NEXT_PUBLIC_UMAMI_WEBSITE_ID: id, NEXT_PUBLIC_UMAMI_SCRIPT_URL: 'https://cloud.umami.is/script.js?token=abc' },
+    {
+      NEXT_PUBLIC_UMAMI_WEBSITE_ID: 'not-a-uuid',
+      NEXT_PUBLIC_UMAMI_SCRIPT_URL: script,
+    },
+    {
+      NEXT_PUBLIC_UMAMI_WEBSITE_ID: id,
+      NEXT_PUBLIC_UMAMI_SCRIPT_URL: 'http://cloud.umami.is/script.js',
+    },
+    {
+      NEXT_PUBLIC_UMAMI_WEBSITE_ID: id,
+      NEXT_PUBLIC_UMAMI_SCRIPT_URL: 'https://cloud.umami.is/script.js?token=abc',
+    },
   ]) {
     expect(releaseErrors({ ...validEnv, ...bad }).length).toBeGreaterThan(0);
   }
