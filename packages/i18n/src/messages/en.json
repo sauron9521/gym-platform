@@ -30,7 +30,18 @@
   },
   "errors": {
     "unknown": "Something went wrong. Try again.",
-    "network": "Check your internet connection and try again."
+    "network": "Check your internet connection and try again.",
+    "badRequest": "Check the values you entered.",
+    "unauthorized": "Please sign in.",
+    "forbidden": "You do not have permission for this action.",
+    "notFound": "The requested information was not found.",
+    "conflict": "This action conflicts with the current state.",
+    "rateLimited": "Too many requests. Try again later.",
+    "unavailable": "The service is temporarily unavailable.",
+    "invalidType": "Invalid value type.",
+    "invalidFormat": "Invalid format.",
+    "tooSmall": "The value is too small.",
+    "tooBig": "The value is too large."
   },
   "web": {
     "navigation": {
