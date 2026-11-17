@@ -10,6 +10,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 
 import { ApiExceptionFilter } from '#src/common/filters/api-exception.filter';
+import { AdminAuditModule } from '#src/common/audit/admin-audit.module';
 import { RolesGuard } from '#src/common/guards/roles.guard';
 import { PermissionsGuard } from '#src/common/rbac/permissions.guard';
 import { RequestContextMiddleware } from '#src/common/request-context/request-context.middleware';
@@ -22,7 +23,7 @@ import { PrivateApiNoStoreMiddleware } from '#src/common/http/private-api-no-sto
 import type { AppConfigService } from '#src/common/config/app-config.types';
 import { validateEnv } from '#src/common/config/env.validation';
 import { createMailOptions } from '#src/common/config/mail.config';
-import { getWebAppOrigin } from '#src/common/config/http.config';
+import { getSessionTrustedOrigins } from '#src/common/config/http.config';
 import { PrismaModule } from '#src/infra/database/index';
 import { HealthModule } from '#src/infra/health/health.module';
 import { AuthModule } from '#src/modules/auth/auth.module';
@@ -36,6 +37,7 @@ import { WorkoutAnalyticsModule } from '#src/modules/workout-analytics/workout-a
 
 @Module({
   imports: [
+    AdminAuditModule,
     AuthenticationModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (config: AppConfigService) => ({
@@ -48,7 +50,10 @@ import { WorkoutAnalyticsModule } from '#src/modules/workout-analytics/workout-a
         session: {
           absoluteTtl: '7d',
           idleTtl: '1d',
-          trustedOrigins: [getWebAppOrigin(config.getOrThrow('APP_URL'))],
+          trustedOrigins: getSessionTrustedOrigins(
+            config.getOrThrow('APP_URL'),
+            config.get('ADMIN_APP_URL'),
+          ),
         },
         emailVerification: {
           url: `${config.getOrThrow('APP_URL')}/verify-email`,

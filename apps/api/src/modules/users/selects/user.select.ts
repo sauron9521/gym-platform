@@ -13,6 +13,7 @@ export const userSelect = {
 /** Full authenticated profile projection, excluding managed avatar keys. */
 export const userWithProfileSelect = {
   ...userSelect,
+  preferredLocale: true,
   profile: {
     select: {
       name: true,

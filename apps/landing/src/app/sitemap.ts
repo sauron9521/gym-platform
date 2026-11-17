@@ -1,12 +1,12 @@
 import type { MetadataRoute } from 'next';
 
 import { publicRoutes } from '@/shared/config/navigation';
-import { getSiteOrigin } from '@/shared/lib/seo';
+import { getSiteOrigin, isIndexingEnabled } from '@/shared/lib/seo';
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const origin = getSiteOrigin();
 
-  if (!origin) {
+  if (!origin || !isIndexingEnabled()) {
     return [];
   }
 
