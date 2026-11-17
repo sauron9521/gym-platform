@@ -50,14 +50,13 @@ export function resolveWorkoutCreationAttempt(
 }
 
 /** A workout with one or more exercises, each containing planned working sets. */
+const validPlannedReps = (value: string) => Number(value) >= 1 && Number(value) <= 1000;
+
 const mobilePlannedSetSchema = z.object({
   reps: z
     .string()
     .regex(/^\d+$/, 'Вкажіть ціле число повторень.')
-    .refine(
-      (value) => Number(value) >= 1 && Number(value) <= 1000,
-      'Повторення: 1–1000.',
-    ),
+    .refine(validPlannedReps, 'Повторення: 1–1000.'),
   weightKg: z
     .string()
     .trim()
@@ -68,17 +67,14 @@ const mobilePlannedSetSchema = z.object({
     ),
 });
 
+const mobileMultiWorkoutExerciseSchema = z.object({
+  exerciseId: z.uuid('Оберіть вправу.'),
+  sets: z.array(mobilePlannedSetSchema).min(1).max(100),
+});
+
 export const mobileMultiWorkoutFormSchema = z.object({
   title: z.string().trim().min(2, 'Назва повинна містити щонайменше 2 символи.').max(120),
-  exercises: z
-    .array(
-      z.object({
-        exerciseId: z.uuid('Оберіть вправу.'),
-        sets: z.array(mobilePlannedSetSchema).min(1).max(100),
-      }),
-    )
-    .min(1)
-    .max(50),
+  exercises: z.array(mobileMultiWorkoutExerciseSchema).min(1).max(50),
 });
 
 export type MobileMultiWorkoutForm = z.infer<typeof mobileMultiWorkoutFormSchema>;
