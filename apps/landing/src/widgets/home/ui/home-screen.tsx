@@ -53,8 +53,8 @@ export function HomeScreen() {
               Тренуйся розумніше. <span className="text-primary">Прогресуй далі.</span>
             </h1>
             <p className="mt-7 text-lg leading-8 text-muted-foreground">
-              Платформа для спортсменів і тренерів: вправи, тренувальні програми та прогрес —
-              в одній екосистемі.
+              Платформа для спортсменів і тренерів: вправи, тренувальні програми та прогрес — в
+              одній екосистемі.
             </p>
             <div className="mt-10 flex flex-wrap gap-3">
               <Button asChild size="lg">
@@ -89,10 +89,7 @@ export function HomeScreen() {
             <div className="mt-6 space-y-3" aria-hidden="true">
               {[65, 83, 45].map((value) => (
                 <div key={value} className="h-3 rounded-full bg-muted">
-                  <div
-                    className="h-3 rounded-full bg-primary/70"
-                    style={{ width: value + '%' }}
-                  />
+                  <div className="h-3 rounded-full bg-primary/70" style={{ width: value + '%' }} />
                 </div>
               ))}
             </div>
