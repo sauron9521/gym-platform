@@ -6,7 +6,6 @@ export const userSelect = {
   email: true,
   emailVerified: true,
   role: true,
-  preferredLocale: true,
   createdAt: true,
   updatedAt: true,
 } satisfies Prisma.UserSelect;
@@ -14,6 +13,7 @@ export const userSelect = {
 /** Full authenticated profile projection, excluding managed avatar keys. */
 export const userWithProfileSelect = {
   ...userSelect,
+  preferredLocale: true,
   profile: {
     select: {
       name: true,
