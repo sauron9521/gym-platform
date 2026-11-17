@@ -284,3 +284,19 @@ This is an initial assignment list with **no pagination beyond the first 20**.
 Athlete and trainer roles are not interchangeable. The tab is hidden for
 non-athletes and the details route is protected. Real-device navigation and
 network-failure behavior still need physical-device testing.
+
+## Exercise library (search and pagination)
+
+An authenticated user can open the **Каталог вправ** from the home screen.
+The protected `/exercises` route uses typed GET /exercises with 20-item
+pagination, 300 ms debounced name search and independent muscle-group and
+equipment slug filters. TanStack infinite-query keys include the signed-in
+account and active filters, so old search results do not appear under another
+user's session. Duplicate results across pages are hidden by exercise ID.
+
+GET /exercises/muscle-groups and GET /exercises/equipment populate filter
+choices, with per-resource error/retry states. A 401 response on any catalog
+request clears the session; other transient read errors can be retried. Failed
+next-page loads require manual retry to avoid repeated requests from FlatList
+scroll events. Pull-to-refresh is supported. No editing or creation is exposed
+by this first read-only library screen.
