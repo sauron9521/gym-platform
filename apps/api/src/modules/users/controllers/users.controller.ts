@@ -27,6 +27,10 @@ import { Authenticate, CurrentUser } from '@nestjs/authentication';
 
 import { UsersService } from '../services/users.service.js';
 import { type UpdateMyProfileDto, updateMyProfileSchema } from '../dto/update-my-profile.dto.js';
+import {
+  type UpdateMyPreferencesDto,
+  updateMyPreferencesSchema,
+} from '../dto/update-my-preferences.dto.js';
 
 type UserActor = { id: string };
 
@@ -49,12 +53,22 @@ export class UsersController {
     description: 'Authenticated account and nullable profile. Never includes credentials.',
     schema: {
       type: 'object',
-      required: ['id', 'email', 'emailVerified', 'role', 'createdAt', 'updatedAt', 'profile'],
+      required: [
+        'id',
+        'email',
+        'emailVerified',
+        'role',
+        'preferredLocale',
+        'createdAt',
+        'updatedAt',
+        'profile',
+      ],
       properties: {
         id: { type: 'string', format: 'uuid' },
         email: { type: 'string', format: 'email' },
         emailVerified: { type: 'boolean' },
         role: { type: 'string', enum: ['ATHLETE', 'TRAINER', 'ADMIN'] },
+        preferredLocale: { type: 'string', enum: ['uk', 'en'], nullable: true },
         createdAt: { type: 'string', format: 'date-time' },
         updatedAt: { type: 'string', format: 'date-time' },
         profile: {
@@ -87,6 +101,55 @@ export class UsersController {
   ) {
     return this.usersService.updateMe(user.id, body);
   }
+  /** Locale preference is account-scoped, not a mutable personal profile attribute. */
+  @Patch('me/preferences')
+  @ApiOkResponse({
+    description: 'Authenticated account and nullable profile. Never includes credentials.',
+    schema: {
+      type: 'object',
+      required: [
+        'id',
+        'email',
+        'emailVerified',
+        'role',
+        'preferredLocale',
+        'createdAt',
+        'updatedAt',
+        'profile',
+      ],
+      properties: {
+        id: { type: 'string', format: 'uuid' },
+        email: { type: 'string', format: 'email' },
+        emailVerified: { type: 'boolean' },
+        role: { type: 'string', enum: ['ATHLETE', 'TRAINER', 'ADMIN'] },
+        preferredLocale: { type: 'string', enum: ['uk', 'en'], nullable: true },
+        createdAt: { type: 'string', format: 'date-time' },
+        updatedAt: { type: 'string', format: 'date-time' },
+        profile: {
+          type: 'object',
+          nullable: true,
+          properties: {
+            name: { type: 'string', nullable: true },
+            firstName: { type: 'string', nullable: true },
+            lastName: { type: 'string', nullable: true },
+            displayName: { type: 'string', nullable: true },
+            avatarUrl: { type: 'string', nullable: true },
+            timezone: { type: 'string' },
+            birthday: { type: 'string', format: 'date', nullable: true },
+            height: { type: 'integer', nullable: true },
+            weight: { type: 'number', nullable: true },
+          },
+        },
+      },
+    },
+  })
+  updatePreferences(
+    @CurrentUser() user: UserActor,
+    @Body({ schema: updateMyPreferencesSchema }) body: UpdateMyPreferencesDto,
+  ) {
+    return this.usersService.updateMyPreferences(user.id, body);
+  }
+
   /** Multipart field: file. Returns the versioned, API-relative avatar URL. */
   @Post('me/avatar')
   @ApiConsumes('multipart/form-data')
