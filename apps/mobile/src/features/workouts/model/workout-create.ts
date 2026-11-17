@@ -1,5 +1,5 @@
 import { useRef } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { useAuth } from '@/features/auth/model/auth-context';
 import { accountQueryKeys } from '@/shared/api/query-client';
@@ -10,31 +10,6 @@ import {
   type CreateOneWorkout,
   type WorkoutCreationAttempt,
 } from '../lib/create-workout-schema';
-
-export function useWorkoutExerciseOptions() {
-  const { account, getApi, signOut } = useAuth();
-  return useQuery({
-    queryKey: ['account', 'create-workout-exercises', account?.id ?? 'signed-out'],
-    enabled: account?.role === 'ATHLETE',
-    queryFn: async ({ signal }) => {
-      const api = getApi();
-      if (!api) throw new Error('Не налаштовано адресу API.');
-      const response = await api.GET('/exercises', {
-        params: { query: { page: 1, limit: 20 } },
-        signal,
-      });
-      if (response.response.status === 401) {
-        await signOut();
-        throw new Error('Сесію завершено.');
-      }
-      if (response.response.status !== 200 || !response.data) {
-        throw new Error('Не вдалося завантажити вправи.');
-      }
-      return response.data.data.filter((item) => !item.isArchived);
-    },
-    retry: false,
-  });
-}
 
 export function useCreateMobileWorkout() {
   const { account, getApi, signOut } = useAuth();
