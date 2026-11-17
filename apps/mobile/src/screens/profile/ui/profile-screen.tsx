@@ -25,11 +25,7 @@ export function ProfileScreen() {
     t('mobile.profile.myProfile');
 
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.content}
-      bounces={false}
-    >
+    <ScrollView style={styles.container} contentContainerStyle={styles.content} bounces={false}>
       <Text style={styles.heading}>{name}</Text>
       <Text style={styles.subheading}>{t('mobile.profile.apiData')}</Text>
       <LocalePicker />

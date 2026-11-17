@@ -21,11 +21,7 @@ export function ProgressScreen() {
   const stats = query.data;
 
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.content}
-      bounces={false}
-    >
+    <ScrollView style={styles.container} contentContainerStyle={styles.content} bounces={false}>
       <Text style={styles.title}>Мій прогрес</Text>
       <Pressable
         accessibilityRole="button"
