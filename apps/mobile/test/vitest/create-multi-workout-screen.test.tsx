@@ -69,15 +69,9 @@ describe('Multi-exercise CreateWorkoutScreen (native)', () => {
 
     await fireEvent.changeText(view.getByLabelText('Назва тренування'), 'Спина');
     await fireEvent.press(view.getByRole('button', { name: 'Жим лежачи' }));
-    await fireEvent.changeText(
-      view.getByLabelText('Планова вага, вправа 1, підхід 1'),
-      '62,5',
-    );
+    await fireEvent.changeText(view.getByLabelText('Планова вага, вправа 1, підхід 1'), '62,5');
     await fireEvent.press(view.getByTestId('workout-set-add-0'));
-    await fireEvent.changeText(
-      view.getByLabelText('Повторення, вправа 1, підхід 2'),
-      '8',
-    );
+    await fireEvent.changeText(view.getByLabelText('Повторення, вправа 1, підхід 2'), '8');
     await fireEvent.press(view.getByTestId('create-workout-submit'));
 
     await waitFor(() => expect(mutateAsync).toHaveBeenCalledOnce());
