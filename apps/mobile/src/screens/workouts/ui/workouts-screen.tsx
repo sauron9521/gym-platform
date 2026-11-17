@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 
+import { useAuth } from '@/features/auth/model/auth-context';
 import {
   workoutStatusLabel,
   type WorkoutState,
@@ -19,6 +20,7 @@ const filters: { title: string; value: WorkoutFilter }[] = [
 
 export function WorkoutsScreen() {
   const router = useRouter();
+  const { account } = useAuth();
   const [filter, setFilter] = useState<WorkoutFilter>(undefined);
   const {
     data,
@@ -29,14 +31,19 @@ export function WorkoutsScreen() {
     isRefetching,
     hasNextPage,
     isFetchingNextPage,
+    isFetchNextPageError,
     fetchNextPage,
     refetch,
   } = useWorkoutsQuery(filter);
   const workouts = useMemo(() => {
     const items: { id: string; title: string; status: WorkoutState; scheduledAt: string | null }[] =
       [];
+    const seen = new Set<string>();
     for (const page of data?.pages ?? []) {
       for (const item of page.data) {
+        // Offset pagination can repeat rows when another device creates a workout.
+        if (seen.has(item.id)) continue;
+        seen.add(item.id);
         items.push({
           id: item.id,
           title: item.title,
@@ -57,13 +64,25 @@ export function WorkoutsScreen() {
       refreshing={isRefetching && !isFetchingNextPage}
       onRefresh={() => void refetch()}
       onEndReached={() => {
-        if (hasNextPage && !isFetchingNextPage) void fetchNextPage();
+        // Prevent failed-page retry loops and overlapping refresh/page fetches.
+        if (hasNextPage && !isFetching && !isFetchNextPageError) void fetchNextPage();
       }}
       onEndReachedThreshold={0.45}
       ListHeaderComponent={
         <View style={styles.heading}>
           <Text style={styles.title}>Мої тренування</Text>
           <Text style={styles.subtitle}>Історія та заплановані тренування</Text>
+          {account?.role === 'ATHLETE' ? (
+            <Pressable
+              testID="workouts-create"
+              accessibilityRole="button"
+              accessibilityLabel="Створити тренування"
+              style={styles.button}
+              onPress={() => router.push('/workouts/new')}
+            >
+              <Text style={styles.buttonText}>Нове тренування</Text>
+            </Pressable>
+          ) : null}
           <View style={styles.filters}>
             {filters.map((choice) => (
               <Pressable
@@ -112,6 +131,19 @@ export function WorkoutsScreen() {
           {isFetchingNextPage ? (
             <Text style={styles.subtitle}>Завантаження наступної сторінки…</Text>
           ) : null}
+          {hasNextPage && !isFetchingNextPage ? (
+            <Pressable
+              testID="workouts-load-more"
+              accessibilityRole="button"
+              disabled={isFetching}
+              onPress={() => void fetchNextPage()}
+              style={styles.moreButton}
+            >
+              <Text style={styles.subtitle}>
+                {isFetchNextPageError ? 'Помилка завантаження. Спробувати ще' : 'Показати ще'}
+              </Text>
+            </Pressable>
+          ) : null}
           <Pressable
             testID="workouts-refresh"
             accessibilityRole="button"
@@ -152,7 +184,16 @@ const styles = StyleSheet.create({
   },
   selectedChip: { backgroundColor: palette.primary },
   chipText: { color: palette.text, fontSize: 13 },
-  error: { color: '#b91c1c', fontSize: 14 },
+  error: { color: '#ff6460', fontSize: 14 },
+  moreButton: {
+    minHeight: 44,
+    borderWidth: 1,
+    borderColor: palette.border,
+    borderRadius: 12,
+    padding: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   footer: { gap: 10 },
   button: {
     minHeight: 48,
