@@ -3,7 +3,9 @@ import { describe, expect, it } from 'vitest';
 import { renderTheme } from '../scripts/generate-theme.mjs';
 
 describe('shared design token source', () => {
-  const palette = JSON.parse(readFileSync(new URL('../src/palette-source.json', import.meta.url), 'utf8'));
+  const palette = JSON.parse(
+    readFileSync(new URL('../src/palette-source.json', import.meta.url), 'utf8'),
+  );
   const output = renderTheme(palette);
 
   it('generates the checked-in Web CSS without drift', () => {
@@ -15,9 +17,10 @@ describe('shared design token source', () => {
   });
 
   it('refuses unbound native semantic colors', () => {
-    expect(() => renderTheme({
+    const invalidPalette = {
       ...palette,
       native: { ...palette.native, missing: { from: 'absent', hex: '#000000' } },
-    })).toThrow(/Invalid native color mapping/);
+    };
+    expect(() => renderTheme(invalidPalette)).toThrow(/Invalid native color mapping/);
   });
 });
