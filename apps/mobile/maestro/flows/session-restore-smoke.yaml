@@ -16,6 +16,7 @@ appId: ${APP_ID}
 - launchApp:
     clearState: false
 - assertVisible: Gym Platform
+- assertNotVisible: З поверненням!
 - tapOn: Profile
 - assertVisible: Оновити профіль
 - tapOn: Вийти

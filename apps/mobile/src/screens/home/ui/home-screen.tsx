@@ -1,6 +1,7 @@
 import { useRouter } from 'expo-router';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
+import { useAuth } from '@/features/auth/model/auth-context';
 import { palette } from '@/shared/config/theme';
 import { StatusTile } from '@/shared/ui/status-tile';
 import { Box } from '@/shared/ui/gluestack/box';
@@ -9,6 +10,7 @@ import { Text as UiText } from '@/shared/ui/gluestack/text';
 
 export function HomeScreen() {
   const router = useRouter();
+  const { account } = useAuth();
 
   return (
     <ScrollView
@@ -34,9 +36,17 @@ export function HomeScreen() {
         <UiText className="text-muted-foreground">
           Базові компоненти gluestack-ui v5 готові для наступних функцій Gym Platform.
         </UiText>
-        <Button onPress={() => router.push('/progress')} accessibilityLabel="Переглянути прогрес">
-          <ButtonText>Мій прогрес</ButtonText>
+        <Button
+          onPress={() => router.push('/exercises')}
+          accessibilityLabel="Відкрити каталог вправ"
+        >
+          <ButtonText>Каталог вправ</ButtonText>
         </Button>
+        {account?.role === 'ATHLETE' ? (
+          <Button onPress={() => router.push('/progress')} accessibilityLabel="Переглянути прогрес">
+            <ButtonText>Мій прогрес</ButtonText>
+          </Button>
+        ) : null}
         <Button onPress={() => router.push('/profile')} accessibilityLabel="Відкрити профіль">
           <ButtonText>Відкрити профіль</ButtonText>
         </Button>
