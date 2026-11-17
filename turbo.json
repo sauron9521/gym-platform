@@ -1,29 +1,15 @@
 {
   "$schema": "https://turborepo.dev/schema.json",
-  "globalEnv": [
-    "GYM_API_INTERNAL_URL"
-  ],
+  "globalEnv": ["GYM_API_INTERNAL_URL"],
   "tasks": {
     "build": {
-      "dependsOn": [
-        "^build"
-      ],
-      "outputs": [
-        "dist/**",
-        "build/**",
-        ".next/**",
-        "!.next/cache/**",
-        ".cache/expo-ios/**"
-      ],
-      "env": [
-        "LANDING_SITE_URL"
-      ]
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**", "build/**", ".next/**", "!.next/cache/**", ".cache/expo-ios/**"],
+      "env": ["LANDING_SITE_URL"]
     },
     "lint": {},
     "typecheck": {
-      "dependsOn": [
-        "^build"
-      ]
+      "dependsOn": ["^build"]
     },
     "test": {
       "cache": false
