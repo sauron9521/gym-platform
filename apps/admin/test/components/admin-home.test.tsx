@@ -1,9 +1,10 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { cleanup, render, screen } from '@testing-library/react';
 
-const { headersMock, sessionMock } = vi.hoisted(() => ({
+const { headersMock, sessionMock, localeState } = vi.hoisted(() => ({
   headersMock: vi.fn(),
   sessionMock: vi.fn(),
+  localeState: { current: 'uk' as 'uk' | 'en' },
 }));
 
 vi.mock('next/headers', () => ({ headers: headersMock }));
@@ -14,7 +15,8 @@ vi.mock('next-intl/server', async () => {
   const { getMessages } = await import('@gym/i18n');
   const messages = getMessages('uk').admin;
   return {
-    getTranslations: async () => (key: keyof typeof messages) => messages[key],
+    getTranslations: async () => (key: keyof typeof messages) =>
+      getMessages(localeState.current).admin[key],
   };
 });
 
@@ -24,6 +26,7 @@ type AccessState = 'unauthenticated' | 'forbidden' | 'unavailable';
 
 beforeEach(() => {
   vi.resetAllMocks();
+  localeState.current = 'uk';
   headersMock.mockResolvedValue({
     get: (name: string) => (name === 'cookie' ? 'sid=browser-session' : null),
   });
@@ -96,6 +99,28 @@ describe('AdminHomePage server-side access control', () => {
 
     expect(screen.getByText(/Функції модерації та метрики з’являться/)).toBeTruthy();
     expect(screen.queryByRole('button', { name: /видалити|змінити|модерувати/i })).toBeNull();
+  });
+
+  test('uses English messages without changing an authenticated admin session', async () => {
+    localeState.current = 'en';
+    sessionMock.mockResolvedValue({ kind: 'admin', id: 'admin-123' });
+    await renderAdminPage();
+
+    expect(screen.getByRole('heading', { name: 'Administration console' })).toBeTruthy();
+    expect(screen.getByText('Access confirmed by the NestJS API.')).toBeTruthy();
+    expect(sessionMock).toHaveBeenCalledExactlyOnceWith('sid=browser-session');
+  });
+
+  test('keeps forbidden sessions denied when English is selected', async () => {
+    localeState.current = 'en';
+    sessionMock.mockResolvedValue({ kind: 'forbidden' });
+    await renderAdminPage();
+
+    expect(screen.getByRole('alert').textContent).toContain(
+      'You do not have administrator access.',
+    );
+    expect(screen.queryByRole('heading', { name: 'Administration console' })).toBeNull();
+    expect(sessionMock).toHaveBeenCalledExactlyOnceWith('sid=browser-session');
   });
 
   test('requires dynamic server rendering rather than caching a privileged response', () => {
