@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { useEffect, useState, type FormEvent } from 'react';
 
 import { webApi } from '@/shared/api/client';
@@ -12,6 +13,7 @@ import {
 } from '../lib/password-reset-flow';
 
 export function ResetPasswordForm({ token }: { token: string | null }) {
+  const t = useTranslations('web.recovery');
   const [password, setPassword] = useState('');
   const [confirmation, setConfirmation] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -55,7 +57,7 @@ export function ResetPasswordForm({ token }: { token: string | null }) {
       setConfirmation('');
       setCompleted(true);
     } catch {
-      setError('Немає з’єднання з API. Спробуйте пізніше.');
+      setError(t('network'));
     } finally {
       setSubmitting(false);
     }
@@ -65,10 +67,10 @@ export function ResetPasswordForm({ token }: { token: string | null }) {
     return (
       <div className="mt-8 space-y-4">
         <p role="alert" className="text-sm text-destructive">
-          Посилання для відновлення пароля відсутнє або некоректне.
+          {t('missingLink')}
         </p>
         <Button asChild variant="outline">
-          <Link href="/forgot-password">Запросити нове посилання</Link>
+          <Link href="/forgot-password">{t('requestLink')}</Link>
         </Button>
       </div>
     );
@@ -78,10 +80,10 @@ export function ResetPasswordForm({ token }: { token: string | null }) {
     return (
       <section className="mt-8 space-y-5">
         <p role="status" className="text-sm leading-6">
-          Пароль успішно змінено. Для доступу до кабінету увійдіть із новим паролем.
+          {t('resetSuccess')}
         </p>
         <Button asChild className="w-full">
-          <Link href="/login">Перейти до входу</Link>
+          <Link href="/login">{t('goLogin')}</Link>
         </Button>
       </section>
     );
@@ -91,7 +93,7 @@ export function ResetPasswordForm({ token }: { token: string | null }) {
     <form onSubmit={handleSubmit} className="mt-8 space-y-5">
       <div className="space-y-2">
         <label htmlFor="new-password" className="block text-sm font-medium">
-          Новий пароль
+          {t('newPassword')}
         </label>
         <input
           id="new-password"
@@ -107,12 +109,12 @@ export function ResetPasswordForm({ token }: { token: string | null }) {
           className="h-11 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
         />
         <p id="reset-password-hint" className="text-xs text-muted-foreground">
-          Щонайменше 8 символів, великі й малі літери, цифра та спеціальний символ.
+          {t('passwordHint')}
         </p>
       </div>
       <div className="space-y-2">
         <label htmlFor="confirm-new-password" className="block text-sm font-medium">
-          Повторіть пароль
+          {t('confirm')}
         </label>
         <input
           id="confirm-new-password"
@@ -129,12 +131,12 @@ export function ResetPasswordForm({ token }: { token: string | null }) {
       </div>
       <FormFeedback message={error} />
       <Button type="submit" className="w-full" disabled={submitting}>
-        {submitting ? 'Змінюємо пароль…' : 'Змінити пароль'}
+        {submitting ? t('resetting') : t('reset')}
       </Button>
       <p className="text-sm text-muted-foreground">
-        Посилання не працює?{' '}
+        {t('badLink')}{' '}
         <Link href="/forgot-password" className="font-medium text-foreground hover:underline">
-          Запросити нове
+          {t('requestNew')}
         </Link>
       </p>
     </form>

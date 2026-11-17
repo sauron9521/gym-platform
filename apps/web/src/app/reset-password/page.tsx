@@ -1,14 +1,18 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { getTranslations } from 'next-intl/server';
 
 import { getPasswordResetToken } from '@/features/auth/lib/password-reset-flow';
 import { ResetPasswordForm } from '@/features/auth/ui/reset-password-form';
 
-export const metadata: Metadata = {
-  title: 'Новий пароль | Gym Platform',
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations('web.recovery');
+  return {
+  title: `${t('resetTitle')} | Gym Platform`,
   robots: { index: false, follow: false },
   referrer: 'no-referrer',
-};
+  };
+}
 
 export const dynamic = 'force-dynamic';
 
@@ -17,6 +21,7 @@ export default async function ResetPasswordPage({
 }: {
   searchParams: Promise<{ token?: string | string[] }>;
 }) {
+  const t = await getTranslations('web.recovery');
   const { token: rawToken } = await searchParams;
   const token = getPasswordResetToken(rawToken);
 
@@ -26,9 +31,9 @@ export default async function ResetPasswordPage({
         <Link href="/" className="text-sm font-medium text-muted-foreground hover:underline">
           Gym Platform
         </Link>
-        <h1 className="mt-6 text-3xl font-semibold">Створити новий пароль</h1>
+        <h1 className="mt-6 text-3xl font-semibold">{t('resetTitle')}</h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Введіть новий пароль, щоб відновити доступ до облікового запису.
+          {t('resetDescription')}
         </p>
         <ResetPasswordForm token={token} />
       </div>

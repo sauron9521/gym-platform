@@ -73,6 +73,31 @@
       "title": "Create an account",
       "description": "Sign up to save your workouts and programs.",
       "existing": "Already have an account?"
+    },
+    "recovery": {
+      "email": "Email address",
+      "back": "Back to sign in",
+      "signIn": "Sign in",
+      "accepted": "If an account exists for that email, password recovery instructions may arrive. Check your spam folder too.",
+      "sending": "Sending request…",
+      "send": "Send instructions",
+      "remember": "Remembered your password?",
+      "forgotTitle": "Forgot your password?",
+      "forgotDescription": "Enter your account email and we'll attempt to send instructions.",
+      "resetTitle": "Create a new password",
+      "resetDescription": "Enter a new password to regain access to your account.",
+      "missingLink": "The reset link is missing or invalid.",
+      "requestLink": "Request a new link",
+      "resetSuccess": "Your password has been changed. Sign in with your new password to access your account.",
+      "goLogin": "Go to sign in",
+      "newPassword": "New password",
+      "passwordHint": "At least 8 characters, upper- and lowercase letters, a number and a special character.",
+      "confirm": "Confirm password",
+      "resetting": "Changing password…",
+      "reset": "Change password",
+      "badLink": "Link not working?",
+      "requestNew": "Request another",
+      "network": "Cannot reach the API. Try again later."
     }
   },
   "admin": {
