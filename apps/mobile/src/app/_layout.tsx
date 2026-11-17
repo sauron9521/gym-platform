@@ -36,6 +36,9 @@ function Navigation() {
             options={{ headerShown: true, title: 'Нове тренування' }}
           />
         </Stack.Protected>
+        <Stack.Protected guard={account?.role === 'TRAINER'}>
+          <Stack.Screen name="trainer/athletes" options={{ headerShown: true, title: 'Мої підопічні' }} />
+        </Stack.Protected>
         <Stack.Protected guard={!account}>
           <Stack.Screen name="sign-in" />
         </Stack.Protected>

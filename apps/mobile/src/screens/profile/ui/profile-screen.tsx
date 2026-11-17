@@ -70,6 +70,11 @@ export function ProfileScreen() {
       >
         <Text style={styles.secondaryText}>Редагувати профіль</Text>
       </Pressable>
+      {account.role === 'TRAINER' ? (
+        <Pressable accessibilityRole="button" onPress={() => router.push('/trainer/athletes')} style={styles.secondary}>
+          <Text style={styles.secondaryText}>Мої підопічні</Text>
+        </Pressable>
+      ) : null}
       <Pressable accessibilityRole="button" onPress={() => void signOut()} style={styles.secondary}>
         <Text style={styles.secondaryText}>Вийти</Text>
       </Pressable>
