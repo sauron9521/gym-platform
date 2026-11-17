@@ -37,7 +37,7 @@ test('one Prisma-generated baseline for an empty database is frozen', () => {
   const dirs = readdirSync(join(root, 'prisma/migrations'), { withFileTypes: true })
     .filter((entry) => entry.isDirectory())
     .map((entry) => entry.name);
-  const ordered = [...dirs].sort();
+  const ordered = [...dirs].sort((a, b) => a.localeCompare(b));
   assert.equal(ordered[0], '20261114000000_initial_baseline');
   assert.equal(new Set(ordered).size, ordered.length);
   for (const name of ordered.slice(1)) {
