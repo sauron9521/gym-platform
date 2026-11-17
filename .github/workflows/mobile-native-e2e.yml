@@ -90,7 +90,7 @@ jobs:
               --proto '=https' --proto-redir '=https' \
               --max-filesize 250000000 \
               "$APK_URL" --output /tmp/gym-platform-preview.apk
-            printf '%s  %s\n' "$APK_SHA256" /tmp/gym-platform-preview.apk | sha256sum --check --status
+            printf '%s  %s\n' "${APK_SHA256,,}" /tmp/gym-platform-preview.apk | sha256sum --check --status
             AAPT="$(find "$ANDROID_HOME/build-tools" -type f -name aapt | sort -V | tail -n 1)"
             if [[ -z "$AAPT" ]]; then
               echo "Android SDK aapt is required to validate the APK manifest." >&2
