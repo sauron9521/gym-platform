@@ -46,3 +46,34 @@ test('analytics sends a bounded event name and no user data when configured', ()
   fireEvent.click(screen.getByRole('link', { name: 'Apps' }));
   expect(track).toHaveBeenCalledExactlyOnceWith('landing_secondary_cta');
 });
+
+test('cancelled navigation does not send conversion events', () => {
+  const track = vi.fn();
+  window.umami = { track };
+  render(
+    <TrackedLink
+      href="/apps"
+      eventName="landing_primary_cta"
+      onClick={(event) => event.preventDefault()}
+    >
+      Cancelled
+    </TrackedLink>,
+  );
+  fireEvent.click(screen.getByRole('link', { name: 'Cancelled' }));
+  expect(track).not.toHaveBeenCalled();
+});
+
+test('provider exceptions cannot interrupt tracked link clicks', () => {
+  const track = vi.fn(() => {
+    throw new Error('provider unavailable');
+  });
+  window.umami = { track };
+  render(
+    <TrackedLink href="/features" eventName="landing_feature_card">
+      Safe link
+    </TrackedLink>,
+  );
+  expect(() => fireEvent.click(screen.getByRole('link', { name: 'Safe link' }))).not.toThrow();
+  expect(track).toHaveBeenCalledExactlyOnceWith('landing_feature_card');
+  expect(screen.getByRole('link', { name: 'Safe link' }).getAttribute('href')).toBe('/features');
+});

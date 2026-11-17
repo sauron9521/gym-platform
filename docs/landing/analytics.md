@@ -1,19 +1,28 @@
-# Landing analytics — opt-in
+# Landing analytics — optional integration
 
-The Landing renders **no analytics script by default**.
+The Landing loads **no third-party analytics script by default**. An operator
+explicitly enables the integration at build time by providing both:
 
-To enable an Umami-compatible provider, set both:
+- `NEXT_PUBLIC_UMAMI_WEBSITE_ID`: an Umami website UUID.
+- `NEXT_PUBLIC_UMAMI_SCRIPT_URL`: an audited, trusted `https://` provider URL
+  ending in `.js` with no URL credentials, query or fragment.
 
-- `NEXT_PUBLIC_UMAMI_WEBSITE_ID`: website UUID
-- `NEXT_PUBLIC_UMAMI_SCRIPT_URL`: trusted HTTPS URL to the provider script
+Invalid or missing settings fail closed. The script uses Next.js
+`afterInteractive`, meaning it can load after the page begins hydration,
+**not** after the visitor clicks or provides consent.
 
-The script is added after interaction and only known event names are sent:
+Only these fixed custom event names are sent on tracked CTA/card clicks:
 `landing_primary_cta`, `landing_secondary_cta`, `landing_feature_card`.
-No names, emails, credentials, workout data, search terms or URLs are included in events.
+No form fields, email addresses, account IDs or workout data are attached to
+custom events. The provider itself may still receive page URLs, IP addresses,
+user-agent data and page-view events. "Cookieless" does not guarantee
+anonymity or legal compliance.
 
-This is an integration point, **not** a hosted analytics backend or consent/compliance guarantee.
-Before enabling in production, verify the host, retention, opt-out and privacy notices for
-the audience and applicable rules. Do not track private application activity from Landing.
+Before production enablement, review provider access, hosting,
+data retention, page-view settings, consent/opt-out requirements, privacy
+notices, CSP allowances and applicable law. Never enable analytics in PR
+previews by default or track private app pages through Landing.
 
-Analytics public environment values must be tracked by build-cache key configuration
-before deployment, and should not be enabled in pull-request previews by default.
+Both public environment variables are already included in Turborepo build
+cache hashing (merged PR #190). Changing the variables requires a fresh
+production build and a verification of actual outgoing requests.

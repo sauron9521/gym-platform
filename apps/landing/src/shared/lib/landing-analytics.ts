@@ -10,6 +10,10 @@ declare global {
 /** Event names only: never send personal identifiers, workout logs or form data. */
 export function recordLandingEvent(name: LandingEventName) {
   if (typeof window !== 'undefined' && typeof window.umami?.track === 'function') {
-    window.umami.track(name);
+    try {
+      window.umami.track(name);
+    } catch {
+      // A third-party provider failure must not interfere with site navigation.
+    }
   }
 }
