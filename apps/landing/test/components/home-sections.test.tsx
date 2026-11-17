@@ -16,6 +16,10 @@ test('homepage explains the process and labels design previews honestly', () => 
   render(<HomeScreen />);
   expect(screen.getByRole('heading', { name: 'Від плану до наступного результату' })).toBeTruthy();
   expect(screen.getByText(/не реальні дані спортсмена/)).toBeTruthy();
+  expect(screen.getByRole('img', { name: /Умовний макет тренувального плану/ })).toBeTruthy();
+  expect(screen.getByText('Макет')).toBeTruthy();
+  expect(screen.getByText(/Рання стадія розробки/)).toBeTruthy();
+  expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
   expect(screen.getByRole('link', { name: 'Переглянути продукти' }).getAttribute('href')).toBe(
     '/apps',
   );
