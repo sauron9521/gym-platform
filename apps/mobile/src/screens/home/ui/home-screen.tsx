@@ -1,89 +1,103 @@
 import { useRouter } from 'expo-router';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { useAuth } from '@/features/auth/model/auth-context';
+import { useProgramAssignments } from '@/features/programs/model/program-assignments-query';
+import { useWorkoutSummary } from '@/features/progress/model/workout-summary-query';
+import { useWorkoutsQuery } from '@/features/workouts/model/workouts-query';
+import { workoutStatusLabel } from '@/features/workouts/lib/workout-presentation';
 import { palette } from '@/shared/config/theme';
-import { StatusTile } from '@/shared/ui/status-tile';
-import { Box } from '@/shared/ui/gluestack/box';
-import { Button, ButtonText } from '@/shared/ui/gluestack/button';
-import { Text as UiText } from '@/shared/ui/gluestack/text';
 
 export function HomeScreen() {
   const router = useRouter();
   const { account } = useAuth();
+  const workouts = useWorkoutsQuery();
+  const programs = useProgramAssignments();
+  const summary = useWorkoutSummary('7d');
+  const recentWorkouts = workouts.data?.pages[0]?.data.slice(0, 3) ?? [];
+  const isAthlete = account?.role === 'ATHLETE';
+  const displayName = account?.profile?.displayName?.trim() || account?.profile?.firstName?.trim() || 'у Gym Platform';
 
   return (
-    <ScrollView
-      contentContainerStyle={styles.content}
-      style={styles.container}
-      accessibilityLabel="Gym Platform home"
-    >
+    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <Text style={styles.eyebrow}>GYM PLATFORM</Text>
-      <Text style={styles.title}>Your training starts here.</Text>
-      <Text style={styles.description}>
-        Mobile is ready for development. Next: authentication, training plans, workouts and progress
-        tracking.
+      <Text style={styles.title}>Вітаємо, {displayName}!</Text>
+      <Text style={styles.subtitle}>
+        {isAthlete ? 'Ваші тренування та прогрес в одному місці.' : 'Переглядайте свій профіль і доступні тренування.'}
       </Text>
 
-      <View style={styles.tiles}>
-        <StatusTile label="Mobile" detail="Expo Router navigation" status="Ready" />
-        <StatusTile label="API" detail="NestJS integration" status="Planned" />
-        <StatusTile label="Programs" detail="Workouts and exercises" status="Planned" />
-      </View>
+      {isAthlete ? (
+        <View style={styles.summary} accessibilityLabel="Підсумок активності">
+          <View style={styles.stat}>
+            <Text style={styles.statValue}>{summary.isPending ? '…' : (summary.data?.workoutCount ?? '—')}</Text>
+            <Text style={styles.subtitle}>Тренувань за 7 днів</Text>
+          </View>
+          <View style={styles.stat}>
+            <Text style={styles.statValue}>{programs.isPending ? '…' : (programs.data?.data.length ?? '—')}</Text>
+            <Text style={styles.subtitle}>Активних програм (завантажено)</Text>
+          </View>
+        </View>
+      ) : null}
+      {isAthlete && (summary.isError || programs.isError) ? (
+        <Text accessibilityRole="alert" style={styles.error}>Частину статистики не вдалося завантажити. Оновіть сторінку або відкрийте відповідний розділ.</Text>
+      ) : null}
 
-      <Box className="gap-3 rounded-xl border border-border bg-card p-4">
-        <UiText className="text-lg font-semibold text-foreground">Мобільний інтерфейс</UiText>
-        <UiText className="text-muted-foreground">
-          Базові компоненти gluestack-ui v5 готові для наступних функцій Gym Platform.
-        </UiText>
-        <Button
-          onPress={() => router.push('/exercises')}
-          accessibilityLabel="Відкрити каталог вправ"
+      <Text style={styles.heading}>Швидкі дії</Text>
+      {isAthlete ? (
+        <Pressable accessibilityRole="button" style={styles.primary} onPress={() => router.push('/workouts/new')}>
+          <Text style={styles.primaryText}>Створити тренування</Text>
+        </Pressable>
+      ) : null}
+      <Pressable accessibilityRole="button" style={styles.action} onPress={() => router.push('/workouts')}>
+        <Text style={styles.actionText}>Мої тренування</Text>
+      </Pressable>
+      <Pressable accessibilityRole="button" style={styles.action} onPress={() => router.push('/exercises')}>
+        <Text style={styles.actionText}>Каталог вправ</Text>
+      </Pressable>
+      {isAthlete ? (
+        <Pressable accessibilityRole="button" style={styles.action} onPress={() => router.push('/progress')}>
+          <Text style={styles.actionText}>Мій прогрес</Text>
+        </Pressable>
+      ) : null}
+
+      <Text style={styles.heading}>Останні тренування</Text>
+      {workouts.isPending ? <Text style={styles.subtitle}>Завантаження тренувань…</Text> : null}
+      {workouts.isError ? (
+        <Pressable accessibilityRole="button" onPress={() => void workouts.refetch()}>
+          <Text style={styles.error}>Не вдалося завантажити. Повторити</Text>
+        </Pressable>
+      ) : null}
+      {!workouts.isPending && !workouts.isError && recentWorkouts.length === 0 ? (
+        <Text style={styles.subtitle}>Тренувань ще немає. Почніть із першого!</Text>
+      ) : null}
+      {recentWorkouts.map((workout) => (
+        <Pressable
+          key={workout.id}
+          accessibilityRole="button"
+          style={styles.action}
+          onPress={() => router.push({ pathname: '/workouts/[id]', params: { id: workout.id } })}
         >
-          <ButtonText>Каталог вправ</ButtonText>
-        </Button>
-        {account?.role === 'ATHLETE' ? (
-          <Button onPress={() => router.push('/progress')} accessibilityLabel="Переглянути прогрес">
-            <ButtonText>Мій прогрес</ButtonText>
-          </Button>
-        ) : null}
-        <Button onPress={() => router.push('/profile')} accessibilityLabel="Відкрити профіль">
-          <ButtonText>Відкрити профіль</ButtonText>
-        </Button>
-      </Box>
+          <Text style={styles.actionText}>{workout.title}</Text>
+          <Text style={styles.subtitle}>{workoutStatusLabel(workout.status)}</Text>
+        </Pressable>
+      ))}
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    backgroundColor: palette.background,
-    flex: 1,
-  },
-  content: {
-    gap: 18,
-    paddingHorizontal: 24,
-    paddingVertical: 48,
-  },
-  eyebrow: {
-    color: palette.primary,
-    fontSize: 12,
-    fontWeight: '700',
-    letterSpacing: 2,
-  },
-  title: {
-    color: palette.text,
-    fontSize: 34,
-    fontWeight: '700',
-    lineHeight: 40,
-  },
-  description: {
-    color: palette.muted,
-    fontSize: 16,
-    lineHeight: 24,
-  },
-  tiles: {
-    gap: 12,
-    marginTop: 24,
-  },
+  container: { flex: 1, backgroundColor: palette.background },
+  content: { padding: 24, gap: 14, paddingBottom: 40 },
+  eyebrow: { color: palette.primary, fontWeight: '700', letterSpacing: 2, fontSize: 12 },
+  title: { color: palette.text, fontWeight: '700', fontSize: 27 },
+  heading: { color: palette.text, fontWeight: '700', fontSize: 19, marginTop: 10 },
+  subtitle: { color: palette.muted, fontSize: 14 },
+  summary: { flexDirection: 'row', gap: 12, marginVertical: 8 },
+  stat: { flex: 1, borderRadius: 12, borderColor: palette.border, borderWidth: 1, padding: 14, gap: 8 },
+  statValue: { color: palette.primary, fontWeight: '700', fontSize: 26 },
+  action: { borderWidth: 1, borderColor: palette.border, borderRadius: 12, padding: 16, gap: 5, minHeight: 50 },
+  actionText: { color: palette.text, fontWeight: '600' },
+  primary: { backgroundColor: palette.primary, borderRadius: 12, padding: 16, minHeight: 50, justifyContent: 'center' },
+  primaryText: { color: palette.background, fontWeight: '700' },
+  error: { color: '#ff6460', fontSize: 14 },
 });
