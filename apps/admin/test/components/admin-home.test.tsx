@@ -1,13 +1,26 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { cleanup, render, screen } from '@testing-library/react';
 
-const { headersMock, sessionMock } = vi.hoisted(() => ({
+const { headersMock, sessionMock, healthMock, localeState } = vi.hoisted(() => ({
   headersMock: vi.fn(),
   sessionMock: vi.fn(),
+  healthMock: vi.fn(),
+  localeState: { current: 'uk' as 'uk' | 'en' },
 }));
 
 vi.mock('next/headers', () => ({ headers: headersMock }));
 vi.mock('@/shared/api/admin-session', () => ({ readAdminSession: sessionMock }));
+vi.mock('@/shared/api/admin-health', () => ({ readAdminHealth: healthMock }));
+
+// Test the server component in happy-dom without replacing production next-intl behavior.
+vi.mock('next-intl/server', async () => {
+  const { getMessages } = await import('@gym/i18n');
+  const messages = getMessages('uk').admin;
+  return {
+    getTranslations: async () => (key: keyof typeof messages) =>
+      getMessages(localeState.current).admin[key],
+  };
+});
 
 import AdminHomePage, { dynamic } from '../../src/app/page';
 
@@ -15,6 +28,8 @@ type AccessState = 'unauthenticated' | 'forbidden' | 'unavailable';
 
 beforeEach(() => {
   vi.resetAllMocks();
+  healthMock.mockResolvedValue('healthy');
+  localeState.current = 'uk';
   headersMock.mockResolvedValue({
     get: (name: string) => (name === 'cookie' ? 'sid=browser-session' : null),
   });
@@ -41,6 +56,7 @@ describe('AdminHomePage server-side access control', () => {
     expect(alert.textContent).toContain(message);
     expect(screen.queryByRole('heading', { name: 'Адміністративна консоль' })).toBeNull();
     expect(sessionMock).toHaveBeenCalledExactlyOnceWith('sid=browser-session');
+    expect(healthMock).not.toHaveBeenCalled();
   });
 
   test('shows the protected console only after server verification of an admin session', async () => {
@@ -51,7 +67,27 @@ describe('AdminHomePage server-side access control', () => {
     expect(screen.getByText('Доступ підтверджено NestJS API.')).toBeTruthy();
     expect(screen.getByText('Gym Platform Admin')).toBeTruthy();
     expect(screen.queryByRole('alert')).toBeNull();
+    expect(screen.getByText(/PostgreSQL та обмеження запитів/)).toBeTruthy();
+    expect(healthMock).toHaveBeenCalledOnce();
     expect(sessionMock).toHaveBeenCalledExactlyOnceWith('sid=browser-session');
+  });
+
+  test('shows a safe degraded signal when API readiness is unavailable', async () => {
+    sessionMock.mockResolvedValue({ kind: 'admin', id: 'admin-123' });
+    healthMock.mockResolvedValue('degraded');
+    await renderAdminPage();
+
+    expect(screen.getByRole('status').textContent).toContain('не підтверджено');
+    expect(screen.getByText(/не гарантує безперервну доступність/)).toBeTruthy();
+    expect(healthMock).toHaveBeenCalledOnce();
+  });
+
+  test('does not query readiness for denied sessions even with an authenticated cookie', async () => {
+    sessionMock.mockResolvedValue({ kind: 'forbidden' });
+    await renderAdminPage();
+
+    expect(healthMock).not.toHaveBeenCalled();
+    expect(screen.queryByRole('status')).toBeNull();
   });
 
   test('keeps the server session ID and cookie out of HTML', async () => {
@@ -87,6 +123,30 @@ describe('AdminHomePage server-side access control', () => {
 
     expect(screen.getByText(/Функції модерації та метрики з’являться/)).toBeTruthy();
     expect(screen.queryByRole('button', { name: /видалити|змінити|модерувати/i })).toBeNull();
+  });
+
+  test('uses English messages without changing an authenticated admin session', async () => {
+    localeState.current = 'en';
+    sessionMock.mockResolvedValue({ kind: 'admin', id: 'admin-123' });
+    await renderAdminPage();
+
+    expect(screen.getByRole('heading', { name: 'Administration console' })).toBeTruthy();
+    expect(screen.getByText('Access confirmed by the NestJS API.')).toBeTruthy();
+    expect(screen.getByRole('status').textContent).toContain('PostgreSQL and rate limiting');
+    expect(healthMock).toHaveBeenCalledOnce();
+    expect(sessionMock).toHaveBeenCalledExactlyOnceWith('sid=browser-session');
+  });
+
+  test('keeps forbidden sessions denied when English is selected', async () => {
+    localeState.current = 'en';
+    sessionMock.mockResolvedValue({ kind: 'forbidden' });
+    await renderAdminPage();
+
+    expect(screen.getByRole('alert').textContent).toContain(
+      'You do not have administrator access.',
+    );
+    expect(screen.queryByRole('heading', { name: 'Administration console' })).toBeNull();
+    expect(sessionMock).toHaveBeenCalledExactlyOnceWith('sid=browser-session');
   });
 
   test('requires dynamic server rendering rather than caching a privileged response', () => {

@@ -1,38 +1,41 @@
 import { pageMetadata } from '@/shared/lib/seo';
-import { IntroPage } from '@/widgets/content/ui/intro-page';
+import { ApplicationDetail } from '@/widgets/applications/ui/application-detail';
 
 export const metadata = pageMetadata({
   title: 'Web',
   description:
-    'Вебзастосунок Gym Platform розробляється для керування тренуваннями, вправами та тренувальними програмами.',
+    'Вебзастосунок Gym Platform розвивається для роботи з вправами, журналом тренувань та програмами. Публічний запуск ще не оголошено.',
   path: '/apps/web',
 });
 
-export default function Page() {
+const highlights = [
+  {
+    title: 'Каталог вправ',
+    description: 'Глобальні та власні вправи з правилами приватного доступу.',
+  },
+  {
+    title: 'Тренувальні програми',
+    description: 'Чернетки, версії та призначення програм у роботі тренера.',
+  },
+  {
+    title: 'Журнал тренувань',
+    description: 'Створення тренувань, редагування підходів і перегляд історії.',
+  },
+  {
+    title: 'Профіль',
+    description: 'Перегляд і редагування основних даних користувача.',
+  },
+] as const;
+
+export default function ApplicationPage() {
   return (
-    <IntroPage
-      eyebrow="Вебзастосунок"
-      title="Gym Platform у браузері"
-      description="Вебзастосунок Gym Platform розробляється для керування тренуваннями, вправами та тренувальними програмами."
-      features={[
-        {
-          title: 'Каталог вправ',
-          description: 'Перегляд і керування доступними вправами з урахуванням приватності.',
-        },
-        {
-          title: 'Програми тренувань',
-          description: 'Робота тренера з чернетками, версіями й призначеннями програм.',
-        },
-        {
-          title: 'Тренування',
-          description: 'Планування та запис виконаних підходів із перевірками станів.',
-        },
-        {
-          title: 'Профіль',
-          description: 'Редагування персональних даних у захищеному кабінеті.',
-        },
-      ]}
-      nextLink={{ href: '/for-trainers', label: 'Інструменти для тренерів' }}
+    <ApplicationDetail
+      eyebrow="Gym Platform Web"
+      title="Тренувальна платформа у браузері"
+      description="Вебзастосунок Gym Platform розвивається для роботи з вправами, журналом тренувань та програмами. Публічний запуск ще не оголошено."
+      highlights={highlights}
+      audienceLink={{ href: '/for-trainers', label: 'Можливості для тренерів' }}
+      relatedApp={{ href: '/apps/mobile', label: 'Про Mobile' }}
     />
   );
 }

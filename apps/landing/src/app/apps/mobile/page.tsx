@@ -1,38 +1,41 @@
 import { pageMetadata } from '@/shared/lib/seo';
-import { IntroPage } from '@/widgets/content/ui/intro-page';
+import { ApplicationDetail } from '@/widgets/applications/ui/application-detail';
 
 export const metadata = pageMetadata({
   title: 'Mobile',
   description:
-    'Мобільний застосунок Gym Platform створюється для доступу до тренувань і результатів зі смартфона.',
+    'Мобільний Gym Platform розвивається як інструмент для тренувань зі смартфона. Публічне встановлення поки не оголошено.',
   path: '/apps/mobile',
 });
 
-export default function Page() {
+const highlights = [
+  {
+    title: 'Мої тренування',
+    description: 'Перегляд занять і робота з підходами в мобільному інтерфейсі.',
+  },
+  {
+    title: 'Програми',
+    description: 'Перегляд призначених програм і створення тренувань за планом.',
+  },
+  {
+    title: 'Прогрес',
+    description: 'Огляд статистики тренувань та виконаного навантаження.',
+  },
+  {
+    title: 'Робота з мережею',
+    description: 'Стани помилок і відсутності з’єднання; повний офлайн-режим ще в розробці.',
+  },
+] as const;
+
+export default function ApplicationPage() {
   return (
-    <IntroPage
-      eyebrow="Мобільний застосунок"
-      title="Тренування зі смартфона"
-      description="Мобільний застосунок Gym Platform створюється для доступу до тренувань і результатів зі смартфона."
-      features={[
-        {
-          title: 'Мої тренування',
-          description: 'Перегляд плану й фіксація підходів у мобільному інтерфейсі.',
-        },
-        {
-          title: 'Програми',
-          description: 'Перегляд програм, призначених тренером, і створення тренувань.',
-        },
-        {
-          title: 'Прогрес',
-          description: 'Зведена статистика активності та обсягу навантаження.',
-        },
-        {
-          title: 'Захист даних',
-          description: 'Перевірка сесій і попередження про відсутність мережі.',
-        },
-      ]}
-      nextLink={{ href: '/for-athletes', label: 'Можливості для спортсменів' }}
+    <ApplicationDetail
+      eyebrow="Gym Platform Mobile"
+      title="Тренування під рукою"
+      description="Мобільний Gym Platform розвивається як інструмент для тренувань зі смартфона. Публічне встановлення поки не оголошено."
+      highlights={highlights}
+      audienceLink={{ href: '/for-athletes', label: 'Можливості для спортсменів' }}
+      relatedApp={{ href: '/apps/web', label: 'Про Web' }}
     />
   );
 }

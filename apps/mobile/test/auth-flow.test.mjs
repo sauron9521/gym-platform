@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 
 import {
   getMobileLoginError,
+  getMobileLoginTransportError,
   validateMobileCredentials,
 } from '../src/features/auth/lib/login-flow.ts';
 
@@ -31,4 +32,11 @@ test('native token flow guards protected routes and avoids plaintext storage', (
   assert.match(auth, /api\.POST\('\/auth\/token\/revoke'/);
   assert.match(auth, /api\.GET\('\/users\/me'/);
   assert.doesNotMatch(auth, /AsyncStorage|localStorage|console\.log/);
+});
+
+test('sign-in failures report the safe failed step, without exposing underlying errors', () => {
+  assert.match(getMobileLoginTransportError('issue'), /запит входу до API/);
+  assert.match(getMobileLoginTransportError('persist'), /зберегти сесію/);
+  assert.match(getMobileLoginTransportError('verify'), /перевірити вхід/);
+  assert.ok(!getMobileLoginTransportError('issue').includes('token'));
 });

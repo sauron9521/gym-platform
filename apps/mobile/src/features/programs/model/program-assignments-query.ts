@@ -1,7 +1,14 @@
 import { useRef } from 'react';
-import { onlineManager, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  onlineManager,
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query';
 
 import { useAuth } from '@/features/auth/model/auth-context';
+import { nextAssignmentPage } from '@/features/programs/lib/assignment-pagination';
 import { accountQueryKeys } from '@/shared/api/query-client';
 import {
   clearProgramWorkoutAttempt,
@@ -17,14 +24,15 @@ function useProgramsApi() {
 
 export function useProgramAssignments() {
   const { account, getApi, signOut } = useProgramsApi();
-  return useQuery({
+  return useInfiniteQuery({
     queryKey: [...accountQueryKeys.all, account?.id ?? 'signed-out', 'program-assignments'],
     enabled: account?.role === 'ATHLETE',
-    queryFn: async ({ signal }) => {
+    initialPageParam: 1,
+    queryFn: async ({ signal, pageParam }) => {
       const api = getApi();
       if (!api) throw new Error('Немає доступу до API.');
       const response = await api.GET('/training-programs/assignments', {
-        params: { query: { page: 1, limit: 20, status: 'ACTIVE', view: 'summary' } },
+        params: { query: { page: pageParam, limit: 20, status: 'ACTIVE', view: 'summary' } },
         signal,
       });
       if (response.response.status === 401) {
@@ -36,6 +44,8 @@ export function useProgramAssignments() {
       }
       return response.data;
     },
+    getNextPageParam: (page, _pages, lastPageParam) =>
+      nextAssignmentPage(lastPageParam, page.meta.totalPages),
     retry: (count, error) => !(error instanceof SessionExpiredError) && count < 1,
   });
 }
