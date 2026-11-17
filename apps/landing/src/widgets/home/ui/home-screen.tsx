@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { defaultLocale, getMessages, type Locale } from '@gym/i18n';
 
 import { Button } from '@/shared/ui/button';
 import {
@@ -9,34 +10,18 @@ import {
   SectionHeading,
 } from '@/shared/ui/marketing';
 
-const audiences = [
-  {
-    title: 'Для спортсменів',
-    description: 'Записуйте тренування, працюйте з вправами й стежте за прогресом.',
-    href: '/for-athletes',
-    action: 'Можливості спортсмена',
-  },
-  {
-    title: 'Для тренерів',
-    description: 'Організовуйте тренувальні програми та взаємодію зі спортсменами.',
-    href: '/for-trainers',
-    action: 'Можливості тренера',
-  },
-  {
-    title: 'Web і Mobile',
-    description: 'Знайомтеся з продуктами, які разом формують Gym Platform.',
-    href: '/apps',
-    action: 'Усі застосунки',
-  },
-] as const;
-
-const milestones = [
-  { number: '01', title: 'Обери вправи', detail: 'Збери власну бібліотеку рухів.' },
-  { number: '02', title: 'Склади план', detail: 'Організуй тренування та підходи.' },
-  { number: '03', title: 'Відстежуй результат', detail: 'Аналізуй свій тренувальний шлях.' },
-] as const;
-
-export function HomeScreen() {
+export function HomeScreen({ locale = defaultLocale }: { locale?: Locale } = {}) {
+  const t = getMessages(locale).landing.home;
+  const audiences = [
+    { title: t.audienceAthletesTitle, description: t.audienceAthletesDescription, href: '/for-athletes', action: t.audienceAthletesAction },
+    { title: t.audienceTrainersTitle, description: t.audienceTrainersDescription, href: '/for-trainers', action: t.audienceTrainersAction },
+    { title: t.audienceAppsTitle, description: t.audienceAppsDescription, href: '/apps', action: t.audienceAppsAction },
+  ] as const;
+  const milestones = [
+    { number: '01', title: t.milestoneOneTitle, detail: t.milestoneOneDetail },
+    { number: '02', title: t.milestoneTwoTitle, detail: t.milestoneTwoDetail },
+    { number: '03', title: t.milestoneThreeTitle, detail: t.milestoneThreeDetail },
+  ] as const;
   return (
     <main id="main-content" className="flex-1">
       <section className="relative isolate overflow-hidden border-b border-border/70">
@@ -47,40 +32,39 @@ export function HomeScreen() {
         <Container className="grid items-center gap-14 py-24 sm:py-32 lg:grid-cols-2">
           <div>
             <p className="inline-flex items-center rounded-full border border-primary/30 bg-primary/10 px-4 py-2 text-xs font-bold tracking-widest text-primary uppercase">
-              Gym Platform · Рання стадія розробки
+              Gym Platform · {t.phase}
             </p>
             <h1 className="mt-8 text-5xl font-bold tracking-tight text-balance sm:text-7xl">
-              Тренуйся розумніше. <span className="text-primary">Прогресуй далі.</span>
+              {t.headlineLead} <span className="text-primary">{t.headlineAccent}</span>
             </h1>
             <p className="mt-7 text-lg leading-8 text-muted-foreground">
-              Платформа для спортсменів і тренерів: вправи, тренувальні програми та прогрес — в
-              одній екосистемі.
+              {t.description}
             </p>
             <div className="mt-10 flex flex-wrap gap-3">
               <Button asChild size="lg">
-                <Link href="/features">Дізнатися більше</Link>
+                <Link href="/features">{t.learnMore}</Link>
               </Button>
               <Button asChild size="lg" variant="outline">
-                <Link href="/apps">Переглянути застосунки</Link>
+                <Link href="/apps">{t.browseApps}</Link>
               </Button>
             </div>
             <p className="mt-6 text-xs text-muted-foreground">
-              Платформа в активній розробці. Можливості з’являються поступово.
+              {t.devNotice}
             </p>
           </div>
           <div
             role="img"
-            aria-label="Умовний макет тренувального плану. Демонстрація дизайну, не реальні дані спортсмена"
+            aria-label={t.mockAria}
             className="rounded-3xl border border-border bg-card p-5 shadow-2xl shadow-black/20"
           >
             <div className="flex items-center justify-between border-b border-border pb-4">
-              <span className="text-sm font-bold">Тренувальний план</span>
+              <span className="text-sm font-bold">{t.mockTitle}</span>
               <span className="rounded-full bg-primary/10 px-3 py-1 text-xs text-primary">
-                Макет
+                {t.mockBadge}
               </span>
             </div>
             <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
-              {['Вправи', 'Підходи', 'Прогрес'].map((label, index) => (
+              {[t.mockExercises, t.mockSets, t.mockProgress].map((label, index) => (
                 <div key={label} className="rounded-xl bg-secondary p-3">
                   <p className="text-xs text-muted-foreground">{label}</p>
                   <p className="mt-4 text-2xl font-bold text-primary">0{index + 1}</p>
@@ -95,7 +79,7 @@ export function HomeScreen() {
               ))}
             </div>
             <p className="mt-6 text-xs text-muted-foreground">
-              Демонстрація дизайн-напрямку, не реальні дані спортсмена.
+              {t.mockDisclaimer}
             </p>
           </div>
         </Container>
@@ -105,9 +89,9 @@ export function HomeScreen() {
         <Container>
           <SectionHeading
             id="audiences"
-            eyebrow="Єдина екосистема"
-            title="Платформа для твоїх цілей"
-            description="Окремі інструменти для різних сценаріїв тренувань — в одному проєкті."
+            eyebrow={t.audiencesEyebrow}
+            title={t.audiencesTitle}
+            description={t.audiencesDescription}
           />
           <div className="mt-10 grid gap-5 md:grid-cols-3">
             {audiences.map(({ title, description, href, action }) => (
@@ -127,9 +111,9 @@ export function HomeScreen() {
         <Container>
           <SectionHeading
             id="workflow"
-            eyebrow="Як це працює"
-            title="Від плану до наступного результату"
-            description="Простий шлях до більш усвідомлених тренувань."
+            eyebrow={t.workflowEyebrow}
+            title={t.workflowTitle}
+            description={t.workflowDescription}
           />
           <div className="mt-10 grid gap-5 md:grid-cols-3">
             {milestones.map((step) => (
@@ -144,10 +128,10 @@ export function HomeScreen() {
       </MarketingSection>
 
       <CallToAction
-        title="Відкрий можливості Gym Platform"
-        description="Дізнайся про продукти платформи та слідкуй за їх розвитком."
-        primary={{ href: '/apps', label: 'Переглянути продукти' }}
-        secondary={{ href: '/about', label: 'Про проєкт' }}
+        title={t.ctaTitle}
+        description={t.ctaDescription}
+        primary={{ href: '/apps', label: t.ctaPrimary }}
+        secondary={{ href: '/about', label: t.ctaSecondary }}
       />
     </main>
   );
