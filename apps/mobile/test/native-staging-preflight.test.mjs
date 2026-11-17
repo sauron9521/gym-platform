@@ -38,3 +38,13 @@ test('staging config rejects unsafe artifact profiles and malformed IDs', () => 
     ).some((message) => message.includes('android.package')),
   );
 });
+
+test('production versioning requires remote EAS source and auto increment', () => {
+  const localVersioning = structuredClone(eas);
+  localVersioning.cli.appVersionSource = 'local';
+  localVersioning.build.production.autoIncrement = false;
+
+  const findings = validateNativeStagingConfig(configured, localVersioning);
+  assert.ok(findings.some((message) => message.includes('appVersionSource')));
+  assert.ok(findings.some((message) => message.includes('Production build version')));
+});
