@@ -5,6 +5,7 @@ Public routes remain Ukrainian and the document root keeps `lang="uk"`.
 **This PR does not claim English pages are live.**
 
 ## Stage 2 (after product pages settle)
+
 1. Move Ukrainian routes into an internal route group without changing existing public paths.
 2. Create an English root layout with `<html lang="en">` and /en route counterparts.
 3. Add a language switch, translated pages, hreflang/canonical and localized sitemap.

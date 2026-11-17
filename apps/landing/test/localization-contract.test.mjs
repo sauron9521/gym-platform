@@ -1,10 +1,6 @@
 import { test, expect } from 'vitest';
 
-import {
-  defaultLocale,
-  getMessages,
-  isSupportedLocale,
-} from '../src/shared/i18n/dictionaries.ts';
+import { defaultLocale, getMessages, isSupportedLocale } from '../src/shared/i18n/dictionaries.ts';
 
 test('Ukrainian default and English have matching translation keys', () => {
   expect(defaultLocale).toBe('uk');
