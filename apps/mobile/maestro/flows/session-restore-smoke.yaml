@@ -1,0 +1,23 @@
+# Staging-only smoke. Requires an APK built against HTTPS staging API and a disposable account.
+appId: ${APP_ID}
+---
+- launchApp:
+    clearState: true
+- assertVisible: З поверненням!
+- tapOn:
+    id: sign-in-email
+- inputText: ${E2E_EMAIL}
+- tapOn:
+    id: sign-in-password
+- inputText: ${E2E_PASSWORD}
+- tapOn: Увійти
+- assertVisible: Gym Platform
+- stopApp
+- launchApp:
+    clearState: false
+- assertVisible: Gym Platform
+- assertNotVisible: З поверненням!
+- tapOn: Profile
+- assertVisible: Оновити профіль
+- tapOn: Вийти
+- assertVisible: З поверненням!

@@ -1,0 +1,114 @@
+name: Mobile native E2E / Maestro (manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      apk_url:
+        description: 'Direct Expo EAS artifact URL (https://expo.dev/artifacts/eas/*.apk)'
+        required: true
+        type: string
+      apk_sha256:
+        description: 'SHA-256 of APK independently downloaded from your own EAS build'
+        required: true
+        type: string
+      app_id:
+        description: 'Android application ID from the trusted APK manifest'
+        required: true
+        type: string
+      flow:
+        description: 'Staging smoke suite'
+        required: true
+        default: auth
+        type: choice
+        options:
+          - auth
+          - workouts
+          - session-restore
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mobile-native-staging-smoke
+  cancel-in-progress: false
+
+jobs:
+  native-smoke:
+    name: Maestro / Android emulator
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    environment: mobile-staging
+    env:
+      APP_ID: ${{ inputs.app_id }}
+      APK_URL: ${{ inputs.apk_url }}
+      APK_SHA256: ${{ inputs.apk_sha256 }}
+      FLOW: ${{ inputs.flow }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js for input validation
+        uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+
+      - name: Reject non-EAS APK sources and malformed inputs
+        run: node scripts/validate-mobile-smoke-inputs.mjs
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Install pinned Maestro CLI
+        shell: bash
+        env:
+          MAESTRO_VERSION: '2.12.1'
+        run: |
+          curl --fail --silent --show-error --location \
+            --proto '=https' --proto-redir '=https' \
+            https://get.maestro.mobile.dev --output "$RUNNER_TEMP/maestro-install.sh"
+          bash "$RUNNER_TEMP/maestro-install.sh"
+          echo "$HOME/.maestro/bin" >> "$GITHUB_PATH"
+
+      - name: Run authenticated staging smoke on a verified APK
+        uses: reactivecircus/android-emulator-runner@v2
+        env:
+          E2E_EMAIL: ${{ secrets.MOBILE_E2E_EMAIL }}
+          E2E_PASSWORD: ${{ secrets.MOBILE_E2E_PASSWORD }}
+        with:
+          api-level: 34
+          arch: x86_64
+          script: |
+            set -euo pipefail
+            if [[ -z "$E2E_EMAIL" || -z "$E2E_PASSWORD" ]]; then
+              echo "The mobile-staging environment needs disposable test account secrets." >&2
+              exit 1
+            fi
+            curl --fail --location --silent --show-error --max-time 240 \
+              --proto '=https' --proto-redir '=https' \
+              --max-filesize 250000000 \
+              "$APK_URL" --output /tmp/gym-platform-preview.apk
+            printf '%s  %s\n' "${APK_SHA256,,}" /tmp/gym-platform-preview.apk | sha256sum --check --status
+            AAPT="$(find "$ANDROID_HOME/build-tools" -type f -name aapt | sort -V | tail -n 1)"
+            if [[ -z "$AAPT" ]]; then
+              echo "Android SDK aapt is required to validate the APK manifest." >&2
+              exit 1
+            fi
+            INSTALLED_ID="$("$AAPT" dump badging /tmp/gym-platform-preview.apk |
+              sed -n "s/^package: name='\([^']*\)'.*/\1/p" |
+              head -n 1)"
+            if [[ "$INSTALLED_ID" != "$APP_ID" ]]; then
+              echo "APK application ID does not match the selected staging package." >&2
+              exit 1
+            fi
+            adb install -r /tmp/gym-platform-preview.apk
+            case "$FLOW" in
+              auth) FLOW_FILE=auth-smoke.yaml ;;
+              workouts) FLOW_FILE=workouts-smoke.yaml ;;
+              session-restore) FLOW_FILE=session-restore-smoke.yaml ;;
+              *) echo "Unsupported Maestro flow" >&2; exit 1 ;;
+            esac
+            maestro test -e APP_ID="$APP_ID" -e E2E_EMAIL="$E2E_EMAIL" \
+              -e E2E_PASSWORD="$E2E_PASSWORD" "apps/mobile/maestro/flows/$FLOW_FILE"
