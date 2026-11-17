@@ -1,11 +1,15 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
+import { getTranslations } from 'next-intl/server';
+
+import { LocaleSwitcher } from '@/shared/ui/locale-switcher';
 
 /**
  * Shared visual shell only. Next.js may cache layouts during navigation.
  * Each private page MUST verify the session before rendering private UI.
  */
-export default function ProtectedLayout({ children }: Readonly<{ children: ReactNode }>) {
+export default async function ProtectedLayout({ children }: Readonly<{ children: ReactNode }>) {
+  const t = await getTranslations('web.navigation');
   return (
     <div className="min-h-screen bg-background text-foreground">
       <header className="border-b">
@@ -13,20 +17,23 @@ export default function ProtectedLayout({ children }: Readonly<{ children: React
           <Link href="/" className="font-semibold">
             Gym Platform
           </Link>
-          <nav aria-label="Особистий кабінет">
+          <div className="flex items-center gap-4">
+            <nav aria-label={t('accountNav')}>
             <Link href="/dashboard" className="text-sm text-muted-foreground hover:underline">
-              Кабінет
+              {t('dashboard')}
             </Link>
             <Link href="/workouts" className="ml-5 text-sm text-muted-foreground hover:underline">
-              Тренування
+              {t('workouts')}
             </Link>
             <Link href="/exercises" className="ml-5 text-sm text-muted-foreground hover:underline">
-              Вправи
+              {t('exercises')}
             </Link>
             <Link href="/profile" className="ml-5 text-sm text-muted-foreground hover:underline">
-              Профіль
+              {t('profile')}
             </Link>
-          </nav>
+            </nav>
+            <LocaleSwitcher />
+          </div>
         </div>
       </header>
       {children}

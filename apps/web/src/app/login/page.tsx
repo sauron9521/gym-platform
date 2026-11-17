@@ -1,40 +1,48 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { getTranslations } from 'next-intl/server';
+
+import { LocaleSwitcher } from '@/shared/ui/locale-switcher';
 
 import { SignInForm } from '@/features/auth/ui/sign-in-form';
 
-export const metadata: Metadata = {
-  title: 'Вхід | Gym Platform',
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations('web.login');
+  return { title: `${t('title')} | Gym Platform` };
+}
 
-export default function LoginPage() {
+export default async function LoginPage() {
+  const t = await getTranslations('web.login');
   return (
     <main className="flex min-h-screen items-center justify-center px-6 py-16">
       <div className="w-full max-w-md rounded-xl border bg-card p-8 text-card-foreground">
-        <Link href="/" className="text-sm font-medium text-muted-foreground hover:underline">
-          Gym Platform
-        </Link>
-        <h1 className="mt-6 text-3xl font-semibold">Вхід у кабінет</h1>
+        <div className="flex items-center justify-between gap-4">
+          <Link href="/" className="text-sm font-medium text-muted-foreground hover:underline">
+            Gym Platform
+          </Link>
+          <LocaleSwitcher />
+        </div>
+        <h1 className="mt-6 text-3xl font-semibold">{t('title')}</h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Увійдіть за допомогою електронної пошти та пароля.
+          {t('description')}
         </p>
         <SignInForm />
         <p className="mt-5 text-center text-sm text-muted-foreground">
-          Забули пароль?{' '}
+          {t('forgotPrompt')}{' '}
           <Link href="/forgot-password" className="font-medium text-foreground hover:underline">
-            Відновити доступ
+            {t('recover')}
           </Link>
         </p>
         <p className="mt-5 text-center text-sm text-muted-foreground">
-          Потрібно підтвердити адресу?{' '}
+          {t('verifyPrompt')}{' '}
           <Link href="/verify-email/resend" className="font-medium text-foreground hover:underline">
-            Надіслати лист ще раз
+            {t('resend')}
           </Link>
         </p>
         <p className="mt-6 text-center text-sm text-muted-foreground">
-          Ще немає облікового запису?{' '}
+          {t('signUpPrompt')}{' '}
           <Link href="/register" className="font-medium text-foreground hover:underline">
-            Зареєструватися
+            {t('signUp')}
           </Link>
         </p>
       </div>
