@@ -49,6 +49,30 @@
       "resend": "Resend email",
       "signUpPrompt": "Don't have an account yet?",
       "signUp": "Sign up"
+    },
+    "authFields": {
+      "email": "Email address",
+      "password": "Password",
+      "passwordRepeat": "Confirm password",
+      "signingIn": "Signing in…",
+      "signIn": "Sign in",
+      "signUp": "Sign up",
+      "signingUp": "Creating account…",
+      "mfa": "This account requires MFA. Support is coming separately.",
+      "sessionMissing": "Could not save the session. Check cookies and the API address.",
+      "sessionUnavailable": "Could not verify the session. Try again.",
+      "network": "Cannot reach the API. Please try again.",
+      "created": "Account created",
+      "createdNotice": "Registration created a session, but the email still needs verification.",
+      "openDashboard": "Go to dashboard",
+      "resendPrompt": "Didn't get an email?",
+      "resend": "Resend email",
+      "passwordHint": "At least 8 characters, upper- and lowercase letters, a number and a special character."
+    },
+    "register": {
+      "title": "Create an account",
+      "description": "Sign up to save your workouts and programs.",
+      "existing": "Already have an account?"
     }
   },
   "admin": {

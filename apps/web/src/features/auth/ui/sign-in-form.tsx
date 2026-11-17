@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -14,6 +15,7 @@ import { classifySessionCheck, getLoginErrorMessage } from '../lib/auth-flow';
 import { loginSchema, type LoginValues } from '../lib/login-schema';
 
 export function SignInForm() {
+  const t = useTranslations('web.authFields');
   const router = useRouter();
   const queryClient = useQueryClient();
   const [error, setError] = useState<string | null>(null);
@@ -48,7 +50,7 @@ export function SignInForm() {
         } catch {
           // Best effort; user still remains on this public route.
         }
-        setError('Для цього облікового запису потрібна MFA. Підтримку додамо окремо.');
+        setError(t('mfa'));
         return;
       }
 
@@ -59,8 +61,8 @@ export function SignInForm() {
       if (decision !== 'authenticated') {
         setError(
           decision === 'unauthenticated'
-            ? 'Не вдалося зберегти сесію. Перевірте cookie та адресу API.'
-            : 'Не вдалося підтвердити сесію. Спробуйте ще раз.',
+            ? t('sessionMissing')
+            : t('sessionUnavailable'),
         );
         return;
       }
@@ -69,7 +71,7 @@ export function SignInForm() {
       router.replace('/dashboard');
       router.refresh();
     } catch {
-      setError('Немає з’єднання з API. Спробуйте ще раз.');
+      setError(t('network'));
     }
   }
 
@@ -77,7 +79,7 @@ export function SignInForm() {
     <form onSubmit={handleSubmit(submit)} noValidate className="mt-8 space-y-5">
       <div className="space-y-2">
         <label htmlFor="email" className="block text-sm font-medium">
-          Електронна пошта
+          {t('email')}
         </label>
         <Input
           id="email"
@@ -97,7 +99,7 @@ export function SignInForm() {
       </div>
       <div className="space-y-2">
         <label htmlFor="password" className="block text-sm font-medium">
-          Пароль
+          {t('password')}
         </label>
         <Input
           id="password"
@@ -116,7 +118,7 @@ export function SignInForm() {
       </div>
       <FormFeedback message={error} />
       <Button type="submit" disabled={isSubmitting} className="w-full">
-        {isSubmitting ? 'Вхід…' : 'Увійти'}
+        {isSubmitting ? t('signingIn') : t('signIn')}
       </Button>
     </form>
   );

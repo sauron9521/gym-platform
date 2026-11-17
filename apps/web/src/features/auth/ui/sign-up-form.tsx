@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
@@ -20,6 +21,7 @@ type RegistrationSuccess = {
 };
 
 export function SignUpForm() {
+  const t = useTranslations('web.authFields');
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<RegistrationSuccess | null>(null);
   const {
@@ -62,22 +64,22 @@ export function SignUpForm() {
     return (
       <section className="mt-8 space-y-5" aria-labelledby="registration-success">
         <h2 id="registration-success" className="text-xl font-semibold">
-          Обліковий запис створено
+          {t('created')}
         </h2>
         <p className="text-sm text-muted-foreground">{success.email}</p>
         <p role="status" className="text-sm leading-6">
           {getRegistrationEmailMessage(success.verificationEmailStatus)}
         </p>
         <p className="text-sm text-muted-foreground">
-          Реєстрація створила сесію, але пошта ще потребує підтвердження.
+          {t('createdNotice')}
         </p>
         <Button asChild className="w-full">
-          <Link href="/dashboard">Перейти до кабінету</Link>
+          <Link href="/dashboard">{t('openDashboard')}</Link>
         </Button>
         <p className="text-sm text-muted-foreground">
-          Не отримали лист?{' '}
+          {t('resendPrompt')}{' '}
           <Link href="/verify-email/resend" className="font-medium text-foreground hover:underline">
-            Надіслати ще раз
+            {t('resend')}
           </Link>
         </p>
       </section>
@@ -88,7 +90,7 @@ export function SignUpForm() {
     <form onSubmit={handleSubmit(submit)} noValidate className="mt-8 space-y-5">
       <div className="space-y-2">
         <label htmlFor="register-email" className="block text-sm font-medium">
-          Електронна пошта
+          {t('email')}
         </label>
         <input
           id="register-email"
@@ -109,7 +111,7 @@ export function SignUpForm() {
       </div>
       <div className="space-y-2">
         <label htmlFor="register-password" className="block text-sm font-medium">
-          Пароль
+          {t('password')}
         </label>
         <input
           id="register-password"
@@ -126,7 +128,7 @@ export function SignUpForm() {
           className="h-11 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
         />
         <p id="register-password-hint" className="text-xs text-muted-foreground">
-          Щонайменше 8 символів: великі й малі літери, цифра та спеціальний символ.
+          {t('passwordHint')}
         </p>
         {errors.password && (
           <p id="register-password-error" role="alert" className="text-xs text-destructive">
@@ -136,7 +138,7 @@ export function SignUpForm() {
       </div>
       <div className="space-y-2">
         <label htmlFor="register-confirmation" className="block text-sm font-medium">
-          Повторіть пароль
+          {t('passwordRepeat')}
         </label>
         <input
           id="register-confirmation"
@@ -160,7 +162,7 @@ export function SignUpForm() {
         </p>
       )}
       <Button type="submit" disabled={isSubmitting} className="w-full">
-        {isSubmitting ? 'Створюємо обліковий запис…' : 'Зареєструватися'}
+        {isSubmitting ? t('signingUp') : t('signUp')}
       </Button>
     </form>
   );
