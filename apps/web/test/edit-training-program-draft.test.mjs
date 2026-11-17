@@ -138,7 +138,7 @@ test('program detail/editor use typed paths and allow only active draft updates'
   assert.match(mutations, /trainingProgramQueryKeys.lists\(\)/);
   assert.match(mutations, /trainingProgramQueryKeys.version\(programId, versionId\)/);
   assert.doesNotMatch(editor, /webApi.PATCH/);
-  assert.match(list, /Деталі програми/);
+  assert.ok(list.includes("t('details')"), 'Details link remains translated');
   for (const file of [details, editor, query, mutations]) {
     assert.doesNotMatch(file, /localStorage|sessionStorage|dangerouslySetInnerHTML/);
   }
