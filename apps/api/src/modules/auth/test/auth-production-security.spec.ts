@@ -31,9 +31,9 @@ describe('production authentication and transport security boundaries', () => {
   });
 
   it('requires a high-entropy metrics token when scrape is explicitly enabled', () => {
-    expect(
-      envSchema.safeParse({ ...production, HTTP_METRICS_ENABLED: 'true' }).success,
-    ).toBe(false);
+    expect(envSchema.safeParse({ ...production, HTTP_METRICS_ENABLED: 'true' }).success).toBe(
+      false,
+    );
     expect(
       envSchema.safeParse({
         ...production,
@@ -44,8 +44,8 @@ describe('production authentication and transport security boundaries', () => {
   });
 
   it('does not permit an invalid proxy address to impersonate the browser IP', () => {
-    expect(
-      envSchema.safeParse({ ...production, TRUSTED_PROXY_CIDRS: '0.0.0.0/0' }).success,
-    ).toBe(false);
+    expect(envSchema.safeParse({ ...production, TRUSTED_PROXY_CIDRS: '0.0.0.0/0' }).success).toBe(
+      false,
+    );
   });
 });
