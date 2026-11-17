@@ -49,7 +49,6 @@ export function RestTimer() {
 
   useEffect(() => {
     if (!foreground || timer.deadline === null) return;
-    refresh();
     const interval = setInterval(refresh, 1000);
     return () => clearInterval(interval);
   }, [foreground, refresh, timer.deadline]);
