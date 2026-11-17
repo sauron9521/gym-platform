@@ -20,6 +20,9 @@ export function validateNativeStagingConfig(app, eas) {
   if (eas?.build?.preview?.environment !== 'preview') {
     failures.push('Preview must use the isolated EAS preview environment');
   }
+  if (eas?.cli?.appVersionSource !== 'remote') {
+    failures.push('EAS appVersionSource must be remote');
+  }
   if (eas?.build?.production?.autoIncrement !== true) {
     failures.push('Production build version must be incremented');
   }
