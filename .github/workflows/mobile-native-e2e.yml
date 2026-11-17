@@ -96,7 +96,9 @@ jobs:
               echo "Android SDK aapt is required to validate the APK manifest." >&2
               exit 1
             fi
-            INSTALLED_ID="$("$AAPT" dump badging /tmp/gym-platform-preview.apk | sed -n "s/^package: name='\([^']*\)'.*/\1/p" | head -n 1)"
+            INSTALLED_ID="$("$AAPT" dump badging /tmp/gym-platform-preview.apk |
+              sed -n "s/^package: name='\([^']*\)'.*/\1/p" |
+              head -n 1)"
             if [[ "$INSTALLED_ID" != "$APP_ID" ]]; then
               echo "APK application ID does not match the selected staging package." >&2
               exit 1
