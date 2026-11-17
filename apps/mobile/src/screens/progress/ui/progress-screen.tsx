@@ -1,13 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useRouter } from 'expo-router';
-import {
-  ActivityIndicator,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { ExercisePicker } from '@/features/exercises/ui/exercise-picker';
 import { strengthVolumeHeights } from '@/features/progress/lib/chart';
