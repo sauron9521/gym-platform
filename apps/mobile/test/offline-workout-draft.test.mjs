@@ -71,6 +71,6 @@ describe('offline workout draft safety contract', () => {
   it('rejects a corrupted draft passed directly to the eligibility predicate', () => {
     const draft = createOfflineWorkoutDraft(owner, form, 123);
     const corrupted = { ...draft, state: 'READY' };
-    expect(canSendReviewedDraft(corrupted as typeof draft, owner, true, true)).toBe(false);
+    expect(canSendReviewedDraft(corrupted, owner, true, true)).toBe(false);
   });
 });
