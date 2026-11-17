@@ -1,0 +1,51 @@
+# Mutating Android Maestro smoke; run manually against a verified disposable staging APK.
+appId: ${APP_ID}
+---
+- launchApp:
+    clearState: true
+- assertVisible: З поверненням!
+- tapOn:
+    id: sign-in-email
+- inputText: ${E2E_EMAIL}
+- tapOn:
+    id: sign-in-password
+- inputText: ${E2E_PASSWORD}
+- tapOn: Увійти
+- assertVisible: Gym Platform
+- tapOn:
+    id: mobile-tab-workouts
+- assertVisible: Мої тренування
+- tapOn:
+    id: workouts-create
+- assertVisible: Нове тренування
+- tapOn: Назва тренування
+- inputText: ${E2E_WORKOUT_TITLE}
+- tapOn:
+    id: workout-exercise-search
+- inputText: ${E2E_EXERCISE_NAME}
+- hideKeyboard
+- assertVisible: ${E2E_EXERCISE_NAME}
+- tapOn: ${E2E_EXERCISE_NAME}
+- tapOn:
+    id: create-workout-submit
+- assertVisible: Мої тренування
+- assertVisible: ${E2E_WORKOUT_TITLE}
+- tapOn: ${E2E_WORKOUT_TITLE}
+- assertVisible: Почати тренування
+- tapOn:
+    id: workout-status-action
+- assertVisible: Завершити тренування
+- tapOn: Повторення, підхід 1
+- eraseText: 20
+- inputText: '8'
+- hideKeyboard
+- tapOn: Вага, підхід 1
+- eraseText: 20
+- inputText: '40'
+- hideKeyboard
+- tapOn: Виконано
+- assertVisible: Підхід 1 · Виконано
+- tapOn:
+    id: workout-status-action
+- assertVisible: Завершено
+- assertNotVisible: Завершити тренування

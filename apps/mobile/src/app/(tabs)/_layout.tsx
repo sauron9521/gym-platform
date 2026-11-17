@@ -31,6 +31,7 @@ export default function TabsLayout() {
         name="workouts"
         options={{
           title: t('mobile.tabs.workouts'),
+          tabBarButtonTestID: 'mobile-tab-workouts',
           headerTitle: t('mobile.tabs.myWorkouts'),
           tabBarIcon: () => <Text accessible={false}>📋</Text>,
         }}

@@ -77,6 +77,16 @@ export function ProfileScreen() {
       >
         <Text style={styles.secondaryText}>{t('mobile.profile.edit')}</Text>
       </Pressable>
+      {account.role === 'TRAINER' ? (
+        <Pressable
+          accessibilityRole="button"
+          testID="profile-trainer-athletes"
+          onPress={() => router.push('/trainer/athletes')}
+          style={styles.secondary}
+        >
+          <Text style={styles.secondaryText}>{t('mobile.profile.myAthletes')}</Text>
+        </Pressable>
+      ) : null}
       <Pressable accessibilityRole="button" onPress={() => void signOut()} style={styles.secondary}>
         <Text style={styles.secondaryText}>{t('mobile.profile.signOut')}</Text>
       </Pressable>
