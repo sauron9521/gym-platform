@@ -210,6 +210,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
         }
 
         // Never unlock based only on token issuance or SecureStore contents.
+        stage = 'verify';
         const revision = session.revision;
         const me = await api.GET('/users/me');
         if (me.response.status !== 200 || !me.data || session.revision !== revision) {
