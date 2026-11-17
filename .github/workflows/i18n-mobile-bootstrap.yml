@@ -1,0 +1,33 @@
+name: i18n mobile bootstrap
+on:
+  push:
+    branches:
+      - feat/i18n-12-mobile-persistence
+permissions:
+  contents: write
+jobs:
+  lock-and-verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v6
+        with:
+          version: '12.18.0'
+          run_install: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: pnpm install --lockfile-only --ignore-scripts --no-frozen-lockfile
+      - run: pnpm exec prettier --write apps/mobile/src/shared/i18n apps/mobile/src/app/_layout.tsx apps/mobile/package.json
+      - name: Push generated lock and style
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add pnpm-lock.yaml apps/mobile
+          if ! git diff --cached --quiet; then
+            git commit -m 'chore(i18n): lock AsyncStorage 2.2.0 and format mobile locale modules'
+            HUSKY=0 git push
+          fi
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @gym/mobile typecheck
+      - run: pnpm --filter @gym/mobile test
