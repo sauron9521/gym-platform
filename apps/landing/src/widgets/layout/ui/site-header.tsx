@@ -2,6 +2,7 @@ import Link from 'next/link';
 
 import { mainNavigation } from '@/shared/config/navigation';
 import { Button } from '@/shared/ui/button';
+import { MobileNavigation } from './mobile-navigation';
 
 export function SiteHeader() {
   return (
@@ -39,34 +40,7 @@ export function SiteHeader() {
           </Button>
         </div>
 
-        <details className="group relative lg:hidden">
-          <summary className="flex cursor-pointer list-none items-center gap-2 rounded-md border border-border px-3 py-2 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary [&::-webkit-details-marker]:hidden">
-            <span aria-hidden="true" className="text-lg leading-none">
-              ☰
-            </span>
-            Меню
-          </summary>
-          <nav
-            aria-label="Мобільна навігація"
-            className="absolute top-full right-0 mt-3 flex w-60 flex-col gap-1 rounded-xl border border-border bg-card p-2 shadow-xl"
-          >
-            {mainNavigation.map(({ label, href }) => (
-              <Link
-                key={href}
-                href={href}
-                className="rounded-md px-3 py-2 text-sm font-medium hover:bg-accent focus-visible:outline-2 focus-visible:outline-primary"
-              >
-                {label}
-              </Link>
-            ))}
-            <Link
-              href="/apps"
-              className="rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground focus-visible:outline-2 focus-visible:outline-primary"
-            >
-              Застосунки
-            </Link>
-          </nav>
-        </details>
+        <MobileNavigation />
       </div>
     </header>
   );
