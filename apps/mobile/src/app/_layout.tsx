@@ -4,6 +4,7 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { AuthProvider, useAuth } from '@/features/auth/model/auth-context';
 import { GluestackUIProvider } from '@/shared/ui/gluestack/gluestack-ui-provider';
@@ -17,9 +18,19 @@ function Navigation() {
   const { account, restoring } = useAuth();
   return (
     <>
-      <Stack screenOptions={{ headerShown: false }}>
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          headerStyle: { backgroundColor: palette.surface },
+          headerTintColor: palette.text,
+          headerTitleStyle: { color: palette.text },
+          headerBackButtonDisplayMode: 'minimal',
+          headerShadowVisible: false,
+          contentStyle: { backgroundColor: palette.background },
+        }}
+      >
         <Stack.Protected guard={Boolean(account)}>
-          <Stack.Screen name="(tabs)" />
+          <Stack.Screen name="(tabs)" options={{ title: 'Gym Platform' }} />
           <Stack.Screen
             name="profile/edit"
             options={{ headerShown: true, title: 'Редагувати профіль' }}
@@ -79,7 +90,8 @@ const styles = StyleSheet.create({
 export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <GluestackUIProvider mode="dark">
+      <SafeAreaProvider>
+        <GluestackUIProvider mode="dark">
         <LocaleProvider>
           <MobileQueryProvider>
             <MobileErrorBoundary>
@@ -89,7 +101,8 @@ export default function RootLayout() {
             </MobileErrorBoundary>
           </MobileQueryProvider>
         </LocaleProvider>
-      </GluestackUIProvider>
+        </GluestackUIProvider>
+      </SafeAreaProvider>
     </GestureHandlerRootView>
   );
 }

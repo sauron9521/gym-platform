@@ -73,7 +73,14 @@ export function EditProfileScreen() {
   const disabled = profile.isPending || mutation.isPending || isSubmitting;
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={styles.content}
+      contentInsetAdjustmentBehavior="automatic"
+      automaticallyAdjustKeyboardInsets
+      keyboardShouldPersistTaps="handled"
+      bounces={false}
+    >
       <Text style={styles.title}>Редагувати профіль</Text>
       {profile.isPending ? <Text style={styles.hint}>Завантаження профілю…</Text> : null}
       {profile.isError ? (
@@ -138,7 +145,7 @@ export function EditProfileScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: palette.background },
-  content: { padding: 24, gap: 14 },
+  content: { paddingHorizontal: 20, paddingTop: 24, paddingBottom: 64, gap: 14 },
   title: { color: palette.text, fontSize: 26, fontWeight: '700' },
   field: { gap: 7 },
   label: { color: palette.text, fontSize: 14, fontWeight: '600' },
