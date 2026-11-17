@@ -58,7 +58,10 @@ export default function FeaturesPage() {
             Gym Platform розвиває інструменти для планування, виконання та аналізу тренувань.
             Частина можливостей ще перебуває в розробці.
           </p>
-          <Link className="mt-8 inline-flex font-semibold text-primary hover:underline" href="/apps">
+          <Link
+            className="mt-8 inline-flex font-semibold text-primary hover:underline"
+            href="/apps"
+          >
             Переглянути застосунки
           </Link>
         </Container>
@@ -72,7 +75,9 @@ export default function FeaturesPage() {
             description="Окремі інструменти працюють як частини спільної платформи."
           />
           <div className="mt-10 grid gap-5 sm:grid-cols-2">
-            {capabilities.map((item) => <FeatureCard key={item.title} {...item} />)}
+            {capabilities.map((item) => (
+              <FeatureCard key={item.title} {...item} />
+            ))}
           </div>
         </Container>
       </MarketingSection>
