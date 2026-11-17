@@ -6,12 +6,10 @@ indexing rules, or analytics configuration to a different deployment.
 
 The root `turbo.json` currently hashes these values for the `build` task:
 
-| Variable                       | Reason                                             |
-| ------------------------------ | -------------------------------------------------- |
-| `LANDING_SITE_URL`             | HTTPS canonical origin, robots and sitemap         |
-| `LANDING_ALLOW_INDEXING`       | Explicit opt-in to indexing (Landing PR #209)      |
-| `NEXT_PUBLIC_UMAMI_WEBSITE_ID` | Public analytics site identifier (Landing PR #212) |
-| `NEXT_PUBLIC_UMAMI_SCRIPT_URL` | Public analytics script URL (Landing PR #212)      |
+- `LANDING_SITE_URL`: HTTPS canonical origin, robots and sitemap
+- `LANDING_ALLOW_INDEXING`: explicit indexing opt-in (Landing PR #209)
+- `NEXT_PUBLIC_UMAMI_WEBSITE_ID`: public analytics site identifier (Landing PR #212)
+- `NEXT_PUBLIC_UMAMI_SCRIPT_URL`: public analytics script URL (Landing PR #212)
 
 The latter three values are included *before* their feature PRs merge, so those changes
 cannot silently re-use an earlier build. Unconfigured values are valid in PR CI;
