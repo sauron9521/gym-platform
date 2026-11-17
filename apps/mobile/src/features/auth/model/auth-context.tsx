@@ -223,7 +223,8 @@ export function AuthProvider({ children }: PropsWithChildren) {
         verified = true;
         return { success: true };
       } catch {
-        return { success: false, message: 'Не вдалося увійти або захистити сесію.' };
+        // Identify the failed step without exposing credentials or raw exceptions.
+        return { success: false, message: getMobileLoginTransportError(stage) };
       } finally {
         if (!verified) {
           await session.clear().catch(() => undefined);
