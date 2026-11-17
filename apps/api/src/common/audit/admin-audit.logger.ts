@@ -1,48 +1,54 @@
 import { createHash } from 'node:crypto';
 
 import { Injectable, Logger } from '@nestjs/common';
+import type { Request } from 'express';
+import { z } from 'zod';
 
-import { ADMIN_PERMISSIONS, type AdminPermission } from '../rbac/admin-permissions.js';
+import { getRequestId } from '../request-context/request-context.middleware.js';
+import { ADMIN_PERMISSIONS } from '../rbac/admin-permissions.js';
 
-export type AdminAuditOutcome = 'allowed' | 'denied' | 'failed';
-export type AdminAuditInput = {
-  permission: AdminPermission;
-  actorId: string;
-  targetId?: string;
-  requestId?: string;
-  outcome: AdminAuditOutcome;
-};
+/**
+ * Logging-only contract, not a durable or complete compliance audit trail.
+ * IDs are validated and pseudonymized (not anonymized) before logging.
+ */
+const auditInputSchema = z.strictObject({
+  permission: z.enum(ADMIN_PERMISSIONS),
+  actorId: z.uuid(),
+  targetId: z.uuid().optional(),
+  outcome: z.enum(['allowed', 'denied', 'failed']),
+});
 
-/** Safe structured event stream for future administrative write endpoints. */
+export type AdminAuditInput = z.infer<typeof auditInputSchema>;
+export type AdminAuditOutcome = AdminAuditInput['outcome'];
+
+function pseudonymize(kind: 'actor' | 'target', value: string): string {
+  // Domain-separated hashes prevent actor/target hashes from being identical
+  // when a user occurs in both positions. UUID hashes are still linkable.
+  return createHash('sha256').update('gym.admin.audit.v1:' + kind + ':' + value).digest('hex');
+}
+
 @Injectable()
 export class AdminAuditLogger {
   private readonly logger = new Logger(AdminAuditLogger.name);
 
-  record(input: AdminAuditInput): void {
-    if (!ADMIN_PERMISSIONS.includes(input.permission)) {
-      throw new Error('Unknown administrative audit action');
-    }
-    if (!['allowed', 'denied', 'failed'].includes(input.outcome)) {
-      throw new Error('Unknown administrative audit outcome');
-    }
-    if (!input.actorId || input.actorId.length > 128) {
-      throw new Error('Invalid administrative audit principal');
-    }
+  /**
+   * Call only after server-side authentication/authorization. The caller must
+   * supply the authenticated principal, not an ID from a request body/header.
+   * An optional request is used only for server-generated request correlation.
+   */
+  record(input: AdminAuditInput, request?: Request): void {
+    const event = auditInputSchema.parse(input);
+    const requestId = request ? getRequestId(request) : undefined;
 
-    const pseudonym = (value: string) => createHash('sha256').update(value).digest('hex');
-
-    // No user IDs, email addresses, access tokens, request bodies or raw errors
-    // enter this log. The future durable store must enforce stricter retention.
+    // Do not log raw principals, targets, request payloads, errors or tokens.
     this.logger.log({
       event: 'ADMIN_AUDIT_EVENT',
       schemaVersion: 1,
-      permission: input.permission,
-      actorHash: pseudonym(input.actorId),
-      ...(input.targetId ? { targetHash: pseudonym(input.targetId) } : {}),
-      ...(input.requestId && /^[a-zA-Z0-9._:-]{1,64}$/.test(input.requestId)
-        ? { requestId: input.requestId }
-        : {}),
-      outcome: input.outcome,
+      permission: event.permission,
+      actorHash: pseudonymize('actor', event.actorId),
+      ...(event.targetId ? { targetHash: pseudonymize('target', event.targetId) } : {}),
+      ...(requestId ? { requestId } : {}),
+      outcome: event.outcome,
     });
   }
 }

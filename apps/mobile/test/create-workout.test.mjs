@@ -82,7 +82,8 @@ test('manual creation locks submission, sends idempotency header and refreshes s
 
   assert.match(screen, /submitLock\.current/);
   assert.match(screen, /if \(submitLock\.current\) return/);
-  assert.match(screen, /disabled=\{createWorkout\.isPending \|\| isSubmitting/);
+  assert.match(screen, /const disabled = isSubmitting \|\| createWorkout\.isPending/);
+  assert.match(screen, /disabled=\{disabled\}/);
   assert.match(model, /'Idempotency-Key': attempt\.current\.key/);
   assert.match(model, /retry: false/);
   assert.match(model, /invalidateQueries\(\{ queryKey: accountQueryKeys\.workouts/);

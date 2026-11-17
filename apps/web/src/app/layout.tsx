@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
+import { NextIntlClientProvider } from 'next-intl';
+import { getLocale, getMessages } from 'next-intl/server';
 
 import { WebQueryProvider } from './providers';
 
@@ -10,11 +12,14 @@ export const metadata: Metadata = {
   description: 'Gym Platform web application.',
 };
 
-export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
+export default async function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
+  const [locale, messages] = await Promise.all([getLocale(), getMessages()]);
   return (
-    <html lang="uk">
+    <html lang={locale}>
       <body className="min-h-screen antialiased">
-        <WebQueryProvider>{children}</WebQueryProvider>
+        <NextIntlClientProvider locale={locale} messages={messages}>
+          <WebQueryProvider>{children}</WebQueryProvider>
+        </NextIntlClientProvider>
       </body>
     </html>
   );

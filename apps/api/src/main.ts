@@ -4,7 +4,7 @@ import { NestFactory } from '@nestjs/core';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from '#src/app.module';
 import type { AppConfigService } from '#src/common/config/app-config.types';
-import { getCorsOrigins, getWebAppOrigin } from '#src/common/config/http.config';
+import { getCorsOrigins, getCsrfTrustedOrigins } from '#src/common/config/http.config';
 import { getTrustedProxies } from '#src/common/config/proxy.config';
 import { getLogLevels } from '#src/common/config/logger.config';
 import { enableOpenApi } from '#src/infra/openapi/openapi';
@@ -40,7 +40,13 @@ async function bootstrap() {
 
   // Browser writes from the configured web app are permitted; arbitrary origins remain blocked.
   app.enableCsrfProtection({
-    trustedOrigins: [getWebAppOrigin(config.getOrThrow('APP_URL'))],
+    // Nest's CSRF origin check is separate from CORS. Expo Web uses bearer
+    // tokens, but its cross-origin POST /auth/token still passes this check.
+    trustedOrigins: getCsrfTrustedOrigins(
+      config.getOrThrow('APP_URL'),
+      corsOrigins,
+      config.get('ADMIN_APP_URL'),
+    ),
   });
 
   // All request DTOs now use Nest 12 Standard Schema/Zod validation.

@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { isTrustedProxyList } from './proxy.config.js';
+import { isValidOperatorSuperAdminIds } from '../rbac/operator-superadmin-allowlist.js';
 
 const emptyToUndefined = (value: unknown) => (value === '' ? undefined : value);
 
@@ -128,6 +129,27 @@ const baseEnvSchema = z.object({
       .regex(/^[A-Za-z0-9_-]{43,128}$/)
       .optional(),
   ),
+  ADMIN_APP_URL: z.preprocess(
+    emptyToUndefined,
+    z
+      .string()
+      .trim()
+      .refine(
+        (value) => isPublicHttpUrl(value) && new URL(value).origin === value,
+        'Must be an HTTP(S) origin without path, query or credentials',
+      )
+      .optional(),
+  ),
+  SUPERADMIN_USER_IDS: z.preprocess(
+    emptyToUndefined,
+    z
+      .string()
+      .trim()
+      .min(1)
+      .max(1024)
+      .refine(isValidOperatorSuperAdminIds, 'Expected 1–20 distinct UUIDs')
+      .optional(),
+  ),
   AVATAR_STORAGE_DIR: optionalString,
   REDIS_URL: z.preprocess(
     emptyToUndefined,
@@ -190,6 +212,14 @@ export const envSchema = baseEnvSchema.superRefine((env, ctx) => {
       code: 'custom',
       path: ['MAIL_FROM'],
       message: 'MAIL_FROM is required in production',
+    });
+  }
+
+  if (env.ADMIN_APP_URL && new URL(env.ADMIN_APP_URL).protocol !== 'https:') {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['ADMIN_APP_URL'],
+      message: 'Production Admin origin must use HTTPS',
     });
   }
 

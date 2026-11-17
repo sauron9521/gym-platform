@@ -5,6 +5,7 @@ import { useState, type FormEvent } from 'react';
 
 import { webApi } from '@/shared/api/client';
 import { Button } from '@/shared/ui/button';
+import { FormFeedback } from '@/shared/ui/form-feedback';
 import { getForgotPasswordErrorMessage } from '../lib/password-reset-flow';
 
 export function ForgotPasswordForm() {
@@ -73,11 +74,7 @@ export function ForgotPasswordForm() {
           className="h-11 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
         />
       </div>
-      {error && (
-        <p role="alert" className="text-sm text-destructive">
-          {error}
-        </p>
-      )}
+      <FormFeedback message={error} />
       <Button type="submit" className="w-full" disabled={submitting}>
         {submitting ? 'Надсилаємо запит…' : 'Надіслати інструкції'}
       </Button>
