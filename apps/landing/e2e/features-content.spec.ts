@@ -24,18 +24,15 @@ for (const width of [320, 1280]) {
     ]) {
       await expect(cards.getByRole('heading', { name: title })).toBeVisible();
     }
-    await expect(main.getByRole('link', { name: 'Я спортсмен', exact: true })).toHaveAttribute(
-      'href',
-      '/for-athletes',
-    );
-    await expect(main.getByRole('link', { name: 'Я тренер', exact: true })).toHaveAttribute(
-      'href',
-      '/for-trainers',
-    );
-    await expect(main.getByRole('link', { name: 'Переглянути застосунки', exact: true })).toHaveAttribute(
-      'href',
-      '/apps',
-    );
+    const athleteLink = main.getByRole('link', { name: 'Я спортсмен', exact: true });
+    const trainerLink = main.getByRole('link', { name: 'Я тренер', exact: true });
+    const applicationsLink = main.getByRole('link', {
+      name: 'Переглянути застосунки',
+      exact: true,
+    });
+    await expect(athleteLink).toHaveAttribute('href', '/for-athletes');
+    await expect(trainerLink).toHaveAttribute('href', '/for-trainers');
+    await expect(applicationsLink).toHaveAttribute('href', '/apps');
 
     const documentWidth = await page.evaluate(() => document.documentElement.scrollWidth);
     expect(documentWidth).toBeLessThanOrEqual(width);
@@ -50,7 +47,8 @@ test('features CTA leads to an existing athlete page without suggesting product 
   page,
 }) => {
   await page.goto('/features');
-  await page.getByRole('main').getByRole('link', { name: 'Я спортсмен', exact: true }).click();
+  const main = page.getByRole('main');
+  await main.getByRole('link', { name: 'Я спортсмен', exact: true }).click();
   await expect(page).toHaveURL(/\/for-athletes$/);
   await expect(page.getByRole('main')).toBeVisible();
 });
