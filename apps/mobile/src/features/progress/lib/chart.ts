@@ -5,5 +5,7 @@ export function strengthVolumeHeights(daily: readonly { strengthVolumeKg: number
   );
   const max = Math.max(0, ...volumes);
   if (max === 0) return volumes.map(() => 0);
-  return volumes.map((volume) => (volume === 0 ? 0 : Math.max(3, Math.round((volume / max) * 100))));
+  return volumes.map((volume) =>
+    volume === 0 ? 0 : Math.max(3, Math.round((volume / max) * 100)),
+  );
 }
