@@ -137,6 +137,16 @@ export function classifyChangedPaths(paths, { forceFull = false } = {}) {
       continue;
     }
 
+    if (path.startsWith('packages/i18n/')) {
+      // Shared translation catalogs are consumed by the Web, Landing, Admin and Mobile apps.
+      selected.web = true;
+      selected.landing = true;
+      selected.admin = true;
+      selected.mobile = true;
+      if (path === 'packages/i18n/package.json') selected.deps = true;
+      continue;
+    }
+
     if (path.startsWith('packages/design-tokens/')) {
       selected.web = true;
       selected.admin = true;
