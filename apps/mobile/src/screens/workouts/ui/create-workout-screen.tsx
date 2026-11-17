@@ -1,7 +1,14 @@
 import { useRef } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'expo-router';
-import { Controller, FormProvider, useFieldArray, useForm, useFormContext, useWatch } from 'react-hook-form';
+import {
+  Controller,
+  FormProvider,
+  useFieldArray,
+  useForm,
+  useFormContext,
+  useWatch,
+} from 'react-hook-form';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { ExercisePicker } from '@/features/exercises/ui/exercise-picker';

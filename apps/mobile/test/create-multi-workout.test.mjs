@@ -52,7 +52,10 @@ describe('mobile multi-exercise workout builder', () => {
       { ...form, exercises: [{ exerciseId: exercise1, sets: [{ reps: '0', weightKg: '' }] }] },
       { ...form, exercises: [{ exerciseId: exercise1, sets: [{ reps: '1001', weightKg: '' }] }] },
       { ...form, exercises: [{ exerciseId: exercise1, sets: [{ reps: '10', weightKg: '-2' }] }] },
-      { ...form, exercises: [{ exerciseId: exercise1, sets: [{ reps: '10', weightKg: '10.123' }] }] },
+      {
+        ...form,
+        exercises: [{ exerciseId: exercise1, sets: [{ reps: '10', weightKg: '10.123' }] }],
+      },
       {
         ...form,
         exercises: [{ exerciseId: exercise1, sets: [{ reps: '10', weightKg: '1000000' }] }],
@@ -73,8 +76,10 @@ describe('mobile multi-exercise workout builder', () => {
       true,
     );
     expect(
-      mobileMultiWorkoutFormSchema.safeParse({ title: 'Valid', exercises: [...exercises, exercises[0]] })
-        .success,
+      mobileMultiWorkoutFormSchema.safeParse({
+        title: 'Valid',
+        exercises: [...exercises, exercises[0]],
+      }).success,
     ).toBe(false);
     expect(
       mobileMultiWorkoutFormSchema.safeParse({
@@ -89,11 +94,7 @@ describe('mobile multi-exercise workout builder', () => {
     const key = () => `mobile-key-${++keys}`;
     const parsed = mobileMultiWorkoutFormSchema.parse(form);
     const initial = resolveMultiWorkoutCreationAttempt(parsed, null, key);
-    const replay = resolveMultiWorkoutCreationAttempt(
-      { ...parsed, title: 'Спина' },
-      initial,
-      key,
-    );
+    const replay = resolveMultiWorkoutCreationAttempt({ ...parsed, title: 'Спина' }, initial, key);
     const changed = resolveMultiWorkoutCreationAttempt(
       {
         ...parsed,

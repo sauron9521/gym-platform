@@ -54,7 +54,10 @@ const mobilePlannedSetSchema = z.object({
   reps: z
     .string()
     .regex(/^\d+$/, 'Вкажіть ціле число повторень.')
-    .refine((value) => Number(value) >= 1 && Number(value) <= 1000, 'Повторення: 1–1000.'),
+    .refine(
+      (value) => Number(value) >= 1 && Number(value) <= 1000,
+      'Повторення: 1–1000.',
+    ),
   weightKg: z
     .string()
     .trim()
