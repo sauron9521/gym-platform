@@ -49,3 +49,17 @@ test('English browser preferences do not expose unfinished English routes or SEO
   const englishRoute = await page.request.get('/en');
   expect(englishRoute.status()).toBe(404);
 });
+
+test('Dark Performance brand mark stays decorative and favicon SVG is served', async ({ page }) => {
+  await page.goto('/');
+
+  const homeLink = page.getByRole('link', { name: 'Gym Platform — головна сторінка' });
+  await expect(homeLink).toBeVisible();
+  await expect(homeLink.locator('svg')).toHaveAttribute('aria-hidden', 'true');
+  await expect(homeLink).toContainText('Gym Platform');
+
+  const favicon = await page.request.get('/icon.svg');
+  expect(favicon.ok()).toBe(true);
+  expect(favicon.headers()['content-type']).toContain('image/svg+xml');
+  expect(await favicon.text()).toContain('viewBox="0 0 64 64"');
+});
