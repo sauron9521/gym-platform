@@ -1,4 +1,4 @@
-import { defaultLocale, isLocale, type Locale } from './index.js';
+import { defaultLocale, isLocale, type Locale } from './index';
 
 /** Explicit choice wins; otherwise use the highest priority supported Accept-Language tag. */
 export function resolveRequestLocale(
