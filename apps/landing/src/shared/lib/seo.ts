@@ -61,3 +61,8 @@ export function pageMetadata({
     },
   };
 }
+
+/** Domain configuration alone never authorizes search-engine indexing. */
+export function isIndexingEnabled(): boolean {
+  return getSiteOrigin() !== null && process.env.LANDING_ALLOW_INDEXING === 'true';
+}
