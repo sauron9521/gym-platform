@@ -1,4 +1,10 @@
-import { CanActivate, ExecutionContext, ForbiddenException, Injectable, Optional } from '@nestjs/common';
+import {
+  CanActivate,
+  ExecutionContext,
+  ForbiddenException,
+  Injectable,
+  Optional,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Reflector } from '@nestjs/core';
 
@@ -38,9 +44,10 @@ export class PermissionsGuard implements CanActivate {
     }
 
     const required = [...(controller ?? []), ...(handler ?? [])];
-    const principal = context
-      .switchToHttp()
-      .getRequest<{ user?: { id?: string; role?: Role } }>().user;
+    const request = context.switchToHttp().getRequest<{
+      user?: { id?: string; role?: Role };
+    }>();
+    const principal = request.user;
     // The user ID must come from the verified NestJS authentication provider.
     const superAdminIds = new Set(
       (this.config?.get<string>('SUPERADMIN_USER_IDS') ?? '')
