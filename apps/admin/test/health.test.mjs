@@ -33,9 +33,10 @@ test('fails safely for malformed or missing private upstream configuration', asy
     'ftp://api.example.test',
     'not-an-origin',
   ]) {
-    assert.equal(await readAdminHealth(config, async () => {
+    const result = await readAdminHealth(config, async () => {
       throw new Error('An invalid origin must not be fetched');
-    }), 'degraded');
+    });
+    assert.equal(result, 'degraded');
   }
 });
 
