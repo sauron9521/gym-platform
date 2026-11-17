@@ -32,7 +32,9 @@ export function releaseErrors(env = process.env) {
         url.port ||
         !publicHost
       ) {
-        issues.push('LANDING_SITE_URL must be a public HTTPS origin without credentials, port or path.');
+        issues.push(
+          'LANDING_SITE_URL must be a public HTTPS origin without credentials, port or path.',
+        );
       }
     } catch {
       issues.push('LANDING_SITE_URL is not a valid URL.');
@@ -68,7 +70,9 @@ export function releaseErrors(env = process.env) {
         url.search ||
         !url.pathname.endsWith('.js')
       ) {
-        issues.push('Analytics script URL must be a trusted HTTPS .js URL without query or fragment.');
+        issues.push(
+          'Analytics script URL must be a trusted HTTPS .js URL without query or fragment.',
+        );
       }
     } catch {
       issues.push('Analytics script URL is invalid.');
@@ -84,6 +88,8 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
     for (const issue of issues) console.error('Release preflight: ' + issue);
     process.exitCode = 1;
   } else {
-    console.log('Landing release configuration checks passed; manual release gates still apply.');
+    console.log(
+      'Landing release configuration checks passed; manual release gates still apply.',
+    );
   }
 }
