@@ -1,13 +1,15 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { cleanup, render, screen } from '@testing-library/react';
 
-const { headersMock, sessionMock } = vi.hoisted(() => ({
+const { headersMock, sessionMock, healthMock } = vi.hoisted(() => ({
   headersMock: vi.fn(),
   sessionMock: vi.fn(),
+  healthMock: vi.fn(),
 }));
 
 vi.mock('next/headers', () => ({ headers: headersMock }));
 vi.mock('@/shared/api/admin-session', () => ({ readAdminSession: sessionMock }));
+vi.mock('@/shared/api/admin-health', () => ({ readAdminHealth: healthMock }));
 
 import AdminHomePage, { dynamic } from '../../src/app/page';
 
@@ -15,6 +17,7 @@ type AccessState = 'unauthenticated' | 'forbidden' | 'unavailable';
 
 beforeEach(() => {
   vi.resetAllMocks();
+  healthMock.mockResolvedValue('healthy');
   headersMock.mockResolvedValue({
     get: (name: string) => (name === 'cookie' ? 'sid=browser-session' : null),
   });
@@ -50,6 +53,7 @@ describe('AdminHomePage server-side access control', () => {
     expect(screen.getByRole('heading', { level: 1, name: 'Адміністративна консоль' })).toBeTruthy();
     expect(screen.getByText('Доступ підтверджено NestJS API.')).toBeTruthy();
     expect(screen.getByText('Gym Platform Admin')).toBeTruthy();
+    expect(screen.getByText(/PostgreSQL і rate limiting/)).toBeTruthy();
     expect(screen.queryByRole('alert')).toBeNull();
     expect(sessionMock).toHaveBeenCalledExactlyOnceWith('sid=browser-session');
   });
