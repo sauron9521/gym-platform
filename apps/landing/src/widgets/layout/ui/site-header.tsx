@@ -1,9 +1,11 @@
 import Link from 'next/link';
+import { getTranslations } from 'next-intl/server';
 
 import { mainNavigation } from '@/shared/config/navigation';
 import { Button } from '@/shared/ui/button';
 
-export function SiteHeader() {
+export async function SiteHeader() {
+  const t = await getTranslations('navigation');
   return (
     <header className="sticky top-0 z-50 border-b border-border/70 bg-background/90 backdrop-blur-xl">
       <div className="mx-auto flex h-18 max-w-6xl items-center justify-between gap-6 px-6">
@@ -35,7 +37,7 @@ export function SiteHeader() {
 
         <div className="hidden lg:block">
           <Button asChild>
-            <Link href="/apps">Застосунки</Link>
+            <Link href="/apps">{t('apps')}</Link>
           </Button>
         </div>
 
