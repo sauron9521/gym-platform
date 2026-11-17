@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { test } from 'vitest';
 
+import { isSessionExpired } from '../src/shared/api/api-error-policy.ts';
 import { accountQueryKeys, createMobileQueryClient } from '../src/shared/api/query-client.ts';
 
 const read = (path) => readFileSync(new URL(path, import.meta.url), 'utf8');
@@ -35,6 +36,9 @@ test('Query provider, cache isolation and guarded profile queries are wired', ()
   assert.match(auth, /queryClient\.clear\(\)/);
   assert.match(auth, /queryClient\.setQueryData\(accountQueryKeys\.me\(me\.data\.id\)/);
   assert.match(hook, /enabled: Boolean\(account\)/);
-  assert.match(hook, /status === 401/);
+  assert.match(hook, /isSessionExpired\\(response\\.response\\.status\\)/);
+  assert.match(hook, /mobileReadError\\(response\\.response\\.status/);
+  assert.equal(isSessionExpired(401), true);
+  assert.equal(isSessionExpired(403), false);
   assert.match(profile, /useAccountQuery\(\)/);
 });
