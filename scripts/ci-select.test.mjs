@@ -25,6 +25,7 @@ test('Web-only change skips API E2E, Docker and Mobile', () => {
     api: false,
     web: true,
     landing: false,
+    admin: false,
     mobile: false,
     client: false,
     deps: false,
@@ -39,6 +40,7 @@ test('Landing-only changes check landing without requiring API or Web browser su
     api: false,
     web: false,
     landing: true,
+    admin: false,
     mobile: false,
     client: false,
     deps: false,
@@ -50,6 +52,15 @@ test('Landing-only changes check landing without requiring API or Web browser su
   assert.equal(manifest.landing, true);
   assert.equal(manifest.deps, true);
   assert.equal(manifest.web, false);
+});
+
+test('Admin-only changes select Admin without unrelated API E2E', () => {
+  const selected = classifyChangedPaths(['apps/admin/src/app/page.tsx']);
+  assert.equal(selected.admin, true);
+  assert.equal(selected.api, false);
+  assert.equal(selected.web, false);
+  assert.equal(selected.full, false);
+  assert.equal(classifyChangedPaths(['apps/admin/package.json']).deps, true);
 });
 
 test('Mobile-only change skips API E2E and Web', () => {
@@ -72,6 +83,7 @@ test('shared API client triggers both frontends without API E2E', () => {
   const actual = classifyChangedPaths(['packages/api-client/src/generated/schema.d.ts']);
   assert.equal(actual.client, true);
   assert.equal(actual.web, true);
+  assert.equal(actual.admin, true);
   assert.equal(actual.mobile, true);
   assert.equal(actual.api, false);
 });
@@ -103,6 +115,7 @@ test('known shared packages select consumers and avoid unrelated API E2E', () =>
       api: false,
       web: true,
       landing: true,
+      admin: true,
       mobile,
       client: false,
       deps: false,
@@ -149,6 +162,19 @@ test('mixed shared changes union scopes and unknown dependencies fail closed', (
   }
 });
 
+test('Admin is included for all shared packages it consumes', () => {
+  for (const path of [
+    'packages/ui-web/src/button.tsx',
+    'packages/design-tokens/src/dark.css',
+    'packages/api-client/src/index.ts',
+    'tooling/config/eslint-next.mjs',
+  ]) {
+    const actual = classifyChangedPaths([path]);
+    assert.equal(actual.admin, true, path);
+    assert.equal(actual.full, false, path);
+  }
+});
+
 test('affected Web quality also typechecks the shared UI workspace', () => {
   const yaml = readFileSync(new URL('../.github/workflows/ci.yml', import.meta.url), 'utf8');
   const workspaces = yaml.split('  quality-workspaces:\n')[1]?.split('\n  quality:\n')[0];
@@ -186,6 +212,7 @@ test('application handbooks and nested infrastructure Markdown skip expensive PR
     api: false,
     web: false,
     landing: false,
+    admin: false,
     mobile: false,
     client: false,
     deps: false,
