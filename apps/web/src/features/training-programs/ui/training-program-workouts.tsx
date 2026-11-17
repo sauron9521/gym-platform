@@ -15,6 +15,7 @@ import {
   type ProgramVersionWithWorkouts,
 } from '../lib/create-program-workout';
 import { trainingProgramQueryKeys } from '../lib/training-program-query-keys';
+import { availableProgramWeeks, filterProgramWorkouts } from '../lib/program-week-preview';
 import { CreateProgramWorkoutForm } from './create-program-workout-form';
 import { ProgramWorkoutItem } from './program-workout-item';
 
@@ -38,6 +39,7 @@ export function TrainingProgramWorkouts({
   const queryClient = useQueryClient();
   const redirecting = useRef(false);
   const [notice, setNotice] = useState<string | null>(null);
+  const [selectedWeek, setSelectedWeek] = useState<number | null>(null);
   const query = useQuery(trainingProgramVersionQueryOptions(programId, versionId));
   const unauthenticated =
     query.error instanceof TrainingProgramVersionRequestError && query.error.status === 401;
@@ -79,6 +81,8 @@ export function TrainingProgramWorkouts({
 
   const version = state.kind === 'ready' ? state.version : null;
   const workouts = version ? sortProgramWorkouts(version.workouts) : [];
+  const availableWeeks = availableProgramWeeks(workouts);
+  const visibleWorkouts = filterProgramWorkouts(workouts, selectedWeek);
 
   // Prevent showing cached trainer-only workouts after a failed authentication check.
   if (unauthenticated) return null;
@@ -106,13 +110,39 @@ export function TrainingProgramWorkouts({
               {notice}
             </p>
           )}
+          {workouts.length > 0 ? (
+            <div className="flex flex-wrap items-end gap-3 rounded-xl border bg-card p-4">
+              <label className="space-y-1 text-sm">
+                <span className="block font-medium">Попередній перегляд тижня</span>
+                <select
+                  aria-label="Фільтр тижня програми"
+                  value={selectedWeek === null ? 'all' : String(selectedWeek)}
+                  onChange={(event) => {
+                    const next = event.target.value;
+                    setSelectedWeek(next === 'all' ? null : Number(next));
+                  }}
+                  className="min-h-10 rounded-md border border-input bg-background px-3"
+                >
+                  <option value="all">Усі тижні</option>
+                  {availableWeeks.map((week) => (
+                    <option key={week} value={week}>
+                      Тиждень {week}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <p role="status" className="text-sm text-muted-foreground">
+                Показано {visibleWorkouts.length} із {workouts.length} тренувальних днів
+              </p>
+            </div>
+          ) : null}
           {workouts.length === 0 ? (
             <p role="status" className="rounded-xl border bg-card p-5 text-muted-foreground">
               Тренувальних днів поки немає.
             </p>
           ) : (
             <ol className="space-y-3">
-              {workouts.map((workout) => (
+              {visibleWorkouts.map((workout) => (
                 <ProgramWorkoutItem
                   key={workout.id}
                   programId={programId}
