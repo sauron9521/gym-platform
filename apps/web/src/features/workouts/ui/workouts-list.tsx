@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 
 import { workoutListQueryOptions, WorkoutListRequestError } from '../api/workouts-list-query';
 import { Button } from '@/shared/ui/button';
@@ -22,6 +23,7 @@ type WorkoutsState =
   | { kind: 'ready'; workouts: WorkoutListItem[]; total: number; totalPages: number };
 
 export function WorkoutsList() {
+  const t = useTranslations('web.workoutList');
   const router = useRouter();
   const queryClient = useQueryClient();
   const [filter, setFilter] = useState<WorkoutFilter>('ALL');
@@ -74,23 +76,23 @@ export function WorkoutsList() {
   return (
     <main className="mx-auto max-w-5xl space-y-7 px-6 py-12">
       <div className="space-y-2">
-        <p className="text-sm font-medium text-muted-foreground">Тренувальний журнал</p>
-        <h1 className="text-3xl font-semibold tracking-tight">Мої тренування</h1>
+        <p className="text-sm font-medium text-muted-foreground">{t('journal')}</p>
+        <h1 className="text-3xl font-semibold tracking-tight">{t('title')}</h1>
         <p className="text-sm text-muted-foreground">
-          Переглядайте заплановані, поточні та завершені тренування.
+          {t('description')}
         </p>
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-4">
         <Button asChild>
-          <Link href="/workouts/new">Створити тренування</Link>
+          <Link href="/workouts/new">{t('create')}</Link>
         </Button>
       </div>
 
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div className="space-y-2">
           <label htmlFor="workout-status" className="block text-sm font-medium">
-            Статус
+            {t('status')}
           </label>
           <select
             id="workout-status"
@@ -107,14 +109,14 @@ export function WorkoutsList() {
         </div>
         {state.kind === 'ready' && (
           <p className="text-sm text-muted-foreground" role="status">
-            Знайдено: {state.total}
+            {t('found', { count: state.total })}
           </p>
         )}
       </div>
 
       {state.kind === 'loading' && (
         <p role="status" className="rounded-xl border bg-card p-6 text-muted-foreground">
-          Завантажуємо тренування…
+          {t('loading')}
         </p>
       )}
 
@@ -122,24 +124,24 @@ export function WorkoutsList() {
         <div role="alert" className="space-y-3 rounded-xl border bg-card p-6">
           <p className="text-sm text-destructive">{state.message}</p>
           <Button type="button" variant="outline" onClick={retry}>
-            Спробувати ще раз
+            {t('retry')}
           </Button>
         </div>
       )}
 
       {state.kind === 'ready' && state.workouts.length === 0 && (
         <section className="rounded-xl border bg-card p-8">
-          <h2 className="font-semibold">Тренувань не знайдено</h2>
+          <h2 className="font-semibold">{t('emptyTitle')}</h2>
           <p className="mt-2 text-sm text-muted-foreground">
             {filter === 'ALL'
-              ? 'Поки немає записів про тренування.'
-              : 'За обраним статусом тренувань немає. Спробуйте інший фільтр.'}
+              ? t('emptyAll')
+              : t('emptyFilter')}
           </p>
         </section>
       )}
 
       {state.kind === 'ready' && state.workouts.length > 0 && (
-        <section aria-label="Список тренувань" className="grid gap-4 sm:grid-cols-2">
+        <section aria-label={t('list')} className="grid gap-4 sm:grid-cols-2">
           {state.workouts.map((workout) => (
             <article key={workout.id} className="space-y-3 rounded-xl border bg-card p-5">
               <div className="flex items-start justify-between gap-3">
@@ -150,12 +152,12 @@ export function WorkoutsList() {
               </div>
               <dl className="space-y-2 text-sm">
                 <div className="flex justify-between gap-3">
-                  <dt className="text-muted-foreground">Дата</dt>
+                  <dt className="text-muted-foreground">{t('date')}</dt>
                   <dd className="text-right">{formatWorkoutDate(workout.scheduledAt)}</dd>
                 </div>
                 {'exerciseCount' in workout && typeof workout.exerciseCount === 'number' && (
                   <div className="flex justify-between gap-3">
-                    <dt className="text-muted-foreground">Вправ</dt>
+                    <dt className="text-muted-foreground">{t('exercises')}</dt>
                     <dd>{workout.exerciseCount}</dd>
                   </div>
                 )}
@@ -164,7 +166,7 @@ export function WorkoutsList() {
                 href={`/workouts/${workout.id}`}
                 className="inline-block text-sm font-medium underline-offset-4 hover:underline"
               >
-                Переглянути деталі
+                {t('details')}
               </Link>
             </article>
           ))}
@@ -172,17 +174,17 @@ export function WorkoutsList() {
       )}
 
       {state.kind === 'ready' && state.totalPages > 1 && (
-        <nav aria-label="Сторінки тренувань" className="flex items-center justify-between gap-4">
+        <nav aria-label={t('pages')} className="flex items-center justify-between gap-4">
           <Button
             variant="outline"
             type="button"
             disabled={page <= 1}
             onClick={() => changePage(page - 1)}
           >
-            Назад
+            {t('back')}
           </Button>
           <span className="text-sm text-muted-foreground">
-            Сторінка {page} із {state.totalPages}
+            {t('page', { page, total: state.totalPages })}
           </span>
           <Button
             variant="outline"
@@ -190,7 +192,7 @@ export function WorkoutsList() {
             disabled={page >= state.totalPages}
             onClick={() => changePage(page + 1)}
           >
-            Далі
+            {t('next')}
           </Button>
         </nav>
       )}

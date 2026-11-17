@@ -121,6 +121,27 @@
       "refetchError": "Profile saved, but updated data could not be retrieved.",
       "forbidden": "Access denied",
       "sessionUnavailable": "Could not verify session. Try again later."
+    },
+    "workoutList": {
+      "journal": "Workout journal",
+      "title": "My workouts",
+      "description": "Review upcoming, ongoing and completed workouts.",
+      "create": "Create workout",
+      "status": "Status",
+      "found": "Found: {count}",
+      "loading": "Loading workouts…",
+      "retry": "Try again",
+      "emptyTitle": "No workouts found",
+      "emptyAll": "You haven't logged any workouts yet.",
+      "emptyFilter": "No workouts match this status. Try another filter.",
+      "list": "Workout list",
+      "date": "Date",
+      "exercises": "Exercises",
+      "details": "View details",
+      "pages": "Workout pages",
+      "back": "Back",
+      "next": "Next",
+      "page": "Page {page} of {total}"
     }
   },
   "admin": {
