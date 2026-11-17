@@ -12,7 +12,11 @@ import { useQueryClient } from '@tanstack/react-query';
 
 import { createMobileApi } from '@/shared/api/client';
 import { accountQueryKeys } from '@/shared/api/query-client';
-import { getMobileLoginError, validateMobileCredentials } from '../lib/login-flow';
+import {
+  getMobileLoginError,
+  getMobileLoginTransportError,
+  validateMobileCredentials,
+} from '../lib/login-flow';
 import { MobileTokenSession } from './mobile-token-session';
 import { refreshTokenStore } from './refresh-token-store';
 
@@ -190,6 +194,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
       setRecoveryAvailable(false);
       let issuedRefreshToken: string | null = null;
       let verified = false;
+      let stage: 'issue' | 'persist' | 'verify' = 'issue';
       try {
         const issued = await guestApi.POST('/auth/token', {
           body: { email: email.trim(), password },
@@ -199,11 +204,13 @@ export function AuthProvider({ children }: PropsWithChildren) {
         }
         issuedRefreshToken = issued.data.refreshToken;
 
+        stage = 'persist';
         if (!(await session.accept(issued.data))) {
           return { success: false, message: 'Не вдалося зберегти сесію.' };
         }
 
         // Never unlock based only on token issuance or SecureStore contents.
+        stage = 'verify';
         const revision = session.revision;
         const me = await api.GET('/users/me');
         if (me.response.status !== 200 || !me.data || session.revision !== revision) {
@@ -216,7 +223,8 @@ export function AuthProvider({ children }: PropsWithChildren) {
         verified = true;
         return { success: true };
       } catch {
-        return { success: false, message: 'Не вдалося увійти або захистити сесію.' };
+        // Identify the failed step without exposing credentials or raw exceptions.
+        return { success: false, message: getMobileLoginTransportError(stage) };
       } finally {
         if (!verified) {
           await session.clear().catch(() => undefined);

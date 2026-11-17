@@ -1,19 +1,23 @@
 import { pageMetadata } from '@/shared/lib/seo';
-import { IntroPage } from '@/widgets/content/ui/intro-page';
+import { ApplicationDetail } from '@/widgets/applications/ui/application-detail';
 
 export const metadata = pageMetadata({
   title: 'Web',
   description:
-    'Вебзастосунок Gym Platform розробляється для керування тренуваннями, вправами та тренувальними програмами.',
+    'Вебзастосунок Gym Platform розвивається для роботи з вправами, журналом тренувань та програмами. Публічний запуск ще не оголошено.',
   path: '/apps/web',
 });
 
-export default function Page() {
+const highlights = ['Керування вправами', 'Журнал тренувань', 'Програми тренувань'] as const;
+
+export default function ApplicationPage() {
   return (
-    <IntroPage
-      eyebrow="Вебзастосунок"
-      title="Gym Platform у браузері"
-      description="Вебзастосунок Gym Platform розробляється для керування тренуваннями, вправами та тренувальними програмами."
+    <ApplicationDetail
+      eyebrow="Gym Platform Web"
+      title="Тренувальна платформа у браузері"
+      description="Вебзастосунок Gym Platform розвивається для роботи з вправами, журналом тренувань та програмами. Публічний запуск ще не оголошено."
+      highlights={highlights}
+      relatedApp={{ href: '/apps/mobile', label: 'Про Mobile' }}
     />
   );
 }

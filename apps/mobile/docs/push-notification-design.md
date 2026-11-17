@@ -1,18 +1,39 @@
-# Push notification safety policy
+# Push notification consent and payload safety
 
-Status: **foundation only; no device push is enabled by this PR**.
+**Status: contract foundation only. No push notifications are enabled by this PR.**
 
-- Default user settings are all opt-out.
-- Request native permission only after an explicit user action and explain the
-  notification category in the UI.
-- Register an Expo device token only for a verified signed-in user; revoke or
-  unlink the token on logout, account switch and data deletion.
-- The server must authorize token ownership, sign notifications and store
-  categories/preferences. Keep message content out of payloads; fetch by
-  opaque notification ID after authenticating the app.
-- Add `expo-notifications` only with Expo-version matching install commands,
-  updated pnpm lockfile, EAS push credentials and native test builds.
-- Never automatically enable push in a PR that lacks a real staging backend.
+The policy module contains no calls to Expo, native permission prompts, device
+push registration, token persistence, network requests or notification delivery.
 
-The code defines validation and consent rules; actual push delivery, scheduling,
-backend registration and preference UI are separate implementation steps.
+## Consent and eligibility
+
+- All categories (`trainingReminders`, `trainerMessages`, `marketing`)
+  default to **false**. Unexpected preference fields are rejected.
+- A future opt-in UI must explain notification categories and require an
+  explicit, reversible user choice; native permission must only be requested
+  after the user chooses to enable notifications.
+- `canRegisterPushToken` is an eligibility check, **not** registration.
+  It requires an authenticated UUID, verified email, explicit opt-in, native
+  permission `granted` and at least one enabled category.
+- No permission or consent can be inferred from an existing Expo token.
+  The backend must independently verify account identity, preferences,
+  token ownership, and authorization for the requested notification category.
+- Revoke or unlink device tokens on logout, account switch, preference
+  disablement and applicable data-deletion requests. Account-scoped token
+  access and multi-device consent must be designed before production use.
+
+## Privacy and delivery boundary
+
+The only accepted transport envelope is `{ notificationId: UUID }`.
+Both encoding and parsing use a strict schema. The future sender must not
+include names, emails, workout progress, message bodies, credentials or
+other private content in visible push titles, bodies or data payloads.
+The authenticated app can fetch the notification details from the API only
+after checking current account access; the server must reject unauthorized IDs.
+
+**Implementation follow-up:** choose Expo SDK-compatible `expo-notifications`,
+update the pnpm lockfile, provision EAS/APNs/FCM credentials, implement a
+server-side token lifecycle and secure notification inbox, and add staging
+and real-device tests for Android and iOS. Validate foreground/background
+behavior, account switching, revoked consent, OS permission changes and
+token rotation. No automatic registration or scheduling is safe before then.
