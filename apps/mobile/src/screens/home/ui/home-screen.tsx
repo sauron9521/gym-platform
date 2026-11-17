@@ -20,7 +20,8 @@ function AthleteDashboard() {
   const summary = useWorkoutSummary('7d');
 
   // Gym API returns the first page newest-first (createdAt desc, id desc).
-  const recentWorkouts = workouts.data?.pages[0]?.data.slice(0, 3) ?? [];
+  const recentWorkouts = workouts.isError ? [] : workouts.data?.pages[0]?.data.slice(0, 3);
+  const recentWorkoutCount = recentWorkouts?.length ?? 0;
   const statsError = summary.isError || programs.isError;
   const statsFetching = summary.isFetching || programs.isFetching;
   const completedCount = summary.data?.workoutCount ?? '—';
@@ -70,10 +71,10 @@ function AthleteDashboard() {
           onRetry={() => void workouts.refetch()}
         />
       ) : null}
-      {!workouts.isPending && !workouts.isError && recentWorkouts.length === 0 ? (
+      {!workouts.isPending && !workouts.isError && recentWorkoutCount === 0 ? (
         <AsyncResourceState kind="empty" message="Тренувань ще немає. Створіть перше!" />
       ) : null}
-      {!workouts.isError && recentWorkouts.map((workout) => (
+      {recentWorkouts?.map((workout) => (
         <Pressable
           key={workout.id}
           accessibilityRole="button"
