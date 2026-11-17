@@ -76,7 +76,11 @@ export default function AdminSignInPage() {
           disabled={busy}
           className="h-11 w-full rounded-md border border-input bg-background px-3"
         />
-        {error ? <p role="alert" className="text-sm text-destructive">{error}</p> : null}
+        {error ? (
+          <p role="alert" className="text-sm text-destructive">
+            {error}
+          </p>
+        ) : null}
         <button
           type="submit"
           disabled={busy}

@@ -5,9 +5,8 @@ import { envSchema } from '../env.schema.js';
 
 describe('separate Admin browser origin', () => {
   it('trusts only the explicitly configured Admin and Web origins', () => {
-    expect(
-      getTrustedSessionOrigins('https://app.example.test', 'https://admin.example.test'),
-    ).toEqual(['https://app.example.test', 'https://admin.example.test']);
+    const origins = getTrustedSessionOrigins('https://app.example.test', 'https://admin.example.test');
+    expect(origins).toEqual(['https://app.example.test', 'https://admin.example.test']);
   });
 
   it('rejects malformed admin origins instead of weakening CSRF protection', () => {
@@ -19,14 +18,11 @@ describe('separate Admin browser origin', () => {
       APP_URL: 'http://localhost:3000',
       CORS_ORIGINS: 'http://localhost:3000',
     };
-    expect(envSchema.safeParse({ ...base, ADMIN_APP_URL: 'http://localhost:3003' }).success).toBe(
-      true,
-    );
-    expect(envSchema.safeParse({ ...base, ADMIN_APP_URL: 'https://other.test/path' }).success).toBe(
-      false,
-    );
-    expect(envSchema.safeParse({ ...base, ADMIN_APP_URL: 'https://a.test@evil.test' }).success).toBe(
-      false,
-    );
+    const valid = envSchema.safeParse({ ...base, ADMIN_APP_URL: 'http://localhost:3003' });
+    const path = envSchema.safeParse({ ...base, ADMIN_APP_URL: 'https://other.test/path' });
+    const credentials = envSchema.safeParse({ ...base, ADMIN_APP_URL: 'https://a.test@evil.test' });
+    expect(valid.success).toBe(true);
+    expect(path.success).toBe(false);
+    expect(credentials.success).toBe(false);
   });
 });
