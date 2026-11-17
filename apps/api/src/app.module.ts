@@ -14,6 +14,7 @@ import { RolesGuard } from '#src/common/guards/roles.guard';
 import { PermissionsGuard } from '#src/common/rbac/permissions.guard';
 import { RequestContextMiddleware } from '#src/common/request-context/request-context.middleware';
 import { HttpMetricsRegistry } from '#src/common/http-metrics/http-metrics.registry';
+import { AdminAuditLogger } from '#src/common/audit/admin-audit.logger';
 import { HttpMetricsController } from '#src/common/http-metrics/http-metrics.controller';
 import { DistributedThrottlerStorage } from '#src/common/rate-limit/distributed-throttler.storage';
 import { RateLimitStorageModule } from '#src/common/rate-limit/rate-limit-storage.module';
@@ -97,6 +98,7 @@ import { WorkoutAnalyticsModule } from '#src/modules/workout-analytics/workout-a
   controllers: [HttpMetricsController],
   providers: [
     HttpMetricsRegistry,
+    AdminAuditLogger,
     { provide: APP_FILTER, useClass: ApiExceptionFilter },
     {
       provide: APP_GUARD,
