@@ -59,5 +59,31 @@
     "title": "Administration console",
     "accessConfirmed": "Access confirmed by the NestJS API.",
     "comingSoon": "Moderation features and metrics will be available after RBAC and audit logging are implemented."
+  },
+  "mobile": {
+    "tabs": {
+      "home": "Home",
+      "workouts": "Workouts",
+      "myWorkouts": "My workouts",
+      "programs": "Programs",
+      "myPrograms": "My programs",
+      "profile": "Profile",
+      "myProfile": "My profile"
+    },
+    "profile": {
+      "myProfile": "My profile",
+      "apiData": "Data from Gym API",
+      "email": "Email address",
+      "role": "Role",
+      "emailStatus": "Email status",
+      "verified": "Verified",
+      "unverified": "Not verified",
+      "height": "Height",
+      "weight": "Weight",
+      "refresh": "Refresh profile",
+      "edit": "Edit profile",
+      "signOut": "Sign out",
+      "language": "Language"
+    }
   }
 }

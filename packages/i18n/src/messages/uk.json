@@ -59,5 +59,31 @@
     "title": "Адміністративна консоль",
     "accessConfirmed": "Доступ підтверджено NestJS API.",
     "comingSoon": "Функції модерації та метрики з’являться після додавання RBAC і журналу аудиту."
+  },
+  "mobile": {
+    "tabs": {
+      "home": "Головна",
+      "workouts": "Тренування",
+      "myWorkouts": "Мої тренування",
+      "programs": "Програми",
+      "myPrograms": "Мої програми",
+      "profile": "Профіль",
+      "myProfile": "Мій профіль"
+    },
+    "profile": {
+      "myProfile": "Мій профіль",
+      "apiData": "Дані з Gym API",
+      "email": "Електронна пошта",
+      "role": "Роль",
+      "emailStatus": "Пошта",
+      "verified": "Підтверджена",
+      "unverified": "Не підтверджена",
+      "height": "Зріст",
+      "weight": "Вага",
+      "refresh": "Оновити профіль",
+      "edit": "Редагувати профіль",
+      "signOut": "Вийти",
+      "language": "Мова"
+    }
   }
 }
