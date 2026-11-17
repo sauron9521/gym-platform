@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { isTrustedProxyList } from './proxy.config.js';
+import { isValidOperatorSuperAdminIds } from '../rbac/operator-superadmin-allowlist.js';
 
 const emptyToUndefined = (value: unknown) => (value === '' ? undefined : value);
 
@@ -137,6 +138,16 @@ const baseEnvSchema = z.object({
         (value) => isPublicHttpUrl(value) && new URL(value).origin === value,
         'Must be an HTTP(S) origin without path, query or credentials',
       )
+      .optional(),
+  ),
+  SUPERADMIN_USER_IDS: z.preprocess(
+    emptyToUndefined,
+    z
+      .string()
+      .trim()
+      .min(1)
+      .max(1024)
+      .refine(isValidOperatorSuperAdminIds, 'Expected 1–20 distinct UUIDs')
       .optional(),
   ),
   AVATAR_STORAGE_DIR: optionalString,
