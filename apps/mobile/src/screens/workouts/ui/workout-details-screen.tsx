@@ -31,6 +31,7 @@ type TitleEditorProps = {
 };
 
 /** Keyed by the server title, so successful PATCH resets the local input. */
+// prettier-ignore
 function WorkoutTitleEditor({ title, disabled, pending, failure, onSave }: TitleEditorProps) {
   const [editedTitle, setEditedTitle] = useState(title);
   const normalized = editedTitle.trim();
