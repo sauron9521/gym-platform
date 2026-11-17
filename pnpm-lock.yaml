@@ -478,6 +478,9 @@ importers:
       '@gym/api-client':
         specifier: workspace:*
         version: link:../../packages/api-client
+      '@gym/design-tokens':
+        specifier: workspace:*
+        version: link:../../packages/design-tokens
       '@hookform/resolvers':
         specifier: 7.0.5
         version: 7.0.5(@standard-schema/spec@1.1.0)(ajv-formats@3.0.1(ajv@8.20.0))(ajv@8.20.0)(react-hook-form@7.92.0(@types/react@19.3.0)(react@19.3.1))(valibot@1.4.2(typescript@6.0.3))(zod@4.6.7)

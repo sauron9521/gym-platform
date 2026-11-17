@@ -23,6 +23,7 @@
     "@gluestack-ui/core": "^5.0.15",
     "@gluestack-ui/utils": "^5.0.6",
     "@gym/api-client": "workspace:*",
+    "@gym/design-tokens": "workspace:*",
     "@hookform/resolvers": "7.0.5",
     "@legendapp/motion": "^2.5.3",
     "@tanstack/react-query": "5.107.1",

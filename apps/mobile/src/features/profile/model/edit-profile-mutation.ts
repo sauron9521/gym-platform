@@ -11,19 +11,23 @@ export function useEditProfile() {
     mutationFn: async (values: EditProfileValues) => {
       if (!onlineManager.isOnline()) throw new Error('Немає мережі. Профіль не збережено.');
       const api = getApi();
-      if (!api) throw new Error('Немає доступу до API.');
+      if (!api || !account) throw new Error('Немає доступу до API.');
       const response = await api.PATCH('/users/me', { body: profilePatch(values) });
       if (response.response.status === 401) {
         await signOut();
         throw new Error('Сесію завершено.');
       }
-      if (response.response.status !== 200) {
+      if (response.response.status !== 200 || !response.data) {
         throw new Error('Не вдалося оновити профіль.');
       }
+      return response.data;
     },
-    onSuccess: async () => {
+    onSuccess: (updated) => {
       if (!account) return;
-      await queryClient.invalidateQueries({ queryKey: accountQueryKeys.me(account.id) });
+      // PATCH /users/me returns the verified account; show changes immediately
+      // even when the profile screen's GET query is inactive during editing.
+      queryClient.setQueryData(accountQueryKeys.me(account.id), updated);
+      void queryClient.invalidateQueries({ queryKey: accountQueryKeys.me(account.id) });
     },
     networkMode: 'always',
     retry: false,

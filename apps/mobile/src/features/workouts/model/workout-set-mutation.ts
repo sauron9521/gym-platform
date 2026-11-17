@@ -38,7 +38,7 @@ export function useWorkoutSetMutation(workoutId: string) {
       }
       return response.data;
     },
-    networkMode: 'always', // Fail fast while offline; never replay set writes implicitly.
+    networkMode: 'always',
     onSuccess: (updated) => {
       if (Platform.OS !== 'web') {
         void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(
