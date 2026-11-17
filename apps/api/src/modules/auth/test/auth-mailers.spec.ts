@@ -13,6 +13,7 @@ import { PasswordResetMail, PasswordResetMailer } from '../mailers/password-rese
 describe('Auth mail handlers', () => {
   const users = {
     findCredentials: vi.fn(),
+    getPreferredMailLocale: vi.fn(),
     markEmailVerified: vi.fn(),
     updatePassHash: vi.fn(),
   };
@@ -23,6 +24,7 @@ describe('Auth mail handlers', () => {
 
   beforeEach(() => {
     vi.resetAllMocks();
+    users.getPreferredMailLocale.mockResolvedValue('uk');
     verification = new EmailVerificationMailer(
       users as unknown as UsersRepository,
       mailer as unknown as Mailer,
@@ -44,14 +46,33 @@ describe('Auth mail handlers', () => {
     const url = 'https://app.example.test/verify?token=opaque';
 
     expect(new VerifyEmailMail().render({ url } as EmailVerificationLink)).toEqual({
-      subject: 'Confirm your email address',
-      template: 'verify-email',
+      subject: 'Підтвердіть електронну адресу',
+      template: 'verify-email.uk',
       context: { url },
     });
     expect(new PasswordResetMail().render({ url } as PasswordResetLink)).toEqual({
-      subject: 'Reset your password',
-      template: 'password-reset',
+      subject: 'Скидання пароля',
+      template: 'password-reset.uk',
       context: { url },
+    });
+  });
+
+  it('renders English copies for an explicitly selected English locale', () => {
+    const url = 'https://app.example.test/verify?token=opaque';
+    expect(new VerifyEmailMail().render({ url, locale: 'en' } as EmailVerificationLink & { locale: 'en' })).toMatchObject({
+      subject: 'Confirm your email address', template: 'verify-email.en',
+    });
+    expect(new PasswordResetMail().render({ url, locale: 'en' } as PasswordResetLink & { locale: 'en' })).toMatchObject({
+      subject: 'Reset your password', template: 'password-reset.en',
+    });
+  });
+
+  it('reads the stored English preference without trusting link parameters', async () => {
+    users.getPreferredMailLocale.mockResolvedValue('en');
+    const link = { url: 'https://app.example.test/verify', email: 'member@example.test' } as EmailVerificationLink;
+    await verification.send(link);
+    expect(mailer.send).toHaveBeenCalledWith(VerifyEmailMail, {
+      to: link.email, data: { ...link, locale: 'en' },
     });
   });
 
@@ -66,7 +87,7 @@ describe('Auth mail handlers', () => {
 
     expect(mailer.send).toHaveBeenCalledExactlyOnceWith(VerifyEmailMail, {
       to: link.email,
-      data: link,
+      data: { ...link, locale: 'uk' },
     });
     expect(users.markEmailVerified).not.toHaveBeenCalled();
   });
@@ -141,7 +162,7 @@ describe('Auth mail handlers', () => {
     await expect(recovery.send(link)).rejects.toBe(failure);
     expect(mailer.send).toHaveBeenCalledExactlyOnceWith(PasswordResetMail, {
       to: link.email,
-      data: link,
+      data: { ...link, locale: 'uk' },
     });
     expect(users.updatePassHash).not.toHaveBeenCalled();
   });

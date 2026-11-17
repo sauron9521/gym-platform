@@ -140,6 +140,15 @@ export class UsersRepository {
     return Boolean(profile && profile.user.deletedAt === null);
   }
 
+  /** Localized transactional mail never accepts locale from untrusted link parameters. */
+  async getPreferredMailLocale(email: string): Promise<'uk' | 'en'> {
+    const account = await this.prisma.user.findFirst({
+      where: { email: normalizeEmail(email), deletedAt: null },
+      select: { preferredLocale: true },
+    });
+    return account?.preferredLocale === 'en' ? 'en' : 'uk';
+  }
+
   async findUserByEmail(email: string) {
     return this.prisma.user.findUnique({
       where: { email: normalizeEmail(email) },
