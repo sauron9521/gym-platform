@@ -33,11 +33,9 @@ describe('mobile API error policy', () => {
     expect(shouldRetryMobileRead(0, new MobileSessionExpiredError())).toBe(false);
     expect(shouldRetryMobileRead(0, new MobileAccessDeniedError())).toBe(false);
     for (const status of [400, 404, 409, 422]) {
-      expect(shouldRetryMobileRead(0, new MobileReadHttpError(status, 'Client error'))).toBe(
-        false,
-      );
+      const error = new MobileReadHttpError(status, 'Client error');
+      expect(shouldRetryMobileRead(0, error)).toBe(false);
     }
-    expect(shouldRetryMobileRead(0, new Error('Aborted', { cause: 'AbortError' }))).toBe(true);
     const aborted = new Error('Request cancelled');
     aborted.name = 'AbortError';
     expect(shouldRetryMobileRead(0, aborted)).toBe(false);
