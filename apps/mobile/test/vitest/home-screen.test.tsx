@@ -1,7 +1,9 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render } from '@testing-library/react-native';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { useAuth } from '@/features/auth/model/auth-context';
+import { useAccountQuery } from '@/features/profile/model/account-query';
 import { useProgramAssignments } from '@/features/programs/model/program-assignments-query';
 import { useWorkoutSummary } from '@/features/progress/model/workout-summary-query';
 import { useWorkoutsQuery } from '@/features/workouts/model/workouts-query';
@@ -10,6 +12,7 @@ import { HomeScreen } from '@/screens/home/ui/home-screen';
 const push = vi.hoisted(() => vi.fn());
 vi.mock('expo-router', () => ({ useRouter: () => ({ push }) }));
 vi.mock('@/features/auth/model/auth-context', () => ({ useAuth: vi.fn() }));
+vi.mock('@/features/profile/model/account-query', () => ({ useAccountQuery: vi.fn() }));
 vi.mock('@/features/programs/model/program-assignments-query', () => ({
   useProgramAssignments: vi.fn(),
 }));
@@ -61,14 +64,25 @@ function prepareAthlete() {
   } as unknown as ReturnType<typeof useWorkoutsQuery>);
 }
 
+function renderHome() {
+  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return render(
+    <QueryClientProvider client={queryClient}>
+      <HomeScreen />
+    </QueryClientProvider>,
+  );
+}
+
 describe('HomeScreen real athlete dashboard', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    const profileQuery = { data: undefined } as ReturnType<typeof useAccountQuery>;
+    vi.mocked(useAccountQuery).mockReturnValue(profileQuery);
     prepareAthlete();
   });
 
   it('renders API-derived totals and routes to an individual workout', async () => {
-    const view = await render(<HomeScreen />);
+    const view = await renderHome();
     expect(useWorkoutSummary).toHaveBeenCalledWith('7d');
     expect(view.getByText('2')).toBeTruthy();
     expect(view.getByText('23')).toBeTruthy();
@@ -84,7 +98,7 @@ describe('HomeScreen real athlete dashboard', () => {
 
   it('does not invoke athlete-only API queries or actions for trainers', async () => {
     setAccount('TRAINER');
-    const view = await render(<HomeScreen />);
+    const view = await renderHome();
     expect(useWorkoutsQuery).not.toHaveBeenCalled();
     expect(useProgramAssignments).not.toHaveBeenCalled();
     expect(useWorkoutSummary).not.toHaveBeenCalled();
@@ -103,7 +117,7 @@ describe('HomeScreen real athlete dashboard', () => {
       isFetching: false,
       refetch: refetchWorkouts,
     } as unknown as ReturnType<typeof useWorkoutsQuery>);
-    const view = await render(<HomeScreen />);
+    const view = await renderHome();
     expect(view.getByText('Помилка API')).toBeTruthy();
     await fireEvent.press(view.getByRole('button', { name: 'Спробувати ще раз' }));
     expect(refetchWorkouts).toHaveBeenCalledOnce();
@@ -118,7 +132,7 @@ describe('HomeScreen real athlete dashboard', () => {
       isFetching: false,
       refetch: refetchWorkouts,
     } as unknown as ReturnType<typeof useWorkoutsQuery>);
-    const view = await render(<HomeScreen />);
+    const view = await renderHome();
     expect(view.getByText('Тренувань ще немає. Створіть перше!')).toBeTruthy();
   });
 });
