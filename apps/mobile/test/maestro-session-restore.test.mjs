@@ -43,6 +43,10 @@ test('APK URL and checksum accept only direct trusted Expo artifacts', () => {
     sha256: valid.apkSha256,
     appId: valid.appId,
   });
+  assert.equal(
+    validateMobileSmokeInputs({ ...valid, apkSha256: 'A'.repeat(64) }).sha256,
+    valid.apkSha256,
+  );
   const invalidUrls = [
     'http://expo.dev/artifacts/eas/a.apk',
     'https://expo.dev.evil.example/artifacts/eas/a.apk',
