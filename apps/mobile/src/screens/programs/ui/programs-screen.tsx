@@ -12,9 +12,16 @@ export function ProgramsScreen() {
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <Text style={styles.title}>Мої програми</Text>
       <Text style={styles.muted}>Активні програми, призначені тренером</Text>
-      {query.isPending ? <AsyncResourceState kind="loading" message="Завантаження програм" /> : null}
+      {query.isPending ? (
+        <AsyncResourceState kind="loading" message="Завантаження програм" />
+      ) : null}
       {query.isError ? (
-        <AsyncResourceState kind="error" message={query.error.message} onRetry={() => void query.refetch()} />
+        <AsyncResourceState
+          kind="error"
+          message={query.error.message}
+          onRetry={() => void query.refetch()}
+          retrying={query.isFetching}
+        />
       ) : null}
       {!query.isPending && !query.isError && query.data?.data.length === 0 ? (
         <AsyncResourceState kind="empty" message="Активних призначень немає." />
@@ -39,6 +46,7 @@ export function ProgramsScreen() {
         testID="programs-refresh"
         accessibilityRole="button"
         disabled={query.isFetching}
+        accessibilityState={{ disabled: query.isFetching }}
         onPress={() => void query.refetch()}
         style={styles.button}
       >
@@ -54,7 +62,6 @@ const styles = StyleSheet.create({
   title: { fontSize: 26, color: palette.text, fontWeight: '700' },
   heading: { fontSize: 17, color: palette.text, fontWeight: '600' },
   muted: { fontSize: 14, color: palette.muted },
-  error: { fontSize: 14, color: '#ff6460' },
   card: {
     backgroundColor: palette.surface,
     borderWidth: 1,

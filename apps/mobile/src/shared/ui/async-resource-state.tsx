@@ -7,20 +7,32 @@ type Props = {
   message: string;
   retryLabel?: string;
   onRetry?: () => void;
+  retrying?: boolean;
 };
 
-/** A consistent, accessible state for paginated mobile resources. */
-export function AsyncResourceState({ kind, message, onRetry, retryLabel = 'Спробувати ще раз' }: Props) {
+/** Consistent, accessible loading/error/empty feedback for native resources. */
+export function AsyncResourceState({
+  kind,
+  message,
+  onRetry,
+  retryLabel = 'Спробувати ще раз',
+  retrying = false,
+}: Props) {
   return (
     <View style={styles.container} accessibilityLiveRegion="polite">
       {kind === 'loading' ? <ActivityIndicator accessibilityLabel={message} /> : null}
-      <Text style={kind === 'error' ? styles.error : styles.message} accessibilityRole={kind === 'error' ? 'alert' : undefined}>
+      <Text
+        style={kind === 'error' ? styles.error : styles.message}
+        accessibilityRole={kind === 'error' ? 'alert' : undefined}
+      >
         {message}
       </Text>
       {kind === 'error' && onRetry ? (
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={retryLabel}
+          accessibilityState={{ disabled: retrying }}
+          disabled={retrying}
           onPress={onRetry}
           style={styles.retry}
         >

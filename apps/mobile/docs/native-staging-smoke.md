@@ -66,3 +66,9 @@ This PR only configures the optional workflow and contracts. A genuine EAS
 build, a running staging backend, and an emulator test require operator-provided
 infrastructure and secrets; **a passing normal CI is not evidence of a
 successful native smoke run**.
+
+## Automated local EAS configuration preflight
+
+Before requesting the manual preview APK build, run `node apps/mobile/scripts/native-staging-preflight.mjs` from the repository root. This command deliberately fails until the owner provides approved Android/iOS package identifiers in `app.json`. The repository does not invent public application IDs or signing keys. The preflight also verifies that the preview artifact is an internal APK bound to EAS `preview`, with independent production versioning.
+
+Passing the configuration preflight **does not** verify a real device build, staging HTTPS, package ownership or Maestro execution. Those remain manual operator requirements.
