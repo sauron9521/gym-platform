@@ -78,9 +78,7 @@ export function WorkoutsList() {
       <div className="space-y-2">
         <p className="text-sm font-medium text-muted-foreground">{t('journal')}</p>
         <h1 className="text-3xl font-semibold tracking-tight">{t('title')}</h1>
-        <p className="text-sm text-muted-foreground">
-          {t('description')}
-        </p>
+        <p className="text-sm text-muted-foreground">{t('description')}</p>
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-4">
@@ -133,9 +131,7 @@ export function WorkoutsList() {
         <section className="rounded-xl border bg-card p-8">
           <h2 className="font-semibold">{t('emptyTitle')}</h2>
           <p className="mt-2 text-sm text-muted-foreground">
-            {filter === 'ALL'
-              ? t('emptyAll')
-              : t('emptyFilter')}
+            {filter === 'ALL' ? t('emptyAll') : t('emptyFilter')}
           </p>
         </section>
       )}

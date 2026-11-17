@@ -7,8 +7,8 @@ import { ForgotPasswordForm } from '@/features/auth/ui/forgot-password-form';
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('web.recovery');
   return {
-  title: `${t('forgotTitle')} | Gym Platform`,
-  robots: { index: false, follow: false },
+    title: `${t('forgotTitle')} | Gym Platform`,
+    robots: { index: false, follow: false },
   };
 }
 
@@ -21,9 +21,7 @@ export default async function ForgotPasswordPage() {
           Gym Platform
         </Link>
         <h1 className="mt-6 text-3xl font-semibold">{t('forgotTitle')}</h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          {t('forgotDescription')}
-        </p>
+        <p className="mt-2 text-sm text-muted-foreground">{t('forgotDescription')}</p>
         <ForgotPasswordForm />
       </div>
     </main>

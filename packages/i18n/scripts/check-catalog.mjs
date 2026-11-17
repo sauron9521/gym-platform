@@ -1,18 +1,23 @@
 import { readFileSync } from 'node:fs';
 import { parse } from '@formatjs/icu-messageformat-parser';
 
-const load = (locale) => JSON.parse(readFileSync(new URL(`../src/messages/${locale}.json`, import.meta.url), 'utf8'));
-const flatten = (value, prefix = '') => Object.fromEntries(Object.entries(value).flatMap(([key, item]) => {
-  const id = prefix ? `${prefix}.${key}` : key;
-  return typeof item === 'string' ? [[id, item]] : Object.entries(flatten(item, id));
-}));
+const load = (locale) =>
+  JSON.parse(readFileSync(new URL(`../src/messages/${locale}.json`, import.meta.url), 'utf8'));
+const flatten = (value, prefix = '') =>
+  Object.fromEntries(
+    Object.entries(value).flatMap(([key, item]) => {
+      const id = prefix ? `${prefix}.${key}` : key;
+      return typeof item === 'string' ? [[id, item]] : Object.entries(flatten(item, id));
+    }),
+  );
 
 const en = flatten(load('en'));
 const uk = flatten(load('uk'));
 const errors = [];
 const enKeys = Object.keys(en).sort();
 const ukKeys = Object.keys(uk).sort();
-if (JSON.stringify(enKeys) !== JSON.stringify(ukKeys)) errors.push('en/uk must have identical keys');
+if (JSON.stringify(enKeys) !== JSON.stringify(ukKeys))
+  errors.push('en/uk must have identical keys');
 
 function collectParameters(message) {
   const found = new Map();
@@ -33,12 +38,18 @@ function collectParameters(message) {
 }
 
 for (const key of new Set([...enKeys, ...ukKeys])) {
-  if (!en[key] || !uk[key]) { errors.push(`${key}: missing/empty translation`); continue; }
+  if (!en[key] || !uk[key]) {
+    errors.push(`${key}: missing/empty translation`);
+    continue;
+  }
   try {
     const a = collectParameters(en[key]);
     const b = collectParameters(uk[key]);
-    if (JSON.stringify(a) !== JSON.stringify(b)) errors.push(`${key}: ICU arguments differ: ${JSON.stringify(a)} vs ${JSON.stringify(b)}`);
-  } catch (error) { errors.push(`${key}: ${error.message}`); }
+    if (JSON.stringify(a) !== JSON.stringify(b))
+      errors.push(`${key}: ICU arguments differ: ${JSON.stringify(a)} vs ${JSON.stringify(b)}`);
+  } catch (error) {
+    errors.push(`${key}: ${error.message}`);
+  }
 }
 if (errors.length) {
   console.error(errors.join('\n'));

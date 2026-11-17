@@ -88,9 +88,7 @@ export function TrainerProgramsList() {
       <header className="space-y-2">
         <p className="text-sm font-medium text-muted-foreground">{t('eyebrow')}</p>
         <h1 className="text-3xl font-semibold tracking-tight">{t('title')}</h1>
-        <p className="text-sm text-muted-foreground">
-          {t('description')}
-        </p>
+        <p className="text-sm text-muted-foreground">{t('description')}</p>
       </header>
 
       <div>
@@ -140,9 +138,7 @@ export function TrainerProgramsList() {
           {state.programs.length === 0 ? (
             <section className="rounded-xl border bg-card p-6">
               <h2 className="font-semibold">{t('empty')}</h2>
-              <p className="mt-2 text-sm text-muted-foreground">
-                {t('emptyHint')}
-              </p>
+              <p className="mt-2 text-sm text-muted-foreground">{t('emptyHint')}</p>
             </section>
           ) : (
             <section aria-label={t('list')} className="grid gap-4">
@@ -202,10 +198,7 @@ export function TrainerProgramsList() {
             </section>
           )}
           {state.pages > 1 && (
-            <nav
-              className="flex items-center justify-between gap-4"
-              aria-label={t('pages')}
-            >
+            <nav className="flex items-center justify-between gap-4" aria-label={t('pages')}>
               <Button
                 type="button"
                 variant="outline"

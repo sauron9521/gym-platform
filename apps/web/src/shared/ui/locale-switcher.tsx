@@ -53,7 +53,11 @@ export function LocaleSwitcher() {
         <option value="uk">Українська</option>
         <option value="en">English</option>
       </select>
-      {error ? <span role="alert" className="text-xs text-destructive">{t('retry')}</span> : null}
+      {error ? (
+        <span role="alert" className="text-xs text-destructive">
+          {t('retry')}
+        </span>
+      ) : null}
     </span>
   );
 }

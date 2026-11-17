@@ -8,9 +8,9 @@ import { ResetPasswordForm } from '@/features/auth/ui/reset-password-form';
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('web.recovery');
   return {
-  title: `${t('resetTitle')} | Gym Platform`,
-  robots: { index: false, follow: false },
-  referrer: 'no-referrer',
+    title: `${t('resetTitle')} | Gym Platform`,
+    robots: { index: false, follow: false },
+    referrer: 'no-referrer',
   };
 }
 
@@ -32,9 +32,7 @@ export default async function ResetPasswordPage({
           Gym Platform
         </Link>
         <h1 className="mt-6 text-3xl font-semibold">{t('resetTitle')}</h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          {t('resetDescription')}
-        </p>
+        <p className="mt-2 text-sm text-muted-foreground">{t('resetDescription')}</p>
         <ResetPasswordForm token={token} />
       </div>
     </main>

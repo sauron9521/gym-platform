@@ -103,9 +103,7 @@ export function ExerciseCatalog({ role }: { role: 'ATHLETE' | 'TRAINER' | 'ADMIN
       <header className="space-y-2">
         <p className="text-sm font-medium text-muted-foreground">{t('library')}</p>
         <h1 className="text-3xl font-semibold tracking-tight">{t('title')}</h1>
-        <p className="text-sm text-muted-foreground">
-          {t('description')}
-        </p>
+        <p className="text-sm text-muted-foreground">{t('description')}</p>
       </header>
 
       {role !== 'ADMIN' && (
@@ -246,9 +244,7 @@ export function ExerciseCatalog({ role }: { role: 'ATHLETE' | 'TRAINER' | 'ADMIN
       {state.kind === 'ready' && state.exercises.length === 0 && (
         <section className="rounded-xl border bg-card p-6">
           <h2 className="font-semibold">{t('empty')}</h2>
-          <p className="mt-2 text-sm text-muted-foreground">
-            {t('emptyHint')}
-          </p>
+          <p className="mt-2 text-sm text-muted-foreground">{t('emptyHint')}</p>
         </section>
       )}
 
