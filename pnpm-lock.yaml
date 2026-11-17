@@ -390,18 +390,6 @@ importers:
       '@gym/ui-web':
         specifier: workspace:*
         version: link:../../packages/ui-web
-      '@hookform/resolvers':
-        specifier: 7.0.5
-        version: 7.0.5(@standard-schema/spec@1.1.0)(ajv-formats@3.0.1(ajv@8.20.0))(ajv@8.20.0)(react-hook-form@7.92.0(@types/react@19.3.0)(react@19.3.1))(valibot@1.4.2(typescript@6.0.3))(zod@4.6.7)
-      '@radix-ui/react-slot':
-        specifier: ^1.2.4
-        version: 1.5.0(@types/react@19.3.0)(react@19.3.1)
-      '@tanstack/react-query':
-        specifier: 5.107.1
-        version: 5.107.1(@types/react@19.3.0)(react@19.3.1)
-      class-variance-authority:
-        specifier: ^0.7.1
-        version: 0.7.1
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
@@ -417,18 +405,12 @@ importers:
       react-dom:
         specifier: 19.3.1
         version: 19.3.1(react@19.3.1)
-      react-hook-form:
-        specifier: 7.92.0
-        version: 7.92.0(@types/react@19.3.0)(react@19.3.1)
       tailwind-merge:
         specifier: ^3.3.1
         version: 3.7.0
       tw-animate-css:
         specifier: ^1.4.0
         version: 1.4.0
-      zod:
-        specifier: 4.6.7
-        version: 4.6.7
     devDependencies:
       '@playwright/test':
         specifier: 1.65.0
