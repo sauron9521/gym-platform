@@ -47,8 +47,8 @@ export default async function AdminHomePage() {
       <section aria-label="Незапущені функції" className="rounded-xl border p-5">
         <h2 className="mb-2 text-lg font-semibold">Плановані модулі</h2>
         <p className="text-sm text-muted-foreground">
-          Функції модерації та метрики з’являться після додавання RBAC і журналу аудиту.
-          Управління вправами, категоріями й акаунтами зараз недоступне.
+          Функції модерації та метрики з’являться після додавання RBAC і журналу аудиту. Управління
+          вправами, категоріями й акаунтами зараз недоступне.
         </p>
       </section>
     </main>
