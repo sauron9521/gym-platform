@@ -1,15 +1,14 @@
 import { expect, test } from '@playwright/test';
 
 for (const width of [320, 1280]) {
-  test(`trainer page explains programs and athlete workflows at ${width}px`, async ({ page }) => {
+  test(`trainer workflows at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
     await page.goto('/for-trainers');
 
     const main = page.getByRole('main');
-    await expect(main.getByRole('heading', { level: 1 })).toHaveCount(1);
-    await expect(main.getByRole('heading', { level: 1 })).toContainText(
-      'Більше уваги спортсменам',
-    );
+    const heading = main.getByRole('heading', { level: 1 });
+    await expect(heading).toHaveCount(1);
+    await expect(heading).toContainText('Більше уваги спортсменам');
     await expect(
       main.getByRole('heading', { name: 'Структура, яка допомагає вести тренування' }),
     ).toBeVisible();
