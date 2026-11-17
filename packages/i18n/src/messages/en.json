@@ -170,6 +170,30 @@
       "back": "Back",
       "next": "Next",
       "page": "Page {page} of {total}"
+    },
+    "trainerPrograms": {
+      "eyebrow": "Trainer workspace",
+      "title": "Training programs",
+      "description": "Your programs, drafts, published and archived versions.",
+      "create": "Create program",
+      "filters": "Program filters",
+      "status": "Program status",
+      "loading": "Loading programs…",
+      "retry": "Try again",
+      "total": "Total programs: {count}",
+      "empty": "No programs found",
+      "emptyHint": "No programs match the selected status.",
+      "list": "Training program list",
+      "updated": "Updated:",
+      "versions": "Versions:",
+      "details": "Program details",
+      "viewVersions": "View versions",
+      "duration": "Duration: {weeks} weeks",
+      "published": "Published:",
+      "pages": "Training program pages",
+      "back": "Back",
+      "next": "Next",
+      "page": "Page {page} of {total}"
     }
   },
   "admin": {

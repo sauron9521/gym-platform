@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 
 import {
   trainerProgramsListQueryOptions,
@@ -28,6 +29,7 @@ type ListState =
   | { kind: 'ready'; programs: TrainingProgramItem[]; total: number; pages: number };
 
 export function TrainerProgramsList() {
+  const t = useTranslations('web.trainerPrograms');
   const router = useRouter();
   const queryClient = useQueryClient();
   const redirecting = useRef(false);
@@ -84,22 +86,22 @@ export function TrainerProgramsList() {
   return (
     <main className="mx-auto max-w-5xl space-y-7 px-6 py-12">
       <header className="space-y-2">
-        <p className="text-sm font-medium text-muted-foreground">Кабінет тренера</p>
-        <h1 className="text-3xl font-semibold tracking-tight">Тренувальні програми</h1>
+        <p className="text-sm font-medium text-muted-foreground">{t('eyebrow')}</p>
+        <h1 className="text-3xl font-semibold tracking-tight">{t('title')}</h1>
         <p className="text-sm text-muted-foreground">
-          Ваші програми, чернетки, опубліковані та архівні версії.
+          {t('description')}
         </p>
       </header>
 
       <div>
         <Button asChild>
-          <Link href="/trainer/programs/new">Створити програму</Link>
+          <Link href="/trainer/programs/new">{t('create')}</Link>
         </Button>
       </div>
 
-      <section className="space-y-2 rounded-xl border bg-card p-5" aria-label="Фільтри програм">
+      <section className="space-y-2 rounded-xl border bg-card p-5" aria-label={t('filters')}>
         <label htmlFor="training-program-status" className="block text-sm font-medium">
-          Статус програми
+          {t('status')}
         </label>
         <select
           id="training-program-status"
@@ -117,7 +119,7 @@ export function TrainerProgramsList() {
 
       {state.kind === 'loading' && (
         <p role="status" className="rounded-xl border bg-card p-6 text-muted-foreground">
-          Завантажуємо програми…
+          {t('loading')}
         </p>
       )}
 
@@ -125,7 +127,7 @@ export function TrainerProgramsList() {
         <section role="alert" className="space-y-3 rounded-xl border bg-card p-6">
           <p className="text-sm text-destructive">{state.message}</p>
           <Button type="button" variant="outline" onClick={retry}>
-            Спробувати ще раз
+            {t('retry')}
           </Button>
         </section>
       )}
@@ -133,17 +135,17 @@ export function TrainerProgramsList() {
       {state.kind === 'ready' && (
         <>
           <p role="status" className="text-sm text-muted-foreground">
-            Усього програм: {state.total}
+            {t('total', { count: state.total })}
           </p>
           {state.programs.length === 0 ? (
             <section className="rounded-xl border bg-card p-6">
-              <h2 className="font-semibold">Програм не знайдено</h2>
+              <h2 className="font-semibold">{t('empty')}</h2>
               <p className="mt-2 text-sm text-muted-foreground">
-                Поки немає програм з обраним статусом.
+                {t('emptyHint')}
               </p>
             </section>
           ) : (
-            <section aria-label="Список тренувальних програм" className="grid gap-4">
+            <section aria-label={t('list')} className="grid gap-4">
               {state.programs.map((program) => (
                 <article key={program.id} className="space-y-3 rounded-xl border bg-card p-5">
                   <div className="flex flex-wrap items-start justify-between gap-3">
@@ -153,18 +155,18 @@ export function TrainerProgramsList() {
                     </span>
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    Оновлено: {formatProgramDate(program.updatedAt)} · Версій:{' '}
+                    {t('updated')} {formatProgramDate(program.updatedAt)} · {t('versions')}{' '}
                     {program.versions.length}
                   </p>
                   <div>
                     <Button asChild variant="outline" size="sm">
-                      <Link href={`/trainer/programs/${program.id}`}>Деталі програми</Link>
+                      <Link href={`/trainer/programs/${program.id}`}>{t('details')}</Link>
                     </Button>
                   </div>
                   {program.versions.length > 0 && (
                     <details className="space-y-3">
                       <summary className="cursor-pointer text-sm font-medium">
-                        Переглянути версії
+                        {t('viewVersions')}
                       </summary>
                       <ul className="space-y-3 pt-3">
                         {sortProgramVersions(program.versions).map((version) => (
@@ -183,11 +185,11 @@ export function TrainerProgramsList() {
                               </p>
                             )}
                             {version.durationWeeks !== null && (
-                              <p>Тривалість: {version.durationWeeks} тиж.</p>
+                              <p>{t('duration', { weeks: version.durationWeeks })}</p>
                             )}
                             {version.publishedAt && (
                               <p className="text-muted-foreground">
-                                Опубліковано: {formatProgramDate(version.publishedAt)}
+                                {t('published')} {formatProgramDate(version.publishedAt)}
                               </p>
                             )}
                           </li>
@@ -202,7 +204,7 @@ export function TrainerProgramsList() {
           {state.pages > 1 && (
             <nav
               className="flex items-center justify-between gap-4"
-              aria-label="Сторінки тренувальних програм"
+              aria-label={t('pages')}
             >
               <Button
                 type="button"
@@ -210,10 +212,10 @@ export function TrainerProgramsList() {
                 disabled={page <= 1}
                 onClick={() => changePage(page - 1)}
               >
-                Назад
+                {t('back')}
               </Button>
               <span className="text-sm text-muted-foreground">
-                Сторінка {page} із {state.pages}
+                {t('page', { page, total: state.pages })}
               </span>
               <Button
                 type="button"
@@ -221,7 +223,7 @@ export function TrainerProgramsList() {
                 disabled={page >= state.pages}
                 onClick={() => changePage(page + 1)}
               >
-                Далі
+                {t('next')}
               </Button>
             </nav>
           )}
