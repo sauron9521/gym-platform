@@ -49,6 +49,8 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     console.error('Mobile release channels NO-GO:\n' + failures.map((x) => '- ' + x).join('\n'));
     process.exitCode = 1;
   } else {
-    console.log('Channel configuration OK. Native builds, identifiers and API readiness NOT verified.');
+    console.log(
+      'Channel configuration OK. Native builds, identifiers and API readiness NOT verified.',
+    );
   }
 }
