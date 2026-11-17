@@ -20,9 +20,9 @@ describe('AsyncResourceState (native)', () => {
     const view = await render(
       <AsyncResourceState kind="error" message="Мережева помилка" onRetry={onRetry} retrying />,
     );
-    const retry = view.getByRole('button', { name: 'Спробувати ще раз' });
-    expect(retry.props.disabled).toBe(true);
-    expect(retry.props.accessibilityState.disabled).toBe(true);
+    expect(
+      view.getByRole('button', { name: 'Спробувати ще раз', disabled: true }),
+    ).toBeTruthy();
   });
 
   it('shows a loading message without a retry action', async () => {
