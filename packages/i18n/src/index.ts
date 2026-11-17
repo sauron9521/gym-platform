@@ -39,4 +39,4 @@ export function getFlatMessages(locale: Locale): Record<string, string> {
   return result;
 }
 
-export { resolveRequestLocale } from './request-locale.js';
+export { resolveRequestLocale } from './request-locale';
