@@ -30,6 +30,7 @@ function Navigation() {
             name="progress/index"
             options={{ headerShown: true, title: 'Мій прогрес' }}
           />
+          <Stack.Screen name="progress/exercises/[id]" options={{ headerShown: true, title: 'Прогрес вправи' }} />
           <Stack.Screen name="programs/[id]" options={{ headerShown: true, title: 'Програма' }} />
           <Stack.Screen
             name="workouts/new"

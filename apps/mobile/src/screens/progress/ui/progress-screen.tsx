@@ -1,4 +1,6 @@
 import { useMemo, useState } from 'react';
+import { useRouter } from 'expo-router';
+import { ExercisePicker } from '@/features/exercises/ui/exercise-picker';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { strengthVolumeHeights } from '@/features/progress/lib/chart';
@@ -11,7 +13,9 @@ import { palette } from '@/shared/config/theme';
 const periods: ProgressRange[] = ['7d', '30d', '90d'];
 
 export function ProgressScreen() {
+  const router = useRouter();
   const [range, setRange] = useState<ProgressRange>('30d');
+  const [selectedExerciseId, setSelectedExerciseId] = useState('');
   const query = useWorkoutSummary(range);
   const heights = useMemo(() => strengthVolumeHeights(query.data?.daily ?? []), [query.data]);
   const stats = query.data;
@@ -19,6 +23,14 @@ export function ProgressScreen() {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <Text style={styles.title}>Мій прогрес</Text>
+      <Text style={styles.heading}>Статистика за вправою</Text>
+      <ExercisePicker
+        selectedId={selectedExerciseId}
+        onSelect={(id) => {
+          setSelectedExerciseId(id);
+          router.push({ pathname: '/progress/exercises/[id]', params: { id } });
+        }}
+      />
       <View style={styles.filters}>
         {periods.map((period) => (
           <Pressable
