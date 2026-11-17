@@ -1,11 +1,15 @@
+import { useCallback, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Platform, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { useAuth } from '@/features/auth/model/auth-context';
+import { useAccountQuery } from '@/features/profile/model/account-query';
 import { useProgramAssignments } from '@/features/programs/model/program-assignments-query';
 import { useWorkoutSummary } from '@/features/progress/model/workout-summary-query';
 import { workoutStatusLabel } from '@/features/workouts/lib/workout-presentation';
 import { useWorkoutsQuery } from '@/features/workouts/model/workouts-query';
+import { accountQueryKeys } from '@/shared/api/query-client';
 import { palette } from '@/shared/config/theme';
 import { AsyncResourceState } from '@/shared/ui/async-resource-state';
 
@@ -93,14 +97,65 @@ function AthleteDashboard() {
 export function HomeScreen() {
   const router = useRouter();
   const { account } = useAuth();
+  const { data: accountData } = useAccountQuery();
+  const queryClient = useQueryClient();
+  const [refreshing, setRefreshing] = useState(false);
   const isAthlete = account?.role === 'ATHLETE';
-  const displayName = account?.profile?.displayName?.trim() || account?.profile?.firstName?.trim();
+  const profile = accountData?.profile ?? account?.profile;
+  const displayName = profile?.displayName?.trim() || profile?.firstName?.trim();
+
+  // Refresh only this screen's active queries; keep the navigation and auth session intact.
+  const onRefresh = useCallback(async () => {
+    if (!account || refreshing) return;
+    setRefreshing(true);
+    try {
+      const requests = [
+        queryClient.refetchQueries({
+          queryKey: accountQueryKeys.me(account.id),
+          exact: true,
+          type: 'active',
+        }),
+      ];
+      if (account.role === 'ATHLETE') {
+        requests.push(
+          queryClient.refetchQueries({
+            queryKey: [...accountQueryKeys.workouts(account.id), 'ALL'],
+            exact: true,
+            type: 'active',
+          }),
+          queryClient.refetchQueries({
+            queryKey: [...accountQueryKeys.all, account.id, 'program-assignments'],
+            exact: true,
+            type: 'active',
+          }),
+          queryClient.refetchQueries({
+            queryKey: [...accountQueryKeys.all, account.id, 'workout-summary', '7d'],
+            exact: true,
+            type: 'active',
+          }),
+        );
+      }
+      await Promise.allSettled(requests);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [account, queryClient, refreshing]);
 
   return (
     <ScrollView
       style={styles.container}
       contentContainerStyle={styles.content}
       accessibilityLabel="Головна Gym Platform"
+      refreshControl={
+        Platform.OS === 'web' ? undefined : (
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => void onRefresh()}
+            tintColor={palette.primary}
+            colors={[palette.primary]}
+          />
+        )
+      }
     >
       <Text style={styles.eyebrow}>GYM PLATFORM</Text>
       <Text style={styles.title}>
