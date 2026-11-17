@@ -36,8 +36,8 @@ test('Query provider, cache isolation and guarded profile queries are wired', ()
   assert.match(auth, /queryClient\.clear\(\)/);
   assert.match(auth, /queryClient\.setQueryData\(accountQueryKeys\.me\(me\.data\.id\)/);
   assert.match(hook, /enabled: Boolean\(account\)/);
-  assert.match(hook, /isSessionExpired\\(response\\.response\\.status\\)/);
-  assert.match(hook, /mobileReadError\\(response\\.response\\.status/);
+  assert.match(hook, /isSessionExpired\(response\.response\.status\)/);
+  assert.match(hook, /mobileReadError\(response\.response\.status/);
   assert.equal(isSessionExpired(401), true);
   assert.equal(isSessionExpired(403), false);
   assert.match(profile, /useAccountQuery\(\)/);
