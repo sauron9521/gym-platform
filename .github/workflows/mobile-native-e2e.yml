@@ -79,6 +79,7 @@ jobs:
           E2E_EMAIL: ${{ secrets.MOBILE_E2E_EMAIL }}
           E2E_PASSWORD: ${{ secrets.MOBILE_E2E_PASSWORD }}
           E2E_EXERCISE_NAME: ${{ secrets.MOBILE_E2E_EXERCISE_NAME }}
+          EXPECTED_STAGING_APP_ID: ${{ secrets.MOBILE_STAGING_ANDROID_APP_ID }}
         with:
           api-level: 34
           arch: x86_64
@@ -87,6 +88,16 @@ jobs:
             if [[ -z "$E2E_EMAIL" || -z "$E2E_PASSWORD" ]]; then
               echo "The mobile-staging environment needs disposable test account secrets." >&2
               exit 1
+            fi
+            if [[ "$FLOW" == "workout-write" ]]; then
+              if [[ -z "$E2E_EXERCISE_NAME" || -z "$EXPECTED_STAGING_APP_ID" ]]; then
+                echo "Workout write smoke needs staging exercise seed and staging Android application ID." >&2
+                exit 1
+              fi
+              if [[ "$APP_ID" != "$EXPECTED_STAGING_APP_ID" ]]; then
+                echo "Workout write smoke refused: APK package is not the approved staging package." >&2
+                exit 1
+              fi
             fi
             curl --fail --location --silent --show-error --max-time 240 \
               --proto '=https' --proto-redir '=https' \
@@ -113,12 +124,8 @@ jobs:
               workout-write) FLOW_FILE=workout-write-smoke.yaml ;;
               *) echo "Unsupported Maestro flow" >&2; exit 1 ;;
             esac
-            if [[ "$FLOW" == workout-write && -z "$E2E_EXERCISE_NAME" ]]; then
-              echo "MOBILE_E2E_EXERCISE_NAME must name a seed exercise in staging." >&2
-              exit 1
-            fi
             maestro test -e APP_ID="$APP_ID" -e E2E_EMAIL="$E2E_EMAIL" \
               -e E2E_PASSWORD="$E2E_PASSWORD" \
               -e E2E_EXERCISE_NAME="$E2E_EXERCISE_NAME" \
-              -e E2E_WORKOUT_TITLE="Mobile-smoke-${GITHUB_RUN_ID}" \
+              -e E2E_WORKOUT_TITLE="Mobile-smoke-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}" \
               "apps/mobile/maestro/flows/$FLOW_FILE"

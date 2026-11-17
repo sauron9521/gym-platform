@@ -67,14 +67,36 @@ build, a running staging backend, and an emulator test require operator-provided
 infrastructure and secrets; **a passing normal CI is not evidence of a
 successful native smoke run**.
 
-## Optional mutating workout journey
+## Automated local EAS configuration preflight
 
-Set the additional mobile-staging secret `MOBILE_E2E_EXERCISE_NAME` to a unique
-exercise name seeded in the disposable staging database. Run the manual workflow
-with `flow: workout-write`. The scenario signs in, searches a real exercise,
-creates an isolated workout named with the GitHub run ID, starts the workout,
-records one set, and completes the workout.
+Before requesting the manual preview APK build, run `node apps/mobile/scripts/native-staging-preflight.mjs` from the repository root. This command deliberately fails until the owner provides approved Android/iOS package identifiers in `app.json`. The repository does not invent public application IDs or signing keys. The preflight also verifies that the preview artifact is an internal APK bound to EAS `preview`, with independent production versioning.
 
-This test deliberately **writes staging data**: never run against production.
-The name must match a visible exercise in the athlete's catalog. Review the
-Maestro failure report and remove disposable test data as needed.
+Passing the configuration preflight **does not** verify a real device build, staging HTTPS, package ownership or Maestro execution. Those remain manual operator requirements.
+
+## Optional staging-only mutating workout smoke
+
+The `workout-write` option adds a **manual** end-to-end write journey:
+log in as the disposable staging athlete, search for a seeded exercise, create
+one workout, start it, record a completed set and finish the workout.
+This is **not** part of pull-request CI.
+
+Before enabling it, configure the `mobile-staging` GitHub environment:
+
+- `MOBILE_E2E_EXERCISE_NAME`: a **unique, active, visible** exercise name
+  available to the staging athlete. Do not use a real person's records.
+- `MOBILE_STAGING_ANDROID_APP_ID`: the verified staging APK application ID,
+  which must be different from your production application ID. The workflow
+  checks it against the operator-supplied `app_id` before downloading the APK.
+- Keep the existing `MOBILE_E2E_EMAIL` and `MOBILE_E2E_PASSWORD` bound to a
+  disposable **ATHLETE** account; preserve environment approval and the
+  `main`-branch restriction.
+
+Build the reviewed **preview** APK from `main`, independently confirm its
+SHA-256 and embedded HTTPS **staging** backend, and select `workout-write`
+in the manual workflow. The test names workouts
+`Mobile-smoke-<run-id>-<run-attempt>` for traceability. It writes to the
+staging database. Remove its disposable test records after the run.
+
+A green normal CI means that code contracts and static selectors pass; it
+**does not prove** the Maestro scenario executed on an emulator. If the
+actual staging smoke fails, promotion remains **NO-GO** until reviewed.

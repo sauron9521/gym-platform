@@ -10,4 +10,12 @@ allowBuilds:
   prisma: true
   bcrypt: true
   esbuild: true
+  '@swc/core': true
+  '@parcel/watcher': false
   '@scarf/scarf': false
+
+# Temporary, advisory-specific exception; see docs/security-audit-exceptions.md.
+# Keep auditing all other production dependencies at high severity and above.
+audit:
+  ignore:
+    - GHSA-fc5q-39xc-vjpf
