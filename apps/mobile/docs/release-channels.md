@@ -3,11 +3,12 @@
 **Status:** configuration and safety checks only. No APK, store submission, or
 over-the-air (OTA) update is published or enabled by this PR.
 
-| Profile | EAS environment | EAS channel | Artifact / destination |
-| --- | --- | --- | --- |
-| `development` | `development` | `development` | Internal development client |
-| `preview` | `preview` | `preview` | Internal Android APK |
-| `production` | `production` | `production` | Store distribution (auto-increment) |
+- **Development:** EAS environment `development`, channel `development`,
+  internal development client.
+- **Preview:** EAS environment `preview`, channel `preview`,
+  internal Android APK.
+- **Production:** EAS environment `production`, channel `production`,
+  store distribution with automatic version increment.
 
 A channel configured in `eas.json` does **not** enable OTA updates.
 This repository does not install or configure `expo-updates` as part of this PR.
