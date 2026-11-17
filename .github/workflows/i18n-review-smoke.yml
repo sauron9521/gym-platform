@@ -35,7 +35,7 @@ jobs:
         run: |
           pnpm exec prettier --write packages/i18n
           case "$GITHUB_REF_NAME" in
-            feat/i18n-15-web-training-programs) pnpm exec prettier --write apps/web/src apps/web/test/components/sign-in-form.test.tsx ;;
+            feat/i18n-15-web-training-programs) pnpm exec prettier --write apps/web/src apps/web/test ;;
             feat/i18n-17b-mobile-program-list) pnpm exec prettier --write apps/mobile/src apps/mobile/test/vitest/workouts-screen.test.tsx apps/mobile/test/vitest/programs-screen.test.tsx ;;
             feat/i18n-20-landing-localized-seo) pnpm exec prettier --write apps/landing/src apps/landing/test/i18n-seo-contract.test.mjs ;;
             feat/i18n-21-localized-transactional-mail) pnpm exec prettier --write apps/api/src/modules/auth/mailers apps/api/src/modules/auth/test/auth-mailers.spec.ts apps/api/src/modules/users/repositories/users.repository.ts ;;
