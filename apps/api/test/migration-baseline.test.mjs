@@ -73,14 +73,22 @@ test('a valid non-empty incremental migration is accepted after the frozen basel
   withTemporaryMigrationDirectory((migrationsRoot) => {
     const name = '20261117120000_add_preferred_locale';
     mkdirSync(join(migrationsRoot, name));
-    writeFileSync(join(migrationsRoot, name, 'migration.sql'), 'ALTER TABLE "users" ADD COLUMN "preferredLocale" TEXT;');
+    writeFileSync(
+      join(migrationsRoot, name, 'migration.sql'),
+      'ALTER TABLE "users" ADD COLUMN "preferredLocale" TEXT;',
+    );
 
     assert.deepEqual(listValidatedMigrationNames(migrationsRoot), [initialBaseline, name]);
   });
 });
 
 test.each([
-  ['malformed directory name', '20261117120000-add-locale', 'SELECT 1;', /Invalid migration directory/],
+  [
+    'malformed directory name',
+    '20261117120000-add-locale',
+    'SELECT 1;',
+    /Invalid migration directory/,
+  ],
   ['empty migration', '20261117120000_add_locale', '   ', /non-empty SQL/],
 ])('incremental migration validation rejects %s', (_description, name, sql, expected) => {
   withTemporaryMigrationDirectory((migrationsRoot) => {
@@ -93,10 +101,7 @@ test.each([
 test('incremental migration validation rejects missing migration.sql', () => {
   withTemporaryMigrationDirectory((migrationsRoot) => {
     mkdirSync(join(migrationsRoot, '20261117120000_missing_sql'));
-    assert.throws(
-      () => listValidatedMigrationNames(migrationsRoot),
-      /ENOENT/,
-    );
+    assert.throws(() => listValidatedMigrationNames(migrationsRoot), /ENOENT/);
   });
 });
 
