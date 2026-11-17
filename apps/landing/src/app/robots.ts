@@ -1,11 +1,11 @@
 import type { MetadataRoute } from 'next';
 
-import { getSiteOrigin } from '@/shared/lib/seo';
+import { getSiteOrigin, isIndexingEnabled } from '@/shared/lib/seo';
 
 export default function robots(): MetadataRoute.Robots {
   const origin = getSiteOrigin();
 
-  if (!origin) {
+  if (!origin || !isIndexingEnabled()) {
     return { rules: { userAgent: '*', disallow: '/' } };
   }
 
