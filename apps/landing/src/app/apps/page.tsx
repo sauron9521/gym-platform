@@ -5,8 +5,7 @@ import { Container, MarketingSection, SectionHeading } from '@/shared/ui/marketi
 
 export const metadata = pageMetadata({
   title: 'Застосунки',
-  description:
-    'Знайомтеся з вебзастосунком та мобільною частиною екосистеми Gym Platform.',
+  description: 'Знайомтеся з вебзастосунком та мобільною частиною екосистеми Gym Platform.',
   path: '/apps',
 });
 
@@ -35,7 +34,10 @@ export default function ApplicationsPage() {
           <p className="text-sm font-bold tracking-widest text-primary uppercase">
             Застосунки Gym Platform
           </p>
-          <h1 id="app-title" className="mt-6 max-w-4xl text-4xl font-bold tracking-tight sm:text-6xl">
+          <h1
+            id="app-title"
+            className="mt-6 max-w-4xl text-4xl font-bold tracking-tight sm:text-6xl"
+          >
             Одне тренувальне середовище — Web і Mobile
           </h1>
           <p className="mt-6 max-w-2xl text-lg leading-8 text-muted-foreground">
