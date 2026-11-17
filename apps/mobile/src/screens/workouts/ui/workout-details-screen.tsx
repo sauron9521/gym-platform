@@ -1,5 +1,14 @@
 import { useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Alert,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 
 import { workoutTitleError } from '@/features/workouts/lib/workout-edit-policy';
 import { useCancelWorkout, useUpdateWorkoutTitle } from '@/features/workouts/model/workout-edit';
@@ -13,8 +22,6 @@ import {
 import { palette } from '@/shared/config/theme';
 import { WorkoutSetRow } from './workout-set-row';
 
-// Preserve the compact native status-action state machine for focused review.
-// prettier-ignore
 type TitleEditorProps = {
   title: string;
   disabled: boolean;
@@ -61,6 +68,8 @@ function WorkoutTitleEditor({ title, disabled, pending, failure, onSave }: Title
   );
 }
 
+// Preserve the compact native status-action state machine for focused review.
+// prettier-ignore
 export function WorkoutDetailsScreen({ id }: { id: string }) {
   const details = useWorkoutDetailsQuery(id);
   const transition = useWorkoutTransition(id);
@@ -69,19 +78,17 @@ export function WorkoutDetailsScreen({ id }: { id: string }) {
   const writeLock = useRef(false);
   const workout = details.data;
   const busy = transition.isPending || titleUpdate.isPending || cancellation.isPending;
+  const cancellable = workout?.status === 'PLANNED' || workout?.status === 'IN_PROGRESS';
+  const releaseLock = () => { writeLock.current = false; };
 
   const saveTitle = (title: string) => {
     if (writeLock.current || busy || workout?.status !== 'PLANNED') return;
     writeLock.current = true;
-    titleUpdate.mutate(title, { onSettled: () => { writeLock.current = false; } });
+    titleUpdate.mutate(title, { onSettled: releaseLock });
   };
 
   const confirmCancellation = () => {
-    if (
-      writeLock.current ||
-      busy ||
-      (workout?.status !== 'PLANNED' && workout?.status !== 'IN_PROGRESS')
-    ) return;
+    if (writeLock.current || busy || !cancellable) return;
     writeLock.current = true;
     Alert.alert(
       'Скасувати тренування?',
@@ -90,14 +97,14 @@ export function WorkoutDetailsScreen({ id }: { id: string }) {
         {
           text: 'Назад',
           style: 'cancel',
-          onPress: () => { writeLock.current = false; },
+          onPress: releaseLock,
         },
         {
           text: 'Скасувати тренування',
           style: 'destructive',
           onPress: () => {
             cancellation.mutate(undefined, {
-              onSettled: () => { writeLock.current = false; },
+              onSettled: releaseLock,
             });
           },
         },

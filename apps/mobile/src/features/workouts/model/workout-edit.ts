@@ -3,10 +3,7 @@ import { onlineManager, useMutation, useQueryClient } from '@tanstack/react-quer
 import { useAuth } from '@/features/auth/model/auth-context';
 import { workoutTitleError } from '@/features/workouts/lib/workout-edit-policy';
 import type { WorkoutDetails } from '@/features/workouts/model/workout-details-query';
-import {
-  isSessionExpired,
-  MobileSessionExpiredError,
-} from '@/shared/api/api-error-policy';
+import { isSessionExpired, MobileSessionExpiredError } from '@/shared/api/api-error-policy';
 import { accountQueryKeys } from '@/shared/api/query-client';
 
 /**
