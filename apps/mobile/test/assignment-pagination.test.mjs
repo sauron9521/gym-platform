@@ -1,9 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import {
-  nextAssignmentPage,
-  uniqueAssignments,
-} from '../src/features/programs/lib/assignment-pagination.ts';
+import { nextAssignmentPage, uniqueAssignments } from '../src/features/programs/lib/assignment-pagination.ts';
 
 describe('assigned program pagination', () => {
   it('never exceeds the server-reported number of pages', () => {
@@ -15,7 +12,8 @@ describe('assigned program pagination', () => {
     expect(nextAssignmentPage(1, -1)).toBeUndefined();
     expect(nextAssignmentPage(1.5, 3)).toBeUndefined();
     expect(nextAssignmentPage(1, Number.NaN)).toBeUndefined();
-    expect(nextAssignmentPage(Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER)).toBeUndefined();
+    const lastPage = Number.MAX_SAFE_INTEGER;
+    expect(nextAssignmentPage(lastPage, lastPage)).toBeUndefined();
   });
 
   it('removes duplicate boundary records without dropping later unique assignments', () => {

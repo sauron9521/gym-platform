@@ -12,8 +12,16 @@ vi.mock('@/features/programs/model/program-assignments-query', () => ({
 
 const refetch = vi.fn();
 const fetchNextPage = vi.fn();
-const first = { id: 'assignment-1', version: { title: 'Сила', version: 1 }, status: 'ACTIVE' };
-const second = { id: 'assignment-2', version: { title: 'Витривалість', version: 2 }, status: 'ACTIVE' };
+const first = {
+  id: 'assignment-1',
+  version: { title: 'Сила', version: 1 },
+  status: 'ACTIVE',
+};
+const second = {
+  id: 'assignment-2',
+  version: { title: 'Витривалість', version: 2 },
+  status: 'ACTIVE',
+};
 
 function prepare(overrides: Record<string, unknown> = {}) {
   vi.mocked(useProgramAssignments).mockReturnValue({
@@ -61,9 +69,13 @@ describe('ProgramsScreen paginated assignments (native)', () => {
     prepare({ isFetching: true, isFetchingNextPage: true });
     const view = await render(<ProgramsScreen />);
 
-    expect(view.getByRole('button', { name: 'Показати більше програм', disabled: true }))
-      .toBeTruthy();
-    expect(view.getByRole('button', { name: 'Оновити програми', disabled: true })).toBeTruthy();
+    const loadMore = view.getByRole('button', {
+      name: 'Показати більше програм',
+      disabled: true,
+    });
+    const refresh = view.getByRole('button', { name: 'Оновити програми', disabled: true });
+    expect(loadMore).toBeTruthy();
+    expect(refresh).toBeTruthy();
   });
 
   it('keeps loaded rows after a failed next page and supports manual retry', async () => {
@@ -82,7 +94,12 @@ describe('ProgramsScreen paginated assignments (native)', () => {
   });
 
   it('offers accessible retry on first-page errors', async () => {
-    prepare({ data: undefined, isError: true, error: new Error('Немає зв’язку'), hasNextPage: false });
+    prepare({
+      data: undefined,
+      isError: true,
+      error: new Error('Немає зв’язку'),
+      hasNextPage: false,
+    });
     const view = await render(<ProgramsScreen />);
 
     expect(view.getByText('Немає зв’язку')).toBeTruthy();

@@ -10,14 +10,12 @@ import { AsyncResourceState } from '@/shared/ui/async-resource-state';
 export function ProgramsScreen() {
   const router = useRouter();
   const query = useProgramAssignments();
-  const assignments = useMemo(
-    () => uniqueAssignments(query.data?.pages ?? []),
-    [query.data],
-  );
+  const assignments = useMemo(() => uniqueAssignments(query.data?.pages ?? []), [query.data]);
   const initialError = query.isError && !query.data;
   const loading = query.isPending;
   const fetching = query.isFetching;
   const canLoadMore = query.hasNextPage && !fetching;
+  const showEmpty = !loading && !query.isError && assignments.length === 0;
 
   const refresh = () => {
     if (!fetching) void query.refetch();
@@ -62,9 +60,7 @@ export function ProgramsScreen() {
         </View>
       }
       ListEmptyComponent={
-        !loading && !initialError && !query.isRefetchError && assignments.length === 0 ? (
-          <AsyncResourceState kind="empty" message="Активних призначень немає." />
-        ) : null
+        showEmpty ? <AsyncResourceState kind="empty" message="Активних призначень немає." /> : null
       }
       renderItem={({ item }) => (
         <Pressable
