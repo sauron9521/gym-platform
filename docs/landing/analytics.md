@@ -3,6 +3,7 @@
 The Landing renders **no analytics script by default**.
 
 To enable an Umami-compatible provider, set both:
+
 - `NEXT_PUBLIC_UMAMI_WEBSITE_ID`: website UUID
 - `NEXT_PUBLIC_UMAMI_SCRIPT_URL`: trusted HTTPS URL to the provider script
 

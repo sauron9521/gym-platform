@@ -13,7 +13,11 @@ vi.mock('next/link', () => ({
     href: string;
     children: ReactNode;
     onClick?: (event: React.MouseEvent<HTMLAnchorElement>) => void;
-  }) => <a href={href} onClick={onClick}>{children}</a>,
+  }) => (
+    <a href={href} onClick={onClick}>
+      {children}
+    </a>
+  ),
 }));
 
 afterEach(() => {
@@ -22,7 +26,11 @@ afterEach(() => {
 });
 
 test('opt-in analytics never blocks navigation when provider is absent', () => {
-  render(<TrackedLink href="/features" eventName="landing_primary_cta">Features</TrackedLink>);
+  render(
+    <TrackedLink href="/features" eventName="landing_primary_cta">
+      Features
+    </TrackedLink>,
+  );
   fireEvent.click(screen.getByRole('link', { name: 'Features' }));
   expect(screen.getByRole('link').getAttribute('href')).toBe('/features');
 });
@@ -30,7 +38,11 @@ test('opt-in analytics never blocks navigation when provider is absent', () => {
 test('analytics sends a bounded event name and no user data when configured', () => {
   const track = vi.fn();
   window.umami = { track };
-  render(<TrackedLink href="/apps" eventName="landing_secondary_cta">Apps</TrackedLink>);
+  render(
+    <TrackedLink href="/apps" eventName="landing_secondary_cta">
+      Apps
+    </TrackedLink>,
+  );
   fireEvent.click(screen.getByRole('link', { name: 'Apps' }));
   expect(track).toHaveBeenCalledExactlyOnceWith('landing_secondary_cta');
 });

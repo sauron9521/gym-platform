@@ -1,7 +1,5 @@
 export type LandingEventName =
-  | 'landing_primary_cta'
-  | 'landing_secondary_cta'
-  | 'landing_feature_card';
+  'landing_primary_cta' | 'landing_secondary_cta' | 'landing_feature_card';
 
 declare global {
   interface Window {
