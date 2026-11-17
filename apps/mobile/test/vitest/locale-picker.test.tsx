@@ -1,5 +1,4 @@
 import { fireEvent, render } from '@testing-library/react-native';
-import { getFlatMessages } from '@gym/i18n';
 import { Text } from 'react-native';
 import { useIntl } from 'react-intl';
 import { describe, expect, it, vi } from 'vitest';
@@ -25,7 +24,7 @@ describe('Mobile locale provider and picker (React Native)', () => {
       </LocaleProvider>,
     );
 
-    expect(view.getByText(getFlatMessages('en')['mobile.profile.myProfile'])).toBeTruthy();
+    expect(view.getByText('My profile')).toBeTruthy();
     expect(view.getByText('English')).toBeTruthy();
   });
 
