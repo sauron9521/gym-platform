@@ -3,8 +3,8 @@
  * Do not sign out for 403, network failures or server errors.
  */
 export class MobileSessionExpiredError extends Error {
-  constructor() {
-    super('Термін сесії минув. Увійдіть повторно.');
+  constructor(message = 'Термін сесії минув. Увійдіть повторно.') {
+    super(message);
     this.name = 'MobileSessionExpiredError';
   }
 }
