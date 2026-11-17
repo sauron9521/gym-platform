@@ -34,7 +34,10 @@ test('catalog offers search debounce, manual page retry and home navigation', ()
     new URL('../src/screens/exercises/ui/exercises-screen.tsx', import.meta.url),
     'utf8',
   );
-  const home = readFileSync(new URL('../src/screens/home/ui/home-screen.tsx', import.meta.url), 'utf8');
+  const home = readFileSync(
+    new URL('../src/screens/home/ui/home-screen.tsx', import.meta.url),
+    'utf8',
+  );
   const layout = readFileSync(new URL('../src/app/_layout.tsx', import.meta.url), 'utf8');
   assert.match(screen, /setTimeout\(\(\) => setDebouncedSearch/);
   assert.match(screen, /isFetchNextPageError/);
