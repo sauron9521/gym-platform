@@ -19,9 +19,7 @@ describe('browser origins for CORS and CSRF', () => {
   });
 
   it('never broadens the allowlist to wildcard or unknown origins', () => {
-    const trusted = getCsrfTrustedOrigins('http://localhost:3000', [
-      'http://localhost:8081',
-    ]);
+    const trusted = getCsrfTrustedOrigins('http://localhost:3000', ['http://localhost:8081']);
     expect(trusted).not.toContain('https://untrusted.example.test');
     expect(trusted).not.toContain('*');
   });
