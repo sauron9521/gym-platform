@@ -1,6 +1,7 @@
 import Link from 'next/link';
 
 import { applicationNavigation, mainNavigation } from '@/shared/config/navigation';
+import { AnalyticsScript } from '@/widgets/analytics/ui/analytics-script';
 
 export function SiteFooter() {
   return (
@@ -47,6 +48,7 @@ export function SiteFooter() {
       <div className="border-t border-border/70 px-6 py-5 text-center text-xs text-muted-foreground">
         © {new Date().getFullYear()} Gym Platform · У розробці
       </div>
+      <AnalyticsScript />
     </footer>
   );
 }
