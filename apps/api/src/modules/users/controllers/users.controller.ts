@@ -27,7 +27,10 @@ import { Authenticate, CurrentUser } from '@nestjs/authentication';
 
 import { UsersService } from '../services/users.service.js';
 import { type UpdateMyProfileDto, updateMyProfileSchema } from '../dto/update-my-profile.dto.js';
-import { type UpdateMyPreferencesDto, updateMyPreferencesSchema } from '../dto/update-my-preferences.dto.js';
+import {
+  type UpdateMyPreferencesDto,
+  updateMyPreferencesSchema,
+} from '../dto/update-my-preferences.dto.js';
 
 type UserActor = { id: string };
 
@@ -50,7 +53,16 @@ export class UsersController {
     description: 'Authenticated account and nullable profile. Never includes credentials.',
     schema: {
       type: 'object',
-      required: ['id', 'email', 'emailVerified', 'role', 'preferredLocale', 'createdAt', 'updatedAt', 'profile'],
+      required: [
+        'id',
+        'email',
+        'emailVerified',
+        'role',
+        'preferredLocale',
+        'createdAt',
+        'updatedAt',
+        'profile',
+      ],
       properties: {
         id: { type: 'string', format: 'uuid' },
         email: { type: 'string', format: 'email' },

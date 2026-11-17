@@ -10,8 +10,13 @@ describe('updateMyPreferencesSchema', () => {
   });
 
   it('rejects unsupported languages, empty payloads and account privilege escalation', () => {
-    for (const body of [{}, { preferredLocale: 'fr' }, { preferredLocale: 'en-US' },
-      { preferredLocale: 'en', role: 'ADMIN' }, { preferredLocale: undefined }]) {
+    for (const body of [
+      {},
+      { preferredLocale: 'fr' },
+      { preferredLocale: 'en-US' },
+      { preferredLocale: 'en', role: 'ADMIN' },
+      { preferredLocale: undefined },
+    ]) {
       expect(updateMyPreferencesSchema.safeParse(body).success).toBe(false);
     }
   });

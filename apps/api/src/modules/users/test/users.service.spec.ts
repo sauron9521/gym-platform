@@ -35,10 +35,15 @@ describe('UsersService', () => {
 
   it('updates an account locale independently from the personal profile', async () => {
     repository.updateMyPreferences.mockResolvedValue({
-      id: 'user-1', preferredLocale: 'en', profile: null,
+      id: 'user-1',
+      preferredLocale: 'en',
+      profile: null,
     });
-    await expect(service.updateMyPreferences('user-1', { preferredLocale: 'en' })).resolves.toMatchObject({
-      preferredLocale: 'en', profile: null,
+    await expect(
+      service.updateMyPreferences('user-1', { preferredLocale: 'en' }),
+    ).resolves.toMatchObject({
+      preferredLocale: 'en',
+      profile: null,
     });
     expect(repository.updateMyPreferences).toHaveBeenCalledExactlyOnceWith('user-1', 'en');
   });

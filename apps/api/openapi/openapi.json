@@ -489,6 +489,7 @@
                     "email",
                     "emailVerified",
                     "role",
+                    "preferredLocale",
                     "createdAt",
                     "updatedAt",
                     "profile"
@@ -508,6 +509,11 @@
                     "role": {
                       "type": "string",
                       "enum": ["ATHLETE", "TRAINER", "ADMIN"]
+                    },
+                    "preferredLocale": {
+                      "type": "string",
+                      "enum": ["uk", "en"],
+                      "nullable": true
                     },
                     "createdAt": {
                       "type": "string",
@@ -640,6 +646,45 @@
                     "multipleOf": 0.01
                   }
                 },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "accessToken": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "tags": ["Users"]
+      }
+    },
+    "/users/me/preferences": {
+      "patch": {
+        "operationId": "UsersController_updatePreferences",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "preferredLocale": {
+                    "nullable": true,
+                    "type": "string",
+                    "enum": ["uk", "en"]
+                  }
+                },
+                "required": ["preferredLocale"],
                 "additionalProperties": false
               }
             }
