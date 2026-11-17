@@ -75,7 +75,9 @@ describe('operator-configured Super-admin permission policy', () => {
         permission === 'admin.console.read',
       );
     }
-    expect(hasAdminPermission('ADMIN', 'admin.invalid' as 'admin.roles.assign', first, elevated)).toBe(
+    expect(
+      hasAdminPermission('ADMIN', 'admin.invalid' as 'admin.roles.assign', first, elevated),
+    ).toBe(false);
       false,
     );
   });
