@@ -7,9 +7,9 @@ import { Injectable } from '@nestjs/common';
 import { type Mailable, Mailer } from '@nestjs/mail';
 import { UsersRepository } from '#src/modules/users/repositories/users.repository';
 
-@Injectable()
 type LocalizedResetLink = PasswordResetLink & { locale?: 'uk' | 'en' };
 
+@Injectable()
 export class PasswordResetMail implements Mailable<LocalizedResetLink> {
   render({ url, locale = 'uk' }: LocalizedResetLink) {
     return {
