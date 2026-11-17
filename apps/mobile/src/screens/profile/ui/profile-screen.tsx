@@ -1,8 +1,6 @@
 import {
   ActivityIndicator,
-  Platform,
   Pressable,
-  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -21,7 +19,7 @@ export function ProfileScreen() {
   const intl = useIntl();
   const t = (id: string) => intl.formatMessage({ id });
   const { account, signOut } = useAuth();
-  const { data, isFetching, isRefetching, isError, error, refetch } = useAccountQuery();
+  const { data, isFetching, isError, error, refetch } = useAccountQuery();
 
   if (!account) return null;
 
@@ -37,16 +35,7 @@ export function ProfileScreen() {
     <ScrollView
       style={styles.container}
       contentContainerStyle={styles.content}
-      refreshControl={
-        Platform.OS === 'web' ? undefined : (
-          <RefreshControl
-            refreshing={isRefetching}
-            onRefresh={() => void refetch()}
-            tintColor={palette.primary}
-            colors={[palette.primary]}
-          />
-        )
-      }
+      bounces={false}
     >
       <Text style={styles.heading}>{name}</Text>
       <Text style={styles.subheading}>{t('mobile.profile.apiData')}</Text>
@@ -81,7 +70,9 @@ export function ProfileScreen() {
         </Text>
       ) : null}
       <Pressable
+        testID="profile-refresh"
         accessibilityRole="button"
+        accessibilityState={{ disabled: isFetching }}
         disabled={isFetching}
         onPress={() => void refetch()}
         style={styles.button}

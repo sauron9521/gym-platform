@@ -2,9 +2,7 @@ import { useCallback, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import {
-  Platform,
   Pressable,
-  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -154,16 +152,7 @@ export function HomeScreen() {
       style={styles.container}
       contentContainerStyle={styles.content}
       accessibilityLabel="Головна Gym Platform"
-      refreshControl={
-        Platform.OS === 'web' ? undefined : (
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={() => void onRefresh()}
-            tintColor={palette.primary}
-            colors={[palette.primary]}
-          />
-        )
-      }
+      bounces={false}
     >
       <Text style={styles.eyebrow}>GYM PLATFORM</Text>
       <Text style={styles.title}>
@@ -174,6 +163,18 @@ export function HomeScreen() {
           ? 'Ваші тренування та прогрес в одному місці.'
           : 'Відкрийте доступні розділи платформи.'}
       </Text>
+
+      <Pressable
+        testID="home-refresh"
+        accessibilityRole="button"
+        accessibilityLabel="Оновити головну"
+        accessibilityState={{ disabled: refreshing }}
+        disabled={refreshing}
+        onPress={() => void onRefresh()}
+        style={styles.refreshButton}
+      >
+        <Text style={styles.actionText}>{refreshing ? 'Оновлюємо…' : 'Оновити дані'}</Text>
+      </Pressable>
 
       <Text style={styles.heading}>Швидкі дії</Text>
       {isAthlete ? (
@@ -259,6 +260,15 @@ const styles = StyleSheet.create({
     minHeight: 50,
   },
   actionText: { color: palette.text, fontWeight: '600' },
+  refreshButton: {
+    borderWidth: 1,
+    borderColor: palette.border,
+    borderRadius: 12,
+    padding: 12,
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   primary: {
     backgroundColor: palette.primary,
     borderRadius: 12,

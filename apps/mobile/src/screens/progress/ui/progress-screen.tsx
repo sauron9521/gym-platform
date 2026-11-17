@@ -2,9 +2,7 @@ import { useMemo, useState } from 'react';
 import { useRouter } from 'expo-router';
 import {
   ActivityIndicator,
-  Platform,
   Pressable,
-  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -33,18 +31,19 @@ export function ProgressScreen() {
     <ScrollView
       style={styles.container}
       contentContainerStyle={styles.content}
-      refreshControl={
-        Platform.OS === 'web' ? undefined : (
-          <RefreshControl
-            refreshing={query.isRefetching}
-            onRefresh={() => void query.refetch()}
-            tintColor={palette.primary}
-            colors={[palette.primary]}
-          />
-        )
-      }
+      bounces={false}
     >
       <Text style={styles.title}>Мій прогрес</Text>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Оновити прогрес"
+        testID="progress-refresh"
+        disabled={query.isFetching}
+        onPress={() => void query.refetch()}
+        style={styles.retryButton}
+      >
+        <Text style={styles.text}>{query.isFetching ? 'Оновлюємо…' : 'Оновити статистику'}</Text>
+      </Pressable>
       <Text style={styles.heading}>Статистика за вправою</Text>
       <ExercisePicker
         selectedId={selectedExerciseId}
