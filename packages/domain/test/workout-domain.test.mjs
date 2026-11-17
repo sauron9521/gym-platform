@@ -32,11 +32,7 @@ test('completion requires an existing completed set and no pending sets', () => 
 
 test('status progress includes skipped sets without counting them as completed', () => {
   assert.deepEqual(
-    workoutSetProgress([
-      { status: 'PENDING' },
-      { status: 'COMPLETED' },
-      { status: 'SKIPPED' },
-    ]),
+    workoutSetProgress([{ status: 'PENDING' }, { status: 'COMPLETED' }, { status: 'SKIPPED' }]),
     { completed: 1, skipped: 1, pending: 1, total: 3 },
   );
 });
