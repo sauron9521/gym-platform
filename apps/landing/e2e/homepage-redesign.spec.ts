@@ -17,10 +17,7 @@ for (const width of [320, 1280]) {
       'href',
       '/apps',
     );
-    await expect(main.getByRole('link', { name: 'Про проєкт' })).toHaveAttribute(
-      'href',
-      '/about',
-    );
+    await expect(main.getByRole('link', { name: 'Про проєкт' })).toHaveAttribute('href', '/about');
 
     const documentWidth = await page.evaluate(() => document.documentElement.scrollWidth);
     expect(documentWidth).toBeLessThanOrEqual(width);
