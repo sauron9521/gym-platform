@@ -1,12 +1,7 @@
 import Link from 'next/link';
 
 import { pageMetadata } from '@/shared/lib/seo';
-import {
-  CallToAction,
-  Container,
-  MarketingSection,
-  SectionHeading,
-} from '@/shared/ui/marketing';
+import { CallToAction, Container, MarketingSection, SectionHeading } from '@/shared/ui/marketing';
 
 export const metadata = pageMetadata({
   title: 'Спортсменам',
@@ -18,7 +13,11 @@ export const metadata = pageMetadata({
 const steps = [
   { number: '01', title: 'Підбери вправи', text: 'Створюй особистий набір вправ.' },
   { number: '02', title: 'Сплануй заняття', text: 'Збирай тренування та підходи в одному місці.' },
-  { number: '03', title: 'Фіксуй результат', text: 'Спостерігай за змінами від заняття до заняття.' },
+  {
+    number: '03',
+    title: 'Фіксуй результат',
+    text: 'Спостерігай за змінами від заняття до заняття.',
+  },
 ] as const;
 
 export default function AthletesPage() {
@@ -31,8 +30,8 @@ export default function AthletesPage() {
             Твоє тренування — під твоїм контролем
           </h1>
           <p className="mt-6 max-w-2xl text-lg leading-8 text-muted-foreground">
-            Gym Platform допомагає організовувати тренувальний процес і зосередитися на
-            поступовому прогресі. Доступність функцій залежить від етапу розробки.
+            Gym Platform допомагає організовувати тренувальний процес і зосередитися на поступовому
+            прогресі. Доступність функцій залежить від етапу розробки.
           </p>
           <Link
             href="/features"
