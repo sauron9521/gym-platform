@@ -266,3 +266,21 @@ stable Idempotency-Key for manual retries of the same canonical payload:
 a lost response must not create duplicate workouts. TanStack mutations are
 never automatically retried. Additional exercise search, multiple
 exercise creation, cancellation and advanced set editing are later PRs.
+
+## Assigned training programs (first athlete mobile slice)
+
+The athlete-only **Програми** tab reads the first 20 active training-program
+assignments from GET /training-programs/assignments. The details route reads
+GET /training-programs/assignments/{assignmentId}, including program workouts.
+For an active assignment the athlete can create a workout through typed
+POST /workouts/from-program and then open the created workout.
+
+Manual retries for the same assignment/workout reuse a stable Idempotency-Key
+until the server confirms success. A synchronous button lock blocks duplicate
+taps; TanStack mutations never retry automatically. A successful creation
+invalidates all cached workout-list filters for the account.
+
+This is an initial assignment list with **no pagination beyond the first 20**.
+Athlete and trainer roles are not interchangeable. The tab is hidden for
+non-athletes and the details route is protected. Real-device navigation and
+network-failure behavior still need physical-device testing.
