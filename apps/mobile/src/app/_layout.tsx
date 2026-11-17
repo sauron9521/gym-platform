@@ -20,11 +20,18 @@ function Navigation() {
           <Stack.Screen name="exercises/index" options={{ headerShown: true, title: 'Вправи' }} />
           <Stack.Screen name="workouts/[id]" options={{ headerShown: true, title: 'Тренування' }} />
         </Stack.Protected>
+        <Stack.Protected guard={account?.role === 'ATHLETE'}>
+          <Stack.Screen name="programs/[id]" options={{ headerShown: true, title: 'Програма' }} />
+          <Stack.Screen
+            name="workouts/new"
+            options={{ headerShown: true, title: 'Нове тренування' }}
+          />
+        </Stack.Protected>
         <Stack.Protected guard={!account}>
           <Stack.Screen name="sign-in" />
         </Stack.Protected>
       </Stack>
-      <StatusBar style="auto" />
+      <StatusBar style="light" />
       {restoring ? (
         <View accessibilityLabel="Відновлення сесії" style={styles.loadingOverlay}>
           <ActivityIndicator color={palette.primary} size="large" />
@@ -50,7 +57,7 @@ const styles = StyleSheet.create({
 export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <GluestackUIProvider mode="system">
+      <GluestackUIProvider mode="dark">
         <MobileQueryProvider>
           <AuthProvider>
             <Navigation />
