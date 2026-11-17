@@ -2,9 +2,11 @@
 
 import { useLocale, useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
+import { useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 
 import { webApi } from '@/shared/api/client';
+import { profileQueryOptions } from '@/features/profile/api/profile-query';
 
 function rememberLocale(locale: 'uk' | 'en') {
   document.cookie = `gym-locale=${locale}; Path=/; Max-Age=31536000; SameSite=Lax`;
@@ -15,6 +17,7 @@ export function LocaleSwitcher() {
   const locale = useLocale();
   const t = useTranslations('common');
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState(false);
 
@@ -28,7 +31,9 @@ export function LocaleSwitcher() {
         const result = await webApi.PATCH('/users/me/preferences', {
           body: { preferredLocale: value },
         });
-        if (result.response.status !== 200) throw new Error('Preference update failed');
+        if (result.response.status !== 200 || !result.data) throw new Error('Preference update failed');
+        // Prevent stale profile data from immediately reverting the user's choice.
+        queryClient.setQueryData(profileQueryOptions().queryKey, result.data);
       } else if (account.response.status !== 401 && account.response.status !== 403) {
         throw new Error('Cannot verify session');
       }
