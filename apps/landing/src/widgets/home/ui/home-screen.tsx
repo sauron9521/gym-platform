@@ -47,7 +47,7 @@ export function HomeScreen() {
         <Container className="grid items-center gap-14 py-24 sm:py-32 lg:grid-cols-2">
           <div>
             <p className="inline-flex items-center rounded-full border border-primary/30 bg-primary/10 px-4 py-2 text-xs font-bold tracking-widest text-primary uppercase">
-              Gym Platform · Early development
+              Gym Platform · Рання стадія розробки
             </p>
             <h1 className="mt-8 text-5xl font-bold tracking-tight text-balance sm:text-7xl">
               Тренуйся розумніше. <span className="text-primary">Прогресуй далі.</span>
@@ -69,16 +69,17 @@ export function HomeScreen() {
             </p>
           </div>
           <div
-            aria-label="Умовна ілюстрація інтерфейсу, не скриншот застосунку"
+            role="img"
+            aria-label="Умовний макет тренувального плану. Демонстрація дизайну, не реальні дані спортсмена"
             className="rounded-3xl border border-border bg-card p-5 shadow-2xl shadow-black/20"
           >
             <div className="flex items-center justify-between border-b border-border pb-4">
               <span className="text-sm font-bold">Тренувальний план</span>
               <span className="rounded-full bg-primary/10 px-3 py-1 text-xs text-primary">
-                Preview
+                Макет
               </span>
             </div>
-            <div className="mt-6 grid grid-cols-3 gap-3">
+            <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
               {['Вправи', 'Підходи', 'Прогрес'].map((label, index) => (
                 <div key={label} className="rounded-xl bg-secondary p-3">
                   <p className="text-xs text-muted-foreground">{label}</p>
