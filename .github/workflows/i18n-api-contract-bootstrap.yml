@@ -9,6 +9,14 @@ permissions:
 jobs:
   generate-and-verify:
     runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: postgresql://example:example@db.invalid:5432/gym_test?schema=public
+      JWT_SECRET: ci-local-long-secret-at-least-32-characters-not-for-use
+      JWT_ISSUER: https://issuer.example.invalid
+      APP_URL: https://app.example.invalid
+      CORS_ORIGINS: https://app.example.invalid
+      SMTP_URL: smtp://mail.example.invalid:2525
+      MAIL_FROM: test@example.invalid
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v6
@@ -39,7 +47,7 @@ jobs:
           git add apps/api/openapi/openapi.json packages/api-client/src/generated/schema.d.ts apps/api/src/modules/users
           if ! git diff --cached --quiet; then
             git commit -m 'chore(i18n): regenerate API contracts for locale preference'
-            git push
+            HUSKY=0 git push
           fi
       - run: pnpm --filter @gym/api typecheck
       - run: pnpm --filter @gym/api test
