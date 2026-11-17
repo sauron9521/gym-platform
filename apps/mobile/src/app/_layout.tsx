@@ -10,6 +10,8 @@ import { GluestackUIProvider } from '@/shared/ui/gluestack/gluestack-ui-provider
 import { MobileQueryProvider } from '@/shared/api/query-provider';
 import { palette } from '@/shared/config/theme';
 import { OfflineBanner } from '@/shared/ui/offline-banner';
+import { MobileErrorBoundary } from '@/shared/ui/mobile-error-boundary';
+import { LocaleProvider } from '@/shared/i18n/locale-provider';
 
 function Navigation() {
   const { account, restoring } = useAuth();
@@ -30,6 +32,10 @@ function Navigation() {
             name="progress/index"
             options={{ headerShown: true, title: 'Мій прогрес' }}
           />
+          <Stack.Screen
+            name="progress/exercises/[id]"
+            options={{ headerShown: true, title: 'Прогрес вправи' }}
+          />
           <Stack.Screen name="programs/[id]" options={{ headerShown: true, title: 'Програма' }} />
           <Stack.Screen
             name="workouts/new"
@@ -37,7 +43,10 @@ function Navigation() {
           />
         </Stack.Protected>
         <Stack.Protected guard={account?.role === 'TRAINER'}>
-          <Stack.Screen name="trainer/athletes" options={{ headerShown: true, title: 'Мої підопічні' }} />
+          <Stack.Screen
+            name="trainer/athletes"
+            options={{ headerShown: true, title: 'Мої підопічні' }}
+          />
         </Stack.Protected>
         <Stack.Protected guard={!account}>
           <Stack.Screen name="sign-in" />
@@ -71,11 +80,15 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <GluestackUIProvider mode="dark">
-        <MobileQueryProvider>
-          <AuthProvider>
-            <Navigation />
-          </AuthProvider>
-        </MobileQueryProvider>
+        <LocaleProvider>
+          <MobileQueryProvider>
+            <MobileErrorBoundary>
+              <AuthProvider>
+                <Navigation />
+              </AuthProvider>
+            </MobileErrorBoundary>
+          </MobileQueryProvider>
+        </LocaleProvider>
       </GluestackUIProvider>
     </GestureHandlerRootView>
   );

@@ -1,9 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render } from '@testing-library/react-native';
 
+import { useExercisesQuery } from '@/features/exercises/model/exercises-query';
 import { useWorkoutSummary } from '@/features/progress/model/workout-summary-query';
 import { ProgressScreen } from '@/screens/progress/ui/progress-screen';
 
+const push = vi.hoisted(() => vi.fn());
+vi.mock('expo-router', () => ({ useRouter: () => ({ push }) }));
+vi.mock('@/features/exercises/model/exercises-query', () => ({
+  useExercisesQuery: vi.fn(),
+}));
 vi.mock('@/features/progress/model/workout-summary-query', () => ({
   useWorkoutSummary: vi.fn(),
 }));
@@ -35,6 +41,22 @@ describe('Mobile ProgressScreen', () => {
     vi.clearAllMocks();
     refetch.mockResolvedValue(undefined);
     prepare();
+    vi.mocked(useExercisesQuery).mockReturnValue({
+      data: { pages: [{ data: [{ id: 'exercise-1', name: 'Жим лежачи', isArchived: false }] }] },
+      isPending: false,
+      isError: false,
+      hasNextPage: false,
+    } as unknown as ReturnType<typeof useExercisesQuery>);
+  });
+
+  it('navigates to the selected exercise without replacing the workout summary', async () => {
+    const view = await render(<ProgressScreen />);
+    await fireEvent.press(view.getByRole('button', { name: 'Жим лежачи' }));
+    expect(push).toHaveBeenCalledExactlyOnceWith({
+      pathname: '/progress/exercises/[id]',
+      params: { id: 'exercise-1' },
+    });
+    expect(view.getByText('Тренувальний об’єм за днями')).toBeTruthy();
   });
 
   it('does not show a positive-volume chart for zero strength volume', async () => {

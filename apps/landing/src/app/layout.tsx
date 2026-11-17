@@ -1,7 +1,9 @@
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
+import { NextIntlClientProvider } from 'next-intl';
+import { getMessages } from 'next-intl/server';
 
-import { getSiteOrigin, siteDescription } from '@/shared/lib/seo';
+import { getSiteOrigin, isIndexingEnabled, siteDescription } from '@/shared/lib/seo';
 import { SiteFooter } from '@/widgets/layout/ui/site-footer';
 import { SiteHeader } from '@/widgets/layout/ui/site-header';
 
@@ -23,14 +25,22 @@ export const metadata: Metadata = {
     siteName: 'Gym Platform',
     title: 'Gym Platform — тренування та прогрес',
     description: siteDescription,
+    images: [{ url: '/opengraph-image', width: 1200, height: 630 }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Gym Platform — тренування та прогрес',
+    description: siteDescription,
+    images: ['/opengraph-image'],
   },
   robots: {
-    index: Boolean(origin),
-    follow: Boolean(origin),
+    index: isIndexingEnabled(),
+    follow: isIndexingEnabled(),
   },
 };
 
-export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
+export default async function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
+  const messages = await getMessages();
   return (
     <html lang="uk">
       <body className="flex min-h-screen flex-col">
@@ -40,9 +50,25 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
         >
           Перейти до вмісту
         </a>
-        <SiteHeader />
-        {children}
-        <SiteFooter />
+        {origin ? (
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{
+              __html: JSON.stringify({
+                '@context': 'https://schema.org',
+                '@type': 'Organization',
+                name: 'Gym Platform',
+                url: origin,
+                logo: new URL('/icon.svg', origin).toString(),
+              }).replaceAll('<', '\\u003c'),
+            }}
+          />
+        ) : null}
+        <NextIntlClientProvider locale="uk" messages={messages}>
+          <SiteHeader />
+          {children}
+          <SiteFooter />
+        </NextIntlClientProvider>
       </body>
     </html>
   );
