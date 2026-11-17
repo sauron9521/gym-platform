@@ -15,7 +15,10 @@ test('anonymous users cannot visit dashboard, workouts or profile', async ({ pag
   for (const route of ['/dashboard', '/workouts', '/profile']) {
     await page.goto(route);
     await expect(page).toHaveURL(/\/login$/);
-    await expect(page.getByRole('heading', { name: 'Вхід у кабінет' })).toBeVisible();
+    const locale = await page.locator('html').getAttribute('lang');
+    expect(['uk', 'en']).toContain(locale);
+    const expectedHeading = locale === 'en' ? 'Sign in to your account' : 'Вхід у кабінет';
+    await expect(page.getByRole('heading', { name: expectedHeading })).toBeVisible();
   }
 });
 
