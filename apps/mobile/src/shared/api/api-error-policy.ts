@@ -42,7 +42,7 @@ export function mobileReadError(status: number, message: string): Error {
 }
 
 /** At most one retry for network failures, 408/429, and 5xx. No retry for other 4xx. */
-export function shouldRetryMobileRead(failureCount: number, error: unknown): boolean {
+export function shouldRetryMobileRead(failureCount: number, error: Error): boolean {
   if (failureCount >= 1 || error instanceof MobileSessionExpiredError) return false;
   if (error instanceof MobileAccessDeniedError) return false;
   if (error instanceof Error && error.name === 'AbortError') return false;
