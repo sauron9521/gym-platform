@@ -22,5 +22,33 @@ test('reduced motion preference does not hide important content', async ({ page 
 test('404 route offers navigation without misleading an application page', async ({ page }) => {
   const response = await page.goto('/this-route-does-not-exist');
   expect(response?.status()).toBe(404);
-  await expect(page.getByRole('link', { name: 'На головну' })).toBeVisible();
+  const main = page.getByRole('main');
+  await expect(main.getByRole('heading', { level: 1 })).toContainText('не знайдено');
+  const home = main.getByRole('link', { name: 'На головну' });
+  await expect(home).toBeVisible();
+  await home.click();
+  await expect(page).toHaveURL(/\/$/);
 });
+
+for (const route of [
+  '/features',
+  '/for-athletes',
+  '/for-trainers',
+  '/apps',
+  '/apps/web',
+  '/apps/mobile',
+  '/about',
+]) {
+  test(`public route ${route} has one h1 and no mobile overflow`, async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    const response = await page.goto(route);
+    expect(response?.ok()).toBe(true);
+    const main = page.getByRole('main');
+    await expect(main).toHaveCount(1);
+    await expect(main.getByRole('heading', { level: 1 })).toHaveCount(1);
+    const overflow = await page.evaluate(
+      () => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
+    );
+    expect(overflow).toBe(false);
+  });
+}
