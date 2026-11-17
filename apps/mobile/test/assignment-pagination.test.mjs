@@ -21,9 +21,24 @@ describe('assigned program pagination', () => {
 
   it('removes duplicate boundary records without dropping later unique assignments', () => {
     const pages = [
-      { data: [{ id: 'one', title: 'A' }, { id: 'two', title: 'B' }] },
-      { data: [{ id: 'two', title: 'Duplicate' }, { id: 'three', title: 'C' }] },
-      { data: [{ id: 'one', title: 'Duplicate' }, { id: 'four', title: 'D' }] },
+      {
+        data: [
+          { id: 'one', title: 'A' },
+          { id: 'two', title: 'B' },
+        ],
+      },
+      {
+        data: [
+          { id: 'two', title: 'Duplicate' },
+          { id: 'three', title: 'C' },
+        ],
+      },
+      {
+        data: [
+          { id: 'one', title: 'Duplicate' },
+          { id: 'four', title: 'D' },
+        ],
+      },
     ];
     expect(uniqueAssignments(pages)).toEqual([
       { id: 'one', title: 'A' },

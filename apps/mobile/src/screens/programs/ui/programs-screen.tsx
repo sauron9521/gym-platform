@@ -42,9 +42,7 @@ export function ProgramsScreen() {
         <View style={styles.header}>
           <Text style={styles.title}>Мої програми</Text>
           <Text style={styles.muted}>Активні програми, призначені тренером</Text>
-          {loading ? (
-            <AsyncResourceState kind="loading" message="Завантаження програм" />
-          ) : null}
+          {loading ? <AsyncResourceState kind="loading" message="Завантаження програм" /> : null}
           {initialError ? (
             <AsyncResourceState
               kind="error"
@@ -64,7 +62,7 @@ export function ProgramsScreen() {
           ) : null}
         </View>
       }
-      ListEmptyComponent={showEmpty ? EmptyAssignedPrograms : null}
+      ListEmptyComponent={showEmpty ? EmptyAssignedPrograms : undefined}
       renderItem={({ item }) => (
         <Pressable
           accessibilityRole="button"
