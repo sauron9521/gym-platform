@@ -76,9 +76,8 @@ function renderHome() {
 describe('HomeScreen real athlete dashboard', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(useAccountQuery).mockReturnValue({ data: undefined } as ReturnType<
-      typeof useAccountQuery
-    >);
+    const profileQuery = { data: undefined } as ReturnType<typeof useAccountQuery>;
+    vi.mocked(useAccountQuery).mockReturnValue(profileQuery);
     prepareAthlete();
   });
 
