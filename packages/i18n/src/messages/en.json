@@ -83,7 +83,18 @@
       "refresh": "Refresh profile",
       "edit": "Edit profile",
       "signOut": "Sign out",
-      "language": "Language"
+      "language": "Language",
+      "myAthletes": "My athletes"
+    },
+    "trainerAthletes": {
+      "title": "My athletes",
+      "subtitle": "Active athlete relationships",
+      "loading": "Loading…",
+      "empty": "No active athletes yet.",
+      "athlete": "Athlete",
+      "loadMore": "Load more",
+      "loadingMore": "Loading…",
+      "retryLoadMore": "Failed to load. Retry"
     }
   },
   "landing": {
