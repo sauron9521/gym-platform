@@ -6,6 +6,10 @@ import { describe, expect, it, vi } from 'vitest';
 import { LocalePicker } from '@/shared/i18n/locale-picker';
 import { LocaleProvider } from '@/shared/i18n/locale-provider';
 
+vi.mock('@/features/auth/model/auth-context', () => ({
+  useAuth: () => ({ account: null, getApi: () => null }),
+}));
+
 vi.mock('expo-localization', () => ({
   getLocales: () => [{ languageTag: 'en-US' }],
 }));
