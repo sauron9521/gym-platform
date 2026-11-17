@@ -85,5 +85,17 @@
       "signOut": "Sign out",
       "language": "Language"
     }
+  },
+  "landing": {
+    "common": {
+      "inDevelopment": "In development",
+      "learnMore": "Learn more",
+      "allApplications": "All applications"
+    },
+    "home": {
+      "headlineLead": "Train smarter.",
+      "headlineAccent": "Progress further.",
+      "description": "A platform for athletes and coaches: exercises, training programs, and progress in one ecosystem."
+    }
   }
 }

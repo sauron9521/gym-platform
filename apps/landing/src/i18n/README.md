@@ -2,7 +2,7 @@
 
 Stage 1 adds next-intl request config and server/client providers while maintaining **Ukrainian-only** public URLs and metadata. Do not advertise `/en` or emit hreflang until all page text, navigation and metadata are translated and route-level locale layouts are implemented.
 
-Existing Landing PR #210 introduces an independent draft dictionary. Consolidate it into `@gym/i18n` when merging; do not maintain duplicate catalogs.
+Landing-specific headline, status, and CTA translations live under the `landing` namespace in `@gym/i18n`. Keep one catalog; do not introduce app-local copies of dictionaries, validators, or locale types.
 
 Stage 2, in a separate PR after Landing page redesign/content changes merge:
 

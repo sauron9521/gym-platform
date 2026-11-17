@@ -26,3 +26,14 @@ test('Pluralization arguments exist in both workout messages', () => {
   assert.match(uk['workouts.exerciseCount'], /\{count, plural,/);
   assert.match(en['workouts.exerciseCount'], /\{count, plural,/);
 });
+
+test('Landing namespace has localized copy for the current homepage and shared CTAs', () => {
+  for (const locale of [uk, en]) {
+    assert.ok(locale['landing.common.inDevelopment']);
+    assert.ok(locale['landing.common.learnMore']);
+    assert.ok(locale['landing.common.allApplications']);
+    assert.ok(locale['landing.home.headlineLead']);
+    assert.ok(locale['landing.home.headlineAccent']);
+    assert.ok(locale['landing.home.description']);
+  }
+});
