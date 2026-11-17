@@ -10,7 +10,7 @@ export type WorkoutFilter = 'PLANNED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED
 export type WorkoutsPage =
   paths['/workouts']['get']['responses'][200]['content']['application/json'];
 
-class SessionExpiredError extends Error {}
+import { MobileSessionExpiredError, shouldRetryMobileRead } from '@/shared/api/api-error-policy';
 
 /** Paginated results are scoped by authenticated account and selected status. */
 export function useWorkoutsQuery(status?: WorkoutFilter) {
@@ -31,7 +31,7 @@ export function useWorkoutsQuery(status?: WorkoutFilter) {
 
       if (response.response.status === 401) {
         await signOut();
-        throw new SessionExpiredError('Термін сесії минув. Увійдіть повторно.');
+        throw new MobileSessionExpiredError('Термін сесії минув. Увійдіть повторно.');
       }
 
       if (response.response.status !== 200 || !response.data) {
@@ -41,6 +41,6 @@ export function useWorkoutsQuery(status?: WorkoutFilter) {
       return response.data;
     },
     getNextPageParam: (page, _pages, lastPageParam) => nextWorkoutPage(page, lastPageParam),
-    retry: (count, error) => !(error instanceof SessionExpiredError) && count < 1,
+    retry: shouldRetryMobileRead,
   });
 }

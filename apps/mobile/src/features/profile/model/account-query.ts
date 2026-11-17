@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/features/auth/model/auth-context';
 import { accountQueryKeys } from '@/shared/api/query-client';
 
-class SessionExpiredError extends Error {}
+import { MobileSessionExpiredError, shouldRetryMobileRead } from '@/shared/api/api-error-policy';
 
 /** Typed GET /users/me, scoped per account and skipped for signed-out users. */
 export function useAccountQuery() {
@@ -21,7 +21,7 @@ export function useAccountQuery() {
       if (response.response.status === 401) {
         // Only an actual 401 ends the session. Network/5xx errors preserve credentials.
         await signOut();
-        throw new SessionExpiredError('Термін сесії минув. Увійдіть повторно.');
+        throw new MobileSessionExpiredError('Термін сесії минув. Увійдіть повторно.');
       }
       if (response.response.status !== 200 || !response.data) {
         throw new Error('Не вдалося завантажити профіль.');
@@ -29,6 +29,6 @@ export function useAccountQuery() {
 
       return response.data;
     },
-    retry: (failureCount, error) => !(error instanceof SessionExpiredError) && failureCount < 1,
+    retry: shouldRetryMobileRead,
   });
 }

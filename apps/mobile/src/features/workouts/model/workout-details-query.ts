@@ -9,7 +9,7 @@ export type WorkoutDetails =
 
 export type WorkoutTransition = 'start' | 'complete';
 
-class SessionExpiredError extends Error {}
+import { MobileSessionExpiredError, shouldRetryMobileRead } from '@/shared/api/api-error-policy';
 
 export function useWorkoutDetailsQuery(workoutId: string) {
   const { account, getApi, signOut } = useAuth();
@@ -26,14 +26,14 @@ export function useWorkoutDetailsQuery(workoutId: string) {
       });
       if (response.response.status === 401) {
         await signOut();
-        throw new SessionExpiredError('Сесію завершено.');
+        throw new MobileSessionExpiredError('Сесію завершено.');
       }
       if (response.response.status !== 200 || !response.data) {
         throw new Error('Не вдалося завантажити тренування.');
       }
       return response.data;
     },
-    retry: (count, error) => !(error instanceof SessionExpiredError) && count < 1,
+    retry: shouldRetryMobileRead,
   });
 }
 
@@ -54,7 +54,7 @@ export function useWorkoutTransition(workoutId: string) {
 
       if (response.response.status === 401) {
         await signOut();
-        throw new SessionExpiredError('Сесію завершено.');
+        throw new MobileSessionExpiredError('Сесію завершено.');
       }
       if (response.response.status !== 200 || !response.data) {
         throw new Error(
