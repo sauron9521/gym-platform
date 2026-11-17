@@ -1,6 +1,7 @@
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { workoutStatusLabel } from '@/features/workouts/lib/workout-presentation';
+import { RestTimer } from '@/features/workouts/ui/rest-timer';
 import {
   useWorkoutDetailsQuery,
   useWorkoutTransition,
@@ -8,7 +9,6 @@ import {
 } from '@/features/workouts/model/workout-details-query';
 import { palette } from '@/shared/config/theme';
 import { WorkoutSetRow } from './workout-set-row';
-import { RestTimer } from '@/features/workouts/ui/rest-timer';
 
 // Preserve the compact native status-action state machine for focused review.
 // prettier-ignore
@@ -51,7 +51,7 @@ export function WorkoutDetailsScreen({ id }: { id: string }) {
               ))}
             </View>
           ))}
-          {workout.status === 'IN_PROGRESS' ? <RestTimer /> : null}
+          {workout.status === 'IN_PROGRESS' ? <RestTimer key={id} /> : null}
           {nextAction ? (
             <Pressable
               accessibilityRole="button"
