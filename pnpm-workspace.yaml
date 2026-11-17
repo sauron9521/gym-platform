@@ -10,4 +10,6 @@ allowBuilds:
   prisma: true
   bcrypt: true
   esbuild: true
+  '@swc/core': true
+  '@parcel/watcher': false
   '@scarf/scarf': false
