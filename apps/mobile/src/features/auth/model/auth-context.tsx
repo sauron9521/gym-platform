@@ -12,7 +12,11 @@ import { useQueryClient } from '@tanstack/react-query';
 
 import { createMobileApi } from '@/shared/api/client';
 import { accountQueryKeys } from '@/shared/api/query-client';
-import { getMobileLoginError, validateMobileCredentials } from '../lib/login-flow';
+import {
+  getMobileLoginError,
+  getMobileLoginTransportError,
+  validateMobileCredentials,
+} from '../lib/login-flow';
 import { MobileTokenSession } from './mobile-token-session';
 import { refreshTokenStore } from './refresh-token-store';
 
