@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 
 import { AvatarService } from '../avatar/avatar.service.js';
 import type { UpdateMyProfileDto } from '../dto/update-my-profile.dto.js';
+import type { UpdateMyPreferencesDto } from '../dto/update-my-preferences.dto.js';
 import { mapProfileUpdateInput, mapUserWithProfile } from '../mappers/user-profile.mapper.js';
 import { UsersRepository } from '../repositories/users.repository.js';
 
@@ -18,6 +19,11 @@ export class UsersService {
       throw new NotFoundException('User not found');
     }
 
+    return mapUserWithProfile(user);
+  }
+
+  async updateMyPreferences(userId: string, input: UpdateMyPreferencesDto) {
+    const user = await this.usersRepository.updateMyPreferences(userId, input.preferredLocale);
     return mapUserWithProfile(user);
   }
 

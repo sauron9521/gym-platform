@@ -6,6 +6,7 @@ export const userSelect = {
   email: true,
   emailVerified: true,
   role: true,
+  preferredLocale: true,
   createdAt: true,
   updatedAt: true,
 } satisfies Prisma.UserSelect;

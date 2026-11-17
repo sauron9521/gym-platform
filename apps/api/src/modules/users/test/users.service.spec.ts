@@ -7,6 +7,7 @@ describe('UsersService', () => {
   const repository = {
     findMe: vi.fn(),
     upsertMyProfile: vi.fn(),
+    updateMyPreferences: vi.fn(),
     replaceAvatar: vi.fn(),
   };
   const avatarService = { removePrevious: vi.fn() };
@@ -30,6 +31,16 @@ describe('UsersService', () => {
       profile: null,
     });
     expect(repository.findMe).toHaveBeenCalledWith('user-1');
+  });
+
+  it('updates an account locale independently from the personal profile', async () => {
+    repository.updateMyPreferences.mockResolvedValue({
+      id: 'user-1', preferredLocale: 'en', profile: null,
+    });
+    await expect(service.updateMyPreferences('user-1', { preferredLocale: 'en' })).resolves.toMatchObject({
+      preferredLocale: 'en', profile: null,
+    });
+    expect(repository.updateMyPreferences).toHaveBeenCalledExactlyOnceWith('user-1', 'en');
   });
 
   it('formats birthday as a date-only string', async () => {
