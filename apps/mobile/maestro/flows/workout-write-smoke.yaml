@@ -1,0 +1,36 @@
+# Mutating staging-only native smoke. Disposable athlete account and seeded exercise required.
+appId: ${APP_ID}
+---
+- launchApp:
+    clearState: true
+- assertVisible: З поверненням!
+- tapOn:
+    id: sign-in-email
+- inputText: ${E2E_EMAIL}
+- tapOn:
+    id: sign-in-password
+- inputText: ${E2E_PASSWORD}
+- tapOn: Увійти
+- tapOn: Тренування
+- tapOn:
+    id: workouts-create
+- tapOn: Назва тренування
+- inputText: ${E2E_WORKOUT_TITLE}
+- tapOn:
+    id: workout-exercise-search
+- inputText: ${E2E_EXERCISE_NAME}
+- tapOn: ${E2E_EXERCISE_NAME}
+- tapOn:
+    id: create-workout-submit
+- assertVisible: Мої тренування
+- tapOn: ${E2E_WORKOUT_TITLE}
+- tapOn:
+    id: workout-status-action
+- tapOn: Повторення, підхід 1
+- inputText: 8
+- tapOn: Вага, підхід 1
+- inputText: 40
+- tapOn: Виконано
+- tapOn:
+    id: workout-status-action
+- assertVisible: Завершено

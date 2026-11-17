@@ -24,6 +24,7 @@ on:
           - auth
           - workouts
           - session-restore
+          - workout-write
 
 permissions:
   contents: read
@@ -77,6 +78,7 @@ jobs:
         env:
           E2E_EMAIL: ${{ secrets.MOBILE_E2E_EMAIL }}
           E2E_PASSWORD: ${{ secrets.MOBILE_E2E_PASSWORD }}
+          E2E_EXERCISE_NAME: ${{ secrets.MOBILE_E2E_EXERCISE_NAME }}
         with:
           api-level: 34
           arch: x86_64
@@ -108,7 +110,15 @@ jobs:
               auth) FLOW_FILE=auth-smoke.yaml ;;
               workouts) FLOW_FILE=workouts-smoke.yaml ;;
               session-restore) FLOW_FILE=session-restore-smoke.yaml ;;
+              workout-write) FLOW_FILE=workout-write-smoke.yaml ;;
               *) echo "Unsupported Maestro flow" >&2; exit 1 ;;
             esac
+            if [[ "$FLOW" == workout-write && -z "$E2E_EXERCISE_NAME" ]]; then
+              echo "MOBILE_E2E_EXERCISE_NAME must name a seed exercise in staging." >&2
+              exit 1
+            fi
             maestro test -e APP_ID="$APP_ID" -e E2E_EMAIL="$E2E_EMAIL" \
-              -e E2E_PASSWORD="$E2E_PASSWORD" "apps/mobile/maestro/flows/$FLOW_FILE"
+              -e E2E_PASSWORD="$E2E_PASSWORD" \
+              -e E2E_EXERCISE_NAME="$E2E_EXERCISE_NAME" \
+              -e E2E_WORKOUT_TITLE="Mobile-smoke-${GITHUB_RUN_ID}" \
+              "apps/mobile/maestro/flows/$FLOW_FILE"

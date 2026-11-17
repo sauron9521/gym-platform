@@ -66,3 +66,15 @@ This PR only configures the optional workflow and contracts. A genuine EAS
 build, a running staging backend, and an emulator test require operator-provided
 infrastructure and secrets; **a passing normal CI is not evidence of a
 successful native smoke run**.
+
+## Optional mutating workout journey
+
+Set the additional mobile-staging secret `MOBILE_E2E_EXERCISE_NAME` to a unique
+exercise name seeded in the disposable staging database. Run the manual workflow
+with `flow: workout-write`. The scenario signs in, searches a real exercise,
+creates an isolated workout named with the GitHub run ID, starts the workout,
+records one set, and completes the workout.
+
+This test deliberately **writes staging data**: never run against production.
+The name must match a visible exercise in the athlete's catalog. Review the
+Maestro failure report and remove disposable test data as needed.
