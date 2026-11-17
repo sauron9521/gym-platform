@@ -1,9 +1,9 @@
 import { z } from 'zod';
 
 export const editProfileSchema = z.object({
-  displayName: z.string().trim().max(80, 'Не більше 80 символів.'),
-  firstName: z.string().trim().max(80, 'Не більше 80 символів.'),
-  lastName: z.string().trim().max(80, 'Не більше 80 символів.'),
+  displayName: z.string().trim().max(100, 'Не більше 100 символів.'),
+  firstName: z.string().trim().max(100, 'Не більше 100 символів.'),
+  lastName: z.string().trim().max(100, 'Не більше 100 символів.'),
   height: z
     .string()
     .trim()
@@ -18,9 +18,9 @@ export const editProfileSchema = z.object({
       (value) =>
         !value ||
         (/^\d+(?:[.,]\d{0,2})?$/.test(value) &&
-          Number(value.replace(',', '.')) >= 10 &&
-          Number(value.replace(',', '.')) <= 500),
-      'Вага має бути 10–500 кг.',
+          Number(value.replace(',', '.')) >= 1 &&
+          Number(value.replace(',', '.')) <= 600),
+      'Вага має бути 1–600 кг.',
     ),
 });
 
