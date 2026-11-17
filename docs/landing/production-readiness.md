@@ -1,36 +1,43 @@
 # Gym Platform Landing — production readiness
 
-This PR adds security headers and a manual production environment preflight;
-it does **not** deploy the Landing or claim the site is production-ready.
+This PR adds security headers, automated configuration checks and a manual
+release checklist. **It does not deploy the Landing or certify production
+readiness.** There is no verified domain or measured production performance
+evidence in this PR.
 
-## Merge / deployment sequence
+## Release sequence
 
-1. Merge the content, navigation, quality and SEO PRs after they pass CI.
-2. Resolve the existing build-cache environment PR #190 before deployment.
-3. Ensure Turborepo build hashes account for `LANDING_SITE_URL`,
-   `LANDING_ALLOW_INDEXING` and any analytics public build inputs.
-4. Obtain and validate the actual domain. Set `LANDING_SITE_URL` to the HTTPS origin.
-5. Review all public copy, product release states, privacy disclosures and routes.
-6. Only after approval, set `LANDING_ALLOW_INDEXING=true`.
-7. Run `node apps/landing/scripts/release-preflight.mjs`.
-8. Run `pnpm --filter @gym/landing lint`, `typecheck`, `test`, `build`, `test:e2e`.
-9. Test the deployed build's canonical, robots, sitemap, Open Graph image, mobile navigation,
-   HTTP security headers and 404 route.
-10. Measure Lighthouse and Web Vitals and verify the final CTA destinations.
+1. Confirm content, SEO, accessibility, responsive QA, analytics and build-cache PRs have merged. Build-cache inputs from #190, SEO #209 and analytics #212 are already on main.
+2. Obtain and **independently verify ownership, DNS resolution and TLS** for the real production origin. A syntactically valid URL alone is not proof.
+3. Set `LANDING_SITE_URL` to that public HTTPS origin. Keep `LANDING_ALLOW_INDEXING` **unset or false** until the content/SEO launch decision has been approved.
+4. Confirm route content, honest product availability statements, CTAs, legal/privacy disclosures and metadata.
+5. Decide separately whether search indexing is approved. Only then set `LANDING_ALLOW_INDEXING=true`. A valid noindex launch must not be blocked.
+6. Keep Umami public settings unset by default. Before opting in, check provider trust, page-view tracking, retention, privacy notices, consent requirements and content security policy.
+7. Run `node apps/landing/scripts/release-preflight.mjs` with actual release environment values. It checks **configuration shape only**, not domain ownership, privacy compliance or deployment health.
+8. Run `pnpm --filter @gym/landing lint`, `typecheck`, `test`, `build` and `test:e2e`; test the actual production build, not only a development server.
+9. Verify deployed canonical tags, robots/sitemap versus approved indexing, Open Graph previews, `404`, internal navigation and HTTP headers at the edge/CDN.
+10. Measure Lighthouse mobile/desktop and Core Web Vitals. Performance targets are not automatically enforced by this PR.
+11. Record release artifact SHA, deploy ID, operator approval and rollback method before switching traffic.
 
-## Headers
+## HTTP security controls
 
-- `X-Content-Type-Options: nosniff` prevents MIME sniffing.
-- `Referrer-Policy: strict-origin-when-cross-origin` limits cross-origin referrer detail.
-- `Permissions-Policy` disables camera, microphone and geolocation for this presentation site.
-- The `X-Powered-By` framework header is disabled.
+- `X-Content-Type-Options: nosniff` prevents content sniffing.
+- `Referrer-Policy: strict-origin-when-cross-origin` reduces cross-origin referrer detail.
+- `Permissions-Policy` denies camera, microphone and geolocation.
+- Next.js `X-Powered-By` is disabled.
+- The new browser test checks these HTTP responses under the Next.js test server.
 
-Content Security Policy (CSP) should be deployed only when an actual hosting strategy,
-script loading and analytics configuration have been reviewed; an untested CSP could
-break Next.js hydration.
+**Not implemented:** Content Security Policy (CSP), HSTS, edge/CDN enforcement,
+consent UX or automated deployment. CSP requires verifying Next.js hydration
+and optional analytics. HSTS requires a deliberately configured HTTPS domain
+and hosting strategy. Do not claim these controls are in place.
 
-## Rollback
+## Rollback and incident response
 
-Keep a previous verified deploy available. If metadata, navigation or tracking breaks
-after release, return traffic to the previous version and disable indexing if content
-integrity is in doubt. Deployments and DNS changes remain operator-controlled.
+Keep a previous verified deploy and immutable build artifact available.
+If navigation, security headers or metadata regress, stop promotion and route
+traffic back to the previous artifact. For an indexing mistake, correct the
+deployed robots/meta configuration and rebuild/redeploy; changing an env variable
+without rebuilding may not update static metadata. Inspect the live responses
+and cache invalidation after rollback. DNS, traffic shifts and release approval
+remain operator-controlled.
