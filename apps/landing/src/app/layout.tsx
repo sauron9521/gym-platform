@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
+import { NextIntlClientProvider } from 'next-intl';
+import { getMessages } from 'next-intl/server';
 
 import { getSiteOrigin, isIndexingEnabled, siteDescription } from '@/shared/lib/seo';
 import { SiteFooter } from '@/widgets/layout/ui/site-footer';
@@ -37,7 +39,8 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
+export default async function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
+  const messages = await getMessages();
   return (
     <html lang="uk">
       <body className="flex min-h-screen flex-col">
@@ -61,9 +64,11 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
             }}
           />
         ) : null}
-        <SiteHeader />
-        {children}
-        <SiteFooter />
+        <NextIntlClientProvider locale="uk" messages={messages}>
+          <SiteHeader />
+          {children}
+          <SiteFooter />
+        </NextIntlClientProvider>
       </body>
     </html>
   );
