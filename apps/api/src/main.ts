@@ -4,7 +4,7 @@ import { NestFactory } from '@nestjs/core';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from '#src/app.module';
 import type { AppConfigService } from '#src/common/config/app-config.types';
-import { getCorsOrigins, getWebAppOrigin } from '#src/common/config/http.config';
+import { getCorsOrigins, getCsrfTrustedOrigins } from '#src/common/config/http.config';
 import { getTrustedProxies } from '#src/common/config/proxy.config';
 import { getLogLevels } from '#src/common/config/logger.config';
 import { enableOpenApi } from '#src/infra/openapi/openapi';
