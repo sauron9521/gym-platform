@@ -37,7 +37,13 @@ test('one Prisma-generated baseline for an empty database is frozen', () => {
   const dirs = readdirSync(join(root, 'prisma/migrations'), { withFileTypes: true })
     .filter((entry) => entry.isDirectory())
     .map((entry) => entry.name);
-  assert.deepEqual(dirs, ['20261114000000_initial_baseline']);
+  const ordered = [...dirs].sort();
+  assert.equal(ordered[0], '20261114000000_initial_baseline');
+  assert.equal(new Set(ordered).size, ordered.length);
+  for (const name of ordered.slice(1)) {
+    assert.match(name, /^\\d{14}_[a-z0-9_]+$/);
+    assert.ok(readFileSync(join(root, 'prisma/migrations', name, 'migration.sql'), 'utf8').trim());
+  }
 
   const buffer = readFileSync(join(root, expectedBaseline));
   assert.equal(gitBlobSha(buffer), manifest.current_baseline.git_blob_sha);

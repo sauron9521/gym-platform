@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -11,6 +11,24 @@ const marker = '-- Manual PostgreSQL constraints not represented by Prisma Schem
 const at = sql.indexOf(marker);
 assert.ok(at > 0, 'The manual constraint separator must appear once after Prisma-generated SQL');
 assert.equal(sql.indexOf(marker, at + 1), -1, 'Duplicate manual constraint separator');
+
+// Once additive migrations exist, the *current* schema must no longer be
+// identical to the initial baseline. The frozen SQL is hash-verified by the
+// migration-baseline contract test, while migration application is validated
+// separately against the integration database in CI.
+const migrationNames = readdirSync(join(root, 'prisma/migrations'), { withFileTypes: true })
+  .filter((entry) => entry.isDirectory())
+  .map((entry) => entry.name)
+  .sort();
+assert.equal(migrationNames[0], '20261114000000_initial_baseline');
+if (migrationNames.length > 1) {
+  for (const name of migrationNames.slice(1)) {
+    assert.match(name, /^\\d{14}_[a-z0-9_]+$/);
+    assert.ok(readFileSync(join(root, 'prisma/migrations', name, 'migration.sql'), 'utf8').trim());
+  }
+  console.log('Frozen baseline verified; incremental migration history detected.');
+  process.exit(0);
+}
 
 const prismaGenerated = sql.slice(0, at).trimEnd() + '\n';
 const command = [
