@@ -1,5 +1,4 @@
 import { fireEvent, render } from '@testing-library/react-native';
-import { FlatList } from 'react-native';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { useTrainerAthletes } from '@/features/trainer-athletes/model/trainer-athletes-query';
@@ -60,7 +59,7 @@ describe('TrainerAthletesScreen native', () => {
   it('deduplicates athletes and allows a manual refresh', async () => {
     const view = await render(<TrainerAthletesScreen />);
     expect(view.getAllByText('Спортсмен · athlete-')).toHaveLength(1);
-    await fireEvent(view.UNSAFE_getByType(FlatList), 'refresh');
+    await fireEvent(view.getByTestId('trainer-athletes-list'), 'refresh');
     expect(refetch).toHaveBeenCalledTimes(1);
   });
 

@@ -24,6 +24,7 @@ export function TrainerAthletesScreen() {
 
   return (
     <FlatList
+      testID="trainer-athletes-list"
       style={styles.container}
       contentContainerStyle={styles.content}
       data={athletes}
@@ -53,7 +54,7 @@ export function TrainerAthletesScreen() {
       ListEmptyComponent={
         !query.isPending && !query.isError ? (
           <Text style={styles.muted}>{t('mobile.trainerAthletes.empty')}</Text>
-        ) : null
+        ) : undefined
       }
       renderItem={({ item }) => (
         <View style={styles.card}>
@@ -86,7 +87,7 @@ export function TrainerAthletesScreen() {
               )}
             </Text>
           </Pressable>
-        ) : null
+        ) : undefined
       }
     />
   );
