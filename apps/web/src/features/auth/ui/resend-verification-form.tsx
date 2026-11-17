@@ -5,6 +5,7 @@ import { useState } from 'react';
 
 import { webApi } from '@/shared/api/client';
 import { Button } from '@/shared/ui/button';
+import { FormFeedback } from '@/shared/ui/form-feedback';
 import { getResendErrorMessage } from '../lib/email-verification-flow';
 
 type ResendState = 'ready' | 'sending' | 'submitted';
@@ -55,11 +56,7 @@ export function ResendVerificationForm() {
         Лист надсилається лише на адресу вашого облікового запису. Для повторного надсилання
         потрібно увійти.
       </p>
-      {error && (
-        <p role="alert" className="text-sm text-destructive">
-          {error}
-        </p>
-      )}
+      <FormFeedback message={error} />
       <Button
         className="w-full"
         type="button"
