@@ -63,8 +63,13 @@ describe('WorkoutSetRow (React Native)', () => {
     expect(mutateAsync).not.toHaveBeenCalled();
   });
 
-  it('shows a saved state and hides repeated completion until edit is explicitly requested', async () => {
-    const completedSet = { ...set, status: 'COMPLETED', actualReps: 8, actualWeightKg: '60' } as typeof set;
+  it('shows saved state and requires explicit edit before resubmitting', async () => {
+    const completedSet = {
+      ...set,
+      status: 'COMPLETED',
+      actualReps: 8,
+      actualWeightKg: '60',
+    } as typeof set;
     const view = await render(<WorkoutSetRow workoutId="workout-1" set={completedSet} editable />);
     expect(view.getByText('✓ Збережено')).toBeTruthy();
     expect(view.queryByTestId('set-complete-set-1')).toBeNull();

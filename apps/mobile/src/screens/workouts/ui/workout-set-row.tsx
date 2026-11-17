@@ -9,7 +9,10 @@ import {
   type WorkoutSetFormValues,
 } from '@/features/workouts/lib/workout-set-form';
 import type { WorkoutDetails } from '@/features/workouts/model/workout-details-query';
-import { WorkoutSetRateLimitError, useWorkoutSetMutation } from '@/features/workouts/model/workout-set-mutation';
+import {
+  WorkoutSetRateLimitError,
+  useWorkoutSetMutation,
+} from '@/features/workouts/model/workout-set-mutation';
 import { palette } from '@/shared/config/theme';
 
 type WorkoutSet = WorkoutDetails['exercises'][number]['sets'][number];
@@ -192,7 +195,9 @@ export function WorkoutSetRow({
               style={styles.button}
               onPress={saveCompleted}
             >
-              <Text style={styles.buttonText}>{mutation.isPending ? 'Зберігаємо…' : 'Підтвердити підхід'}</Text>
+              <Text style={styles.buttonText}>
+                {mutation.isPending ? 'Зберігаємо…' : 'Підтвердити підхід'}
+              </Text>
             </Pressable>
             <Pressable
               testID={`set-skip-${set.id}`}
