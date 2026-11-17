@@ -1,10 +1,12 @@
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useRouter } from 'expo-router';
 
 import { useAuth } from '@/features/auth/model/auth-context';
 import { useAccountQuery } from '@/features/profile/model/account-query';
 import { palette } from '@/shared/config/theme';
 
 export function ProfileScreen() {
+  const router = useRouter();
   const { account, signOut } = useAuth();
   const { data, isFetching, isError, error, refetch } = useAccountQuery();
 
@@ -60,6 +62,13 @@ export function ProfileScreen() {
         ) : (
           <Text style={styles.buttonText}>Оновити профіль</Text>
         )}
+      </Pressable>
+      <Pressable
+        accessibilityRole="button"
+        onPress={() => router.push('/profile/edit')}
+        style={styles.secondary}
+      >
+        <Text style={styles.secondaryText}>Редагувати профіль</Text>
       </Pressable>
       <Pressable accessibilityRole="button" onPress={() => void signOut()} style={styles.secondary}>
         <Text style={styles.secondaryText}>Вийти</Text>

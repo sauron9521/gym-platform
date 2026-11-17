@@ -300,3 +300,18 @@ request clears the session; other transient read errors can be retried. Failed
 next-page loads require manual retry to avoid repeated requests from FlatList
 scroll events. Pull-to-refresh is supported. No editing or creation is exposed
 by this first read-only library screen.
+
+## Editing the athlete or trainer profile
+
+The authenticated `/profile/edit` route offers display name, first and last
+name, height and weight. React Hook Form and Zod validate measurements against
+the PATCH /users/me API contract (50–300 cm; 1–600 kg with up to two decimal
+places). Comma decimal input is converted before the request. Empty optional
+fields are sent as null to clear them.
+
+The editor hydrates the last verified GET /users/me response without
+overwriting unsaved typing during refetch. The form blocks duplicate taps,
+remains open on any PATCH failure, and navigates back only after server success.
+The successful response immediately updates the account-scoped TanStack cache
+and the profile query is invalidated for eventual refresh. Email, role and
+security settings are intentionally not editable here.
