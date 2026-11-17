@@ -23,6 +23,7 @@ export function ProgressScreen() {
         {periods.map((period) => (
           <Pressable
             key={period}
+            testID={`progress-range-${period}`}
             accessibilityRole="button"
             accessibilityState={{ selected: range === period }}
             onPress={() => setRange(period)}
@@ -34,9 +35,20 @@ export function ProgressScreen() {
       </View>
       {query.isPending ? <ActivityIndicator accessibilityLabel="Завантаження статистики" /> : null}
       {query.isError ? (
-        <Text accessibilityRole="alert" style={styles.error}>
-          {query.error.message}
-        </Text>
+        <View style={styles.errorGroup}>
+          <Text accessibilityRole="alert" style={styles.error}>
+            {query.error.message}
+          </Text>
+          <Pressable
+            accessibilityRole="button"
+            testID="progress-retry"
+            onPress={() => void query.refetch()}
+            style={styles.retryButton}
+            disabled={query.isFetching}
+          >
+            <Text style={styles.text}>Повторити завантаження</Text>
+          </Pressable>
+        </View>
       ) : null}
       {stats ? (
         <>
@@ -59,19 +71,25 @@ export function ProgressScreen() {
             </View>
           </View>
           <Text style={styles.heading}>Тренувальний об’єм за днями</Text>
-          {stats.daily.length ? (
+          {stats.daily.some((day) => day.strengthVolumeKg > 0) ? (
             <View style={styles.chart}>
               {stats.daily.map((day, index) => (
-                <View key={day.date} style={styles.barCell}>
-                  <View
-                    accessibilityLabel={`${day.date}: ${Math.round(day.strengthVolumeKg)} кг`}
-                    style={[styles.bar, { height: `${heights[index]}%` }]}
-                  />
+                <View
+                  key={day.date}
+                  accessible
+                  accessibilityLabel={`${day.date}: ${Math.round(day.strengthVolumeKg)} кг`}
+                  style={styles.barCell}
+                >
+                  <View style={[styles.bar, { height: `${heights[index] ?? 0}%` }]} />
                 </View>
               ))}
             </View>
           ) : (
-            <Text style={styles.subtitle}>Даних за цей період ще немає.</Text>
+            <Text style={styles.subtitle}>
+              {stats.daily.length === 0
+                ? 'Даних за цей період ще немає.'
+                : 'За цей період немає записаного силового об’єму.'}
+            </Text>
           )}
           <Text style={styles.subtitle}>
             Дані з Gym API, станом на {new Date(stats.asOf).toLocaleDateString('uk-UA')}
@@ -122,5 +140,14 @@ const styles = StyleSheet.create({
   },
   barCell: { flex: 1, height: '100%', justifyContent: 'flex-end' },
   bar: { width: '100%', backgroundColor: palette.primary, borderRadius: 2 },
-  error: { color: '#b91c1c', fontSize: 14 },
+  error: { color: '#ff6460', fontSize: 14 },
+  errorGroup: { gap: 10 },
+  retryButton: {
+    borderWidth: 1,
+    borderColor: palette.border,
+    borderRadius: 10,
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 });

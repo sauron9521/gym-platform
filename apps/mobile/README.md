@@ -206,10 +206,13 @@ unchanged. Follow the same pattern for future React Native forms.
 
 ## Workouts list foundation
 
-The protected `Тренування` tab fetches the current user's first 20 workouts
-through the generated typed API client, scoped by account ID in TanStack Query.
-It supports loading, empty, error and manual refresh states; 401 clears the
-local session. Editing and workout creation are deliberately separate PRs.
+The protected `Тренування` tab fetches workouts through the generated
+typed API client, scoped by account ID in TanStack Query. Pages load in batches
+of 20 with FlatList infinite scrolling; status filters and pull-to-refresh use
+separate query keys per account and selected status. Initial, empty, failed-page
+and retry states are displayed, and 401 clears the local session. The athlete
+creation action remains available alongside the list. The older manual refresh
+button is also retained for accessibility and Maestro smoke tests.
 
 ## Workout detail and lifecycle (first vertical slice)
 
@@ -240,3 +243,91 @@ exercise the status button with user events. This is not an emulator/device
 or EAS smoke test. Existing Maestro native flows remain operator-driven.
 Keep this pilot isolated to Mobile until CI and local Windows development
 confirm the beta plugin works reliably with Expo SDK 58 / React Native 0.88.
+
+## Retry profile verification after an offline launch
+
+When refresh-token rotation succeeded but `GET /users/me` failed due to a transient
+network/server outage, the sign-in screen offers a manual **Відновити сесію**
+action. It reuses only the still-fresh in-memory access token for verification.
+It never replays the already-consumed refresh token; expired or invalid sessions
+require a normal sign-in. Protected navigation remains locked until a successful
+verified profile response.
+
+## Create workout (first native write journey)
+
+A protected `/workouts/new` route uses React Hook Form and Zod for title,
+exercise selection and a single planned-reps set. Exercises are loaded from
+the typed GET /exercises API; POST /workouts writes through the bearer client.
+Only verified success navigates back and invalidates the athlete's workout list.
+The screen is available only for ATHLETE accounts and currently lists the first
+20 accessible exercises, with a manual reload action on a read error.
+A synchronous submit lock blocks duplicate presses. POST /workouts sends a
+stable Idempotency-Key for manual retries of the same canonical payload:
+a lost response must not create duplicate workouts. TanStack mutations are
+never automatically retried. Additional exercise search, multiple
+exercise creation, cancellation and advanced set editing are later PRs.
+
+## Assigned training programs (first athlete mobile slice)
+
+The athlete-only **Програми** tab reads the first 20 active training-program
+assignments from GET /training-programs/assignments. The details route reads
+GET /training-programs/assignments/{assignmentId}, including program workouts.
+For an active assignment the athlete can create a workout through typed
+POST /workouts/from-program and then open the created workout.
+
+Manual retries for the same assignment/workout reuse a stable Idempotency-Key
+until the server confirms success. A synchronous button lock blocks duplicate
+taps; TanStack mutations never retry automatically. A successful creation
+invalidates all cached workout-list filters for the account.
+
+This is an initial assignment list with **no pagination beyond the first 20**.
+Athlete and trainer roles are not interchangeable. The tab is hidden for
+non-athletes and the details route is protected. Real-device navigation and
+network-failure behavior still need physical-device testing.
+
+## Exercise library (search and pagination)
+
+An authenticated user can open the **Каталог вправ** from the home screen.
+The protected `/exercises` route uses typed GET /exercises with 20-item
+pagination, 300 ms debounced name search and independent muscle-group and
+equipment slug filters. TanStack infinite-query keys include the signed-in
+account and active filters, so old search results do not appear under another
+user's session. Duplicate results across pages are hidden by exercise ID.
+
+GET /exercises/muscle-groups and GET /exercises/equipment populate filter
+choices, with per-resource error/retry states. A 401 response on any catalog
+request clears the session; other transient read errors can be retried. Failed
+next-page loads require manual retry to avoid repeated requests from FlatList
+scroll events. Pull-to-refresh is supported. No editing or creation is exposed
+by this first read-only library screen.
+
+## Editing the athlete or trainer profile
+
+The authenticated `/profile/edit` route offers display name, first and last
+name, height and weight. React Hook Form and Zod validate measurements against
+the PATCH /users/me API contract (50–300 cm; 1–600 kg with up to two decimal
+places). Comma decimal input is converted before the request. Empty optional
+fields are sent as null to clear them.
+
+The editor hydrates the last verified GET /users/me response without
+overwriting unsaved typing during refetch. The form blocks duplicate taps,
+remains open on any PATCH failure, and navigates back only after server success.
+The successful response immediately updates the account-scoped TanStack cache
+and the profile query is invalidated for eventual refresh. Email, role and
+security settings are intentionally not editable here.
+
+## Workout progress dashboard (athlete only)
+
+The protected `/progress` route reads the generated typed
+GET /workout-analytics/summary endpoint and displays completed training
+statistics for 7, 30 or 90 days. Each period has a separate account-scoped
+TanStack Query cache. The API is athlete-only, so non-athlete users cannot
+open this route or launch analytics requests. HTTP 401 clears the verified
+session; HTTP 403 reports insufficient permissions without logging out.
+
+The dashboard shows workout count, active days, completed sets, total strength
+volume and a lightweight daily volume chart. Zero-volume days have zero-height
+bars and an all-zero range displays an explicit empty-volume message. Offline
+or server errors offer a manual retry; no other chart library is required.
+This is a read-only summary; exercise-level performance charts and a device
+smoke test remain follow-up work.

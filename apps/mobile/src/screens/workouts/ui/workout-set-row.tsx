@@ -1,3 +1,4 @@
+import { useRef } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Controller, useForm } from 'react-hook-form';
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -23,10 +24,11 @@ export function WorkoutSetRow({
   editable: boolean;
 }) {
   const mutation = useWorkoutSetMutation(workoutId);
+  const submitLock = useRef(false);
   const {
     control,
     handleSubmit,
-    formState: { errors },
+    formState: { errors, isSubmitting },
   } = useForm<WorkoutSetFormValues>({
     resolver: zodResolver(workoutSetFormSchema),
     defaultValues: {
@@ -35,7 +37,40 @@ export function WorkoutSetRow({
     },
   });
 
-  const savingDisabled = !editable || mutation.isPending;
+  const saveCompleted = () => {
+    // A synchronous lock prevents two presses before isPending rerenders the row.
+    if (submitLock.current || mutation.isPending || !editable) return;
+    submitLock.current = true;
+    void handleSubmit(
+      async (values) => {
+        try {
+          await mutation.mutateAsync({ setId: set.id, body: workoutSetPayload(values) });
+        } finally {
+          submitLock.current = false;
+        }
+      },
+      () => {
+        submitLock.current = false;
+      },
+    )().catch(() => {
+      // React Query exposes the failure through mutation.error below.
+    });
+  };
+
+  const skipSet = () => {
+    if (submitLock.current || mutation.isPending || !editable) return;
+    submitLock.current = true;
+    void mutation
+      .mutateAsync({ setId: set.id, body: { status: 'SKIPPED' } })
+      .finally(() => {
+        submitLock.current = false;
+      })
+      .catch(() => {
+        // The mutation error is shown to the user below.
+      });
+  };
+
+  const savingDisabled = !editable || mutation.isPending || isSubmitting;
   return (
     <View style={styles.container}>
       <Text style={styles.title}>
@@ -103,11 +138,7 @@ export function WorkoutSetRow({
               accessibilityRole="button"
               disabled={savingDisabled}
               style={styles.button}
-              onPress={() =>
-                void handleSubmit((values) =>
-                  mutation.mutate({ setId: set.id, body: workoutSetPayload(values) }),
-                )()
-              }
+              onPress={saveCompleted}
             >
               <Text style={styles.buttonText}>Виконано</Text>
             </Pressable>
@@ -116,7 +147,7 @@ export function WorkoutSetRow({
               accessibilityRole="button"
               disabled={savingDisabled}
               style={styles.secondary}
-              onPress={() => mutation.mutate({ setId: set.id, body: { status: 'SKIPPED' } })}
+              onPress={skipSet}
             >
               <Text style={styles.secondaryText}>Пропустити</Text>
             </Pressable>
@@ -168,5 +199,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   secondaryText: { color: palette.text, fontWeight: '600' },
-  error: { color: '#b91c1c', fontSize: 13 },
+  error: { color: '#ff6460', fontSize: 13 },
 });

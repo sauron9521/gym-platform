@@ -17,8 +17,11 @@ export function ProgramsScreen() {
           {query.error.message}
         </Text>
       ) : null}
-      {query.data?.data.length === 0 ? (
+      {!query.isPending && !query.isError && query.data?.data.length === 0 ? (
         <Text style={styles.muted}>Активних призначень немає.</Text>
+      ) : null}
+      {query.data?.meta.totalPages && query.data.meta.totalPages > 1 ? (
+        <Text style={styles.muted}>Показано перші 20 призначень.</Text>
       ) : null}
       {query.data?.data.map((assignment) => (
         <Pressable
@@ -34,7 +37,9 @@ export function ProgramsScreen() {
         </Pressable>
       ))}
       <Pressable
+        testID="programs-refresh"
         accessibilityRole="button"
+        disabled={query.isFetching}
         onPress={() => void query.refetch()}
         style={styles.button}
       >
@@ -50,7 +55,7 @@ const styles = StyleSheet.create({
   title: { fontSize: 26, color: palette.text, fontWeight: '700' },
   heading: { fontSize: 17, color: palette.text, fontWeight: '600' },
   muted: { fontSize: 14, color: palette.muted },
-  error: { fontSize: 14, color: '#b91c1c' },
+  error: { fontSize: 14, color: '#ff6460' },
   card: {
     backgroundColor: palette.surface,
     borderWidth: 1,
