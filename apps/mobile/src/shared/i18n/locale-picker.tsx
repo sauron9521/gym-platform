@@ -21,7 +21,9 @@ export function LocalePicker() {
       if (account) {
         const api = getApi();
         if (!api) throw new Error('API unavailable');
-        const response = await api.PATCH('/users/me/preferences', { body: { preferredLocale: next } });
+        const response = await api.PATCH('/users/me/preferences', {
+          body: { preferredLocale: next },
+        });
         if (response.response.status !== 200) throw new Error('Locale preference rejected');
       }
       setLocale(next);
@@ -33,19 +35,34 @@ export function LocalePicker() {
   }
   return (
     <View>
-      <View style={styles.row} accessibilityLabel={intl.formatMessage({ id: 'mobile.profile.language' })}>
-        <Pressable accessibilityRole="button" disabled={pending}
+      <View
+        style={styles.row}
+        accessibilityLabel={intl.formatMessage({ id: 'mobile.profile.language' })}
+      >
+        <Pressable
+          accessibilityRole="button"
+          disabled={pending}
           accessibilityState={{ selected: locale === 'uk', disabled: pending }}
-          onPress={() => void select('uk')} style={styles.button}>
+          onPress={() => void select('uk')}
+          style={styles.button}
+        >
           <Text style={styles.label}>Українська</Text>
         </Pressable>
-        <Pressable accessibilityRole="button" disabled={pending}
+        <Pressable
+          accessibilityRole="button"
+          disabled={pending}
           accessibilityState={{ selected: locale === 'en', disabled: pending }}
-          onPress={() => void select('en')} style={styles.button}>
+          onPress={() => void select('en')}
+          style={styles.button}
+        >
           <Text style={styles.label}>English</Text>
         </Pressable>
       </View>
-      {error ? <Text accessibilityRole="alert" style={styles.label}>{intl.formatMessage({ id: 'common.retry' })}</Text> : null}
+      {error ? (
+        <Text accessibilityRole="alert" style={styles.label}>
+          {intl.formatMessage({ id: 'common.retry' })}
+        </Text>
+      ) : null}
     </View>
   );
 }

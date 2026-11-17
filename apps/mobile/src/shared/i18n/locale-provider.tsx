@@ -2,7 +2,15 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getFlatMessages, isLocale, resolveLocale, type Locale } from '@gym/i18n';
 import { getLocales } from 'expo-localization';
 import { IntlProvider } from 'react-intl';
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type PropsWithChildren } from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type PropsWithChildren,
+} from 'react';
 
 const STORAGE_KEY = 'gym-platform:preferred-locale';
 type LocaleContextValue = { locale: Locale; setLocale: (next: Locale) => void };
@@ -10,16 +18,24 @@ const LocaleContext = createContext<LocaleContextValue | null>(null);
 
 /** Local non-secret preference is persisted across native/Web restarts. */
 export function LocaleProvider({ children }: PropsWithChildren) {
-  const [locale, updateLocale] = useState<Locale>(() => resolveLocale(getLocales()[0]?.languageTag));
+  const [locale, updateLocale] = useState<Locale>(() =>
+    resolveLocale(getLocales()[0]?.languageTag),
+  );
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
     let active = true;
     void AsyncStorage.getItem(STORAGE_KEY)
-      .then((saved) => { if (active && isLocale(saved)) updateLocale(saved); })
+      .then((saved) => {
+        if (active && isLocale(saved)) updateLocale(saved);
+      })
       .catch(() => undefined)
-      .finally(() => { if (active) setReady(true); });
-    return () => { active = false; };
+      .finally(() => {
+        if (active) setReady(true);
+      });
+    return () => {
+      active = false;
+    };
   }, []);
 
   const setLocale = useCallback((next: Locale) => {
