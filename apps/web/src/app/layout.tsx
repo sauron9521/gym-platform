@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { Manrope } from 'next/font/google';
 import type { ReactNode } from 'react';
 import { NextIntlClientProvider } from 'next-intl';
 import { cookies } from 'next/headers';
@@ -9,6 +10,13 @@ import { parseThemePreference, THEME_COOKIE_NAME } from '@/shared/lib/theme-pref
 import { WebQueryProvider } from './providers';
 
 import './globals.css';
+
+/** Build-time optimized Manrope, including Ukrainian and English glyphs. */
+const manrope = Manrope({
+  subsets: ['latin', 'cyrillic', 'cyrillic-ext'],
+  display: 'swap',
+  variable: '--font-manrope',
+});
 
 export const metadata: Metadata = {
   title: 'Gym Platform',
@@ -24,7 +32,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   const preference = parseThemePreference(cookieStore.get(THEME_COOKIE_NAME)?.value);
   return (
     <html lang={locale} className={preference === 'system' ? undefined : preference}>
-      <body className="min-h-screen antialiased">
+      <body className={`${manrope.variable} min-h-screen font-sans antialiased`}>
         <NextIntlClientProvider locale={locale} messages={messages}>
           <WebQueryProvider>{children}</WebQueryProvider>
         </NextIntlClientProvider>
