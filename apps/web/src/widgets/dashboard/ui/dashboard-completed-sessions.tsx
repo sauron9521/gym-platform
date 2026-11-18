@@ -86,7 +86,7 @@ export function DashboardCompletedSessions() {
               {workouts.slice(0, 3).map((workout) => (
                 <li
                   key={workout.id}
-                  className="flex min-w-0 flex-col gap-3 rounded-xl border border-border bg-card px-4 py-4 shadow-sm sm:flex-row sm:items-center sm:justify-between"
+                  className="flex min-w-0 flex-col gap-3 rounded-xl border p-4 sm:flex-row sm:items-center"
                 >
                   <div className="min-w-0 flex-1 space-y-1">
                     <h3 className="break-words text-sm font-semibold">{workout.title}</h3>
@@ -104,7 +104,7 @@ export function DashboardCompletedSessions() {
                   </div>
                   <Link
                     href={`/workouts/${workout.id}`}
-                    className="inline-flex min-h-11 items-center self-start rounded-md px-2 text-sm font-semibold text-primary underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring sm:shrink-0 sm:self-auto"
+                    className="inline-flex min-h-11 self-start items-center text-sm font-semibold text-primary sm:self-auto"
                   >
                     Деталі
                   </Link>
