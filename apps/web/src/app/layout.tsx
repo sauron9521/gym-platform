@@ -4,10 +4,7 @@ import { NextIntlClientProvider } from 'next-intl';
 import { cookies } from 'next/headers';
 import { getLocale, getMessages } from 'next-intl/server';
 
-import {
-  parseThemePreference,
-  THEME_COOKIE_NAME,
-} from '@/shared/lib/theme-preference';
+import { parseThemePreference, THEME_COOKIE_NAME } from '@/shared/lib/theme-preference';
 
 import { WebQueryProvider } from './providers';
 
@@ -19,7 +16,11 @@ export const metadata: Metadata = {
 };
 
 export default async function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
-  const [locale, messages, cookieStore] = await Promise.all([getLocale(), getMessages(), cookies()]);
+  const [locale, messages, cookieStore] = await Promise.all([
+    getLocale(),
+    getMessages(),
+    cookies(),
+  ]);
   const preference = parseThemePreference(cookieStore.get(THEME_COOKIE_NAME)?.value);
   return (
     <html lang={locale} className={preference === 'system' ? undefined : preference}>
