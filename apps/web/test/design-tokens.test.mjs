@@ -9,8 +9,9 @@ const landingCss = readFileSync(
 );
 const webPackage = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
 
-test('Web and Landing consume the one canonical Dark Performance palette', () => {
-  assert.match(webCss, /@import '@gym\/design-tokens\/dark.css';/);
+test('Web opts into OVRANTO while Landing retains its legacy theme', () => {
+  assert.match(webCss, /@import '@gym\/design-tokens\/ovranto.css';/);
+  assert.doesNotMatch(webCss, /@import '@gym\/design-tokens\/dark.css';/);
   assert.match(landingCss, /@import '@gym\/design-tokens\/dark.css';/);
   assert.equal(webPackage.dependencies['@gym/design-tokens'], 'workspace:*');
   assert.doesNotMatch(webCss, /--(?:background|primary|card):\s*oklch\(/);
