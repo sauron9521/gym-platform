@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 
 import { afterEach, expect, test } from 'vitest';
 import { cleanup, render, screen } from '@testing-library/react';
@@ -18,7 +19,7 @@ test('BrandLogo renders accessible HTML text, never a heading', () => {
 });
 
 test('BrandLogo preserves master SVG shapes and brand colors', () => {
-  const source = new URL('../../../../assets/brand/mark.svg', import.meta.url);
+  const source = resolve(process.cwd(), '../../assets/brand/mark.svg');
   const master = readFileSync(source, 'utf8');
   const { container } = render(<BrandLogo />);
   const strokes = container.querySelectorAll('svg path');
