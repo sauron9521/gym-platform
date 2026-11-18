@@ -18,6 +18,7 @@ describe('Endpoint-aware throttling policies', () => {
     [ExercisesController, 'findOne', 60],
     [WorkoutsController, 'findMany', 60],
     [WorkoutsController, 'findOne', 60],
+    [WorkoutsController, 'updateSet', 120],
     [WorkoutAnalyticsController, 'summary', 20],
     [WorkoutAnalyticsController, 'exercise', 20],
     [AuthController, 'signIn', 3],
@@ -36,7 +37,14 @@ describe('Endpoint-aware throttling policies', () => {
   );
 
   it('retains the global policy for workout mutations', () => {
-    for (const methodName of ['create', 'updateSet'] as const) {
+    for (const methodName of [
+      'create',
+      'update',
+      'start',
+      'complete',
+      'cancel',
+      'createFromProgram',
+    ] as const) {
       const handler = Object.getOwnPropertyDescriptor(
         WorkoutsController.prototype,
         methodName,
