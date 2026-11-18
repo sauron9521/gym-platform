@@ -1,4 +1,4 @@
-import { Throttle } from '@nestjs/throttler';
+import { RateLimit } from '#src/common/rate-limit/rate-limit.policies';
 import { Authenticate, CurrentUser } from '@nestjs/authentication';
 import { Controller, Get, Param, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiCookieAuth, ApiOkResponse, ApiTags } from '@nestjs/swagger';
@@ -24,7 +24,7 @@ import { WorkoutAnalyticsService } from '../services/workout-analytics.service.j
 export class WorkoutAnalyticsController {
   constructor(private readonly service: WorkoutAnalyticsService) {}
 
-  @Throttle({ default: { limit: 20, ttl: 60_000 } })
+  @RateLimit('analytics')
   @Get('summary')
   @ApiOkResponse({ schema: workoutAnalyticsSummaryResponseSchema })
   summary(
@@ -34,7 +34,7 @@ export class WorkoutAnalyticsController {
     return this.service.summary(actor, query);
   }
 
-  @Throttle({ default: { limit: 20, ttl: 60_000 } })
+  @RateLimit('analytics')
   @Get('exercises/:exerciseId')
   @ApiOkResponse({ schema: workoutAnalyticsExerciseResponseSchema })
   exercise(
