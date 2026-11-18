@@ -66,7 +66,10 @@ export function DashboardNextPlannedWorkout() {
 
   const workout = query.data?.workout;
   // A previously cached time may have passed while the tab was open.
-  const isFuture = workout?.scheduledAt && Date.parse(workout.scheduledAt) >= Date.now();
+  const isFuture =
+    workout?.scheduledAt &&
+    query.data?.requestedFrom &&
+    Date.parse(workout.scheduledAt) >= Date.parse(query.data.requestedFrom);
 
   if (!workout || !isFuture) {
     return (

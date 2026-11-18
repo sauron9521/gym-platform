@@ -13,6 +13,7 @@ export function nextPlannedWorkoutQueryOptions() {
     queryKey: workoutQueryKeys.nextPlanned(),
     queryFn: async ({ signal }) => {
       try {
+        const requestedFrom = new Date().toISOString();
         const { data, response } = await webApi.GET('/workouts', {
           signal,
           params: {
@@ -20,7 +21,7 @@ export function nextPlannedWorkoutQueryOptions() {
               view: 'summary',
               status: 'PLANNED',
               sort: 'scheduledAtAsc',
-              scheduledFrom: new Date().toISOString(),
+              scheduledFrom: requestedFrom,
               page: 1,
               limit: 1,
             },
@@ -31,7 +32,7 @@ export function nextPlannedWorkoutQueryOptions() {
           throw new WorkoutListRequestError(response.status);
         }
 
-        return { workout: data.data[0] ?? null, total: data.meta.total };
+        return { workout: data.data[0] ?? null, total: data.meta.total, requestedFrom };
       } catch (error) {
         if (error instanceof WorkoutListRequestError || signal.aborted) throw error;
         throw new WorkoutListRequestError();

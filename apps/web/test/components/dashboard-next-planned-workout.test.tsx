@@ -32,7 +32,7 @@ function success(workout: typeof scheduled | null = scheduled) {
     isFetching: false,
     isError: false,
     error: null,
-    data: { workout, total: workout ? 1 : 0 },
+    data: { workout, total: workout ? 1 : 0, requestedFrom: '2026-11-18T00:00:00Z' },
   };
 }
 
