@@ -17,13 +17,12 @@ import {
 import { useAuthFailure } from '@/shared/api/use-auth-failure';
 
 /**
- * The API orders filtered summaries by createdAt DESC.
- * These are the most recently created COMPLETED records, not necessarily
- * the most recently finished workouts.
+ * The API explicitly sorts completed summaries by completedAt DESC with
+ * null completion timestamps last and a stable id tie-breaker.
  */
 export function DashboardCompletedSessions() {
   const onAuthFailure = useAuthFailure();
-  const query = useQuery(workoutListQueryOptions('COMPLETED', 1));
+  const query = useQuery(workoutListQueryOptions('COMPLETED', 1, 'completedAtDesc'));
 
   useEffect(() => {
     if (query.error instanceof WorkoutListRequestError) {
@@ -47,7 +46,7 @@ export function DashboardCompletedSessions() {
             Завершені тренування
           </h2>
           <p className="text-sm text-muted-foreground">
-            Останні додані записи серед завершених тренувань.
+            Останні тренування за датою завершення.
           </p>
         </div>
         <Link
@@ -82,14 +81,14 @@ export function DashboardCompletedSessions() {
           </CardContent>
         )}
         {!loading && !query.isError && workouts.length > 0 && (
-          <CardContent className="py-2">
-            <ul className="divide-y divide-border">
+          <CardContent className="py-3">
+            <ul className="space-y-3">
               {workouts.slice(0, 3).map((workout) => (
                 <li
                   key={workout.id}
-                  className="flex flex-wrap items-center justify-between gap-4 py-4"
+                  className="flex min-w-0 flex-col gap-3 rounded-xl border border-border bg-card px-4 py-4 shadow-sm sm:flex-row sm:items-center sm:justify-between"
                 >
-                  <div className="min-w-0 space-y-1">
+                  <div className="min-w-0 flex-1 space-y-1">
                     <h3 className="break-words text-sm font-semibold">{workout.title}</h3>
                     <p className="text-xs text-muted-foreground">
                       Завершено:{' '}
@@ -105,7 +104,7 @@ export function DashboardCompletedSessions() {
                   </div>
                   <Link
                     href={`/workouts/${workout.id}`}
-                    className="inline-flex min-h-11 shrink-0 items-center rounded-md text-sm font-semibold text-primary underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                    className="inline-flex min-h-11 items-center self-start rounded-md px-2 text-sm font-semibold text-primary underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring sm:shrink-0 sm:self-auto"
                   >
                     Деталі
                   </Link>
