@@ -25,7 +25,9 @@ test('button retains native disabled behavior and visible keyboard focus', () =>
 
 test('button supports opt-in touch sizes and existing asChild navigation', () => {
   const { rerender } = render(<Button size="touch">Почати тренування</Button>);
-  expect(screen.getByRole('button', { name: 'Почати тренування' }).className).toContain('h-11');
+  expect(screen.getByRole('button', { name: 'Почати тренування' }).className).toContain(
+    'h-11',
+  );
   rerender(
     <Button asChild variant="outline">
       <a href="/workouts">Усі тренування</a>
@@ -34,7 +36,11 @@ test('button supports opt-in touch sizes and existing asChild navigation', () =>
   const link = screen.getByRole('link', { name: 'Усі тренування' });
   expect(link.getAttribute('href')).toBe('/workouts');
   expect(link.className).toContain('border-input');
-  rerender(<Button size="iconTouch" aria-label="Додати підхід">+</Button>);
+  rerender(
+    <Button size="iconTouch" aria-label="Додати підхід">
+      +
+    </Button>,
+  );
   expect(screen.getByRole('button', { name: 'Додати підхід' }).className).toContain('size-11');
 });
 
@@ -64,6 +70,7 @@ test('card remains a semantic slot-based surface with restrained shadow', () => 
     </Card>,
   );
   const card = container.querySelector('[data-slot="card"]');
+  expect(card?.className).toContain('rounded-lg');
   expect(card?.className).toContain('border-border');
   expect(card?.className).toContain('shadow-sm');
   expect(screen.getByRole('heading', { level: 3, name: 'Силова сесія' })).toBeTruthy();

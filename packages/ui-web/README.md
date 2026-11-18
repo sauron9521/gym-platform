@@ -45,7 +45,6 @@ This PR adopts the brand only in the Athlete Web protected header. Landing
 header/footer changes are deferred because open localization PR #258 touches
 both files; PR #270 separately modifies the UI package export barrel.
 
-
 ## OVRANTO control and surface foundation (#383 / #391)
 
 `Button`, `Input` and `Card` retain their public names, props and existing
