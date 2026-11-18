@@ -33,32 +33,31 @@ export function getDashboardShortcuts(role: AuthenticatedUser['role']): Shortcut
     },
   ];
 
-  if (role === 'ATHLETE' || role === 'TRAINER') {
+  if (role === 'ATHLETE') {
     shortcuts.push(
-      role === 'ATHLETE'
-        ? {
-            href: '/athlete/programs',
-            title: 'Мої програми',
-            description: 'Переглядай призначені тренувальні програми.',
-          }
-        : {
-            href: '/trainer/programs',
-            title: 'Тренувальні програми',
-            description: 'Керуй програмами для своїх спортсменів.',
-          },
+      {
+        href: '/athlete/programs',
+        title: 'Мої програми',
+        description: 'Переглядай призначені тренувальні програми.',
+      },
+      {
+        href: '/athlete/trainers',
+        title: 'Мої тренери',
+        description: 'Переглядай зв’язки зі своїми тренерами.',
+      },
     );
+  } else if (role === 'TRAINER') {
     shortcuts.push(
-      role === 'ATHLETE'
-        ? {
-            href: '/athlete/trainers',
-            title: 'Мої тренери',
-            description: 'Переглядай зв’язки зі своїми тренерами.',
-          }
-        : {
-            href: '/trainer/athletes',
-            title: 'Мої підопічні',
-            description: 'Переглядай спортсменів, із якими працюєш.',
-          },
+      {
+        href: '/trainer/programs',
+        title: 'Тренувальні програми',
+        description: 'Керуй програмами для своїх спортсменів.',
+      },
+      {
+        href: '/trainer/athletes',
+        title: 'Мої підопічні',
+        description: 'Переглядай спортсменів, із якими працюєш.',
+      },
     );
   }
 
@@ -128,8 +127,8 @@ export function DashboardHome({
             Плануй тренування. Відстежуй прогрес.
           </h2>
           <p className="max-w-xl text-sm leading-relaxed text-muted-foreground sm:text-base">
-            Створи тренування, додай вправи й підходи. Записи та їхній стан
-            можна переглядати у твоєму журналі.
+            Створи тренування, додай вправи й підходи. Записи та їхній стан можна
+            переглядати у твоєму журналі.
           </p>
           <div className="flex flex-wrap gap-3 pt-2">
             <Button
