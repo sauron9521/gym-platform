@@ -240,7 +240,9 @@ export function WorkoutSetRow({
               onPress={() => {
                 reset({
                   actualReps: String(visibleSet.actualReps ?? visibleSet.plannedReps ?? ''),
-                  actualWeightKg: String(visibleSet.actualWeightKg ?? visibleSet.plannedWeightKg ?? ''),
+                  actualWeightKg: String(
+                    visibleSet.actualWeightKg ?? visibleSet.plannedWeightKg ?? '',
+                  ),
                 });
                 setEditing(false);
               }}
