@@ -78,9 +78,7 @@ export function DashboardCompletedSessions() {
         )}
         {!loading && !query.isError && workouts.length === 0 && (
           <CardContent className="py-6">
-            <p className="text-sm text-muted-foreground">
-              Поки немає завершених тренувань.
-            </p>
+            <p className="text-sm text-muted-foreground">Поки немає завершених тренувань.</p>
           </CardContent>
         )}
         {!loading && !query.isError && workouts.length > 0 && (
