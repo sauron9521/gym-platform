@@ -1,10 +1,7 @@
 import { afterEach, expect, test, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 
-import {
-  parseSidebarCollapsed,
-  SIDEBAR_COOKIE_NAME,
-} from '@/shared/lib/sidebar-preference';
+import { parseSidebarCollapsed, SIDEBAR_COOKIE_NAME } from '@/shared/lib/sidebar-preference';
 import { AthleteShell, isCurrentNavigationLink } from '@/widgets/athlete-shell/ui/athlete-shell';
 
 vi.mock('next/navigation', () => ({

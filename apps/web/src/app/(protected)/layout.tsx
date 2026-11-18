@@ -2,10 +2,7 @@ import type { ReactNode } from 'react';
 import { getLocale, getTranslations } from 'next-intl/server';
 import { cookies } from 'next/headers';
 
-import {
-  parseSidebarCollapsed,
-  SIDEBAR_COOKIE_NAME,
-} from '@/shared/lib/sidebar-preference';
+import { parseSidebarCollapsed, SIDEBAR_COOKIE_NAME } from '@/shared/lib/sidebar-preference';
 import { parseThemePreference, THEME_COOKIE_NAME } from '@/shared/lib/theme-preference';
 import { AthleteShell } from '@/widgets/athlete-shell/ui/athlete-shell';
 
