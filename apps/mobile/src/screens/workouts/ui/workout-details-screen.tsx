@@ -127,7 +127,8 @@ export function WorkoutDetailsScreen({ id }: { id: string }) {
       contentInsetAdjustmentBehavior="automatic"
       automaticallyAdjustKeyboardInsets
       keyboardShouldPersistTaps="handled"
-      bounces={false}
+      alwaysBounceVertical={false}
+      testID="workout-details-scroll"
     >
       {details.isPending ? <ActivityIndicator accessibilityLabel="Завантаження" /> : null}
       {details.isError ? (

@@ -1,3 +1,4 @@
+import { ScrollView } from 'react-native';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, waitFor } from '@testing-library/react-native';
 
@@ -43,6 +44,20 @@ describe('EditProfileScreen (React Native)', () => {
     vi.clearAllMocks();
     mutateAsync.mockResolvedValue(undefined);
     setup();
+  });
+
+  it('keeps the profile editor keyboard-aware without disabling native refresh gestures', () => {
+    const view = render(<EditProfileScreen />);
+    const scroll = view.UNSAFE_getAllByType(ScrollView).find(
+      (element) => element.props.testID === 'profile-edit-scroll',
+    );
+    expect(scroll?.props).toMatchObject({
+      contentInsetAdjustmentBehavior: 'automatic',
+      automaticallyAdjustKeyboardInsets: true,
+      keyboardShouldPersistTaps: 'handled',
+      alwaysBounceVertical: false,
+    });
+    expect(scroll?.props.contentContainerStyle).toMatchObject({ paddingBottom: 64 });
   });
 
   it('submits valid localized weight and navigates after success', async () => {

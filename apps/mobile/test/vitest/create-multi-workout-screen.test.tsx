@@ -1,3 +1,4 @@
+import { ScrollView } from 'react-native';
 import { fireEvent, render, waitFor } from '@testing-library/react-native';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -41,6 +42,20 @@ describe('Multi-exercise CreateWorkoutScreen (native)', () => {
     vi.clearAllMocks();
     mutateAsync.mockResolvedValue('workout-created');
     prepare();
+  });
+
+  it('keeps the create-workout form keyboard-aware without disabling native refresh gestures', () => {
+    const view = render(<CreateWorkoutScreen />);
+    const scroll = view.UNSAFE_getAllByType(ScrollView).find(
+      (element) => element.props.testID === 'create-workout-scroll',
+    );
+    expect(scroll?.props).toMatchObject({
+      contentInsetAdjustmentBehavior: 'automatic',
+      automaticallyAdjustKeyboardInsets: true,
+      keyboardShouldPersistTaps: 'handled',
+      alwaysBounceVertical: false,
+    });
+    expect(scroll?.props.contentContainerStyle).toMatchObject({ paddingBottom: 64 });
   });
 
   it('adds and removes nested exercises and sets without deleting the final item', async () => {

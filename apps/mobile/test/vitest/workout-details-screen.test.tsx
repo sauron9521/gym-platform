@@ -1,3 +1,4 @@
+import { ScrollView } from 'react-native';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render } from '@testing-library/react-native';
 import { Alert } from 'react-native';
@@ -57,6 +58,21 @@ function prepareWorkout(status: 'PLANNED' | 'IN_PROGRESS' | 'COMPLETED') {
 describe('WorkoutDetailsScreen (real React Native renderer)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  it('keeps the workout details keyboard-aware without disabling native refresh gestures', () => {
+    prepareWorkout('IN_PROGRESS');
+    const view = render(<WorkoutDetailsScreen id="workout-123" />);
+    const scroll = view.UNSAFE_getAllByType(ScrollView).find(
+      (element) => element.props.testID === 'workout-details-scroll',
+    );
+    expect(scroll?.props).toMatchObject({
+      contentInsetAdjustmentBehavior: 'automatic',
+      automaticallyAdjustKeyboardInsets: true,
+      keyboardShouldPersistTaps: 'handled',
+      alwaysBounceVertical: false,
+    });
+    expect(scroll?.props.contentContainerStyle).toMatchObject({ paddingBottom: 64 });
   });
 
   it('starts a planned workout by pressing the native action button', async () => {

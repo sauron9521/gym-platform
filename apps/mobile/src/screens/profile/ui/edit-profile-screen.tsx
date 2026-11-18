@@ -79,7 +79,8 @@ export function EditProfileScreen() {
       contentInsetAdjustmentBehavior="automatic"
       automaticallyAdjustKeyboardInsets
       keyboardShouldPersistTaps="handled"
-      bounces={false}
+      alwaysBounceVertical={false}
+      testID="profile-edit-scroll"
     >
       <Text style={styles.title}>Редагувати профіль</Text>
       {profile.isPending ? <Text style={styles.hint}>Завантаження профілю…</Text> : null}

@@ -186,7 +186,8 @@ export function CreateWorkoutScreen() {
         contentInsetAdjustmentBehavior="automatic"
         automaticallyAdjustKeyboardInsets
         keyboardShouldPersistTaps="handled"
-        bounces={false}
+        alwaysBounceVertical={false}
+      testID="create-workout-scroll"
       >
         <Text style={styles.heading}>Нове тренування</Text>
         <Text style={styles.label}>Назва</Text>

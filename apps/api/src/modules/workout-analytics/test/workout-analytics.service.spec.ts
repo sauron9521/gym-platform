@@ -12,6 +12,7 @@ describe('WorkoutAnalyticsService', () => {
   const repository = {
     readSummary: vi.fn(),
     readExercise: vi.fn(),
+    readPersonalRecords: vi.fn(),
   };
   const service = new WorkoutAnalyticsService(repository as unknown as WorkoutAnalyticsRepository);
 
@@ -97,12 +98,27 @@ describe('WorkoutAnalyticsService', () => {
     });
   });
 
+  it('returns a lifetime per-exercise record count only from the authenticated athlete', async () => {
+    repository.readPersonalRecords.mockResolvedValue([{ exerciseCount: 2 }]);
+    const result = await service.personalRecords(athlete);
+    expect(result).toMatchObject({ exerciseCount: 2, asOf: expect.any(Date) });
+    expect(repository.readPersonalRecords).toHaveBeenCalledWith(athlete.id, expect.any(Date));
+  });
+
+  it('returns zero for an empty verified record history', async () => {
+    repository.readPersonalRecords.mockResolvedValue([{ exerciseCount: 0 }]);
+    const result = await service.personalRecords(athlete);
+    expect(result.exerciseCount).toBe(0);
+  });
+
   it('refuses trainer roles before touching the database', async () => {
     await expect(service.summary(trainer, { range: '30d' })).rejects.toThrow(ForbiddenException);
+    await expect(service.personalRecords(trainer)).rejects.toThrow(ForbiddenException);
     await expect(service.exercise(trainer, 'exercise-1', { range: '30d' })).rejects.toThrow(
       ForbiddenException,
     );
     expect(repository.readSummary).not.toHaveBeenCalled();
+    expect(repository.readPersonalRecords).not.toHaveBeenCalled();
     expect(repository.readExercise).not.toHaveBeenCalled();
   });
 });

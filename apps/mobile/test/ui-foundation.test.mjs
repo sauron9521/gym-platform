@@ -14,6 +14,13 @@ test('UniWind is configured only for the mobile Expo app', () => {
   assert.match(css, /\.dark \{/);
 });
 
+test('root navigation provides safe areas and hides iOS group labels in back buttons', () => {
+  const layout = read('../src/app/_layout.tsx');
+  assert.ok(layout.includes('<SafeAreaProvider>'));
+  assert.ok(layout.includes("headerBackButtonDisplayMode: 'minimal'"));
+  assert.ok(layout.includes('name="(tabs)" options={{ title: '));
+});
+
 test('Gluestack root provider preserves authenticated route guards', () => {
   const layout = read('../src/app/_layout.tsx');
   assert.match(layout, /<GluestackUIProvider/);

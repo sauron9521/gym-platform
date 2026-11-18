@@ -163,6 +163,11 @@ export class WorkoutsService {
       throw new BadRequestException('scheduledFrom must not be later than scheduledTo');
     }
 
+    // Date ordering is opt-in and only meaningful for bounded planned workouts.
+    if (query.sort === 'scheduledAtAsc' && (query.status !== 'PLANNED' || !query.scheduledFrom)) {
+      throw new BadRequestException('scheduledAtAsc requires status=PLANNED and scheduledFrom');
+    }
+
     const where: Prisma.WorkoutWhereInput = {
       athleteId: actor.id,
 
@@ -182,6 +187,14 @@ export class WorkoutsService {
       where,
       skip: (query.page - 1) * query.limit,
       take: query.limit,
+      ...(query.sort === 'scheduledAtAsc'
+        ? {
+            orderBy: [
+              { scheduledAt: 'asc' as const },
+              { id: 'asc' as const },
+            ] satisfies Prisma.WorkoutOrderByWithRelationInput[],
+          }
+        : {}),
     };
 
     return query.view === 'summary'
