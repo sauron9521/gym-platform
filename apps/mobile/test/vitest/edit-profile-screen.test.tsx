@@ -46,7 +46,7 @@ describe('EditProfileScreen (React Native)', () => {
     setup();
   });
 
-  it('keeps the profile editor keyboard-aware without disabling native refresh gestures', () => {
+  it('keeps the profile editor keyboard-aware and scrollable', () => {
     const view = render(<EditProfileScreen />);
     const scroll = view.UNSAFE_getAllByType(ScrollView).find(
       (element) => element.props.testID === 'profile-edit-scroll',

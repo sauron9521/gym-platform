@@ -1,7 +1,6 @@
-import { ScrollView } from 'react-native';
+import { Alert, ScrollView } from 'react-native';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render } from '@testing-library/react-native';
-import { Alert } from 'react-native';
 
 import {
   useWorkoutDetailsQuery,
@@ -60,7 +59,7 @@ describe('WorkoutDetailsScreen (real React Native renderer)', () => {
     vi.clearAllMocks();
   });
 
-  it('keeps the workout details keyboard-aware without disabling native refresh gestures', () => {
+  it('keeps workout details keyboard-aware and scrollable', () => {
     prepareWorkout('IN_PROGRESS');
     const view = render(<WorkoutDetailsScreen id="workout-123" />);
     const scroll = view.UNSAFE_getAllByType(ScrollView).find(

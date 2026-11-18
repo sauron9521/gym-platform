@@ -44,7 +44,7 @@ describe('Multi-exercise CreateWorkoutScreen (native)', () => {
     prepare();
   });
 
-  it('keeps the create-workout form keyboard-aware without disabling native refresh gestures', () => {
+  it('keeps the workout creation form keyboard-aware and scrollable', () => {
     const view = render(<CreateWorkoutScreen />);
     const scroll = view.UNSAFE_getAllByType(ScrollView).find(
       (element) => element.props.testID === 'create-workout-scroll',
