@@ -7000,6 +7000,44 @@
         "tags": ["Workout Analytics"]
       }
     },
+    "/workout-analytics/personal-records": {
+      "get": {
+        "operationId": "WorkoutAnalyticsController_personalRecords",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "asOf": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "exerciseCount": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": ["asOf", "exerciseCount"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "accessToken": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "tags": ["Workout Analytics"]
+      }
+    },
     "/workout-analytics/exercises/{exerciseId}": {
       "get": {
         "operationId": "WorkoutAnalyticsController_exercise",

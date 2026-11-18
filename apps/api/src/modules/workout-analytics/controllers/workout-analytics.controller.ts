@@ -12,6 +12,7 @@ import {
 } from '../dto/workout-analytics.schemas.js';
 import {
   workoutAnalyticsExerciseResponseSchema,
+  workoutAnalyticsPersonalRecordsResponseSchema,
   workoutAnalyticsSummaryResponseSchema,
 } from '../workout-analytics.responses.js';
 import { WorkoutAnalyticsService } from '../services/workout-analytics.service.js';
@@ -32,6 +33,13 @@ export class WorkoutAnalyticsController {
     @Query({ schema: workoutAnalyticsQuerySchema }) query: WorkoutAnalyticsQuery,
   ) {
     return this.service.summary(actor, query);
+  }
+
+  @RateLimit('analytics')
+  @Get('personal-records')
+  @ApiOkResponse({ schema: workoutAnalyticsPersonalRecordsResponseSchema })
+  personalRecords(@CurrentUser() actor: WorkoutActor) {
+    return this.service.personalRecords(actor);
   }
 
   @RateLimit('analytics')

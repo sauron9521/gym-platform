@@ -15,6 +15,10 @@ vi.mock('@/shared/api/use-auth-failure', () => ({
   useAuthFailure: () => onAuthFailure,
 }));
 
+vi.mock('@/widgets/dashboard/ui/dashboard-personal-records', () => ({
+  DashboardPersonalRecords: () => <div data-testid="personal-records-kpi" />,
+}));
+
 import { WorkoutListRequestError } from '@/features/workouts/api/workouts-list-query';
 import { DashboardWorkoutStats } from '@/widgets/dashboard/ui/dashboard-workout-stats';
 

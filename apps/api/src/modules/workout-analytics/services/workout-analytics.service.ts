@@ -41,6 +41,14 @@ export class WorkoutAnalyticsService {
     };
   }
 
+  /** Count one verified external-load best per distinct exercise over completed history. */
+  async personalRecords(actor: WorkoutActor) {
+    assertWorkoutAthlete(actor);
+    const asOf = new Date();
+    const rows = await this.repository.readPersonalRecords(actor.id, asOf);
+    return { asOf, exerciseCount: rows[0]?.exerciseCount ?? 0 };
+  }
+
   async exercise(actor: WorkoutActor, exerciseId: string, query: WorkoutAnalyticsQuery) {
     assertWorkoutAthlete(actor);
     const asOf = new Date();
