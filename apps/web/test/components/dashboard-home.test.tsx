@@ -96,3 +96,20 @@ test('DashboardHome inserts optional private data section between hero and short
     child.compareDocumentPosition(screen.getByRole('heading', { name: 'Швидкий доступ' })),
   ).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
 });
+
+test('a supplied live workout hero replaces the default create-workout hero', () => {
+  render(
+    <DashboardHome
+      displayName="Олексій"
+      email="athlete@example.test"
+      role="ATHLETE"
+      isSigningOut={false}
+      signOutError={null}
+      onSignOut={vi.fn()}
+      hero={<section aria-label="Активне тренування">Продовжити заняття</section>}
+    />,
+  );
+  expect(screen.getByRole('region', { name: 'Активне тренування' })).toBeTruthy();
+  expect(screen.queryByRole('heading', { name: 'Плануй тренування. Відстежуй прогрес.' })).toBeNull();
+  expect(screen.queryByRole('link', { name: 'Створити тренування' })).toBeNull();
+});

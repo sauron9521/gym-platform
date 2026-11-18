@@ -8,6 +8,7 @@ import { classifySessionCheck } from '@/features/auth/lib/auth-flow';
 import { webApi } from '@/shared/api/client';
 import { Button } from '@/shared/ui/button';
 import { DashboardHome } from './dashboard-home';
+import { DashboardActiveWorkout } from './dashboard-active-workout';
 import { DashboardCompletedSessions } from './dashboard-completed-sessions';
 import { DashboardPlannedWorkouts } from './dashboard-planned-workouts';
 import { DashboardWorkoutStats } from './dashboard-workout-stats';
@@ -128,6 +129,7 @@ export function DashboardScreen({ initialUser }: { initialUser: AuthenticatedUse
       isSigningOut={isSigningOut}
       signOutError={signOutError}
       onSignOut={handleSignOut}
+      hero={initialUser.role === 'ATHLETE' ? <DashboardActiveWorkout /> : undefined}
     >
       {initialUser.role === 'ATHLETE' && (
         <>

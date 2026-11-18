@@ -13,6 +13,7 @@ type DashboardHomeProps = {
   signOutError: string | null;
   onSignOut: () => void;
   children?: ReactNode;
+  hero?: ReactNode;
 };
 
 type Shortcut = {
@@ -78,6 +79,7 @@ export function DashboardHome({
   signOutError,
   onSignOut,
   children,
+  hero,
 }: DashboardHomeProps) {
   const shortcuts = getDashboardShortcuts(role);
 
@@ -111,42 +113,44 @@ export function DashboardHome({
         </div>
       </header>
 
-      <section
-        aria-labelledby="dashboard-next-step"
-        className="relative overflow-hidden rounded-lg border border-border bg-card p-6 shadow-sm sm:p-8 lg:p-10"
-      >
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute -right-20 -top-24 size-72 rounded-full bg-secondary/60 blur-3xl"
-        />
-        <div className="relative max-w-2xl space-y-4">
-          <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-            Твій наступний крок
-          </p>
-          <h2
-            id="dashboard-next-step"
-            className="text-2xl font-semibold tracking-tight sm:text-3xl"
-          >
-            Плануй тренування. Відстежуй прогрес.
-          </h2>
-          <p className="max-w-xl text-sm leading-relaxed text-muted-foreground sm:text-base">
-            Створи тренування, додай вправи й підходи. Записи та їхній стан можна переглядати у
-            твоєму журналі.
-          </p>
-          <div className="flex flex-wrap gap-3 pt-2">
-            <Button
-              asChild
-              size="touch"
-              className="bg-[var(--brand-teal)] text-[var(--set-active-foreground)] hover:opacity-90"
+      {hero ?? (
+        <section
+          aria-labelledby="dashboard-next-step"
+          className="relative overflow-hidden rounded-lg border border-border bg-card p-6 shadow-sm sm:p-8 lg:p-10"
+        >
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute -right-20 -top-24 size-72 rounded-full bg-secondary/60 blur-3xl"
+          />
+          <div className="relative max-w-2xl space-y-4">
+            <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+              Твій наступний крок
+            </p>
+            <h2
+              id="dashboard-next-step"
+              className="text-2xl font-semibold tracking-tight sm:text-3xl"
             >
-              <Link href="/workouts/new">Створити тренування</Link>
-            </Button>
-            <Button asChild size="touch" variant="outline">
-              <Link href="/workouts">Відкрити журнал</Link>
-            </Button>
+              Плануй тренування. Відстежуй прогрес.
+            </h2>
+            <p className="max-w-xl text-sm leading-relaxed text-muted-foreground sm:text-base">
+              Створи тренування, додай вправи й підходи. Записи та їхній стан можна переглядати у
+              твоєму журналі.
+            </p>
+            <div className="flex flex-wrap gap-3 pt-2">
+              <Button
+                asChild
+                size="touch"
+                className="bg-[var(--brand-teal)] text-[var(--set-active-foreground)] hover:opacity-90"
+              >
+                <Link href="/workouts/new">Створити тренування</Link>
+              </Button>
+              <Button asChild size="touch" variant="outline">
+                <Link href="/workouts">Відкрити журнал</Link>
+              </Button>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {children}
 
