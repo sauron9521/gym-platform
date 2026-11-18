@@ -45,9 +45,7 @@ export function DashboardCompletedSessions() {
           <h2 id="dashboard-completed" className="text-xl font-semibold tracking-tight">
             Завершені тренування
           </h2>
-          <p className="text-sm text-muted-foreground">
-            Останні тренування за датою завершення.
-          </p>
+          <p className="text-sm text-muted-foreground">Останні тренування за датою завершення.</p>
         </div>
         <Link
           href="/workouts"
