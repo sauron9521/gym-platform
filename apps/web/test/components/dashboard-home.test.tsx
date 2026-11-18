@@ -74,6 +74,7 @@ test('sign-out pending and error states stay adjacent to the control', () => {
       onSignOut={onSignOut}
     />,
   );
-  expect((screen.getByRole('button', { name: 'Вихід…' }) as HTMLButtonElement).disabled).toBe(true);
+  const pending = screen.getByRole('button', { name: 'Вихід…' }) as HTMLButtonElement;
+  expect(pending.disabled).toBe(true);
   expect(screen.getByRole('alert').textContent).toContain('Не вдалося завершити сесію.');
 });
