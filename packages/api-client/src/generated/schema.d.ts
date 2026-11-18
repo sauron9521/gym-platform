@@ -2745,8 +2745,8 @@ export interface operations {
         status?: 'PLANNED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
         /** @description Optional compact view; full remains the default for compatibility. */
         view?: 'full' | 'summary';
-        /** @description Order by planned date ascending; requires status=PLANNED and scheduledFrom. */
-        sort?: 'scheduledAtAsc';
+        /** @description Order by planned date ascending (requires status=PLANNED and scheduledFrom) or by completion date descending (requires status=COMPLETED). */
+        sort?: 'scheduledAtAsc' | 'completedAtDesc';
         scheduledFrom?: string;
         scheduledTo?: string;
       };
