@@ -30,17 +30,13 @@ test('button supports opt-in touch sizes and existing asChild navigation', () =>
   );
   rerender(
     <Button asChild variant="outline">
-      <a href="/workouts">Усі тренування</a>
+      <a href="https://example.test/workouts">Усі тренування</a>
     </Button>,
   );
   const link = screen.getByRole('link', { name: 'Усі тренування' });
-  expect(link.getAttribute('href')).toBe('/workouts');
+  expect(link.getAttribute('href')).toBe('https://example.test/workouts');
   expect(link.className).toContain('border-input');
-  rerender(
-    <Button size="iconTouch" aria-label="Додати підхід">
-      +
-    </Button>,
-  );
+  rerender(<Button size="iconTouch" aria-label="Додати підхід">+</Button>);
   expect(screen.getByRole('button', { name: 'Додати підхід' }).className).toContain('size-11');
 });
 
