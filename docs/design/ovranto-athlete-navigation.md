@@ -26,8 +26,9 @@ or full cross-product visual signoff.
   trainer paths, and Start Workout need specific route/API verification.
 - No new dependency, role or permission assumptions, changed route, API,
   query cache, session handling, or workout mutation behavior.
-- **Follow-up:** collapsed sidebar with standardized Lucide icons, dashboard
-  hero and API-backed metrics, charts, and recent workouts.
+- **This slice:** desktop collapse and standardized Lucide icons with a
+  cookie-backed visual preference; all existing routes and controls remain.
+- **Follow-up:** dashboard hero and API-backed metrics, charts, and history.
 - The mobile menu is non-modal and does not trap focus. Escape closes the
   menu and returns focus to its toggle; link selection closes it.
 
@@ -39,3 +40,21 @@ authenticated deep links, expired/forbidden sessions, and horizontal overflow.
 
 Source/DOM contracts and GitHub CI run in this PR. Visual viewport and
 manual usability review are still needed before closing the UX epic.
+
+## Persistent desktop sidebar
+
+The OVRANTO sidebar switches between an expanded 240px desktop column and
+a compact 88px icon rail. Each icon-only link retains its accessible text name
+using `sr-only`; a `title` provides a mouse hover hint. `aria-current="page"`
+still identifies the current route. The mobile menu remains full-width and
+independent from desktop collapse state.
+
+The server reads `ovranto-sidebar=collapsed|expanded` (host-only, SameSite=Lax;
+Secure on HTTPS) in the protected layout before rendering. The client updates
+the cookie on toggle, so reloading the page does not flash the wrong width.
+Unrecognized cookie values fall back to expanded.
+
+Lucide React is a pinned dependency of `apps/web` only, not a new shared UI
+system. The 200ms width transition respects `prefers-reduced-motion` and
+all icons are decorative `aria-hidden` SVGs alongside real text labels.
+This slice does not alter auth, workout mutations, other apps or API routes.
