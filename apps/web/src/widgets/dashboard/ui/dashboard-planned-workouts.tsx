@@ -96,7 +96,7 @@ export function DashboardPlannedWorkouts() {
                     <p className="text-xs text-muted-foreground">
                       Заплановано: {formatWorkoutDate(workout.scheduledAt)}
                     </p>
-                    {typeof workout.exerciseCount === 'number' && (
+                    {'exerciseCount' in workout && typeof workout.exerciseCount === 'number' && (
                       <p className="text-xs text-muted-foreground">
                         Вправ: {workout.exerciseCount}
                       </p>
