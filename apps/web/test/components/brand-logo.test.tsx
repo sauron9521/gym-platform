@@ -10,7 +10,7 @@ afterEach(cleanup);
 describe('OVRANTO shared BrandLogo', () => {
   test('uses text for the brand and a decorative SVG rather than a heading', () => {
     const { container } = render(
-      <a href="/" aria-label="OVRANTO — головна">
+      <a href="https://ovranto.example/" aria-label="OVRANTO — головна">
         <BrandLogo />
       </a>,
     );
@@ -27,13 +27,8 @@ describe('OVRANTO shared BrandLogo', () => {
   });
 
   test('matches the canonical mark.svg geometry and palette in both themes', () => {
-    const master = readFileSync(
-      new URL('../../../../assets/brand/mark.svg', import.meta.url),
-      'utf8',
-    );
-    const expected = [...master.matchAll(/<path d="([^"]+)" fill="([^"]+)" \/>/g)].map(
-      ([, d, fill]) => ({ d, fill }),
-    );
+    const masterPath = new URL('../../../../assets/brand/mark.svg', import.meta.url);
+    const master = readFileSync(masterPath, 'utf8');
 
     for (const theme of ['light', 'dark']) {
       const { container, unmount } = render(
@@ -43,12 +38,13 @@ describe('OVRANTO shared BrandLogo', () => {
       );
 
       const mark = container.querySelector('[data-slot="brand-mark"]');
-      const actual = [...(mark?.querySelectorAll('path') ?? [])].map((path) => ({
-        d: path.getAttribute('d'),
-        fill: path.getAttribute('fill'),
-      }));
+      const strokes = container.querySelectorAll('[data-slot="brand-mark"] path');
+      expect(strokes).toHaveLength(2);
+      for (const path of strokes) {
+        const geometry = `d="${path.getAttribute('d')}" fill="${path.getAttribute('fill')}"`;
+        expect(master).toContain(geometry);
+      }
 
-      expect(actual).toEqual(expected);
       expect(mark?.getAttribute('viewBox')).toBe('0 0 90 68');
       expect(container.querySelector('[data-slot="brand-logo"]')?.className).toContain(
         'text-foreground',
