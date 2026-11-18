@@ -127,8 +127,8 @@ export function DashboardHome({
             Плануй тренування. Відстежуй прогрес.
           </h2>
           <p className="max-w-xl text-sm leading-relaxed text-muted-foreground sm:text-base">
-            Створи тренування, додай вправи й підходи. Записи та їхній стан можна
-            переглядати у твоєму журналі.
+            Створи тренування, додай вправи й підходи. Записи та їхній стан можна переглядати у
+            твоєму журналі.
           </p>
           <div className="flex flex-wrap gap-3 pt-2">
             <Button
@@ -150,9 +150,7 @@ export function DashboardHome({
           <h2 id="dashboard-shortcuts" className="text-xl font-semibold tracking-tight">
             Швидкий доступ
           </h2>
-          <p className="text-sm text-muted-foreground">
-            Перейди до потрібного розділу OVRANTO.
-          </p>
+          <p className="text-sm text-muted-foreground">Перейди до потрібного розділу OVRANTO.</p>
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
           {shortcuts.map((shortcut) => (
