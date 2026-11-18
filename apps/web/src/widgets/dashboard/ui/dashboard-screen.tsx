@@ -8,6 +8,7 @@ import { classifySessionCheck } from '@/features/auth/lib/auth-flow';
 import { webApi } from '@/shared/api/client';
 import { Button } from '@/shared/ui/button';
 import { DashboardHome } from './dashboard-home';
+import { DashboardCompletedSessions } from './dashboard-completed-sessions';
 import { DashboardPlannedWorkouts } from './dashboard-planned-workouts';
 import { DashboardWorkoutStats } from './dashboard-workout-stats';
 import type { AuthenticatedUser } from '@/shared/api/server-session';
@@ -132,6 +133,7 @@ export function DashboardScreen({ initialUser }: { initialUser: AuthenticatedUse
         <>
           <DashboardWorkoutStats />
           <DashboardPlannedWorkouts />
+          <DashboardCompletedSessions />
         </>
       )}
     </DashboardHome>
