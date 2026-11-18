@@ -95,9 +95,7 @@ test('429 shows per-card retry and leaves other successful counters visible', ()
   expect(screen.getByText('4')).toBeTruthy();
   expect(screen.getByText('2')).toBeTruthy();
   expect(screen.getByRole('alert').textContent).toContain('Забагато запитів');
-  fireEvent.click(
-    screen.getByRole('button', { name: 'Повторити завантаження: завершені' }),
-  );
+  fireEvent.click(screen.getByRole('button', { name: 'Повторити завантаження: завершені' }));
   expect(refetch).toHaveBeenCalledOnce();
   expect(onAuthFailure).not.toHaveBeenCalled();
 });
