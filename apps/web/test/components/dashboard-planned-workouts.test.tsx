@@ -57,7 +57,7 @@ test('shows real total and at most three most recently added planned workouts', 
   expect(screen.getAllByRole('link', { name: 'Переглянути' })[0].getAttribute('href')).toBe(
     '/workouts/workout-1',
   );
-  expect(screen.getByText('Заплановано: Не заплановано')).toBeTruthy();
+  expect(screen.getAllByText('Заплановано: Не заплановано')).toHaveLength(2);
 });
 
 test('shows an honest empty state and existing creation route', () => {
