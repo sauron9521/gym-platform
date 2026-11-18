@@ -49,9 +49,8 @@ test('desktop sidebar keeps existing routes and server-rendered content', () => 
   renderShell();
   const desktopNav = screen.getAllByRole('navigation', { name: 'Особистий кабінет' })[0];
   expect(within(desktopNav).getAllByRole('link')).toHaveLength(4);
-  expect(within(desktopNav).getByRole('link', { name: 'Тренування' }).getAttribute('aria-current')).toBe(
-    'page',
-  );
+  const active = within(desktopNav).getByRole('link', { name: 'Тренування' });
+  expect(active.getAttribute('aria-current')).toBe('page');
   expect(screen.getByText('Захищена сторінка')).toBeTruthy();
   expect(screen.getByTestId('theme-switcher')).toBeTruthy();
   expect(screen.getByTestId('locale-switcher')).toBeTruthy();
@@ -65,9 +64,8 @@ test('mobile navigation opens, closes on Escape and restores keyboard focus', ()
   expect(menu?.hidden).toBe(true);
 
   fireEvent.click(open);
-  expect(screen.getByRole('button', { name: 'Закрити навігацію' }).getAttribute('aria-expanded')).toBe(
-    'true',
-  );
+  const close = screen.getByRole('button', { name: 'Закрити навігацію' });
+  expect(close.getAttribute('aria-expanded')).toBe('true');
   expect(menu?.hidden).toBe(false);
   fireEvent.keyDown(screen.getByTestId('athlete-shell-header'), { key: 'Escape' });
   expect(menu?.hidden).toBe(true);
