@@ -37,7 +37,14 @@ describe('Endpoint-aware throttling policies', () => {
   );
 
   it('retains the global policy for workout mutations', () => {
-    for (const methodName of ['create'] as const) {
+    for (const methodName of [
+      'create',
+      'update',
+      'start',
+      'complete',
+      'cancel',
+      'createFromProgram',
+    ] as const) {
       const handler = Object.getOwnPropertyDescriptor(
         WorkoutsController.prototype,
         methodName,

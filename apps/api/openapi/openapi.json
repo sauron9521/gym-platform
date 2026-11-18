@@ -4389,6 +4389,16 @@
             "description": "Optional compact view; full remains the default for compatibility."
           },
           {
+            "name": "sort",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": ["scheduledAtAsc"],
+              "type": "string"
+            },
+            "description": "Order by planned date ascending; requires status=PLANNED and scheduledFrom."
+          },
+          {
             "name": "scheduledFrom",
             "required": false,
             "in": "query",

@@ -3337,6 +3337,64 @@ describe('Workouts (HTTP + PostgreSQL)', () => {
       expect(ids).toContain(createdWorkoutId);
     });
 
+    it('returns the nearest future scheduled workout despite a later created record', async () => {
+      const later = await createWorkout('Date sorted: later');
+      const nearer = await createWorkout('Date sorted: nearer');
+
+      for (const [id, scheduledAt] of [
+        [later.id, '2035-04-03T09:00:00.000Z'],
+        [nearer.id, '2035-04-02T09:00:00.000Z'],
+      ]) {
+        const updated = await request(app!.getHttpServer())
+          .patch(`/workouts/${id}`)
+          .set('Cookie', ownerCookie)
+          .send({ scheduledAt });
+        expect(updated.status).toBe(200);
+      }
+
+      const filter = {
+        status: 'PLANNED',
+        view: 'summary',
+        sort: 'scheduledAtAsc',
+        scheduledFrom: '2035-04-01T00:00:00.000Z',
+        scheduledTo: '2035-04-04T00:00:00.000Z',
+        limit: 1,
+      };
+
+      const result = await request(app!.getHttpServer())
+        .get('/workouts')
+        .set('Cookie', ownerCookie)
+        .query(filter);
+
+      expect(result.status).toBe(200);
+      expect(result.body.data).toHaveLength(1);
+      expect(result.body.data[0]).toMatchObject({
+        id: nearer.id,
+        title: 'Date sorted: nearer',
+        status: 'PLANNED',
+        scheduledAt: '2035-04-02T09:00:00.000Z',
+      });
+      expect(result.body.meta.total).toBe(2);
+
+      const other = await request(app!.getHttpServer())
+        .get('/workouts')
+        .set('Cookie', otherAthleteCookie)
+        .query(filter);
+      expect(other.status).toBe(200);
+      expect(other.body.data).toEqual([]);
+
+      for (const invalid of [
+        { ...filter, status: 'COMPLETED' },
+        { status: 'PLANNED', view: 'summary', sort: 'scheduledAtAsc' },
+      ]) {
+        const response = await request(app!.getHttpServer())
+          .get('/workouts')
+          .set('Cookie', ownerCookie)
+          .query(invalid);
+        expect(response.status).toBe(400);
+      }
+    });
+
     it('should not expose another athlete workouts', async () => {
       const response = await request(app!.getHttpServer())
         .get('/workouts')

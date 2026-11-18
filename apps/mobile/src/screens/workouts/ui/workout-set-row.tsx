@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Controller, useForm } from 'react-hook-form';
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -9,7 +9,10 @@ import {
   type WorkoutSetFormValues,
 } from '@/features/workouts/lib/workout-set-form';
 import type { WorkoutDetails } from '@/features/workouts/model/workout-details-query';
-import { useWorkoutSetMutation } from '@/features/workouts/model/workout-set-mutation';
+import {
+  WorkoutSetRateLimitError,
+  useWorkoutSetMutation,
+} from '@/features/workouts/model/workout-set-mutation';
 import { palette } from '@/shared/config/theme';
 
 type WorkoutSet = WorkoutDetails['exercises'][number]['sets'][number];
@@ -25,9 +28,25 @@ export function WorkoutSetRow({
 }) {
   const mutation = useWorkoutSetMutation(workoutId);
   const submitLock = useRef(false);
+  const [editing, setEditing] = useState(false);
+  const [retryAt, setRetryAt] = useState<number | null>(null);
+  // A PATCH response is authoritative even if the details query has no cache yet.
+  // Once a newer server snapshot arrives, use it instead of the local acknowledgment.
+  const [confirmedResult, setConfirmedResult] = useState<{
+    previousUpdatedAt: string;
+    set: WorkoutSet;
+  } | null>(null);
+  const visibleSet =
+    confirmedResult?.set.id === set.id && confirmedResult.previousUpdatedAt === set.updatedAt
+      ? confirmedResult.set
+      : set;
+  const isSaved = visibleSet.status !== 'PENDING';
+  const isEditing = !isSaved || editing;
+  const limited = retryAt !== null;
   const {
     control,
     handleSubmit,
+    reset,
     formState: { errors, isSubmitting },
   } = useForm<WorkoutSetFormValues>({
     resolver: zodResolver(workoutSetFormSchema),
@@ -37,14 +56,47 @@ export function WorkoutSetRow({
     },
   });
 
+  useEffect(() => {
+    reset({
+      actualReps: String(visibleSet.actualReps ?? visibleSet.plannedReps ?? ''),
+      actualWeightKg: String(visibleSet.actualWeightKg ?? visibleSet.plannedWeightKg ?? ''),
+    });
+  }, [
+    reset,
+    visibleSet.actualReps,
+    visibleSet.actualWeightKg,
+    visibleSet.plannedReps,
+    visibleSet.plannedWeightKg,
+  ]);
+
+  useEffect(() => {
+    if (retryAt === null) return;
+    const timeout = setTimeout(() => setRetryAt(null), Math.max(0, retryAt - Date.now()));
+    return () => clearTimeout(timeout);
+  }, [retryAt]);
+
+  const captureRateLimit = (error: unknown) => {
+    if (error instanceof WorkoutSetRateLimitError) {
+      setRetryAt(Date.now() + error.retryAfterSeconds * 1000);
+    }
+  };
+
   const saveCompleted = () => {
     // A synchronous lock prevents two presses before isPending rerenders the row.
-    if (submitLock.current || mutation.isPending || !editable) return;
+    if (submitLock.current || mutation.isPending || !editable || !isEditing || limited) return;
     submitLock.current = true;
     void handleSubmit(
       async (values) => {
         try {
-          await mutation.mutateAsync({ setId: set.id, body: workoutSetPayload(values) });
+          const updated = await mutation.mutateAsync({
+            setId: set.id,
+            body: workoutSetPayload(values),
+          });
+          setConfirmedResult({ previousUpdatedAt: set.updatedAt, set: updated });
+          setEditing(false);
+        } catch (error) {
+          captureRateLimit(error);
+          throw error;
         } finally {
           submitLock.current = false;
         }
@@ -58,10 +110,17 @@ export function WorkoutSetRow({
   };
 
   const skipSet = () => {
-    if (submitLock.current || mutation.isPending || !editable) return;
+    if (submitLock.current || mutation.isPending || !editable || !isEditing || limited) return;
     submitLock.current = true;
     void mutation
       .mutateAsync({ setId: set.id, body: { status: 'SKIPPED' } })
+      .then((updated) => {
+        setConfirmedResult({ previousUpdatedAt: set.updatedAt, set: updated });
+        setEditing(false);
+      })
+      .catch((error: unknown) => {
+        captureRateLimit(error);
+      })
       .finally(() => {
         submitLock.current = false;
       })
@@ -70,21 +129,40 @@ export function WorkoutSetRow({
       });
   };
 
-  const savingDisabled = !editable || mutation.isPending || isSubmitting;
+  const savingDisabled = !editable || mutation.isPending || isSubmitting || limited;
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>
-        Підхід {set.setNumber} ·{' '}
-        {set.status === 'PENDING'
-          ? 'Очікує'
-          : set.status === 'COMPLETED'
-            ? 'Виконано'
-            : 'Пропущено'}
-      </Text>
+      <View style={styles.headingRow}>
+        <Text style={styles.title}>Підхід {set.setNumber}</Text>
+        <Text style={isSaved ? styles.saved : styles.caption}>
+          {visibleSet.status === 'PENDING'
+            ? 'Очікує'
+            : visibleSet.status === 'COMPLETED'
+              ? '✓ Збережено'
+              : '✓ Пропущено'}
+        </Text>
+      </View>
       <Text style={styles.caption}>
         План: {set.plannedReps ?? '—'} повт. · {set.plannedWeightKg ?? '—'} кг
       </Text>
-      {editable ? (
+      {isSaved ? (
+        <Text style={styles.caption}>
+          Результат: {visibleSet.actualReps ?? '—'} повт. · {visibleSet.actualWeightKg ?? '—'} кг
+        </Text>
+      ) : null}
+      {editable && isSaved && !editing ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Редагувати підхід ${set.setNumber}`}
+          testID={`set-edit-${set.id}`}
+          disabled={savingDisabled}
+          onPress={() => setEditing(true)}
+          style={styles.editButton}
+        >
+          <Text style={styles.editText}>Редагувати результат</Text>
+        </Pressable>
+      ) : null}
+      {editable && isEditing ? (
         <>
           <View style={styles.inputs}>
             <View style={styles.field}>
@@ -100,7 +178,7 @@ export function WorkoutSetRow({
                     onChangeText={onChange}
                     onBlur={onBlur}
                     keyboardType="number-pad"
-                    editable={!mutation.isPending}
+                    editable={!savingDisabled}
                     style={styles.input}
                   />
                 )}
@@ -122,7 +200,7 @@ export function WorkoutSetRow({
                     onChangeText={onChange}
                     onBlur={onBlur}
                     keyboardType="decimal-pad"
-                    editable={!mutation.isPending}
+                    editable={!savingDisabled}
                     style={styles.input}
                   />
                 )}
@@ -140,7 +218,9 @@ export function WorkoutSetRow({
               style={styles.button}
               onPress={saveCompleted}
             >
-              <Text style={styles.buttonText}>Виконано</Text>
+              <Text style={styles.buttonText}>
+                {mutation.isPending ? 'Зберігаємо…' : 'Підтвердити підхід'}
+              </Text>
             </Pressable>
             <Pressable
               testID={`set-skip-${set.id}`}
@@ -152,7 +232,30 @@ export function WorkoutSetRow({
               <Text style={styles.secondaryText}>Пропустити</Text>
             </Pressable>
           </View>
+          {isSaved ? (
+            <Pressable
+              accessibilityRole="button"
+              testID={`set-edit-cancel-${set.id}`}
+              disabled={savingDisabled}
+              onPress={() => {
+                reset({
+                  actualReps: String(visibleSet.actualReps ?? visibleSet.plannedReps ?? ''),
+                  actualWeightKg: String(
+                    visibleSet.actualWeightKg ?? visibleSet.plannedWeightKg ?? '',
+                  ),
+                });
+                setEditing(false);
+              }}
+            >
+              <Text style={styles.caption}>Скасувати редагування</Text>
+            </Pressable>
+          ) : null}
         </>
+      ) : null}
+      {limited ? (
+        <Text accessibilityRole="alert" style={styles.error}>
+          Ліміт запитів вичерпано. Повторне збереження тимчасово заблоковано.
+        </Text>
       ) : null}
       {mutation.isPending ? <ActivityIndicator accessibilityLabel="Зберігаємо підхід" /> : null}
       {mutation.isError ? (
@@ -167,6 +270,10 @@ export function WorkoutSetRow({
 const styles = StyleSheet.create({
   container: { gap: 8, borderTopWidth: 1, borderColor: palette.border, paddingTop: 12 },
   title: { fontSize: 15, fontWeight: '600', color: palette.text },
+  headingRow: { flexDirection: 'row', justifyContent: 'space-between', flexWrap: 'wrap', gap: 6 },
+  saved: { fontSize: 13, color: '#86efac', fontWeight: '700' },
+  editButton: { alignSelf: 'flex-start', paddingVertical: 10, paddingHorizontal: 12 },
+  editText: { color: palette.primary, fontWeight: '600' },
   caption: { fontSize: 13, color: palette.muted },
   inputs: { flexDirection: 'row', gap: 12 },
   field: { flex: 1, gap: 4 },

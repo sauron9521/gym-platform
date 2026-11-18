@@ -77,6 +77,12 @@ export class WorkoutsController {
     enum: ['full', 'summary'],
     description: 'Optional compact view; full remains the default for compatibility.',
   })
+  @ApiQuery({
+    name: 'sort',
+    required: false,
+    enum: ['scheduledAtAsc'],
+    description: 'Order by planned date ascending; requires status=PLANNED and scheduledFrom.',
+  })
   @ApiOkResponse({
     schema: { oneOf: [workoutListResponseSchema, workoutSummaryListResponseSchema] },
   })
@@ -113,7 +119,7 @@ export class WorkoutsController {
     return this.workoutsService.start(id, user);
   }
 
-  // Training sessions involve many legitimate writes; keep a generous per-minute limit.
+  // Training sessions involve many legitimate writes; other mutations retain the strict default.
   @Throttle({ default: { limit: 120, ttl: 60_000 } })
   @Patch(':id/sets/:setId')
   @ApiOkResponse({ schema: workoutSetResponseSchema })
