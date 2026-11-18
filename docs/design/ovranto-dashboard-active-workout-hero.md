@@ -12,8 +12,8 @@ endpoint, dependency, database change or workout mutation.
   Query cache key already used by the #411 status KPI widget. No duplicate
   network request for the same filter/page when both components mount.
 - The API returns the athlete's own `IN_PROGRESS` workouts ordered by
-  **createdAt DESC, id DESC**. The primary CTA opens the *most recently
-  created* in-progress workout's existing `/workouts/[id]` details page.
+  **createdAt DESC, id DESC**. The primary CTA opens the _most recently
+  created_ in-progress workout's existing `/workouts/[id]` details page.
   The copy does **not** call this the most recently started session.
 - "Продовжити тренування" is **navigation, not a POST /start**. The details
   route already supports editing workout sets and lifecycle controls; the

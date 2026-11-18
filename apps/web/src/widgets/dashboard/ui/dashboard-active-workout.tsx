@@ -84,7 +84,12 @@ export function DashboardActiveWorkout() {
                   ? query.error.message
                   : getWorkoutListErrorMessage()}
               </p>
-              <Button type="button" size="touch" variant="outline" onClick={() => void query.refetch()}>
+              <Button
+                type="button"
+                size="touch"
+                variant="outline"
+                onClick={() => void query.refetch()}
+              >
                 Спробувати знову
               </Button>
             </div>
@@ -125,9 +130,7 @@ export function DashboardActiveWorkout() {
             >
               {workout.title}
             </h2>
-            <p className="text-sm font-semibold text-[var(--brand-teal)]">
-              Тренування у процесі
-            </p>
+            <p className="text-sm font-semibold text-[var(--brand-teal)]">Тренування у процесі</p>
             <p className="text-sm leading-relaxed text-muted-foreground sm:text-base">
               Останнє додане тренування серед тих, що тривають.
               {workout.startedAt && ` Почато: ${formatWorkoutDate(workout.startedAt)}.`}
