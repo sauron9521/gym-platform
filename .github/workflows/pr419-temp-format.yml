@@ -1,0 +1,46 @@
+name: PR 419 temporary Prettier normalization
+
+on:
+  push:
+    branches:
+      - feat/ovranto-recent-workouts-completion-order
+
+permissions:
+  contents: write
+
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 12.18.0
+          run_install: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - name: Install pinned workspace dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Format only modified test and dashboard files
+        run: |
+          pnpm exec prettier --write \
+            apps/api/src/modules/workouts/test/workouts.service.spec.ts \
+            apps/api/test/e2e/workouts/workouts.e2e-spec.ts \
+            apps/web/src/widgets/dashboard/ui/dashboard-completed-sessions.tsx
+      - name: Commit format-only changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- \
+            apps/api/src/modules/workouts/test/workouts.service.spec.ts \
+            apps/api/test/e2e/workouts/workouts.e2e-spec.ts \
+            apps/web/src/widgets/dashboard/ui/dashboard-completed-sessions.tsx
+          if ! git diff --cached --quiet; then
+            git commit -m "style: normalize recent-workouts changes with Prettier"
+            git push origin HEAD:feat/ovranto-recent-workouts-completion-order
+          fi
