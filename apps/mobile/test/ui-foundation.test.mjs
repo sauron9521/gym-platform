@@ -21,6 +21,23 @@ test('root navigation provides safe areas and hides iOS group labels in back but
   assert.ok(layout.includes('name="(tabs)" options={{ title: '));
 });
 
+test('native form scroll views preserve safe-area and keyboard behavior', () => {
+  for (const [path, id] of [
+    ['../src/screens/profile/ui/edit-profile-screen.tsx', 'profile-edit-scroll'],
+    ['../src/screens/workouts/ui/create-workout-screen.tsx', 'create-workout-scroll'],
+    ['../src/screens/workouts/ui/workout-details-screen.tsx', 'workout-details-scroll'],
+  ]) {
+    const screen = read(path);
+    assert.ok(screen.includes(`testID="${id}"`), id);
+    assert.ok(screen.includes('contentInsetAdjustmentBehavior="automatic"'), id);
+    assert.ok(screen.includes('automaticallyAdjustKeyboardInsets'), id);
+    assert.ok(screen.includes('keyboardShouldPersistTaps="handled"'), id);
+    assert.ok(screen.includes('alwaysBounceVertical={false}'), id);
+    assert.match(screen, /paddingBottom: 64/, id);
+    assert.ok(!screen.includes('bounces={false}'), id);
+  }
+});
+
 test('Gluestack root provider preserves authenticated route guards', () => {
   const layout = read('../src/app/_layout.tsx');
   assert.match(layout, /<GluestackUIProvider/);
