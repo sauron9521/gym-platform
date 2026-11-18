@@ -12,7 +12,8 @@
   },
   "scripts": {
     "build": "pnpm test",
-    "test": "vitest run"
+    "test": "vitest run",
+    "tokens:generate": "node scripts/generate-theme.mjs"
   },
   "devDependencies": {
     "vite": "8.3.8",
