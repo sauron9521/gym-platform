@@ -75,3 +75,24 @@ test('sign-out pending and error states stay adjacent to the control', () => {
   expect(pending.disabled).toBe(true);
   expect(screen.getByRole('alert').textContent).toContain('Не вдалося завершити сесію.');
 });
+
+test('DashboardHome inserts optional private data section between hero and shortcuts', () => {
+  const { container } = render(
+    <DashboardHome
+      displayName="Олексій"
+      email="athlete@example.test"
+      role="ATHLETE"
+      isSigningOut={false}
+      signOutError={null}
+      onSignOut={vi.fn()}
+    >
+      <section data-testid="private-data">Реальні тренування</section>
+    </DashboardHome>,
+  );
+  const main = container.querySelector('main');
+  const child = screen.getByTestId('private-data');
+  expect(main?.contains(child)).toBe(true);
+  expect(
+    child.compareDocumentPosition(screen.getByRole('heading', { name: 'Швидкий доступ' })),
+  ).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+});

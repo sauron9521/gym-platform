@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import type { ReactNode } from 'react';
 
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle } from '@gym/ui-web';
 
@@ -11,6 +12,7 @@ type DashboardHomeProps = {
   isSigningOut: boolean;
   signOutError: string | null;
   onSignOut: () => void;
+  children?: ReactNode;
 };
 
 type Shortcut = {
@@ -75,6 +77,7 @@ export function DashboardHome({
   isSigningOut,
   signOutError,
   onSignOut,
+  children,
 }: DashboardHomeProps) {
   const shortcuts = getDashboardShortcuts(role);
 
@@ -144,6 +147,8 @@ export function DashboardHome({
           </div>
         </div>
       </section>
+
+      {children}
 
       <section aria-labelledby="dashboard-shortcuts" className="space-y-4">
         <div className="space-y-1">
