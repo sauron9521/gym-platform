@@ -13,7 +13,9 @@ const ranges: readonly Range[] = ['7d', '30d', '90d'];
 
 class AnalyticsError extends Error {
   constructor(readonly status: number) {
-    super(status === 429 ? 'Забагато запитів. Спробуйте пізніше.' : 'Не вдалося завантажити аналітику.');
+    super(
+      status === 429 ? 'Забагато запитів. Спробуйте пізніше.' : 'Не вдалося завантажити аналітику.',
+    );
   }
 }
 
@@ -52,7 +54,12 @@ export function DashboardVolumeChart() {
   // Keep prior-range private data hidden until the selected range is confirmed.
   const ready = !query.isPending && !query.isFetching && !query.isError && query.data;
   const daily = ready ? query.data.daily : [];
-  const max = Math.max(0, ...daily.map((day) => Number.isFinite(day.strengthVolumeKg) ? Math.max(0, day.strengthVolumeKg) : 0));
+  const max = Math.max(
+    0,
+    ...daily.map((day) =>
+      Number.isFinite(day.strengthVolumeKg) ? Math.max(0, day.strengthVolumeKg) : 0,
+    ),
+  );
   const hasVolume = max > 0;
 
   return (
@@ -62,7 +69,9 @@ export function DashboardVolumeChart() {
           <h2 id="dashboard-volume-heading" className="text-xl font-semibold tracking-tight">
             Прогрес тренувань
           </h2>
-          <p className="text-sm text-muted-foreground">Силовий об’єм за днями за вибраний період.</p>
+          <p className="text-sm text-muted-foreground">
+            Силовий об’єм за днями за вибраний період.
+          </p>
         </div>
         <div role="group" aria-label="Період графіка" className="flex gap-2">
           {ranges.map((option) => (
@@ -85,12 +94,16 @@ export function DashboardVolumeChart() {
         </CardHeader>
         <CardContent className="space-y-4">
           {(query.isPending || query.isFetching) && (
-            <p role="status" className="text-sm text-muted-foreground">Завантажуємо графік…</p>
+            <p role="status" className="text-sm text-muted-foreground">
+              Завантажуємо графік…
+            </p>
           )}
           {!query.isPending && !query.isFetching && query.isError && (
             <div role="alert" className="space-y-3">
               <p className="text-sm text-destructive">
-                {query.error instanceof AnalyticsError ? query.error.message : 'Не вдалося завантажити аналітику.'}
+                {query.error instanceof AnalyticsError
+                  ? query.error.message
+                  : 'Не вдалося завантажити аналітику.'}
               </p>
               <Button type="button" variant="outline" onClick={() => void query.refetch()}>
                 Повторити
@@ -98,24 +111,37 @@ export function DashboardVolumeChart() {
             </div>
           )}
           {ready && !hasVolume && (
-            <p className="text-sm text-muted-foreground">За вибраний період немає записаного силового об’єму.</p>
+            <p className="text-sm text-muted-foreground">
+              За вибраний період немає записаного силового об’єму.
+            </p>
           )}
           {ready && hasVolume && (
             <>
-              <div className="flex h-44 items-end gap-px overflow-x-auto rounded-lg border border-border p-3" role="img" aria-label={`Графік силового об’єму за ${range === '7d' ? '7' : range === '30d' ? '30' : '90'} днів. Точні значення наведено нижче.`}>
+              <div
+                className="flex h-44 items-end gap-px overflow-x-auto rounded-lg border border-border p-3"
+                role="img"
+                aria-label={`Графік силового об’єму за ${range === '7d' ? '7' : range === '30d' ? '30' : '90'} днів. Точні значення наведено нижче.`}
+              >
                 {daily.map((day) => (
                   <div key={day.date} className="flex h-full min-w-1 flex-1 items-end">
                     <div
                       className="w-full rounded-t-sm bg-primary"
-                      style={{ height: `${Math.max(0, Math.min(100, (day.strengthVolumeKg / max) * 100))}%` }}
+                      style={{
+                        height: `${Math.max(0, Math.min(100, (day.strengthVolumeKg / max) * 100))}%`,
+                      }}
                       title={`${day.date}: ${Math.round(day.strengthVolumeKg)} кг`}
                     />
                   </div>
                 ))}
               </div>
               <details className="text-sm">
-                <summary className="cursor-pointer font-medium text-primary">Переглянути точні значення за днями</summary>
-                <ul className="mt-2 max-h-48 space-y-1 overflow-auto" aria-label="Денні значення об’єму">
+                <summary className="cursor-pointer font-medium text-primary">
+                  Переглянути точні значення за днями
+                </summary>
+                <ul
+                  className="mt-2 max-h-48 space-y-1 overflow-auto"
+                  aria-label="Денні значення об’єму"
+                >
                   {daily.map((day) => (
                     <li key={day.date} className="flex justify-between gap-3">
                       <time dateTime={day.date}>{day.date}</time>
@@ -128,8 +154,8 @@ export function DashboardVolumeChart() {
           )}
           {ready && (
             <p className="text-xs text-muted-foreground">
-              Тренувань: {query.data.workoutCount}. Активних днів: {query.data.activeDays}. Дані API станом на{' '}
-              {new Date(query.data.asOf).toLocaleDateString('uk-UA')}.
+              Тренувань: {query.data.workoutCount}. Активних днів: {query.data.activeDays}. Дані API
+              станом на {new Date(query.data.asOf).toLocaleDateString('uk-UA')}.
             </p>
           )}
         </CardContent>
