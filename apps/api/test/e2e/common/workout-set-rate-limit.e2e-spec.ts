@@ -48,10 +48,7 @@ describe('workout set updates (HTTP rate limit)', () => {
         .expect(200);
     }
 
-    await request(server)
-      .patch(endpoint)
-      .send({ status: 'COMPLETED', actualReps: 8 })
-      .expect(429);
+    await request(server).patch(endpoint).send({ status: 'COMPLETED', actualReps: 8 }).expect(429);
 
     expect(updateSet).toHaveBeenCalledTimes(120);
   }, 20_000);
