@@ -3400,9 +3400,7 @@ describe('Workouts (HTTP + PostgreSQL)', () => {
           .set('Cookie', otherAthleteCookie)
           .query({ view: 'summary', status: 'COMPLETED', sort: 'completedAtDesc', limit: 3 });
         expect(other.status).toBe(200);
-        expect(other.body.data).not.toContainEqual(
-          expect.objectContaining({ id: newest }),
-        );
+        expect(other.body.data).not.toContainEqual(expect.objectContaining({ id: newest }));
 
         for (const invalid of [
           { sort: 'completedAtDesc' },
