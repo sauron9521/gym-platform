@@ -418,7 +418,7 @@ describe('WorkoutsService', () => {
       expect(repository.findMany).not.toHaveBeenCalled();
     });
 
-    it('returns the newest completed workouts using stable completion order without altering journal defaults', async () => {
+    it('sorts completed summaries by finish time with stable pagination', async () => {
       repository.findManySummary.mockResolvedValue({
         data: [],
         meta: { total: 0, skip: 0, take: 3, totalPages: 0 },
