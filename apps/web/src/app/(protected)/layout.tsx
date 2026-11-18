@@ -5,10 +5,7 @@ import { cookies } from 'next/headers';
 
 import { BrandLogo } from '@gym/ui-web';
 
-import {
-  parseThemePreference,
-  THEME_COOKIE_NAME,
-} from '@/shared/lib/theme-preference';
+import { parseThemePreference, THEME_COOKIE_NAME } from '@/shared/lib/theme-preference';
 import { LocaleSwitcher } from '@/shared/ui/locale-switcher';
 import { ThemeSwitcher } from '@/shared/ui/theme-switcher';
 
