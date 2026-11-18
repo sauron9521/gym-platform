@@ -1,4 +1,4 @@
-import { Throttle } from '@nestjs/throttler';
+import { RateLimit } from '#src/common/rate-limit/rate-limit.policies';
 import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
 
 import { Authenticate, CurrentUser } from '@nestjs/authentication';
@@ -42,7 +42,7 @@ export class ExercisesController {
     private readonly trainerAthletesService: TrainerAthletesService,
   ) {}
 
-  @Throttle({ default: { limit: 60, ttl: 60_000 } })
+  @RateLimit('read')
   @Get()
   @ApiOkResponse({ schema: exerciseListResponseSchema })
   @Authenticate({ optional: true })
@@ -59,7 +59,7 @@ export class ExercisesController {
   }
 
   /** Specific routes must precede /:id, which accepts only UUIDs. */
-  @Throttle({ default: { limit: 60, ttl: 60_000 } })
+  @RateLimit('read')
   @Get('muscle-groups')
   @ApiOkResponse({ schema: exerciseTaxonomyListResponseSchema })
   @Authenticate({ optional: true })
@@ -67,7 +67,7 @@ export class ExercisesController {
     return this.exercisesService.listMuscleGroups();
   }
 
-  @Throttle({ default: { limit: 60, ttl: 60_000 } })
+  @RateLimit('read')
   @Get('equipment')
   @ApiOkResponse({ schema: exerciseTaxonomyListResponseSchema })
   @Authenticate({ optional: true })
@@ -75,7 +75,7 @@ export class ExercisesController {
     return this.exercisesService.listEquipment();
   }
 
-  @Throttle({ default: { limit: 60, ttl: 60_000 } })
+  @RateLimit('read')
   @Get(':id')
   @ApiOkResponse({ schema: exerciseResponseSchema })
   @Authenticate({ optional: true })

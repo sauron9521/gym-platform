@@ -1,4 +1,4 @@
-import { Throttle } from '@nestjs/throttler';
+import { RateLimit } from '#src/common/rate-limit/rate-limit.policies';
 import {
   Body,
   Controller,
@@ -69,7 +69,7 @@ export class WorkoutsController {
     return this.workoutsService.create(user, body, idempotencyKey);
   }
 
-  @Throttle({ default: { limit: 60, ttl: 60_000 } })
+  @RateLimit('read')
   @Get()
   @ApiQuery({
     name: 'view',
@@ -94,7 +94,7 @@ export class WorkoutsController {
     return this.workoutsService.findMany(user, query);
   }
 
-  @Throttle({ default: { limit: 60, ttl: 60_000 } })
+  @RateLimit('read')
   @Get(':id')
   @ApiOkResponse({ schema: workoutResponseSchema })
   findOne(@Param('id', { schema: workoutIdSchema }) id: string, @CurrentUser() user: WorkoutActor) {
@@ -120,7 +120,7 @@ export class WorkoutsController {
   }
 
   // Training sessions involve many legitimate writes; other mutations retain the strict default.
-  @Throttle({ default: { limit: 120, ttl: 60_000 } })
+  @RateLimit('workoutSet')
   @Patch(':id/sets/:setId')
   @ApiOkResponse({ schema: workoutSetResponseSchema })
   updateSet(
