@@ -62,9 +62,8 @@ describe('WorkoutDetailsScreen (real React Native renderer)', () => {
   it('keeps workout details keyboard-aware and scrollable', () => {
     prepareWorkout('IN_PROGRESS');
     const view = render(<WorkoutDetailsScreen id="workout-123" />);
-    const scroll = view.UNSAFE_getAllByType(ScrollView).find(
-      (element) => element.props.testID === 'workout-details-scroll',
-    );
+    const scroll = view.UNSAFE_getAllByType(ScrollView)[0];
+    expect(scroll?.props.testID).toBe('workout-details-scroll');
     expect(scroll?.props).toMatchObject({
       contentInsetAdjustmentBehavior: 'automatic',
       automaticallyAdjustKeyboardInsets: true,

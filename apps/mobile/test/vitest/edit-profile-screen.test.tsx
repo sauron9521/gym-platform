@@ -48,9 +48,8 @@ describe('EditProfileScreen (React Native)', () => {
 
   it('keeps the profile editor keyboard-aware and scrollable', () => {
     const view = render(<EditProfileScreen />);
-    const scroll = view.UNSAFE_getAllByType(ScrollView).find(
-      (element) => element.props.testID === 'profile-edit-scroll',
-    );
+    const scroll = view.UNSAFE_getAllByType(ScrollView)[0];
+    expect(scroll?.props.testID).toBe('profile-edit-scroll');
     expect(scroll?.props).toMatchObject({
       contentInsetAdjustmentBehavior: 'automatic',
       automaticallyAdjustKeyboardInsets: true,

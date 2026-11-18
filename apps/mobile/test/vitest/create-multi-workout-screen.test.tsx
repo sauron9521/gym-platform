@@ -46,9 +46,8 @@ describe('Multi-exercise CreateWorkoutScreen (native)', () => {
 
   it('keeps the workout creation form keyboard-aware and scrollable', () => {
     const view = render(<CreateWorkoutScreen />);
-    const scroll = view.UNSAFE_getAllByType(ScrollView).find(
-      (element) => element.props.testID === 'create-workout-scroll',
-    );
+    const scroll = view.UNSAFE_getAllByType(ScrollView)[0];
+    expect(scroll?.props.testID).toBe('create-workout-scroll');
     expect(scroll?.props).toMatchObject({
       contentInsetAdjustmentBehavior: 'automatic',
       automaticallyAdjustKeyboardInsets: true,
