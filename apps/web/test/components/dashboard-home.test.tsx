@@ -92,7 +92,7 @@ test('DashboardHome inserts optional private data section between hero and short
   const main = container.querySelector('main');
   const child = screen.getByTestId('private-data');
   expect(main?.contains(child)).toBe(true);
-  expect(child.compareDocumentPosition(screen.getByRole('heading', { name: 'Швидкий доступ' }))).toBe(
-    Node.DOCUMENT_POSITION_FOLLOWING,
-  );
+  expect(
+    child.compareDocumentPosition(screen.getByRole('heading', { name: 'Швидкий доступ' })),
+  ).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
 });

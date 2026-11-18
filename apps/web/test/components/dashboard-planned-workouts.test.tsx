@@ -19,8 +19,20 @@ import { WorkoutListRequestError } from '@/features/workouts/api/workouts-list-q
 import { DashboardPlannedWorkouts } from '@/widgets/dashboard/ui/dashboard-planned-workouts';
 
 const planned = [
-  { id: 'workout-1', title: 'Силове тренування', status: 'PLANNED', scheduledAt: null, exerciseCount: 4 },
-  { id: 'workout-2', title: 'Ноги', status: 'PLANNED', scheduledAt: '2026-11-23T10:00:00Z', exerciseCount: 3 },
+  {
+    id: 'workout-1',
+    title: 'Силове тренування',
+    status: 'PLANNED',
+    scheduledAt: null,
+    exerciseCount: 4,
+  },
+  {
+    id: 'workout-2',
+    title: 'Ноги',
+    status: 'PLANNED',
+    scheduledAt: '2026-11-23T10:00:00Z',
+    exerciseCount: 3,
+  },
   { id: 'workout-3', title: 'Спина', status: 'PLANNED', scheduledAt: null, exerciseCount: 5 },
   { id: 'workout-4', title: 'Груди', status: 'PLANNED', scheduledAt: null, exerciseCount: 2 },
 ];
