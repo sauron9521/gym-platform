@@ -11,12 +11,10 @@ stroke (`#C76537`). The full horizontal lockup uses the **OVRANTO** wordmark
 and the smaller **PERFORMANCE PLATFORM** caption. This replaces the earlier
 placeholder dumbbell, outline-stroke, letter-A and mountain logo experiments.
 
-| Asset | Intended use |
-| --- | --- |
-| `logo-light.svg` | Full wordmark on light backgrounds |
-| `logo-dark.svg` | Full wordmark on dark backgrounds |
-| `mark.svg` | Compact colored symbol; source for favicon/native icon preparation |
-| `mark-monochrome.svg` | Single-color symbol for constrained contexts; inherits `currentColor` |
+- `logo-light.svg`: Full wordmark on light backgrounds.
+- `logo-dark.svg`: Full wordmark on dark backgrounds.
+- `mark.svg`: Compact colored symbol; source for favicon/native icon preparation.
+- `mark-monochrome.svg`: Single-color symbol for constrained contexts; inherits `currentColor`.
 
 Assets are **transparent** and use a common path geometry. They contain no
 embedded fonts, scripts or external references. The SVG wordmark remains
