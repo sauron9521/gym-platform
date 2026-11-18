@@ -1,13 +1,6 @@
 import Link from 'next/link';
 
-import {
-  Button,
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@gym/ui-web';
+import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle } from '@gym/ui-web';
 
 import type { AuthenticatedUser } from '@/shared/api/server-session';
 
