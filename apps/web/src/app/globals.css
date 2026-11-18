@@ -1,6 +1,6 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
-@import '@gym/design-tokens/dark.css';
+@import '@gym/design-tokens/ovranto.css';
 
 @custom-variant dark (&:is(.dark *));
 @source "../../../../packages/ui-web/src";
