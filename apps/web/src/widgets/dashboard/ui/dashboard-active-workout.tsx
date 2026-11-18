@@ -6,6 +6,8 @@ import { useQuery } from '@tanstack/react-query';
 
 import { Button } from '@gym/ui-web';
 
+import { DashboardNextPlannedWorkout } from './dashboard-next-planned-workout';
+
 import {
   WorkoutListRequestError,
   workoutListQueryOptions,
@@ -96,31 +98,7 @@ export function DashboardActiveWorkout() {
           </>
         )}
 
-        {!loading && !query.isError && !workout && (
-          <>
-            <h2
-              id="dashboard-next-step"
-              className="text-2xl font-semibold tracking-tight sm:text-3xl"
-            >
-              Плануй тренування. Відстежуй прогрес.
-            </h2>
-            <p className="text-sm leading-relaxed text-muted-foreground sm:text-base">
-              Зараз немає тренувань у процесі. Створи нове заняття або відкрий журнал.
-            </p>
-            <div className="flex flex-wrap gap-3 pt-2">
-              <Button
-                asChild
-                size="touch"
-                className="bg-[var(--brand-teal)] text-[var(--set-active-foreground)] hover:opacity-90"
-              >
-                <Link href="/workouts/new">Створити тренування</Link>
-              </Button>
-              <Button asChild size="touch" variant="outline">
-                <Link href="/workouts">Відкрити журнал</Link>
-              </Button>
-            </div>
-          </>
-        )}
+        {!loading && !query.isError && !workout && <DashboardNextPlannedWorkout />}
 
         {!loading && !query.isError && workout && (
           <>
