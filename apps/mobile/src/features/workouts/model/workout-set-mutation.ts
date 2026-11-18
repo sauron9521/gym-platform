@@ -7,6 +7,13 @@ import { useAuth } from '@/features/auth/model/auth-context';
 import { accountQueryKeys } from '@/shared/api/query-client';
 import type { WorkoutDetails } from './workout-details-query';
 
+export class WorkoutSetRateLimitError extends Error {
+  constructor(readonly retryAfterSeconds: number) {
+    super('Забагато запитів. Зачекайте перед повторним збереженням.');
+    this.name = 'WorkoutSetRateLimitError';
+  }
+}
+
 type SetBody =
   paths['/workouts/{id}/sets/{setId}']['patch']['requestBody']['content']['application/json'];
 type SetResponse =
@@ -29,6 +36,12 @@ export function useWorkoutSetMutation(workoutId: string) {
         await signOut();
         throw new Error('Сесію завершено. Увійдіть повторно.');
       }
+      if (response.response.status === 429) {
+        const retryAfter = Number(response.response.headers.get('retry-after'));
+        throw new WorkoutSetRateLimitError(
+          Number.isFinite(retryAfter) && retryAfter > 0 ? Math.ceil(retryAfter) : 60,
+        );
+      }
       if (response.response.status !== 200 || !response.data) {
         throw new Error(
           response.response.status === 409
@@ -45,7 +58,7 @@ export function useWorkoutSetMutation(workoutId: string) {
           () => undefined,
         );
       }
-      if (!account || !queryClient.getQueryData(accountQueryKeys.me(account.id))) return;
+      if (!account) return;
       queryClient.setQueryData<WorkoutDetails>(
         accountQueryKeys.workoutDetail(account.id, workoutId),
         (current) =>
