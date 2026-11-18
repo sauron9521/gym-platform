@@ -9,6 +9,7 @@ import { webApi } from '@/shared/api/client';
 import { Button } from '@/shared/ui/button';
 import { DashboardHome } from './dashboard-home';
 import { DashboardPlannedWorkouts } from './dashboard-planned-workouts';
+import { DashboardWorkoutStats } from './dashboard-workout-stats';
 import type { AuthenticatedUser } from '@/shared/api/server-session';
 
 type DashboardState =
@@ -127,7 +128,12 @@ export function DashboardScreen({ initialUser }: { initialUser: AuthenticatedUse
       signOutError={signOutError}
       onSignOut={handleSignOut}
     >
-      {initialUser.role === 'ATHLETE' && <DashboardPlannedWorkouts />}
+      {initialUser.role === 'ATHLETE' && (
+        <>
+          <DashboardWorkoutStats />
+          <DashboardPlannedWorkouts />
+        </>
+      )}
     </DashboardHome>
   );
 }
