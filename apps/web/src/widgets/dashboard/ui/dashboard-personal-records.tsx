@@ -26,7 +26,8 @@ export function personalRecordsQueryOptions() {
         const { data, response } = await webApi.GET('/workout-analytics/personal-records', {
           signal,
         });
-        if (response.status !== 200 || !data) throw new PersonalRecordsRequestError(response.status);
+        if (response.status !== 200 || !data)
+          throw new PersonalRecordsRequestError(response.status);
         return data;
       } catch (error) {
         if (error instanceof PersonalRecordsRequestError || signal.aborted) throw error;
@@ -43,7 +44,9 @@ export function DashboardPersonalRecords() {
   const onAuthFailure = useAuthFailure();
 
   useEffect(() => {
-    if (query.error instanceof PersonalRecordsRequestError) onAuthFailure(query.error);
+    if (query.error instanceof PersonalRecordsRequestError && query.error.status === 401) {
+      onAuthFailure(query.error);
+    }
   }, [onAuthFailure, query.error]);
 
   // An expired session must not leave historical private analytics visible.
@@ -58,7 +61,9 @@ export function DashboardPersonalRecords() {
       </CardHeader>
       <CardContent className="space-y-2">
         {loading ? (
-          <p role="status" className="text-sm text-muted-foreground">Завантажуємо…</p>
+          <p role="status" className="text-sm text-muted-foreground">
+            Завантажуємо…
+          </p>
         ) : query.isError ? (
           <div role="alert" className="space-y-3">
             <p className="text-sm text-destructive">
@@ -66,21 +71,29 @@ export function DashboardPersonalRecords() {
                 ? query.error.message
                 : 'Не вдалося завантажити особисті рекорди.'}
             </p>
-            <Button type="button" size="touch" variant="outline" onClick={() => void query.refetch()}>
+            <Button
+              type="button"
+              size="touch"
+              variant="outline"
+              onClick={() => void query.refetch()}
+            >
               Повторити
             </Button>
           </div>
-        ) : Number.isInteger(query.data?.exerciseCount) && (query.data?.exerciseCount ?? -1) >= 0 ? (
+        ) : Number.isInteger(query.data?.exerciseCount) &&
+          (query.data?.exerciseCount ?? -1) >= 0 ? (
           <>
             <p className="text-3xl font-semibold tracking-tight tabular-nums">
-              {query.data!.exerciseCount}
+              {query.data?.exerciseCount}
             </p>
             <p className="text-xs text-muted-foreground">
               Вправ із зафіксованою найкращою вагою за весь час.
             </p>
           </>
         ) : (
-          <p role="status" className="text-sm text-muted-foreground">Дані недоступні</p>
+          <p role="status" className="text-sm text-muted-foreground">
+            Дані недоступні
+          </p>
         )}
       </CardContent>
     </Card>

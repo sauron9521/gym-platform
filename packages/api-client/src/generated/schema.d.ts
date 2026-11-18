@@ -628,6 +628,22 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/workout-analytics/personal-records': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['WorkoutAnalyticsController_personalRecords'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/workout-analytics/exercises/{exerciseId}': {
     parameters: {
       query?: never;
@@ -3727,6 +3743,29 @@ export interface operations {
               completedSets: number;
               strengthVolumeKg: number;
             }[];
+          };
+        };
+      };
+    };
+  };
+  WorkoutAnalyticsController_personalRecords: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** Format: date-time */
+            asOf: string;
+            exerciseCount: number;
           };
         };
       };
