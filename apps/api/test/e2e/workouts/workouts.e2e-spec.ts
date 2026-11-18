@@ -3337,6 +3337,76 @@ describe('Workouts (HTTP + PostgreSQL)', () => {
       expect(ids).toContain(createdWorkoutId);
     });
 
+    it('pages completed summaries by completion time rather than creation time and respects ownership', async () => {
+      const records: string[] = [];
+      const prefix = `Completed sorting ${randomUUID()}`;
+      const make = async (label: string, completedAt: string | null, createdAt: string) => {
+        const record = await prisma.workout.create({
+          data: {
+            athleteId: ownerId,
+            createdById: ownerId,
+            title: `${prefix}: ${label}`,
+            status: 'COMPLETED',
+            completedAt: completedAt ? new Date(completedAt) : null,
+            createdAt: new Date(createdAt),
+          },
+          select: { id: true },
+        });
+        records.push(record.id);
+        return record.id;
+      };
+
+      try {
+        const oldest = await make('older completion', '2035-03-01T10:00:00Z', '2035-03-09T00:00:00Z');
+        const newest = await make('newest completion', '2035-03-03T10:00:00Z', '2035-03-01T00:00:00Z');
+        const middle = await make('middle completion', '2035-03-02T10:00:00Z', '2035-03-08T00:00:00Z');
+        const missing = await make('missing timestamp', null, '2036-03-01T00:00:00Z');
+
+        const response = await request(app!.getHttpServer())
+          .get('/workouts')
+          .set('Cookie', ownerCookie)
+          .query({ view: 'summary', status: 'COMPLETED', sort: 'completedAtDesc', limit: 3 });
+
+        expect(response.status).toBe(200);
+        expect(response.body.data.map((row: { id: string }) => row.id)).toEqual([
+          newest,
+          middle,
+          oldest,
+        ]);
+        expect(response.body.data).not.toContainEqual(expect.objectContaining({ id: missing }));
+        expect(response.body.data[0]).toHaveProperty('exerciseCount', 0);
+
+        const originalOrder = await request(app!.getHttpServer())
+          .get('/workouts')
+          .set('Cookie', ownerCookie)
+          .query({ view: 'summary', status: 'COMPLETED', limit: 1 });
+        expect(originalOrder.status).toBe(200);
+        expect(originalOrder.body.data[0].id).toBe(missing);
+
+        const other = await request(app!.getHttpServer())
+          .get('/workouts')
+          .set('Cookie', otherAthleteCookie)
+          .query({ view: 'summary', status: 'COMPLETED', sort: 'completedAtDesc', limit: 3 });
+        expect(other.status).toBe(200);
+        expect(other.body.data).not.toContainEqual(
+          expect.objectContaining({ id: newest }),
+        );
+
+        for (const invalid of [
+          { sort: 'completedAtDesc' },
+          { sort: 'completedAtDesc', status: 'PLANNED' },
+        ]) {
+          const rejected = await request(app!.getHttpServer())
+            .get('/workouts')
+            .set('Cookie', ownerCookie)
+            .query(invalid);
+          expect(rejected.status).toBe(400);
+        }
+      } finally {
+        await prisma.workout.deleteMany({ where: { id: { in: records } } });
+      }
+    });
+
     it('returns the nearest future scheduled workout despite a later created record', async () => {
       const later = await createWorkout('Date sorted: later');
       const nearer = await createWorkout('Date sorted: nearer');
