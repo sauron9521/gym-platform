@@ -6,9 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 
 import { Button } from '@gym/ui-web';
 
-import {
-  nextPlannedWorkoutQueryOptions,
-} from '@/features/workouts/api/next-planned-workout-query';
+import { nextPlannedWorkoutQueryOptions } from '@/features/workouts/api/next-planned-workout-query';
 import { WorkoutListRequestError } from '@/features/workouts/api/workouts-list-query';
 import {
   formatWorkoutDate,

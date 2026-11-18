@@ -81,7 +81,9 @@ test('empty active list delegates to a separately keyed upcoming query', () => {
     data: { workout: null, total: 0 },
   });
   render(<DashboardActiveWorkout />);
-  expect(screen.getByText(/Зараз немає активних або майбутніх запланованих тренувань/)).toBeTruthy();
+  expect(
+    screen.getByText(/Зараз немає активних або майбутніх запланованих тренувань/),
+  ).toBeTruthy();
   expect(useQueryMock.mock.calls[1]?.[0].queryKey).toEqual(['workouts', 'next-planned']);
   expect(screen.getByRole('link', { name: 'Створити тренування' }).getAttribute('href')).toBe(
     '/workouts/new',

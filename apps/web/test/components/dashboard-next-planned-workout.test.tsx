@@ -73,9 +73,7 @@ test('loading and refetch hide private cached workout details', () => {
 });
 
 test('stale past scheduled timestamps cannot be shown as upcoming', () => {
-  useQueryMock.mockReturnValue(
-    success({ ...scheduled, scheduledAt: '2020-01-01T00:00:00Z' }),
-  );
+  useQueryMock.mockReturnValue(success({ ...scheduled, scheduledAt: '2020-01-01T00:00:00Z' }));
   render(<DashboardNextPlannedWorkout />);
   expect(screen.getByRole('link', { name: 'Створити тренування' })).toBeTruthy();
   expect(screen.queryByText('Тренування ніг')).toBeNull();

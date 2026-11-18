@@ -423,7 +423,13 @@ describe('WorkoutsService', () => {
       for (const query of [
         { page: 1, limit: 1, sort: 'scheduledAtAsc' as const, status: 'PLANNED' as const },
         { page: 1, limit: 1, sort: 'scheduledAtAsc' as const, scheduledFrom: from },
-        { page: 1, limit: 1, sort: 'scheduledAtAsc' as const, status: 'COMPLETED' as const, scheduledFrom: from },
+        {
+          page: 1,
+          limit: 1,
+          sort: 'scheduledAtAsc' as const,
+          status: 'COMPLETED' as const,
+          scheduledFrom: from,
+        },
       ]) {
         await expect(service.findMany(athlete, query)).rejects.toThrow(BadRequestException);
       }
