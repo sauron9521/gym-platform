@@ -46,8 +46,8 @@ describe('EditProfileScreen (React Native)', () => {
     setup();
   });
 
-  it('keeps the profile editor keyboard-aware and scrollable', () => {
-    const view = render(<EditProfileScreen />);
+  it('keeps the profile editor keyboard-aware and scrollable', async () => {
+    const view = await render(<EditProfileScreen />);
     const scroll = view.UNSAFE_getAllByType(ScrollView)[0];
     expect(scroll?.props.testID).toBe('profile-edit-scroll');
     expect(scroll?.props).toMatchObject({

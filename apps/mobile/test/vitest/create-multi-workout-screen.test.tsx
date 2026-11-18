@@ -44,8 +44,8 @@ describe('Multi-exercise CreateWorkoutScreen (native)', () => {
     prepare();
   });
 
-  it('keeps the workout creation form keyboard-aware and scrollable', () => {
-    const view = render(<CreateWorkoutScreen />);
+  it('keeps the workout creation form keyboard-aware and scrollable', async () => {
+    const view = await render(<CreateWorkoutScreen />);
     const scroll = view.UNSAFE_getAllByType(ScrollView)[0];
     expect(scroll?.props.testID).toBe('create-workout-scroll');
     expect(scroll?.props).toMatchObject({

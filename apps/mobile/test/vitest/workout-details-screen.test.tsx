@@ -59,9 +59,9 @@ describe('WorkoutDetailsScreen (real React Native renderer)', () => {
     vi.clearAllMocks();
   });
 
-  it('keeps workout details keyboard-aware and scrollable', () => {
+  it('keeps workout details keyboard-aware and scrollable', async () => {
     prepareWorkout('IN_PROGRESS');
-    const view = render(<WorkoutDetailsScreen id="workout-123" />);
+    const view = await render(<WorkoutDetailsScreen id="workout-123" />);
     const scroll = view.UNSAFE_getAllByType(ScrollView)[0];
     expect(scroll?.props.testID).toBe('workout-details-scroll');
     expect(scroll?.props).toMatchObject({
