@@ -44,17 +44,14 @@ test('shortcuts match verified athlete and trainer routes without privilege leak
     '/trainer/programs',
     '/trainer/athletes',
   ]);
-  expect(getDashboardShortcuts('ADMIN').map((x) => x.href)).toEqual([
-    '/exercises',
-    '/profile',
-  ]);
+  const adminRoutes = getDashboardShortcuts('ADMIN').map((shortcut) => shortcut.href);
+  expect(adminRoutes).toEqual(['/exercises', '/profile']);
 });
 
 test('signed-in dashboard shows only links available for the role', () => {
   dashboard('TRAINER');
-  expect(screen.getByRole('link', { name: 'Відкрити мої підопічні' }).getAttribute('href')).toBe(
-    '/trainer/athletes',
-  );
+  const trainerLink = screen.getByRole('link', { name: 'Відкрити мої підопічні' });
+  expect(trainerLink.getAttribute('href')).toBe('/trainer/athletes');
   expect(screen.queryByRole('link', { name: 'Відкрити мої тренери' })).toBeNull();
 });
 
