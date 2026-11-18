@@ -18,6 +18,7 @@ import { HttpMetricsRegistry } from '#src/common/http-metrics/http-metrics.regis
 import { HttpMetricsController } from '#src/common/http-metrics/http-metrics.controller';
 import { DistributedThrottlerStorage } from '#src/common/rate-limit/distributed-throttler.storage';
 import { RateLimitStorageModule } from '#src/common/rate-limit/rate-limit-storage.module';
+import { RATE_LIMIT_POLICIES } from '#src/common/rate-limit/rate-limit.policies';
 import { AuthNoStoreMiddleware } from '#src/modules/auth/middleware/auth-no-store.middleware';
 import { PrivateApiNoStoreMiddleware } from '#src/common/http/private-api-no-store.middleware';
 import type { AppConfigService } from '#src/common/config/app-config.types';
@@ -86,7 +87,7 @@ import { WorkoutAnalyticsModule } from '#src/modules/workout-analytics/workout-a
       imports: [RateLimitStorageModule],
       inject: [DistributedThrottlerStorage],
       useFactory: (storage: DistributedThrottlerStorage) => ({
-        throttlers: [{ ttl: 60_000, limit: 10 }],
+        throttlers: [{ ...RATE_LIMIT_POLICIES.global }],
         storage,
       }),
     }),
