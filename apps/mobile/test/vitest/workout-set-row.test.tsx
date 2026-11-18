@@ -77,6 +77,38 @@ describe('WorkoutSetRow (React Native)', () => {
     expect(view.getByTestId('set-complete-set-1')).toBeTruthy();
   });
 
+  it('uses an acknowledged response while the parent still has a pending set snapshot', async () => {
+    mutateAsync.mockResolvedValue({
+      ...set,
+      status: 'COMPLETED',
+      actualReps: 8,
+      actualWeightKg: '60',
+    });
+
+    const view = await render(<WorkoutSetRow workoutId="workout-1" set={set} editable />);
+    await fireEvent.press(view.getByTestId('set-complete-set-1'));
+
+    await waitFor(() => expect(view.getByText('✓ Збережено')).toBeTruthy());
+    expect(view.getByText('Результат: 8 повт. · 60 кг')).toBeTruthy();
+    expect(view.queryByTestId('set-complete-set-1')).toBeNull();
+    expect(view.queryByTestId('set-skip-set-1')).toBeNull();
+    expect(mutateAsync).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps a server-confirmed skip from being submitted twice with stale parent data', async () => {
+    mutateAsync.mockResolvedValue({
+      ...set,
+      status: 'SKIPPED',
+    });
+
+    const view = await render(<WorkoutSetRow workoutId="workout-1" set={set} editable />);
+    await fireEvent.press(view.getByTestId('set-skip-set-1'));
+
+    await waitFor(() => expect(view.getByText('✓ Пропущено')).toBeTruthy());
+    expect(view.queryByTestId('set-skip-set-1')).toBeNull();
+    expect(mutateAsync).toHaveBeenCalledTimes(1);
+  });
+
   it('rejects a second immediate completion while the first request is pending', async () => {
     let finish!: (value: { id: string }) => void;
     mutateAsync.mockImplementation(
