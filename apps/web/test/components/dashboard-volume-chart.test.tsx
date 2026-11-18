@@ -6,7 +6,9 @@ const { useQueryMock, authFailure } = vi.hoisted(() => ({
   authFailure: vi.fn(),
 }));
 vi.mock('@tanstack/react-query', () => ({ useQuery: useQueryMock }));
-vi.mock('@/shared/api/use-auth-failure', () => ({ useAuthFailure: () => authFailure }));
+vi.mock('@/shared/api/use-auth-failure', () => ({
+  useAuthFailure: () => authFailure,
+}));
 
 import { DashboardVolumeChart } from '@/widgets/dashboard/ui/dashboard-volume-chart';
 
@@ -53,8 +55,16 @@ test('does not show stale analytics while changing range', () => {
 
 test('shows empty state for zero volume', () => {
   useQueryMock.mockReturnValue({
-    isPending: false, isFetching: false, isError: false, error: null,
-    data: { daily: [], workoutCount: 0, activeDays: 0, asOf: '2026-11-18T12:00:00.000Z' },
+    isPending: false,
+    isFetching: false,
+    isError: false,
+    error: null,
+    data: {
+      daily: [],
+      workoutCount: 0,
+      activeDays: 0,
+      asOf: '2026-11-18T12:00:00.000Z',
+    },
   });
   render(<DashboardVolumeChart />);
   expect(screen.getByText(/немає записаного силового об’єму/)).toBeTruthy();
