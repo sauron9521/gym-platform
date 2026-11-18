@@ -90,9 +90,7 @@ export function AthleteShell({
 
   const shellClassName =
     'min-h-screen bg-background text-foreground lg:grid lg:transition-[grid-template-columns] lg:duration-200 motion-reduce:transition-none ' +
-    (collapsed
-      ? 'lg:grid-cols-[5.5rem_minmax(0,1fr)]'
-      : 'lg:grid-cols-[15rem_minmax(0,1fr)]');
+    (collapsed ? 'lg:grid-cols-[5.5rem_minmax(0,1fr)]' : 'lg:grid-cols-[15rem_minmax(0,1fr)]');
   const sidebarClassName =
     'sticky top-0 hidden h-screen flex-col overflow-y-auto border-r border-border bg-card py-6 lg:flex ' +
     (collapsed ? 'items-center px-2' : 'px-4');
@@ -217,7 +215,9 @@ export function AthleteShell({
             hidden={!menuOpen}
             className="absolute inset-x-0 top-full max-h-[65dvh] overflow-y-auto border-b border-border bg-card p-3 shadow-sm lg:hidden"
           >
-            <div className="flex flex-col gap-1">{navLinks(false, () => setOpenedOnPath(null))}</div>
+            <div className="flex flex-col gap-1">
+              {navLinks(false, () => setOpenedOnPath(null))}
+            </div>
           </nav>
         </header>
 

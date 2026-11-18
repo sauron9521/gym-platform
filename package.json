@@ -17,7 +17,7 @@
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
     "format": "prettier --write .",
-    "format:check": "prettier --check . || (prettier --write apps/web/src/widgets/athlete-shell/ui/athlete-shell.tsx && git --no-pager diff -- apps/web/src/widgets/athlete-shell/ui/athlete-shell.tsx && exit 1)",
+    "format:check": "prettier --check .",
     "prepare": "husky",
     "api:openapi": "pnpm --filter @gym/api docs:openapi",
     "api:types": "pnpm --filter @gym/api-client generate",
