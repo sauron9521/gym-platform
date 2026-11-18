@@ -95,7 +95,7 @@ export function AthleteShell({
             }
           }}
         >
-          <div className="flex items-center justify-between gap-3 px-4 py-3 lg:justify-end lg:px-8">
+          <div className="flex items-center justify-between gap-3 px-4 py-3 lg:hidden">
             <Link
               href="/"
               aria-label={homeLabel}
