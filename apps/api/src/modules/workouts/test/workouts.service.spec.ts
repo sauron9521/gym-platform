@@ -418,6 +418,47 @@ describe('WorkoutsService', () => {
       expect(repository.findMany).not.toHaveBeenCalled();
     });
 
+    it('returns the newest completed workouts using stable completion order without altering journal defaults', async () => {
+      repository.findManySummary.mockResolvedValue({
+        data: [],
+        meta: { total: 0, skip: 0, take: 3, totalPages: 0 },
+      });
+
+      await service.findMany(athlete, {
+        page: 1,
+        limit: 3,
+        status: 'COMPLETED',
+        view: 'summary',
+        sort: 'completedAtDesc',
+      });
+
+      expect(repository.findManySummary).toHaveBeenCalledWith({
+        where: { athleteId: athlete.id, status: 'COMPLETED' },
+        skip: 0,
+        take: 3,
+        orderBy: [
+          { completedAt: { sort: 'desc', nulls: 'last' } },
+          { id: 'desc' },
+        ],
+      });
+      expect(repository.findMany).not.toHaveBeenCalled();
+    });
+
+    it('rejects completion-date sorting unless status=COMPLETED', async () => {
+      for (const status of [undefined, 'PLANNED', 'IN_PROGRESS', 'CANCELLED'] as const) {
+        await expect(
+          service.findMany(athlete, {
+            page: 1,
+            limit: 3,
+            ...(status ? { status } : {}),
+            sort: 'completedAtDesc',
+          }),
+        ).rejects.toThrow(BadRequestException);
+      }
+      expect(repository.findMany).not.toHaveBeenCalled();
+      expect(repository.findManySummary).not.toHaveBeenCalled();
+    });
+
     it('rejects scheduled sorting without a planned status and lower date bound', async () => {
       const from = new Date('2035-04-01T00:00:00.000Z');
       for (const query of [
