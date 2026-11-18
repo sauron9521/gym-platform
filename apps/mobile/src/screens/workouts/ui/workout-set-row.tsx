@@ -30,7 +30,17 @@ export function WorkoutSetRow({
   const submitLock = useRef(false);
   const [editing, setEditing] = useState(false);
   const [retryAt, setRetryAt] = useState<number | null>(null);
-  const isSaved = set.status !== 'PENDING';
+  // A PATCH response is authoritative even if the details query has no cache yet.
+  // Once a newer server snapshot arrives, use it instead of the local acknowledgment.
+  const [confirmedResult, setConfirmedResult] = useState<{
+    previousUpdatedAt: string;
+    set: WorkoutSet;
+  } | null>(null);
+  const visibleSet =
+    confirmedResult?.set.id === set.id && confirmedResult.previousUpdatedAt === set.updatedAt
+      ? confirmedResult.set
+      : set;
+  const isSaved = visibleSet.status !== 'PENDING';
   const isEditing = !isSaved || editing;
   const limited = retryAt !== null;
   const {
@@ -48,10 +58,16 @@ export function WorkoutSetRow({
 
   useEffect(() => {
     reset({
-      actualReps: String(set.actualReps ?? set.plannedReps ?? ''),
-      actualWeightKg: String(set.actualWeightKg ?? set.plannedWeightKg ?? ''),
+      actualReps: String(visibleSet.actualReps ?? visibleSet.plannedReps ?? ''),
+      actualWeightKg: String(visibleSet.actualWeightKg ?? visibleSet.plannedWeightKg ?? ''),
     });
-  }, [reset, set.actualReps, set.actualWeightKg, set.plannedReps, set.plannedWeightKg]);
+  }, [
+    reset,
+    visibleSet.actualReps,
+    visibleSet.actualWeightKg,
+    visibleSet.plannedReps,
+    visibleSet.plannedWeightKg,
+  ]);
 
   useEffect(() => {
     if (retryAt === null) return;
@@ -72,7 +88,11 @@ export function WorkoutSetRow({
     void handleSubmit(
       async (values) => {
         try {
-          await mutation.mutateAsync({ setId: set.id, body: workoutSetPayload(values) });
+          const updated = await mutation.mutateAsync({
+            setId: set.id,
+            body: workoutSetPayload(values),
+          });
+          setConfirmedResult({ previousUpdatedAt: set.updatedAt, set: updated });
           setEditing(false);
         } catch (error) {
           captureRateLimit(error);
@@ -94,7 +114,10 @@ export function WorkoutSetRow({
     submitLock.current = true;
     void mutation
       .mutateAsync({ setId: set.id, body: { status: 'SKIPPED' } })
-      .then(() => setEditing(false))
+      .then((updated) => {
+        setConfirmedResult({ previousUpdatedAt: set.updatedAt, set: updated });
+        setEditing(false);
+      })
       .catch((error: unknown) => {
         captureRateLimit(error);
       })
@@ -112,9 +135,9 @@ export function WorkoutSetRow({
       <View style={styles.headingRow}>
         <Text style={styles.title}>Підхід {set.setNumber}</Text>
         <Text style={isSaved ? styles.saved : styles.caption}>
-          {set.status === 'PENDING'
+          {visibleSet.status === 'PENDING'
             ? 'Очікує'
-            : set.status === 'COMPLETED'
+            : visibleSet.status === 'COMPLETED'
               ? '✓ Збережено'
               : '✓ Пропущено'}
         </Text>
@@ -124,7 +147,7 @@ export function WorkoutSetRow({
       </Text>
       {isSaved ? (
         <Text style={styles.caption}>
-          Результат: {set.actualReps ?? '—'} повт. · {set.actualWeightKg ?? '—'} кг
+          Результат: {visibleSet.actualReps ?? '—'} повт. · {visibleSet.actualWeightKg ?? '—'} кг
         </Text>
       ) : null}
       {editable && isSaved && !editing ? (
@@ -216,8 +239,8 @@ export function WorkoutSetRow({
               disabled={savingDisabled}
               onPress={() => {
                 reset({
-                  actualReps: String(set.actualReps ?? set.plannedReps ?? ''),
-                  actualWeightKg: String(set.actualWeightKg ?? set.plannedWeightKg ?? ''),
+                  actualReps: String(visibleSet.actualReps ?? visibleSet.plannedReps ?? ''),
+                  actualWeightKg: String(visibleSet.actualWeightKg ?? visibleSet.plannedWeightKg ?? ''),
                 });
                 setEditing(false);
               }}
