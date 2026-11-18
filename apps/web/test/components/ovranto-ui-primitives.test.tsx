@@ -7,11 +7,7 @@ afterEach(cleanup);
 
 test('button retains native disabled behavior and visible keyboard focus', () => {
   const onClick = vi.fn();
-  const { container } = render(
-    <Button disabled onClick={onClick}>
-      Зберегти
-    </Button>,
-  );
+  const { container } = render(<Button disabled onClick={onClick}>Зберегти</Button>);
   const button = screen.getByRole('button', { name: 'Зберегти' });
   expect((button as HTMLButtonElement).disabled).toBe(true);
   fireEvent.click(button);
@@ -25,9 +21,8 @@ test('button retains native disabled behavior and visible keyboard focus', () =>
 
 test('button supports opt-in touch sizes and existing asChild navigation', () => {
   const { rerender } = render(<Button size="touch">Почати тренування</Button>);
-  expect(screen.getByRole('button', { name: 'Почати тренування' }).className).toContain(
-    'h-11',
-  );
+  const touchButton = screen.getByRole('button', { name: 'Почати тренування' });
+  expect(touchButton.className).toContain('h-11');
   rerender(
     <Button asChild variant="outline">
       <a href="https://example.test/workouts">Усі тренування</a>
@@ -37,7 +32,8 @@ test('button supports opt-in touch sizes and existing asChild navigation', () =>
   expect(link.getAttribute('href')).toBe('https://example.test/workouts');
   expect(link.className).toContain('border-input');
   rerender(<Button size="iconTouch" aria-label="Додати підхід">+</Button>);
-  expect(screen.getByRole('button', { name: 'Додати підхід' }).className).toContain('size-11');
+  const iconButton = screen.getByRole('button', { name: 'Додати підхід' });
+  expect(iconButton.className).toContain('size-11');
 });
 
 test('input styling honors native invalid and disabled semantics', () => {
@@ -69,7 +65,10 @@ test('card remains a semantic slot-based surface with restrained shadow', () => 
   expect(card?.className).toContain('rounded-lg');
   expect(card?.className).toContain('border-border');
   expect(card?.className).toContain('shadow-sm');
-  expect(screen.getByRole('heading', { level: 3, name: 'Силова сесія' })).toBeTruthy();
-  expect(container.querySelector('[data-slot="card-description"]')?.tagName).toBe('P');
-  expect(container.querySelector('[data-slot="card-content"]')?.textContent).toBe('Програма');
+  const title = screen.getByRole('heading', { level: 3, name: 'Силова сесія' });
+  expect(title).toBeTruthy();
+  const description = container.querySelector('[data-slot="card-description"]');
+  const content = container.querySelector('[data-slot="card-content"]');
+  expect(description?.tagName).toBe('P');
+  expect(content?.textContent).toBe('Програма');
 });
