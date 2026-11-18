@@ -72,10 +72,17 @@ test('only the first in-progress workout can be continued through existing detai
   expect(screen.getByText(/Почато:/)).toBeTruthy();
 });
 
-test('empty state offers a real create-workout route, not a false resume action', () => {
-  useQueryMock.mockReturnValue(success([], 0));
+test('empty active list delegates to a separately keyed upcoming query', () => {
+  useQueryMock.mockReturnValueOnce(success([], 0)).mockReturnValueOnce({
+    isPending: false,
+    isFetching: false,
+    isError: false,
+    error: null,
+    data: { workout: null, total: 0 },
+  });
   render(<DashboardActiveWorkout />);
-  expect(screen.getByText(/Зараз немає тренувань у процесі/)).toBeTruthy();
+  expect(screen.getByText(/Зараз немає активних або майбутніх запланованих тренувань/)).toBeTruthy();
+  expect(useQueryMock.mock.calls[1]?.[0].queryKey).toEqual(['workouts', 'next-planned']);
   expect(screen.getByRole('link', { name: 'Створити тренування' }).getAttribute('href')).toBe(
     '/workouts/new',
   );
