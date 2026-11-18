@@ -436,10 +436,7 @@ describe('WorkoutsService', () => {
         where: { athleteId: athlete.id, status: 'COMPLETED' },
         skip: 0,
         take: 3,
-        orderBy: [
-          { completedAt: { sort: 'desc', nulls: 'last' } },
-          { id: 'desc' },
-        ],
+        orderBy: [{ completedAt: { sort: 'desc', nulls: 'last' } }, { id: 'desc' }],
       });
       expect(repository.findMany).not.toHaveBeenCalled();
     });
