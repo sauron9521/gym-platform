@@ -17,7 +17,7 @@
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
     "format": "prettier --write .",
-    "format:check": "prettier --write apps/api/src/modules/workouts/test/workouts.service.spec.ts apps/api/test/e2e/workouts/workouts.e2e-spec.ts apps/web/src/widgets/dashboard/ui/dashboard-completed-sessions.tsx && git diff -- apps/api/src/modules/workouts/test/workouts.service.spec.ts apps/api/test/e2e/workouts/workouts.e2e-spec.ts apps/web/src/widgets/dashboard/ui/dashboard-completed-sessions.tsx && sh -c 'exit 1'",
+    "format:check": "prettier --check .",
     "prepare": "husky",
     "api:openapi": "pnpm --filter @gym/api docs:openapi",
     "api:types": "pnpm --filter @gym/api-client generate",
