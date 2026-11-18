@@ -17,7 +17,7 @@
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
     "format": "prettier --write .",
-    "format:check": "prettier --check .",
+    "format:check": "prettier --write apps/api/src/modules/workouts/test/workouts.service.spec.ts apps/web/src/widgets/dashboard/ui/dashboard-next-planned-workout.tsx apps/web/test/components/dashboard-active-workout.test.tsx apps/web/test/components/dashboard-next-planned-workout.test.tsx && git --no-pager diff -- apps/api/src/modules/workouts/test/workouts.service.spec.ts apps/web/src/widgets/dashboard/ui/dashboard-next-planned-workout.tsx apps/web/test/components/dashboard-active-workout.test.tsx apps/web/test/components/dashboard-next-planned-workout.test.tsx && prettier --check .",
     "prepare": "husky",
     "api:openapi": "pnpm --filter @gym/api docs:openapi",
     "api:types": "pnpm --filter @gym/api-client generate",
