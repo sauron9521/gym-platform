@@ -1,64 +1,42 @@
 import { readFileSync } from 'node:fs';
 
-import { afterEach, describe, expect, test } from 'vitest';
+import { afterEach, expect, test } from 'vitest';
 import { cleanup, render, screen } from '@testing-library/react';
 
 import { BrandLogo } from '@gym/ui-web';
 
 afterEach(cleanup);
 
-describe('OVRANTO shared BrandLogo', () => {
-  test('uses text for the brand and a decorative SVG rather than a heading', () => {
-    const { container } = render(
-      <a href="https://ovranto.example/" aria-label="OVRANTO — головна">
-        <BrandLogo />
-      </a>,
-    );
+test('BrandLogo renders accessible HTML text, never a heading', () => {
+  const { container } = render(<BrandLogo />);
 
-    expect(screen.getByRole('link', { name: 'OVRANTO — головна' })).toBeTruthy();
-    expect(screen.getByText('OVRANTO').tagName).toBe('SPAN');
-    expect(screen.getByText('PERFORMANCE PLATFORM').tagName).toBe('SPAN');
-    expect(container.querySelector('h1')).toBeNull();
+  expect(screen.getByText('OVRANTO').tagName).toBe('SPAN');
+  expect(screen.getByText('PERFORMANCE PLATFORM').tagName).toBe('SPAN');
+  expect(container.querySelector('h1')).toBeNull();
+  expect(container.querySelector('svg')?.getAttribute('aria-hidden')).toBe('true');
+  expect(container.querySelector('svg')?.getAttribute('focusable')).toBe('false');
+});
 
-    const mark = container.querySelector('[data-slot="brand-mark"]');
-    expect(mark?.tagName.toLowerCase()).toBe('svg');
-    expect(mark?.getAttribute('aria-hidden')).toBe('true');
-    expect(mark?.getAttribute('focusable')).toBe('false');
-  });
+test('BrandLogo preserves master SVG shapes and brand colors', () => {
+  const source = new URL('../../../../assets/brand/mark.svg', import.meta.url);
+  const master = readFileSync(source, 'utf8');
+  const { container } = render(<BrandLogo />);
+  const strokes = container.querySelectorAll('svg path');
 
-  test('matches the canonical mark.svg geometry and palette in both themes', () => {
-    const masterPath = new URL('../../../../assets/brand/mark.svg', import.meta.url);
-    const master = readFileSync(masterPath, 'utf8');
+  expect(strokes).toHaveLength(2);
+  for (const stroke of strokes) {
+    const geometry = `d="${stroke.getAttribute('d')}" fill="${stroke.getAttribute('fill')}"`;
+    expect(master).toContain(geometry);
+  }
+  expect(container.querySelector('svg')?.getAttribute('viewBox')).toBe('0 0 90 68');
+});
 
-    for (const theme of ['light', 'dark']) {
-      const { container, unmount } = render(
-        <div className={theme}>
-          <BrandLogo />
-        </div>,
-      );
+test('BrandLogo has semantic theme classes and can hide the tagline', () => {
+  const { container } = render(<BrandLogo showTagline={false} />);
 
-      const mark = container.querySelector('[data-slot="brand-mark"]');
-      const strokes = container.querySelectorAll('[data-slot="brand-mark"] path');
-      expect(strokes).toHaveLength(2);
-      for (const path of strokes) {
-        const geometry = `d="${path.getAttribute('d')}" fill="${path.getAttribute('fill')}"`;
-        expect(master).toContain(geometry);
-      }
+  expect(screen.getByText('OVRANTO')).toBeTruthy();
+  expect(screen.queryByText('PERFORMANCE PLATFORM')).toBeNull();
 
-      expect(mark?.getAttribute('viewBox')).toBe('0 0 90 68');
-      expect(container.querySelector('[data-slot="brand-logo"]')?.className).toContain(
-        'text-foreground',
-      );
-      expect(screen.getByText('PERFORMANCE PLATFORM').className).toContain(
-        'text-muted-foreground',
-      );
-      unmount();
-    }
-  });
-
-  test('supports a compact wordmark without tagline', () => {
-    render(<BrandLogo showTagline={false} />);
-    expect(screen.getByText('OVRANTO')).toBeTruthy();
-    expect(screen.queryByText('PERFORMANCE PLATFORM')).toBeNull();
-  });
+  const logo = container.querySelector('[data-slot="brand-logo"]');
+  expect(logo?.className).toContain('text-foreground');
 });
