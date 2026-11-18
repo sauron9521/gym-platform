@@ -88,6 +88,20 @@ export function AthleteShell({
     setCollapsed(next);
   };
 
+  const shellClassName =
+    'min-h-screen bg-background text-foreground lg:grid lg:transition-[grid-template-columns] lg:duration-200 motion-reduce:transition-none ' +
+    (collapsed
+      ? 'lg:grid-cols-[5.5rem_minmax(0,1fr)]'
+      : 'lg:grid-cols-[15rem_minmax(0,1fr)]');
+  const sidebarClassName =
+    'sticky top-0 hidden h-screen flex-col overflow-y-auto border-r border-border bg-card py-6 lg:flex ' +
+    (collapsed ? 'items-center px-2' : 'px-4');
+  const toggleClassName =
+    'mt-auto flex min-h-11 items-center gap-3 rounded-lg border border-border text-sm text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring motion-reduce:transition-none ' +
+    (collapsed ? 'size-11 justify-center' : 'w-full px-4');
+  const logoClassName = collapsed ? 'w-12 overflow-hidden' : undefined;
+  const toggleText = collapsed ? expandLabel : collapseLabel;
+
   const navLinks = (compact: boolean, onNavigate?: () => void) =>
     links.map((link) => {
       const active = isCurrentNavigationLink(pathname, link.href);
@@ -117,30 +131,14 @@ export function AthleteShell({
     });
 
   return (
-    <div
-      data-sidebar-collapsed={collapsed ? 'true' : 'false'}
-      className={
-        'min-h-screen bg-background text-foreground lg:grid lg:transition-[grid-template-columns] lg:duration-200 motion-reduce:transition-none ' +
-        (collapsed
-          ? 'lg:grid-cols-[5.5rem_minmax(0,1fr)]'
-          : 'lg:grid-cols-[15rem_minmax(0,1fr)]')
-      }
-    >
-      <aside
-        className={
-          'sticky top-0 hidden h-screen flex-col overflow-y-auto border-r border-border bg-card py-6 lg:flex ' +
-          (collapsed ? 'items-center px-2' : 'px-4')
-        }
-      >
+    <div data-sidebar-collapsed={collapsed ? 'true' : 'false'} className={shellClassName}>
+      <aside className={sidebarClassName}>
         <Link
           href="/"
           aria-label={homeLabel}
           className="mb-10 inline-flex rounded-lg focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
         >
-          <BrandLogo
-            showTagline={!collapsed}
-            className={collapsed ? 'w-12 overflow-hidden' : undefined}
-          />
+          <BrandLogo showTagline={!collapsed} className={logoClassName} />
         </Link>
         <p
           className={
@@ -161,19 +159,14 @@ export function AthleteShell({
           aria-expanded={!collapsed}
           title={collapsed ? expandLabel : collapseLabel}
           onClick={toggleSidebar}
-          className={
-            'mt-auto flex min-h-11 items-center gap-3 rounded-lg border border-border text-sm text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring motion-reduce:transition-none ' +
-            (collapsed ? 'size-11 justify-center' : 'w-full px-4')
-          }
+          className={toggleClassName}
         >
           {collapsed ? (
             <PanelLeftOpen aria-hidden="true" className="size-5 shrink-0" strokeWidth={1.75} />
           ) : (
             <PanelLeftClose aria-hidden="true" className="size-5 shrink-0" strokeWidth={1.75} />
           )}
-          <span className={collapsed ? 'sr-only' : undefined}>
-            {collapsed ? expandLabel : collapseLabel}
-          </span>
+          <span className={collapsed ? 'sr-only' : undefined}>{toggleText}</span>
         </button>
       </aside>
 
