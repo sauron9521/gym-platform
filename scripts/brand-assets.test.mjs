@@ -11,7 +11,8 @@ test('OVRANTO brand assets preserve the owner-approved two-stroke silhouette', (
     assert.match(svg, /<svg[^>]+viewBox="0 0 (?:286 72|90 68)"/);
     for (const stroke of geometry) assert.ok(svg.includes(stroke), `${name}: missing ${stroke}`);
     assert.equal((svg.match(/<path\s/g) ?? []).length, 2, `${name}: exactly two filled strokes`);
-    assert.doesNotMatch(svg, /<(?:script|image|foreignObject)\b|(?:https?:)?\/\/[^\s"']+[^\s"']*\.((?:png|jpg|svg))/i);
+    assert.doesNotMatch(svg, /<(?:script|image|foreignObject)\b/);
+    assert.doesNotMatch(svg, /\b(?:href|src)=/);
   }
 });
 
