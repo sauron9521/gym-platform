@@ -129,6 +129,7 @@ test('surfaces rate-limit errors with retry instead of stale records', () => {
   expect(screen.queryByText('Жим лежачи')).toBeNull();
   fireEvent.click(screen.getByRole('button', { name: 'Спробувати знову' }));
   expect(refetch).toHaveBeenCalledOnce();
+  expect(onAuthFailure).not.toHaveBeenCalled();
 });
 
 test('does not expose stale workouts after 401, triggers auth recovery', () => {
