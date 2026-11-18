@@ -3337,7 +3337,7 @@ describe('Workouts (HTTP + PostgreSQL)', () => {
       expect(ids).toContain(createdWorkoutId);
     });
 
-    it('pages completed summaries by completion time rather than creation time and respects ownership', async () => {
+    it('returns completed workouts by completion time with ownership isolation', async () => {
       const records: string[] = [];
       const prefix = `Completed sorting ${randomUUID()}`;
       const make = async (label: string, completedAt: string | null, createdAt: string) => {
@@ -3357,9 +3357,21 @@ describe('Workouts (HTTP + PostgreSQL)', () => {
       };
 
       try {
-        const oldest = await make('older completion', '2035-03-01T10:00:00Z', '2035-03-09T00:00:00Z');
-        const newest = await make('newest completion', '2035-03-03T10:00:00Z', '2035-03-01T00:00:00Z');
-        const middle = await make('middle completion', '2035-03-02T10:00:00Z', '2035-03-08T00:00:00Z');
+        const oldest = await make(
+          'older completion',
+          '2035-03-01T10:00:00Z',
+          '2035-03-09T00:00:00Z',
+        );
+        const newest = await make(
+          'newest completion',
+          '2035-03-03T10:00:00Z',
+          '2035-03-01T00:00:00Z',
+        );
+        const middle = await make(
+          'middle completion',
+          '2035-03-02T10:00:00Z',
+          '2035-03-08T00:00:00Z',
+        );
         const missing = await make('missing timestamp', null, '2036-03-01T00:00:00Z');
 
         const response = await request(app!.getHttpServer())
