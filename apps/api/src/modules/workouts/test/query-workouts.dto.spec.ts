@@ -18,4 +18,9 @@ describe('queryWorkoutsSchema: list view', () => {
   it('rejects unsupported views', () => {
     expect(queryWorkoutsSchema.safeParse({ view: 'aggregate' }).success).toBe(false);
   });
+
+  it('recognizes only the opt-in scheduled date order', () => {
+    expect(queryWorkoutsSchema.parse({ sort: 'scheduledAtAsc' }).sort).toBe('scheduledAtAsc');
+    expect(queryWorkoutsSchema.safeParse({ sort: 'createdAtDesc' }).success).toBe(false);
+  });
 });
