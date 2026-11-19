@@ -12,14 +12,12 @@ The monorepo already has a single NestJS API, shared identity, Athlete Web, Athl
 
 **Decision:** keep one NestJS modular monolith (`apps/api`), one `User` identity, one PostgreSQL/Prisma data model and distinct frontend products:
 
-| Product | Owner | Responsibilities |
-| --- | --- | --- |
-| Athlete Web | `apps/web` | Athlete dashboard, workouts, exercise library, athlete programs, personal profile and sign-in |
-| Athlete Mobile | `apps/mobile` | Native athlete sessions, history, programs, profile and progress; trainer-only legacy screen is an audit/cutover item |
-| Trainer Web | **future** `apps/trainer` | Trainer clients, programs, templates, builder, assignments, feedback and trainer dashboard |
-| Admin Web | `apps/admin` | Privileged admin review, roles, audit and operations |
-| Marketing | `apps/landing` | Public OVRANTO product pages and links; no authenticated data |
-| Backend | `apps/api` | Auth, ownership, policies, domain services, data persistence and public API contracts |
+- **Athlete Web** — owner: `apps/web`; responsibility: Athlete dashboard, workouts, exercise library, athlete programs, personal profile and sign-in.
+- **Athlete Mobile** — owner: `apps/mobile`; responsibility: Native athlete sessions, history, programs, profile and progress; trainer-only legacy screen is an audit/cutover item.
+- **Trainer Web** — owner: **future** `apps/trainer`; responsibility: Trainer clients, programs, templates, builder, assignments, feedback and trainer dashboard.
+- **Admin Web** — owner: `apps/admin`; responsibility: Privileged admin review, roles, audit and operations.
+- **Marketing** — owner: `apps/landing`; responsibility: Public OVRANTO product pages and links; no authenticated data.
+- **Backend** — owner: `apps/api`; responsibility: Auth, ownership, policies, domain services, data persistence and public API contracts.
 
 Trainer capability is additive to an athlete account; a trainer keeps the ability to track their own workouts. The server, never client navigation or a UI role check alone, determines authorization. Admin privileged session policy is separate. No second `User`, auth database, trainer API service, microservice, or automatic role self-grant.
 
@@ -27,18 +25,16 @@ Trainer capability is additive to an athlete account; a trainer keeps the abilit
 
 These are **current file-backed routes**, not promises that the future Trainer app already implements them.
 
-| Existing route | Current file / surface | Future owner | Cutover policy |
-| --- | --- | --- | --- |
-| `/dashboard` | `apps/web/src/app/(protected)/dashboard/page.tsx` | Athlete Web | Retain |
-| `/workouts`, `/workouts/new`, `/workouts/[id]` | `apps/web/src/app/(protected)/workouts/` | Athlete Web | Retain |
-| `/exercises`, `/exercises/new`, `/exercises/[id]` | `apps/web/src/app/(protected)/exercises/` | Athlete Web | Retain; keep current owner policies |
-| `/profile`, `/athlete/programs`, `/athlete/trainers` | `apps/web/src/app/(protected)/` | Athlete Web | Retain athlete flows |
-| `/trainer/athletes` | `apps/web/src/app/(protected)/trainer/athletes/page.tsx` | Trainer Web | Migrate after capability and client-list parity |
-| `/trainer/programs`, `/trainer/programs/new`, `/trainer/programs/[programId]` | `apps/web/src/app/(protected)/trainer/programs/` | Trainer Web | Migrate after builder/version/locale parity |
-| `/login`, `/register`, `/forgot-password`, `/reset-password`, `/verify-email` | `apps/web/src/app/` | Athlete Web | Retain; future Trainer sign-in reuses same identity, not necessarily these URLs |
-| `/sign-in`, `/` | `apps/admin/src/app/` | Admin Web | Retain privileged admin boundary |
-| `/trainer/athletes` (Expo route) | `apps/mobile/src/app/trainer/athletes.tsx` | Athlete Mobile scope review | Audit in #368; do not silently remove deep links or athlete functionality |
-| `/for-trainers`, `/apps/*` | `apps/landing/src/app/` | Landing | Add Trainer product links only after usable destination/host exists |
+- **`/dashboard`** — current: `apps/web/src/app/(protected)/dashboard/page.tsx`; target: Athlete Web; cutover: Retain.
+- **`/workouts`, `/workouts/new`, `/workouts/[id]`** — current: `apps/web/src/app/(protected)/workouts/`; target: Athlete Web; cutover: Retain.
+- **`/exercises`, `/exercises/new`, `/exercises/[id]`** — current: `apps/web/src/app/(protected)/exercises/`; target: Athlete Web; cutover: Retain; keep current owner policies.
+- **`/profile`, `/athlete/programs`, `/athlete/trainers`** — current: `apps/web/src/app/(protected)/`; target: Athlete Web; cutover: Retain athlete flows.
+- **`/trainer/athletes`** — current: `apps/web/src/app/(protected)/trainer/athletes/page.tsx`; target: Trainer Web; cutover: Migrate after capability and client-list parity.
+- **`/trainer/programs`, `/trainer/programs/new`, `/trainer/programs/[programId]`** — current: `apps/web/src/app/(protected)/trainer/programs/`; target: Trainer Web; cutover: Migrate after builder/version/locale parity.
+- **`/login`, `/register`, `/forgot-password`, `/reset-password`, `/verify-email`** — current: `apps/web/src/app/`; target: Athlete Web; cutover: Retain; future Trainer sign-in reuses same identity, not necessarily these URLs.
+- **`/sign-in`, `/`** — current: `apps/admin/src/app/`; target: Admin Web; cutover: Retain privileged admin boundary.
+- **`/trainer/athletes` (Expo route)** — current: `apps/mobile/src/app/trainer/athletes.tsx`; target: Athlete Mobile scope review; cutover: Audit in #368; do not silently remove deep links or athlete functionality.
+- **`/for-trainers`, `/apps/*`** — current: `apps/landing/src/app/`; target: Landing; cutover: Add Trainer product links only after usable destination/host exists.
 
 Other verified Expo routes under `apps/mobile/src/app/` include `(tabs)`, `exercises/index`, `profile/edit`, `programs/[id]`, `progress/index`, `progress/exercises/[id]`, `sign-in`, `workouts/new` and `workouts/[id]`. They remain Athlete Mobile surfaces. Expo `Stack.Protected` currently branches on `account.role`; this is **not** evidence of complete multi-capability support or a security boundary.
 
@@ -46,19 +42,17 @@ The current Web protected layout is visual only and explicitly says each protect
 
 ## Migration contract and dependency order
 
-| Gate | Work item | Deliverable / proof |
-| --- | --- | --- |
-| 1 | **#359 (this ADR)** | Owners, route inventory, compatibility contract and ordered plan |
-| 2 | #360, #288, #291 | Audit API module boundaries and role/capability policies; no direct repository leaks |
-| 3 | #362 | Independent `@gym/trainer` Next.js/Turborepo scaffold; OVRANTO design tokens, i18n and typed API client |
-| 4 | #309 → #310 → #311, #361 | Trainer profile/application state machine, admin approval/revocation, dual-capability security tests |
-| 5 | #363 | Trainer host-only cookie/same-origin proxy, guarded routes; explicit 401/403/revoked/pending UX |
-| 6 | #312 → #364 | Bounded trainer dashboard API, then Trainer Web views |
-| 7 | #336–338, existing PR #271/#275, then #365 | Stabilize builder behavior and localizations; move to focused 3-pane Trainer editor with approved OVRANTO UX |
-| 8 | #339, #301–304, #366 | Authorized feedback, templates and assignment UI, no duplicated backend |
-| 9 | #369 plus #389 | Auth/permission/browser E2E, responsive/a11y, CI affected-workspace and release evidence |
-| 10 | **#367 only after parity** | Compatibility links/redirects and deliberate removal of legacy Web trainer-only UI |
-| Parallel review | #368 | Mobile trainer-only audit, safe deep-link policy, no premature removal |
+- **1** — **#359 (this ADR)**; proof: Owners, route inventory, compatibility contract and ordered plan.
+- **2** — #360, #288, #291; proof: Audit API module boundaries and role/capability policies; no direct repository leaks.
+- **3** — #362; proof: Independent `@gym/trainer` Next.js/Turborepo scaffold; OVRANTO design tokens, i18n and typed API client.
+- **4** — #309 → #310 → #311, #361; proof: Trainer profile/application state machine, admin approval/revocation, dual-capability security tests.
+- **5** — #363; proof: Trainer host-only cookie/same-origin proxy, guarded routes; explicit 401/403/revoked/pending UX.
+- **6** — #312 → #364; proof: Bounded trainer dashboard API, then Trainer Web views.
+- **7** — #336–338, existing PR #271/#275, then #365; proof: Stabilize builder behavior and localizations; move to focused 3-pane Trainer editor with approved OVRANTO UX.
+- **8** — #339, #301–304, #366; proof: Authorized feedback, templates and assignment UI, no duplicated backend.
+- **9** — #369 plus #389; proof: Auth/permission/browser E2E, responsive/a11y, CI affected-workspace and release evidence.
+- **10** — **#367 only after parity**; proof: Compatibility links/redirects and deliberate removal of legacy Web trainer-only UI.
+- **Parallel review** — #368; proof: Mobile trainer-only audit, safe deep-link policy, no premature removal.
 
 The precise order inside dependent groups can be refined when testable contracts exist. Bootstrap #362 may proceed before all capability changes, but **must not expose privileged data or impersonate a working Trainer login**.
 
