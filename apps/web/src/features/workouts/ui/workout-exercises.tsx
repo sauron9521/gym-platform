@@ -26,7 +26,9 @@ export function WorkoutExercises({ workout, editingSetId, onEditSet }: Props) {
                 href={`#workout-exercise-${exercise.id}`}
                 className="inline-flex min-h-11 max-w-56 shrink-0 items-center rounded-full border bg-card px-4 text-sm font-medium text-foreground underline-offset-2 hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
               >
-                <span className="truncate">{index + 1}. {exercise.exerciseNameSnapshot}</span>
+                <span className="truncate">
+                  {index + 1}. {exercise.exerciseNameSnapshot}
+                </span>
               </a>
             ))}
           </div>
