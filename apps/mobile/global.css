@@ -17,6 +17,7 @@ body {
     --primary: 7 92 85;
     --primary-foreground: 255 255 255;
     --card: 255 255 255;
+    --card-foreground: 41 39 36;
     --secondary: 237 232 225;
     --secondary-foreground: 41 39 36;
     --background: 245 240 233;
@@ -55,6 +56,7 @@ body {
     --primary: 112 207 182;
     --primary-foreground: 13 37 30;
     --card: 27 37 34;
+    --card-foreground: 245 242 237;
     --secondary: 42 57 53;
     --secondary-foreground: 234 243 239;
     --background: 17 25 24;
@@ -93,6 +95,7 @@ body {
   --color-primary: rgb(var(--primary));
   --color-primary-foreground: rgb(var(--primary-foreground));
   --color-card: rgb(var(--card));
+  --color-card-foreground: rgb(var(--card-foreground));
   --color-secondary: rgb(var(--secondary));
   --color-secondary-foreground: rgb(var(--secondary-foreground));
   --color-background: rgb(var(--background));
