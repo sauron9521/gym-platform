@@ -5,7 +5,11 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { webApi } from '@/shared/api/client';
 import { useAuthFailure } from '@/shared/api/use-auth-failure';
 
-import { getWorkoutSetSubmitError, type WorkoutSetData, type WorkoutSetPayload } from '../lib/workout-set-form';
+import {
+  getWorkoutSetSubmitError,
+  type WorkoutSetData,
+  type WorkoutSetPayload,
+} from '../lib/workout-set-form';
 import type { WorkoutDetailsData } from '../lib/workout-details';
 import { workoutQueryKeys } from '../lib/workout-query-keys';
 
