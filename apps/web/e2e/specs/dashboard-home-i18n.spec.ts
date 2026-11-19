@@ -3,7 +3,9 @@ import { expect, test } from '@playwright/test';
 test('Dashboard home updates title and shortcuts for English without changing account data', async ({
   page,
 }) => {
-  await page.context().addCookies([{ name: 'gym-locale', value: 'en', url: 'http://127.0.0.1:3100' }]);
+  await page.context().addCookies([
+    { name: 'gym-locale', value: 'en', url: 'http://127.0.0.1:3100' },
+  ]);
   await page.goto('/login');
   await page.getByLabel('Електронна пошта').fill('athlete@example.test');
   await page.getByLabel('Пароль').fill('TestPassword123!');
@@ -24,5 +26,7 @@ test('Dashboard home updates title and shortcuts for English without changing ac
 
   // A different locale changes interface copy, not the user's saved display name.
   await page.reload();
-  await expect(page.getByRole('heading', { level: 1, name: 'Welcome, Тестовий атлет!' })).toBeVisible();
+  await expect(
+    page.getByRole('heading', { level: 1, name: 'Welcome, Тестовий атлет!' }),
+  ).toBeVisible();
 });
