@@ -52,9 +52,7 @@ export function HomeScreen({ locale = defaultLocale }: { locale?: Locale } = {})
             <h1 className="mt-8 text-5xl font-bold tracking-tight text-balance sm:text-7xl">
               {t.headlineLead} <span className="text-primary">{t.headlineAccent}</span>
             </h1>
-            <p className="mt-7 text-lg leading-8 text-muted-foreground">
-              {t.description}
-            </p>
+            <p className="mt-7 text-lg leading-8 text-muted-foreground">{t.description}</p>
             <div className="mt-10 flex flex-wrap gap-3">
               <Button asChild size="lg">
                 <Link href="/features">{t.learnMore}</Link>
@@ -63,9 +61,7 @@ export function HomeScreen({ locale = defaultLocale }: { locale?: Locale } = {})
                 <Link href="/apps">{t.browseApps}</Link>
               </Button>
             </div>
-            <p className="mt-6 text-xs text-muted-foreground">
-              {t.devNotice}
-            </p>
+            <p className="mt-6 text-xs text-muted-foreground">{t.devNotice}</p>
           </div>
           <div
             role="img"
@@ -93,9 +89,7 @@ export function HomeScreen({ locale = defaultLocale }: { locale?: Locale } = {})
                 </div>
               ))}
             </div>
-            <p className="mt-6 text-xs text-muted-foreground">
-              {t.mockDisclaimer}
-            </p>
+            <p className="mt-6 text-xs text-muted-foreground">{t.mockDisclaimer}</p>
           </div>
         </Container>
       </section>

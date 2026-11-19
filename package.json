@@ -17,7 +17,7 @@
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
     "format": "prettier --write .",
-    "format:check": "prettier --write apps/landing/src/widgets/home/ui/home-screen.tsx apps/landing/test/components/home-sections.test.tsx && git diff -- apps/landing/src/widgets/home/ui/home-screen.tsx apps/landing/test/components/home-sections.test.tsx && exit 1",
+    "format:check": "prettier --check .",
     "prepare": "husky",
     "api:openapi": "pnpm --filter @gym/api docs:openapi",
     "api:types": "pnpm --filter @gym/api-client generate",

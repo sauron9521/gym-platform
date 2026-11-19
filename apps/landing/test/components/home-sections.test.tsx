@@ -36,9 +36,7 @@ test('English homepage uses translated headings, CTAs, cards, milestones and ARI
   expect(screen.getByRole('link', { name: 'Explore applications' }).getAttribute('href')).toBe(
     '/apps',
   );
-  expect(screen.getByRole('link', { name: 'Explore products' }).getAttribute('href')).toBe(
-    '/apps',
-  );
+  expect(screen.getByRole('link', { name: 'Explore products' }).getAttribute('href')).toBe('/apps');
   expect(screen.getByRole('link', { name: 'About the project' }).getAttribute('href')).toBe(
     '/about',
   );
