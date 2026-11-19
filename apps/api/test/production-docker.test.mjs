@@ -45,3 +45,21 @@ test('Docker build context excludes credentials and generated state', async () =
   assert.match(ignore, /^\*\*\/src\/infra\/database\/generated$/m);
   assert.match(ignore, /^\.git$/m);
 });
+
+test('Docker dependency install remains cached when only API source changes', async () => {
+  const docker = await read('../Dockerfile');
+  const build = docker.split('FROM base AS build\n')[1]?.split('\nFROM build AS migration-deps')[0];
+  assert.ok(build, 'Build stage missing');
+  const manifest = build.indexOf('COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./');
+  const workspaces = build.indexOf(
+    'COPY --parents apps/*/package.json packages/*/package.json tooling/*/package.json ./',
+  );
+  const install = build.indexOf('RUN pnpm --filter @gym/api... install --frozen-lockfile');
+  const source = build.indexOf('COPY . .');
+  const compile = build.indexOf('RUN pnpm --filter @gym/api db:generate');
+  assert.ok(manifest >= 0 && manifest < workspaces, 'Root lockfile must be copied first');
+  assert.ok(workspaces < install, 'Workspace manifests must precede install');
+  assert.ok(install < source, 'All sources must be copied only after install');
+  assert.ok(source < compile, 'Prisma generation and Nest build must see source files');
+  assert.equal((build.match(/RUN pnpm .* install --frozen-lockfile/g) ?? []).length, 1);
+});
