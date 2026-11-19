@@ -77,7 +77,10 @@ test('avatar writes use typed TanStack mutation with safe cache handling', async
 
 test('avatar validation and HTTP error codes are localizable without changing the API', () => {
   assert.equal(getAvatarValidationKey({ size: 0, type: 'image/png' }), 'empty');
-  assert.equal(getAvatarValidationKey({ size: MAX_AVATAR_BYTES + 1, type: 'image/jpeg' }), 'tooLarge');
+  assert.equal(
+    getAvatarValidationKey({ size: MAX_AVATAR_BYTES + 1, type: 'image/jpeg' }),
+    'tooLarge',
+  );
   assert.equal(getAvatarValidationKey({ size: 12, type: 'image/svg+xml' }), 'unsupported');
   assert.equal(getAvatarValidationKey({ size: 12, type: 'image/png' }), null);
   assert.equal(getAvatarErrorKey(413), 'fileInvalid');

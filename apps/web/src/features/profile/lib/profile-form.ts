@@ -27,9 +27,11 @@ const defaultValidationMessages: ProfileValidationMessages = {
 };
 
 /** Localized validation preserves all existing profile limits and parsing rules. */
-export function createProfileSchema(messages: ProfileValidationMessages = defaultValidationMessages) {
+export function createProfileSchema(
+  messages: ProfileValidationMessages = defaultValidationMessages,
+) {
   const personName = z.string().trim().max(100, messages.nameTooLong);
-  
+
   const measurement = (message: string, min: number, max: number, integer = false) =>
     z.string().refine((input) => {
       if (!input.trim()) return true;
@@ -38,7 +40,7 @@ export function createProfileSchema(messages: ProfileValidationMessages = defaul
       if (integer) return Number.isInteger(value);
       return /^[0-9]+(?:\.[0-9]{1,2})?$/.test(input.trim());
     }, message);
-  
+
   const birthday = z.string().refine((input) => {
     if (!input) return true;
     if (!/^\d{4}-\d{2}-\d{2}$/.test(input)) return false;
@@ -48,9 +50,9 @@ export function createProfileSchema(messages: ProfileValidationMessages = defaul
     const date = new Date(`${input}T00:00:00.000Z`);
     return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === input;
   }, messages.birthdayInvalid);
-  
+
   const timezonePattern = /^(?:UTC|[A-Za-z_]+\/[A-Za-z0-9_+.-]+(?:\/[A-Za-z0-9_+.-]+)?)$/;
-  
+
   const timezone = z
     .string()
     .trim()
@@ -65,7 +67,7 @@ export function createProfileSchema(messages: ProfileValidationMessages = defaul
         return false;
       }
     }, messages.timezoneInvalid);
-  
+
   return z.object({
     firstName: personName,
     lastName: personName,
@@ -125,7 +127,9 @@ export function getProfileErrorMessage(status: number): string {
 }
 
 /** Never display untrusted API payload strings in the localized profile UI. */
-export function getProfileErrorKey(status: number): 'invalid' | 'signedOut' | 'forbidden' | 'rateLimited' | 'requestFailed' {
+export function getProfileErrorKey(
+  status: number,
+): 'invalid' | 'signedOut' | 'forbidden' | 'rateLimited' | 'requestFailed' {
   if (status === 400 || status === 422) return 'invalid';
   if (status === 401) return 'signedOut';
   if (status === 403) return 'forbidden';

@@ -174,7 +174,9 @@ export function ProfileEditor() {
           noValidate
           className="space-y-5 rounded-xl border p-6"
         >
-          <p className="text-sm text-muted-foreground">{t('email')}: {account.email}</p>
+          <p className="text-sm text-muted-foreground">
+            {t('email')}: {account.email}
+          </p>
           <div className="grid gap-4 sm:grid-cols-2">
             {fields.map(({ key, type = 'text', placeholder }) => (
               <div key={key} className="space-y-2">

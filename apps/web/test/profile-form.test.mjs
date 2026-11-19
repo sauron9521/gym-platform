@@ -138,16 +138,38 @@ test('localized profile schema retains API semantics and translates validation',
   };
   const schema = createProfileSchema(messages);
   const draft = toProfileDraft(account);
-  assert.equal(schema.safeParse({ ...draft, height: '193.5' }).error?.issues[0]?.message, messages.heightInvalid);
-  assert.equal(schema.safeParse({ ...draft, birthday: '2026-02-30' }).error?.issues[0]?.message, messages.birthdayInvalid);
-  assert.equal(schema.safeParse({ ...draft, timezone: 'Bad/Zone' }).error?.issues[0]?.message, messages.timezoneInvalid);
-  assert.equal(schema.safeParse({ ...draft, firstName: 'x'.repeat(101) }).error?.issues[0]?.message, messages.nameTooLong);
+  assert.equal(
+    schema.safeParse({ ...draft, height: '193.5' }).error?.issues[0]?.message,
+    messages.heightInvalid,
+  );
+  assert.equal(
+    schema.safeParse({ ...draft, birthday: '2026-02-30' }).error?.issues[0]?.message,
+    messages.birthdayInvalid,
+  );
+  assert.equal(
+    schema.safeParse({ ...draft, timezone: 'Bad/Zone' }).error?.issues[0]?.message,
+    messages.timezoneInvalid,
+  );
+  assert.equal(
+    schema.safeParse({ ...draft, firstName: 'x'.repeat(101) }).error?.issues[0]?.message,
+    messages.nameTooLong,
+  );
   assert.equal(buildProfilePatch({ ...draft, weight: '81.5' }, schema).data?.weight, 81.5);
-  assert.equal(buildProfilePatch({ ...draft, height: '193.5' }, schema).error, messages.heightInvalid);
+  assert.equal(
+    buildProfilePatch({ ...draft, height: '193.5' }, schema).error,
+    messages.heightInvalid,
+  );
 });
 
 test('profile HTTP statuses select stable localized message keys', () => {
-  for (const [status, key] of [[400, 'invalid'], [401, 'signedOut'], [403, 'forbidden'], [422, 'invalid'], [429, 'rateLimited'], [500, 'requestFailed']]) {
+  for (const [status, key] of [
+    [400, 'invalid'],
+    [401, 'signedOut'],
+    [403, 'forbidden'],
+    [422, 'invalid'],
+    [429, 'rateLimited'],
+    [500, 'requestFailed'],
+  ]) {
     assert.equal(getProfileErrorKey(status), key);
   }
 });

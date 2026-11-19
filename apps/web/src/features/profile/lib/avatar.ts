@@ -12,7 +12,9 @@ const avatarPath = new RegExp(`^/avatars/${keyIdParts.join('-')}[.](png|jpg|webp
 
 export type AvatarValidationKey = 'empty' | 'tooLarge' | 'unsupported';
 
-export function getAvatarValidationKey(file: Pick<File, 'size' | 'type'>): AvatarValidationKey | null {
+export function getAvatarValidationKey(
+  file: Pick<File, 'size' | 'type'>,
+): AvatarValidationKey | null {
   if (file.size === 0) return 'empty';
   if (file.size > MAX_AVATAR_BYTES) return 'tooLarge';
   if (!acceptedTypes.has(file.type)) return 'unsupported';
@@ -57,8 +59,9 @@ export function avatarErrorMessage(status: number): string {
 }
 
 /** Safe categories for localized avatar request errors. */
-export function getAvatarErrorKey(status?: number):
-  'fileInvalid' | 'signedOut' | 'forbidden' | 'rateLimited' | 'requestFailed' | 'network' {
+export function getAvatarErrorKey(
+  status?: number,
+): 'fileInvalid' | 'signedOut' | 'forbidden' | 'rateLimited' | 'requestFailed' | 'network' {
   if (status === undefined) return 'network';
   if (status === 400 || status === 413 || status === 422) return 'fileInvalid';
   if (status === 401) return 'signedOut';

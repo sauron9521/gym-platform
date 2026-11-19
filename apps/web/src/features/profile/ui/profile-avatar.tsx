@@ -98,7 +98,11 @@ export function ProfileAvatar({ avatarUrl, displayName, email, onChanged }: Prop
           disabled={busy}
           className="block w-full text-sm"
         />
-        {file && <p className="text-sm">{t('selected')}: {file.name}</p>}
+        {file && (
+          <p className="text-sm">
+            {t('selected')}: {file.name}
+          </p>
+        )}
         <div className="flex flex-wrap gap-3">
           <Button
             type="button"
