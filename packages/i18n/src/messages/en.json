@@ -76,6 +76,30 @@
         "trainerProgramsDescription": "Manage programs for your athletes.",
         "trainerAthletesTitle": "My athletes",
         "trainerAthletesDescription": "Manage athletes you train."
+      },
+      "workoutHero": {
+        "checkingActive": "Checking workouts",
+        "loadingActive": "Loading your current workout…",
+        "errorActive": "Could not check workouts",
+        "checkingUpcoming": "Finding your next workout",
+        "loadingUpcoming": "Checking your schedule…",
+        "errorUpcoming": "Could not load your schedule",
+        "errorDefault": "Could not load workouts. Try again.",
+        "errorForbidden": "You do not have permission to view these workouts.",
+        "errorBadRequest": "Invalid workout search parameters.",
+        "errorRateLimited": "Too many requests. Please try again later.",
+        "retry": "Try again",
+        "activeStatus": "Workout in progress",
+        "activeIntro": "The most recently added workout that is still in progress.",
+        "startedAt": "Started: {date}.",
+        "activeCount": "Workouts in progress: {count}",
+        "continueWorkout": "Continue workout",
+        "noUpcoming": "There are no active or upcoming scheduled workouts.",
+        "upcomingStatus": "Next scheduled workout",
+        "scheduledAt": "Scheduled: {date}",
+        "exerciseCount": "Exercises: {count}",
+        "viewAndStart": "View and start",
+        "dateUnavailable": "Date unavailable"
       }
     }
   },
