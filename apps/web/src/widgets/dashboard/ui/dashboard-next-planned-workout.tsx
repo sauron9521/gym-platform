@@ -2,20 +2,21 @@
 
 import { useEffect } from 'react';
 import Link from 'next/link';
+import { useFormatter, useTranslations } from 'next-intl';
 import { useQuery } from '@tanstack/react-query';
 
 import { Button } from '@gym/ui-web';
 
+import { getDashboardWorkoutErrorKey } from '../lib/dashboard-workout-error';
+
 import { nextPlannedWorkoutQueryOptions } from '@/features/workouts/api/next-planned-workout-query';
 import { WorkoutListRequestError } from '@/features/workouts/api/workouts-list-query';
-import {
-  formatWorkoutDate,
-  getWorkoutListErrorMessage,
-} from '@/features/workouts/lib/workouts-list';
 import { useAuthFailure } from '@/shared/api/use-auth-failure';
 
 /** Mounted only when the athlete has no IN_PROGRESS workouts. */
 export function DashboardNextPlannedWorkout() {
+  const t = useTranslations('web.dashboard');
+  const format = useFormatter();
   const onAuthFailure = useAuthFailure();
   const query = useQuery(nextPlannedWorkoutQueryOptions());
 
@@ -33,10 +34,10 @@ export function DashboardNextPlannedWorkout() {
     return (
       <>
         <h2 id="dashboard-next-step" className="text-2xl font-semibold tracking-tight sm:text-3xl">
-          Шукаємо найближче тренування
+          {t('workoutHero.checkingUpcoming')}
         </h2>
         <p role="status" className="text-sm text-muted-foreground">
-          Перевіряємо розклад…
+          {t('workoutHero.loadingUpcoming')}
         </p>
       </>
     );
@@ -46,16 +47,12 @@ export function DashboardNextPlannedWorkout() {
     return (
       <>
         <h2 id="dashboard-next-step" className="text-2xl font-semibold tracking-tight sm:text-3xl">
-          Не вдалося завантажити розклад
+          {t('workoutHero.errorUpcoming')}
         </h2>
         <div role="alert" className="space-y-3">
-          <p className="text-sm text-destructive">
-            {query.error instanceof WorkoutListRequestError
-              ? query.error.message
-              : getWorkoutListErrorMessage()}
-          </p>
+          <p className="text-sm text-destructive">{t(getDashboardWorkoutErrorKey(query.error))}</p>
           <Button size="touch" type="button" variant="outline" onClick={() => void query.refetch()}>
-            Спробувати знову
+            {t('workoutHero.retry')}
           </Button>
         </div>
       </>
@@ -73,10 +70,10 @@ export function DashboardNextPlannedWorkout() {
     return (
       <>
         <h2 id="dashboard-next-step" className="text-2xl font-semibold tracking-tight sm:text-3xl">
-          Плануй тренування. Відстежуй прогрес.
+          {t('heroTitle')}
         </h2>
         <p className="text-sm leading-relaxed text-muted-foreground sm:text-base">
-          Зараз немає активних або майбутніх запланованих тренувань.
+          {t('workoutHero.noUpcoming')}
         </p>
         <div className="flex flex-wrap gap-3 pt-2">
           <Button
@@ -84,10 +81,10 @@ export function DashboardNextPlannedWorkout() {
             size="touch"
             className="bg-[var(--brand-teal)] text-[var(--set-active-foreground)] hover:opacity-90"
           >
-            <Link href="/workouts/new">Створити тренування</Link>
+            <Link href="/workouts/new">{t('createWorkout')}</Link>
           </Button>
           <Button asChild size="touch" variant="outline">
-            <Link href="/workouts">Відкрити журнал</Link>
+            <Link href="/workouts">{t('openJournal')}</Link>
           </Button>
         </div>
       </>
@@ -103,13 +100,25 @@ export function DashboardNextPlannedWorkout() {
         {workout.title}
       </h2>
       <p className="text-sm font-semibold text-[var(--brand-teal)]">
-        Найближче заплановане тренування
+        {t('workoutHero.upcomingStatus')}
       </p>
       <p className="text-sm leading-relaxed text-muted-foreground sm:text-base">
-        Заплановано: {formatWorkoutDate(workout.scheduledAt)}
+        {t('workoutHero.scheduledAt', {
+          date: workout.scheduledAt
+            ? format.dateTime(new Date(workout.scheduledAt), {
+                day: 'numeric',
+                month: 'short',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+              })
+            : t('workoutHero.dateUnavailable'),
+        })}
       </p>
       {'exerciseCount' in workout && typeof workout.exerciseCount === 'number' && (
-        <p className="text-sm text-muted-foreground">Вправ: {workout.exerciseCount}</p>
+        <p className="text-sm text-muted-foreground">
+          {t('workoutHero.exerciseCount', { count: workout.exerciseCount })}
+        </p>
       )}
       <div className="flex flex-wrap gap-3 pt-2">
         <Button
@@ -117,10 +126,10 @@ export function DashboardNextPlannedWorkout() {
           size="touch"
           className="bg-[var(--brand-teal)] text-[var(--set-active-foreground)] hover:opacity-90"
         >
-          <Link href={`/workouts/${workout.id}`}>Переглянути та розпочати</Link>
+          <Link href={`/workouts/${workout.id}`}>{t('workoutHero.viewAndStart')}</Link>
         </Button>
         <Button asChild size="touch" variant="outline">
-          <Link href="/workouts">Відкрити журнал</Link>
+          <Link href="/workouts">{t('openJournal')}</Link>
         </Button>
       </div>
     </>

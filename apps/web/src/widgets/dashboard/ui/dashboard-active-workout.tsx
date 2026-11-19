@@ -2,20 +2,18 @@
 
 import { useEffect } from 'react';
 import Link from 'next/link';
+import { useFormatter, useTranslations } from 'next-intl';
 import { useQuery } from '@tanstack/react-query';
 
 import { Button } from '@gym/ui-web';
 
 import { DashboardNextPlannedWorkout } from './dashboard-next-planned-workout';
+import { getDashboardWorkoutErrorKey } from '../lib/dashboard-workout-error';
 
 import {
   WorkoutListRequestError,
   workoutListQueryOptions,
 } from '@/features/workouts/api/workouts-list-query';
-import {
-  formatWorkoutDate,
-  getWorkoutListErrorMessage,
-} from '@/features/workouts/lib/workouts-list';
 import { useAuthFailure } from '@/shared/api/use-auth-failure';
 
 /**
@@ -27,6 +25,8 @@ import { useAuthFailure } from '@/shared/api/use-auth-failure';
  * CREATED in-progress workout, not the most recently started session.
  */
 export function DashboardActiveWorkout() {
+  const t = useTranslations('web.dashboard');
+  const format = useFormatter();
   const onAuthFailure = useAuthFailure();
   const query = useQuery(workoutListQueryOptions('IN_PROGRESS', 1));
 
@@ -55,7 +55,7 @@ export function DashboardActiveWorkout() {
       />
       <div className="relative max-w-2xl space-y-4">
         <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-          Твій наступний крок
+          {t('nextStep')}
         </p>
 
         {loading && (
@@ -64,10 +64,10 @@ export function DashboardActiveWorkout() {
               id="dashboard-next-step"
               className="text-2xl font-semibold tracking-tight sm:text-3xl"
             >
-              Перевіряємо тренування
+              {t('workoutHero.checkingActive')}
             </h2>
             <p role="status" className="text-sm text-muted-foreground">
-              Завантажуємо поточне тренування…
+              {t('workoutHero.loadingActive')}
             </p>
           </>
         )}
@@ -78,13 +78,11 @@ export function DashboardActiveWorkout() {
               id="dashboard-next-step"
               className="text-2xl font-semibold tracking-tight sm:text-3xl"
             >
-              Не вдалося перевірити тренування
+              {t('workoutHero.errorActive')}
             </h2>
             <div role="alert" className="space-y-3">
               <p className="text-sm text-destructive">
-                {query.error instanceof WorkoutListRequestError
-                  ? query.error.message
-                  : getWorkoutListErrorMessage()}
+                {t(getDashboardWorkoutErrorKey(query.error))}
               </p>
               <Button
                 type="button"
@@ -92,7 +90,7 @@ export function DashboardActiveWorkout() {
                 variant="outline"
                 onClick={() => void query.refetch()}
               >
-                Спробувати знову
+                {t('workoutHero.retry')}
               </Button>
             </div>
           </>
@@ -108,14 +106,25 @@ export function DashboardActiveWorkout() {
             >
               {workout.title}
             </h2>
-            <p className="text-sm font-semibold text-[var(--brand-teal)]">Тренування у процесі</p>
+            <p className="text-sm font-semibold text-[var(--brand-teal)]">
+              {t('workoutHero.activeStatus')}
+            </p>
             <p className="text-sm leading-relaxed text-muted-foreground sm:text-base">
-              Останнє додане тренування серед тих, що тривають.
-              {workout.startedAt && ` Почато: ${formatWorkoutDate(workout.startedAt)}.`}
+              {t('workoutHero.activeIntro')}
+              {workout.startedAt &&
+                ` ${t('workoutHero.startedAt', {
+                  date: format.dateTime(new Date(workout.startedAt), {
+                    day: 'numeric',
+                    month: 'short',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  }),
+                })}`}
             </p>
             {typeof query.data?.total === 'number' && query.data.total > 1 && (
               <p className="text-sm text-muted-foreground">
-                Усього тренувань у процесі: {query.data.total}
+                {t('workoutHero.activeCount', { count: query.data.total })}
               </p>
             )}
             <div className="flex flex-wrap gap-3 pt-2">
@@ -124,10 +133,10 @@ export function DashboardActiveWorkout() {
                 size="touch"
                 className="bg-[var(--brand-teal)] text-[var(--set-active-foreground)] hover:opacity-90"
               >
-                <Link href={`/workouts/${workout.id}`}>Продовжити тренування</Link>
+                <Link href={`/workouts/${workout.id}`}>{t('workoutHero.continueWorkout')}</Link>
               </Button>
               <Button asChild size="touch" variant="outline">
-                <Link href="/workouts">Відкрити журнал</Link>
+                <Link href="/workouts">{t('openJournal')}</Link>
               </Button>
             </div>
           </>
