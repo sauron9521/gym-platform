@@ -1,0 +1,69 @@
+name: OVRANTO Web visual review
+
+# Manual-only screenshot evidence. Never a required PR or push CI gate.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  capture:
+    name: Capture Light/Dark and uk/en review artifacts
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      CI: 'true'
+      OVRANTO_VISUAL_CAPTURE: '1'
+      NEXT_TELEMETRY_DISABLED: '1'
+
+    steps:
+      - name: Restrict capture to reviewed main code
+        run: test "$GITHUB_REF" = refs/heads/main
+
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install frozen dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Restore Playwright Chromium browser cache
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-chromium-1.65.0
+
+      - name: Install Chromium and system dependencies
+        run: pnpm --filter @gym/web exec playwright install --with-deps chromium
+
+      - name: Capture OVRANTO Web screenshots
+        run: pnpm --filter @gym/web exec playwright test ovranto-visual-review.spec.ts --reporter=html
+
+      - name: Verify capture output
+        run: |
+          set -euo pipefail
+          test -f apps/web/playwright-report/index.html
+          count="$(find apps/web/test-results -type f -name '*.png' | wc -l)"
+          echo "Captured PNG files: $count"
+          test "$count" -ge 24
+
+      - name: Upload screenshot evidence and HTML report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: ovranto-web-visual-review-${{ github.run_id }}
+          path: |
+            apps/web/playwright-report/
+            apps/web/test-results/
+          if-no-files-found: warn
+          retention-days: 7

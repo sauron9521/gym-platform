@@ -17,3 +17,7 @@ pnpm-lock.yaml
 
 apps/api/src/infra/database/generated
 packages/api-client/generated
+
+# Generated from packages/design-tokens/src/palette-source.json; checked for byte parity in Vitest
+packages/design-tokens/src/ovranto.css
+packages/design-tokens/src/ovranto-native.ts

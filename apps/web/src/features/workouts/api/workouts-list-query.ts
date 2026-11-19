@@ -18,9 +18,15 @@ export class WorkoutListRequestError extends Error {
   }
 }
 
-export function workoutListQueryOptions(filter: WorkoutFilter, page: number) {
+export function workoutListQueryOptions(
+  filter: WorkoutFilter,
+  page: number,
+  sort?: 'completedAtDesc',
+) {
   return queryOptions({
-    queryKey: workoutQueryKeys.list(filter, page),
+    queryKey: sort
+      ? [...workoutQueryKeys.lists(), { filter, page, sort }]
+      : workoutQueryKeys.list(filter, page),
     queryFn: async ({ signal }) => {
       try {
         const { data, response } = await webApi.GET('/workouts', {
@@ -31,6 +37,7 @@ export function workoutListQueryOptions(filter: WorkoutFilter, page: number) {
               limit: PAGE_SIZE,
               view: 'summary',
               ...(filter === 'ALL' ? {} : { status: filter }),
+              ...(sort ? { sort } : {}),
             },
           },
         });

@@ -24,3 +24,25 @@ test('homepage explains the process and labels design previews honestly', () => 
     '/apps',
   );
 });
+
+test('English homepage uses translated headings, CTAs, cards, milestones and ARIA text', () => {
+  render(<HomeScreen locale="en" />);
+
+  expect(screen.getByRole('heading', { level: 1 }).textContent).toContain('Train smarter.');
+  expect(screen.getByRole('heading', { name: 'From planning to progress' })).toBeTruthy();
+  expect(screen.getByRole('img', { name: /Illustration of a workout plan/ })).toBeTruthy();
+  expect(screen.getByText('Concept')).toBeTruthy();
+  expect(screen.getByText(/actively being developed/)).toBeTruthy();
+  expect(screen.getByRole('link', { name: 'Explore applications' }).getAttribute('href')).toBe(
+    '/apps',
+  );
+  expect(screen.getByRole('link', { name: 'Explore products' }).getAttribute('href')).toBe('/apps');
+  expect(screen.getByRole('link', { name: 'About the project' }).getAttribute('href')).toBe(
+    '/about',
+  );
+  expect(screen.getByRole('heading', { name: 'Choose exercises' })).toBeTruthy();
+  expect(screen.getByRole('heading', { name: 'Build a plan' })).toBeTruthy();
+  expect(screen.getByRole('heading', { name: 'Track results' })).toBeTruthy();
+  expect(screen.getAllByRole('article')).toHaveLength(3);
+  expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
+});

@@ -29,8 +29,7 @@ export function TrainerAthletesScreen() {
       contentContainerStyle={styles.content}
       data={athletes}
       keyExtractor={(item) => item.id}
-      refreshing={query.isRefetching && !query.isFetchingNextPage}
-      onRefresh={() => void query.refetch()}
+      bounces={false}
       onEndReached={() => {
         if (query.hasNextPage && !query.isFetching && !query.isFetchNextPageError) {
           void query.fetchNextPage();
@@ -41,6 +40,19 @@ export function TrainerAthletesScreen() {
         <View style={styles.group}>
           <Text style={styles.title}>{t('mobile.trainerAthletes.title')}</Text>
           <Text style={styles.muted}>{t('mobile.trainerAthletes.subtitle')}</Text>
+          <Pressable
+            testID="trainer-athletes-refresh"
+            accessibilityRole="button"
+            accessibilityLabel="Оновити підопічних"
+            accessibilityState={{ disabled: query.isFetching }}
+            disabled={query.isFetching}
+            onPress={() => void query.refetch()}
+            style={styles.button}
+          >
+            <Text style={styles.buttonText}>
+              {query.isFetching ? 'Оновлюємо…' : 'Оновити підопічних'}
+            </Text>
+          </Pressable>
           {query.isPending ? (
             <Text style={styles.muted}>{t('mobile.trainerAthletes.loading')}</Text>
           ) : null}

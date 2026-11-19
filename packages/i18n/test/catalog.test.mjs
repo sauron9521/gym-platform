@@ -37,3 +37,25 @@ test('Landing namespace has localized copy for the current homepage and shared C
     assert.ok(locale['landing.home.description']);
   }
 });
+
+test('Landing home message keys are complete and localized in both languages', () => {
+  const englishHome = Object.keys(load('en').landing.home).sort();
+  const ukrainianHome = Object.keys(load('uk').landing.home).sort();
+  assert.deepEqual(englishHome, ukrainianHome);
+  assert.ok(englishHome.length >= 39);
+  for (const key of englishHome) {
+    assert.ok(en[`landing.home.${key}`].trim(), `Missing English landing.home.${key}`);
+    assert.ok(uk[`landing.home.${key}`].trim(), `Missing Ukrainian landing.home.${key}`);
+  }
+});
+
+test('shared API and Zod error labels are nonempty and symmetrical', () => {
+  const englishErrors = load('en').errors;
+  const ukrainianErrors = load('uk').errors;
+  assert.deepEqual(Object.keys(englishErrors).sort(), Object.keys(ukrainianErrors).sort());
+  assert.ok(Object.keys(englishErrors).length >= 19);
+  for (const key of Object.keys(englishErrors)) {
+    assert.ok(englishErrors[key].trim(), `Empty English error: ${key}`);
+    assert.ok(ukrainianErrors[key].trim(), `Empty Ukrainian error: ${key}`);
+  }
+});

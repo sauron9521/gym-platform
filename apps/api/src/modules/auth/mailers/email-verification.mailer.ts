@@ -7,12 +7,16 @@ import { Injectable } from '@nestjs/common';
 import { Mailable, Mailer } from '@nestjs/mail';
 import { UsersRepository } from '#src/modules/users/repositories/users.repository';
 
+type LocalizedVerificationLink = EmailVerificationLink & { locale?: 'uk' | 'en' };
+
 @Injectable()
-export class VerifyEmailMail implements Mailable<EmailVerificationLink> {
-  render({ url }: EmailVerificationLink) {
+export class VerifyEmailMail implements Mailable<LocalizedVerificationLink> {
+  render({ url, locale }: LocalizedVerificationLink) {
+    // Only two known template filenames; malformed values cannot form a path.
+    const language = locale === 'en' ? 'en' : 'uk';
     return {
-      subject: 'Confirm your email address',
-      template: 'verify-email',
+      subject: language === 'en' ? 'Confirm your email address' : 'Підтвердіть електронну адресу',
+      template: `verify-email.${language}`,
       context: { url },
     };
   }
@@ -30,7 +34,8 @@ export class EmailVerificationMailer extends EmailVerificationHandler {
   }
 
   async send(link: EmailVerificationLink) {
-    await this.mailer.send(VerifyEmailMail, { to: link.email, data: link });
+    const locale = await this.usersRepository.getPreferredMailLocale(link.email);
+    await this.mailer.send(VerifyEmailMail, { to: link.email, data: { ...link, locale } });
   }
 
   markVerified(userId: string, email: string) {

@@ -11,6 +11,8 @@ export const queryWorkoutsSchema = z.strictObject({
 
   view: z.enum(['summary', 'full']).optional(),
 
+  sort: z.enum(['scheduledAtAsc', 'completedAtDesc']).optional(),
+
   scheduledFrom: workoutDateSchema.optional(),
 
   scheduledTo: workoutDateSchema.optional(),

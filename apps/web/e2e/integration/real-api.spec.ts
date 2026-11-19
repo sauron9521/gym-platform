@@ -55,7 +55,8 @@ test('real API persists the profile and revokes the browser session', async ({ p
     ).toBeLessThan(60_000);
 
     await page.goto('/dashboard');
-    await page.getByRole('button', { name: 'Вийти' }).click();
+    // Dashboard uses the request locale; session revocation must work in both languages.
+    await page.getByRole('button', { name: /^(Вийти|Sign out)$/ }).click();
     await expect(page).toHaveURL(/\/login$/);
 
     const revoked = await replay.get('/users/me');
