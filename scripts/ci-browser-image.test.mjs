@@ -47,12 +47,8 @@ test('browser E2E jobs use identical pinned Playwright images', () => {
 test('browser jobs retain affected scope, E2E, traces and required gate', () => {
   assert.ok(fixture);
   assert.ok(landingSuite);
-  assert.ok(
-    fixture.includes("if: needs.changes.outputs.web == 'true'"),
-  );
-  assert.ok(
-    landingSuite.includes("if: needs.changes.outputs.landing == 'true'"),
-  );
+  assert.ok(fixture.includes("if: needs.changes.outputs.web == 'true'"));
+  assert.ok(landingSuite.includes("if: needs.changes.outputs.landing == 'true'"));
   assert.ok(fixture.includes('pnpm --filter @gym/web test:e2e'));
   assert.ok(landingSuite.includes('pnpm --filter @gym/landing test:e2e'));
   assert.ok(fixture.includes('web-playwright-failures'));
