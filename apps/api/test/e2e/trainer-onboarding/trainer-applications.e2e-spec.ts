@@ -117,7 +117,7 @@ describe('Trainer applications (HTTP + PostgreSQL)', () => {
       .set('Cookie', cookieFor('owner'));
 
     expect(get.status).toBe(200);
-    expect(get.body).toBeNull();
+    expect(get.body).toEqual({ application: null });
     expect(get.headers['cache-control']).toContain('no-store');
   });
 
@@ -171,7 +171,7 @@ describe('Trainer applications (HTTP + PostgreSQL)', () => {
       .get('/trainer-applications/me')
       .set('Cookie', cookieFor('other'));
     expect(other.status).toBe(200);
-    expect(other.body).toBeNull();
+    expect(other.body).toEqual({ application: null });
   });
 
   it('prevents a second open application and edits only owner pending notes', async () => {
@@ -255,8 +255,8 @@ describe('Trainer applications (HTTP + PostgreSQL)', () => {
       .get('/trainer-applications/me')
       .set('Cookie', cookieFor('owner'));
     expect(approved.status).toBe(200);
-    expect(approved.body.status).toBe('APPROVED');
-    expect(approved.body).not.toHaveProperty('reviewerId');
+    expect(approved.body.application.status).toBe('APPROVED');
+    expect(approved.body.application).not.toHaveProperty('reviewerId');
 
     const edit = await request(app.getHttpServer())
       .patch('/trainer-applications/me')

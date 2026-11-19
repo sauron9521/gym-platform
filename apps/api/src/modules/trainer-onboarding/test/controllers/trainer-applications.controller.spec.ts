@@ -21,7 +21,7 @@ describe('TrainerApplicationsController', () => {
 
   it('reads only the authenticated account applications', async () => {
     service.findMine.mockResolvedValue(null);
-    await expect(controller.findMine(actor)).resolves.toBeNull();
+    await expect(controller.findMine(actor)).resolves.toEqual({ application: null });
     expect(service.findMine).toHaveBeenCalledWith(actor.id);
   });
 

@@ -26,7 +26,7 @@ The authenticated applicant uses the same User identity, browser session cookie
 or Bearer access token as the existing API. The three routes are **owner-only**:
 
 - `POST /trainer-applications` — 201, new own PENDING record; 3/min/IP.
-- `GET /trainer-applications/me` — 200, latest own record or null; 60/min/IP.
+- `GET /trainer-applications/me` — 200, `{ application: record | null }`; 60/min/IP.
 - `PATCH /trainer-applications/me` — 200, edit own PENDING record; 3/min/IP.
 
 POST and PATCH accept only `{ "applicantNote": "20–1000 characters" }`.

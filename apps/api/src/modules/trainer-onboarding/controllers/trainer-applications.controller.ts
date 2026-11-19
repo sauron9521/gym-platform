@@ -11,6 +11,7 @@ import {
 import { RateLimit } from '#src/common/rate-limit/rate-limit.policies';
 import {
   nullable,
+  objectSchema,
   trainerApplicationOwnResponseSchema,
 } from '#src/infra/openapi/response-contracts';
 
@@ -32,9 +33,11 @@ export class TrainerApplicationsController {
 
   @Get('me')
   @RateLimit('read')
-  @ApiOkResponse({ schema: nullable(trainerApplicationOwnResponseSchema) })
-  findMine(@CurrentUser() user: Actor) {
-    return this.service.findMine(user.id);
+  @ApiOkResponse({
+    schema: objectSchema({ application: nullable(trainerApplicationOwnResponseSchema) }),
+  })
+  async findMine(@CurrentUser() user: Actor) {
+    return { application: await this.service.findMine(user.id) };
   }
 
   @Post()
