@@ -7,7 +7,7 @@ import { TrainerReviewController } from '../../controllers/trainer-review.contro
 import { TrainerOnboardingModule } from '../../trainer-onboarding.module.js';
 
 describe('TrainerOnboardingModule controller registry', () => {
-  it('registers exactly the protected application controller', () => {
+  it('registers the application and operator review controllers', () => {
     const controllers: unknown[] = Reflect.getMetadata(
       MODULE_METADATA.CONTROLLERS,
       TrainerOnboardingModule,
@@ -34,9 +34,10 @@ describe('Trainer review admin route registry', () => {
     expect(Reflect.getMetadata(PATH_METADATA, TrainerReviewController)).toBe(
       'admin/trainer-applications',
     );
-    expect(Reflect.getMetadata('required_admin_permissions', TrainerReviewController)).toBeUndefined();
+    expect(
+      Reflect.getMetadata('required_admin_permissions', TrainerReviewController),
+    ).toBeUndefined();
   });
-
 
   it.each([
     ['findPending', RequestMethod.GET, '/'],
