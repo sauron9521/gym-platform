@@ -16,7 +16,17 @@ COPY --parents apps/*/package.json packages/*/package.json tooling/*/package.jso
 RUN pnpm --filter @gym/api... install --frozen-lockfile
 # Source edits now invalidate compilation, not the dependency install layer.
 COPY . .
-RUN pnpm --filter @gym/api db:generate && pnpm --filter @gym/api build
+# Verify the API-only context before producing either deployable image.
+RUN test -f apps/api/prisma7.config.ts \
+    && test -d apps/api/src \
+    && test -d apps/api/prisma/migrations \
+    && test -f apps/web/package.json \
+    && test -f packages/i18n/package.json \
+    && test ! -e apps/web/src \
+    && test ! -e apps/mobile/src \
+    && test ! -e packages/i18n/src \
+    && pnpm --filter @gym/api db:generate \
+    && pnpm --filter @gym/api build
 
 # Deploy only the API workspace with its migration tooling. Unlike the full
 # build stage, the migration image must not contain unrelated web/mobile deps.

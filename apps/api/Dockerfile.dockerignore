@@ -1,0 +1,46 @@
+# API-specific build context. Docker uses this file instead of root
+# .dockerignore only for builds with -f apps/api/Dockerfile.
+# Default deny: new monorepo apps/packages cannot silently enter API images.
+**
+# pnpm needs the root lockfile and the full workspace manifest graph.
+!package.json
+!pnpm-lock.yaml
+!pnpm-workspace.yaml
+!apps
+!apps/*
+!apps/*/package.json
+!packages
+!packages/*
+!packages/*/package.json
+!tooling
+!tooling/*
+!tooling/*/package.json
+# Preserve every API source, Prisma schema/migration and Nest build asset.
+!apps/api/**
+
+# Re-apply exclusions AFTER the API exception; the final match wins.
+.git
+**/.git
+**/.env
+**/.env.*
+**/node_modules
+**/dist
+**/build
+**/.next
+**/coverage
+**/.turbo
+**/.cache
+**/uploads
+**/logs
+**/*.log
+**/*.tsbuildinfo
+**/.idea
+**/.vscode
+**/test
+**/docs
+**/playwright-report
+**/test-results
+**/src/infra/database/generated
+**/*.pem
+**/*.key
+**/*.p12
