@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { describe, it } from 'node:test';
+import { describe, it } from 'vitest';
 import { buildPlan, issuePhase, milestoneCode, milestones } from './roadmap-milestones.mjs';
 
 const issue = (number, labels, milestone = null) => ({
