@@ -36,8 +36,7 @@ export function ProgramsScreen() {
       contentContainerStyle={styles.content}
       data={assignments}
       keyExtractor={(item) => item.id}
-      refreshing={query.isRefetching && !query.isFetchingNextPage}
-      onRefresh={refresh}
+      bounces={false}
       ListHeaderComponent={
         <View style={styles.header}>
           <Text style={styles.title}>Мої програми</Text>
