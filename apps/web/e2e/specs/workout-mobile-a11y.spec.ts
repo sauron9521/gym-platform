@@ -78,7 +78,9 @@ async function openActiveWorkout(page: Page) {
 async function expectNoHorizontalPageOverflow(page: Page) {
   await expect
     .poll(async () =>
-      page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth),
+      page.evaluate(
+        () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+      ),
     )
     .toBeLessThanOrEqual(1);
 }
