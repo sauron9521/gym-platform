@@ -76,6 +76,30 @@
         "trainerProgramsDescription": "Керуй програмами для своїх спортсменів.",
         "trainerAthletesTitle": "Мої підопічні",
         "trainerAthletesDescription": "Переглядай спортсменів, із якими працюєш."
+      },
+      "workoutHero": {
+        "checkingActive": "Перевіряємо тренування",
+        "loadingActive": "Завантажуємо поточне тренування…",
+        "errorActive": "Не вдалося перевірити тренування",
+        "checkingUpcoming": "Шукаємо найближче тренування",
+        "loadingUpcoming": "Перевіряємо розклад…",
+        "errorUpcoming": "Не вдалося завантажити розклад",
+        "errorDefault": "Не вдалося завантажити тренування. Спробуйте ще раз.",
+        "errorForbidden": "Немає дозволу переглядати ці тренування.",
+        "errorBadRequest": "Некоректні параметри пошуку тренувань.",
+        "errorRateLimited": "Забагато запитів. Спробуйте трохи пізніше.",
+        "retry": "Спробувати знову",
+        "activeStatus": "Тренування у процесі",
+        "activeIntro": "Останнє додане тренування серед тих, що тривають.",
+        "startedAt": "Почато: {date}.",
+        "activeCount": "Усього тренувань у процесі: {count}",
+        "continueWorkout": "Продовжити тренування",
+        "noUpcoming": "Зараз немає активних або майбутніх запланованих тренувань.",
+        "upcomingStatus": "Найближче заплановане тренування",
+        "scheduledAt": "Заплановано: {date}",
+        "exerciseCount": "Вправ: {count}",
+        "viewAndStart": "Переглянути та розпочати",
+        "dateUnavailable": "Дата недоступна"
       }
     }
   },
