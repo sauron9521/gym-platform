@@ -16,7 +16,12 @@ model User {
   deletedAt     DateTime? @map("deleted_at") @db.Timestamptz(3)
 
   // Relation
-  profile              Profile?
+  profile                    Profile?
+  trainerProfile             TrainerProfile?
+  trainerApplications        TrainerApplication[] @relation("TrainerApplicationApplicant")
+  reviewedTrainerApplications TrainerApplication[] @relation("TrainerApplicationReviewer")
+  approvedTrainerProfiles    TrainerProfile[] @relation("TrainerProfileApprover")
+  revokedTrainerProfiles     TrainerProfile[] @relation("TrainerProfileRevoker")
   bodyMeasurements     BodyMeasurement[]
   sessions             Session[]
   refreshTokens        RefreshToken[]

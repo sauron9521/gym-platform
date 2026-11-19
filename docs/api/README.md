@@ -13,6 +13,7 @@ The API lives in `apps/api` and uses NestJS 12 (ESM), Prisma 7/PostgreSQL, Redis
 | [Workouts](modules/workouts.md)                   | Workout lifecycle, sets and workout creation from programs                        |
 | [Workout analytics](modules/workout-analytics.md) | Progress summary and per-exercise analytics                                       |
 | [Trainer–athletes](modules/trainer-athletes.md)   | Trainer/athlete relationships and termination                                     |
+| [Trainer onboarding](modules/trainer-onboarding.md)   | Trainer application/profile persistence foundation, no HTTP API yet               |
 | [Training programs](modules/training-programs.md) | Programs, versions, workouts, exercises, sets and assignments                     |
 
 Infrastructure includes `src/infra/database` (Prisma), `src/infra/health`, `src/infra/openapi` and common cross-cutting HTTP/config components. These are **not** user-facing feature modules.
