@@ -19,10 +19,7 @@ function renderWithLocale(element: ReactElement, locale: Locale = 'uk') {
   return { ...view, rerender: (next: ReactElement) => view.rerender(wrap(next)) };
 }
 
-function dashboard(
-  role: 'ATHLETE' | 'TRAINER' | 'ADMIN' = 'ATHLETE',
-  locale: Locale = 'uk',
-) {
+function dashboard(role: 'ATHLETE' | 'TRAINER' | 'ADMIN' = 'ATHLETE', locale: Locale = 'uk') {
   const onSignOut = vi.fn();
   const view = renderWithLocale(
     <DashboardHome
