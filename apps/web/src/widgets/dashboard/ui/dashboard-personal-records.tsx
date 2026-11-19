@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import { useTranslations } from 'next-intl';
 import { useQuery } from '@tanstack/react-query';
 
 import { Button, Card, CardContent, CardHeader, CardTitle } from '@gym/ui-web';
@@ -40,6 +41,7 @@ export function personalRecordsQueryOptions() {
 
 /** Each count represents one current lifetime best for an exercise, not repeated record-break events. */
 export function DashboardPersonalRecords() {
+  const t = useTranslations('web.dashboard');
   const query = useQuery(personalRecordsQueryOptions());
   const onAuthFailure = useAuthFailure();
 
@@ -57,27 +59,30 @@ export function DashboardPersonalRecords() {
   return (
     <Card className="min-w-0">
       <CardHeader className="pb-3">
-        <CardTitle className="text-base">Особисті рекорди</CardTitle>
+        <CardTitle className="text-base">{t('kpi.recordsTitle')}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-2">
         {loading ? (
           <p role="status" className="text-sm text-muted-foreground">
-            Завантажуємо…
+            {t('kpi.loading')}
           </p>
         ) : query.isError ? (
           <div role="alert" className="space-y-3">
             <p className="text-sm text-destructive">
-              {query.error instanceof PersonalRecordsRequestError
-                ? query.error.message
-                : 'Не вдалося завантажити особисті рекорди.'}
+              {t(
+                query.error instanceof PersonalRecordsRequestError && query.error.status === 429
+                  ? 'kpi.recordsErrorRateLimited'
+                  : 'kpi.recordsErrorDefault',
+              )}
             </p>
             <Button
               type="button"
               size="touch"
               variant="outline"
+              aria-label={t('kpi.retryRecords')}
               onClick={() => void query.refetch()}
             >
-              Повторити
+              {t('kpi.retry')}
             </Button>
           </div>
         ) : Number.isInteger(query.data?.exerciseCount) &&
@@ -87,12 +92,12 @@ export function DashboardPersonalRecords() {
               {query.data?.exerciseCount}
             </p>
             <p className="text-xs text-muted-foreground">
-              Вправ із зафіксованою найкращою вагою за весь час.
+              {t('kpi.recordsDescription')}
             </p>
           </>
         ) : (
           <p role="status" className="text-sm text-muted-foreground">
-            Дані недоступні
+            {t('kpi.unavailable')}
           </p>
         )}
       </CardContent>
