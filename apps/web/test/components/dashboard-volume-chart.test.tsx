@@ -126,7 +126,9 @@ test('fetching a new range hides stale private graph and exact numbers', () => {
 test('empty response remains an empty state, not a fabricated graph', () => {
   useQueryMock.mockReturnValue(success({ ...volume, daily: [], workoutCount: 0, activeDays: 0 }));
   renderWithLocale(<DashboardVolumeChart />, 'en');
-  expect(screen.getByText('No recorded strength-training volume for the selected period.')).toBeTruthy();
+  expect(
+    screen.getByText('No recorded strength-training volume for the selected period.'),
+  ).toBeTruthy();
   expect(screen.queryByRole('img')).toBeNull();
 });
 
