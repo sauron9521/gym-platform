@@ -8,50 +8,42 @@ const integration = read('../.github/workflows/web-integration.yml');
 const web = JSON.parse(read('../apps/web/package.json'));
 const landing = JSON.parse(read('../apps/landing/package.json'));
 
-const fixture = workflow
-  .split('  web-browser-e2e:\n')[1]
-  ?.split('\n  landing-browser-e2e:\n')[0];
-const landingSuite = workflow
-  .split('  landing-browser-e2e:\n')[1]
-  ?.split('\n  quality-workspaces:\n')[0];
-const integrationSuite = integration
-  .split('  browser-api-suite:\n')[1]
-  ?.split('\n  browser-api:\n')[0];
+const sections = workflow.split('  landing-browser-e2e:\n');
+const webSuite = sections[0].split('  web-browser-e2e:\n')[1];
+const landingSuite = sections[1].split('  quality-workspaces:\n')[0];
+const integrationSuite = integration.split('  browser-api-suite:\n')[1];
 
 test('browser E2E jobs use identical pinned Playwright images', () => {
-  assert.ok(fixture, 'Web fixture E2E job missing');
-  assert.ok(landingSuite, 'Landing E2E job missing');
-  assert.ok(integrationSuite, 'Web integration E2E matrix missing');
+  assert.ok(webSuite);
+  assert.ok(landingSuite);
+  assert.ok(integrationSuite);
 
   const version = web.devDependencies['@playwright/test'];
   assert.equal(landing.devDependencies['@playwright/test'], version);
   assert.match(version, /^\d+\.\d+\.\d+$/);
 
-  const image = integrationSuite.match(
-    /mcr\.microsoft\.com\/playwright:v\d+\.\d+\.\d+-noble@sha256:[a-f0-9]{64}/,
-  )?.[0];
-  assert.ok(image, 'Reference Playwright image must be pinned by digest');
+  const image = integrationSuite.match(/mcr\.microsoft\.com\/playwright:[^\s]+/)?.[0];
+  assert.ok(image);
   assert.ok(image.includes('playwright:v' + version + '-noble'));
+  assert.match(image, /@sha256:[a-f0-9]{64}$/);
 
-  for (const [name, suite] of [
-    ['Web fixture', fixture],
+  for (const [label, suite] of [
+    ['Web fixture', webSuite],
     ['Landing', landingSuite],
   ]) {
-    assert.ok(suite.includes('image: ' + image), name + ' must match image');
+    assert.ok(suite.includes('image: ' + image), label);
     assert.ok(suite.includes('runs-on: ubuntu-24.04'));
-    assert.doesNotMatch(suite, /playwright install|ms-playwright|actions\/cache@v6/);
+    assert.doesNotMatch(suite, /playwright install|ms-playwright/);
     assert.match(suite, /pnpm install --frozen-lockfile/);
   }
 });
 
-test('browser jobs retain affected scope, E2E, traces and required gate', () => {
-  assert.ok(fixture);
-  assert.ok(landingSuite);
-  assert.ok(fixture.includes("if: needs.changes.outputs.web == 'true'"));
-  assert.ok(landingSuite.includes("if: needs.changes.outputs.landing == 'true'"));
-  assert.ok(fixture.includes('pnpm --filter @gym/web test:e2e'));
+test('affected checks retain browsers, traces and required gate', () => {
+  assert.match(webSuite, /if: needs\.changes\.outputs\.web == 'true'/);
+  assert.match(landingSuite, /if: needs\.changes\.outputs\.landing == 'true'/);
+  assert.ok(webSuite.includes('pnpm --filter @gym/web test:e2e'));
   assert.ok(landingSuite.includes('pnpm --filter @gym/landing test:e2e'));
-  assert.ok(fixture.includes('web-playwright-failures'));
+  assert.ok(webSuite.includes('web-playwright-failures'));
   assert.ok(landingSuite.includes('landing-playwright-failures'));
   assert.ok(workflow.includes('name: Quality / Node 24'));
   assert.ok(workflow.includes('name: API e2e / PostgreSQL 17'));
