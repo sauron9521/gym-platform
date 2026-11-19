@@ -30,7 +30,11 @@ describe('Trainer onboarding schema (PostgreSQL)', () => {
         select: { id: true },
       }),
       prisma.user.create({
-        data: { email: `trainer-reviewer-${randomUUID()}@example.com`, passwordHash: 'hash', role: 'ADMIN' },
+        data: {
+          email: `trainer-reviewer-${randomUUID()}@example.com`,
+          passwordHash: 'hash',
+          role: 'ADMIN',
+        },
         select: { id: true },
       }),
     ]);
@@ -68,9 +72,10 @@ describe('Trainer onboarding schema (PostgreSQL)', () => {
   });
 
   it('prevents a second pending application, but retains rejected history', async () => {
-    await expect(
-      prisma.trainerApplication.create({ data: { userId: applicantId } }),
-    ).rejects.toThrow();
+    const duplicatePending = prisma.trainerApplication.create({
+      data: { userId: applicantId },
+    });
+    await expect(duplicatePending).rejects.toThrow();
 
     const pending = await prisma.trainerApplication.findFirstOrThrow({
       where: { userId: applicantId, status: 'PENDING' },
@@ -102,21 +107,22 @@ describe('Trainer onboarding schema (PostgreSQL)', () => {
     const pending = await prisma.trainerApplication.findFirstOrThrow({
       where: { userId: applicantId, status: 'PENDING' },
     });
-    await expect(
-      prisma.trainerApplication.update({
-        where: { id: pending.id },
-        data: { status: 'APPROVED' },
-      }),
-    ).rejects.toThrow();
+    const unreviewedApproval = prisma.trainerApplication.update({
+      where: { id: pending.id },
+      data: { status: 'APPROVED' },
+    });
+    await expect(unreviewedApproval).rejects.toThrow();
 
     const approved = await prisma.trainerApplication.update({
       where: { id: pending.id },
       data: { status: 'APPROVED', reviewerId, reviewedAt: new Date() },
     });
     expect(approved.status).toBe('APPROVED');
-    await expect(
-      prisma.trainerApplication.update({ where: { id: approved.id }, data: { status: 'REVOKED' } }),
-    ).rejects.toThrow();
+    const unreviewedRevocation = prisma.trainerApplication.update({
+      where: { id: approved.id },
+      data: { status: 'REVOKED' },
+    });
+    await expect(unreviewedRevocation).rejects.toThrow();
     const revoked = await prisma.trainerApplication.update({
       where: { id: approved.id },
       data: { status: 'REVOKED', revokedAt: new Date(), revokedById: reviewerId },
@@ -128,21 +134,21 @@ describe('Trainer onboarding schema (PostgreSQL)', () => {
   it('keeps profile fail-closed until an audited explicit activation', async () => {
     const profile = await prisma.trainerProfile.create({ data: { userId: applicantId } });
     expect(profile.isActive).toBe(false);
-    await expect(
-      prisma.trainerProfile.update({
-        where: { id: profile.id },
-        data: { isActive: true },
-      }),
-    ).rejects.toThrow();
+    const unapprovedActivation = prisma.trainerProfile.update({
+      where: { id: profile.id },
+      data: { isActive: true },
+    });
+    await expect(unapprovedActivation).rejects.toThrow();
 
     const active = await prisma.trainerProfile.update({
       where: { id: profile.id },
       data: { isActive: true, approvedAt: new Date(), approvedById: reviewerId },
     });
     expect(active.isActive).toBe(true);
-    await expect(
-      prisma.trainerProfile.create({ data: { userId: applicantId } }),
-    ).rejects.toThrow();
+    const duplicateProfile = prisma.trainerProfile.create({
+      data: { userId: applicantId },
+    });
+    await expect(duplicateProfile).rejects.toThrow();
 
     const revoked = await prisma.trainerProfile.update({
       where: { id: profile.id },
