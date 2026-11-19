@@ -6,6 +6,32 @@ OVRANTO Light/Dark visual direction. It deliberately does **not** use
 pixel differences. The approved design references are tracked in issues #381,
 #383, #384, #389 and #392.
 
+## Capture from GitHub Actions (after PR #429 is merged)
+
+Go to **Actions → OVRANTO Web visual review → Run workflow**, select
+the `main` branch and start the manual run. The workflow does not run on
+pull requests or pushes and rejects non-`main` branches. It uses only
+the loopback fixture API and test accounts; no deployment secrets or real
+user data are needed.
+
+After the run completes, download **ovranto-web-visual-review-<run id>**
+from the run's **Artifacts** section. Extract the ZIP to find:
+
+- `playwright-report/`: HTML report with images attached to each of
+  the eight locale/theme/viewport cases.
+- `test-results/`: the 24 named full-page PNGs, organized into the
+  eight test case directories; failure traces may also be present.
+
+Open the report with `pnpm --filter @gym/web exec playwright show-report
+<path-to-extracted-playwright-report>` or inspect the PNGs directly.
+Artifacts are retained for **7 days**; download review evidence before
+it expires. A green manual run confirms captures were produced, **not**
+that the visuals were approved or pixel-identical to the mockups.
+
+The new workflow becomes available in the Actions tab **after merging**
+its workflow file into the default branch; PR CI cannot prove the manual
+dispatch itself ran.
+
 ## Capture on a developer machine
 
 Install dependencies and Chromium first:
@@ -36,7 +62,8 @@ development server. They capture full-page **Login**, **Athlete Dashboard** and
 - Viewport: 390×844 mobile, 1280×900 desktop
 
 The PNG images are attached to individual Playwright tests in
-`apps/web/playwright-report/`; both reports and test outputs are ignored by Git.
+`apps/web/playwright-report/` and stored as named files in `apps/web/test-results/`;
+both reports and test outputs are ignored by Git.
 This is not a replacement for screenshots taken on real mobile devices.
 
 ## Review policy
