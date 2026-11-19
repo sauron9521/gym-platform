@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { useLocale, useTranslations } from 'next-intl';
 import type { ReactNode } from 'react';
 
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle } from '@gym/ui-web';
@@ -22,17 +23,35 @@ type Shortcut = {
   description: string;
 };
 
-export function getDashboardShortcuts(role: AuthenticatedUser['role']): Shortcut[] {
+type DashboardShortcutKey =
+  | 'shortcuts.exercisesTitle'
+  | 'shortcuts.exercisesDescription'
+  | 'shortcuts.profileTitle'
+  | 'shortcuts.profileDescription'
+  | 'shortcuts.athleteProgramsTitle'
+  | 'shortcuts.athleteProgramsDescription'
+  | 'shortcuts.athleteTrainersTitle'
+  | 'shortcuts.athleteTrainersDescription'
+  | 'shortcuts.trainerProgramsTitle'
+  | 'shortcuts.trainerProgramsDescription'
+  | 'shortcuts.trainerAthletesTitle'
+  | 'shortcuts.trainerAthletesDescription';
+
+/** Restrict available routes by role; copy comes from the current request locale. */
+export function getDashboardShortcuts(
+  role: AuthenticatedUser['role'],
+  t: (key: DashboardShortcutKey) => string,
+): Shortcut[] {
   const shortcuts: Shortcut[] = [
     {
       href: '/exercises',
-      title: 'Каталог вправ',
-      description: 'Знаходь вправи для своїх тренувань.',
+      title: t('shortcuts.exercisesTitle'),
+      description: t('shortcuts.exercisesDescription'),
     },
     {
       href: '/profile',
-      title: 'Мій профіль',
-      description: 'Переглядай і оновлюй особисті дані.',
+      title: t('shortcuts.profileTitle'),
+      description: t('shortcuts.profileDescription'),
     },
   ];
 
@@ -40,26 +59,26 @@ export function getDashboardShortcuts(role: AuthenticatedUser['role']): Shortcut
     shortcuts.push(
       {
         href: '/athlete/programs',
-        title: 'Мої програми',
-        description: 'Переглядай призначені тренувальні програми.',
+        title: t('shortcuts.athleteProgramsTitle'),
+        description: t('shortcuts.athleteProgramsDescription'),
       },
       {
         href: '/athlete/trainers',
-        title: 'Мої тренери',
-        description: 'Переглядай зв’язки зі своїми тренерами.',
+        title: t('shortcuts.athleteTrainersTitle'),
+        description: t('shortcuts.athleteTrainersDescription'),
       },
     );
   } else if (role === 'TRAINER') {
     shortcuts.push(
       {
         href: '/trainer/programs',
-        title: 'Тренувальні програми',
-        description: 'Керуй програмами для своїх спортсменів.',
+        title: t('shortcuts.trainerProgramsTitle'),
+        description: t('shortcuts.trainerProgramsDescription'),
       },
       {
         href: '/trainer/athletes',
-        title: 'Мої підопічні',
-        description: 'Переглядай спортсменів, із якими працюєш.',
+        title: t('shortcuts.trainerAthletesTitle'),
+        description: t('shortcuts.trainerAthletesDescription'),
       },
     );
   }
@@ -81,7 +100,9 @@ export function DashboardHome({
   children,
   hero,
 }: DashboardHomeProps) {
-  const shortcuts = getDashboardShortcuts(role);
+  const t = useTranslations('web.dashboard');
+  const locale = useLocale();
+  const shortcuts = getDashboardShortcuts(role, t);
 
   return (
     <main className="mx-auto w-full max-w-6xl space-y-8 px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
@@ -91,7 +112,7 @@ export function DashboardHome({
             OVRANTO · PERFORMANCE PLATFORM
           </p>
           <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
-            Вітаємо, {displayName}!
+            {t('greeting', { name: displayName })}
           </h1>
           <p className="break-all text-sm text-muted-foreground">{email}</p>
         </div>
@@ -103,7 +124,7 @@ export function DashboardHome({
             disabled={isSigningOut}
             onClick={onSignOut}
           >
-            {isSigningOut ? 'Вихід…' : 'Вийти'}
+            {isSigningOut ? t('signingOut') : t('signOut')}
           </Button>
           {signOutError && (
             <p role="alert" className="max-w-xs text-sm text-destructive">
@@ -124,17 +145,16 @@ export function DashboardHome({
           />
           <div className="relative max-w-2xl space-y-4">
             <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-              Твій наступний крок
+              {t('nextStep')}
             </p>
             <h2
               id="dashboard-next-step"
               className="text-2xl font-semibold tracking-tight sm:text-3xl"
             >
-              Плануй тренування. Відстежуй прогрес.
+              {t('heroTitle')}
             </h2>
             <p className="max-w-xl text-sm leading-relaxed text-muted-foreground sm:text-base">
-              Створи тренування, додай вправи й підходи. Записи та їхній стан можна переглядати у
-              твоєму журналі.
+              {t('heroDescription')}
             </p>
             <div className="flex flex-wrap gap-3 pt-2">
               <Button
@@ -142,10 +162,10 @@ export function DashboardHome({
                 size="touch"
                 className="bg-[var(--brand-teal)] text-[var(--set-active-foreground)] hover:opacity-90"
               >
-                <Link href="/workouts/new">Створити тренування</Link>
+                <Link href="/workouts/new">{t('createWorkout')}</Link>
               </Button>
               <Button asChild size="touch" variant="outline">
-                <Link href="/workouts">Відкрити журнал</Link>
+                <Link href="/workouts">{t('openJournal')}</Link>
               </Button>
             </div>
           </div>
@@ -157,9 +177,9 @@ export function DashboardHome({
       <section aria-labelledby="dashboard-shortcuts" className="space-y-4">
         <div className="space-y-1">
           <h2 id="dashboard-shortcuts" className="text-xl font-semibold tracking-tight">
-            Швидкий доступ
+            {t('shortcutsTitle')}
           </h2>
-          <p className="text-sm text-muted-foreground">Перейди до потрібного розділу OVRANTO.</p>
+          <p className="text-sm text-muted-foreground">{t('shortcutsDescription')}</p>
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
           {shortcuts.map((shortcut) => (
@@ -173,7 +193,7 @@ export function DashboardHome({
                   href={shortcut.href}
                   className="inline-flex min-h-11 items-center rounded-md text-sm font-semibold text-primary underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
                 >
-                  Відкрити {shortcut.title.toLowerCase()}
+                  {t('shortcutLink', { title: shortcut.title.toLocaleLowerCase(locale) })}
                 </Link>
               </CardContent>
             </Card>
