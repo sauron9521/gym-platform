@@ -37,3 +37,14 @@ test('Landing namespace has localized copy for the current homepage and shared C
     assert.ok(locale['landing.home.description']);
   }
 });
+
+test('Landing home message keys are complete and localized in both languages', () => {
+  const englishHome = Object.keys(load('en').landing.home).sort();
+  const ukrainianHome = Object.keys(load('uk').landing.home).sort();
+  assert.deepEqual(englishHome, ukrainianHome);
+  assert.ok(englishHome.length >= 39);
+  for (const key of englishHome) {
+    assert.ok(en[`landing.home.${key}`].trim(), `Missing English landing.home.${key}`);
+    assert.ok(uk[`landing.home.${key}`].trim(), `Missing Ukrainian landing.home.${key}`);
+  }
+});

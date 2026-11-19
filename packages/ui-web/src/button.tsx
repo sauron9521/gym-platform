@@ -7,12 +7,13 @@ import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from './utils';
 
 const buttonVariants = cva(
-  'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50',
+  'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-medium transition-[background-color,border-color,color,box-shadow] motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-50',
   {
     variants: {
       variant: {
         default: 'bg-primary text-primary-foreground hover:bg-primary/90',
-        destructive: 'bg-destructive text-white hover:bg-destructive/90',
+        destructive:
+          'bg-destructive text-[color:var(--destructive-foreground,#fff)] hover:bg-destructive/90',
         outline: 'border border-input bg-background hover:bg-accent hover:text-accent-foreground',
         secondary: 'bg-secondary text-secondary-foreground hover:bg-secondary/80',
         ghost: 'hover:bg-accent hover:text-accent-foreground',
@@ -23,6 +24,9 @@ const buttonVariants = cva(
         sm: 'h-8 rounded-md px-3',
         lg: 'h-10 rounded-md px-6',
         icon: 'size-9',
+        /** Opt-in 44px control size for touch-heavy web flows. */
+        touch: 'h-11 px-5 py-2',
+        iconTouch: 'size-11',
       },
     },
     defaultVariants: {

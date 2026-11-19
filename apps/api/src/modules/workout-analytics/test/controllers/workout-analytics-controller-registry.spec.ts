@@ -33,9 +33,9 @@ describe('WorkoutAnalyticsModule controller registry', () => {
     expect(Reflect.getMetadata(HTTP_CODE_METADATA, handler)).toBeUndefined();
   });
 
-  it('keeps the 20-per-minute throttling on both analytics endpoints', () => {
+  it('keeps the 20-per-minute throttling on all analytics endpoints', () => {
     const handlers = WorkoutAnalyticsController.prototype;
-    for (const name of ['summary', 'exercise'] as const) {
+    for (const name of ['summary', 'personalRecords', 'exercise'] as const) {
       const handler = Object.getOwnPropertyDescriptor(handlers, name)?.value;
       expect(Reflect.getMetadata('THROTTLER:LIMITdefault', handler)).toBe(20);
       expect(Reflect.getMetadata('THROTTLER:TTLdefault', handler)).toBe(60_000);
@@ -53,7 +53,7 @@ describe('WorkoutAnalyticsModule controller registry', () => {
         return `${method}:workout-analytics/${path}`;
       });
 
-    expect(routes).toHaveLength(2);
+    expect(routes).toHaveLength(3);
     expect(new Set(routes).size).toBe(routes.length);
   });
 });

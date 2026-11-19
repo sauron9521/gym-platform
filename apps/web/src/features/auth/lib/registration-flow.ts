@@ -21,3 +21,24 @@ export function getRegistrationEmailMessage(status: VerificationEmailStatus): st
     ? 'Запит на надсилання листа підтвердження прийнято. Перевірте пошту та папку «Спам».'
     : 'Обліковий запис створено, але запит на надсилання листа не вдався. Спробуйте повторне надсилання після входу.';
 }
+
+/** Public error messages use translated keys, not backend response bodies. */
+export function getRegistrationErrorKey(status: number) {
+  switch (status) {
+    case 400:
+      return 'badInput' as const;
+    case 403:
+      return 'security' as const;
+    case 409:
+      return 'duplicate' as const;
+    case 429:
+      return 'rateLimited' as const;
+    default:
+      return 'unknown' as const;
+  }
+}
+
+export function getRegistrationEmailKey(status: VerificationEmailStatus) {
+  if (status === 'SUBMITTED') return 'submitted' as const;
+  return 'retryRequired' as const;
+}

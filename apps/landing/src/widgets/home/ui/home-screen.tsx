@@ -13,9 +13,24 @@ import {
 export function HomeScreen({ locale = defaultLocale }: { locale?: Locale } = {}) {
   const t = getMessages(locale).landing.home;
   const audiences = [
-    { title: t.audienceAthletesTitle, description: t.audienceAthletesDescription, href: '/for-athletes', action: t.audienceAthletesAction },
-    { title: t.audienceTrainersTitle, description: t.audienceTrainersDescription, href: '/for-trainers', action: t.audienceTrainersAction },
-    { title: t.audienceAppsTitle, description: t.audienceAppsDescription, href: '/apps', action: t.audienceAppsAction },
+    {
+      title: t.audienceAthletesTitle,
+      description: t.audienceAthletesDescription,
+      href: '/for-athletes',
+      action: t.audienceAthletesAction,
+    },
+    {
+      title: t.audienceTrainersTitle,
+      description: t.audienceTrainersDescription,
+      href: '/for-trainers',
+      action: t.audienceTrainersAction,
+    },
+    {
+      title: t.audienceAppsTitle,
+      description: t.audienceAppsDescription,
+      href: '/apps',
+      action: t.audienceAppsAction,
+    },
   ] as const;
   const milestones = [
     { number: '01', title: t.milestoneOneTitle, detail: t.milestoneOneDetail },

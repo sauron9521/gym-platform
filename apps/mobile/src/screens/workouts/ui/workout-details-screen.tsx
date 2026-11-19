@@ -121,7 +121,15 @@ export function WorkoutDetailsScreen({ id }: { id: string }) {
         : null;
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={styles.content}
+      contentInsetAdjustmentBehavior="automatic"
+      automaticallyAdjustKeyboardInsets
+      keyboardShouldPersistTaps="handled"
+      alwaysBounceVertical={false}
+      testID="workout-details-scroll"
+    >
       {details.isPending ? <ActivityIndicator accessibilityLabel="Завантаження" /> : null}
       {details.isError ? (
         <Text accessibilityRole="alert" style={styles.error}>
@@ -211,7 +219,7 @@ export function WorkoutDetailsScreen({ id }: { id: string }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: palette.background },
-  content: { padding: 24, gap: 16 },
+  content: { paddingHorizontal: 20, paddingTop: 24, paddingBottom: 64, gap: 16 },
   title: { fontSize: 26, fontWeight: '700', color: palette.text },
   heading: { fontSize: 17, fontWeight: '600', color: palette.text },
   muted: { fontSize: 14, color: palette.muted },
@@ -241,6 +249,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     padding: 18,
     gap: 8,
+    minWidth: 0,
   },
   button: {
     backgroundColor: palette.primary,

@@ -42,11 +42,23 @@ export function ExercisesScreen() {
         }
       }}
       onEndReachedThreshold={0.5}
-      refreshing={query.isRefetching && !query.isFetchingNextPage}
-      onRefresh={() => void query.refetch()}
+      bounces={false}
       ListHeaderComponent={
         <View style={styles.header}>
           <Text style={styles.title}>Каталог вправ</Text>
+          <Pressable
+            testID="exercises-refresh"
+            accessibilityRole="button"
+            accessibilityLabel="Оновити каталог вправ"
+            accessibilityState={{ disabled: query.isFetching }}
+            disabled={query.isFetching}
+            onPress={() => void query.refetch()}
+            style={styles.moreButton}
+          >
+            <Text style={styles.retryText}>
+              {query.isFetching ? 'Оновлення…' : 'Оновити каталог'}
+            </Text>
+          </Pressable>
           <TextInput
             testID="exercise-search"
             accessibilityLabel="Пошук вправ"

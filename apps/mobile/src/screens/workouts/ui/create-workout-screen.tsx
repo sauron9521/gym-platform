@@ -180,7 +180,15 @@ export function CreateWorkoutScreen() {
 
   return (
     <FormProvider {...form}>
-      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={styles.content}
+        contentInsetAdjustmentBehavior="automatic"
+        automaticallyAdjustKeyboardInsets
+        keyboardShouldPersistTaps="handled"
+        alwaysBounceVertical={false}
+        testID="create-workout-scroll"
+      >
         <Text style={styles.heading}>Нове тренування</Text>
         <Text style={styles.label}>Назва</Text>
         <Controller
@@ -255,7 +263,7 @@ export function CreateWorkoutScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: palette.background },
-  content: { gap: 12, padding: 24, paddingBottom: 48 },
+  content: { gap: 12, paddingHorizontal: 20, paddingTop: 24, paddingBottom: 64 },
   heading: { fontSize: 25, fontWeight: '700', color: palette.text },
   label: { fontSize: 14, fontWeight: '600', color: palette.text },
   text: { color: palette.text, fontWeight: '600' },
@@ -271,7 +279,13 @@ const styles = StyleSheet.create({
   },
   group: { gap: 12, padding: 14, borderColor: palette.border, borderWidth: 1, borderRadius: 12 },
   set: { gap: 8, padding: 12, borderRadius: 10, backgroundColor: palette.surface },
-  row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8 },
+  row: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
   secondary: {
     padding: 14,
     borderRadius: 12,
