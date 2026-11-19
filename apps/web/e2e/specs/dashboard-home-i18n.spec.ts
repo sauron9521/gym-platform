@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 
 test('English dashboard home copy', async ({ page }) => {
   await page.goto('/login');
-  await page.getByRole('combobox', { name: 'Мова' }).selectOption('en');
+  await page.getByRole('combobox', { name: /^(Мова|Language)$/ }).selectOption('en');
   await expect(page.locator('html')).toHaveAttribute('lang', 'en');
 
   await page.getByLabel('Електронна пошта').fill('athlete@example.test');
