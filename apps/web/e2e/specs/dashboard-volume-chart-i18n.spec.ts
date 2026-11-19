@@ -5,10 +5,12 @@ async function signInEnglish(page: Page) {
   await page.getByRole('combobox', { name: /^(Мова|Language)$/ }).selectOption('en');
   await expect(page.locator('html')).toHaveAttribute('lang', 'en');
 
-  // Login copy is owned by the separate Auth i18n PR #249.
-  await page.getByLabel('Електронна пошта').fill('athlete@example.test');
-  await page.getByLabel('Пароль').fill('TestPassword123!');
-  await page.getByRole('button', { name: 'Увійти' }).click();
+  // Auth copy was localized in merged #249: after switching to English,
+  // use the actual English labels, not the previous Ukrainian-only form.
+  await expect(page.getByRole('heading', { name: 'Sign in to your account' })).toBeVisible();
+  await page.getByLabel('Email address').fill('athlete@example.test');
+  await page.getByLabel('Password').fill('TestPassword123!');
+  await page.getByRole('button', { name: 'Sign in' }).click();
   await expect(page).toHaveURL(/\/dashboard$/);
 }
 
