@@ -16,7 +16,10 @@ vi.mock('@/shared/api/use-auth-failure', () => ({
   useAuthFailure: () => authFailureMock,
 }));
 
-import { useUpdateWorkoutSetMutation, WorkoutSetMutationError } from '@/features/workouts/api/workout-set-mutation';
+import {
+  useUpdateWorkoutSetMutation,
+  WorkoutSetMutationError,
+} from '@/features/workouts/api/workout-set-mutation';
 import type { WorkoutDetailsData } from '@/features/workouts/lib/workout-details';
 
 const persisted = {
@@ -48,7 +51,10 @@ const setQueryData = vi.fn();
 const invalidateQueries = vi.fn();
 
 type MutationOptions = {
-  mutationFn: (input: { setId: string; body: { status: 'COMPLETED' | 'SKIPPED' } }) => Promise<unknown>;
+  mutationFn: (input: {
+    setId: string;
+    body: { status: 'COMPLETED' | 'SKIPPED' };
+  }) => Promise<unknown>;
   onSuccess: (set: unknown) => Promise<void>;
   onError: (error: unknown) => void;
   retry: boolean;
