@@ -106,4 +106,60 @@ describe('ExercisePicker (native)', () => {
       expect(vi.mocked(useExercisesQuery)).toHaveBeenLastCalledWith({ search: 'жим' });
     });
   });
+  it('keeps the selected label tied to the externally controlled ID', async () => {
+    const onSelect = vi.fn();
+    const view = await render(<ExercisePicker selectedId="" onSelect={onSelect} />);
+    await fireEvent.press(view.getByTestId('workout-exercise-open'));
+    await fireEvent.press(view.getByRole('button', { name: 'Жим лежачи' }));
+
+    view.rerender(<ExercisePicker selectedId="exercise-1" onSelect={onSelect} />);
+    expect(view.getByText('Жим лежачи')).toBeTruthy();
+
+    // A form reset or external change must never display a different ID's cached name.
+    view.rerender(<ExercisePicker selectedId="different-id" onSelect={onSelect} />);
+    expect(view.getByText('Вправу обрано')).toBeTruthy();
+
+    view.rerender(<ExercisePicker selectedId="" onSelect={onSelect} />);
+    expect(view.getByText('Обрати вправу')).toBeTruthy();
+  });
+
+  it('clears search when cancelled and does not select an exercise', async () => {
+    const onSelect = vi.fn();
+    const view = await render(<ExercisePicker selectedId="" onSelect={onSelect} />);
+    await fireEvent.press(view.getByTestId('workout-exercise-open'));
+    await fireEvent.changeText(view.getByTestId('workout-exercise-search'), '  присідання  ');
+    await waitFor(() => {
+      expect(vi.mocked(useExercisesQuery)).toHaveBeenLastCalledWith({ search: 'присідання' });
+    });
+    await fireEvent.press(view.getByTestId('workout-exercise-close'));
+    expect(onSelect).not.toHaveBeenCalled();
+    await fireEvent.press(view.getByTestId('workout-exercise-open'));
+    expect(view.getByTestId('workout-exercise-search').props.value).toBe('');
+    expect(vi.mocked(useExercisesQuery)).toHaveBeenLastCalledWith({ search: '' });
+  });
+
+  it('keeps cached exercises and offers retry on a failed next page', async () => {
+    prepareQuery({
+      isError: true,
+      isFetchNextPageError: true,
+      hasNextPage: true,
+      error: new Error('Помилка наступної сторінки'),
+    });
+    const view = await render(<ExercisePicker selectedId="" onSelect={vi.fn()} />);
+    await fireEvent.press(view.getByTestId('workout-exercise-open'));
+    expect(view.getByRole('button', { name: 'Жим лежачи' })).toBeTruthy();
+    expect(view.getByText('Помилка сторінки. Спробувати ще')).toBeTruthy();
+    await fireEvent.press(view.getByTestId('workout-exercises-next'));
+    expect(fetchNextPage).toHaveBeenCalledOnce();
+  });
+
+  it('does not open the catalog when disabled', async () => {
+    const view = await render(<ExercisePicker selectedId="" disabled onSelect={vi.fn()} />);
+    expect(view.getByTestId('workout-exercise-open').props.accessibilityState).toEqual({
+      disabled: true,
+    });
+    await fireEvent.press(view.getByTestId('workout-exercise-open'));
+    expect(view.queryByTestId('workout-exercise-search')).toBeNull();
+  });
+
 });
