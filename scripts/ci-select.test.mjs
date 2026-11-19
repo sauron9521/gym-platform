@@ -449,7 +449,7 @@ test('real API browser suite preserves the required gate and fails closed', () =
     new URL('../.github/workflows/web-integration.yml', import.meta.url),
     'utf8',
   );
-  assert.match(yaml, /name: Web \/ Real API and PostgreSQL suite/);
+  assert.match(yaml, /name: Web \/ Integration E2E/);
   assert.match(yaml, /name: Web \/ Real API and PostgreSQL\n/);
   const suite = yaml.split('  browser-api-suite:\n')[1]?.split('\n  browser-api:\n')[0];
   assert.ok(suite, 'Web integration matrix suite must exist');

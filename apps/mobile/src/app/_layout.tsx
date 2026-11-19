@@ -13,6 +13,7 @@ import { palette } from '@/shared/config/theme';
 import { OfflineBanner } from '@/shared/ui/offline-banner';
 import { MobileErrorBoundary } from '@/shared/ui/mobile-error-boundary';
 import { LocaleProvider } from '@/shared/i18n/locale-provider';
+import { AccountLocaleSync } from '@/features/profile/ui/account-locale-sync';
 
 function Navigation() {
   const { account, restoring } = useAuth();
@@ -96,6 +97,7 @@ export default function RootLayout() {
             <MobileQueryProvider>
               <MobileErrorBoundary>
                 <AuthProvider>
+                  <AccountLocaleSync />
                   <Navigation />
                 </AuthProvider>
               </MobileErrorBoundary>
