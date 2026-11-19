@@ -8,7 +8,6 @@ import { ConfigService } from '@nestjs/config';
 
 import { Prisma } from '#prisma/client';
 import { AdminAuditLogger } from '#src/common/audit/admin-audit.logger';
-import type { AppConfigService } from '#src/common/config/app-config.types';
 import { hasAdminPermission } from '#src/common/rbac/admin-permissions';
 import { parseOperatorSuperAdminIds } from '#src/common/rbac/operator-superadmin-allowlist';
 
@@ -30,7 +29,7 @@ export class TrainerReviewService {
 
   private assertOperator(reviewer: Reviewer): void {
     const trusted = parseOperatorSuperAdminIds(
-      (this.config as AppConfigService).get('SUPERADMIN_USER_IDS'),
+      this.config.get<string>('SUPERADMIN_USER_IDS'),
     );
     if (!hasAdminPermission(reviewer.role, 'admin.accounts.manage', reviewer.id, trusted)) {
       throw new ForbiddenException('Insufficient administrative permissions');

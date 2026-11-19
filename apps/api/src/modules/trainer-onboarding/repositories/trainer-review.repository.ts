@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 
-import { Prisma } from '#prisma/client';
+import { Prisma, type TrainerApplicationStatus } from '#prisma/client';
 import { PrismaService } from '#src/infra/database/index';
 
 import { trainerApplicationAdminSelect } from '../selects/trainer-application.admin-select.js';
@@ -50,7 +50,8 @@ export class TrainerReviewRepository {
         if (application.userId === reviewerId) return { kind: 'forbidden' } as const;
 
         // Retry is a true no-op only for identical actor+decision+reason.
-        const desired = action === 'APPROVE' ? 'APPROVED' : action === 'REJECT' ? 'REJECTED' : 'REVOKED';
+        const desired: TrainerApplicationStatus =
+          action === 'APPROVE' ? 'APPROVED' : action === 'REJECT' ? 'REJECTED' : 'REVOKED';
         if (application.status === desired) {
           const actor = action === 'REVOKE' ? application.revokedById : application.reviewerId;
           const storedReason = action === 'REVOKE' ? application.revokeReason : application.reviewReason;
