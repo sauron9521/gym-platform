@@ -91,9 +91,7 @@ export function DashboardPersonalRecords() {
             <p className="text-3xl font-semibold tracking-tight tabular-nums">
               {query.data?.exerciseCount}
             </p>
-            <p className="text-xs text-muted-foreground">
-              {t('kpi.recordsDescription')}
-            </p>
+            <p className="text-xs text-muted-foreground">{t('kpi.recordsDescription')}</p>
           </>
         ) : (
           <p role="status" className="text-sm text-muted-foreground">
