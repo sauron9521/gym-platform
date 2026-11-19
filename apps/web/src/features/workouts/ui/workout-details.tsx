@@ -61,8 +61,8 @@ export function WorkoutDetails({ id }: { id: string }) {
   if (unauthenticated) return null;
 
   return (
-    <main className="mx-auto max-w-5xl space-y-7 px-6 py-12">
-      <Link href="/workouts" className="text-sm text-muted-foreground hover:underline">
+    <main className="mx-auto min-w-0 max-w-5xl space-y-6 px-4 py-6 sm:space-y-7 sm:px-6 sm:py-10">
+      <Link href="/workouts" className="inline-flex min-h-11 items-center rounded-md text-sm font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring">
         ← Усі тренування
       </Link>
 
@@ -83,10 +83,12 @@ export function WorkoutDetails({ id }: { id: string }) {
 
       {state.kind === 'ready' && (
         <>
-          <header className="space-y-3">
+          <header className="min-w-0 space-y-4 rounded-2xl border bg-card p-4 sm:p-6">
             <div className="flex flex-wrap items-center gap-3">
-              <h1 className="text-3xl font-semibold tracking-tight">{state.workout.title}</h1>
-              <span className="rounded-full bg-muted px-3 py-1 text-xs font-medium">
+              <h1 className="min-w-0 break-words text-2xl font-semibold tracking-tight sm:text-3xl">
+                {state.workout.title}
+              </h1>
+              <span className="shrink-0 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
                 {getWorkoutStatusLabel(state.workout.status)}
               </span>
               {state.workout.status === 'PLANNED' && !editingWorkout && (
@@ -95,13 +97,13 @@ export function WorkoutDetails({ id }: { id: string }) {
                 </Button>
               )}
             </div>
-            <dl className="grid gap-3 text-sm sm:grid-cols-3">
+            <dl className="grid gap-3 text-sm sm:grid-cols-3 [&>div]:min-w-0 [&>div]:rounded-lg [&>div]:bg-muted/40 [&>div]:p-3">
               <SetMetric label="Заплановано" value={formatWorkoutDate(state.workout.scheduledAt)} />
               <SetMetric label="Початок" value={formatWorkoutDate(state.workout.startedAt)} />
               <SetMetric label="Завершення" value={formatWorkoutDate(state.workout.completedAt)} />
             </dl>
             {state.workout.notes && (
-              <p className="whitespace-pre-wrap text-sm text-muted-foreground">
+              <p className="whitespace-pre-wrap break-words text-sm text-muted-foreground">
                 {state.workout.notes}
               </p>
             )}
