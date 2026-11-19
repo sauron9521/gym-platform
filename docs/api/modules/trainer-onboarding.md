@@ -18,3 +18,29 @@
 - PostgreSQL integration uses the disposable `*_test` database and verifies unique pending rows, failed malformed approval, review history, no athlete role mutation, and fail-closed profile activation. Never run this migration on production without staging review.
 - Use standard `pnpm --filter @gym/api db:migrate:deploy` **only** on a verified disposable test database or separately approved staging environment. Frozen initial baseline is unchanged.
 - Follow-up API work is split across #310 submission/status, #311 admin moderation + capability synchronization, #312 dashboard read models and #363 Trainer Web auth after permissions.
+
+## Application HTTP API — #310
+
+The authenticated applicant uses the same User identity, browser session cookie
+or Bearer access token as the existing API. The three routes are **owner-only**:
+
+- `POST /trainer-applications` — 201, new own PENDING record; 3/min/IP.
+- `GET /trainer-applications/me` — 200, `{ application: record | null }`; 60/min/IP.
+- `PATCH /trainer-applications/me` — 200, edit own PENDING record; 3/min/IP.
+
+POST and PATCH accept only `{ "applicantNote": "20–1000 characters" }`.
+Zod rejects extra fields including `role`, `status`, `userId`, `reviewerId`
+and all approval timestamps. Only verified-email ATHLETE accounts may
+submit/edit; pending or approved requests conflict (409). Rejected or revoked
+applications remain in the audit history and allow another submission. The
+PostgreSQL partial unique index prevents concurrent duplicate PENDING rows.
+
+GET does not reveal other accounts' applications or reviewer identity.
+Read/write responses contain only applicant-facing fields, and the entire
+`/trainer-applications` tree sets `Cache-Control: no-store` including errors.
+No endpoint grants Trainer capability; moderation (#311), role/capability
+policy (#291) and Trainer Web authorization (#363) are separate milestones.
+
+Tests: `src/modules/trainer-onboarding/test/`,
+`test/e2e/trainer-onboarding/`. The checked-in OpenAPI and typed client must
+be regenerated with `pnpm api:contract:generate` alongside route changes.
