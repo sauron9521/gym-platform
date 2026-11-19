@@ -56,7 +56,10 @@ afterEach(cleanup);
 test('only confirms after the server mutation resolves and rejects rapid duplicate submissions', async () => {
   let confirm!: () => void;
   mutateAsync.mockImplementation(
-    () => new Promise<void>((resolve) => { confirm = resolve; }),
+    () =>
+      new Promise<void>((resolve) => {
+        confirm = resolve;
+      }),
   );
   mount();
 
@@ -107,7 +110,8 @@ test('failed request keeps the form open and never claims success', async () => 
 
 test('pending mutation shows accessible status and disables every action', () => {
   useMutationMock.mockReturnValue({
-    mutateAsync, reset,
+    mutateAsync,
+    reset,
     isPending: true,
     isError: false,
     error: null,
@@ -115,7 +119,9 @@ test('pending mutation shows accessible status and disables every action', () =>
   });
   mount();
   expect(screen.getByRole('status').textContent).toContain('Зберігаємо пропуск підходу');
-  expect(screen.getByRole('form', { name: 'Запис результатів підходу' }).getAttribute('aria-busy')).toBe('true');
+  expect(
+    screen.getByRole('form', { name: 'Запис результатів підходу' }).getAttribute('aria-busy'),
+  ).toBe('true');
   for (const button of screen.getAllByRole('button')) {
     expect((button as HTMLButtonElement).disabled).toBe(true);
   }
