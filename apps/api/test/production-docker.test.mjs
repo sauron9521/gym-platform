@@ -8,7 +8,11 @@ test('Dockerfile uses Node 24/pnpm and isolates the production runtime', async (
   const docker = await read('../Dockerfile');
   assert.ok(docker.includes('ARG NODE_BASE_IMAGE=node:24-trixie-slim'));
   assert.ok(docker.includes('FROM ${NODE_BASE_IMAGE} AS base'));
-  assert.ok(docker.includes('FROM build AS migrate'));
+  assert.ok(docker.includes('FROM build AS migration-deps'));
+  assert.ok(docker.includes('pnpm --filter @gym/api deploy /app/migrate'));
+  assert.ok(docker.includes('FROM ${NODE_BASE_IMAGE} AS migrate'));
+  assert.ok(docker.includes('COPY --from=migration-deps /app/migrate/ ./'));
+  assert.ok(docker.includes('CMD ["./node_modules/.bin/prisma", "migrate", "deploy"'));
   assert.ok(docker.includes('FROM ${NODE_BASE_IMAGE} AS runtime'));
   assert.ok(docker.includes('pnpm install --frozen-lockfile'));
   assert.ok(docker.includes('pnpm --filter @gym/api db:generate'));
