@@ -90,7 +90,7 @@ describe('Auth mail handlers', () => {
       url: 'https://app.example.test/reset?token=opaque&locale=uk',
       email: 'member@example.test',
       locale: 'uk',
-    } as PasswordResetLink;
+    } as unknown as PasswordResetLink;
     await recovery.send(link);
     expect(users.getPreferredMailLocale).toHaveBeenCalledExactlyOnceWith(link.email);
     expect(mailer.send).toHaveBeenCalledExactlyOnceWith(PasswordResetMail, {
