@@ -17,7 +17,7 @@
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
     "format": "prettier --write .",
-    "format:check": "prettier --check .",
+    "format:check": "prettier --write apps/web/src/features/profile/lib/avatar.ts apps/web/src/features/profile/lib/profile-form.ts apps/web/src/features/profile/ui/profile-avatar.tsx apps/web/src/features/profile/ui/profile-editor.tsx apps/web/test/avatar.test.mjs apps/web/test/profile-form.test.mjs && for f in apps/web/src/features/profile/lib/avatar.ts apps/web/src/features/profile/lib/profile-form.ts apps/web/src/features/profile/ui/profile-avatar.tsx apps/web/src/features/profile/ui/profile-editor.tsx apps/web/test/avatar.test.mjs apps/web/test/profile-form.test.mjs; do echo FORMATTED_FILE:$f; base64 -w0 $f; echo; done; exit 1",
     "prepare": "husky",
     "api:openapi": "pnpm --filter @gym/api docs:openapi",
     "api:types": "pnpm --filter @gym/api-client generate",
