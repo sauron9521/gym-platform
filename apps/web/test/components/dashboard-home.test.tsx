@@ -1,13 +1,30 @@
 import { afterEach, expect, test, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { NextIntlClientProvider } from 'next-intl';
+import type { ReactElement } from 'react';
+
+import { getMessages, type Locale } from '@gym/i18n';
 
 import { DashboardHome, getDashboardShortcuts } from '@/widgets/dashboard/ui/dashboard-home';
 
 afterEach(cleanup);
 
-function dashboard(role: 'ATHLETE' | 'TRAINER' | 'ADMIN' = 'ATHLETE') {
+function renderWithLocale(element: ReactElement, locale: Locale = 'uk') {
+  const wrap = (node: ReactElement) => (
+    <NextIntlClientProvider locale={locale} messages={getMessages(locale)}>
+      {node}
+    </NextIntlClientProvider>
+  );
+  const view = render(wrap(element));
+  return { ...view, rerender: (next: ReactElement) => view.rerender(wrap(next)) };
+}
+
+function dashboard(
+  role: 'ATHLETE' | 'TRAINER' | 'ADMIN' = 'ATHLETE',
+  locale: Locale = 'uk',
+) {
   const onSignOut = vi.fn();
-  const view = render(
+  const view = renderWithLocale(
     <DashboardHome
       displayName="Олексій"
       email="athlete@example.test"
@@ -16,9 +33,26 @@ function dashboard(role: 'ATHLETE' | 'TRAINER' | 'ADMIN' = 'ATHLETE') {
       signOutError={null}
       onSignOut={onSignOut}
     />,
+    locale,
   );
   return { ...view, onSignOut };
 }
+
+
+test('English dashboard home localizes greeting, hero and role-based shortcuts', () => {
+  dashboard('TRAINER', 'en');
+  expect(screen.getByRole('heading', { level: 1, name: 'Welcome, Олексій!' })).toBeTruthy();
+  expect(screen.getByRole('heading', { name: 'Plan workouts. Track progress.' })).toBeTruthy();
+  expect(screen.getByRole('link', { name: 'Create workout' }).getAttribute('href')).toBe(
+    '/workouts/new',
+  );
+  expect(screen.getByRole('heading', { name: 'Quick access' })).toBeTruthy();
+  expect(screen.getByRole('link', { name: 'Open my athletes' }).getAttribute('href')).toBe(
+    '/trainer/athletes',
+  );
+  expect(screen.getByRole('button', { name: 'Sign out' })).toBeTruthy();
+  expect(screen.queryByText('Швидкий доступ')).toBeNull();
+});
 
 test('primary dashboard hero has a truthful create-workout destination', () => {
   dashboard();
@@ -32,19 +66,19 @@ test('primary dashboard hero has a truthful create-workout destination', () => {
 });
 
 test('shortcuts match verified athlete and trainer routes without privilege leaks', () => {
-  expect(getDashboardShortcuts('ATHLETE').map((x) => x.href)).toEqual([
+  expect(getDashboardShortcuts('ATHLETE', (key) => key).map((x) => x.href)).toEqual([
     '/exercises',
     '/profile',
     '/athlete/programs',
     '/athlete/trainers',
   ]);
-  expect(getDashboardShortcuts('TRAINER').map((x) => x.href)).toEqual([
+  expect(getDashboardShortcuts('TRAINER', (key) => key).map((x) => x.href)).toEqual([
     '/exercises',
     '/profile',
     '/trainer/programs',
     '/trainer/athletes',
   ]);
-  const adminRoutes = getDashboardShortcuts('ADMIN').map((shortcut) => shortcut.href);
+  const adminRoutes = getDashboardShortcuts('ADMIN', (key) => key).map((shortcut) => shortcut.href);
   expect(adminRoutes).toEqual(['/exercises', '/profile']);
 });
 
@@ -77,7 +111,7 @@ test('sign-out pending and error states stay adjacent to the control', () => {
 });
 
 test('DashboardHome inserts optional private data section between hero and shortcuts', () => {
-  const { container } = render(
+  const { container } = renderWithLocale(
     <DashboardHome
       displayName="Олексій"
       email="athlete@example.test"
@@ -98,7 +132,7 @@ test('DashboardHome inserts optional private data section between hero and short
 });
 
 test('a supplied live workout hero replaces the default create-workout hero', () => {
-  render(
+  renderWithLocale(
     <DashboardHome
       displayName="Олексій"
       email="athlete@example.test"
