@@ -78,7 +78,7 @@ test('English dashboard shows upcoming workout after confirmed empty active list
   });
 
   await signInEnglish(page);
-  await expect(page.getByRole('heading', { name: 'Leg session' })).toBeVisible();
+  await expect(page.getByRole('heading', { level: 2, name: 'Leg session' })).toBeVisible();
   await expect(page.getByText('Next scheduled workout')).toBeVisible();
   await expect(page.getByText(/Scheduled:/)).toBeVisible();
   await expect(page.getByText('Exercises: 5')).toBeVisible();
