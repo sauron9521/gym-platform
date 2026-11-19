@@ -43,9 +43,8 @@ test('login shows accessible OVRANTO brand without horizontal overflow at 320px'
 });
 
 async function signInForLocaleTest(page: import('@playwright/test').Page, email: string) {
-  await page.context().addCookies([
-    { name: 'gym-locale', value: 'uk', url: 'http://127.0.0.1:3100' },
-  ]);
+  const localeCookie = { name: 'gym-locale', value: 'uk', url: 'http://127.0.0.1:3100' };
+  await page.context().addCookies([localeCookie]);
   await page.goto('/login');
   await page.getByLabel('Електронна пошта').fill(email);
   await page.getByLabel('Пароль').fill('TestPassword123!');
@@ -54,9 +53,7 @@ async function signInForLocaleTest(page: import('@playwright/test').Page, email:
   await expect(page.getByRole('combobox', { name: /^(Мова|Language)$/ })).toBeEnabled();
 }
 
-test('account locale persists across reload and login, overriding a guest cookie', async ({
-  page,
-}) => {
+test('account locale survives logout and overrides guest choice', async ({ page }) => {
   await signInForLocaleTest(page, 'locale@example.test');
   await page.getByRole('combobox', { name: 'Мова' }).selectOption('en');
   await expect(page.locator('html')).toHaveAttribute('lang', 'en');
@@ -78,9 +75,7 @@ test('account locale persists across reload and login, overriding a guest cookie
   expect(cookie?.value).toBe('en');
 });
 
-test('failed authenticated preference PATCH preserves locale and permits explicit retry', async ({
-  page,
-}) => {
+test('failed locale PATCH preserves cookie and retries safely', async ({ page }) => {
   await signInForLocaleTest(page, 'locale-error@example.test');
 
   let patches = 0;
