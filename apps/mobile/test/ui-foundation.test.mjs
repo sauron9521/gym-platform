@@ -85,10 +85,7 @@ test('UniWind light and dark channels match generated OVRANTO semantic tokens', 
     assert.ok(content, 'Missing ' + mode + ' UniWind theme');
     const palette = ovrantoNativePalette[mode];
     for (const [key, value] of Object.entries(palette)) {
-      assert.ok(
-        content.includes('--' + kebab(key) + ': ' + rgb(value) + ';'),
-        mode + ' ' + key,
-      );
+      assert.ok(content.includes('--' + kebab(key) + ': ' + rgb(value) + ';'), mode + ' ' + key);
     }
     for (const [key, value] of Object.entries(ovrantoNativePalette.brand)) {
       assert.ok(content.includes('--brand-' + key + ': ' + rgb(value) + ';'));
