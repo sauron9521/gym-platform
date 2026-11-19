@@ -140,6 +140,15 @@ export class UsersRepository {
     return Boolean(profile && profile.user.deletedAt === null);
   }
 
+  /** Transactional mail uses the persisted account setting, not link/query language hints. */
+  async getPreferredMailLocale(email: string): Promise<'uk' | 'en'> {
+    const user = await this.prisma.user.findUnique({
+      where: { email: normalizeEmail(email), deletedAt: null },
+      select: { preferredLocale: true },
+    });
+    return user?.preferredLocale === 'en' ? 'en' : 'uk';
+  }
+
   async findUserByEmail(email: string) {
     return this.prisma.user.findUnique({
       where: { email: normalizeEmail(email) },

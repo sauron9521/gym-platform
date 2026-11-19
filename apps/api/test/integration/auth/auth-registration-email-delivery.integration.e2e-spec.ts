@@ -10,6 +10,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import { AppModule } from '../../../src/app.module.js';
 import { PrismaService } from '../../../src/infra/database/index.js';
+import { VerifyEmailMail } from '../../../src/modules/auth/mailers/email-verification.mailer.js';
 import { useTestDatabase } from '../../utility/test-db-helper.js';
 
 describe('Registration email submission recovery (HTTP + PostgreSQL)', () => {
@@ -82,6 +83,10 @@ describe('Registration email submission recovery (HTTP + PostgreSQL)', () => {
     expect(response.headers['cache-control']).toBe('no-store');
     expect(sessionCookie(response.headers['set-cookie'])).toMatch(/^__Host-sid=/);
     expect(mailer.send).toHaveBeenCalledTimes(1);
+    expect(mailer.send).toHaveBeenLastCalledWith(VerifyEmailMail, {
+      to: successEmail,
+      data: expect.objectContaining({ locale: 'uk', url: expect.any(String) }),
+    });
   }, 20_000);
 
   it('does not turn a persisted account into a failed signup and permits resend', async () => {
@@ -130,11 +135,19 @@ describe('Registration email submission recovery (HTTP + PostgreSQL)', () => {
 
     // Once SMTP recovers, the already authenticated account can resend.
     mailer.send.mockResolvedValue(undefined);
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { preferredLocale: 'en' },
+    });
     await request(app.getHttpServer())
       .post('/auth/email/verification')
       .set('Cookie', cookie)
       .expect(202);
     expect(mailer.send).toHaveBeenCalledTimes(3);
+    expect(mailer.send).toHaveBeenLastCalledWith(VerifyEmailMail, {
+      to: failedEmail,
+      data: expect.objectContaining({ locale: 'en', url: expect.any(String) }),
+    });
     expect(await prisma.emailToken.count({ where: { userId: user.id } })).toBeGreaterThan(0);
   }, 30_000);
 });
