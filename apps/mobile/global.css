@@ -44,8 +44,8 @@ body {
     --set-pending-foreground: 84 79 73;
     --set-error-background: 251 230 227;
     --set-error-foreground: 163 41 39;
-    --chart1: 7 92 85;
-    --chart2: 199 101 55;
+    --chart-1: 7 92 85;
+    --chart-2: 199 101 55;
   }
 
   .dark {
@@ -82,8 +82,8 @@ body {
     --set-pending-foreground: 216 224 220;
     --set-error-background: 76 40 38;
     --set-error-foreground: 255 197 190;
-    --chart1: 112 207 182;
-    --chart2: 236 161 123;
+    --chart-1: 112 207 182;
+    --chart-2: 236 161 123;
   }
 }
 
@@ -120,6 +120,6 @@ body {
   --color-set-pending-foreground: rgb(var(--set-pending-foreground));
   --color-set-error-background: rgb(var(--set-error-background));
   --color-set-error-foreground: rgb(var(--set-error-foreground));
-  --color-chart1: rgb(var(--chart1));
-  --color-chart2: rgb(var(--chart2));
+  --color-chart1: rgb(var(--chart-1));
+  --color-chart2: rgb(var(--chart-2));
 }
