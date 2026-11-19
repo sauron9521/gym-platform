@@ -129,10 +129,13 @@ jobs:
         run: node apps/mobile/scripts/smoke-ios-dev.mjs
 
   web-browser-e2e:
-    name: Web Browser E2E / Chromium
+    name: Web / Browser E2E (Chromium, fixture API)
     needs: changes
     if: needs.changes.outputs.web == 'true'
-    runs-on: ubuntu-latest
+    # Reuse the version-matched image validated by Web integration E2E.
+    runs-on: ubuntu-24.04
+    container:
+      image: mcr.microsoft.com/playwright:v1.65.1-noble@sha256:1507cbfc550a63a6b7396791ca4f00df17beb56342d2447b3f106c306f525579
     timeout-minutes: 20
     env:
       GYM_API_INTERNAL_URL: http://127.0.0.1:3001
@@ -160,14 +163,7 @@ jobs:
           pnpm --filter @gym/web lint
           pnpm --filter @gym/web typecheck
 
-      - name: Restore Playwright Chromium browser cache
-        uses: actions/cache@v6
-        with:
-          path: ~/.cache/ms-playwright
-          key: ${{ runner.os }}-playwright-chromium-1.65.0
-
-      - name: Install Chromium and system dependencies
-        run: pnpm --filter @gym/web exec playwright install --with-deps chromium
+      # The official pinned container already includes Chromium and OS libraries.
 
       - name: Browser tests against a loopback fixture HTTP API
         run: pnpm --filter @gym/web test:e2e
@@ -186,10 +182,12 @@ jobs:
           retention-days: 7
 
   landing-browser-e2e:
-    name: Landing Browser E2E / Chromium
+    name: Landing / Browser E2E (Chromium)
     needs: changes
     if: needs.changes.outputs.landing == 'true'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    container:
+      image: mcr.microsoft.com/playwright:v1.65.1-noble@sha256:1507cbfc550a63a6b7396791ca4f00df17beb56342d2447b3f106c306f525579
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
@@ -199,7 +197,7 @@ jobs:
           node-version: '24'
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm --filter @gym/landing exec playwright install --with-deps chromium
+      # Browser and OS dependencies are supplied by the pinned container.
       - name: Browser checks against the real public Next.js app
         run: pnpm --filter @gym/landing test:e2e
         env:
