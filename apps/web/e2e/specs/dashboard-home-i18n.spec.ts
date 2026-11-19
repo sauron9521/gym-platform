@@ -1,8 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-test('Dashboard home updates title and shortcuts for English without changing account data', async ({
-  page,
-}) => {
+test('English dashboard home updates title and shortcuts', async ({ page }) => {
   await page.context().addCookies([
     { name: 'gym-locale', value: 'en', url: 'http://127.0.0.1:3100' },
   ]);
