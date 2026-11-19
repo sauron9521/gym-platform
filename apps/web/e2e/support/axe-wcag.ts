@@ -21,7 +21,8 @@ export async function expectNoAxeWcagViolations(page: Page) {
         impact: violation.impact,
         helpUrl: violation.helpUrl,
         nodes: violation.nodes.map((node) => {
-          const element = document.querySelector(node.target[0] ?? '');
+          const selector = node.target[0];
+          const element = typeof selector === 'string' ? document.querySelector(selector) : null;
           return {
             target: node.target,
             html: node.html,
