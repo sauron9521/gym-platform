@@ -135,6 +135,27 @@
         "recordsDescription": "Exercises with a recorded lifetime best weight.",
         "recordsErrorDefault": "Could not load personal records.",
         "recordsErrorRateLimited": "Too many requests. Please try again later."
+      },
+      "volumeChart": {
+        "heading": "Workout progress",
+        "description": "Daily strength-training volume for the selected period.",
+        "periodLabel": "Chart period",
+        "range7": "7 days",
+        "range30": "30 days",
+        "range90": "90 days",
+        "volumeLabel": "Training volume, kg",
+        "loading": "Loading chart…",
+        "errorDefault": "Could not load workout analytics.",
+        "errorRateLimited": "Too many requests. Please try again later.",
+        "retry": "Retry",
+        "retryAccessible": "Retry loading chart",
+        "empty": "No recorded strength-training volume for the selected period.",
+        "chartAccessible": "Strength-training volume chart for {days, plural, one {# day} other {# days}}. Exact values are listed below.",
+        "pointTitle": "{date}: {volume, number} kg",
+        "volumeKg": "{volume, number} kg",
+        "showValues": "View exact daily values",
+        "dailyValues": "Daily training volume values",
+        "summary": "Workouts: {workouts, number}. Active days: {activeDays, number}. API data as of {date}."
       }
     },
     "authFields": {
