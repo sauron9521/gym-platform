@@ -295,8 +295,7 @@ jobs:
       - name: Full workspace regression for main and cross-cutting changes
         if: needs.changes.outputs.full == 'true'
         run: |
-          pnpm lint
-          pnpm typecheck
+          pnpm exec turbo run lint typecheck
           # API unit tests with coverage are enforced by the protected E2E gate.
           pnpm exec turbo run test --filter=@gym/web --filter=@gym/mobile --filter=@gym/api-client --filter=@gym/landing --filter=@gym/admin --filter=@gym/trainer
           pnpm build
@@ -324,8 +323,7 @@ jobs:
           if [ "$CI_MOBILE" = true ]; then filters+=(--filter=@gym/mobile); fi
           if [ "$CI_CLIENT" = true ]; then filters+=(--filter=@gym/api-client); fi
           test "${#filters[@]}" -gt 0
-          pnpm exec turbo run lint "${filters[@]}"
-          pnpm exec turbo run typecheck "${filters[@]}"
+          pnpm exec turbo run lint typecheck "${filters[@]}"
           # API unit tests run in the dedicated coverage job.
           test_filters=()
           if [ "$CI_WEB" = true ]; then test_filters+=(--filter=@gym/web); fi
