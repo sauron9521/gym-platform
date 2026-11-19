@@ -32,11 +32,7 @@ describe('Trainer applications (HTTP + PostgreSQL)', () => {
     return cookie;
   }
 
-  async function createUser(
-    key: string,
-    role: 'ATHLETE' | 'TRAINER' | 'ADMIN',
-    verified = true,
-  ) {
+  async function createUser(key: string, role: 'ATHLETE' | 'TRAINER' | 'ADMIN', verified = true) {
     const email = `trainer-application-${key}-${randomUUID()}@example.com`;
     const hasher = app.get(PasswordHasher);
     const user = await prisma.user.create({
@@ -231,7 +227,7 @@ describe('Trainer applications (HTTP + PostgreSQL)', () => {
         .set('Cookie', cookieFor('owner'))
         .send({ applicantNote: updatedNote }),
     ]);
-    expect(responses.map((response) => response.status).sort()).toEqual([201, 409]);
+    expect(responses.map((response) => response.status).sort((a, b) => a - b)).toEqual([201, 409]);
 
     const history = await prisma.trainerApplication.findMany({
       where: { userId: users[0]!.id },

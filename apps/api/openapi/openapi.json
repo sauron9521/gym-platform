@@ -7649,53 +7649,60 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "id": {
-                      "type": "string",
-                      "format": "uuid"
-                    },
-                    "status": {
-                      "type": "string",
-                      "enum": ["PENDING", "APPROVED", "REJECTED", "REVOKED"]
-                    },
-                    "applicantNote": {
-                      "type": "string",
+                    "application": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": ["PENDING", "APPROVED", "REJECTED", "REVOKED"]
+                        },
+                        "applicantNote": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "reviewReason": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "reviewedAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "nullable": true
+                        },
+                        "revokedAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "nullable": true
+                        },
+                        "createdAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "updatedAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "status",
+                        "applicantNote",
+                        "reviewReason",
+                        "reviewedAt",
+                        "revokedAt",
+                        "createdAt",
+                        "updatedAt"
+                      ],
+                      "additionalProperties": false,
                       "nullable": true
-                    },
-                    "reviewReason": {
-                      "type": "string",
-                      "nullable": true
-                    },
-                    "reviewedAt": {
-                      "type": "string",
-                      "format": "date-time",
-                      "nullable": true
-                    },
-                    "revokedAt": {
-                      "type": "string",
-                      "format": "date-time",
-                      "nullable": true
-                    },
-                    "createdAt": {
-                      "type": "string",
-                      "format": "date-time"
-                    },
-                    "updatedAt": {
-                      "type": "string",
-                      "format": "date-time"
                     }
                   },
-                  "required": [
-                    "id",
-                    "status",
-                    "applicantNote",
-                    "reviewReason",
-                    "reviewedAt",
-                    "revokedAt",
-                    "createdAt",
-                    "updatedAt"
-                  ],
-                  "additionalProperties": false,
-                  "nullable": true
+                  "required": ["application"],
+                  "additionalProperties": false
                 }
               }
             }

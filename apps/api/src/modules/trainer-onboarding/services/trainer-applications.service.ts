@@ -50,11 +50,7 @@ export class TrainerApplicationsService {
     }
 
     // CAS on (id, owner, status) cannot overwrite a concurrent admin decision.
-    const updated = await this.applications.updatePending(
-      userId,
-      pending.id,
-      input.applicantNote,
-    );
+    const updated = await this.applications.updatePending(userId, pending.id, input.applicantNote);
     if (!updated) throw new ConflictException('Trainer application is no longer pending');
 
     return updated;

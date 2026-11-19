@@ -19,7 +19,6 @@
 - Use standard `pnpm --filter @gym/api db:migrate:deploy` **only** on a verified disposable test database or separately approved staging environment. Frozen initial baseline is unchanged.
 - Follow-up API work is split across #310 submission/status, #311 admin moderation + capability synchronization, #312 dashboard read models and #363 Trainer Web auth after permissions.
 
-
 ## Application HTTP API — #310
 
 The authenticated applicant uses the same User identity, browser session cookie

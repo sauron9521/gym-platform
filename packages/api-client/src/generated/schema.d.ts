@@ -4053,21 +4053,23 @@ export interface operations {
         };
         content: {
           'application/json': {
-            /** Format: uuid */
-            id: string;
-            /** @enum {string} */
-            status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'REVOKED';
-            applicantNote: string | null;
-            reviewReason: string | null;
-            /** Format: date-time */
-            reviewedAt: string | null;
-            /** Format: date-time */
-            revokedAt: string | null;
-            /** Format: date-time */
-            createdAt: string;
-            /** Format: date-time */
-            updatedAt: string;
-          } | null;
+            application: {
+              /** Format: uuid */
+              id: string;
+              /** @enum {string} */
+              status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'REVOKED';
+              applicantNote: string | null;
+              reviewReason: string | null;
+              /** Format: date-time */
+              reviewedAt: string | null;
+              /** Format: date-time */
+              revokedAt: string | null;
+              /** Format: date-time */
+              createdAt: string;
+              /** Format: date-time */
+              updatedAt: string;
+            } | null;
+          };
         };
       };
     };

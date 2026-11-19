@@ -279,12 +279,6 @@ jobs:
           pnpm --filter @gym/api test:architecture
           pnpm --filter @gym/api test:coverage-tools
 
-      # TEMPORARY formatting diagnostics; will be reverted before review.
-      - name: Show M05 formatter corrections (temporary)
-        run: |
-          pnpm exec prettier --write apps/api/src/modules/trainer-onboarding/services/trainer-applications.service.ts apps/api/test/e2e/trainer-onboarding/trainer-applications.e2e-spec.ts docs/api/modules/trainer-onboarding.md
-          git diff -- apps/api/src/modules/trainer-onboarding/services/trainer-applications.service.ts apps/api/test/e2e/trainer-onboarding/trainer-applications.e2e-spec.ts docs/api/modules/trainer-onboarding.md
-
       - name: Check formatting
         run: pnpm format:check
 
