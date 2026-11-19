@@ -76,9 +76,7 @@ for (const width of [320, 1280]) {
   });
 }
 
-test('athlete dashboard has no detectable WCAG 2.2 A/AA violations at 390px', async ({
-  page,
-}) => {
+test('athlete dashboard has no detectable WCAG 2.2 A/AA violations at 390px', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 812 });
   await signIn(page);
   await expectNoAxeWcagViolations(page);
@@ -116,9 +114,7 @@ test('open workout set editor meets automated WCAG 2.2 A/AA at 320px', async ({ 
   await expectNoAxeWcagViolations(page);
 });
 
-test('invalid advanced notes state meets automated WCAG 2.2 A/AA at 360px', async ({
-  page,
-}) => {
+test('invalid advanced notes state meets automated WCAG 2.2 A/AA at 360px', async ({ page }) => {
   await page.setViewportSize({ width: 360, height: 812 });
   await openActiveWorkout(page);
   await page.getByRole('button', { name: 'Записати результат' }).click();
