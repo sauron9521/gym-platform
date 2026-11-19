@@ -28,7 +28,16 @@ describe('Localized API error codes', () => {
   });
 
   it('falls back safely for unknown, inherited and malformed API codes', () => {
-    for (const code of ['PRIVATE_DB_TOKEN', 'HTTP_418', '__proto__', 'constructor', null, 123, {}]) {
+    const unsafeCodes = [
+      'PRIVATE_DB_TOKEN',
+      'HTTP_418',
+      '__proto__',
+      'constructor',
+      null,
+      123,
+      {},
+    ];
+    for (const code of unsafeCodes) {
       for (const locale of ['uk', 'en']) {
         expect(apiErrorMessage(locale, code)).toBe(getMessages(locale).errors.unknown);
       }
