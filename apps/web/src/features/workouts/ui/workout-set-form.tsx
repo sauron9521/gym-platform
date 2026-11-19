@@ -119,8 +119,7 @@ export function WorkoutSetForm({
 
   function showValidationErrors(errors: Partial<Record<keyof WorkoutSetFormValues, unknown>>) {
     const firstAdvancedError =
-      additionalFields.find(({ name }) => errors[name])?.name ??
-      (errors.notes ? 'notes' : null);
+      additionalFields.find(({ name }) => errors[name])?.name ?? (errors.notes ? 'notes' : null);
     if (firstAdvancedError) {
       setInvalidAdvancedField(firstAdvancedError);
       setShowAdditional(true);
