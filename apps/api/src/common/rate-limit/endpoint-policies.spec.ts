@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
+import { RATE_LIMIT_POLICIES } from './rate-limit.policies.js';
+
 import { ExercisesController } from '#src/modules/exercises/controllers/exercises.controller';
 import { WorkoutsController } from '#src/modules/workouts/controllers/workouts.controller';
 import { WorkoutAnalyticsController } from '#src/modules/workout-analytics/controllers/workout-analytics.controller';
@@ -7,6 +9,17 @@ import { AuthController } from '#src/modules/auth/controllers/auth.controller';
 import { UsersController } from '#src/modules/users/controllers/users.controller';
 
 describe('Endpoint-aware throttling policies', () => {
+  it('centralizes the global default and every semantic endpoint budget', () => {
+    expect(RATE_LIMIT_POLICIES).toEqual({
+      global: { limit: 10, ttl: 60_000 },
+      read: { limit: 60, ttl: 60_000 },
+      analytics: { limit: 20, ttl: 60_000 },
+      auth: { limit: 3, ttl: 60_000 },
+      avatar: { limit: 5, ttl: 60_000 },
+      workoutSet: { limit: 120, ttl: 60_000 },
+    });
+  });
+
   // Nest throttler stores method-level limits under this metadata key.
   const limitKey = 'THROTTLER:LIMITdefault';
   const ttlKey = 'THROTTLER:TTLdefault';
@@ -18,6 +31,7 @@ describe('Endpoint-aware throttling policies', () => {
     [ExercisesController, 'findOne', 60],
     [WorkoutsController, 'findMany', 60],
     [WorkoutsController, 'findOne', 60],
+    [WorkoutsController, 'updateSet', 120],
     [WorkoutAnalyticsController, 'summary', 20],
     [WorkoutAnalyticsController, 'exercise', 20],
     [AuthController, 'signIn', 3],
@@ -36,7 +50,14 @@ describe('Endpoint-aware throttling policies', () => {
   );
 
   it('retains the global policy for workout mutations', () => {
-    for (const methodName of ['create', 'updateSet'] as const) {
+    for (const methodName of [
+      'create',
+      'update',
+      'start',
+      'complete',
+      'cancel',
+      'createFromProgram',
+    ] as const) {
       const handler = Object.getOwnPropertyDescriptor(
         WorkoutsController.prototype,
         methodName,

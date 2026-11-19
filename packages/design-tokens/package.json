@@ -8,11 +8,14 @@
   ],
   "exports": {
     "./dark.css": "./src/dark.css",
-    "./native": "./src/native.ts"
+    "./native": "./src/native.ts",
+    "./ovranto.css": "./src/ovranto.css",
+    "./ovranto-native": "./src/ovranto-native.ts"
   },
   "scripts": {
     "build": "pnpm test",
-    "test": "vitest run"
+    "test": "vitest run",
+    "tokens:generate": "node scripts/generate-theme.mjs"
   },
   "devDependencies": {
     "vite": "8.3.8",

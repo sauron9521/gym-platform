@@ -1,13 +1,15 @@
 import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
+import { getTranslations } from 'next-intl/server';
 
 import { verifyServerSession } from '@/shared/api/server-session';
 import { DashboardScreen } from '@/widgets/dashboard/ui/dashboard-screen';
 
-export const metadata: Metadata = {
-  title: 'Кабінет | Gym Platform',
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations('web.dashboard');
+  return { title: `${t('pageTitle')} | OVRANTO` };
+}
 
 // Every request must verify with NestJS; never statically cache private content.
 export const dynamic = 'force-dynamic';
