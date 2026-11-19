@@ -12,6 +12,7 @@ import { DashboardActiveWorkout } from './dashboard-active-workout';
 import { DashboardCompletedSessions } from './dashboard-completed-sessions';
 import { DashboardPlannedWorkouts } from './dashboard-planned-workouts';
 import { DashboardWorkoutStats } from './dashboard-workout-stats';
+import { DashboardVolumeChart } from './dashboard-volume-chart';
 import type { AuthenticatedUser } from '@/shared/api/server-session';
 
 type DashboardState =
@@ -134,6 +135,7 @@ export function DashboardScreen({ initialUser }: { initialUser: AuthenticatedUse
       {initialUser.role === 'ATHLETE' && (
         <>
           <DashboardWorkoutStats />
+          <DashboardVolumeChart />
           <DashboardPlannedWorkouts />
           <DashboardCompletedSessions />
         </>

@@ -11,6 +11,7 @@ import {
 } from '@/features/workouts/api/workouts-list-query';
 import { getWorkoutListErrorMessage } from '@/features/workouts/lib/workouts-list';
 import { useAuthFailure } from '@/shared/api/use-auth-failure';
+import { DashboardPersonalRecords } from './dashboard-personal-records';
 
 /**
  * Read the API's owner-scoped total count for each supported status.
@@ -50,7 +51,7 @@ export function DashboardWorkoutStats() {
           Кількість за статусом за весь час. Скасовані не враховуються.
         </p>
       </div>
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {metrics.map(({ status, label, query }) => {
           const loading = query.isPending || query.isFetching;
 
@@ -94,6 +95,7 @@ export function DashboardWorkoutStats() {
             </Card>
           );
         })}
+        <DashboardPersonalRecords />
       </div>
     </section>
   );
