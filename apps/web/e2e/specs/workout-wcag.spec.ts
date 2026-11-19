@@ -132,3 +132,39 @@ test('invalid advanced notes state meets automated WCAG 2.2 A/AA at 360px', asyn
   await expect(form.getByRole('alert')).toBeVisible();
   await expectNoAxeWcagViolations(page);
 });
+
+// Reuse the existing axe helper while exercising real user preference controls.
+for (const locale of ['uk', 'en'] as const) {
+  for (const theme of ['light', 'dark'] as const) {
+    test(`${locale}/${theme} dashboard accessibility`, async ({ page }) => {
+      const width = locale === 'en' ? 1280 : 390;
+      await page.setViewportSize({ width, height: 812 });
+      await signIn(page);
+      const header = page.getByTestId('athlete-shell-header');
+      await header.getByRole('combobox').first().selectOption(theme);
+      await header.getByRole('combobox').nth(1).selectOption(locale);
+      await page.reload();
+      await expect(page.locator('html')).toHaveAttribute('lang', locale);
+      await expect(page.locator('html')).toHaveClass(new RegExp(theme));
+      await expect(header.getByRole('combobox').first()).toHaveValue(theme);
+      await expect(header.getByRole('combobox').nth(1)).toHaveValue(locale);
+      await expectNoAxeWcagViolations(page);
+    });
+  }
+}
+
+test('system appearance follows OS colors', async ({ page }) => {
+  await page.emulateMedia({ colorScheme: 'dark' });
+  await signIn(page);
+  const theme = page.getByTestId('athlete-shell-header').getByRole('combobox').first();
+  await theme.selectOption('system');
+  await page.reload();
+  await expect(theme).toHaveValue('system');
+  await expect(page.locator('html')).not.toHaveClass(/(?:light|dark)/);
+  const dark = await page.evaluate(() => getComputedStyle(document.body).backgroundColor);
+  await expectNoAxeWcagViolations(page);
+  await page.emulateMedia({ colorScheme: 'light' });
+  const light = await page.evaluate(() => getComputedStyle(document.body).backgroundColor);
+  expect(light).not.toBe(dark);
+  await expectNoAxeWcagViolations(page);
+});
