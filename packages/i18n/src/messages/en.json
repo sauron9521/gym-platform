@@ -7,7 +7,9 @@
     "changeLanguage": "Change language",
     "retry": "Try again",
     "back": "Back",
-    "close": "Close"
+    "close": "Close",
+    "languageLoadError": "Could not load your language preference.",
+    "languageUpdateError": "Could not save your language. Please try again."
   },
   "navigation": {
     "features": "Features",

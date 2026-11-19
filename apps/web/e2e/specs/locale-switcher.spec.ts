@@ -41,3 +41,65 @@ test('login shows accessible OVRANTO brand without horizontal overflow at 320px'
     )
     .toBeLessThanOrEqual(1);
 });
+
+async function signInForLocaleTest(page: import('@playwright/test').Page, email: string) {
+  const localeCookie = { name: 'gym-locale', value: 'uk', url: 'http://127.0.0.1:3100' };
+  await page.context().addCookies([localeCookie]);
+  await page.goto('/login');
+  await page.getByLabel('Електронна пошта').fill(email);
+  await page.getByLabel('Пароль').fill('TestPassword123!');
+  await page.getByRole('button', { name: 'Увійти' }).click();
+  await expect(page).toHaveURL(/\/dashboard$/);
+  await expect(page.getByRole('combobox', { name: /^(Мова|Language)$/ })).toBeEnabled();
+}
+
+test('account locale survives logout and overrides guest choice', async ({ page }) => {
+  await signInForLocaleTest(page, 'locale@example.test');
+  await page.getByRole('combobox', { name: 'Мова' }).selectOption('en');
+  await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+
+  await page.reload();
+  await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+
+  await page.getByRole('button', { name: /^(Вийти|Sign out)$/ }).click();
+  await expect(page).toHaveURL(/\/login$/);
+  await page.getByRole('combobox', { name: 'Language' }).selectOption('uk');
+  await expect(page.locator('html')).toHaveAttribute('lang', 'uk');
+
+  await page.getByLabel('Електронна пошта').fill('locale@example.test');
+  await page.getByLabel('Пароль').fill('TestPassword123!');
+  await page.getByRole('button', { name: 'Увійти' }).click();
+  await expect(page).toHaveURL(/\/dashboard$/);
+  await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+  const cookie = (await page.context().cookies()).find((item) => item.name === 'gym-locale');
+  expect(cookie?.value).toBe('en');
+});
+
+test('failed locale PATCH preserves cookie and retries safely', async ({ page }) => {
+  await signInForLocaleTest(page, 'locale-error@example.test');
+
+  let patches = 0;
+  await page.route('**/backend/users/me/preferences', (route) => {
+    patches += 1;
+    if (patches === 1) {
+      return route.fulfill({ status: 503, contentType: 'application/json', body: '{}' });
+    }
+    return route.continue();
+  });
+
+  const switcher = page.getByRole('combobox', { name: /^(Мова|Language)$/ });
+  await switcher.selectOption('en');
+  const localeError = page.getByRole('alert').filter({ hasText: 'Не вдалося зберегти мову' });
+  await expect(localeError).toBeVisible();
+  await expect(page.locator('html')).toHaveAttribute('lang', 'uk');
+  await expect(switcher).toHaveValue('uk');
+  let cookie = (await page.context().cookies()).find((item) => item.name === 'gym-locale');
+  expect(cookie?.value).toBe('uk');
+  expect(patches).toBe(1);
+
+  await switcher.selectOption('en');
+  await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+  cookie = (await page.context().cookies()).find((item) => item.name === 'gym-locale');
+  expect(cookie?.value).toBe('en');
+  expect(patches).toBe(2);
+});

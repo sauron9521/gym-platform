@@ -7,7 +7,9 @@
     "changeLanguage": "Змінити мову",
     "retry": "Повторити",
     "back": "Назад",
-    "close": "Закрити"
+    "close": "Закрити",
+    "languageLoadError": "Не вдалося завантажити мовні налаштування.",
+    "languageUpdateError": "Не вдалося зберегти мову. Спробуйте ще раз."
   },
   "navigation": {
     "features": "Можливості",
