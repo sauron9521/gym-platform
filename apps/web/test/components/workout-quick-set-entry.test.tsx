@@ -128,7 +128,10 @@ test('additional recorded metrics are expanded by default and are not lost on qu
     notes: 'Після вправи',
   } as WorkoutSetData;
   mount(current, false);
-  expect((screen.getByText('Додаткові показники та нотатки').closest('details') as HTMLDetailsElement).open).toBe(true);
+  expect(
+    (screen.getByText('Додаткові показники та нотатки').closest('details') as HTMLDetailsElement)
+      .open,
+  ).toBe(true);
   expect(screen.queryByRole('button', { name: 'Зберегти й наступний' })).toBeNull();
   fireEvent.click(screen.getByRole('button', { name: 'Позначити виконаним' }));
   await waitFor(() => expect(onSaved).toHaveBeenCalledOnce());
