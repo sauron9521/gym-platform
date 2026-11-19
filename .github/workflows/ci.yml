@@ -305,6 +305,11 @@ jobs:
           pnpm --filter @gym/api test:architecture
           pnpm --filter @gym/api test:coverage-tools
 
+      - name: Show CI workflow Prettier difference
+        run: |
+          pnpm exec prettier .github/workflows/ci.yml > /tmp/ci-formatted.yml
+          diff -u .github/workflows/ci.yml /tmp/ci-formatted.yml || true
+
       - name: Check formatting
         run: pnpm format:check
 
