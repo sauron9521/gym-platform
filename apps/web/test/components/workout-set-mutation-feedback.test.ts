@@ -1,4 +1,5 @@
-import { beforeEach, expect, test, vi } from 'vitest';
+import { afterEach, beforeEach, expect, test, vi } from 'vitest';
+import { cleanup, renderHook } from '@testing-library/react';
 
 const { useMutationMock, useQueryClientMock, patchMock, authFailureMock } = vi.hoisted(() => ({
   useMutationMock: vi.fn(),
@@ -61,8 +62,11 @@ type MutationOptions = {
 };
 
 function options() {
-  return useUpdateWorkoutSetMutation('workout-1') as unknown as MutationOptions;
+  const { result } = renderHook(() => useUpdateWorkoutSetMutation('workout-1'));
+  return result.current as unknown as MutationOptions;
 }
+
+afterEach(cleanup);
 
 beforeEach(() => {
   vi.clearAllMocks();
