@@ -13,8 +13,8 @@ vi.mock('@/shared/ui/theme-switcher', () => ({
   ThemeSwitcher: () => <div data-testid="theme-switcher" />,
 }));
 
-vi.mock('@/shared/ui/locale-switcher', () => ({
-  LocaleSwitcher: () => <div data-testid="locale-switcher" />,
+vi.mock('@/features/profile/ui/account-locale-switcher', () => ({
+  AccountLocaleSwitcher: () => <div data-testid="locale-switcher" />,
 }));
 
 afterEach(() => {

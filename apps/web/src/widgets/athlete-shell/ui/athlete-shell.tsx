@@ -23,7 +23,7 @@ import {
   SIDEBAR_COOKIE_NAME,
 } from '@/shared/lib/sidebar-preference';
 import type { ThemePreference } from '@/shared/lib/theme-preference';
-import { LocaleSwitcher } from '@/shared/ui/locale-switcher';
+import { AccountLocaleSwitcher } from '@/features/profile/ui/account-locale-switcher';
 import { ThemeSwitcher } from '@/shared/ui/theme-switcher';
 
 type NavigationLink = { href: string; label: string };
@@ -210,7 +210,7 @@ export function AthleteShell({
 
           <div className="flex items-center justify-end gap-2 border-t border-border/60 px-4 py-2 lg:border-t-0 lg:px-8">
             <ThemeSwitcher initialPreference={initialPreference} locale={locale} />
-            <LocaleSwitcher />
+            <AccountLocaleSwitcher />
           </div>
 
           <nav

@@ -14,6 +14,20 @@ const accounts = {
     role: 'ATHLETE',
     displayName: 'Тестовий атлет',
   },
+  'locale@example.test': {
+    id: '00000000-0000-4000-8000-000000000003',
+    email: 'locale@example.test',
+    role: 'ATHLETE',
+    displayName: 'Локаль тест',
+    preferredLocale: null,
+  },
+  'locale-error@example.test': {
+    id: '00000000-0000-4000-8000-000000000004',
+    email: 'locale-error@example.test',
+    role: 'ATHLETE',
+    displayName: 'Локаль помилка',
+    preferredLocale: null,
+  },
   'trainer@example.test': {
     id: '00000000-0000-4000-8000-000000000002',
     email: 'trainer@example.test',
@@ -71,6 +85,7 @@ function accountResponse(session) {
     email: account.email,
     emailVerified: true,
     role: account.role,
+    preferredLocale: account.preferredLocale ?? null,
     createdAt: '2026-11-01T10:00:00.000Z',
     updatedAt: '2026-11-01T10:00:00.000Z',
     profile,
@@ -129,6 +144,19 @@ const server = createServer(async (request, response) => {
     if (!session) return send(response, 401, { message: 'Unauthenticated' });
 
     if (request.method === 'GET' && route === '/users/me') {
+      return send(response, 200, accountResponse(session));
+    }
+
+    if (request.method === 'PATCH' && route === '/users/me/preferences') {
+      const body = await readBody(request);
+      if (
+        Object.keys(body).length !== 1 ||
+        !Object.hasOwn(body, 'preferredLocale') ||
+        !['uk', 'en', null].includes(body.preferredLocale)
+      ) {
+        return send(response, 400, { message: 'Invalid locale preference' });
+      }
+      session.account.preferredLocale = body.preferredLocale;
       return send(response, 200, accountResponse(session));
     }
 
