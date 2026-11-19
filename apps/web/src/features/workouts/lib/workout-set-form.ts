@@ -48,6 +48,13 @@ function asText(value: number | string | null): string {
   return value === null ? '' : String(value);
 }
 
+export function getWorkoutSetPlanSuggestion(set: WorkoutSetData) {
+  return {
+    actualReps: set.plannedReps === null ? null : String(set.plannedReps),
+    actualWeightKg: set.plannedWeightKg === null ? null : String(set.plannedWeightKg),
+  };
+}
+
 export function getWorkoutSetDefaults(set: WorkoutSetData): WorkoutSetFormValues {
   return {
     actualReps: asText(set.actualReps),
