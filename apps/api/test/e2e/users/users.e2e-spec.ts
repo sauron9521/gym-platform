@@ -18,13 +18,16 @@ describe('Users /me (HTTP + PostgreSQL)', () => {
   let prisma: PrismaService;
   let athleteId: string;
   let otherId: string;
+  let reviewerId: string;
   let athleteCookie: string;
   let otherCookie: string;
+  let adminCookie: string;
 
   const password = 'StrongPassword123!';
   const suffix = randomUUID();
   const athleteEmail = `user-profile-athlete-${suffix}@example.com`;
   const otherEmail = `user-profile-other-${suffix}@example.com`;
+  const adminEmail = `user-profile-admin-${suffix}@example.com`;
 
   function sessionCookie(header: string | string[] | undefined): string {
     const cookies = Array.isArray(header) ? header : header ? [header] : [];
@@ -79,16 +82,23 @@ describe('Users /me (HTTP + PostgreSQL)', () => {
       select: { id: true },
     });
     otherId = other.id;
+    const admin = await prisma.user.create({
+      data: { email: adminEmail, passwordHash: hash, role: 'ADMIN' },
+      select: { id: true },
+    });
+    reviewerId = admin.id;
 
     athleteCookie = await login(athleteEmail);
     otherCookie = await login(otherEmail);
+    adminCookie = await login(adminEmail);
   }, 30_000);
 
   afterAll(async () => {
     try {
       if (prisma) {
-        const userIds = [athleteId, otherId].filter(Boolean);
+        const userIds = [athleteId, otherId, reviewerId].filter(Boolean);
         if (userIds.length) {
+          await prisma.trainerProfile.deleteMany({ where: { userId: { in: userIds } } });
           await prisma.profile.deleteMany({
             where: { userId: { in: userIds } },
           });
@@ -105,6 +115,52 @@ describe('Users /me (HTTP + PostgreSQL)', () => {
     const patch = await request(app.getHttpServer()).patch('/users/me').send({ name: 'Anonymous' });
     expect(get.status).toBe(401);
     expect(patch.status).toBe(401);
+  });
+
+  it('reads fresh grants from the current actor, not a stale session role', async () => {
+    const anonymous = await request(app.getHttpServer()).get('/users/me/capabilities');
+    expect(anonymous.status).toBe(401);
+
+    const own = () =>
+      request(app.getHttpServer()).get('/users/me/capabilities').set('Cookie', athleteCookie);
+
+    const initial = await own();
+    expect(initial.status).toBe(200);
+    expect(initial.headers['cache-control']).toBe('no-store');
+    expect(initial.body).toEqual({ athlete: true, trainer: false, admin: false });
+
+    const legacy = await request(app.getHttpServer())
+      .get('/users/me/capabilities')
+      .set('Cookie', otherCookie);
+    expect(legacy.status).toBe(200);
+    expect(legacy.body).toEqual({ athlete: true, trainer: true, admin: false });
+
+    const admin = await request(app.getHttpServer())
+      .get('/users/me/capabilities')
+      .set('Cookie', adminCookie);
+    expect(admin.status).toBe(200);
+    expect(admin.body).toEqual({ athlete: false, trainer: false, admin: true });
+
+    await prisma.trainerProfile.create({
+      data: { userId: athleteId, isActive: true, approvedAt: new Date(), approvedById: reviewerId },
+    });
+    try {
+      const approved = await own();
+      expect(approved.status).toBe(200);
+      expect(approved.body).toEqual({ athlete: true, trainer: true, admin: false });
+      expect(approved.body).not.toHaveProperty('role');
+      expect(approved.body).not.toHaveProperty('trainerProfile');
+
+      await prisma.trainerProfile.update({
+        where: { userId: athleteId },
+        data: { isActive: false, revokedAt: new Date(), revokedById: reviewerId },
+      });
+      const revoked = await own();
+      expect(revoked.status).toBe(200);
+      expect(revoked.body).toEqual({ athlete: true, trainer: false, admin: false });
+    } finally {
+      await prisma.trainerProfile.deleteMany({ where: { userId: athleteId } });
+    }
   });
 
   it('returns current account with null profile and no secrets', async () => {

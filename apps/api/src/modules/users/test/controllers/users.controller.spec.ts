@@ -5,6 +5,7 @@ import { AvatarService } from '../../avatar/avatar.service.js';
 describe('UsersController', () => {
   const usersService = {
     findMe: vi.fn(),
+    findMyCapabilities: vi.fn(),
     updateMe: vi.fn(),
     updateMyPreferences: vi.fn(),
   };
@@ -21,6 +22,13 @@ describe('UsersController', () => {
       usersService as unknown as UsersService,
       avatarService as unknown as AvatarService,
     );
+  });
+
+  it('reads only the session owner capabilities, without a user-provided ID', async () => {
+    const grants = { athlete: true, trainer: false, admin: false };
+    usersService.findMyCapabilities.mockResolvedValue(grants);
+    await expect(controller.myCapabilities(actor)).resolves.toBe(grants);
+    expect(usersService.findMyCapabilities).toHaveBeenCalledExactlyOnceWith(actor.id);
   });
 
   it('reads the authenticated user profile without a client-provided user ID', async () => {

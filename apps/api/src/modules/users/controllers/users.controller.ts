@@ -45,6 +45,25 @@ export class UsersController {
     private readonly avatarService: AvatarService,
   ) {}
 
+  @Get('me/capabilities')
+  @RateLimit('read')
+  @ApiOkResponse({
+    description: 'Current database-derived account capabilities; does not authorize admin actions.',
+    schema: {
+      type: 'object',
+      required: ['athlete', 'trainer', 'admin'],
+      additionalProperties: false,
+      properties: {
+        athlete: { type: 'boolean' },
+        trainer: { type: 'boolean' },
+        admin: { type: 'boolean' },
+      },
+    },
+  })
+  myCapabilities(@CurrentUser() user: UserActor) {
+    return this.usersService.findMyCapabilities(user.id);
+  }
+
   @Get('me')
   // Server route guards and browser profile reads share this endpoint. Normal
   // navigation must not exhaust the stricter default mutation budget.
