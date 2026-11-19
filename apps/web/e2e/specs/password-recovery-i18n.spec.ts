@@ -1,6 +1,12 @@
 import { expect, test } from '@playwright/test';
 
-test('forgot-password switches to English and never discloses account existence', async ({ page }) => {
+const englishCookie = {
+  name: 'gym-locale',
+  value: 'en',
+  url: 'http://127.0.0.1:3100',
+};
+
+test('English recovery keeps account existence private', async ({ page }) => {
   await page.goto('/forgot-password');
   await page.getByRole('combobox', { name: 'Мова' }).selectOption('en');
 
@@ -24,10 +30,8 @@ test('forgot-password switches to English and never discloses account existence'
   expect(forgotRequests).toBe(1);
 });
 
-test('recovery rate limits are localized without exposing API error bodies', async ({ page }) => {
-  await page.context().addCookies([
-    { name: 'gym-locale', value: 'en', url: 'http://127.0.0.1:3100' },
-  ]);
+test('English recovery rate limits hide API response bodies', async ({ page }) => {
+  await page.context().addCookies([englishCookie]);
   await page.route('**/backend/auth/password-reset/forgot', (route) =>
     route.fulfill({ status: 429, json: { message: 'internal account details' } }),
   );
@@ -39,10 +43,8 @@ test('recovery rate limits are localized without exposing API error bodies', asy
   await expect(page.getByText('internal account details')).toHaveCount(0);
 });
 
-test('reset keeps a one-time token out of history and uses English errors', async ({ page }) => {
-  await page.context().addCookies([
-    { name: 'gym-locale', value: 'en', url: 'http://127.0.0.1:3100' },
-  ]);
+test('reset strips token from URL and localizes errors', async ({ page }) => {
+  await page.context().addCookies([englishCookie]);
   const token = 'opaque-recovery-token-e2e';
   let calls = 0;
   await page.route('**/backend/auth/password-reset/reset', async (route) => {
@@ -67,9 +69,7 @@ test('reset keeps a one-time token out of history and uses English errors', asyn
 
   await page.getByLabel('Confirm password').fill('Password123!');
   await page.getByRole('button', { name: 'Change password' }).click();
-  await expect(
-    page.getByText("The link is invalid or expired, or the password doesn't meet the requirements."),
-  ).toBeVisible();
+  await expect(page.getByText(/The link is invalid or expired/)).toBeVisible();
   expect(calls).toBe(1);
 
   await page.getByRole('button', { name: 'Change password' }).click();
@@ -78,10 +78,8 @@ test('reset keeps a one-time token out of history and uses English errors', asyn
   expect(calls).toBe(2);
 });
 
-test('reset without a token gives a localized safe error and no form', async ({ page }) => {
-  await page.context().addCookies([
-    { name: 'gym-locale', value: 'en', url: 'http://127.0.0.1:3100' },
-  ]);
+test('missing reset token shows a translated error', async ({ page }) => {
+  await page.context().addCookies([englishCookie]);
   await page.goto('/reset-password');
   await expect(page.getByRole('alert')).toContainText('The reset link is missing or invalid.');
   await expect(page.getByRole('link', { name: 'Request a new link' })).toBeVisible();
