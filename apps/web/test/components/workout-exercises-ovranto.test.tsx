@@ -4,11 +4,24 @@ import { cleanup, fireEvent, render, screen, within } from '@testing-library/rea
 import type { WorkoutDetailsData } from '@/features/workouts/lib/workout-details';
 
 vi.mock('@/features/workouts/ui/workout-set-form', () => ({
-  WorkoutSetForm: ({ onSaved, onClose }: { onSaved: () => void; onClose: () => void }) => (
+  WorkoutSetForm: ({
+    onSaved,
+    onSavedAndNext,
+    onClose,
+  }: {
+    onSaved: () => void;
+    onSavedAndNext?: () => void;
+    onClose: () => void;
+  }) => (
     <div data-testid="set-editor">
       <button type="button" onClick={onSaved}>
         Тестове збереження
       </button>
+      {onSavedAndNext && (
+        <button type="button" onClick={onSavedAndNext}>
+          Тестовий наступний
+        </button>
+      )}
       <button type="button" onClick={onClose}>
         Тестове закриття
       </button>
@@ -176,4 +189,19 @@ test('renders a useful empty state when no exercises exist', () => {
     />,
   );
   expect(screen.getByText('У цьому тренуванні ще немає вправ.')).toBeTruthy();
+});
+
+test('save-and-next targets the next pending set without reopening completed sets', () => {
+  const workout = exampleWorkout('IN_PROGRESS');
+  workout.exercises[0]!.sets[2]!.status = 'PENDING';
+  const onEditSet = vi.fn();
+  render(<WorkoutExercises workout={workout} editingSetId="set-1" onEditSet={onEditSet} />);
+  fireEvent.click(screen.getByRole('button', { name: 'Тестовий наступний' }));
+  expect(onEditSet).toHaveBeenCalledExactlyOnceWith('set-3');
+});
+
+test('save-and-next is unavailable when no subsequent pending set exists', () => {
+  const workout = exampleWorkout('IN_PROGRESS');
+  render(<WorkoutExercises workout={workout} editingSetId="set-1" onEditSet={vi.fn()} />);
+  expect(screen.queryByRole('button', { name: 'Тестовий наступний' })).toBeNull();
 });
