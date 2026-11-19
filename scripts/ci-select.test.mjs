@@ -129,7 +129,6 @@ test('known shared packages select consumers and avoid unrelated API E2E', () =>
       web: true,
       landing: true,
       admin: true,
-    trainer: true,
       trainer: true,
       mobile,
       client: false,
