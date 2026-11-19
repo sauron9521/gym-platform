@@ -70,7 +70,11 @@ export function AthleteShell({
   const english = locale === 'en';
   const openLabel = english ? 'Open navigation' : 'Відкрити навігацію';
   const closeLabel = english ? 'Close navigation' : 'Закрити навігацію';
-  const homeLabel = english ? 'OVRANTO — home' : 'OVRANTO — головна';
+  // The accessible link name must include the visible wordmark AND tagline
+  // (WCAG 2.5.3 Label in Name), even though the tagline is decorative to AT.
+  const homeLabel = english
+    ? 'OVRANTO PERFORMANCE PLATFORM — home'
+    : 'OVRANTO PERFORMANCE PLATFORM — головна';
   const expandLabel = english ? 'Expand sidebar' : 'Розгорнути бічну панель';
   const collapseLabel = english ? 'Collapse sidebar' : 'Згорнути бічну панель';
 
