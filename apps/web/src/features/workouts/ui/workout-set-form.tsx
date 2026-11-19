@@ -64,9 +64,7 @@ export function WorkoutSetForm({
         body: buildWorkoutSetPayload(status, values),
       });
       toast.success(
-        status === 'COMPLETED'
-          ? 'Результат підходу збережено.'
-          : 'Підхід позначено пропущеним.',
+        status === 'COMPLETED' ? 'Результат підходу збережено.' : 'Підхід позначено пропущеним.',
       );
       onSaved();
     } catch {
