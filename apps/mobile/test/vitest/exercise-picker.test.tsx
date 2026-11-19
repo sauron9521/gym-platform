@@ -106,6 +106,7 @@ describe('ExercisePicker (native)', () => {
       expect(vi.mocked(useExercisesQuery)).toHaveBeenLastCalledWith({ search: 'жим' });
     });
   });
+
   it('keeps the selected label tied to the externally controlled ID', async () => {
     const onSelect = vi.fn();
     const view = await render(<ExercisePicker selectedId="" onSelect={onSelect} />);
@@ -161,5 +162,4 @@ describe('ExercisePicker (native)', () => {
     await fireEvent.press(view.getByTestId('workout-exercise-open'));
     expect(view.queryByTestId('workout-exercise-search')).toBeNull();
   });
-
 });
