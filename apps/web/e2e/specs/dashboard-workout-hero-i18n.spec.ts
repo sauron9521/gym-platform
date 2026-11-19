@@ -14,7 +14,9 @@ async function signInEnglish(page: Page) {
 
 const meta = { page: 1, limit: 10, total: 1, totalPages: 1 };
 
-test('English dashboard shows real active workout title with localized actions', async ({ page }) => {
+test('English dashboard shows real active workout title with localized actions', async ({
+  page,
+}) => {
   await page.route('**/backend/workouts*', (route) => {
     const url = new URL(route.request().url());
     if (url.searchParams.get('status') !== 'IN_PROGRESS') return route.continue();
