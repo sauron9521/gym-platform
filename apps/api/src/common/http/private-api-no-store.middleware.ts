@@ -11,6 +11,7 @@ const SENSITIVE_API_ROOTS = new Set([
   'workouts',
   'body-measurements',
   'trainer-athletes',
+  'trainer-applications',
   'training-programs',
   'exercises',
   'avatars',

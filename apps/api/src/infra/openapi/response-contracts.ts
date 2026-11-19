@@ -269,6 +269,18 @@ export const trainerAthletePublicResponseSchema: ResponseSchema = {
 };
 export const trainerAthleteListResponseSchema = paginatedSchema(trainerAthletePublicResponseSchema);
 
+/** Owner-visible applicant fields. Never include reviewerId, revokedById or userId. */
+export const trainerApplicationOwnResponseSchema = objectSchema({
+  id: uuidSchema,
+  status: enumSchema(['PENDING', 'APPROVED', 'REJECTED', 'REVOKED']),
+  applicantNote: nullable(stringSchema),
+  reviewReason: nullable(stringSchema),
+  reviewedAt: nullable(dateTimeSchema),
+  revokedAt: nullable(dateTimeSchema),
+  createdAt: dateTimeSchema,
+  updatedAt: dateTimeSchema,
+});
+
 export const trainingProgramVersionSummarySchema = objectSchema({
   id: uuidSchema,
   version: integerSchema,
