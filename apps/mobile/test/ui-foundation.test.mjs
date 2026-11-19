@@ -75,7 +75,11 @@ test('UniWind light and dark channels match generated OVRANTO semantic tokens', 
   const layout = read('../src/app/_layout.tsx');
   const rgb = (hex) => {
     let value = hex.slice(1);
-    if (value.length === 3) value = value.split('').map((part) => part + part).join('');
+    if (value.length === 3)
+      value = value
+        .split('')
+        .map((part) => part + part)
+        .join('');
     return [0, 2, 4].map((index) => parseInt(value.slice(index, index + 2), 16)).join(' ');
   };
   const kebab = (key) =>
