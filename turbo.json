@@ -4,7 +4,14 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": ["dist/**", "build/**", ".next/**", "!.next/cache/**", ".cache/expo-ios/**"],
+      "outputs": [
+        "dist/**",
+        "build/**",
+        ".next/**",
+        "!.next/cache/**",
+        "!.next/dev/**",
+        ".cache/expo-ios/**"
+      ],
       "env": [
         "LANDING_SITE_URL",
         "LANDING_ALLOW_INDEXING",
