@@ -10,7 +10,7 @@ RUN npm install --global pnpm@12.18.0 --no-audit --no-fund
 FROM base AS build
 # Build context is the repository root (not apps/api).
 COPY . .
-RUN pnpm install --frozen-lockfile
+RUN pnpm --filter @gym/api... install --frozen-lockfile
 RUN pnpm --filter @gym/api db:generate && pnpm --filter @gym/api build
 
 # Deploy only the API workspace with its migration tooling. Unlike the full
