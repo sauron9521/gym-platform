@@ -3,7 +3,6 @@ import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post } from '@nestj
 import { ApiBearerAuth, ApiCookieAuth, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 
 import { RateLimit } from '#src/common/rate-limit/rate-limit.policies';
-import { RequireAdminPermissions } from '#src/common/rbac/permissions.decorator';
 import {
   arraySchema,
   trainerApplicationAdminResponseSchema,
@@ -21,7 +20,6 @@ import { TrainerReviewService, type Reviewer } from '../services/trainer-review.
 @ApiCookieAuth('sessionCookie')
 @Controller('admin/trainer-applications')
 @Authenticate()
-@RequireAdminPermissions('admin.accounts.manage')
 export class TrainerReviewController {
   constructor(private readonly service: TrainerReviewService) {}
 

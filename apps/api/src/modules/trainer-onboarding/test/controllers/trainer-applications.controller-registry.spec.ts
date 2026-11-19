@@ -30,6 +30,14 @@ describe('TrainerOnboardingModule controller registry', () => {
 });
 
 describe('Trainer review admin route registry', () => {
+  it('enforces authentication before the service checks operator permissions', () => {
+    expect(Reflect.getMetadata(PATH_METADATA, TrainerReviewController)).toBe(
+      'admin/trainer-applications',
+    );
+    expect(Reflect.getMetadata('required_admin_permissions', TrainerReviewController)).toBeUndefined();
+  });
+
+
   it.each([
     ['findPending', RequestMethod.GET, '/'],
     ['approve', RequestMethod.POST, ':id/approve'],

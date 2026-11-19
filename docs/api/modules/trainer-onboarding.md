@@ -48,9 +48,11 @@ be regenerated with `pnpm api:contract:generate` alongside route changes.
 ## Operator moderation HTTP API — #311
 
 **Elevation:** Only an existing `ADMIN` account explicitly included in
-`SUPERADMIN_USER_IDS` can call `admin.accounts.manage`. The permission
-guard also denies default ADMIN, TRAINER, ATHLETE and anonymous requests.
-The service rechecks the live database role inside the transaction.
+`SUPERADMIN_USER_IDS` can call `admin.accounts.manage`. Each route requires authentication; the service checks the existing
+`admin.accounts.manage` permission and the live database role. This avoids
+Nest's global permission guard running before the route's auth guard.
+Default ADMIN, TRAINER, ATHLETE and anonymous callers remain denied; reviews
+also validate the live administrator role inside the serializable transaction.
 
 - `GET /admin/trainer-applications`: up to 50 oldest pending submissions.
 - `POST /admin/trainer-applications/:id/approve`: activate an approved

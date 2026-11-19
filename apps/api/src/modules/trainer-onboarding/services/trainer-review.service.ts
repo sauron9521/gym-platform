@@ -34,8 +34,11 @@ export class TrainerReviewService {
     }
   }
 
-  findPending(reviewer: Reviewer) {
+  async findPending(reviewer: Reviewer) {
     this.assertOperator(reviewer);
+    if (!(await this.repository.isCurrentAdmin(reviewer.id))) {
+      throw new ForbiddenException('Invalid reviewer');
+    }
     return this.repository.findPending();
   }
 

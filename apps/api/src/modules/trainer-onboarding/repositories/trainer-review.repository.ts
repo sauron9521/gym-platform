@@ -11,6 +11,14 @@ export type TrainerReviewAction = 'APPROVE' | 'REJECT' | 'REVOKE';
 export class TrainerReviewRepository {
   constructor(private readonly prisma: PrismaService) {}
 
+  async isCurrentAdmin(reviewerId: string): Promise<boolean> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: reviewerId },
+      select: { role: true, deletedAt: true },
+    });
+    return !!user && user.role === 'ADMIN' && user.deletedAt === null;
+  }
+
   findPending() {
     return this.prisma.trainerApplication.findMany({
       where: { status: 'PENDING' },
