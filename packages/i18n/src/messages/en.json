@@ -49,6 +49,34 @@
       "resend": "Resend email",
       "signUpPrompt": "Don't have an account yet?",
       "signUp": "Sign up"
+    },
+    "dashboard": {
+      "pageTitle": "Dashboard",
+      "greeting": "Welcome, {name}!",
+      "signOut": "Sign out",
+      "signingOut": "Signing out…",
+      "nextStep": "Your next step",
+      "heroTitle": "Plan workouts. Track progress.",
+      "heroDescription": "Create a workout, add exercises and sets. Review your sessions and their status in your training log.",
+      "createWorkout": "Create workout",
+      "openJournal": "Open workout log",
+      "shortcutsTitle": "Quick access",
+      "shortcutsDescription": "Go to the OVRANTO section you need.",
+      "shortcutLink": "Open {title}",
+      "shortcuts": {
+        "exercisesTitle": "Exercise library",
+        "exercisesDescription": "Find exercises for your training sessions.",
+        "profileTitle": "My profile",
+        "profileDescription": "View and update your personal information.",
+        "athleteProgramsTitle": "My programs",
+        "athleteProgramsDescription": "Review your assigned training programs.",
+        "athleteTrainersTitle": "My trainers",
+        "athleteTrainersDescription": "Review your connections with trainers.",
+        "trainerProgramsTitle": "Training programs",
+        "trainerProgramsDescription": "Manage programs for your athletes.",
+        "trainerAthletesTitle": "My athletes",
+        "trainerAthletesDescription": "Manage athletes you train."
+      }
     }
   },
   "admin": {
