@@ -132,3 +132,65 @@ test('invalid advanced notes state meets automated WCAG 2.2 A/AA at 360px', asyn
   await expect(form.getByRole('alert')).toBeVisible();
   await expectNoAxeWcagViolations(page);
 });
+
+// Exercise actual browser theme and locale preferences instead of faking CSS
+// classes or translations, so SSR persistence is covered by the audit.
+const appearanceMatrix = [
+  { locale: 'uk', theme: 'light', width: 390 },
+  { locale: 'uk', theme: 'dark', width: 1280 },
+  { locale: 'en', theme: 'light', width: 1280 },
+  { locale: 'en', theme: 'dark', width: 390 },
+] as const;
+
+for (const { locale, theme, width } of appearanceMatrix) {
+  test(`athlete dashboard has no automated WCAG violations in ${locale}/${theme} at ${width}px`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height: 812 });
+    await signIn(page);
+
+    const selectors = page.getByTestId('athlete-shell-header').getByRole('combobox');
+    await selectors.first().selectOption(theme);
+    await selectors.nth(1).selectOption(locale);
+
+    // A full navigation must keep the chosen locale and theme on the server.
+    await page.reload();
+    await expect(page.locator('html')).toHaveAttribute('lang', locale);
+    await expect(page.locator('html')).toHaveClass(new RegExp(`(^| )${theme}( |$)`));
+    await expect(page.getByTestId('athlete-shell-header').getByRole('combobox').nth(1)).toHaveValue(
+      locale,
+    );
+    await expect(
+      page.getByRole('combobox', {
+        name: locale === 'en' ? 'Appearance theme' : 'Тема інтерфейсу',
+      }),
+    ).toHaveValue(theme);
+
+    const brandHomeName =
+      locale === 'en'
+        ? 'OVRANTO PERFORMANCE PLATFORM — home'
+        : 'OVRANTO PERFORMANCE PLATFORM — головна';
+    await expect(page.getByRole('link', { name: brandHomeName }).first()).toBeVisible();
+    await expectNoAxeWcagViolations(page);
+  });
+}
+
+test('system appearance follows OS changes without overriding saved preference', async ({ page }) => {
+  await page.emulateMedia({ colorScheme: 'dark' });
+  await signIn(page);
+  await page.getByRole('combobox', { name: 'Тема інтерфейсу' }).selectOption('system');
+  await page.reload();
+
+  await expect(page.getByRole('combobox', { name: 'Тема інтерфейсу' })).toHaveValue('system');
+  await expect(page.locator('html')).not.toHaveClass(/\b(?:light|dark)\b/);
+  const darkBackground = await page.locator('body').evaluate((element) => {
+    return getComputedStyle(element).backgroundColor;
+  });
+  await expectNoAxeWcagViolations(page);
+
+  await page.emulateMedia({ colorScheme: 'light' });
+  await expect
+    .poll(() => page.locator('body').evaluate((element) => getComputedStyle(element).backgroundColor))
+    .not.toBe(darkBackground);
+  await expectNoAxeWcagViolations(page);
+});
