@@ -63,7 +63,10 @@ export function WorkoutActions({
   if (actions.length === 0) return null;
 
   return (
-    <section className="min-w-0 space-y-3 rounded-xl border bg-card p-4 sm:p-5" aria-label="Керування тренуванням">
+    <section
+      className="min-w-0 space-y-3 rounded-xl border bg-card p-4 sm:p-5"
+      aria-label="Керування тренуванням"
+    >
       <h2 className="font-semibold">Керування тренуванням</h2>
       {workout.status === 'IN_PROGRESS' && !canCompleteWorkout(workout) && (
         <p className="text-sm text-muted-foreground">
