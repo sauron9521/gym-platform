@@ -20,10 +20,17 @@ export async function expectNoAxeWcagViolations(page: Page) {
         rule: violation.id,
         impact: violation.impact,
         helpUrl: violation.helpUrl,
-        nodes: violation.nodes.map((node) => ({
-          target: node.target,
-          failureSummary: node.failureSummary,
-        })),
+        nodes: violation.nodes.map((node) => {
+          const element = document.querySelector(node.target[0] ?? '');
+          return {
+            target: node.target,
+            html: node.html,
+            ariaLabel: element?.getAttribute('aria-label') ?? null,
+            innerText: element instanceof HTMLElement ? element.innerText : null,
+            textContent: element?.textContent ?? null,
+            failureSummary: node.failureSummary,
+          };
+        }),
       })),
     };
   }, wcagTags);
