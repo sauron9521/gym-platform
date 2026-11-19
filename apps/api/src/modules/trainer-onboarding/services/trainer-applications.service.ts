@@ -1,4 +1,9 @@
-import { ConflictException, ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  ConflictException,
+  ForbiddenException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 
 import { Prisma } from '#prisma/client';
 
@@ -40,10 +45,16 @@ export class TrainerApplicationsService {
     await this.assertEligible(userId);
 
     const pending = await this.applications.findPendingId(userId);
-    if (!pending) throw new ConflictException('Only pending trainer applications can be edited');
+    if (!pending) {
+      throw new ConflictException('Only pending trainer applications can be edited');
+    }
 
     // CAS on (id, owner, status) cannot overwrite a concurrent admin decision.
-    const updated = await this.applications.updatePending(userId, pending.id, input.applicantNote);
+    const updated = await this.applications.updatePending(
+      userId,
+      pending.id,
+      input.applicantNote,
+    );
     if (!updated) throw new ConflictException('Trainer application is no longer pending');
 
     return updated;

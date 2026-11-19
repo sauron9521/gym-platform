@@ -207,7 +207,7 @@ describe('Trainer applications (HTTP + PostgreSQL)', () => {
     expect(other.status).toBe(409);
   });
 
-  it('preserves rejected history and only one pending application across concurrent reapply', async () => {
+  it('permits a single concurrent reapplication after rejection', async () => {
     const pending = await prisma.trainerApplication.findFirstOrThrow({
       where: { userId: users[0]!.id, status: 'PENDING' },
     });
