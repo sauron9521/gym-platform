@@ -119,6 +119,58 @@
         "recordsErrorDefault": "Could not load personal records.",
         "recordsErrorRateLimited": "Too many requests. Please try again later."
       }
+    },
+    "authFields": {
+      "email": "Email address",
+      "password": "Password",
+      "passwordRepeat": "Confirm password",
+      "signingIn": "Signing in…",
+      "signIn": "Sign in",
+      "signUp": "Sign up",
+      "signingUp": "Creating account…",
+      "mfa": "This account requires MFA. Support is coming separately.",
+      "sessionMissing": "Could not save the session. Check cookies and the API address.",
+      "sessionUnavailable": "Could not verify the session. Try again.",
+      "network": "Cannot reach the API. Please try again.",
+      "created": "Account created",
+      "createdNotice": "Your account has been created, but your email address still needs verification.",
+      "openDashboard": "Go to dashboard",
+      "resendPrompt": "Didn't get an email?",
+      "resend": "Resend email",
+      "passwordHint": "At least 8 characters, with uppercase and lowercase letters, a number and a special character."
+    },
+    "authValidation": {
+      "emailRequired": "Enter your email address.",
+      "emailInvalid": "Enter a valid email address.",
+      "emailTooLong": "Email address is too long.",
+      "passwordRequired": "Enter your password.",
+      "passwordWhitespace": "Password cannot consist only of spaces.",
+      "passwordMinLength": "Password must contain at least 8 characters.",
+      "passwordConfirmation": "Confirm your password.",
+      "passwordMismatch": "Passwords do not match."
+    },
+    "loginErrors": {
+      "badInput": "Check your email address and password.",
+      "invalidCredentials": "Incorrect email address or password.",
+      "security": "Your request was blocked by security settings. Check the application origin.",
+      "rateLimited": "Too many sign-in attempts. Try again later.",
+      "unknown": "Could not sign in. Please try again."
+    },
+    "registrationErrors": {
+      "badInput": "Check your email address and password strength.",
+      "security": "Your request was blocked by security settings. Check the application address.",
+      "duplicate": "An account with this email address already exists.",
+      "rateLimited": "Too many registration attempts. Try again later.",
+      "unknown": "Could not create an account. Please try again."
+    },
+    "registrationEmail": {
+      "submitted": "Your verification email request was accepted. Check your inbox and spam folder.",
+      "retryRequired": "Your account was created, but the verification email could not be requested. Try sending it again after signing in."
+    },
+    "register": {
+      "title": "Create an account",
+      "description": "Sign up to save your workouts and programs.",
+      "existing": "Already have an account?"
     }
   },
   "admin": {

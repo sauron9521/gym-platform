@@ -5,10 +5,9 @@ async function signInEnglish(page: Page) {
   await page.getByRole('combobox', { name: /^(Мова|Language)$/ }).selectOption('en');
   await expect(page.locator('html')).toHaveAttribute('lang', 'en');
 
-  // Auth form translations are owned by the separate PR #249.
-  await page.getByLabel('Електронна пошта').fill('athlete@example.test');
-  await page.getByLabel('Пароль').fill('TestPassword123!');
-  await page.getByRole('button', { name: 'Увійти' }).click();
+  await page.getByLabel('Email address').fill('athlete@example.test');
+  await page.getByLabel('Password').fill('TestPassword123!');
+  await page.getByRole('button', { name: 'Sign in' }).click();
   await expect(page).toHaveURL(/\/dashboard$/);
 }
 

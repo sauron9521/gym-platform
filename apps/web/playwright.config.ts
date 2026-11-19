@@ -24,6 +24,7 @@ export default defineConfig({
   use: {
     ...devices['Desktop Chrome'],
     baseURL: webOrigin,
+    locale: 'uk-UA',
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
   },

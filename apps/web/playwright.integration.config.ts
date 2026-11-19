@@ -23,7 +23,12 @@ export default defineConfig({
   expect: { timeout: 15_000 },
   reporter: 'list',
   outputDir: './test-results/integration',
-  use: { ...devices['Desktop Chrome'], baseURL: webOrigin, trace: 'retain-on-failure' },
+  use: {
+    ...devices['Desktop Chrome'],
+    baseURL: webOrigin,
+    locale: 'uk-UA',
+    trace: 'retain-on-failure',
+  },
   webServer: [
     {
       name: 'real-api',
