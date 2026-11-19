@@ -473,6 +473,46 @@
         "tags": ["Sessions"]
       }
     },
+    "/users/me/capabilities": {
+      "get": {
+        "operationId": "UsersController_myCapabilities",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Current database-derived account capabilities; does not authorize admin actions.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["athlete", "trainer", "admin"],
+                  "additionalProperties": false,
+                  "properties": {
+                    "athlete": {
+                      "type": "boolean"
+                    },
+                    "trainer": {
+                      "type": "boolean"
+                    },
+                    "admin": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "accessToken": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "tags": ["Users"]
+      }
+    },
     "/users/me": {
       "get": {
         "operationId": "UsersController_me",
