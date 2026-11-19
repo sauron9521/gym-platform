@@ -31,12 +31,29 @@ const tones: Record<SetData['status'], { card: string; label: string }> = {
   SKIPPED: { card: 'bg-muted/40', label: 'bg-muted text-muted-foreground' },
 };
 
-export function WorkoutSetCard({ workoutId, set, editable, editing, editingLocked, onEditSet }: Props) {
+export function WorkoutSetCard({
+  workoutId,
+  set,
+  editable,
+  editing,
+  editingLocked,
+  onEditSet,
+}: Props) {
   const metrics = [
     { label: 'Повторення', plan: set.plannedReps, actual: set.actualReps, unit: '' },
     { label: 'Вага', plan: set.plannedWeightKg, actual: set.actualWeightKg, unit: ' кг' },
-    { label: 'Тривалість', plan: set.plannedDurationSeconds, actual: set.actualDurationSeconds, unit: ' с' },
-    { label: 'Дистанція', plan: set.plannedDistanceMeters, actual: set.actualDistanceMeters, unit: ' м' },
+    {
+      label: 'Тривалість',
+      plan: set.plannedDurationSeconds,
+      actual: set.actualDurationSeconds,
+      unit: ' с',
+    },
+    {
+      label: 'Дистанція',
+      plan: set.plannedDistanceMeters,
+      actual: set.actualDistanceMeters,
+      unit: ' м',
+    },
   ].filter(({ plan, actual }) => plan !== null || actual !== null);
   const tone = tones[set.status];
 
@@ -72,9 +89,7 @@ export function WorkoutSetCard({ workoutId, set, editable, editing, editingLocke
       )}
 
       {set.notes && (
-        <p className="whitespace-pre-wrap break-words text-sm text-muted-foreground">
-          {set.notes}
-        </p>
+        <p className="whitespace-pre-wrap break-words text-sm text-muted-foreground">{set.notes}</p>
       )}
 
       {editable &&
