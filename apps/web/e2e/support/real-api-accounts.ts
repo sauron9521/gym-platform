@@ -28,11 +28,17 @@ function disposableDatabaseUrl(): string {
     throw new Error('Role fixtures require identical DATABASE_URL and TEST_DATABASE_URL');
   }
   const url = new URL(database);
-  if (
-    !['localhost', '127.0.0.1'].includes(url.hostname) ||
-    !decodeURIComponent(url.pathname).endsWith('_test')
-  ) {
-    throw new Error('Role fixtures require a disposable loopback *_test database');
+  const databaseName = decodeURIComponent(url.pathname);
+  const localTestDatabase =
+    ['localhost', '127.0.0.1'].includes(url.hostname) && databaseName.endsWith('_test');
+  // Docker CI uses the same disposable PostgreSQL service as the API web server.
+  const ciServiceDatabase =
+    process.env.CI === 'true' &&
+    url.hostname === 'postgres' &&
+    url.port === '5432' &&
+    databaseName === '/gym_browser_test';
+  if (!localTestDatabase && !ciServiceDatabase) {
+    throw new Error('Role fixtures require an approved disposable *_test database');
   }
   return database;
 }

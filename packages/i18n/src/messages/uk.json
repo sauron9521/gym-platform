@@ -135,6 +135,27 @@
         "recordsDescription": "Вправ із зафіксованою найкращою вагою за весь час.",
         "recordsErrorDefault": "Не вдалося завантажити особисті рекорди.",
         "recordsErrorRateLimited": "Забагато запитів. Спробуйте пізніше."
+      },
+      "volumeChart": {
+        "heading": "Прогрес тренувань",
+        "description": "Силовий об’єм за днями за вибраний період.",
+        "periodLabel": "Період графіка",
+        "range7": "7 днів",
+        "range30": "30 днів",
+        "range90": "90 днів",
+        "volumeLabel": "Тренувальний об’єм, кг",
+        "loading": "Завантажуємо графік…",
+        "errorDefault": "Не вдалося завантажити аналітику.",
+        "errorRateLimited": "Забагато запитів. Спробуйте пізніше.",
+        "retry": "Повторити",
+        "retryAccessible": "Повторити завантаження графіка",
+        "empty": "За вибраний період немає записаного силового об’єму.",
+        "chartAccessible": "Графік силового об’єму за {days, plural, one {# день} few {# дні} many {# днів} other {# дня}}. Точні значення наведено нижче.",
+        "pointTitle": "{date}: {volume, number} кг",
+        "volumeKg": "{volume, number} кг",
+        "showValues": "Переглянути точні значення за днями",
+        "dailyValues": "Денні значення об’єму",
+        "summary": "Тренувань: {workouts, number}. Активних днів: {activeDays, number}. Дані API станом на {date}."
       }
     },
     "authFields": {

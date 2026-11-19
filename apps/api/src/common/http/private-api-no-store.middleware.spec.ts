@@ -20,6 +20,10 @@ describe('PrivateApiNoStoreMiddleware', () => {
     '/workouts',
     '/workouts/123',
     '/trainer-athletes',
+    '/trainer-applications',
+    '/trainer-applications/me',
+    '/admin/trainer-applications',
+    '/admin/trainer-applications/123/approve',
     '/training-programs/abc',
     '/body-measurements/statistics',
     '/exercises', // Mixed guest/private library requires non-shared caching.
