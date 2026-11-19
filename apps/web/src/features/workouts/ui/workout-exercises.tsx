@@ -1,6 +1,7 @@
 'use client';
 
 import type { WorkoutDetailsData } from '../lib/workout-details';
+import { getNextPendingWorkoutSetId } from '../lib/workout-set-progress';
 import { WorkoutSetCard } from './workout-set-card';
 import { WorkoutProgress } from './workout-progress';
 
@@ -80,6 +81,7 @@ export function WorkoutExercises({ workout, editingSetId, onEditSet }: Props) {
                     editable={workout.status === 'IN_PROGRESS'}
                     editing={editingSetId === set.id}
                     editingLocked={editingSetId !== null}
+                    nextPendingSetId={getNextPendingWorkoutSetId(workout, set.id)}
                     onEditSet={onEditSet}
                   />
                 ))}
