@@ -59,6 +59,14 @@ export function WorkoutSetCard({
   ].filter(({ plan, actual }) => plan !== null || actual !== null);
   const tone = tones[set.status];
 
+  function closeEditor() {
+    onEditSet(null);
+    // Restore keyboard focus to the edit control after the form unmounts.
+    window.requestAnimationFrame(() => {
+      document.getElementById(`workout-set-edit-${set.id}`)?.focus({ preventScroll: true });
+    });
+  }
+
   return (
     <li
       id={`workout-set-${set.id}`}
@@ -115,12 +123,14 @@ export function WorkoutSetCard({
                   }
                 : undefined
             }
-            onClose={() => onEditSet(null)}
+            onClose={closeEditor}
           />
         ) : (
           <Button
+            id={`workout-set-edit-${set.id}`}
             type="button"
             variant="outline"
+            className="min-h-11 w-full sm:w-auto"
             disabled={editingLocked}
             onClick={() => onEditSet(set.id)}
           >

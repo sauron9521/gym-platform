@@ -29,6 +29,7 @@ test('workout details delegates set presentation without changing query/auth bou
   assert.match(exercises, /workout.status === 'IN_PROGRESS'/);
   assert.match(setCard, /key=\{set.updatedAt\}/);
   assert.match(setCard, /onSaved=\{\(\) => onEditSet\(null\)\}/);
-  assert.match(setCard, /onClose=\{\(\) => onEditSet\(null\)\}/);
+  assert.match(setCard, /onClose=\{closeEditor\}/);
+  assert.match(setCard, /window.requestAnimationFrame/);
   assert.match(setCard, /disabled=\{editingLocked\}/);
 });

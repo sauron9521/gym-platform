@@ -119,7 +119,8 @@ test('set logging uses RHF, Zod and the typed PATCH endpoint, only during active
   assert.match(exercises, /<WorkoutSetCard/);
   assert.match(exercises, /workout.status === 'IN_PROGRESS'/);
   assert.match(setCard, /onSaved=\{\(\) => onEditSet\(null\)\}/);
-  assert.match(setCard, /onClose=\{\(\) => onEditSet\(null\)\}/);
+  assert.match(setCard, /onClose=\{closeEditor\}/);
+  assert.match(setCard, /window.requestAnimationFrame/);
   assert.match(setCard, /<WorkoutSetForm/);
   assert.match(setCard, /disabled=\{editingLocked\}/);
   assert.doesNotMatch(form, /localStorage|sessionStorage|dangerouslySetInnerHTML/);

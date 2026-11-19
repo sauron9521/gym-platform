@@ -63,7 +63,10 @@ export function WorkoutActions({
   if (actions.length === 0) return null;
 
   return (
-    <section className="space-y-3 rounded-xl border bg-card p-5" aria-label="Керування тренуванням">
+    <section
+      className="min-w-0 space-y-3 rounded-xl border bg-card p-4 sm:p-5"
+      aria-label="Керування тренуванням"
+    >
       <h2 className="font-semibold">Керування тренуванням</h2>
       {workout.status === 'IN_PROGRESS' && !canCompleteWorkout(workout) && (
         <p className="text-sm text-muted-foreground">
@@ -72,12 +75,13 @@ export function WorkoutActions({
             : 'Щоб завершити тренування, виконайте хоча б один підхід.'}
         </p>
       )}
-      <div className="flex flex-wrap gap-3">
+      <div className="grid grid-cols-1 gap-2 sm:flex sm:flex-wrap sm:gap-3">
         {actions.map((action) => (
           <Button
             key={action}
             type="button"
             variant={action === 'cancel' ? 'outline' : 'default'}
+            className="min-h-11 w-full sm:w-auto"
             disabled={inProgress}
             onClick={() => requestAction(action)}
           >
@@ -87,7 +91,7 @@ export function WorkoutActions({
       </div>
       {confirmation && (
         <div
-          className="space-y-3 rounded-lg border p-4"
+          className="min-w-0 space-y-3 rounded-lg border p-3 sm:p-4"
           role="group"
           aria-label="Підтвердження дії"
         >
@@ -96,13 +100,19 @@ export function WorkoutActions({
               ? 'Скасувати це тренування? Дію не можна буде відновити.'
               : 'Завершити це тренування? Після завершення змінити підходи не можна.'}
           </p>
-          <div className="flex flex-wrap gap-3">
-            <Button type="button" disabled={inProgress} onClick={() => void execute(confirmation)}>
+          <div className="grid grid-cols-1 gap-2 sm:flex sm:flex-wrap sm:gap-3">
+            <Button
+              type="button"
+              className="min-h-11 w-full sm:w-auto"
+              disabled={inProgress}
+              onClick={() => void execute(confirmation)}
+            >
               Підтвердити
             </Button>
             <Button
               type="button"
               variant="outline"
+              className="min-h-11 w-full sm:w-auto"
               disabled={inProgress}
               onClick={() => setConfirmation(null)}
             >
@@ -117,6 +127,7 @@ export function WorkoutActions({
           <Button
             type="button"
             variant="outline"
+            className="min-h-11 w-full sm:w-auto"
             disabled={inProgress}
             onClick={() => {
               mutation.reset();

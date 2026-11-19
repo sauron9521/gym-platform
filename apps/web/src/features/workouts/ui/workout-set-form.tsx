@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
@@ -49,6 +49,7 @@ export function WorkoutSetForm({
   // A synchronous lock covers rapid taps before React paints isPending/disabled.
   const requestInFlight = useRef(false);
   const plan = getWorkoutSetPlanSuggestion(set);
+  const [invalidAdvancedField, setInvalidAdvancedField] = useState<string | null>(null);
   const [showAdditional, setShowAdditional] = useState(
     () =>
       set.actualDurationSeconds !== null ||
@@ -70,6 +71,21 @@ export function WorkoutSetForm({
     reValidateMode: 'onChange',
   });
   const busy = isSubmitting || mutation.isPending;
+  const notesErrorId = `workout-set-${set.id}-notes-error`;
+
+  // Keep the opened editor keyboard-ready without moving the viewport.
+  useEffect(() => {
+    document.getElementById(`workout-set-${set.id}-actualReps`)?.focus({ preventScroll: true });
+  }, [set.id]);
+
+  // An invalid advanced input cannot receive focus until its disclosure opens.
+  useEffect(() => {
+    if (showAdditional && invalidAdvancedField) {
+      document.getElementById(`workout-set-${set.id}-${invalidAdvancedField}`)?.focus({
+        preventScroll: true,
+      });
+    }
+  }, [showAdditional, invalidAdvancedField, set.id]);
 
   async function send(
     status: 'COMPLETED' | 'SKIPPED',
@@ -102,7 +118,10 @@ export function WorkoutSetForm({
   }
 
   function showValidationErrors(errors: Partial<Record<keyof WorkoutSetFormValues, unknown>>) {
-    if (additionalFields.some(({ name }) => errors[name]) || errors.notes) {
+    const firstAdvancedError =
+      additionalFields.find(({ name }) => errors[name])?.name ?? (errors.notes ? 'notes' : null);
+    if (firstAdvancedError) {
+      setInvalidAdvancedField(firstAdvancedError);
       setShowAdditional(true);
     }
   }
@@ -143,7 +162,7 @@ export function WorkoutSetForm({
           aria-invalid={Boolean(errors[name])}
           aria-describedby={errors[name] ? errorId : undefined}
           {...register(name, { onChange: () => mutation.reset() })}
-          className="h-12 w-full min-w-0 rounded-md border border-input bg-background px-3 text-base tabular-nums"
+          className="h-12 w-full min-w-0 rounded-md border border-input bg-background px-3 text-base tabular-nums focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring aria-invalid:border-destructive"
         />
         {errors[name] && (
           <p id={errorId} role="alert" className="text-xs text-destructive">
@@ -159,19 +178,27 @@ export function WorkoutSetForm({
       onSubmit={submitCompleted}
       noValidate
       aria-busy={busy}
-      className="space-y-4 rounded-lg border bg-muted/30 p-4"
+      className="min-w-0 space-y-4 rounded-lg border bg-muted/30 p-3 sm:p-4"
       aria-label="Запис результатів підходу"
     >
       <div className="space-y-2">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <p className="text-sm font-semibold">Основні показники</p>
           {(plan.actualReps !== null || plan.actualWeightKg !== null) && (
-            <Button type="button" variant="outline" disabled={busy} onClick={applyPlan}>
+            <Button
+              type="button"
+              variant="outline"
+              className="min-h-11 w-full sm:w-auto"
+              disabled={busy}
+              onClick={applyPlan}
+            >
               Підставити план
             </Button>
           )}
         </div>
-        <div className="grid grid-cols-2 gap-3">{primaryFields.map(renderField)}</div>
+        <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2">
+          {primaryFields.map(renderField)}
+        </div>
         {(plan.actualReps !== null || plan.actualWeightKg !== null) && (
           <p className="text-xs text-muted-foreground">
             Планові значення підставляються лише після натискання — перевірте фактичний результат.
@@ -181,13 +208,15 @@ export function WorkoutSetForm({
       <details
         open={showAdditional}
         onToggle={(event) => setShowAdditional(event.currentTarget.open)}
-        className="rounded-lg border bg-card p-3"
+        className="min-w-0 rounded-lg border bg-card p-3"
       >
-        <summary className="min-h-11 cursor-pointer py-2 text-sm font-medium">
+        <summary className="min-h-11 cursor-pointer rounded-sm py-2 text-sm font-medium focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring">
           Додаткові показники та нотатки
         </summary>
         <div className="space-y-4 pt-3">
-          <div className="grid gap-3 sm:grid-cols-2">{additionalFields.map(renderField)}</div>
+          <div className="grid min-w-0 gap-3 sm:grid-cols-2">
+            {additionalFields.map(renderField)}
+          </div>
           <div className="space-y-1">
             <label htmlFor={`workout-set-${set.id}-notes`} className="block text-sm font-medium">
               Нотатки
@@ -197,11 +226,12 @@ export function WorkoutSetForm({
               rows={2}
               disabled={busy}
               aria-invalid={Boolean(errors.notes)}
+              aria-describedby={errors.notes ? notesErrorId : undefined}
               {...register('notes', { onChange: () => mutation.reset() })}
-              className="w-full rounded-md border border-input bg-background p-3 text-base"
+              className="min-h-24 w-full min-w-0 rounded-md border border-input bg-background p-3 text-base focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring aria-invalid:border-destructive"
             />
             {errors.notes && (
-              <p role="alert" className="text-xs text-destructive">
+              <p id={notesErrorId} role="alert" className="text-xs text-destructive">
                 {errors.notes.message}
               </p>
             )}
@@ -222,23 +252,41 @@ export function WorkoutSetForm({
           {mutation.error.message}
         </p>
       )}
-      <div className="flex flex-wrap gap-2">
-        <Button type="submit" disabled={busy}>
+      <div className="grid grid-cols-1 gap-2 sm:flex sm:flex-wrap">
+        <Button type="submit" className="min-h-11 w-full sm:w-auto" disabled={busy}>
           {isSubmitting || (mutation.isPending && mutation.variables?.body.status === 'COMPLETED')
             ? 'Зберігаємо…'
             : 'Позначити виконаним'}
         </Button>
         {onSavedAndNext && (
-          <Button type="button" variant="outline" disabled={busy} onClick={submitAndNext}>
+          <Button
+            type="button"
+            variant="outline"
+            className="min-h-11 w-full sm:w-auto"
+            disabled={busy}
+            onClick={submitAndNext}
+          >
             Зберегти й наступний
           </Button>
         )}
-        <Button type="button" variant="outline" disabled={busy} onClick={() => void skip()}>
+        <Button
+          type="button"
+          variant="outline"
+          className="min-h-11 w-full sm:w-auto"
+          disabled={busy}
+          onClick={() => void skip()}
+        >
           {mutation.isPending && mutation.variables?.body.status === 'SKIPPED'
             ? 'Пропускаємо…'
             : 'Пропустити підхід'}
         </Button>
-        <Button type="button" variant="outline" disabled={busy} onClick={onClose}>
+        <Button
+          type="button"
+          variant="outline"
+          className="min-h-11 w-full sm:w-auto"
+          disabled={busy}
+          onClick={onClose}
+        >
           Закрити
         </Button>
       </div>
