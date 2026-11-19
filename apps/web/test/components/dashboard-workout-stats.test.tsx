@@ -1,5 +1,9 @@
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { NextIntlClientProvider } from 'next-intl';
+import type { ReactElement } from 'react';
+
+import { getMessages, type Locale } from '@gym/i18n';
 
 const { useQueryMock, onAuthFailure } = vi.hoisted(() => ({
   useQueryMock: vi.fn(),
@@ -41,6 +45,16 @@ function mockStatuses(results: Record<Status, unknown>) {
   );
 }
 
+function renderWithLocale(element: ReactElement, locale: Locale = 'uk') {
+  const wrap = (node: ReactElement) => (
+    <NextIntlClientProvider locale={locale} messages={getMessages(locale)}>
+      {node}
+    </NextIntlClientProvider>
+  );
+  const view = render(wrap(element));
+  return { ...view, rerender: (next: ReactElement) => view.rerender(wrap(next)) };
+}
+
 beforeEach(() => {
   useQueryMock.mockReset();
   onAuthFailure.mockReset();
@@ -50,7 +64,7 @@ afterEach(cleanup);
 
 test('reads exact server totals using three existing owner-scoped query keys', () => {
   mockStatuses({ PLANNED: success(12), IN_PROGRESS: success(1), COMPLETED: success(47) });
-  render(<DashboardWorkoutStats />);
+  renderWithLocale(<DashboardWorkoutStats />);
 
   expect(screen.getByRole('heading', { name: 'Мої тренування в цифрах' })).toBeTruthy();
   expect(screen.getByText('12')).toBeTruthy();
@@ -69,7 +83,7 @@ test('shows loading instead of displaying stale totals during refetch', () => {
     IN_PROGRESS: { ...success(1), isPending: true },
     COMPLETED: success(3),
   });
-  render(<DashboardWorkoutStats />);
+  renderWithLocale(<DashboardWorkoutStats />);
   expect(screen.getAllByRole('status')).toHaveLength(2);
   expect(screen.queryByText('12')).toBeNull();
   expect(screen.queryByText('1')).toBeNull();
@@ -78,7 +92,7 @@ test('shows loading instead of displaying stale totals during refetch', () => {
 
 test('zero is only displayed after a confirmed successful API response', () => {
   mockStatuses({ PLANNED: success(0), IN_PROGRESS: success(0), COMPLETED: success(0) });
-  render(<DashboardWorkoutStats />);
+  renderWithLocale(<DashboardWorkoutStats />);
   expect(screen.getAllByText('0')).toHaveLength(3);
 });
 
@@ -95,7 +109,7 @@ test('429 shows per-card retry and leaves other successful counters visible', ()
       refetch,
     },
   });
-  render(<DashboardWorkoutStats />);
+  renderWithLocale(<DashboardWorkoutStats />);
   expect(screen.getByText('4')).toBeTruthy();
   expect(screen.getByText('2')).toBeTruthy();
   expect(screen.getByRole('alert').textContent).toContain('Забагато запитів');
@@ -116,7 +130,7 @@ test('a 401 anywhere hides all cached counts and delegates session invalidation'
     },
     COMPLETED: success(47),
   });
-  const { container } = render(<DashboardWorkoutStats />);
+  const { container } = renderWithLocale(<DashboardWorkoutStats />);
   expect(container.textContent).toBe('');
   expect(onAuthFailure).toHaveBeenCalledOnce();
   expect((onAuthFailure.mock.calls[0]?.[0] as WorkoutListRequestError).status).toBe(401);
@@ -128,7 +142,41 @@ test('missing summary data is not converted to a made-up zero', () => {
     IN_PROGRESS: success(1),
     COMPLETED: success(7),
   });
-  render(<DashboardWorkoutStats />);
+  renderWithLocale(<DashboardWorkoutStats />);
   expect(screen.getByRole('status').textContent).toContain('Дані недоступні');
   expect(screen.queryByText('0')).toBeNull();
+});
+
+test('English KPI cards use translated labels and locale-formatted lifetime counts', () => {
+  mockStatuses({ PLANNED: success(1234), IN_PROGRESS: success(0), COMPLETED: success(18) });
+  renderWithLocale(<DashboardWorkoutStats />, 'en');
+  expect(screen.getByRole('heading', { name: 'Workout totals by status' })).toBeTruthy();
+  expect(screen.getByText('Planned')).toBeTruthy();
+  expect(screen.getByText('In progress')).toBeTruthy();
+  expect(screen.getByText('Completed')).toBeTruthy();
+  expect(screen.getByText('1,234')).toBeTruthy();
+  expect(screen.getByText('0')).toBeTruthy();
+  expect(screen.getByText('Cancelled workouts are excluded.', { exact: false })).toBeTruthy();
+});
+
+test('English 429 has a labelled retry and never turns an unavailable total into zero', () => {
+  const refetch = vi.fn();
+  mockStatuses({
+    PLANNED: { ...success(0), data: undefined },
+    IN_PROGRESS: success(2),
+    COMPLETED: {
+      isPending: false,
+      isFetching: false,
+      isError: true,
+      error: new WorkoutListRequestError(429),
+      refetch,
+    },
+  });
+  renderWithLocale(<DashboardWorkoutStats />, 'en');
+  expect(screen.getByRole('alert').textContent).toContain('Too many requests');
+  expect(screen.getByRole('status').textContent).toContain('Data unavailable');
+  expect(screen.queryByText('0')).toBeNull();
+  fireEvent.click(screen.getByRole('button', { name: 'Retry loading: completed' }));
+  expect(refetch).toHaveBeenCalledOnce();
+  expect(onAuthFailure).not.toHaveBeenCalled();
 });
