@@ -86,9 +86,7 @@ export function SignUpForm() {
         <p role="status" className="text-sm leading-6">
           {verification(getRegistrationEmailKey(success.verificationEmailStatus))}
         </p>
-        <p className="text-sm text-muted-foreground">
-          {t('createdNotice')}
-        </p>
+        <p className="text-sm text-muted-foreground">{t('createdNotice')}</p>
         <Button asChild className="w-full">
           <Link href="/dashboard">{t('openDashboard')}</Link>
         </Button>

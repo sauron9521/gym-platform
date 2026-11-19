@@ -24,7 +24,7 @@ export function getRegistrationErrorKey(status: number): RegistrationErrorKey {
 }
 
 export function getRegistrationEmailKey(status: VerificationEmailStatus) {
-  return status === 'SUBMITTED' ? ('submitted' as const) : ('retryRequired' as const);
+  return status === 'SUBMITTED' ? 'submitted' : 'retryRequired';
 }
 
 const defaultErrors: Record<RegistrationErrorKey, string> = {

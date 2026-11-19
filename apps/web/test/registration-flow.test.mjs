@@ -6,7 +6,10 @@ import {
   getRegistrationEmailMessage,
   getRegistrationErrorMessage,
 } from '../src/features/auth/lib/registration-flow.ts';
-import { createRegistrationSchema, registrationSchema } from '../src/features/auth/lib/registration-schema.ts';
+import {
+  createRegistrationSchema,
+  registrationSchema,
+} from '../src/features/auth/lib/registration-schema.ts';
 
 const valid = {
   email: 'user@example.test',

@@ -1,5 +1,10 @@
 /** Localize based on safe HTTP status, never an untrusted response body. */
-export type LoginErrorKey = 'badInput' | 'invalidCredentials' | 'security' | 'rateLimited' | 'unknown';
+export type LoginErrorKey =
+  | 'badInput'
+  | 'invalidCredentials'
+  | 'security'
+  | 'rateLimited'
+  | 'unknown';
 
 export function getLoginErrorKey(status: number): LoginErrorKey {
   switch (status) {

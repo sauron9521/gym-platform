@@ -72,11 +72,7 @@ export function SignInForm() {
       const decision = classifySessionCheck(account.response.status, Boolean(account.data));
 
       if (decision !== 'authenticated') {
-        setError(
-          decision === 'unauthenticated'
-            ? t('sessionMissing')
-            : t('sessionUnavailable'),
-        );
+        setError(decision === 'unauthenticated' ? t('sessionMissing') : t('sessionUnavailable'));
         return;
       }
 
