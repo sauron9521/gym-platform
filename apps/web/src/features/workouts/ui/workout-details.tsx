@@ -62,7 +62,10 @@ export function WorkoutDetails({ id }: { id: string }) {
 
   return (
     <main className="mx-auto min-w-0 max-w-5xl space-y-6 px-4 py-6 sm:space-y-7 sm:px-6 sm:py-10">
-      <Link href="/workouts" className="inline-flex min-h-11 items-center rounded-md text-sm font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring">
+      <Link
+        href="/workouts"
+        className="inline-flex min-h-11 items-center rounded-md text-sm font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+      >
         ← Усі тренування
       </Link>
 
