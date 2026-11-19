@@ -42,3 +42,12 @@ test('requires CI for the explicit disposable service database', () => {
   assert.match(config, /databaseName === '\/gym_browser_test'/);
   assert.match(config, /!localTestDatabase && !ciServiceDatabase/);
 });
+
+test('E2E role fixtures enforce the same disposable DB restriction', () => {
+  const fixtures = read('../apps/web/e2e/support/real-api-accounts.ts');
+  assert.match(fixtures, /database !== process\.env\.DATABASE_URL/);
+  assert.match(fixtures, /process\.env\.CI === 'true'/);
+  assert.match(fixtures, /url\.hostname === 'postgres'/);
+  assert.match(fixtures, /databaseName === '\/gym_browser_test'/);
+  assert.match(fixtures, /!localTestDatabase && !ciServiceDatabase/);
+});
