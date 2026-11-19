@@ -2,7 +2,10 @@ import { afterEach, expect, test, vi } from 'vitest';
 import { cleanup, render, screen } from '@testing-library/react';
 
 import type { WorkoutDetailsData } from '@/features/workouts/lib/workout-details';
-import { getWorkoutSetProgress } from '@/features/workouts/lib/workout-set-progress';
+import {
+  getNextPendingWorkoutSetId,
+  getWorkoutSetProgress,
+} from '@/features/workouts/lib/workout-set-progress';
 
 vi.mock('@/features/workouts/ui/workout-set-form', () => ({
   WorkoutSetForm: () => <div data-testid="set-editor">Редактор підходу</div>,
@@ -124,4 +127,12 @@ test('all processed sets do not show an actionable next-set jump', () => {
   expect(
     screen.getByText('Усі підходи опрацьовано. Можна перейти до завершення тренування.'),
   ).toBeTruthy();
+});
+
+test('finds the next pending set in order, across exercises, without wrapping backwards', () => {
+  const data = workout('IN_PROGRESS');
+  expect(getNextPendingWorkoutSetId(data, 'set-1')).toBe('set-3');
+  expect(getNextPendingWorkoutSetId(data, 'set-3')).toBe('set-4');
+  expect(getNextPendingWorkoutSetId(data, 'set-4')).toBeNull();
+  expect(getNextPendingWorkoutSetId(data, 'unknown-set')).toBeNull();
 });

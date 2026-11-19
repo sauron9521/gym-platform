@@ -18,3 +18,10 @@ export function getWorkoutSetProgress(workout: WorkoutExercises) {
     nextPendingSetId: sets.find((set) => set.status === 'PENDING')?.id ?? null,
   };
 }
+
+export function getNextPendingWorkoutSetId(workout: WorkoutExercises, currentSetId: string) {
+  const sets = workout.exercises.flatMap((exercise) => exercise.sets);
+  const index = sets.findIndex((set) => set.id === currentSetId);
+  if (index === -1) return null;
+  return sets.slice(index + 1).find((set) => set.status === 'PENDING')?.id ?? null;
+}
