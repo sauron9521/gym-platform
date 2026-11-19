@@ -20,6 +20,7 @@ model User {
   trainerProfile             TrainerProfile?
   trainerApplications        TrainerApplication[] @relation("TrainerApplicationApplicant")
   reviewedTrainerApplications TrainerApplication[] @relation("TrainerApplicationReviewer")
+  revokedTrainerApplications TrainerApplication[] @relation("TrainerApplicationRevoker")
   approvedTrainerProfiles    TrainerProfile[] @relation("TrainerProfileApprover")
   revokedTrainerProfiles     TrainerProfile[] @relation("TrainerProfileRevoker")
   bodyMeasurements     BodyMeasurement[]

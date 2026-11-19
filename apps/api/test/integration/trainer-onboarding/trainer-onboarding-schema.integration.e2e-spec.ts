@@ -119,9 +119,10 @@ describe('Trainer onboarding schema (PostgreSQL)', () => {
     ).rejects.toThrow();
     const revoked = await prisma.trainerApplication.update({
       where: { id: approved.id },
-      data: { status: 'REVOKED', revokedAt: new Date() },
+      data: { status: 'REVOKED', revokedAt: new Date(), revokedById: reviewerId },
     });
     expect(revoked.revokedAt).toBeInstanceOf(Date);
+    expect(revoked.revokedById).toBe(reviewerId);
   });
 
   it('keeps profile fail-closed until an audited explicit activation', async () => {

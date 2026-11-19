@@ -28,6 +28,7 @@ CREATE TABLE "trainer_applications" (
     "review_reason" VARCHAR(500),
     "reviewed_at" TIMESTAMPTZ(3),
     "revoked_at" TIMESTAMPTZ(3),
+    "revoked_by_id" TEXT,
     "created_at" TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMPTZ(3) NOT NULL,
 
@@ -49,6 +50,7 @@ CREATE INDEX "trainer_applications_status_created_at_idx"
     ON "trainer_applications"("status", "created_at" DESC);
 
 CREATE INDEX "trainer_applications_reviewer_id_idx" ON "trainer_applications"("reviewer_id");
+CREATE INDEX "trainer_applications_revoked_by_id_idx" ON "trainer_applications"("revoked_by_id");
 
 ALTER TABLE "trainer_profiles"
     ADD CONSTRAINT "trainer_profiles_user_id_fkey"
@@ -70,6 +72,10 @@ ALTER TABLE "trainer_applications"
     ADD CONSTRAINT "trainer_applications_reviewer_id_fkey"
     FOREIGN KEY ("reviewer_id") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
+ALTER TABLE "trainer_applications"
+    ADD CONSTRAINT "trainer_applications_revoked_by_id_fkey"
+    FOREIGN KEY ("revoked_by_id") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
 -- Hard invariant: activating a TrainerProfile requires a recorded approving actor,
 -- and a revoked profile can never remain active. Server policy adds #291/#311 checks.
 ALTER TABLE "trainer_profiles"
@@ -78,16 +84,20 @@ ALTER TABLE "trainer_profiles"
       "approved_at" IS NOT NULL AND "approved_by_id" IS NOT NULL AND "revoked_at" IS NULL
     ));
 
+ALTER TABLE "trainer_profiles"
+    ADD CONSTRAINT "trainer_profiles_revocation_actor_check"
+    CHECK (("revoked_at" IS NULL) = ("revoked_by_id" IS NULL));
+
 -- A PENDING application is undecided. Every terminal decision must retain
 -- reviewer/time for audit; a revoked application must retain revocation time.
 ALTER TABLE "trainer_applications"
     ADD CONSTRAINT "trainer_applications_decision_audit_check"
     CHECK (
-      ("status" = 'PENDING' AND "reviewer_id" IS NULL AND "reviewed_at" IS NULL AND "revoked_at" IS NULL)
+      ("status" = 'PENDING' AND "reviewer_id" IS NULL AND "reviewed_at" IS NULL AND "revoked_at" IS NULL AND "revoked_by_id" IS NULL)
       OR
       ("status" IN ('APPROVED', 'REJECTED') AND "reviewer_id" IS NOT NULL
-        AND "reviewed_at" IS NOT NULL AND "revoked_at" IS NULL)
+        AND "reviewed_at" IS NOT NULL AND "revoked_at" IS NULL AND "revoked_by_id" IS NULL)
       OR
       ("status" = 'REVOKED' AND "reviewer_id" IS NOT NULL
-        AND "reviewed_at" IS NOT NULL AND "revoked_at" IS NOT NULL)
+        AND "reviewed_at" IS NOT NULL AND "revoked_at" IS NOT NULL AND "revoked_by_id" IS NOT NULL)
     );

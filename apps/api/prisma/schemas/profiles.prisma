@@ -74,9 +74,11 @@ model TrainerApplication {
   reviewReason String? @map("review_reason") @db.VarChar(500)
   reviewedAt DateTime? @map("reviewed_at") @db.Timestamptz(3)
   revokedAt DateTime? @map("revoked_at") @db.Timestamptz(3)
+  revokedById String? @map("revoked_by_id")
 
   applicant User @relation("TrainerApplicationApplicant", fields: [userId], references: [id], onDelete: Restrict)
   reviewer User? @relation("TrainerApplicationReviewer", fields: [reviewerId], references: [id], onDelete: Restrict)
+  revokedBy User? @relation("TrainerApplicationRevoker", fields: [revokedById], references: [id], onDelete: Restrict)
 
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
@@ -85,5 +87,6 @@ model TrainerApplication {
   @@index([userId, createdAt(sort: Desc)])
   @@index([status, createdAt(sort: Desc)])
   @@index([reviewerId])
+  @@index([revokedById])
   @@map("trainer_applications")
 }
