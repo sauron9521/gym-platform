@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, waitFor } from '@testing-library/react-native';
+import { cleanup, fireEvent, render, waitFor, within } from '@testing-library/react-native';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { useExercisesQuery } from '@/features/exercises/model/exercises-query';
@@ -116,7 +116,7 @@ describe('ExercisePicker (native)', () => {
     await fireEvent.press(view.getByRole('button', { name: 'Жим лежачи' }));
 
     await view.rerender(<ExercisePicker selectedId="exercise-1" onSelect={onSelect} />);
-    expect(view.getByText('Жим лежачи')).toBeTruthy();
+    expect(within(view.getByTestId('workout-exercise-open')).getByText('Жим лежачи')).toBeTruthy();
 
     // A form reset or external change must never display a different ID's cached name.
     await view.rerender(<ExercisePicker selectedId="different-id" onSelect={onSelect} />);
