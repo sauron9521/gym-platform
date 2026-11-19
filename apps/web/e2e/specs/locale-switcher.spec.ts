@@ -94,7 +94,8 @@ test('failed authenticated preference PATCH preserves locale and permits explici
 
   const switcher = page.getByRole('combobox', { name: /^(Мова|Language)$/ });
   await switcher.selectOption('en');
-  await expect(page.getByRole('alert').filter({ hasText: 'Не вдалося зберегти мову' })).toBeVisible();
+  const localeError = page.getByRole('alert').filter({ hasText: 'Не вдалося зберегти мову' });
+  await expect(localeError).toBeVisible();
   await expect(page.locator('html')).toHaveAttribute('lang', 'uk');
   await expect(switcher).toHaveValue('uk');
   let cookie = (await page.context().cookies()).find((item) => item.name === 'gym-locale');
