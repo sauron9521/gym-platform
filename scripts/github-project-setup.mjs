@@ -81,8 +81,9 @@ function command(args, input) {
   });
   if (result.error || result.status !== 0) {
     throw new Error(
-      'GitHub CLI command ' + args.slice(0, 2).join(' ') +
-      ' failed. Check gh auth status and project scope.',
+      'GitHub CLI command ' +
+        args.slice(0, 2).join(' ') +
+        ' failed. Check gh auth status and project scope.',
     );
   }
   return result.stdout;
@@ -116,7 +117,15 @@ function details(number) {
 }
 function items(number) {
   const result = json([
-    'project', 'item-list', String(number), '--owner', OWNER, '--limit', '1000', '--format', 'json',
+    'project',
+    'item-list',
+    String(number),
+    '--owner',
+    OWNER,
+    '--limit',
+    '1000',
+    '--format',
+    'json',
   ]);
   if (!Array.isArray(result.items)) throw new Error('Expected Projects items');
   if (result.totalCount > result.items.length) throw new Error('Project item list was truncated');
@@ -178,9 +187,9 @@ export function run(args = process.argv.slice(2)) {
   };
   console.log(JSON.stringify(summary, null, 2));
   if (mode === 'preview') return summary;
-  const created = existing ?? json([
-    'project', 'create', '--owner', OWNER, '--title', PROJECT_TITLE, '--format', 'json',
-  ]);
+  const created =
+    existing ??
+    json(['project', 'create', '--owner', OWNER, '--title', PROJECT_TITLE, '--format', 'json']);
   const number = created.number;
   if (!Number.isInteger(number)) throw new Error('Project create did not return a number');
   let project = details(number);
@@ -193,12 +202,28 @@ export function run(args = process.argv.slice(2)) {
   createViews(project);
   for (const issue of missing) {
     json([
-      'project', 'item-add', String(number), '--owner', OWNER, '--url', issue.url,
-      '--format', 'json',
+      'project',
+      'item-add',
+      String(number),
+      '--owner',
+      OWNER,
+      '--url',
+      issue.url,
+      '--format',
+      'json',
     ]);
     command([
-      'project', 'item-edit', String(number), '--owner', OWNER, '--url', issue.url,
-      '--field', 'Status', '--value', 'Backlog',
+      'project',
+      'item-edit',
+      String(number),
+      '--owner',
+      OWNER,
+      '--url',
+      issue.url,
+      '--field',
+      'Status',
+      '--value',
+      'Backlog',
     ]);
     console.log('Imported #' + issue.number + ' (' + issue.phase + ') as Backlog');
   }
