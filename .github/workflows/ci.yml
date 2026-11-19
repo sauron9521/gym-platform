@@ -247,6 +247,7 @@ jobs:
             .turbo/cache
             apps/web/.next/cache
             apps/landing/.next/cache
+            apps/admin/.next/cache
             apps/trainer/.next/cache
           key: ${{ runner.os }}-node24-build-${{ hashFiles('pnpm-lock.yaml', 'turbo.json', 'apps/**/package.json', 'packages/**/package.json') }}-${{ github.sha }}
           restore-keys: |
@@ -295,7 +296,8 @@ jobs:
       - name: Full workspace regression for main and cross-cutting changes
         if: needs.changes.outputs.full == 'true'
         run: |
-          pnpm exec turbo run lint typecheck
+          pnpm lint
+          pnpm typecheck
           # API unit tests with coverage are enforced by the protected E2E gate.
           pnpm exec turbo run test --filter=@gym/web --filter=@gym/mobile --filter=@gym/api-client --filter=@gym/landing --filter=@gym/admin --filter=@gym/trainer
           pnpm build
@@ -323,7 +325,8 @@ jobs:
           if [ "$CI_MOBILE" = true ]; then filters+=(--filter=@gym/mobile); fi
           if [ "$CI_CLIENT" = true ]; then filters+=(--filter=@gym/api-client); fi
           test "${#filters[@]}" -gt 0
-          pnpm exec turbo run lint typecheck "${filters[@]}"
+          pnpm exec turbo run lint "${filters[@]}"
+          pnpm exec turbo run typecheck "${filters[@]}"
           # API unit tests run in the dedicated coverage job.
           test_filters=()
           if [ "$CI_WEB" = true ]; then test_filters+=(--filter=@gym/web); fi

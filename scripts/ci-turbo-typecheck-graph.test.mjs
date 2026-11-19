@@ -20,24 +20,25 @@ test('typecheck depends on source dependency typechecks, not builds', () => {
   assert.equal(tokens.scripts.build, 'pnpm test');
 });
 
-test('full CI runs lint and typecheck together before tests and build', () => {
+test('full CI preserves lint and typecheck before tests and build', () => {
   assert.ok(quality);
   const full = quality.split('      - name: Full workspace regression')[1];
   assert.ok(full);
   const script = full.split('      - name: Lint, typecheck, test and build')[0];
-  const lint = script.indexOf('pnpm exec turbo run lint typecheck');
+  const lint = script.indexOf('pnpm lint');
+  const typecheck = script.indexOf('pnpm typecheck');
   const tests = script.indexOf('pnpm exec turbo run test');
   const build = script.indexOf('pnpm build');
-  assert.ok(lint !== -1 && lint < tests && tests < build);
-  assert.ok(!script.includes('\n          pnpm lint\n'));
-  assert.ok(!script.includes('\n          pnpm typecheck\n'));
+  assert.ok(lint !== -1 && lint < typecheck);
+  assert.ok(typecheck < tests && tests < build);
 });
 
 test('affected CI preserves filters, tests, builds and required gates', () => {
   assert.ok(quality);
   const affected = quality.split('      - name: Lint, typecheck, test and build')[1];
   assert.ok(affected);
-  assert.ok(affected.includes('pnpm exec turbo run lint typecheck "${filters[@]}"'));
+  assert.ok(affected.includes('pnpm exec turbo run lint "${filters[@]}"'));
+  assert.ok(affected.includes('pnpm exec turbo run typecheck "${filters[@]}"'));
   assert.ok(affected.includes('pnpm exec turbo run test'));
   assert.ok(affected.includes('pnpm exec turbo run build "${filters[@]}"'));
   assert.ok(affected.includes('test_filters=()'));
@@ -65,4 +66,13 @@ test('Turbo dry-run typechecks shared source without dependency builds', () => {
   assert.ok(tasks.includes('@gym/api-client#typecheck'));
   assert.ok(tasks.includes('@gym/ui-web#typecheck'));
   assert.ok(!tasks.some((task) => task.endsWith('#build')));
+});
+
+test('CI preserves incremental Next cache for all Next applications', () => {
+  assert.ok(quality);
+  const cache = quality.split('      - name: Restore Turborepo')[1];
+  assert.ok(cache);
+  for (const name of ['web', 'landing', 'admin', 'trainer']) {
+    assert.ok(cache.includes('apps/' + name + '/.next/cache'));
+  }
 });
