@@ -58,6 +58,7 @@ test('Ukrainian chart exposes API-backed daily values and preserves 7/30/90 quer
 
   expect(screen.getByRole('heading', { name: 'Прогрес тренувань' })).toBeTruthy();
   expect(screen.getByRole('img', { name: /Графік силового об’єму за 30 днів/ })).toBeTruthy();
+  fireEvent.click(screen.getByText('Переглянути точні значення за днями'));
   const values = screen.getByRole('list', { name: 'Денні значення об’єму' });
   expect(values.textContent).toContain(new Intl.NumberFormat('uk-UA').format(1500));
   expect(values.textContent).toContain('кг');
@@ -103,6 +104,7 @@ test('English labels, daily dates, numbers, tooltip and summary use request loca
   expect(screen.getByText('Training volume, kg')).toBeTruthy();
   expect(screen.getByText('View exact daily values')).toBeTruthy();
 
+  fireEvent.click(screen.getByText('View exact daily values'));
   const values = screen.getByRole('list', { name: 'Daily training volume values' });
   expect(values.querySelector('time')?.getAttribute('dateTime')).toBe('2026-11-17');
   expect(values.querySelector('time')?.textContent).toMatch(/Nov.*17.*2026/);
