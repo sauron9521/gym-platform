@@ -1,36 +1,17 @@
-/** Localize based on safe HTTP status, never an untrusted response body. */
-export type LoginErrorKey =
-  | 'badInput'
-  | 'invalidCredentials'
-  | 'security'
-  | 'rateLimited'
-  | 'unknown';
-
-export function getLoginErrorKey(status: number): LoginErrorKey {
+/** UI decisions are based on HTTP status, never on an untrusted error body. */
+export function getLoginErrorMessage(status: number): string {
   switch (status) {
     case 400:
-      return 'badInput';
+      return 'Перевірте адресу електронної пошти та пароль.';
     case 401:
-      return 'invalidCredentials';
+      return 'Невірна електронна пошта або пароль.';
     case 403:
-      return 'security';
+      return 'Запит заблоковано налаштуваннями безпеки. Перевірте origin вебзастосунку.';
     case 429:
-      return 'rateLimited';
+      return 'Забагато спроб входу. Спробуйте пізніше.';
     default:
-      return 'unknown';
+      return 'Не вдалося увійти. Спробуйте ще раз.';
   }
-}
-
-const defaultMessages: Record<LoginErrorKey, string> = {
-  badInput: 'Перевірте адресу електронної пошти та пароль.',
-  invalidCredentials: 'Невірна електронна пошта або пароль.',
-  security: 'Запит заблоковано налаштуваннями безпеки. Перевірте origin вебзастосунку.',
-  rateLimited: 'Забагато спроб входу. Спробуйте пізніше.',
-  unknown: 'Не вдалося увійти. Спробуйте ще раз.',
-};
-
-export function getLoginErrorMessage(status: number): string {
-  return defaultMessages[getLoginErrorKey(status)];
 }
 
 export type SessionDecision = 'authenticated' | 'unauthenticated' | 'forbidden' | 'error';
@@ -40,4 +21,20 @@ export function classifySessionCheck(status: number, hasUser: boolean): SessionD
   if (status === 403) return 'forbidden';
   if (status === 200 && hasUser) return 'authenticated';
   return 'error';
+}
+
+/** Stable translation key derived from HTTP status, never the untrusted response body. */
+export function getLoginErrorKey(status: number) {
+  switch (status) {
+    case 400:
+      return 'badInput' as const;
+    case 401:
+      return 'invalidCredentials' as const;
+    case 403:
+      return 'security' as const;
+    case 429:
+      return 'rateLimited' as const;
+    default:
+      return 'unknown' as const;
+  }
 }
