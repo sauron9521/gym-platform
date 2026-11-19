@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page, type TestInfo } from '@playwright/test';
 
 // These captures produce review evidence, not committed golden images.
 // Normal PR CI skips the visual-review matrix to prevent flaky screenshot gates.
@@ -7,6 +7,12 @@ const viewports = [
   { width: 390, height: 844, label: 'mobile' },
   { width: 1280, height: 900, label: 'desktop' },
 ] as const;
+
+async function attachScreenshot(page: Page, testInfo: TestInfo, name: string) {
+  const path = testInfo.outputPath(name);
+  await page.screenshot({ path, fullPage: true, animations: 'disabled', caret: 'hide' });
+  await testInfo.attach(name, { path, contentType: 'image/png' });
+}
 
 test.describe('OVRANTO visual review (manual, opt-in)', () => {
   test.skip(!captureEnabled, 'Enable OVRANTO_VISUAL_CAPTURE=1 to generate review screenshots.');
@@ -28,10 +34,7 @@ test.describe('OVRANTO visual review (manual, opt-in)', () => {
           await expect(page.locator('html')).toHaveClass(new RegExp(`(^| )${theme}( |$)`));
           await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
 
-          await testInfo.attach('login.png', {
-            body: await page.screenshot({ fullPage: true, animations: 'disabled', caret: 'hide' }),
-            contentType: 'image/png',
-          });
+          await attachScreenshot(page, testInfo, 'login.png');
 
           await page.getByLabel('Електронна пошта').fill('athlete@example.test');
           await page.getByLabel('Пароль').fill('TestPassword123!');
@@ -40,19 +43,13 @@ test.describe('OVRANTO visual review (manual, opt-in)', () => {
           await expect(page.getByTestId('athlete-shell-header')).toBeVisible();
           await expect(page.getByRole('heading', { level: 1 }).first()).toBeVisible();
 
-          await testInfo.attach('athlete-dashboard.png', {
-            body: await page.screenshot({ fullPage: true, animations: 'disabled', caret: 'hide' }),
-            contentType: 'image/png',
-          });
+          await attachScreenshot(page, testInfo, 'athlete-dashboard.png');
 
           await page.goto('/workouts');
           await expect(page.getByTestId('athlete-shell-header')).toBeVisible();
           await expect(page.getByRole('heading', { level: 1 }).first()).toBeVisible();
 
-          await testInfo.attach('athlete-workouts.png', {
-            body: await page.screenshot({ fullPage: true, animations: 'disabled', caret: 'hide' }),
-            contentType: 'image/png',
-          });
+          await attachScreenshot(page, testInfo, 'athlete-workouts.png');
         });
       }
     }
