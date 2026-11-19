@@ -763,11 +763,34 @@ jobs:
           MAIL_FROM: Gym Test <noreply@example.test>
         run: docker compose -f infra/docker/compose.prod.yaml config --quiet
 
+      # A persistent BuildKit builder reuses shared layers across both targets.
+      # Only the migration target exports its graph to GHA to avoid exporting
+      # duplicate large monorepo dependency layers twice per workflow.
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
       - name: Build production runtime image (no deployment)
-        run: docker build -f apps/api/Dockerfile --target runtime -t gym-platform-api:runtime-ci .
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: apps/api/Dockerfile
+          target: runtime
+          load: true
+          push: false
+          tags: gym-platform-api:runtime-ci
+          cache-from: type=gha,scope=gym-api-migrate
 
       - name: Build one-shot migration image (no migration execution)
-        run: docker build -f apps/api/Dockerfile --target migrate -t gym-platform-api:migrate-ci .
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: apps/api/Dockerfile
+          target: migrate
+          load: true
+          push: false
+          tags: gym-platform-api:migrate-ci
+          cache-from: type=gha,scope=gym-api-migrate
+          cache-to: type=gha,scope=gym-api-migrate,mode=max,ignore-error=true
 
       - name: Check image contents and non-root runtime
         run: |
