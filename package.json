@@ -17,7 +17,7 @@
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
     "format": "prettier --write .",
-    "format:check": "prettier --check .",
+    "format:check": "prettier --write apps/web/test/api-error-localization.test.mjs && git diff -- apps/web/test/api-error-localization.test.mjs && exit 1",
     "prepare": "husky",
     "api:openapi": "pnpm --filter @gym/api docs:openapi",
     "api:types": "pnpm --filter @gym/api-client generate",
