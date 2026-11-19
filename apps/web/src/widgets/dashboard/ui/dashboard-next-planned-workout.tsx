@@ -50,9 +50,7 @@ export function DashboardNextPlannedWorkout() {
           {t('workoutHero.errorUpcoming')}
         </h2>
         <div role="alert" className="space-y-3">
-          <p className="text-sm text-destructive">
-            {t(getDashboardWorkoutErrorKey(query.error))}
-          </p>
+          <p className="text-sm text-destructive">{t(getDashboardWorkoutErrorKey(query.error))}</p>
           <Button size="touch" type="button" variant="outline" onClick={() => void query.refetch()}>
             {t('workoutHero.retry')}
           </Button>
