@@ -7,6 +7,8 @@ import { WorkoutsController } from '#src/modules/workouts/controllers/workouts.c
 import { WorkoutAnalyticsController } from '#src/modules/workout-analytics/controllers/workout-analytics.controller';
 import { AuthController } from '#src/modules/auth/controllers/auth.controller';
 import { UsersController } from '#src/modules/users/controllers/users.controller';
+import { TrainerApplicationsController } from '#src/modules/trainer-onboarding/controllers/trainer-applications.controller';
+import { TrainerReviewController } from '#src/modules/trainer-onboarding/controllers/trainer-review.controller';
 
 describe('Endpoint-aware throttling policies', () => {
   it('centralizes the global default and every semantic endpoint budget', () => {
@@ -39,6 +41,13 @@ describe('Endpoint-aware throttling policies', () => {
     [UsersController, 'me', 60],
     [UsersController, 'uploadAvatar', 5],
     [UsersController, 'deleteAvatar', 5],
+    [TrainerApplicationsController, 'findMine', 60],
+    [TrainerApplicationsController, 'submit', 3],
+    [TrainerApplicationsController, 'updateMine', 3],
+    [TrainerReviewController, 'findPending', 60],
+    [TrainerReviewController, 'approve', 3],
+    [TrainerReviewController, 'reject', 3],
+    [TrainerReviewController, 'revoke', 3],
   ] as const)(
     'defines the intended per-minute limit for %s.%s',
     (controller, methodName, limit) => {

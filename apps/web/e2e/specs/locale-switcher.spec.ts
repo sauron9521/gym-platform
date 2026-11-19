@@ -103,3 +103,44 @@ test('failed locale PATCH preserves cookie and retries safely', async ({ page })
   expect(cookie?.value).toBe('en');
   expect(patches).toBe(2);
 });
+
+test('English login translates validation and API authentication failures', async ({ page }) => {
+  await page.goto('/login');
+  await page.getByRole('combobox', { name: 'Мова' }).selectOption('en');
+
+  await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+  await expect(page.getByRole('textbox', { name: 'Email address' })).toBeVisible();
+
+  await page.getByLabel('Email address').fill('bad-address');
+  await page.getByLabel('Password').fill('Password1!');
+  await page.getByRole('button', { name: 'Sign in' }).click();
+  await expect(page.locator('#login-email-error')).toContainText('Enter a valid email address');
+
+  await page.getByLabel('Email address').fill('athlete@example.test');
+  await page.getByLabel('Password').fill('WrongPassword123!');
+  await page.getByRole('button', { name: 'Sign in' }).click();
+  await expect(page.getByText('Incorrect email address or password.')).toBeVisible();
+  await expect(page).toHaveURL(/\/login$/);
+});
+
+test('registration has direct bilingual switching and localized validation', async ({ page }) => {
+  await page.goto('/register');
+  await page.getByRole('combobox', { name: 'Мова' }).selectOption('en');
+  await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+  await expect(page.getByRole('heading', { name: 'Create an account' })).toBeVisible();
+
+  await page.getByLabel('Email address').fill('invalid-address');
+  await page.getByLabel('Password', { exact: true }).fill('Password1!');
+  await page.getByLabel('Confirm password').fill('Different1!');
+  await page.getByRole('button', { name: 'Sign up' }).click();
+
+  await expect(page.locator('#register-email-error')).toContainText('Enter a valid email address');
+  await expect(page.locator('#register-confirmation-error')).toContainText(
+    'Passwords do not match.',
+  );
+
+  await page.getByRole('combobox', { name: 'Language' }).selectOption('uk');
+  await expect(page.locator('html')).toHaveAttribute('lang', 'uk');
+  await expect(page.getByRole('heading', { name: 'Створити обліковий запис' })).toBeVisible();
+  await expect(page.getByLabel('Повторіть пароль')).toBeVisible();
+});

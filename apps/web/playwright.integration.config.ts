@@ -5,11 +5,18 @@ if (!database || database !== process.env.DATABASE_URL) {
   throw new Error('Integration browser tests require identical DATABASE_URL and TEST_DATABASE_URL');
 }
 const url = new URL(database);
-if (
-  !['localhost', '127.0.0.1'].includes(url.hostname) ||
-  !decodeURIComponent(url.pathname).endsWith('_test')
-) {
-  throw new Error('Integration browser tests require a local disposable *_test database');
+const databaseName = decodeURIComponent(url.pathname);
+const localTestDatabase =
+  ['localhost', '127.0.0.1'].includes(url.hostname) && databaseName.endsWith('_test');
+// Container jobs access the disposable PostgreSQL Actions service by its DNS name.
+// Never allow the service hostname outside CI or with an arbitrary database name.
+const ciServiceDatabase =
+  process.env.CI === 'true' &&
+  url.hostname === 'postgres' &&
+  url.port === '5432' &&
+  databaseName === '/gym_browser_test';
+if (!localTestDatabase && !ciServiceDatabase) {
+  throw new Error('Integration browser tests require an approved disposable *_test database');
 }
 
 const webOrigin = 'http://127.0.0.1:3200';
@@ -23,7 +30,12 @@ export default defineConfig({
   expect: { timeout: 15_000 },
   reporter: 'list',
   outputDir: './test-results/integration',
-  use: { ...devices['Desktop Chrome'], baseURL: webOrigin, trace: 'retain-on-failure' },
+  use: {
+    ...devices['Desktop Chrome'],
+    baseURL: webOrigin,
+    locale: 'uk-UA',
+    trace: 'retain-on-failure',
+  },
   webServer: [
     {
       name: 'real-api',
