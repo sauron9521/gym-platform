@@ -143,13 +143,12 @@ const appearanceMatrix = [
 ] as const;
 
 for (const { locale, theme, width } of appearanceMatrix) {
-  test(`athlete dashboard has no automated WCAG violations in ${locale}/${theme} at ${width}px`, async ({
-    page,
-  }) => {
+  test(`${locale}/${theme} accessibility at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 812 });
     await signIn(page);
 
-    const selectors = page.getByTestId('athlete-shell-header').getByRole('combobox');
+    const header = page.getByTestId('athlete-shell-header');
+    const selectors = header.getByRole('combobox');
     await selectors.first().selectOption(theme);
     await selectors.nth(1).selectOption(locale);
 
@@ -157,14 +156,10 @@ for (const { locale, theme, width } of appearanceMatrix) {
     await page.reload();
     await expect(page.locator('html')).toHaveAttribute('lang', locale);
     await expect(page.locator('html')).toHaveClass(new RegExp(`(^| )${theme}( |$)`));
-    await expect(page.getByTestId('athlete-shell-header').getByRole('combobox').nth(1)).toHaveValue(
-      locale,
-    );
-    await expect(
-      page.getByRole('combobox', {
-        name: locale === 'en' ? 'Appearance theme' : 'Тема інтерфейсу',
-      }),
-    ).toHaveValue(theme);
+    const persistedLocale = header.getByRole('combobox').nth(1);
+    await expect(persistedLocale).toHaveValue(locale);
+    const themeLabel = locale === 'en' ? 'Appearance theme' : 'Тема інтерфейсу';
+    await expect(page.getByRole('combobox', { name: themeLabel })).toHaveValue(theme);
 
     const brandHomeName =
       locale === 'en'
@@ -175,7 +170,7 @@ for (const { locale, theme, width } of appearanceMatrix) {
   });
 }
 
-test('system appearance follows OS changes without overriding saved preference', async ({ page }) => {
+test('system theme follows OS appearance and survives reload', async ({ page }) => {
   await page.emulateMedia({ colorScheme: 'dark' });
   await signIn(page);
   await page.getByRole('combobox', { name: 'Тема інтерфейсу' }).selectOption('system');
@@ -183,14 +178,11 @@ test('system appearance follows OS changes without overriding saved preference',
 
   await expect(page.getByRole('combobox', { name: 'Тема інтерфейсу' })).toHaveValue('system');
   await expect(page.locator('html')).not.toHaveClass(/\b(?:light|dark)\b/);
-  const darkBackground = await page.locator('body').evaluate((element) => {
-    return getComputedStyle(element).backgroundColor;
-  });
+  const darkBackground = await page.evaluate(() => getComputedStyle(document.body).backgroundColor);
   await expectNoAxeWcagViolations(page);
 
   await page.emulateMedia({ colorScheme: 'light' });
-  await expect
-    .poll(() => page.locator('body').evaluate((element) => getComputedStyle(element).backgroundColor))
-    .not.toBe(darkBackground);
+  const lightBackground = await page.evaluate(() => getComputedStyle(document.body).backgroundColor);
+  expect(lightBackground).not.toBe(darkBackground);
   await expectNoAxeWcagViolations(page);
 });
