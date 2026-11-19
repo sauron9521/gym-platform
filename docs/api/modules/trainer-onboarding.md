@@ -44,3 +44,31 @@ policy (#291) and Trainer Web authorization (#363) are separate milestones.
 Tests: `src/modules/trainer-onboarding/test/`,
 `test/e2e/trainer-onboarding/`. The checked-in OpenAPI and typed client must
 be regenerated with `pnpm api:contract:generate` alongside route changes.
+
+## Operator moderation HTTP API — #311
+
+**Elevation:** Only an existing `ADMIN` account explicitly included in
+`SUPERADMIN_USER_IDS` can call `admin.accounts.manage`. The permission
+guard also denies default ADMIN, TRAINER, ATHLETE and anonymous requests.
+The service rechecks the live database role inside the transaction.
+
+- `GET /admin/trainer-applications`: up to 50 oldest pending submissions.
+- `POST /admin/trainer-applications/:id/approve`: activate an approved
+  `TrainerProfile`, preserving the user's ATHLETE role.
+- `POST /admin/trainer-applications/:id/reject`: record a reviewed rejection
+  without creating or activating a profile.
+- `POST /admin/trainer-applications/:id/revoke`: deactivate the profile and
+  audit the actor, time and separate revocation reason.
+
+Each decision has strict `{ "reason": "8–500 characters" }` validation;
+unknown fields, self-moderation, stale state and attempts to change another
+administrator's decision are rejected. An identical request from the same
+operator is idempotent. Decisions and profile changes use one PostgreSQL
+`SERIALIZABLE` transaction. `P2034` concurrent conflicts return 409.
+The approval and revocation reasons are stored separately; the additive
+`revoke_reason` migration leaves legacy rows compatible.
+
+The new approved profile facet does not change `User.role`, session tokens,
+existing Trainer/Athlete guards, or grant moderator privileges. Consumer-side
+capability resolution and session authorization changes remain in #291/#361,
+then Trainer Web routes #363. Do not claim Trainer Web access is unlocked yet.

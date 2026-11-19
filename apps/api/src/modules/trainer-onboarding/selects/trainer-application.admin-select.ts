@@ -11,6 +11,7 @@ export const trainerApplicationAdminSelect = {
   reviewedAt: true,
   revokedById: true,
   revokedAt: true,
+  revokeReason: true,
   createdAt: true,
   updatedAt: true,
 } as const satisfies Prisma.TrainerApplicationSelect;

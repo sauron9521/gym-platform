@@ -53,7 +53,8 @@ export class TrainerReviewRepository {
         const desired = action === 'APPROVE' ? 'APPROVED' : action === 'REJECT' ? 'REJECTED' : 'REVOKED';
         if (application.status === desired) {
           const actor = action === 'REVOKE' ? application.revokedById : application.reviewerId;
-          if (actor === reviewerId && application.reviewReason === reason) {
+          const storedReason = action === 'REVOKE' ? application.revokeReason : application.reviewReason;
+          if (actor === reviewerId && storedReason === reason) {
             const existing = await tx.trainerApplication.findUniqueOrThrow({
               where: { id: applicationId },
               select: trainerApplicationAdminSelect,
@@ -83,7 +84,7 @@ export class TrainerReviewRepository {
         const now = new Date();
         const decisionData =
           action === 'REVOKE'
-            ? { status: desired, revokedById: reviewerId, revokedAt: now }
+            ? { status: desired, revokedById: reviewerId, revokedAt: now, revokeReason: reason }
             : { status: desired, reviewerId, reviewedAt: now, reviewReason: reason };
         const changed = await tx.trainerApplication.updateMany({
           where: { id: applicationId, status: previous },
@@ -114,7 +115,11 @@ export class TrainerReviewRepository {
             where: { userId: application.userId, isActive: true },
             data: { isActive: false, revokedAt: now, revokedById: reviewerId },
           });
-          if (profile.count !== 1) return { kind: 'conflict' } as const;
+          if (profile.count !== 1) {
+            // Returning a conflict would COMMIT the application update. Throw
+            // to roll back the whole serializable transaction instead.
+            throw new Error('Trainer profile revocation invariant violated');
+          }
         }
 
         const record = await tx.trainerApplication.findUniqueOrThrow({
