@@ -15,5 +15,7 @@ test('synthetic visual dashboard analytics render a graph and record count', asy
     page.locator('[aria-labelledby="dashboard-volume-heading"] [role="img"]'),
   ).toBeVisible();
   await expect(page.getByText('3', { exact: true })).toBeVisible();
-  await expect(page.getByRole('alert')).toHaveCount(0);
+  // Next.js Dev Tools announces the page title outside <main> in dev mode.
+  // Only an alert in the actual dashboard content signals an error state.
+  await expect(page.getByRole('main').getByRole('alert')).toHaveCount(0);
 });
