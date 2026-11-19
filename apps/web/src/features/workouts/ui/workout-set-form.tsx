@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef } from 'react';
+import { useRef, type FormEvent } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
@@ -79,9 +79,13 @@ export function WorkoutSetForm({
     void send('SKIPPED', getWorkoutSetDefaults(set));
   }
 
+  function submitCompleted(event: FormEvent<HTMLFormElement>) {
+    void handleSubmit((values) => send('COMPLETED', values))(event);
+  }
+
   return (
     <form
-      onSubmit={handleSubmit((values) => send('COMPLETED', values))}
+      onSubmit={submitCompleted}
       noValidate
       aria-busy={busy}
       className="space-y-4 rounded-lg border bg-muted/30 p-4"
