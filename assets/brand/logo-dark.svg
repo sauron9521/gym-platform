@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 286 72" role="img" aria-labelledby="logo-title">
+  <title id="logo-title">OVRANTO — PERFORMANCE PLATFORM</title>
+  <path d="M5 55 38 12H65L32 55Z" fill="#075C55" />
+  <path d="M37 55 67 18H85L55 55Z" fill="#C76537" />
+  <g font-family="Manrope, Arial, sans-serif">
+    <text x="106" y="42" fill="#F5F0E9" font-size="31" font-weight="400" letter-spacing="-0.5">OVRANTO</text>
+    <text x="106" y="62" fill="#C6BFB6" font-size="12.5" font-weight="400" letter-spacing="-0.15">PERFORMANCE PLATFORM</text>
+  </g>
+</svg>

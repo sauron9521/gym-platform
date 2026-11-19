@@ -7,10 +7,7 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { webApi } from '@/shared/api/client';
 import { Button } from '@/shared/ui/button';
 import { FormFeedback } from '@/shared/ui/form-feedback';
-import {
-  getResetPasswordErrorMessage,
-  validatePasswordResetInput,
-} from '../lib/password-reset-flow';
+import { getResetPasswordErrorKey, validatePasswordResetInput } from '../lib/password-reset-flow';
 
 export function ResetPasswordForm({ token }: { token: string | null }) {
   const t = useTranslations('web.recovery');
@@ -32,7 +29,11 @@ export function ResetPasswordForm({ token }: { token: string | null }) {
     event.preventDefault();
     if (!token || submitting || completed) return;
 
-    const validationError = validatePasswordResetInput(password, confirmation);
+    const validationError = validatePasswordResetInput(password, confirmation, {
+      tooShort: t('tooShort'),
+      whitespaceOnly: t('whitespaceOnly'),
+      mismatch: t('mismatch'),
+    });
     if (validationError) {
       setError(validationError);
       return;
@@ -46,7 +47,7 @@ export function ResetPasswordForm({ token }: { token: string | null }) {
       });
 
       if (response.status !== 200) {
-        setError(getResetPasswordErrorMessage(response.status));
+        setError(t(getResetPasswordErrorKey(response.status)));
         return;
       }
 

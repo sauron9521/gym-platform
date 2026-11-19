@@ -22,6 +22,7 @@ test('login uses the shared Input while preserving form validation and session g
   assert.match(login, /<Input/);
   assert.match(login, /\.\.\.register\('email'/);
   assert.match(login, /\.\.\.register\('password'/);
-  assert.match(login, /zodResolver\(loginSchema\)/);
+  assert.match(login, /zodResolver\(schema\)/);
+  assert.match(login, /createLoginSchema/);
   assert.match(login, /classifySessionCheck/);
 });

@@ -1,10 +1,16 @@
 'use client';
 
 import { useState, type ChangeEvent } from 'react';
+import { useTranslations } from 'next-intl';
 
 import { Button } from '@/shared/ui/button';
 import { useAvatarMutation } from '../api/avatar-mutations';
-import { getAvatarInitials, getAvatarSource, validateAvatarFile } from '../lib/avatar';
+import {
+  getAvatarErrorKey,
+  getAvatarInitials,
+  getAvatarSource,
+  getAvatarValidationKey,
+} from '../lib/avatar';
 
 type Props = {
   avatarUrl: string | null | undefined;
@@ -14,6 +20,7 @@ type Props = {
 };
 
 export function ProfileAvatar({ avatarUrl, displayName, email, onChanged }: Props) {
+  const t = useTranslations('web.profileAvatar');
   const [file, setFile] = useState<File | null>(null);
   const mutation = useAvatarMutation();
   const busy = mutation.isPending;
@@ -28,9 +35,9 @@ export function ProfileAvatar({ avatarUrl, displayName, email, onChanged }: Prop
     setMessage(null);
     mutation.reset();
     setConfirmDelete(false);
-    const validation = selected ? validateAvatarFile(selected) : null;
+    const validation = selected ? getAvatarValidationKey(selected) : null;
     setFile(validation ? null : selected);
-    setError(validation);
+    setError(validation ? t(validation) : null);
   }
 
   async function changeAvatar(action: 'upload' | 'delete') {
@@ -47,41 +54,41 @@ export function ProfileAvatar({ avatarUrl, displayName, email, onChanged }: Prop
       }
 
       if (!(await onChanged())) {
-        setError('Аватар змінено, але оновити профіль не вдалося.');
+        setError(t('refetchError'));
         return;
       }
       setFile(null);
       setConfirmDelete(false);
-      setMessage(action === 'upload' ? 'Фото профілю оновлено.' : 'Фото профілю видалено.');
+      setMessage(action === 'upload' ? t('uploaded') : t('deleted'));
     } catch {
       // Preserve the file and confirmation for an explicit retry.
     }
   }
 
   return (
-    <section aria-label="Фото профілю" className="space-y-4 rounded-xl border p-6">
+    <section aria-label={t('section')} className="space-y-4 rounded-xl border p-6">
       <div className="flex items-center gap-5">
         <div className="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-full bg-muted text-2xl font-semibold">
           {source ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={source}
-              alt="Фото профілю"
+              alt={t('photo')}
               className="h-full w-full object-cover"
               referrerPolicy="no-referrer"
             />
           ) : (
-            <span aria-label="Ініціали користувача">{getAvatarInitials(displayName, email)}</span>
+            <span aria-label={t('initials')}>{getAvatarInitials(displayName, email)}</span>
           )}
         </div>
         <div className="space-y-1">
-          <h2 className="text-lg font-semibold">Аватар</h2>
-          <p className="text-sm text-muted-foreground">PNG, JPEG або WebP до 2 МіБ.</p>
+          <h2 className="text-lg font-semibold">{t('heading')}</h2>
+          <p className="text-sm text-muted-foreground">{t('hint')}</p>
         </div>
       </div>
       <div className="space-y-3">
         <label htmlFor="avatar-file" className="block text-sm font-medium">
-          Обрати фотографію
+          {t('choose')}
         </label>
         <input
           id="avatar-file"
@@ -91,14 +98,14 @@ export function ProfileAvatar({ avatarUrl, displayName, email, onChanged }: Prop
           disabled={busy}
           className="block w-full text-sm"
         />
-        {file && <p className="text-sm">Обрано: {file.name}</p>}
+        {file && <p className="text-sm">{t('selected')}: {file.name}</p>}
         <div className="flex flex-wrap gap-3">
           <Button
             type="button"
             disabled={!file || busy}
             onClick={() => void changeAvatar('upload')}
           >
-            {busy ? 'Обробка…' : 'Завантажити фото'}
+            {busy ? t('processing') : t('upload')}
           </Button>
           {source && !confirmDelete && (
             <Button
@@ -107,7 +114,7 @@ export function ProfileAvatar({ avatarUrl, displayName, email, onChanged }: Prop
               disabled={busy}
               onClick={() => setConfirmDelete(true)}
             >
-              Видалити фото
+              {t('delete')}
             </Button>
           )}
           {source && confirmDelete && (
@@ -118,7 +125,7 @@ export function ProfileAvatar({ avatarUrl, displayName, email, onChanged }: Prop
                 disabled={busy}
                 onClick={() => void changeAvatar('delete')}
               >
-                Підтвердити видалення
+                {t('confirmDelete')}
               </Button>
               <Button
                 type="button"
@@ -126,7 +133,7 @@ export function ProfileAvatar({ avatarUrl, displayName, email, onChanged }: Prop
                 disabled={busy}
                 onClick={() => setConfirmDelete(false)}
               >
-                Скасувати
+                {t('cancel')}
               </Button>
             </>
           )}
@@ -134,7 +141,7 @@ export function ProfileAvatar({ avatarUrl, displayName, email, onChanged }: Prop
       </div>
       {(error || mutation.isError) && (
         <p role="alert" className="text-sm text-destructive">
-          {error ?? mutation.error?.message}
+          {error ?? (mutation.error ? t(getAvatarErrorKey(mutation.error.status)) : null)}
         </p>
       )}
       {message && (

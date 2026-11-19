@@ -101,7 +101,7 @@ test('relationship UI uses cached filters, retry and 401 protection', async () =
     'utf8',
   );
   const dashboard = await readFile(
-    new URL('../src/widgets/dashboard/ui/dashboard-screen.tsx', import.meta.url),
+    new URL('../src/widgets/dashboard/ui/dashboard-home.tsx', import.meta.url),
     'utf8',
   );
   const api = await readFile(
@@ -128,7 +128,7 @@ test('relationship UI uses cached filters, retry and 401 protection', async () =
   assert.match(api, /retry: false/);
   assert.match(ui, /aria-label="Сторінки підопічних"/);
   assert.match(ui, /Пошук контакту на поточній сторінці/);
-  assert.match(dashboard, /initialUser.role === 'TRAINER'/);
+  assert.match(dashboard, /role === 'TRAINER'/);
   assert.ok(dashboard.includes("'/trainer/athletes'"));
   assert.doesNotMatch(ui, /localStorage|sessionStorage|document.cookie|dangerouslySetInnerHTML/);
 });

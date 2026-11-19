@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
@@ -11,11 +11,24 @@ import { webApi } from '@/shared/api/client';
 import { Button } from '@/shared/ui/button';
 import { FormFeedback } from '@/shared/ui/form-feedback';
 import { Input } from '@/shared/ui/input';
-import { classifySessionCheck, getLoginErrorMessage } from '../lib/auth-flow';
-import { loginSchema, type LoginValues } from '../lib/login-schema';
+import { classifySessionCheck, getLoginErrorKey } from '../lib/auth-flow';
+import { createLoginSchema, type LoginValues } from '../lib/login-schema';
 
 export function SignInForm() {
   const t = useTranslations('web.authFields');
+  const validation = useTranslations('web.authValidation');
+  const loginError = useTranslations('web.loginErrors');
+  const schema = useMemo(
+    () =>
+      createLoginSchema({
+        emailRequired: validation('emailRequired'),
+        emailInvalid: validation('emailInvalid'),
+        emailTooLong: validation('emailTooLong'),
+        passwordRequired: validation('passwordRequired'),
+        passwordWhitespace: validation('passwordWhitespace'),
+      }),
+    [validation],
+  );
   const router = useRouter();
   const queryClient = useQueryClient();
   const [error, setError] = useState<string | null>(null);
@@ -24,7 +37,7 @@ export function SignInForm() {
     handleSubmit,
     formState: { errors, isSubmitting },
   } = useForm<LoginValues>({
-    resolver: zodResolver(loginSchema),
+    resolver: zodResolver(schema),
     defaultValues: { email: '', password: '' },
     mode: 'onBlur',
     reValidateMode: 'onChange',
@@ -39,7 +52,7 @@ export function SignInForm() {
       });
 
       if (response.status !== 200 || !data) {
-        setError(getLoginErrorMessage(response.status));
+        setError(loginError(getLoginErrorKey(response.status)));
         return;
       }
 
@@ -59,11 +72,7 @@ export function SignInForm() {
       const decision = classifySessionCheck(account.response.status, Boolean(account.data));
 
       if (decision !== 'authenticated') {
-        setError(
-          decision === 'unauthenticated'
-            ? t('sessionMissing')
-            : t('sessionUnavailable'),
-        );
+        setError(decision === 'unauthenticated' ? t('sessionMissing') : t('sessionUnavailable'));
         return;
       }
 

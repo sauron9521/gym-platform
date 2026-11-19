@@ -1,9 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
+import { useQuery } from '@tanstack/react-query';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 
@@ -14,19 +14,20 @@ import { profileQueryOptions, ProfileRequestError } from '../api/profile-query';
 import { ProfileAvatar } from './profile-avatar';
 import {
   buildProfilePatch,
-  profileSchema,
+  createProfileSchema,
+  getProfileErrorKey,
   toProfileDraft,
   type ProfileDraft,
 } from '../lib/profile-form';
 
-const fields: { key: keyof ProfileDraft; label: string; type?: string; placeholder?: string }[] = [
-  { key: 'firstName', label: 'Ім’я', placeholder: 'Ім’я' },
-  { key: 'lastName', label: 'Прізвище', placeholder: 'Прізвище' },
-  { key: 'displayName', label: 'Відображуване ім’я' },
-  { key: 'birthday', label: 'Дата народження', type: 'date' },
-  { key: 'height', label: 'Зріст (см)', type: 'number' },
-  { key: 'weight', label: 'Вага (кг)', type: 'number' },
-  { key: 'timezone', label: 'Часовий пояс', placeholder: 'Europe/Kyiv' },
+const fields: { key: keyof ProfileDraft; type?: string; placeholder?: string }[] = [
+  { key: 'firstName' },
+  { key: 'lastName' },
+  { key: 'displayName' },
+  { key: 'birthday', type: 'date' },
+  { key: 'height', type: 'number' },
+  { key: 'weight', type: 'number' },
+  { key: 'timezone', placeholder: 'Europe/Kyiv' },
 ];
 
 const emptyProfile: ProfileDraft = {
@@ -41,6 +42,19 @@ const emptyProfile: ProfileDraft = {
 
 export function ProfileEditor() {
   const t = useTranslations('web.profile');
+  const schema = useMemo(
+    () =>
+      createProfileSchema({
+        nameTooLong: t('nameTooLong'),
+        heightInvalid: t('heightInvalid'),
+        weightInvalid: t('weightInvalid'),
+        birthdayInvalid: t('birthdayInvalid'),
+        timezoneRequired: t('timezoneRequired'),
+        timezoneTooLong: t('timezoneTooLong'),
+        timezoneInvalid: t('timezoneInvalid'),
+      }),
+    [t],
+  );
   const query = useQuery(profileQueryOptions());
   const mutation = useUpdateProfileMutation();
   const onAuthFailure = useAuthFailure();
@@ -51,14 +65,18 @@ export function ProfileEditor() {
     (query.error instanceof ProfileRequestError && query.error.status === 401) ||
     (mutation.error instanceof ProfileMutationError && mutation.error.status === 401);
   const loading = query.isPending || (query.isFetching && !account);
+  const localizeFailure = (failure: unknown, fallback: 'loadError' | 'requestFailed') => {
+    if (failure instanceof ProfileRequestError || failure instanceof ProfileMutationError) {
+      return failure.status === undefined ? t('network') : t(getProfileErrorKey(failure.status));
+    }
+    return t(fallback);
+  };
   const message =
     error ??
     (mutation.isError
-      ? mutation.error.message
+      ? localizeFailure(mutation.error, 'requestFailed')
       : query.isError
-        ? query.error instanceof ProfileRequestError
-          ? query.error.message
-          : t('loadError')
+        ? localizeFailure(query.error, 'loadError')
         : null);
 
   const {
@@ -67,7 +85,7 @@ export function ProfileEditor() {
     reset,
     formState: { errors, isDirty, isSubmitting },
   } = useForm<ProfileDraft>({
-    resolver: zodResolver(profileSchema),
+    resolver: zodResolver(schema),
     defaultValues: emptyProfile,
     mode: 'onBlur',
     reValidateMode: 'onChange',
@@ -96,7 +114,7 @@ export function ProfileEditor() {
   async function submit(values: ProfileDraft) {
     // React Hook Form sets isSubmitting before invoking this callback.
     if (!account || mutation.isPending) return;
-    const result = buildProfilePatch(values);
+    const result = buildProfilePatch(values, schema);
     if (!result.data) {
       setError(result.error ?? t('invalid'));
       return;
@@ -125,9 +143,9 @@ export function ProfileEditor() {
       {loading && <p role="status">{t('loading')}</p>}
       {unauthenticated && (
         <p role="alert">
-          Сесію завершено.{' '}
+          {t('signedOut')}{' '}
           <Link className="underline" href="/login">
-            Увійти повторно
+            {t('signIn')}
           </Link>
           .
         </p>
@@ -139,7 +157,7 @@ export function ProfileEditor() {
       )}
       {success && !message && (
         <p role="status" className="text-sm">
-          Профіль оновлено.
+          {t('saved')}
         </p>
       )}
       {!unauthenticated && account && (
@@ -166,7 +184,7 @@ export function ProfileEditor() {
                 <input
                   id={key}
                   type={type}
-                  placeholder={placeholder && key !== 'timezone' ? t(key) : placeholder}
+                  placeholder={placeholder ?? (type === 'text' ? t(key) : undefined)}
                   step={type === 'number' ? '0.01' : undefined}
                   min={key === 'height' ? 50 : key === 'weight' ? 1 : undefined}
                   max={key === 'height' ? 300 : key === 'weight' ? 600 : undefined}
@@ -198,7 +216,7 @@ export function ProfileEditor() {
       )}
       {!loading && !account && !unauthenticated && (
         <Button variant="outline" onClick={() => void query.refetch()}>
-          Спробувати знову
+          {t('retry')}
         </Button>
       )}
     </main>

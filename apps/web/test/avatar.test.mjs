@@ -5,7 +5,9 @@ import { test } from 'vitest';
 import {
   MAX_AVATAR_BYTES,
   avatarErrorMessage,
+  getAvatarErrorKey,
   getAvatarInitials,
+  getAvatarValidationKey,
   getAvatarSource,
   validateAvatarFile,
 } from '../src/features/profile/lib/avatar.ts';
@@ -71,4 +73,16 @@ test('avatar writes use typed TanStack mutation with safe cache handling', async
   assert.doesNotMatch(ui, /fetch\(|setSignedOut|setBusy\(/);
   assert.match(contract, /UsersController_uploadAvatar:/);
   assert.match(contract, /UsersController_deleteAvatar:/);
+});
+
+test('avatar validation and HTTP error codes are localizable without changing the API', () => {
+  assert.equal(getAvatarValidationKey({ size: 0, type: 'image/png' }), 'empty');
+  assert.equal(getAvatarValidationKey({ size: MAX_AVATAR_BYTES + 1, type: 'image/jpeg' }), 'tooLarge');
+  assert.equal(getAvatarValidationKey({ size: 12, type: 'image/svg+xml' }), 'unsupported');
+  assert.equal(getAvatarValidationKey({ size: 12, type: 'image/png' }), null);
+  assert.equal(getAvatarErrorKey(413), 'fileInvalid');
+  assert.equal(getAvatarErrorKey(429), 'rateLimited');
+  assert.equal(getAvatarErrorKey(401), 'signedOut');
+  assert.equal(getAvatarErrorKey(), 'network');
+  assert.equal(getAvatarErrorKey(500), 'requestFailed');
 });

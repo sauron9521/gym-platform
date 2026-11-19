@@ -389,6 +389,92 @@ describe('WorkoutsService', () => {
       });
     });
 
+    it('orders only upcoming PLANNED summaries by scheduled date, preserving ownership and page size', async () => {
+      const from = new Date('2035-04-01T00:00:00.000Z');
+      repository.findManySummary.mockResolvedValue({
+        data: [],
+        meta: { total: 0, skip: 0, take: 1, totalPages: 0 },
+      });
+
+      await service.findMany(athlete, {
+        page: 1,
+        limit: 1,
+        status: 'PLANNED',
+        view: 'summary',
+        scheduledFrom: from,
+        sort: 'scheduledAtAsc',
+      });
+
+      expect(repository.findManySummary).toHaveBeenCalledWith({
+        where: {
+          athleteId: athlete.id,
+          status: 'PLANNED',
+          scheduledAt: { gte: from },
+        },
+        skip: 0,
+        take: 1,
+        orderBy: [{ scheduledAt: 'asc' }, { id: 'asc' }],
+      });
+      expect(repository.findMany).not.toHaveBeenCalled();
+    });
+
+    it('sorts completed summaries by finish time with stable pagination', async () => {
+      repository.findManySummary.mockResolvedValue({
+        data: [],
+        meta: { total: 0, skip: 0, take: 3, totalPages: 0 },
+      });
+
+      await service.findMany(athlete, {
+        page: 1,
+        limit: 3,
+        status: 'COMPLETED',
+        view: 'summary',
+        sort: 'completedAtDesc',
+      });
+
+      expect(repository.findManySummary).toHaveBeenCalledWith({
+        where: { athleteId: athlete.id, status: 'COMPLETED' },
+        skip: 0,
+        take: 3,
+        orderBy: [{ completedAt: { sort: 'desc', nulls: 'last' } }, { id: 'desc' }],
+      });
+      expect(repository.findMany).not.toHaveBeenCalled();
+    });
+
+    it('rejects completion-date sorting unless status=COMPLETED', async () => {
+      for (const status of [undefined, 'PLANNED', 'IN_PROGRESS', 'CANCELLED'] as const) {
+        await expect(
+          service.findMany(athlete, {
+            page: 1,
+            limit: 3,
+            ...(status ? { status } : {}),
+            sort: 'completedAtDesc',
+          }),
+        ).rejects.toThrow(BadRequestException);
+      }
+      expect(repository.findMany).not.toHaveBeenCalled();
+      expect(repository.findManySummary).not.toHaveBeenCalled();
+    });
+
+    it('rejects scheduled sorting without a planned status and lower date bound', async () => {
+      const from = new Date('2035-04-01T00:00:00.000Z');
+      for (const query of [
+        { page: 1, limit: 1, sort: 'scheduledAtAsc' as const, status: 'PLANNED' as const },
+        { page: 1, limit: 1, sort: 'scheduledAtAsc' as const, scheduledFrom: from },
+        {
+          page: 1,
+          limit: 1,
+          sort: 'scheduledAtAsc' as const,
+          status: 'COMPLETED' as const,
+          scheduledFrom: from,
+        },
+      ]) {
+        await expect(service.findMany(athlete, query)).rejects.toThrow(BadRequestException);
+      }
+      expect(repository.findMany).not.toHaveBeenCalled();
+      expect(repository.findManySummary).not.toHaveBeenCalled();
+    });
+
     it('should reject invalid pagination', async () => {
       await expect(
         service.findMany(athlete, {
