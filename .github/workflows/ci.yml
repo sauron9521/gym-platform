@@ -258,7 +258,6 @@ jobs:
             ${{ runner.os }}-node24-build-${{ hashFiles('pnpm-lock.yaml', 'turbo.json', 'apps/**/package.json', 'packages/**/package.json') }}-
             ${{ runner.os }}-node24-build-
 
-
       - name: Report incremental build cache restore
         env:
           CACHE_HIT: ${{ steps.incremental-build-cache.outputs.cache-hit }}
@@ -304,11 +303,6 @@ jobs:
           pnpm --filter @gym/api architecture:deps
           pnpm --filter @gym/api test:architecture
           pnpm --filter @gym/api test:coverage-tools
-
-      - name: Show CI workflow Prettier difference
-        run: |
-          pnpm exec prettier .github/workflows/ci.yml > /tmp/ci-formatted.yml
-          diff -u .github/workflows/ci.yml /tmp/ci-formatted.yml || true
 
       - name: Check formatting
         run: pnpm format:check
