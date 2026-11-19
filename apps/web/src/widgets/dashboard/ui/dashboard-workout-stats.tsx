@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import { useFormatter, useTranslations } from 'next-intl';
 import { useQuery } from '@tanstack/react-query';
 
 import { Button, Card, CardContent, CardHeader, CardTitle } from '@gym/ui-web';
@@ -9,9 +10,9 @@ import {
   WorkoutListRequestError,
   workoutListQueryOptions,
 } from '@/features/workouts/api/workouts-list-query';
-import { getWorkoutListErrorMessage } from '@/features/workouts/lib/workouts-list';
 import { useAuthFailure } from '@/shared/api/use-auth-failure';
 import { DashboardPersonalRecords } from './dashboard-personal-records';
+import { getDashboardWorkoutErrorKey } from '../lib/dashboard-workout-error';
 
 /**
  * Read the API's owner-scoped total count for each supported status.
@@ -19,6 +20,8 @@ import { DashboardPersonalRecords } from './dashboard-personal-records';
  * with DashboardPlannedWorkouts rather than making a duplicate API request.
  */
 export function DashboardWorkoutStats() {
+  const t = useTranslations('web.dashboard');
+  const format = useFormatter();
   const onAuthFailure = useAuthFailure();
   const planned = useQuery(workoutListQueryOptions('PLANNED', 1));
   const active = useQuery(workoutListQueryOptions('IN_PROGRESS', 1));
@@ -36,19 +39,19 @@ export function DashboardWorkoutStats() {
   if (authError) return null;
 
   const metrics = [
-    { status: 'PLANNED', label: 'Заплановані', query: planned },
-    { status: 'IN_PROGRESS', label: 'У процесі', query: active },
-    { status: 'COMPLETED', label: 'Завершені', query: completed },
+    { status: 'PLANNED', label: t('kpi.planned'), query: planned },
+    { status: 'IN_PROGRESS', label: t('kpi.active'), query: active },
+    { status: 'COMPLETED', label: t('kpi.completed'), query: completed },
   ] as const;
 
   return (
     <section aria-labelledby="dashboard-status-metrics" className="space-y-4">
       <div className="space-y-1">
         <h2 id="dashboard-status-metrics" className="text-xl font-semibold tracking-tight">
-          Мої тренування в цифрах
+          {t('kpi.title')}
         </h2>
         <p className="text-sm text-muted-foreground">
-          Кількість за статусом за весь час. Скасовані не враховуються.
+          {t('kpi.description')}
         </p>
       </div>
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -63,32 +66,30 @@ export function DashboardWorkoutStats() {
               <CardContent>
                 {loading ? (
                   <p role="status" className="text-sm text-muted-foreground">
-                    Завантажуємо…
+                    {t('kpi.loading')}
                   </p>
                 ) : query.isError ? (
                   <div role="alert" className="space-y-3">
                     <p className="text-sm text-destructive">
-                      {query.error instanceof WorkoutListRequestError
-                        ? query.error.message
-                        : getWorkoutListErrorMessage()}
+                      {t(getDashboardWorkoutErrorKey(query.error))}
                     </p>
                     <Button
                       size="touch"
                       type="button"
                       variant="outline"
-                      aria-label={`Повторити завантаження: ${label.toLowerCase()}`}
+                      aria-label={t('kpi.retryStatus', { status: label.toLowerCase() })}
                       onClick={() => void query.refetch()}
                     >
-                      Повторити
+                      {t('kpi.retry')}
                     </Button>
                   </div>
                 ) : typeof query.data?.total === 'number' ? (
                   <p className="text-3xl font-semibold tracking-tight tabular-nums">
-                    {query.data.total}
+                    {format.number(query.data.total)}
                   </p>
                 ) : (
                   <p role="status" className="text-sm text-muted-foreground">
-                    Дані недоступні
+                    {t('kpi.unavailable')}
                   </p>
                 )}
               </CardContent>
