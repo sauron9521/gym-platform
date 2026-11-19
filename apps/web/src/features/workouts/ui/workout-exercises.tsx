@@ -2,6 +2,7 @@
 
 import type { WorkoutDetailsData } from '../lib/workout-details';
 import { WorkoutSetCard } from './workout-set-card';
+import { WorkoutProgress } from './workout-progress';
 
 type Props = {
   workout: WorkoutDetailsData;
@@ -13,6 +14,26 @@ export function WorkoutExercises({ workout, editingSetId, onEditSet }: Props) {
   return (
     <section className="min-w-0 space-y-4" aria-label="Вправи тренування">
       <h2 className="text-xl font-semibold tracking-tight">Вправи ({workout.exercises.length})</h2>
+
+      <WorkoutProgress workout={workout} editingSetId={editingSetId} />
+
+      {workout.status === 'IN_PROGRESS' && workout.exercises.length > 1 && (
+        <nav aria-label="Перехід між вправами" className="min-w-0">
+          <div className="flex gap-2 overflow-x-auto pb-2">
+            {workout.exercises.map((exercise, index) => (
+              <a
+                key={exercise.id}
+                href={`#workout-exercise-${exercise.id}`}
+                className="inline-flex min-h-11 max-w-56 shrink-0 items-center rounded-full border bg-card px-4 text-sm font-medium text-foreground underline-offset-2 hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+              >
+                <span className="truncate">
+                  {index + 1}. {exercise.exerciseNameSnapshot}
+                </span>
+              </a>
+            ))}
+          </div>
+        </nav>
+      )}
 
       {workout.exercises.length === 0 && (
         <p className="rounded-2xl border bg-card p-5 text-sm text-muted-foreground">
@@ -27,8 +48,9 @@ export function WorkoutExercises({ workout, editingSetId, onEditSet }: Props) {
         return (
           <article
             key={exercise.id}
+            id={`workout-exercise-${exercise.id}`}
             aria-labelledby={titleId}
-            className="min-w-0 space-y-4 rounded-2xl border bg-card p-4 shadow-sm sm:p-6"
+            className="min-w-0 scroll-mt-24 space-y-4 rounded-2xl border bg-card p-4 shadow-sm sm:p-6"
           >
             <header className="flex min-w-0 flex-wrap items-start justify-between gap-3">
               <div className="min-w-0 flex-1 space-y-1">

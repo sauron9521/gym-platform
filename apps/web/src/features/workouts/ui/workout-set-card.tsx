@@ -58,7 +58,10 @@ export function WorkoutSetCard({
   const tone = tones[set.status];
 
   return (
-    <li className={`min-w-0 space-y-3 rounded-xl border p-3 sm:p-4 ${tone.card}`}>
+    <li
+      id={`workout-set-${set.id}`}
+      className={`min-w-0 scroll-mt-24 space-y-3 rounded-xl border p-3 sm:p-4 ${tone.card}`}
+    >
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="min-w-0 break-words text-sm font-semibold">
           <span className="mr-2 inline-flex size-7 items-center justify-center rounded-lg bg-muted font-bold tabular-nums">
