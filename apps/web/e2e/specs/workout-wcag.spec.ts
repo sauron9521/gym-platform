@@ -156,7 +156,7 @@ for (const locale of ['uk', 'en'] as const) {
 test('system appearance follows OS colors', async ({ page }) => {
   await page.emulateMedia({ colorScheme: 'dark' });
   await signIn(page);
-  const theme = page.getByRole('combobox', { name: 'Тема інтерфейсу' });
+  const theme = page.getByTestId('athlete-shell-header').getByRole('combobox').first();
   await theme.selectOption('system');
   await page.reload();
   await expect(theme).toHaveValue('system');
