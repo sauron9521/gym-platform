@@ -3,8 +3,10 @@ import { readFile } from 'node:fs/promises';
 import { test } from 'vitest';
 
 import {
+  getForgotPasswordErrorKey,
   getForgotPasswordErrorMessage,
   getPasswordResetToken,
+  getResetPasswordErrorKey,
   getResetPasswordErrorMessage,
   validatePasswordResetInput,
 } from '../src/features/auth/lib/password-reset-flow.ts';
@@ -57,7 +59,7 @@ test('forgot request follows actual 202-only OpenAPI contract with generic succe
   assert.match(ui, /webApi\.POST\('\/auth\/password-reset\/forgot'/);
   assert.match(ui, /body: \{ email: email\.trim\(\) \}/);
   assert.match(ui, /response\.status !== 202/);
-  assert.match(ui, /Якщо обліковий запис із такою адресою існує/);
+  assert.match(ui, /t\('accepted'\)/);
   assert.doesNotMatch(
     ui,
     /response\.json\(|localStorage|sessionStorage|console\.log|document\.cookie/,
@@ -100,4 +102,27 @@ test('reset requires explicit form submit, removes query token and never grants 
   );
   const effect = ui.slice(ui.indexOf('useEffect(() => {'), ui.indexOf('}, []);'));
   assert.doesNotMatch(effect, /webApi\.POST/);
+});
+
+test('password reset validation selects English messages without changing the default contract', () => {
+  assert.equal(
+    validatePasswordResetInput('short', 'short', {
+      tooShort: 'New password must be at least 8 characters.',
+      whitespaceOnly: 'Password cannot be spaces only.',
+      mismatch: 'Passwords do not match.',
+    }),
+    'New password must be at least 8 characters.',
+  );
+  assert.equal(
+    validatePasswordResetInput('Password1!', 'Different1!', {
+      tooShort: 'New password must be at least 8 characters.',
+      whitespaceOnly: 'Password cannot be spaces only.',
+      mismatch: 'Passwords do not match.',
+    }),
+    'Passwords do not match.',
+  );
+  assert.equal(getForgotPasswordErrorKey(429), 'forgotRateLimited');
+  assert.equal(getForgotPasswordErrorKey(503), 'forgotUnknown');
+  assert.equal(getResetPasswordErrorKey(400), 'resetBadInput');
+  assert.equal(getResetPasswordErrorKey(403), 'resetSecurity');
 });

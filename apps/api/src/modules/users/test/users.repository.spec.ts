@@ -104,6 +104,29 @@ describe('UsersRepository', () => {
     });
   });
 
+  describe('getPreferredMailLocale', () => {
+    it('selects only the active user preference, normalizes email, and falls back to Ukrainian', async () => {
+      prisma.user.findUnique.mockResolvedValueOnce({ preferredLocale: 'en' });
+      await expect(repository.getPreferredMailLocale('  User@Example.COM ')).resolves.toBe('en');
+      expect(prisma.user.findUnique).toHaveBeenCalledWith({
+        where: { email: 'user@example.com', deletedAt: null },
+        select: { preferredLocale: true },
+      });
+
+      prisma.user.findUnique.mockResolvedValueOnce({ preferredLocale: null });
+      await expect(repository.getPreferredMailLocale('user@example.com')).resolves.toBe('uk');
+
+      prisma.user.findUnique.mockResolvedValueOnce(null);
+      await expect(repository.getPreferredMailLocale('deleted@example.com')).resolves.toBe('uk');
+    });
+
+    it('does not swallow database errors', async () => {
+      const failure = new Error('Database unavailable');
+      prisma.user.findUnique.mockRejectedValueOnce(failure);
+      await expect(repository.getPreferredMailLocale('user@example.com')).rejects.toBe(failure);
+    });
+  });
+
   describe('findUserByEmail', () => {
     it('should return a user when found', async () => {
       const user = {

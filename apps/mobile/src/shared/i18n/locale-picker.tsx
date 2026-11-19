@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useIntl } from 'react-intl';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
@@ -12,9 +12,11 @@ export function LocalePicker() {
   const intl = useIntl();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState(false);
+  const requestInFlight = useRef(false);
 
   async function select(next: 'uk' | 'en') {
-    if (next === locale || pending) return;
+    if (next === locale || pending || requestInFlight.current) return;
+    requestInFlight.current = true;
     setPending(true);
     setError(false);
     try {
@@ -24,12 +26,15 @@ export function LocalePicker() {
         const response = await api.PATCH('/users/me/preferences', {
           body: { preferredLocale: next },
         });
-        if (response.response.status !== 200) throw new Error('Locale preference rejected');
+        if (response.response.status !== 200 || response.data?.preferredLocale !== next) {
+          throw new Error('Locale preference not confirmed');
+        }
       }
       setLocale(next);
     } catch {
       setError(true);
     } finally {
+      requestInFlight.current = false;
       setPending(false);
     }
   }
@@ -59,8 +64,8 @@ export function LocalePicker() {
         </Pressable>
       </View>
       {error ? (
-        <Text accessibilityRole="alert" style={styles.label}>
-          {intl.formatMessage({ id: 'common.retry' })}
+        <Text accessibilityRole="alert" accessibilityLiveRegion="polite" style={styles.label}>
+          {intl.formatMessage({ id: 'common.languageUpdateError' })}
         </Text>
       ) : null}
     </View>

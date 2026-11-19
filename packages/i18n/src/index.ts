@@ -1,16 +1,10 @@
 import en from './messages/en.json';
 import uk from './messages/uk.json';
+import { defaultLocale, isLocale, type Locale } from './locales';
 
-/** Source of truth for platform-supported user-facing languages. */
-export const supportedLocales = ['uk', 'en'] as const;
-export type Locale = (typeof supportedLocales)[number];
-export const defaultLocale: Locale = 'uk';
+export { supportedLocales, defaultLocale, isLocale, type Locale } from './locales';
 
 const catalogs = { uk, en } satisfies Record<Locale, typeof uk>;
-
-export function isLocale(value: unknown): value is Locale {
-  return value === 'uk' || value === 'en';
-}
 
 /** Accept language tags like 'en-US' and 'uk_UA'; do not trust arbitrary API input. */
 export function resolveLocale(value: unknown): Locale {
@@ -42,3 +36,5 @@ export function getFlatMessages(locale: Locale): Record<string, string> {
 export { resolveRequestLocale } from './request-locale';
 
 export type { TranslationKey } from './typed';
+
+export { apiErrorMessage, validationIssueMessage } from './error-messages';

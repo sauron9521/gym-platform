@@ -8,6 +8,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type PropsWithChildren,
 } from 'react';
@@ -21,32 +22,29 @@ export function LocaleProvider({ children }: PropsWithChildren) {
   const [locale, updateLocale] = useState<Locale>(() =>
     resolveLocale(getLocales()[0]?.languageTag),
   );
-  const [ready, setReady] = useState(false);
+  const explicitlyChanged = useRef(false);
 
   useEffect(() => {
     let active = true;
     void AsyncStorage.getItem(STORAGE_KEY)
       .then((saved) => {
-        if (active && isLocale(saved)) updateLocale(saved);
+        if (active && !explicitlyChanged.current && isLocale(saved)) updateLocale(saved);
       })
-      .catch(() => undefined)
-      .finally(() => {
-        if (active) setReady(true);
-      });
+      .catch(() => undefined);
     return () => {
       active = false;
     };
   }, []);
 
   const setLocale = useCallback((next: Locale) => {
+    // Account language or a new tap must beat an outdated pending storage read.
+    explicitlyChanged.current = true;
     updateLocale(next);
     void AsyncStorage.setItem(STORAGE_KEY, next).catch(() => undefined);
   }, []);
 
   const messages = useMemo(() => getFlatMessages(locale), [locale]);
   const value = useMemo(() => ({ locale, setLocale }), [locale, setLocale]);
-  if (!ready) return null;
-
   return (
     <LocaleContext.Provider value={value}>
       <IntlProvider locale={locale} defaultLocale="uk" messages={messages}>

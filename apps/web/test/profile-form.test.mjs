@@ -4,6 +4,8 @@ import { test } from 'vitest';
 
 import {
   buildProfilePatch,
+  createProfileSchema,
+  getProfileErrorKey,
   getProfileErrorMessage,
   profileSchema,
   toProfileDraft,
@@ -96,7 +98,7 @@ test('profile remains protected and uses shared TanStack query and mutation flow
   assert.match(page, /verifyServerSession/);
   assert.match(page, /force-dynamic/);
   assert.match(ui, /useForm<ProfileDraft>/);
-  assert.match(ui, /zodResolver\(profileSchema\)/);
+  assert.match(ui, /zodResolver\(schema\)/);
   assert.match(ui, /handleSubmit\(submit\)/);
   assert.match(ui, /useQuery\(profileQueryOptions\(\)\)/);
   assert.match(ui, /useUpdateProfileMutation\(\)/);
@@ -122,4 +124,52 @@ test('profile query key is scoped to the signed-in account view', async () => {
   const { profileQueryKeys } = await import('../src/features/profile/lib/profile-query-keys.ts');
   assert.deepEqual(profileQueryKeys.all, ['profile']);
   assert.deepEqual(profileQueryKeys.me(), ['profile', 'me']);
+});
+
+test('localized profile schema retains API semantics and translates validation', () => {
+  const messages = {
+    nameTooLong: 'Maximum 100 characters.',
+    heightInvalid: 'Enter a valid height.',
+    weightInvalid: 'Enter a valid weight.',
+    birthdayInvalid: 'Check the date of birth.',
+    timezoneRequired: 'Enter a time zone.',
+    timezoneTooLong: 'The time zone is too long.',
+    timezoneInvalid: 'Enter a valid time zone, such as Europe/Kyiv.',
+  };
+  const schema = createProfileSchema(messages);
+  const draft = toProfileDraft(account);
+  assert.equal(
+    schema.safeParse({ ...draft, height: '193.5' }).error?.issues[0]?.message,
+    messages.heightInvalid,
+  );
+  assert.equal(
+    schema.safeParse({ ...draft, birthday: '2026-02-30' }).error?.issues[0]?.message,
+    messages.birthdayInvalid,
+  );
+  assert.equal(
+    schema.safeParse({ ...draft, timezone: 'Bad/Zone' }).error?.issues[0]?.message,
+    messages.timezoneInvalid,
+  );
+  assert.equal(
+    schema.safeParse({ ...draft, firstName: 'x'.repeat(101) }).error?.issues[0]?.message,
+    messages.nameTooLong,
+  );
+  assert.equal(buildProfilePatch({ ...draft, weight: '81.5' }, schema).data?.weight, 81.5);
+  assert.equal(
+    buildProfilePatch({ ...draft, height: '193.5' }, schema).error,
+    messages.heightInvalid,
+  );
+});
+
+test('profile HTTP statuses select stable localized message keys', () => {
+  for (const [status, key] of [
+    [400, 'invalid'],
+    [401, 'signedOut'],
+    [403, 'forbidden'],
+    [422, 'invalid'],
+    [429, 'rateLimited'],
+    [500, 'requestFailed'],
+  ]) {
+    assert.equal(getProfileErrorKey(status), key);
+  }
 });

@@ -123,7 +123,16 @@ test('exercise details use an ID-scoped query, reject inaccessible records and u
   assert.doesNotMatch(details + api, /localStorage|sessionStorage|dangerouslySetInnerHTML/);
 });
 
-test('protected navigation links to exercise catalog', async () => {
-  const nav = await readFile(new URL('../src/app/(protected)/layout.tsx', import.meta.url), 'utf8');
-  assert.match(nav, /href="\/exercises"/);
+test('protected navigation links to exercise catalog through the responsive shell', async () => {
+  const layout = await readFile(
+    new URL('../src/app/(protected)/layout.tsx', import.meta.url),
+    'utf8',
+  );
+  const shell = await readFile(
+    new URL('../src/widgets/athlete-shell/ui/athlete-shell.tsx', import.meta.url),
+    'utf8',
+  );
+  assert.match(layout, /href: '\/exercises', label: t\('exercises'\)/);
+  assert.match(shell, /href=\{link\.href\}/);
+  assert.match(shell, /aria-current=\{active \? 'page' : undefined\}/);
 });

@@ -7,12 +7,15 @@ import { Injectable } from '@nestjs/common';
 import { type Mailable, Mailer } from '@nestjs/mail';
 import { UsersRepository } from '#src/modules/users/repositories/users.repository';
 
+type LocalizedResetLink = PasswordResetLink & { locale?: 'uk' | 'en' };
+
 @Injectable()
-export class PasswordResetMail implements Mailable<PasswordResetLink> {
-  render({ url }: PasswordResetLink) {
+export class PasswordResetMail implements Mailable<LocalizedResetLink> {
+  render({ url, locale }: LocalizedResetLink) {
+    const language = locale === 'en' ? 'en' : 'uk';
     return {
-      subject: 'Reset your password',
-      template: 'password-reset',
+      subject: language === 'en' ? 'Reset your password' : 'Скидання пароля',
+      template: `password-reset.${language}`,
       context: { url },
     };
   }
@@ -41,7 +44,8 @@ export class PasswordResetMailer extends PasswordResetHandler {
   }
 
   async send(link: PasswordResetLink) {
-    await this.mailer.send(PasswordResetMail, { to: link.email, data: link });
+    const locale = await this.usersRepository.getPreferredMailLocale(link.email);
+    await this.mailer.send(PasswordResetMail, { to: link.email, data: { ...link, locale } });
   }
 
   updatePassword(userId: string, passwordHash: string) {

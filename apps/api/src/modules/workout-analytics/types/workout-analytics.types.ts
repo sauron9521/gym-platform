@@ -18,3 +18,7 @@ export type ExerciseAnalyticsDailyRow = WorkoutAnalyticsDailyRow & {
 export type ExerciseSnapshotRow = {
   name: string;
 };
+
+export type PersonalRecordsRow = {
+  exerciseCount: number;
+};

@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -10,10 +11,24 @@ import { webApi } from '@/shared/api/client';
 import { Button } from '@/shared/ui/button';
 import { FormFeedback } from '@/shared/ui/form-feedback';
 import { Input } from '@/shared/ui/input';
-import { classifySessionCheck, getLoginErrorMessage } from '../lib/auth-flow';
-import { loginSchema, type LoginValues } from '../lib/login-schema';
+import { classifySessionCheck, getLoginErrorKey } from '../lib/auth-flow';
+import { createLoginSchema, type LoginValues } from '../lib/login-schema';
 
 export function SignInForm() {
+  const t = useTranslations('web.authFields');
+  const validation = useTranslations('web.authValidation');
+  const loginError = useTranslations('web.loginErrors');
+  const schema = useMemo(
+    () =>
+      createLoginSchema({
+        emailRequired: validation('emailRequired'),
+        emailInvalid: validation('emailInvalid'),
+        emailTooLong: validation('emailTooLong'),
+        passwordRequired: validation('passwordRequired'),
+        passwordWhitespace: validation('passwordWhitespace'),
+      }),
+    [validation],
+  );
   const router = useRouter();
   const queryClient = useQueryClient();
   const [error, setError] = useState<string | null>(null);
@@ -22,7 +37,7 @@ export function SignInForm() {
     handleSubmit,
     formState: { errors, isSubmitting },
   } = useForm<LoginValues>({
-    resolver: zodResolver(loginSchema),
+    resolver: zodResolver(schema),
     defaultValues: { email: '', password: '' },
     mode: 'onBlur',
     reValidateMode: 'onChange',
@@ -37,7 +52,7 @@ export function SignInForm() {
       });
 
       if (response.status !== 200 || !data) {
-        setError(getLoginErrorMessage(response.status));
+        setError(loginError(getLoginErrorKey(response.status)));
         return;
       }
 
@@ -48,7 +63,7 @@ export function SignInForm() {
         } catch {
           // Best effort; user still remains on this public route.
         }
-        setError('Для цього облікового запису потрібна MFA. Підтримку додамо окремо.');
+        setError(t('mfa'));
         return;
       }
 
@@ -57,11 +72,7 @@ export function SignInForm() {
       const decision = classifySessionCheck(account.response.status, Boolean(account.data));
 
       if (decision !== 'authenticated') {
-        setError(
-          decision === 'unauthenticated'
-            ? 'Не вдалося зберегти сесію. Перевірте cookie та адресу API.'
-            : 'Не вдалося підтвердити сесію. Спробуйте ще раз.',
-        );
+        setError(decision === 'unauthenticated' ? t('sessionMissing') : t('sessionUnavailable'));
         return;
       }
 
@@ -69,7 +80,7 @@ export function SignInForm() {
       router.replace('/dashboard');
       router.refresh();
     } catch {
-      setError('Немає з’єднання з API. Спробуйте ще раз.');
+      setError(t('network'));
     }
   }
 
@@ -77,7 +88,7 @@ export function SignInForm() {
     <form onSubmit={handleSubmit(submit)} noValidate className="mt-8 space-y-5">
       <div className="space-y-2">
         <label htmlFor="email" className="block text-sm font-medium">
-          Електронна пошта
+          {t('email')}
         </label>
         <Input
           id="email"
@@ -97,7 +108,7 @@ export function SignInForm() {
       </div>
       <div className="space-y-2">
         <label htmlFor="password" className="block text-sm font-medium">
-          Пароль
+          {t('password')}
         </label>
         <Input
           id="password"
@@ -116,7 +127,7 @@ export function SignInForm() {
       </div>
       <FormFeedback message={error} />
       <Button type="submit" disabled={isSubmitting} className="w-full">
-        {isSubmitting ? 'Вхід…' : 'Увійти'}
+        {isSubmitting ? t('signingIn') : t('signIn')}
       </Button>
     </form>
   );
