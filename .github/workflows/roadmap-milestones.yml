@@ -1,0 +1,55 @@
+name: Roadmap milestones / manual sync
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'Preview first; apply creates and assigns milestones'
+        type: choice
+        required: true
+        default: preview
+        options:
+          - preview
+          - apply
+      confirmation:
+        description: 'For apply only, enter APPLY_MILESTONES'
+        type: string
+        required: false
+      include_ai_readiness:
+        description: 'Opt in to future M08 AI-readiness milestone (disabled by default)'
+        type: boolean
+        default: false
+        required: true
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: roadmap-milestone-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    name: Preview or safely apply milestones
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GITHUB_REPOSITORY: ${{ github.repository }}
+      GITHUB_REF: ${{ github.ref }}
+      ROADMAP_MODE: ${{ inputs.mode }}
+      ROADMAP_CONFIRM: ${{ inputs.confirmation }}
+      ROADMAP_INCLUDE_AI: ${{ inputs.include_ai_readiness }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+      - name: Verify safety contracts
+        run: node --test scripts/roadmap-milestones.test.mjs
+      - name: Preview or apply milestone assignments
+        run: node scripts/roadmap-milestones.mjs
