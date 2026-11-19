@@ -70,7 +70,7 @@ test('does not leak cached count during refetch or after 401', () => {
 
   const error = new PersonalRecordsRequestError(401);
   useQueryMock.mockReturnValue({ ...success(5), isFetching: false, isError: true, error });
-  rerenderWithLocale(<DashboardPersonalRecords />);
+  rerender(<DashboardPersonalRecords />);
   expect(screen.queryByText('5')).toBeNull();
   expect(authFailure).toHaveBeenCalledWith(error);
 });
@@ -85,7 +85,9 @@ test('lets the user retry a 429 without falsely resetting the session', () => {
   });
   renderWithLocale(<DashboardPersonalRecords />);
   expect(screen.getByRole('alert').textContent).toContain('Забагато запитів');
-  fireEvent.click(screen.getByRole('button', { name: 'Повторити завантаження особистих рекордів' }));
+  fireEvent.click(
+    screen.getByRole('button', { name: 'Повторити завантаження особистих рекордів' }),
+  );
   expect(refetch).toHaveBeenCalledOnce();
   expect(authFailure).not.toHaveBeenCalled();
 });
