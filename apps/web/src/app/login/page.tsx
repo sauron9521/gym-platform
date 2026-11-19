@@ -2,13 +2,15 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { getTranslations } from 'next-intl/server';
 
+import { BrandLogo } from '@gym/ui-web';
+
 import { LocaleSwitcher } from '@/shared/ui/locale-switcher';
 
 import { SignInForm } from '@/features/auth/ui/sign-in-form';
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('web.login');
-  return { title: `${t('title')} | Gym Platform` };
+  return { title: `${t('title')} | OVRANTO` };
 }
 
 export default async function LoginPage() {
@@ -16,9 +18,12 @@ export default async function LoginPage() {
   return (
     <main className="flex min-h-screen items-center justify-center px-6 py-16">
       <div className="w-full max-w-md rounded-xl border bg-card p-8 text-card-foreground">
-        <div className="flex items-center justify-between gap-4">
-          <Link href="/" className="text-sm font-medium text-muted-foreground hover:underline">
-            Gym Platform
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <Link
+            href="/"
+            className="inline-flex rounded-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+          >
+            <BrandLogo showTagline={false} />
           </Link>
           <LocaleSwitcher />
         </div>

@@ -23,4 +23,10 @@ describe('Web request locale selection', () => {
     expect(resolveRequestLocale(undefined, 'en;q=0,uk;q=0.6')).toBe('uk');
     expect(resolveRequestLocale(undefined, 'en;q=invalid,uk;q=0.8')).toBe('uk');
   });
+
+  it('supports case-insensitive regional tags, tied weights, and rejects out-of-range weights', () => {
+    expect(resolveRequestLocale(undefined, 'fr;q=0.9, EN-us;q=0.8, uk;q=0.7')).toBe('en');
+    expect(resolveRequestLocale(undefined, 'uk;q=0.8,en;q=0.8')).toBe('uk');
+    expect(resolveRequestLocale(undefined, 'en;q=1.5,uk;q=0.4')).toBe('uk');
+  });
 });

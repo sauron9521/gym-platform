@@ -13,8 +13,8 @@ vi.mock('@/shared/ui/theme-switcher', () => ({
   ThemeSwitcher: () => <div data-testid="theme-switcher" />,
 }));
 
-vi.mock('@/shared/ui/locale-switcher', () => ({
-  LocaleSwitcher: () => <div data-testid="locale-switcher" />,
+vi.mock('@/features/profile/ui/account-locale-switcher', () => ({
+  AccountLocaleSwitcher: () => <div data-testid="locale-switcher" />,
 }));
 
 afterEach(() => {
@@ -59,6 +59,19 @@ test('desktop sidebar keeps existing routes and server-rendered content', () => 
   expect(screen.getByText('Захищена сторінка')).toBeTruthy();
   expect(screen.getByTestId('theme-switcher')).toBeTruthy();
   expect(screen.getByTestId('locale-switcher')).toBeTruthy();
+});
+
+test('brand home link accessible names include the visible OVRANTO tagline', () => {
+  renderShell();
+  const brandLinks = screen.getAllByRole('link', {
+    name: 'OVRANTO PERFORMANCE PLATFORM — головна',
+  });
+  expect(brandLinks).toHaveLength(2);
+  for (const link of brandLinks) {
+    expect(link.textContent).toContain('OVRANTO');
+  }
+  const desktopLink = brandLinks.find((link) => link.className.includes('mb-10'));
+  expect(desktopLink?.textContent).toContain('OVRANTO PERFORMANCE PLATFORM');
 });
 
 test('mobile navigation opens, closes on Escape and restores keyboard focus', () => {

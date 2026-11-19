@@ -26,6 +26,7 @@ test('Web-only change skips API E2E, Docker and Mobile', () => {
     web: true,
     landing: false,
     admin: false,
+    trainer: false,
     mobile: false,
     client: false,
     deps: false,
@@ -41,6 +42,7 @@ test('Landing-only changes check landing without requiring API or Web browser su
     web: false,
     landing: true,
     admin: false,
+    trainer: false,
     mobile: false,
     client: false,
     deps: false,
@@ -61,6 +63,17 @@ test('Admin-only changes select Admin without unrelated API E2E', () => {
   assert.equal(selected.web, false);
   assert.equal(selected.full, false);
   assert.equal(classifyChangedPaths(['apps/admin/package.json']).deps, true);
+});
+
+test('Trainer-only changes select only Trainer, while its manifest opts into security audit', () => {
+  const selected = classifyChangedPaths(['apps/trainer/src/app/page.tsx']);
+  assert.equal(selected.trainer, true);
+  assert.equal(selected.full, false);
+  assert.equal(selected.api, false);
+  assert.equal(selected.web, false);
+  assert.equal(selected.admin, false);
+  assert.equal(selected.mobile, false);
+  assert.equal(classifyChangedPaths(['apps/trainer/package.json']).deps, true);
 });
 
 test('Mobile-only change skips API E2E and Web', () => {
@@ -116,6 +129,7 @@ test('known shared packages select consumers and avoid unrelated API E2E', () =>
       web: true,
       landing: true,
       admin: true,
+      trainer: true,
       mobile,
       client: false,
       deps: false,
@@ -199,6 +213,7 @@ test('application handbooks and nested infrastructure Markdown skip expensive PR
     'apps/api/README.md',
     'apps/api/test/README.md',
     'apps/web/README.md',
+    'apps/trainer/README.md',
     'apps/landing/README.md',
     'apps/mobile/README.md',
     'packages/api-client/README.md',
@@ -213,6 +228,7 @@ test('application handbooks and nested infrastructure Markdown skip expensive PR
     web: false,
     landing: false,
     admin: false,
+    trainer: false,
     mobile: false,
     client: false,
     deps: false,

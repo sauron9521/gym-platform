@@ -23,7 +23,7 @@ import {
   SIDEBAR_COOKIE_NAME,
 } from '@/shared/lib/sidebar-preference';
 import type { ThemePreference } from '@/shared/lib/theme-preference';
-import { LocaleSwitcher } from '@/shared/ui/locale-switcher';
+import { AccountLocaleSwitcher } from '@/features/profile/ui/account-locale-switcher';
 import { ThemeSwitcher } from '@/shared/ui/theme-switcher';
 
 type NavigationLink = { href: string; label: string };
@@ -70,7 +70,11 @@ export function AthleteShell({
   const english = locale === 'en';
   const openLabel = english ? 'Open navigation' : 'Відкрити навігацію';
   const closeLabel = english ? 'Close navigation' : 'Закрити навігацію';
-  const homeLabel = english ? 'OVRANTO — home' : 'OVRANTO — головна';
+  // The accessible link name must include the visible wordmark AND tagline
+  // (WCAG 2.5.3 Label in Name), even though the tagline is decorative to AT.
+  const homeLabel = english
+    ? 'OVRANTO PERFORMANCE PLATFORM — home'
+    : 'OVRANTO PERFORMANCE PLATFORM — головна';
   const expandLabel = english ? 'Expand sidebar' : 'Розгорнути бічну панель';
   const collapseLabel = english ? 'Collapse sidebar' : 'Згорнути бічну панель';
 
@@ -206,7 +210,7 @@ export function AthleteShell({
 
           <div className="flex items-center justify-end gap-2 border-t border-border/60 px-4 py-2 lg:border-t-0 lg:px-8">
             <ThemeSwitcher initialPreference={initialPreference} locale={locale} />
-            <LocaleSwitcher />
+            <AccountLocaleSwitcher />
           </div>
 
           <nav

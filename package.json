@@ -7,6 +7,7 @@
     "dev:web": "pnpm --filter @gym/web dev",
     "dev:landing": "pnpm --filter @gym/landing dev",
     "dev:admin": "pnpm --filter @gym/admin dev",
+    "dev:trainer": "pnpm --filter @gym/trainer dev",
     "dev:mobile": "pnpm --filter @gym/mobile dev",
     "db:up": "docker compose --env-file infra/docker/.env -f infra/docker/compose.yaml up -d --wait",
     "db:down": "docker compose --env-file infra/docker/.env -f infra/docker/compose.yaml down",

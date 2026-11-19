@@ -28,6 +28,7 @@ jobs:
       web: ${{ steps.select.outputs.web }}
       landing: ${{ steps.select.outputs.landing }}
       admin: ${{ steps.select.outputs.admin }}
+      trainer: ${{ steps.select.outputs.trainer }}
       mobile: ${{ steps.select.outputs.mobile }}
       client: ${{ steps.select.outputs.client }}
       deps: ${{ steps.select.outputs.deps }}
@@ -244,6 +245,7 @@ jobs:
             .turbo/cache
             apps/web/.next/cache
             apps/landing/.next/cache
+            apps/trainer/.next/cache
           key: ${{ runner.os }}-node24-build-${{ hashFiles('pnpm-lock.yaml', 'turbo.json', 'apps/**/package.json', 'packages/**/package.json') }}-${{ github.sha }}
           restore-keys: |
             ${{ runner.os }}-node24-build-${{ hashFiles('pnpm-lock.yaml', 'turbo.json', 'apps/**/package.json', 'packages/**/package.json') }}-
@@ -280,6 +282,9 @@ jobs:
       - name: Check formatting
         run: pnpm format:check
 
+      - name: Verify shared i18n catalogs and ICU contracts
+        run: pnpm --filter @gym/i18n test
+
       # Only Redis-related pull requests exercise the extra Docker image upgrade.
       - name: Rehearse isolated Redis 7 to Redis 8 AOF and backup recovery
         if: github.event_name == 'pull_request' && needs.changes.outputs.redis == 'true'
@@ -291,7 +296,7 @@ jobs:
           pnpm lint
           pnpm typecheck
           # API unit tests with coverage are enforced by the protected E2E gate.
-          pnpm exec turbo run test --filter=@gym/web --filter=@gym/mobile --filter=@gym/api-client --filter=@gym/landing --filter=@gym/admin
+          pnpm exec turbo run test --filter=@gym/web --filter=@gym/mobile --filter=@gym/api-client --filter=@gym/landing --filter=@gym/admin --filter=@gym/trainer
           pnpm build
 
       - name: Lint, typecheck, test and build affected workspaces
@@ -301,6 +306,7 @@ jobs:
           CI_WEB: ${{ needs.changes.outputs.web }}
           CI_LANDING: ${{ needs.changes.outputs.landing }}
           CI_ADMIN: ${{ needs.changes.outputs.admin }}
+          CI_TRAINER: ${{ needs.changes.outputs.trainer }}
           CI_MOBILE: ${{ needs.changes.outputs.mobile }}
           CI_CLIENT: ${{ needs.changes.outputs.client }}
         run: |
@@ -312,6 +318,7 @@ jobs:
           if [ "$CI_WEB" = true ]; then filters+=(--filter=@gym/ui-web); fi
           if [ "$CI_LANDING" = true ]; then filters+=(--filter=@gym/landing); fi
           if [ "$CI_ADMIN" = true ]; then filters+=(--filter=@gym/admin); fi
+          if [ "$CI_TRAINER" = true ]; then filters+=(--filter=@gym/trainer); fi
           if [ "$CI_MOBILE" = true ]; then filters+=(--filter=@gym/mobile); fi
           if [ "$CI_CLIENT" = true ]; then filters+=(--filter=@gym/api-client); fi
           test "${#filters[@]}" -gt 0
@@ -324,6 +331,7 @@ jobs:
           if [ "$CI_CLIENT" = true ]; then test_filters+=(--filter=@gym/api-client); fi
           if [ "$CI_LANDING" = true ]; then test_filters+=(--filter=@gym/landing); fi
           if [ "$CI_ADMIN" = true ]; then test_filters+=(--filter=@gym/admin); fi
+          if [ "$CI_TRAINER" = true ]; then test_filters+=(--filter=@gym/trainer); fi
           if [ "${#test_filters[@]}" -gt 0 ]; then
             pnpm exec turbo run test "${test_filters[@]}"
           fi
