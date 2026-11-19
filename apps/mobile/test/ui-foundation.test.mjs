@@ -54,7 +54,7 @@ test('Expo uses its default Babel setup and TypeScript resolves aliases to src',
 test('Mobile uses OVRANTO v2 native semantic tokens through one shared adapter', () => {
   const theme = read('../src/shared/config/theme.ts');
   const packageJson = JSON.parse(read('../package.json'));
-  assert.match(theme, /@gym\\/design-tokens\\/ovranto-native/);
+  assert.ok(theme.includes('@gym/design-tokens/ovranto-native'));
   assert.equal(packageJson.dependencies['@gym/design-tokens'], 'workspace:*');
   for (const mapping of [
     'background: dark.background',
