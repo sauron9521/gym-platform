@@ -63,3 +63,60 @@ test('Docker dependency install remains cached when only API source changes', as
   assert.ok(source < compile, 'Prisma generation and Nest build must see source files');
   assert.equal((build.match(/RUN pnpm .* install --frozen-lockfile/g) ?? []).length, 1);
 });
+
+test('API Dockerfile-specific ignore only includes required API sources and manifests', async () => {
+  const ignore = await read('../Dockerfile.dockerignore');
+  const patterns = new Set(ignore.split('\n').map((line) => line.trim()));
+  for (const include of [
+    '**',
+    '!package.json',
+    '!pnpm-lock.yaml',
+    '!pnpm-workspace.yaml',
+    '!apps',
+    '!apps/*',
+    '!apps/*/package.json',
+    '!apps/api/**',
+    '!packages',
+    '!packages/*',
+    '!packages/*/package.json',
+    '!tooling',
+    '!tooling/*',
+    '!tooling/*/package.json',
+  ]) {
+    assert.ok(patterns.has(include), 'Missing API build context allowlist: ' + include);
+  }
+  for (const exclude of [
+    '**/.env',
+    '**/.env.*',
+    '**/node_modules',
+    'apps/*/**',
+    'packages/*/**',
+    'tooling/*/**',
+    '**/dist',
+    '**/test',
+    '**/src/infra/database/generated',
+    '**/*.pem',
+    '**/*.key',
+    '**/*.p12',
+  ]) {
+    assert.ok(patterns.has(exclude), 'Missing sensitive/state exclusion: ' + exclude);
+  }
+  assert.ok(ignore.indexOf('!apps/api/**') < ignore.indexOf('**/.env'));
+  // Later re-inclusions must restore manifests without restoring other sources.
+  for (const [deny, manifest] of [
+    ['apps/*/**', '!apps/*/package.json'],
+    ['packages/*/**', '!packages/*/package.json'],
+    ['tooling/*/**', '!tooling/*/package.json'],
+  ]) {
+    assert.ok(ignore.indexOf(deny) < ignore.indexOf(manifest));
+  }
+  assert.ok(ignore.indexOf('apps/*/**') < ignore.indexOf('!apps/api/**'));
+  const docker = await read('../Dockerfile');
+  assert.ok(docker.includes('test -d apps/api/src'));
+  assert.ok(docker.includes('test -d apps/api/prisma/migrations'));
+  assert.ok(docker.includes('test -f apps/web/package.json'));
+  assert.ok(docker.includes('test -f packages/i18n/package.json'));
+  assert.ok(docker.includes('test ! -e apps/web/src'));
+  assert.ok(docker.includes('test ! -e apps/mobile/src'));
+  assert.ok(docker.includes('test ! -e packages/i18n/src'));
+});

@@ -16,6 +16,23 @@ COPY --parents apps/*/package.json packages/*/package.json tooling/*/package.jso
 RUN pnpm --filter @gym/api... install --frozen-lockfile
 # Source edits now invalidate compilation, not the dependency install layer.
 COPY . .
+# Verify the API-only context before producing either deployable image.
+RUN echo 'Docker context: API Prisma config' \
+    && test -f apps/api/prisma7.config.ts \
+    && echo 'Docker context: API src' \
+    && test -d apps/api/src \
+    && echo 'Docker context: Prisma migrations' \
+    && test -d apps/api/prisma/migrations \
+    && echo 'Docker context: Web workspace manifest' \
+    && test -f apps/web/package.json \
+    && echo 'Docker context: i18n workspace manifest' \
+    && test -f packages/i18n/package.json \
+    && echo 'Docker context: Web src excluded' \
+    && test ! -e apps/web/src \
+    && echo 'Docker context: Mobile src excluded' \
+    && test ! -e apps/mobile/src \
+    && echo 'Docker context: i18n src excluded' \
+    && test ! -e packages/i18n/src
 RUN pnpm --filter @gym/api db:generate && pnpm --filter @gym/api build
 
 # Deploy only the API workspace with its migration tooling. Unlike the full
