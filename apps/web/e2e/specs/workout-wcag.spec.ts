@@ -11,7 +11,7 @@ async function signIn(page: Page) {
   await page.getByLabel('Пароль').fill('TestPassword123!');
   await page.getByRole('button', { name: 'Увійти' }).click();
   await expect(page).toHaveURL(/\/dashboard$/);
-  await expect(page.getByRole('heading', { name: /Вітаємо/ })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /^(Вітаємо|Welcome,)/ })).toBeVisible();
 }
 
 async function openActiveWorkout(page: Page) {
@@ -154,7 +154,9 @@ for (const locale of ['uk', 'en'] as const) {
 }
 
 test('system appearance follows OS colors', async ({ page }) => {
-  await page.emulateMedia({ colorScheme: 'dark' });
+  // Disable color transitions during axe scans: intermediate blended colors
+  // can temporarily fail contrast even when both settled themes pass WCAG.
+  await page.emulateMedia({ colorScheme: 'dark', reducedMotion: 'reduce' });
   await signIn(page);
   const theme = page.getByTestId('athlete-shell-header').getByRole('combobox').first();
   await theme.selectOption('system');
