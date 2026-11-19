@@ -34,3 +34,5 @@ export function getFlatMessages(locale: Locale): Record<string, string> {
 }
 
 export { resolveRequestLocale } from './request-locale';
+
+export type { TranslationKey } from './typed';

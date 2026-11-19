@@ -739,7 +739,11 @@ importers:
 
   packages/domain: {}
 
-  packages/i18n: {}
+  packages/i18n:
+    devDependencies:
+      '@formatjs/icu-messageformat-parser':
+        specifier: 3.5.23
+        version: 3.5.23
 
   packages/ui-web:
     dependencies:

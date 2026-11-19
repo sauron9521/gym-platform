@@ -12,7 +12,11 @@ Shared message catalogs for Gym Platform. Current locales: `uk` (default) and `e
 - API error codes remain language-neutral; translate them in clients, never parse localized server text.
 - For user-generated exercise names and database content, use dedicated translation tables instead of UI catalogs.
 
-Run `pnpm --filter @gym/i18n test` before merging changes to catalogs.
+Translation keys are exported as TypeScript `TranslationKey` dotted leaf IDs; use the type in
+consumers that accept shared catalog keys to catch misspellings at compile time.
+`pnpm --filter @gym/i18n check` parses ICU messages and checks that both locales contain
+non-empty keys with the same argument names and formatting kinds (plural categories may differ).
+The same validation runs automatically under `pnpm --filter @gym/i18n test`.
 For request-locale changes also run `pnpm --filter @gym/web test` and
 `pnpm --filter @gym/admin test`.
 
