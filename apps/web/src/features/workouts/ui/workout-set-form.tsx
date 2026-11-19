@@ -1,7 +1,9 @@
 'use client';
 
+import { useRef, type FormEvent } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
+import { toast } from 'sonner';
 
 import { Button } from '@/shared/ui/button';
 import { useUpdateWorkoutSetMutation } from '../api/workout-set-mutation';
@@ -38,6 +40,8 @@ export function WorkoutSetForm({
   onClose: () => void;
 }) {
   const mutation = useUpdateWorkoutSetMutation(workoutId);
+  // A synchronous lock covers rapid taps before React paints isPending/disabled.
+  const requestInFlight = useRef(false);
   const {
     register,
     handleSubmit,
@@ -51,28 +55,39 @@ export function WorkoutSetForm({
   const busy = isSubmitting || mutation.isPending;
 
   async function send(status: 'COMPLETED' | 'SKIPPED', values: WorkoutSetFormValues) {
-    if (mutation.isPending) return;
+    if (requestInFlight.current || mutation.isPending) return;
+    requestInFlight.current = true;
     mutation.reset();
     try {
       await mutation.mutateAsync({
         setId: set.id,
         body: buildWorkoutSetPayload(status, values),
       });
+      toast.success(
+        status === 'COMPLETED' ? 'Результат підходу збережено.' : 'Підхід позначено пропущеним.',
+      );
       onSaved();
     } catch {
       // Mutation holds the status-specific error without dropping form values.
+    } finally {
+      requestInFlight.current = false;
     }
   }
 
   function skip() {
-    if (busy) return;
+    if (busy || requestInFlight.current) return;
     void send('SKIPPED', getWorkoutSetDefaults(set));
+  }
+
+  function submitCompleted(event: FormEvent<HTMLFormElement>) {
+    void handleSubmit((values) => send('COMPLETED', values))(event);
   }
 
   return (
     <form
-      onSubmit={handleSubmit((values) => send('COMPLETED', values))}
+      onSubmit={submitCompleted}
       noValidate
+      aria-busy={busy}
       className="space-y-4 rounded-lg border bg-muted/30 p-4"
       aria-label="Запис результатів підходу"
     >
@@ -122,6 +137,15 @@ export function WorkoutSetForm({
           </p>
         )}
       </div>
+      {busy && (
+        <p role="status" aria-live="polite" className="text-sm font-medium text-primary">
+          {mutation.isPending
+            ? mutation.variables?.body.status === 'SKIPPED'
+              ? 'Зберігаємо пропуск підходу…'
+              : 'Зберігаємо результат підходу…'
+            : 'Перевіряємо дані підходу…'}
+        </p>
+      )}
       {mutation.isError && (
         <p role="alert" className="text-sm text-destructive">
           {mutation.error.message}

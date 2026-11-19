@@ -43,7 +43,8 @@ export function WorkoutDetails({ id }: { id: string }) {
   }
 
   let state: DetailsState;
-  if (query.isPending || query.isFetching || unauthenticated) {
+  // Keep the server-confirmed set visible while the canonical detail is revalidated.
+  if (query.isPending || (query.isFetching && !query.data) || unauthenticated) {
     state = { kind: 'loading' };
   } else if (query.isError) {
     state = {
@@ -86,6 +87,11 @@ export function WorkoutDetails({ id }: { id: string }) {
 
       {state.kind === 'ready' && (
         <>
+          {query.isFetching && (
+            <p role="status" className="text-sm text-muted-foreground">
+              Оновлюємо дані тренування…
+            </p>
+          )}
           <header className="min-w-0 space-y-4 rounded-2xl border bg-card p-4 sm:p-6">
             <div className="flex flex-wrap items-center gap-3">
               <h1 className="min-w-0 break-words text-2xl font-semibold tracking-tight sm:text-3xl">
