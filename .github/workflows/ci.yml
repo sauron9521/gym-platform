@@ -348,12 +348,18 @@ jobs:
       - dependency-security
       - mobile-ios-dev-windows
       - landing-browser-e2e
+      - api-operations
+      - api-staging-contracts
+      - api-readiness
+      - api-migration
+      - api-observability
+      - api-docker
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5
 
     steps:
-      - name: Fail closed if change classification, tooling, Windows, browser or dependency audit fails
+      - name: Fail closed if required quality, browser, security or API job fails
         env:
           QUALITY_WORKSPACES_RESULT: ${{ needs.quality-workspaces.result }}
           TOOLING_CONTRACTS_RESULT: ${{ needs.tooling-contracts.result }}
@@ -368,6 +374,13 @@ jobs:
           LANDING_REQUIRED: ${{ needs.changes.outputs.landing }}
           LANDING_E2E_RESULT: ${{ needs.landing-browser-e2e.result }}
           MOBILE_IOS_DEV_RESULT: ${{ needs.mobile-ios-dev-windows.result }}
+          API_REQUIRED: ${{ needs.changes.outputs.api }}
+          API_OPERATIONS_RESULT: ${{ needs.api-operations.result }}
+          API_STAGING_CONTRACTS_RESULT: ${{ needs.api-staging-contracts.result }}
+          API_READINESS_RESULT: ${{ needs.api-readiness.result }}
+          API_MIGRATION_RESULT: ${{ needs.api-migration.result }}
+          API_OBSERVABILITY_RESULT: ${{ needs.api-observability.result }}
+          API_DOCKER_RESULT: ${{ needs.api-docker.result }}
         run: |
           set -euo pipefail
           test "$CHANGE_DETECTION_RESULT" = success
@@ -402,6 +415,23 @@ jobs:
           else
             test "$MOBILE_REQUIRED" = false
             test "$MOBILE_IOS_DEV_RESULT" = skipped
+          fi
+          # API E2E and coverage remain enforced by the separate required API E2E gate.
+          if [ "$API_REQUIRED" = true ]; then
+            test "$API_OPERATIONS_RESULT" = success
+            test "$API_STAGING_CONTRACTS_RESULT" = success
+            test "$API_READINESS_RESULT" = success
+            test "$API_MIGRATION_RESULT" = success
+            test "$API_OBSERVABILITY_RESULT" = success
+            test "$API_DOCKER_RESULT" = success
+          else
+            test "$API_REQUIRED" = false
+            test "$API_OPERATIONS_RESULT" = skipped
+            test "$API_STAGING_CONTRACTS_RESULT" = skipped
+            test "$API_READINESS_RESULT" = skipped
+            test "$API_MIGRATION_RESULT" = skipped
+            test "$API_OBSERVABILITY_RESULT" = skipped
+            test "$API_DOCKER_RESULT" = skipped
           fi
 
   api-coverage:
