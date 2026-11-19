@@ -49,10 +49,7 @@ export function WorkoutExercises({ workout, editingSetId, onEditSet }: Props) {
             {exercise.sets.length === 0 ? (
               <p className="text-sm text-muted-foreground">Підходів ще немає.</p>
             ) : (
-              <ol
-                className="space-y-2"
-                aria-label={`Підходи: ${exercise.exerciseNameSnapshot}`}
-              >
+              <ol className="space-y-2" aria-label={`Підходи: ${exercise.exerciseNameSnapshot}`}>
                 {exercise.sets.map((set) => (
                   <WorkoutSetCard
                     key={set.id}
