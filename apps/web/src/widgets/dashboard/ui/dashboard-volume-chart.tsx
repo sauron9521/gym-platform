@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useFormatter, useTranslations } from 'next-intl';
 import { useQuery } from '@tanstack/react-query';
 
 import { Button, Card, CardContent, CardHeader, CardTitle } from '@gym/ui-web';
@@ -10,12 +11,15 @@ import { useAuthFailure } from '@/shared/api/use-auth-failure';
 
 type Range = '7d' | '30d' | '90d';
 const ranges: readonly Range[] = ['7d', '30d', '90d'];
+const rangeLabelKeys = {
+  '7d': 'volumeChart.range7',
+  '30d': 'volumeChart.range30',
+  '90d': 'volumeChart.range90',
+} as const;
 
-class AnalyticsError extends Error {
+export class AnalyticsError extends Error {
   constructor(readonly status: number) {
-    super(
-      status === 429 ? 'Забагато запитів. Спробуйте пізніше.' : 'Не вдалося завантажити аналітику.',
-    );
+    super('Workout analytics request failed');
   }
 }
 
@@ -41,12 +45,17 @@ function summaryOptions(range: Range) {
 
 /** Owner-scoped daily strength volume, sourced exclusively from the existing analytics endpoint. */
 export function DashboardVolumeChart() {
+  const t = useTranslations('web.dashboard');
+  const format = useFormatter();
   const [range, setRange] = useState<Range>('30d');
   const onAuthFailure = useAuthFailure();
   const query = useQuery(summaryOptions(range));
 
   useEffect(() => {
-    if (query.error instanceof AnalyticsError) onAuthFailure(query.error);
+    // Only 401 invalidates the session; 429, 403 and network failures are retryable.
+    if (query.error instanceof AnalyticsError && query.error.status === 401) {
+      onAuthFailure(query.error);
+    }
   }, [onAuthFailure, query.error]);
 
   if (query.error instanceof AnalyticsError && query.error.status === 401) return null;
@@ -61,19 +70,27 @@ export function DashboardVolumeChart() {
     ),
   );
   const hasVolume = max > 0;
+  const rangeDays = range === '7d' ? 7 : range === '30d' ? 30 : 90;
+  // Date-only values represent calendar days; pin them to UTC to avoid
+  // shifting a workout to the previous or next date in the user's timezone.
+  const formatDay = (date: string) =>
+    format.dateTime(new Date(`${date}T12:00:00.000Z`), {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+      timeZone: 'UTC',
+    });
 
   return (
     <section aria-labelledby="dashboard-volume-heading" className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="space-y-1">
           <h2 id="dashboard-volume-heading" className="text-xl font-semibold tracking-tight">
-            Прогрес тренувань
+            {t('volumeChart.heading')}
           </h2>
-          <p className="text-sm text-muted-foreground">
-            Силовий об’єм за днями за вибраний період.
-          </p>
+          <p className="text-sm text-muted-foreground">{t('volumeChart.description')}</p>
         </div>
-        <div role="group" aria-label="Період графіка" className="flex gap-2">
+        <div role="group" aria-label={t('volumeChart.periodLabel')} className="flex gap-2">
           {ranges.map((option) => (
             <Button
               key={option}
@@ -83,44 +100,49 @@ export function DashboardVolumeChart() {
               aria-pressed={range === option}
               onClick={() => setRange(option)}
             >
-              {option === '7d' ? '7 днів' : option === '30d' ? '30 днів' : '90 днів'}
+              {t(rangeLabelKeys[option])}
             </Button>
           ))}
         </div>
       </div>
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Тренувальний об’єм, кг</CardTitle>
+          <CardTitle className="text-base">{t('volumeChart.volumeLabel')}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           {(query.isPending || query.isFetching) && (
             <p role="status" className="text-sm text-muted-foreground">
-              Завантажуємо графік…
+              {t('volumeChart.loading')}
             </p>
           )}
           {!query.isPending && !query.isFetching && query.isError && (
             <div role="alert" className="space-y-3">
               <p className="text-sm text-destructive">
-                {query.error instanceof AnalyticsError
-                  ? query.error.message
-                  : 'Не вдалося завантажити аналітику.'}
+                {t(
+                  query.error instanceof AnalyticsError && query.error.status === 429
+                    ? 'volumeChart.errorRateLimited'
+                    : 'volumeChart.errorDefault',
+                )}
               </p>
-              <Button type="button" variant="outline" onClick={() => void query.refetch()}>
-                Повторити
+              <Button
+                type="button"
+                variant="outline"
+                aria-label={t('volumeChart.retryAccessible')}
+                onClick={() => void query.refetch()}
+              >
+                {t('volumeChart.retry')}
               </Button>
             </div>
           )}
           {ready && !hasVolume && (
-            <p className="text-sm text-muted-foreground">
-              За вибраний період немає записаного силового об’єму.
-            </p>
+            <p className="text-sm text-muted-foreground">{t('volumeChart.empty')}</p>
           )}
           {ready && hasVolume && (
             <>
               <div
                 className="flex h-44 items-end gap-px overflow-x-auto rounded-lg border border-border p-3"
                 role="img"
-                aria-label={`Графік силового об’єму за ${range === '7d' ? '7' : range === '30d' ? '30' : '90'} днів. Точні значення наведено нижче.`}
+                aria-label={t('volumeChart.chartAccessible', { days: rangeDays })}
               >
                 {daily.map((day) => (
                   <div key={day.date} className="flex h-full min-w-1 flex-1 items-end">
@@ -129,23 +151,28 @@ export function DashboardVolumeChart() {
                       style={{
                         height: `${Math.max(0, Math.min(100, (day.strengthVolumeKg / max) * 100))}%`,
                       }}
-                      title={`${day.date}: ${Math.round(day.strengthVolumeKg)} кг`}
+                      title={t('volumeChart.pointTitle', {
+                        date: formatDay(day.date),
+                        volume: Math.round(day.strengthVolumeKg),
+                      })}
                     />
                   </div>
                 ))}
               </div>
               <details className="text-sm">
                 <summary className="cursor-pointer font-medium text-primary">
-                  Переглянути точні значення за днями
+                  {t('volumeChart.showValues')}
                 </summary>
                 <ul
                   className="mt-2 max-h-48 space-y-1 overflow-auto"
-                  aria-label="Денні значення об’єму"
+                  aria-label={t('volumeChart.dailyValues')}
                 >
                   {daily.map((day) => (
                     <li key={day.date} className="flex justify-between gap-3">
-                      <time dateTime={day.date}>{day.date}</time>
-                      <span className="tabular-nums">{Math.round(day.strengthVolumeKg)} кг</span>
+                      <time dateTime={day.date}>{formatDay(day.date)}</time>
+                      <span className="tabular-nums">
+                        {t('volumeChart.volumeKg', { volume: Math.round(day.strengthVolumeKg) })}
+                      </span>
                     </li>
                   ))}
                 </ul>
@@ -154,8 +181,15 @@ export function DashboardVolumeChart() {
           )}
           {ready && (
             <p className="text-xs text-muted-foreground">
-              Тренувань: {query.data.workoutCount}. Активних днів: {query.data.activeDays}. Дані API
-              станом на {new Date(query.data.asOf).toLocaleDateString('uk-UA')}.
+              {t('volumeChart.summary', {
+                workouts: query.data.workoutCount,
+                activeDays: query.data.activeDays,
+                date: format.dateTime(new Date(query.data.asOf), {
+                  day: 'numeric',
+                  month: 'short',
+                  year: 'numeric',
+                }),
+              })}
             </p>
           )}
         </CardContent>
