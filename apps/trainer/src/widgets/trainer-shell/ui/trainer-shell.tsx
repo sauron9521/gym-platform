@@ -78,7 +78,10 @@ export function TrainerShell({
           </p>
           <Preferences locale={locale} initialTheme={initialTheme} />
         </header>
-        <div id="trainer-mobile-navigation" className={menuOpen ? 'border-b border-border bg-card px-5 py-4 lg:hidden' : 'hidden'}>
+        <div
+          id="trainer-mobile-navigation"
+          className={menuOpen ? 'border-b border-border bg-card px-5 py-4 lg:hidden' : 'hidden'}
+        >
           {navigation}
         </div>
         <main id="main-content" className="mx-auto max-w-6xl px-5 py-10 sm:px-8">
