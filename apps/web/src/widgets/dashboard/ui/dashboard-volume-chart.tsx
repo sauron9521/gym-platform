@@ -11,6 +11,11 @@ import { useAuthFailure } from '@/shared/api/use-auth-failure';
 
 type Range = '7d' | '30d' | '90d';
 const ranges: readonly Range[] = ['7d', '30d', '90d'];
+const rangeLabelKeys = {
+  '7d': 'volumeChart.range7',
+  '30d': 'volumeChart.range30',
+  '90d': 'volumeChart.range90',
+} as const;
 
 export class AnalyticsError extends Error {
   constructor(readonly status: number) {
@@ -80,9 +85,7 @@ export function DashboardVolumeChart() {
           <h2 id="dashboard-volume-heading" className="text-xl font-semibold tracking-tight">
             {t('volumeChart.heading')}
           </h2>
-          <p className="text-sm text-muted-foreground">
-            {t('volumeChart.description')}
-          </p>
+          <p className="text-sm text-muted-foreground">{t('volumeChart.description')}</p>
         </div>
         <div role="group" aria-label={t('volumeChart.periodLabel')} className="flex gap-2">
           {ranges.map((option) => (
@@ -94,7 +97,7 @@ export function DashboardVolumeChart() {
               aria-pressed={range === option}
               onClick={() => setRange(option)}
             >
-              {t(option === '7d' ? 'volumeChart.range7' : option === '30d' ? 'volumeChart.range30' : 'volumeChart.range90')}
+              {t(rangeLabelKeys[option])}
             </Button>
           ))}
         </div>
@@ -129,9 +132,7 @@ export function DashboardVolumeChart() {
             </div>
           )}
           {ready && !hasVolume && (
-            <p className="text-sm text-muted-foreground">
-              {t('volumeChart.empty')}
-            </p>
+            <p className="text-sm text-muted-foreground">{t('volumeChart.empty')}</p>
           )}
           {ready && hasVolume && (
             <>
