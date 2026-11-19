@@ -74,3 +74,27 @@ describe('GitHub Projects setup safety', () => {
     );
   });
 });
+
+// TEMP_PRETTIER_DIFF_BEGIN
+import { readFileSync, writeFileSync, mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { resolve, join } from 'node:path';
+import { spawnSync } from 'node:child_process';
+import prettier from 'prettier';
+
+it('temporary: show script Prettier differences', async () => {
+  const file = resolve('scripts/github-project-setup.mjs');
+  const before = readFileSync(file, 'utf8');
+  const after = await prettier.format(before, {
+    ...(await prettier.resolveConfig(file)),
+    filepath: file,
+  });
+  const folder = mkdtempSync(join(tmpdir(), 'project-format-'));
+  const a = join(folder, 'before.txt');
+  const b = join(folder, 'after.txt');
+  writeFileSync(a, before);
+  writeFileSync(b, after);
+  const result = spawnSync('diff', ['-u', a, b], { encoding: 'utf8' });
+  console.log('PROJECT_FORMAT_DIFF\n' + result.stdout);
+  rmSync(folder, { recursive: true, force: true });
+});
