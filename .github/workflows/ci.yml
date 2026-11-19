@@ -129,9 +129,13 @@ jobs:
         run: node apps/mobile/scripts/smoke-ios-dev.mjs
 
   web-browser-e2e:
-    name: Web / Browser E2E (Chromium, fixture API)
+    name: Web / Browser E2E (Chromium, fixture API, shard ${{ matrix.shard }}/2)
     needs: changes
     if: needs.changes.outputs.web == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2]
     # Reuse the version-matched image validated by Web integration E2E.
     runs-on: ubuntu-24.04
     container:
@@ -166,7 +170,7 @@ jobs:
       # The official pinned container already includes Chromium and OS libraries.
 
       - name: Browser tests against a loopback fixture HTTP API
-        run: pnpm --filter @gym/web test:e2e
+        run: pnpm --filter @gym/web exec playwright test --shard=${{ matrix.shard }}/2
         env:
           CI: 'true'
 
@@ -174,7 +178,7 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v7
         with:
-          name: web-playwright-failures
+          name: web-playwright-failures-${{ matrix.shard }}
           path: |
             apps/web/test-results/
             apps/web/playwright-report/

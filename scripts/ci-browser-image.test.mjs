@@ -41,7 +41,7 @@ test('browser E2E jobs use identical pinned Playwright images', () => {
 test('affected checks retain browsers, traces and required gate', () => {
   assert.match(webSuite, /if: needs\.changes\.outputs\.web == 'true'/);
   assert.match(landingSuite, /if: needs\.changes\.outputs\.landing == 'true'/);
-  assert.ok(webSuite.includes('pnpm --filter @gym/web test:e2e'));
+  assert.ok(webSuite.includes('pnpm --filter @gym/web exec playwright test'));
   assert.ok(landingSuite.includes('pnpm --filter @gym/landing test:e2e'));
   assert.ok(webSuite.includes('web-playwright-failures'));
   assert.ok(landingSuite.includes('landing-playwright-failures'));
@@ -50,4 +50,16 @@ test('affected checks retain browsers, traces and required gate', () => {
   assert.ok(integration.includes('name: Web / Real API and PostgreSQL\n'));
   assert.ok(workflow.includes('      - web-browser-e2e\n'));
   assert.ok(workflow.includes('      - landing-browser-e2e\n'));
+});
+
+test('fixture API E2E splits all specs across isolated required shards', () => {
+  assert.match(webSuite, /fail-fast: false/);
+  assert.match(webSuite, /shard: \[1, 2\]/);
+  assert.ok(webSuite.includes('test --shard=${{ matrix.shard }}/2'));
+  assert.ok(webSuite.includes('web-playwright-failures-${{ matrix.shard }}'));
+  assert.ok(workflow.includes('WEB_E2E_RESULT: ${{ needs.web-browser-e2e.result }}'));
+  assert.ok(workflow.includes('test "$WEB_E2E_RESULT" = success'));
+  const config = read('../apps/web/playwright.config.ts');
+  assert.match(config, /fullyParallel: false/);
+  assert.match(config, /workers: 1/);
 });
