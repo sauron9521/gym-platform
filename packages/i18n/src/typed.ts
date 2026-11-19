@@ -1,8 +1,12 @@
 import en from './messages/en.json';
 
-/** Dotted leaf IDs; misspelled translation IDs fail the TypeScript check. */
+/** Compile-time dotted leaf IDs from the shared English catalog. */
 type DotPaths<T> = {
-  [K in keyof T & string]: T[K] extends string ? K : `${K}.${DotPaths<T[K]>}`;
+  [K in keyof T & string]: T[K] extends string
+    ? K
+    : T[K] extends object
+      ? `${K}.${DotPaths<T[K]>}`
+      : never;
 }[keyof T & string];
 
 export type TranslationKey = DotPaths<typeof en>;

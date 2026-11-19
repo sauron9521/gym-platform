@@ -280,6 +280,9 @@ jobs:
       - name: Check formatting
         run: pnpm format:check
 
+      - name: Verify shared i18n catalogs and ICU contracts
+        run: pnpm --filter @gym/i18n test
+
       # Only Redis-related pull requests exercise the extra Docker image upgrade.
       - name: Rehearse isolated Redis 7 to Redis 8 AOF and backup recovery
         if: github.event_name == 'pull_request' && needs.changes.outputs.redis == 'true'

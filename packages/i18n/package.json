@@ -11,7 +11,7 @@
     }
   },
   "scripts": {
-    "test": "node --test test/*.test.mjs",
+    "test": "node --test test/*.test.mjs && node scripts/check-catalog.mjs",
     "check": "node scripts/check-catalog.mjs"
   },
   "devDependencies": {

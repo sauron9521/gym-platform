@@ -1,13 +1,18 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
 
 import { classifySessionCheck } from '@/features/auth/lib/auth-flow';
 import { webApi } from '@/shared/api/client';
 import { Button } from '@/shared/ui/button';
+import { DashboardHome } from './dashboard-home';
+import { DashboardActiveWorkout } from './dashboard-active-workout';
+import { DashboardCompletedSessions } from './dashboard-completed-sessions';
+import { DashboardPlannedWorkouts } from './dashboard-planned-workouts';
+import { DashboardWorkoutStats } from './dashboard-workout-stats';
+import { DashboardVolumeChart } from './dashboard-volume-chart';
 import type { AuthenticatedUser } from '@/shared/api/server-session';
 
 type DashboardState =
@@ -118,56 +123,23 @@ export function DashboardScreen({ initialUser }: { initialUser: AuthenticatedUse
   }
 
   return (
-    <main className="mx-auto max-w-3xl space-y-6 px-6 py-16">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <p className="text-sm font-medium text-muted-foreground">Gym Platform</p>
-          <h1 className="mt-3 text-3xl font-semibold tracking-tight">
-            Вітаємо, {state.displayName}!
-          </h1>
-          <p className="mt-2 text-sm text-muted-foreground">{state.email}</p>
-        </div>
-        <Button variant="outline" onClick={handleSignOut} disabled={isSigningOut}>
-          {isSigningOut ? 'Вихід…' : 'Вийти'}
-        </Button>
-      </div>
-      {signOutError && (
-        <p role="alert" className="text-sm text-destructive">
-          {signOutError}
-        </p>
+    <DashboardHome
+      email={state.email}
+      displayName={state.displayName}
+      role={initialUser.role}
+      isSigningOut={isSigningOut}
+      signOutError={signOutError}
+      onSignOut={handleSignOut}
+      hero={initialUser.role === 'ATHLETE' ? <DashboardActiveWorkout /> : undefined}
+    >
+      {initialUser.role === 'ATHLETE' && (
+        <>
+          <DashboardWorkoutStats />
+          <DashboardVolumeChart />
+          <DashboardPlannedWorkouts />
+          <DashboardCompletedSessions />
+        </>
       )}
-      <section className="rounded-xl border bg-card p-6">
-        <h2 className="font-semibold">Особистий кабінет</h2>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Перегляньте свій журнал тренувань або оновіть особистий профіль.
-        </p>
-        <div className="mt-4 flex flex-wrap gap-3">
-          <Button asChild>
-            <Link href="/workouts">Мої тренування</Link>
-          </Button>
-          <Button asChild variant="outline">
-            <Link href="/profile">Мій профіль</Link>
-          </Button>
-          {(initialUser.role === 'TRAINER' || initialUser.role === 'ATHLETE') && (
-            <Button asChild variant="outline">
-              <Link
-                href={initialUser.role === 'TRAINER' ? '/trainer/athletes' : '/athlete/trainers'}
-              >
-                {initialUser.role === 'TRAINER' ? 'Мої підопічні' : 'Мої тренери'}
-              </Link>
-            </Button>
-          )}
-          {(initialUser.role === 'TRAINER' || initialUser.role === 'ATHLETE') && (
-            <Button asChild variant="outline">
-              <Link
-                href={initialUser.role === 'TRAINER' ? '/trainer/programs' : '/athlete/programs'}
-              >
-                {initialUser.role === 'TRAINER' ? 'Тренувальні програми' : 'Мої програми'}
-              </Link>
-            </Button>
-          )}
-        </div>
-      </section>
-    </main>
+    </DashboardHome>
   );
 }
