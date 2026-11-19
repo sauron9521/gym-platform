@@ -50,9 +50,7 @@ export function DashboardWorkoutStats() {
         <h2 id="dashboard-status-metrics" className="text-xl font-semibold tracking-tight">
           {t('kpi.title')}
         </h2>
-        <p className="text-sm text-muted-foreground">
-          {t('kpi.description')}
-        </p>
+        <p className="text-sm text-muted-foreground">{t('kpi.description')}</p>
       </div>
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {metrics.map(({ status, label, query }) => {
