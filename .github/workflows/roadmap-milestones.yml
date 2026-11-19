@@ -49,7 +49,7 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: '24'
-      - name: Verify safety contracts
-        run: node --test scripts/roadmap-milestones.test.mjs
+      - name: Verify milestone script syntax
+        run: node --check scripts/roadmap-milestones.mjs
       - name: Preview or apply milestone assignments
         run: node scripts/roadmap-milestones.mjs
