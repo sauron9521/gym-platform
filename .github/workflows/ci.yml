@@ -240,7 +240,11 @@ jobs:
 
       # Dependency downloads already use the pnpm store cache above.
       # Persist only build/tool caches, never node_modules, secrets or tests.
+      # Try the current dependency graph first, then a safe incremental cache
+      # across manifest, lockfile and Turborepo config changes.
+      # Turbo hashes and Next.js internally validate cached build inputs.
       - name: Restore Turborepo and Next.js incremental build caches
+        id: incremental-build-cache
         uses: actions/cache@v6
         with:
           path: |
@@ -252,6 +256,25 @@ jobs:
           key: ${{ runner.os }}-node24-build-${{ hashFiles('pnpm-lock.yaml', 'turbo.json', 'apps/**/package.json', 'packages/**/package.json') }}-${{ github.sha }}
           restore-keys: |
             ${{ runner.os }}-node24-build-${{ hashFiles('pnpm-lock.yaml', 'turbo.json', 'apps/**/package.json', 'packages/**/package.json') }}-
+            ${{ runner.os }}-node24-build-
+
+
+      - name: Report incremental build cache restore
+        env:
+          CACHE_HIT: ${{ steps.incremental-build-cache.outputs.cache-hit }}
+        run: |
+          case "$CACHE_HIT" in
+            true) echo "Exact incremental build cache hit" ;;
+            false) echo "Restored a prior incremental build cache" ;;
+            *) echo "No compatible incremental build cache found" ;;
+          esac
+          for dir in .turbo/cache \
+            apps/web/.next/cache \
+            apps/landing/.next/cache \
+            apps/admin/.next/cache \
+            apps/trainer/.next/cache; do
+            if [ -d "$dir" ]; then du -sh "$dir"; fi
+          done
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
