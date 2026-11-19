@@ -33,7 +33,7 @@
   "dependencies": {
     "@nestjs/authentication": "^0.1.6",
     "@nestjs/authorization": "^0.1.4",
-    "@nestjs/common": "^12.4.0",
+    "@nestjs/common": "^12.5.1",
     "@nestjs/config": "^12.1.1",
     "@nestjs/core": "^12.4.0",
     "@nestjs/mail": "^0.0.2",

@@ -14,7 +14,8 @@ test('Dockerfile uses Node 24/pnpm and isolates the production runtime', async (
   assert.ok(docker.includes('COPY --from=migration-deps /app/migrate/ ./'));
   assert.ok(docker.includes('CMD ["./node_modules/.bin/prisma", "migrate", "deploy"'));
   assert.ok(docker.includes('FROM ${NODE_BASE_IMAGE} AS runtime'));
-  assert.ok(docker.includes('pnpm install --frozen-lockfile'));
+  assert.ok(docker.includes('pnpm --filter @gym/api... install --frozen-lockfile'));
+  assert.doesNotMatch(docker, /^RUN pnpm install --frozen-lockfile$/m);
   assert.ok(docker.includes('pnpm --filter @gym/api db:generate'));
   assert.ok(docker.includes('pnpm --filter @gym/api --prod deploy'));
   assert.ok(docker.includes('COPY --from=build /workspace/apps/api/dist/ ./dist/'));
