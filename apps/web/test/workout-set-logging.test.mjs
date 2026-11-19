@@ -112,8 +112,15 @@ test('set logging uses RHF, Zod and the typed PATCH endpoint, only during active
     'utf8',
   );
   assert.match(details, /<WorkoutExercises/);
-  assert.match(exercises, /onSaved=\{\(\) => onEditSet\(null\)\}/);
+  const setCard = await readFile(
+    new URL('../src/features/workouts/ui/workout-set-card.tsx', import.meta.url),
+    'utf8',
+  );
+  assert.match(exercises, /<WorkoutSetCard/);
   assert.match(exercises, /workout.status === 'IN_PROGRESS'/);
-  assert.match(exercises, /<WorkoutSetForm/);
+  assert.match(setCard, /onSaved=\{\(\) => onEditSet\(null\)\}/);
+  assert.match(setCard, /onClose=\{\(\) => onEditSet\(null\)\}/);
+  assert.match(setCard, /<WorkoutSetForm/);
+  assert.match(setCard, /disabled=\{editingLocked\}/);
   assert.doesNotMatch(form, /localStorage|sessionStorage|dangerouslySetInnerHTML/);
 });
