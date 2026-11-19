@@ -281,6 +281,22 @@ export const trainerApplicationOwnResponseSchema = objectSchema({
   updatedAt: dateTimeSchema,
 });
 
+/** Authorization required: operator-only. Never expose to applicant routes. */
+export const trainerApplicationAdminResponseSchema = objectSchema({
+  id: uuidSchema,
+  userId: uuidSchema,
+  status: enumSchema(['PENDING', 'APPROVED', 'REJECTED', 'REVOKED']),
+  applicantNote: nullable(stringSchema),
+  reviewerId: nullable(uuidSchema),
+  reviewedAt: nullable(dateTimeSchema),
+  reviewReason: nullable(stringSchema),
+  revokedById: nullable(uuidSchema),
+  revokedAt: nullable(dateTimeSchema),
+  revokeReason: nullable(stringSchema),
+  createdAt: dateTimeSchema,
+  updatedAt: dateTimeSchema,
+});
+
 export const trainingProgramVersionSummarySchema = objectSchema({
   id: uuidSchema,
   version: integerSchema,

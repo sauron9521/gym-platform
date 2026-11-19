@@ -75,6 +75,7 @@ model TrainerApplication {
   reviewedAt DateTime? @map("reviewed_at") @db.Timestamptz(3)
   revokedAt DateTime? @map("revoked_at") @db.Timestamptz(3)
   revokedById String? @map("revoked_by_id")
+  revokeReason String? @map("revoke_reason") @db.VarChar(500)
 
   applicant User @relation("TrainerApplicationApplicant", fields: [userId], references: [id], onDelete: Restrict)
   reviewer User? @relation("TrainerApplicationReviewer", fields: [reviewerId], references: [id], onDelete: Restrict)
