@@ -11,10 +11,12 @@ type LocalizedVerificationLink = EmailVerificationLink & { locale?: 'uk' | 'en' 
 
 @Injectable()
 export class VerifyEmailMail implements Mailable<LocalizedVerificationLink> {
-  render({ url, locale = 'uk' }: LocalizedVerificationLink) {
+  render({ url, locale }: LocalizedVerificationLink) {
+    // Only two known template filenames; malformed values cannot form a path.
+    const language = locale === 'en' ? 'en' : 'uk';
     return {
-      subject: locale === 'en' ? 'Confirm your email address' : 'Підтвердіть електронну адресу',
-      template: `verify-email.${locale}`,
+      subject: language === 'en' ? 'Confirm your email address' : 'Підтвердіть електронну адресу',
+      template: `verify-email.${language}`,
       context: { url },
     };
   }

@@ -1,6 +1,9 @@
-import { defaultLocale, isLocale, type Locale } from './index.js';
+import { defaultLocale, isLocale, type Locale } from './locales';
 
-/** Explicit choice wins; otherwise use the highest priority supported Accept-Language tag. */
+/**
+ * Explicit preference (e.g. cookie) wins. Otherwise select the highest-ranked
+ * supported Accept-Language tag, falling back to Ukrainian.
+ */
 export function resolveRequestLocale(
   explicitLocale: string | null | undefined,
   acceptLanguage: string | null,
@@ -24,5 +27,6 @@ export function resolveRequestLocale(
     const language = tag?.split(/[-_]/, 1)[0]?.toLowerCase();
     if (isLocale(language)) return language;
   }
+
   return defaultLocale;
 }

@@ -140,13 +140,13 @@ export class UsersRepository {
     return Boolean(profile && profile.user.deletedAt === null);
   }
 
-  /** Localized transactional mail never accepts locale from untrusted link parameters. */
+  /** Transactional mail uses the persisted account setting, not link/query language hints. */
   async getPreferredMailLocale(email: string): Promise<'uk' | 'en'> {
-    const account = await this.prisma.user.findFirst({
+    const user = await this.prisma.user.findUnique({
       where: { email: normalizeEmail(email), deletedAt: null },
       select: { preferredLocale: true },
     });
-    return account?.preferredLocale === 'en' ? 'en' : 'uk';
+    return user?.preferredLocale === 'en' ? 'en' : 'uk';
   }
 
   async findUserByEmail(email: string) {

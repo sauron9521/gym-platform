@@ -1,14 +1,16 @@
 'use client';
 
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { useState, type FormEvent } from 'react';
 
 import { webApi } from '@/shared/api/client';
 import { Button } from '@/shared/ui/button';
 import { FormFeedback } from '@/shared/ui/form-feedback';
-import { getForgotPasswordErrorMessage } from '../lib/password-reset-flow';
+import { getForgotPasswordErrorKey } from '../lib/password-reset-flow';
 
 export function ForgotPasswordForm() {
+  const t = useTranslations('web.recovery');
   const [email, setEmail] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -26,7 +28,7 @@ export function ForgotPasswordForm() {
       });
 
       if (response.status !== 202) {
-        setError(getForgotPasswordErrorMessage(response.status));
+        setError(t(getForgotPasswordErrorKey(response.status)));
         return;
       }
 
@@ -35,7 +37,7 @@ export function ForgotPasswordForm() {
       setEmail('');
       setSubmitted(true);
     } catch {
-      setError('Немає з’єднання з API. Спробуйте пізніше.');
+      setError(t('network'));
     } finally {
       setSubmitting(false);
     }
@@ -45,11 +47,10 @@ export function ForgotPasswordForm() {
     return (
       <section className="mt-8 space-y-5">
         <p role="status" className="text-sm leading-6">
-          Якщо обліковий запис із такою адресою існує, інструкції з відновлення пароля можуть
-          надійти на пошту. Перевірте також папку «Спам».
+          {t('accepted')}
         </p>
         <Button asChild variant="outline" className="w-full">
-          <Link href="/login">Повернутися до входу</Link>
+          <Link href="/login">{t('back')}</Link>
         </Button>
       </section>
     );
@@ -59,7 +60,7 @@ export function ForgotPasswordForm() {
     <form onSubmit={handleSubmit} className="mt-8 space-y-5">
       <div className="space-y-2">
         <label htmlFor="recovery-email" className="block text-sm font-medium">
-          Електронна адреса
+          {t('email')}
         </label>
         <input
           id="recovery-email"
@@ -76,12 +77,12 @@ export function ForgotPasswordForm() {
       </div>
       <FormFeedback message={error} />
       <Button type="submit" className="w-full" disabled={submitting}>
-        {submitting ? 'Надсилаємо запит…' : 'Надіслати інструкції'}
+        {submitting ? t('sending') : t('send')}
       </Button>
       <p className="text-sm text-muted-foreground">
-        Пригадали пароль?{' '}
+        {t('remember')}{' '}
         <Link href="/login" className="font-medium text-foreground hover:underline">
-          Увійти
+          {t('signIn')}
         </Link>
       </p>
     </form>

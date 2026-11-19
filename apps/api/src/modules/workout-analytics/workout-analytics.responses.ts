@@ -37,6 +37,12 @@ const exerciseDaySchema = objectSchema({
   bestWeightKg: nullable(decimalNumberSchema),
 });
 
+/** One current lifetime best weight per exercise, not a count of improvement events. */
+export const workoutAnalyticsPersonalRecordsResponseSchema = objectSchema({
+  asOf: dateTimeSchema,
+  exerciseCount: integerSchema,
+});
+
 export const workoutAnalyticsExerciseResponseSchema = objectSchema({
   range: rangeSchema,
   from: dateTimeSchema,

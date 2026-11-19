@@ -57,35 +57,50 @@ describe('Auth mail handlers', () => {
     });
   });
 
-  it('renders English copies for an explicitly selected English locale', () => {
-    const url = 'https://app.example.test/verify?token=opaque';
-    expect(
-      new VerifyEmailMail().render({ url, locale: 'en' } as EmailVerificationLink & {
-        locale: 'en';
-      }),
-    ).toMatchObject({
+  it('renders English mail and restricts unexpected language to the Ukrainian template', () => {
+    const url = 'https://app.example.test/reset-password?token=opaque';
+    expect(new VerifyEmailMail().render({ url, locale: 'en' } as EmailVerificationLink & {
+      locale: 'en';
+    })).toEqual({
       subject: 'Confirm your email address',
       template: 'verify-email.en',
+      context: { url },
     });
-    expect(
-      new PasswordResetMail().render({ url, locale: 'en' } as PasswordResetLink & { locale: 'en' }),
-    ).toMatchObject({
+    expect(new PasswordResetMail().render({ url, locale: 'en' } as PasswordResetLink & {
+      locale: 'en';
+    })).toEqual({
       subject: 'Reset your password',
       template: 'password-reset.en',
+      context: { url },
+    });
+    expect(new PasswordResetMail().render({ url, locale: 'fr' } as unknown as PasswordResetLink)).toMatchObject({
+      template: 'password-reset.uk',
     });
   });
 
-  it('reads the stored English preference without trusting link parameters', async () => {
-    users.getPreferredMailLocale.mockResolvedValue('en');
+  it('uses persisted language instead of an untrusted language hint in links', async () => {
+    users.getPreferredMailLocale.mockResolvedValueOnce('en');
     const link = {
-      url: 'https://app.example.test/verify',
+      url: 'https://app.example.test/reset?token=opaque&locale=uk',
       email: 'member@example.test',
-    } as EmailVerificationLink;
-    await verification.send(link);
-    expect(mailer.send).toHaveBeenCalledWith(VerifyEmailMail, {
+      locale: 'uk',
+    } as PasswordResetLink;
+    await recovery.send(link);
+    expect(users.getPreferredMailLocale).toHaveBeenCalledExactlyOnceWith(link.email);
+    expect(mailer.send).toHaveBeenCalledExactlyOnceWith(PasswordResetMail, {
       to: link.email,
       data: { ...link, locale: 'en' },
     });
+  });
+
+  it('propagates a failed preference lookup instead of sending the wrong message', async () => {
+    const failure = new Error('Database unavailable');
+    users.getPreferredMailLocale.mockRejectedValueOnce(failure);
+    await expect(verification.send({
+      url: 'https://app.example.test/verify-email?token=opaque',
+      email: 'member@example.test',
+    } as EmailVerificationLink)).rejects.toBe(failure);
+    expect(mailer.send).not.toHaveBeenCalled();
   });
 
   it('sends verification email only to the link owner with the matching template', async () => {

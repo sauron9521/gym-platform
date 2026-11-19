@@ -11,10 +11,11 @@ type LocalizedResetLink = PasswordResetLink & { locale?: 'uk' | 'en' };
 
 @Injectable()
 export class PasswordResetMail implements Mailable<LocalizedResetLink> {
-  render({ url, locale = 'uk' }: LocalizedResetLink) {
+  render({ url, locale }: LocalizedResetLink) {
+    const language = locale === 'en' ? 'en' : 'uk';
     return {
-      subject: locale === 'en' ? 'Reset your password' : 'Скидання пароля',
-      template: `password-reset.${locale}`,
+      subject: language === 'en' ? 'Reset your password' : 'Скидання пароля',
+      template: `password-reset.${language}`,
       context: { url },
     };
   }
