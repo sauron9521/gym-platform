@@ -29,9 +29,7 @@ function workout(status: 'IN_PROGRESS' | 'PLANNED' | 'COMPLETED') {
         id: 'exercise-2',
         exerciseNameSnapshot: 'Присідання',
         notes: null,
-        sets: [
-          { id: 'set-4', setNumber: 1, setType: 'WORKING', status: 'PENDING', notes: null },
-        ],
+        sets: [{ id: 'set-4', setNumber: 1, setType: 'WORKING', status: 'PENDING', notes: null }],
       },
     ],
   } as unknown as WorkoutDetailsData;
@@ -60,11 +58,7 @@ test('derives progress from server statuses, including skipped sets as processed
 
 test('active session shows accessible progress, mobile exercise links and the next pending set', () => {
   render(
-    <WorkoutExercises
-      workout={workout('IN_PROGRESS')}
-      editingSetId={null}
-      onEditSet={vi.fn()}
-    />,
+    <WorkoutExercises workout={workout('IN_PROGRESS')} editingSetId={null} onEditSet={vi.fn()} />,
   );
   const meter = screen.getByRole('progressbar', { name: 'Прогрес тренування' });
   expect(meter.getAttribute('value')).toBe('2');
@@ -92,9 +86,7 @@ test('after server refresh the next pending target and progress reflect the new 
   );
   const updated = workout('IN_PROGRESS');
   updated.exercises[0]!.sets[2]!.status = 'COMPLETED';
-  view.rerender(
-    <WorkoutExercises workout={updated} editingSetId={null} onEditSet={vi.fn()} />,
-  );
+  view.rerender(<WorkoutExercises workout={updated} editingSetId={null} onEditSet={vi.fn()} />);
   expect(screen.getByRole('progressbar').getAttribute('value')).toBe('3');
   expect(screen.getByRole('link', { name: 'До наступного підходу' }).getAttribute('href')).toBe(
     '#workout-set-set-4',
@@ -103,11 +95,7 @@ test('after server refresh the next pending target and progress reflect the new 
 
 test('prevents jump to a different pending set while another result is being edited', () => {
   render(
-    <WorkoutExercises
-      workout={workout('IN_PROGRESS')}
-      editingSetId="set-1"
-      onEditSet={vi.fn()}
-    />,
+    <WorkoutExercises workout={workout('IN_PROGRESS')} editingSetId="set-1" onEditSet={vi.fn()} />,
   );
   expect(screen.queryByRole('link', { name: 'До наступного підходу' })).toBeNull();
   expect(screen.getByTestId('set-editor')).toBeTruthy();
@@ -130,10 +118,10 @@ test('all processed sets do not show an actionable next-set jump', () => {
   for (const exercise of allDone.exercises) {
     for (const set of exercise.sets) set.status = 'COMPLETED';
   }
-  render(
-    <WorkoutExercises workout={allDone} editingSetId={null} onEditSet={vi.fn()} />,
-  );
+  render(<WorkoutExercises workout={allDone} editingSetId={null} onEditSet={vi.fn()} />);
   expect(screen.getByRole('progressbar').getAttribute('value')).toBe('4');
   expect(screen.queryByRole('link', { name: 'До наступного підходу' })).toBeNull();
-  expect(screen.getByText('Усі підходи опрацьовано. Можна перейти до завершення тренування.')).toBeTruthy();
+  expect(
+    screen.getByText('Усі підходи опрацьовано. Можна перейти до завершення тренування.'),
+  ).toBeTruthy();
 });
