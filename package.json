@@ -18,7 +18,7 @@
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
     "format": "prettier --write .",
-    "format:check": "prettier --write apps/mobile/test/vitest/locale-picker.test.tsx && echo FORMATTED_BASE64 && base64 -w0 apps/mobile/test/vitest/locale-picker.test.tsx && echo && exit 1",
+    "format:check": "prettier --check .",
     "prepare": "husky",
     "api:openapi": "pnpm --filter @gym/api docs:openapi",
     "api:types": "pnpm --filter @gym/api-client generate",

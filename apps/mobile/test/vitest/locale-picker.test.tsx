@@ -143,9 +143,10 @@ describe('Mobile language persistence and verified account preference', () => {
   it('a late storage read cannot replace an explicitly selected language', async () => {
     let completeRead: (value: string | null) => void = () => undefined;
     state.getItem.mockImplementation(
-      () => new Promise((resolve) => {
-        completeRead = resolve;
-      }),
+      () =>
+        new Promise((resolve) => {
+          completeRead = resolve;
+        }),
     );
     const view = await renderPicker();
     expect(view.getByText('My profile')).toBeTruthy();
@@ -158,5 +159,4 @@ describe('Mobile language persistence and verified account preference', () => {
     expect(view.getByText('Мій профіль')).toBeTruthy();
     expect(state.setItem).toHaveBeenCalledWith('gym-platform:preferred-locale', 'uk');
   });
-
 });
