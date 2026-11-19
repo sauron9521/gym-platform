@@ -6,6 +6,7 @@ import { UsersService } from '../services/users.service.js';
 describe('UsersService', () => {
   const repository = {
     findMe: vi.fn(),
+    findCapabilitySnapshot: vi.fn(),
     upsertMyProfile: vi.fn(),
     updateMyPreferences: vi.fn(),
     replaceAvatar: vi.fn(),
@@ -16,6 +17,31 @@ describe('UsersService', () => {
   beforeEach(() => {
     vi.resetAllMocks();
     service = new UsersService(repository as unknown as UsersRepository, avatarService as never);
+  });
+
+  it('derives grants from current DB state, and removes trainer access after revocation', async () => {
+    repository.findCapabilitySnapshot
+      .mockResolvedValueOnce({ role: 'ATHLETE', trainerProfile: { isActive: true } })
+      .mockResolvedValueOnce({ role: 'ATHLETE', trainerProfile: { isActive: false } });
+
+    await expect(service.findMyCapabilities('user-1')).resolves.toEqual({
+      athlete: true,
+      trainer: true,
+      admin: false,
+    });
+    await expect(service.findMyCapabilities('user-1')).resolves.toEqual({
+      athlete: true,
+      trainer: false,
+      admin: false,
+    });
+    expect(repository.findCapabilitySnapshot).toHaveBeenCalledTimes(2);
+    expect(repository.findCapabilitySnapshot).toHaveBeenNthCalledWith(1, 'user-1');
+    expect(repository.findCapabilitySnapshot).toHaveBeenNthCalledWith(2, 'user-1');
+  });
+
+  it('fails closed for an inactive or deleted account', async () => {
+    repository.findCapabilitySnapshot.mockResolvedValue(null);
+    await expect(service.findMyCapabilities('gone')).rejects.toThrow(NotFoundException);
   });
 
   it('returns a user without a profile as profile: null', async () => {

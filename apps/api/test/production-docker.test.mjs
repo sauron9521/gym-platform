@@ -89,6 +89,9 @@ test('API Dockerfile-specific ignore only includes required API sources and mani
     '**/.env',
     '**/.env.*',
     '**/node_modules',
+    'apps/*/**',
+    'packages/*/**',
+    'tooling/*/**',
     '**/dist',
     '**/test',
     '**/src/infra/database/generated',
@@ -99,6 +102,15 @@ test('API Dockerfile-specific ignore only includes required API sources and mani
     assert.ok(patterns.has(exclude), 'Missing sensitive/state exclusion: ' + exclude);
   }
   assert.ok(ignore.indexOf('!apps/api/**') < ignore.indexOf('**/.env'));
+  // Later re-inclusions must restore manifests without restoring other sources.
+  for (const [deny, manifest] of [
+    ['apps/*/**', '!apps/*/package.json'],
+    ['packages/*/**', '!packages/*/package.json'],
+    ['tooling/*/**', '!tooling/*/package.json'],
+  ]) {
+    assert.ok(ignore.indexOf(deny) < ignore.indexOf(manifest));
+  }
+  assert.ok(ignore.indexOf('apps/*/**') < ignore.indexOf('!apps/api/**'));
   const docker = await read('../Dockerfile');
   assert.ok(docker.includes('test -d apps/api/src'));
   assert.ok(docker.includes('test -d apps/api/prisma/migrations'));

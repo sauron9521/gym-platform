@@ -8,12 +8,16 @@
 !pnpm-workspace.yaml
 !apps
 !apps/*
+# Explicitly exclude other apps' nested content, then restore manifests.
+apps/*/**
 !apps/*/package.json
 !packages
 !packages/*
+packages/*/**
 !packages/*/package.json
 !tooling
 !tooling/*
+tooling/*/**
 !tooling/*/package.json
 # Preserve every API source, Prisma schema/migration and Nest build asset.
 !apps/api/**
