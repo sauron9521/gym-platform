@@ -38,7 +38,7 @@ export function BrandLogo({ className, showTagline = true, ...props }: BrandLogo
             aria-hidden="true"
             className="mt-1 text-[9px] font-medium tracking-[0.075em] text-muted-foreground"
           >
-            {' '}PERFORMANCE PLATFORM
+            {' PERFORMANCE PLATFORM'}
           </span>
         ) : null}
       </span>
