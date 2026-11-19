@@ -51,6 +51,7 @@ describe('Mobile ProgressScreen', () => {
 
   it('navigates to the selected exercise without replacing the workout summary', async () => {
     const view = await render(<ProgressScreen />);
+    await fireEvent.press(view.getByTestId('workout-exercise-open'));
     await fireEvent.press(view.getByRole('button', { name: 'Жим лежачи' }));
     expect(push).toHaveBeenCalledExactlyOnceWith({
       pathname: '/progress/exercises/[id]',

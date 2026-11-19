@@ -6,6 +6,7 @@ import { PrismaService } from '#src/infra/database/index';
 import type {
   ExerciseAnalyticsDailyRow,
   ExerciseSnapshotRow,
+  PersonalRecordsRow,
   WorkoutAnalyticsDailyRow,
 } from '../types/workout-analytics.types.js';
 
@@ -44,6 +45,24 @@ export class WorkoutAnalyticsRepository {
         AND w."completed_at" <= ${asOf}
       GROUP BY 1
       ORDER BY 1 ASC
+    `;
+  }
+
+  /** One lifetime verified best per strength exercise. Never count skipped sets, cardio or other athletes. */
+  async readPersonalRecords(athleteId: string, asOf: Date) {
+    return this.prisma.$queryRaw<PersonalRecordsRow[]>`
+      SELECT COUNT(DISTINCT we."exercise_id")::int AS "exerciseCount"
+      FROM "workouts" AS w
+      INNER JOIN "workout_exercises" AS we ON we."workout_id" = w."id"
+      INNER JOIN "workout_sets" AS ws ON ws."workout_exercise_id" = we."id"
+      WHERE w."athlete_id" = ${athleteId}
+        AND w."status" = 'COMPLETED'
+        AND w."completed_at" IS NOT NULL
+        AND w."completed_at" <= ${asOf}
+        AND we."exercise_type_snapshot" = 'STRENGTH'
+        AND ws."status" = 'COMPLETED'
+        AND ws."actual_weight_kg" > 0
+        AND ws."actual_reps" > 0
     `;
   }
 

@@ -8,7 +8,7 @@ async function signIn(page: import('@playwright/test').Page, email = 'athlete@ex
   await page.getByLabel('Пароль').fill(password);
   await page.getByRole('button', { name: 'Увійти' }).click();
   await expect(page).toHaveURL(/\/dashboard$/);
-  await expect(page.getByRole('heading', { name: /Вітаємо/ })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /^(Вітаємо|Welcome,)/ })).toBeVisible();
 }
 
 test('anonymous users cannot visit dashboard, workouts or profile', async ({ page }) => {
@@ -53,7 +53,7 @@ test('login persists the HttpOnly session; sign-out revokes it', async ({ page }
   expect(session).toBeDefined();
   expect(session?.httpOnly).toBe(true);
 
-  await page.getByRole('button', { name: 'Вийти' }).click();
+  await page.getByRole('button', { name: /^(Вийти|Sign out)$/ }).click();
   await expect(page).toHaveURL(/\/login$/);
   await page.goto('/dashboard');
   await expect(page).toHaveURL(/\/login$/);

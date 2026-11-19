@@ -268,6 +268,29 @@ describe('Workout Analytics (HTTP + PostgreSQL)', () => {
       .expect(403);
   });
 
+  it('returns verified per-exercise lifetime best counts without leaking other users', async () => {
+    await request(app.getHttpServer()).get('/workout-analytics/personal-records').expect(401);
+    await request(app.getHttpServer())
+      .get('/workout-analytics/personal-records')
+      .set('Cookie', trainerCookie)
+      .expect(403);
+
+    const owner = await request(app.getHttpServer())
+      .get('/workout-analytics/personal-records')
+      .set('Cookie', athleteCookie)
+      .expect(200);
+    // One bench press best despite four completed weights. Cardio, skipped,
+    // cancelled, planned and another athlete's exercise are excluded.
+    expect(owner.body).toMatchObject({ exerciseCount: 1, asOf: expect.any(String) });
+    expect(owner.body).not.toHaveProperty('athleteId');
+
+    const other = await request(app.getHttpServer())
+      .get('/workout-analytics/personal-records')
+      .set('Cookie', otherCookie)
+      .expect(200);
+    expect(other.body).toMatchObject({ exerciseCount: 1 });
+  });
+
   it('summarizes only completed athlete workouts and actual strength volume', async () => {
     const res = await request(app.getHttpServer())
       .get('/workout-analytics/summary')

@@ -28,7 +28,8 @@ test('login form uses RHF and Zod without weakening session or MFA guards', asyn
     'utf8',
   );
   assert.match(ui, /useForm<LoginValues>/);
-  assert.match(ui, /zodResolver\(loginSchema\)/);
+  assert.match(ui, /zodResolver\(schema\)/);
+  assert.match(ui, /createLoginSchema/);
   assert.match(ui, /handleSubmit\(submit\)/);
   assert.match(ui, /webApi.POST\('\/auth\/login'/);
   assert.match(ui, /webApi.POST\('\/auth\/sign-out'\)/);

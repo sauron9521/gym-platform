@@ -7,7 +7,7 @@ import { useState, type FormEvent } from 'react';
 import { webApi } from '@/shared/api/client';
 import { Button } from '@/shared/ui/button';
 import { FormFeedback } from '@/shared/ui/form-feedback';
-import { getForgotPasswordErrorMessage } from '../lib/password-reset-flow';
+import { getForgotPasswordErrorKey } from '../lib/password-reset-flow';
 
 export function ForgotPasswordForm() {
   const t = useTranslations('web.recovery');
@@ -28,7 +28,7 @@ export function ForgotPasswordForm() {
       });
 
       if (response.status !== 202) {
-        setError(getForgotPasswordErrorMessage(response.status));
+        setError(t(getForgotPasswordErrorKey(response.status)));
         return;
       }
 
