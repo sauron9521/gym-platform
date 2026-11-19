@@ -52,7 +52,10 @@ export function DashboardVolumeChart() {
   const query = useQuery(summaryOptions(range));
 
   useEffect(() => {
-    if (query.error instanceof AnalyticsError) onAuthFailure(query.error);
+    // Only 401 invalidates the session; 429, 403 and network failures are retryable.
+    if (query.error instanceof AnalyticsError && query.error.status === 401) {
+      onAuthFailure(query.error);
+    }
   }, [onAuthFailure, query.error]);
 
   if (query.error instanceof AnalyticsError && query.error.status === 401) return null;
