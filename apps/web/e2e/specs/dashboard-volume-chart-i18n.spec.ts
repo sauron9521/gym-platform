@@ -46,6 +46,9 @@ test('English chart shows locale-formatted API data and switches 30d to 7d witho
   await expect(
     chart.getByRole('img', { name: /Strength-training volume chart for 7 days/ }),
   ).toBeVisible();
+  // Range changes unmount the previous details element while the new query
+  // loads, so expand the fresh daily-value panel before checking the values.
+  await chart.getByText('View exact daily values').click();
   await expect(daily.getByText('750 kg')).toBeVisible();
   await expect(daily.getByText('1,500 kg')).toHaveCount(0);
   await expect(chart.getByRole('button', { name: '7 days' })).toHaveAttribute(
