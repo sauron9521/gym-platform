@@ -38,7 +38,6 @@ function dashboard(
   return { ...view, onSignOut };
 }
 
-
 test('English dashboard home localizes greeting, hero and role-based shortcuts', () => {
   dashboard('TRAINER', 'en');
   expect(screen.getByRole('heading', { level: 1, name: 'Welcome, Олексій!' })).toBeTruthy();
