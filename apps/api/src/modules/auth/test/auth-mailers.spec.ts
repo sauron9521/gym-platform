@@ -59,21 +59,27 @@ describe('Auth mail handlers', () => {
 
   it('renders English mail and restricts unexpected language to the Ukrainian template', () => {
     const url = 'https://app.example.test/reset-password?token=opaque';
-    expect(new VerifyEmailMail().render({ url, locale: 'en' } as EmailVerificationLink & {
-      locale: 'en';
-    })).toEqual({
+    expect(
+      new VerifyEmailMail().render({ url, locale: 'en' } as EmailVerificationLink & {
+        locale: 'en';
+      }),
+    ).toEqual({
       subject: 'Confirm your email address',
       template: 'verify-email.en',
       context: { url },
     });
-    expect(new PasswordResetMail().render({ url, locale: 'en' } as PasswordResetLink & {
-      locale: 'en';
-    })).toEqual({
+    expect(
+      new PasswordResetMail().render({ url, locale: 'en' } as PasswordResetLink & {
+        locale: 'en';
+      }),
+    ).toEqual({
       subject: 'Reset your password',
       template: 'password-reset.en',
       context: { url },
     });
-    expect(new PasswordResetMail().render({ url, locale: 'fr' } as unknown as PasswordResetLink)).toMatchObject({
+    expect(
+      new PasswordResetMail().render({ url, locale: 'fr' } as unknown as PasswordResetLink),
+    ).toMatchObject({
       template: 'password-reset.uk',
     });
   });
@@ -96,10 +102,12 @@ describe('Auth mail handlers', () => {
   it('propagates a failed preference lookup instead of sending the wrong message', async () => {
     const failure = new Error('Database unavailable');
     users.getPreferredMailLocale.mockRejectedValueOnce(failure);
-    await expect(verification.send({
-      url: 'https://app.example.test/verify-email?token=opaque',
-      email: 'member@example.test',
-    } as EmailVerificationLink)).rejects.toBe(failure);
+    await expect(
+      verification.send({
+        url: 'https://app.example.test/verify-email?token=opaque',
+        email: 'member@example.test',
+      } as EmailVerificationLink),
+    ).rejects.toBe(failure);
     expect(mailer.send).not.toHaveBeenCalled();
   });
 

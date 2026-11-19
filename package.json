@@ -17,7 +17,7 @@
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
     "format": "prettier --write .",
-    "format:check": "prettier --write apps/api/src/modules/auth/test/auth-mailers.spec.ts apps/api/src/mail/templates/password-reset.uk.html && git diff -- apps/api/src/modules/auth/test/auth-mailers.spec.ts apps/api/src/mail/templates/password-reset.uk.html && exit 1",
+    "format:check": "prettier --check .",
     "prepare": "husky",
     "api:openapi": "pnpm --filter @gym/api docs:openapi",
     "api:types": "pnpm --filter @gym/api-client generate",
