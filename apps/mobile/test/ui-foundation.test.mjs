@@ -78,7 +78,8 @@ test('UniWind light and dark channels match generated OVRANTO semantic tokens', 
     if (value.length === 3) value = value.split('').map((part) => part + part).join('');
     return [0, 2, 4].map((index) => parseInt(value.slice(index, index + 2), 16)).join(' ');
   };
-  const kebab = (key) => key.replace(/[A-Z]/g, (letter) => '-' + letter.toLowerCase());
+  const kebab = (key) =>
+    key.replace(/[A-Z]/g, (letter) => '-' + letter.toLowerCase()).replace(/([a-z])(\d)/g, '$1-$2');
   for (const mode of ['light', 'dark']) {
     const content = css.split('  .' + mode + ' {')[1]?.split('  }')[0];
     assert.ok(content, 'Missing ' + mode + ' UniWind theme');
