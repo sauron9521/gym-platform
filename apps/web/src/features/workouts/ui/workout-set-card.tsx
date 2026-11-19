@@ -19,6 +19,7 @@ type Props = {
   editable: boolean;
   editing: boolean;
   editingLocked: boolean;
+  nextPendingSetId?: string | null;
   onEditSet: (id: string | null) => void;
 };
 
@@ -37,6 +38,7 @@ export function WorkoutSetCard({
   editable,
   editing,
   editingLocked,
+  nextPendingSetId,
   onEditSet,
 }: Props) {
   const metrics = [
@@ -102,6 +104,17 @@ export function WorkoutSetCard({
             workoutId={workoutId}
             set={set}
             onSaved={() => onEditSet(null)}
+            onSavedAndNext={
+              nextPendingSetId
+                ? () => {
+                    onEditSet(nextPendingSetId);
+                    document.getElementById(`workout-set-${nextPendingSetId}`)?.scrollIntoView?.({
+                      behavior: 'smooth',
+                      block: 'start',
+                    });
+                  }
+                : undefined
+            }
             onClose={() => onEditSet(null)}
           />
         ) : (
