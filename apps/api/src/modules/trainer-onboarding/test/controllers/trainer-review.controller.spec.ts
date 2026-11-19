@@ -21,9 +21,12 @@ describe('TrainerReviewController', () => {
     ['approve', 'APPROVE'],
     ['reject', 'REJECT'],
     ['revoke', 'REVOKE'],
-  ] as const)('%s passes only server-authenticated actor and reviewed decision', async (method, action) => {
-    service.decide.mockResolvedValue({ id: 'application', status: action });
-    await controller[method]('application', actor, input);
-    expect(service.decide).toHaveBeenCalledWith('application', actor, action, input);
-  });
+  ] as const)(
+    '%s passes only server-authenticated actor and reviewed decision',
+    async (method, action) => {
+      service.decide.mockResolvedValue({ id: 'application', status: action });
+      await controller[method]('application', actor, input);
+      expect(service.decide).toHaveBeenCalledWith('application', actor, action, input);
+    },
+  );
 });

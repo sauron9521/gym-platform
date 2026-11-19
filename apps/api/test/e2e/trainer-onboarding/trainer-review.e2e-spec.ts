@@ -43,9 +43,7 @@ describe('Operator trainer review (HTTP + PostgreSQL)', () => {
     });
     users.push(user.id);
 
-    const login = await request(app.getHttpServer())
-      .post('/auth/login')
-      .send({ email, password });
+    const login = await request(app.getHttpServer()).post('/auth/login').send({ email, password });
     expect(login.status).toBe(200);
     const setCookies = login.headers['set-cookie'];
     const values = Array.isArray(setCookies) ? setCookies : setCookies ? [setCookies] : [];
@@ -58,8 +56,7 @@ describe('Operator trainer review (HTTP + PostgreSQL)', () => {
   }
 
   const asUser = (key: string) => cookies[key] ?? '';
-  const url = (id: string, action: string) =>
-    `/admin/trainer-applications/${id}/${action}`;
+  const url = (id: string, action: string) => `/admin/trainer-applications/${id}/${action}`;
 
   beforeAll(async () => {
     useTestDatabase();

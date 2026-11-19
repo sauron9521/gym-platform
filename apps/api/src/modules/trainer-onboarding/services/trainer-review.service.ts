@@ -28,9 +28,7 @@ export class TrainerReviewService {
   ) {}
 
   private assertOperator(reviewer: Reviewer): void {
-    const trusted = parseOperatorSuperAdminIds(
-      this.config.get<string>('SUPERADMIN_USER_IDS'),
-    );
+    const trusted = parseOperatorSuperAdminIds(this.config.get<string>('SUPERADMIN_USER_IDS'));
     if (!hasAdminPermission(reviewer.role, 'admin.accounts.manage', reviewer.id, trusted)) {
       throw new ForbiddenException('Insufficient administrative permissions');
     }
@@ -50,12 +48,7 @@ export class TrainerReviewService {
     this.assertOperator(reviewer);
 
     try {
-      const result = await this.repository.decide(
-        applicationId,
-        reviewer.id,
-        action,
-        input.reason,
-      );
+      const result = await this.repository.decide(applicationId, reviewer.id, action, input.reason);
 
       if (result.kind === 'forbidden') throw new ForbiddenException('Invalid reviewer');
       if (result.kind === 'missing') throw new NotFoundException('Trainer application not found');

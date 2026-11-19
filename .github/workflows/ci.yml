@@ -281,12 +281,6 @@ jobs:
           pnpm --filter @gym/api test:architecture
           pnpm --filter @gym/api test:coverage-tools
 
-      # TEMPORARY: record actual Prettier diff for exact follow-up patch; remove before merge.
-      - name: Display trainer moderation formatting changes (temporary)
-        run: |
-          pnpm exec prettier --write apps/api/src/modules/trainer-onboarding/repositories/trainer-review.repository.ts apps/api/src/modules/trainer-onboarding/services/trainer-review.service.ts apps/api/src/modules/trainer-onboarding/test/controllers/trainer-review.controller.spec.ts apps/api/test/e2e/trainer-onboarding/trainer-review.e2e-spec.ts
-          git diff -- apps/api/src/modules/trainer-onboarding/repositories/trainer-review.repository.ts apps/api/src/modules/trainer-onboarding/services/trainer-review.service.ts apps/api/src/modules/trainer-onboarding/test/controllers/trainer-review.controller.spec.ts apps/api/test/e2e/trainer-onboarding/trainer-review.e2e-spec.ts
-
       - name: Check formatting
         run: pnpm format:check
 

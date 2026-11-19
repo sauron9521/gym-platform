@@ -54,7 +54,8 @@ export class TrainerReviewRepository {
           action === 'APPROVE' ? 'APPROVED' : action === 'REJECT' ? 'REJECTED' : 'REVOKED';
         if (application.status === desired) {
           const actor = action === 'REVOKE' ? application.revokedById : application.reviewerId;
-          const storedReason = action === 'REVOKE' ? application.revokeReason : application.reviewReason;
+          const storedReason =
+            action === 'REVOKE' ? application.revokeReason : application.reviewReason;
           if (actor === reviewerId && storedReason === reason) {
             const existing = await tx.trainerApplication.findUniqueOrThrow({
               where: { id: applicationId },
