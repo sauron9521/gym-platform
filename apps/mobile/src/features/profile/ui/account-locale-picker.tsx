@@ -43,9 +43,7 @@ export function AccountLocalePicker() {
   return (
     <LocalePicker
       disabled={pending}
-      error={
-        error ? intl.formatMessage({ id: 'common.languageUpdateError' }) : null
-      }
+      error={error ? intl.formatMessage({ id: 'common.languageUpdateError' }) : null}
       onSelect={(next) => void choose(next)}
     />
   );
