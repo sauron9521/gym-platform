@@ -65,31 +65,17 @@ test('Ukrainian chart exposes API-backed daily values and preserves 7/30/90 quer
   expect(values.querySelector('time')?.getAttribute('dateTime')).toBe('2026-11-17');
   expect(values.querySelector('time')?.textContent).not.toBe('2026-11-17');
   expect(screen.getByText(/Дані API станом на/)).toBeTruthy();
-  expect(useQueryMock.mock.lastCall?.[0].queryKey).toEqual([
-    'workout-analytics',
-    'summary',
-    '30d',
-  ]);
+  expect(useQueryMock.mock.lastCall?.[0].queryKey).toEqual(['workout-analytics', 'summary', '30d']);
 
   const period = screen.getByRole('group', { name: 'Період графіка' });
   fireEvent.click(screen.getByRole('button', { name: '7 днів' }));
   expect(screen.getByRole('button', { name: '7 днів' }).getAttribute('aria-pressed')).toBe('true');
-  expect(useQueryMock.mock.lastCall?.[0].queryKey).toEqual([
-    'workout-analytics',
-    'summary',
-    '7d',
-  ]);
+  expect(useQueryMock.mock.lastCall?.[0].queryKey).toEqual(['workout-analytics', 'summary', '7d']);
 
   fireEvent.click(screen.getByRole('button', { name: '90 днів' }));
-  expect(screen.getByRole('button', { name: '90 днів' }).getAttribute('aria-pressed')).toBe(
-    'true',
-  );
+  expect(screen.getByRole('button', { name: '90 днів' }).getAttribute('aria-pressed')).toBe('true');
   expect(period.getAttribute('aria-label')).toBe('Період графіка');
-  expect(useQueryMock.mock.lastCall?.[0].queryKey).toEqual([
-    'workout-analytics',
-    'summary',
-    '90d',
-  ]);
+  expect(useQueryMock.mock.lastCall?.[0].queryKey).toEqual(['workout-analytics', 'summary', '90d']);
 });
 
 test('English labels, daily dates, numbers, tooltip and summary use request locale', () => {
