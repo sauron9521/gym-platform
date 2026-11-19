@@ -20,9 +20,7 @@ export function milestoneCode(title) {
 
 export function issuePhase(issue, includeAi = false) {
   if (issue.pull_request) return null;
-  const labels = (issue.labels ?? []).map((item) =>
-    typeof item === 'string' ? item : item.name,
-  );
+  const labels = (issue.labels ?? []).map((item) => (typeof item === 'string' ? item : item.name));
   if (labels.includes('type:roadmap') || labels.includes('status:deferred')) return null;
   const phases = labels.filter((name) => /^phase:M0[1-8]$/.test(name));
   if (phases.length > 1) throw new Error('Conflicting phase labels on #' + issue.number);
@@ -92,12 +90,7 @@ async function listAll(token, repo, path) {
   const result = [];
   for (let page = 1; page <= 40; page++) {
     const separator = path.includes('?') ? '&' : '?';
-    const data = await api(
-      token,
-      repo,
-      'GET',
-      path + separator + 'per_page=100&page=' + page,
-    );
+    const data = await api(token, repo, 'GET', path + separator + 'per_page=100&page=' + page);
     if (!Array.isArray(data)) throw new Error('Invalid GitHub pagination response');
     result.push(...data);
     if (data.length < 100) return result;
@@ -159,10 +152,9 @@ export async function run(env = process.env) {
   }
 
   const updated = await listAll(token, repo, '/issues?state=open');
-  const byNumber = new Map(updated.filter((issue) => !issue.pull_request).map((issue) => [
-    issue.number,
-    issue,
-  ]));
+  const byNumber = new Map(
+    updated.filter((issue) => !issue.pull_request).map((issue) => [issue.number, issue]),
+  );
   for (const issue of issues) {
     const code = issuePhase(issue, includeAi);
     if (!code || issue.pull_request) continue;
