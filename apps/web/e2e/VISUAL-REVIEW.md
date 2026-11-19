@@ -75,7 +75,11 @@ localization and legibility in both themes. Note any variance in issue #389 with
 the test case, viewport, theme and screen name.
 
 The fixture API provides deterministic **test data**, not real user metrics or
-proof of implemented roadmap features. Manually review loading/empty/error
+proof of implemented roadmap features. Visual captures also intercept only the
+Dashboard analytics summary and personal-record requests with fixed synthetic
+values, so the expected **populated** graph and record card are visible rather
+than unrelated fixture-API 404 errors. The normal browser suite separately
+checks the populated rendering; these mocks do not change actual API behavior. Manually review loading/empty/error
 states, native screens, Safari, VoiceOver/TalkBack and reduced-motion behavior
 separately. Color contrast and semantic accessibility are also covered by
 dedicated axe/browser tests; screenshots alone cannot verify WCAG compliance.
