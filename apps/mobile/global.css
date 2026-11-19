@@ -8,49 +8,88 @@ body {
 }
 
 /* Keep classes on the theme layer root: UniWind applies light/dark on web. */
+/* UniWind channels mirror generated OVRANTO v2 light/dark semantic tokens. */
 @layer theme {
   .light {
-    --primary: 37 99 235;
+    --radius: 0.875rem;
+    --brand-teal: 7 92 85;
+    --brand-terracotta: 199 101 55;
+    --primary: 7 92 85;
     --primary-foreground: 255 255 255;
     --card: 255 255 255;
-    --secondary: 241 245 249;
-    --secondary-foreground: 15 23 42;
-    --background: 248 250 252;
+    --secondary: 237 232 225;
+    --secondary-foreground: 41 39 36;
+    --background: 245 240 233;
     --popover: 255 255 255;
-    --popover-foreground: 15 23 42;
-    --muted: 241 245 249;
-    --muted-foreground: 100 116 139;
-    --destructive: 185 28 28;
-    --foreground: 15 23 42;
-    --border: 226 232 240;
-    --input: 226 232 240;
-    --ring: 37 99 235;
-    --accent: 239 246 255;
-    --accent-foreground: 30 64 175;
+    --popover-foreground: 41 39 36;
+    --muted: 236 231 224;
+    --muted-foreground: 98 93 86;
+    --destructive: 179 52 44;
+    --destructive-foreground: 255 255 255;
+    --foreground: 41 39 36;
+    --border: 222 216 208;
+    --input: 217 210 201;
+    --ring: 7 92 85;
+    --accent: 248 230 219;
+    --accent-foreground: 139 67 39;
+    --success: 7 92 85;
+    --success-foreground: 255 255 255;
+    --warning: 164 79 34;
+    --warning-foreground: 255 255 255;
+    --set-complete-background: 225 240 233;
+    --set-complete-foreground: 7 92 85;
+    --set-active-background: 7 92 85;
+    --set-active-foreground: 255 255 255;
+    --set-pending-background: 236 231 224;
+    --set-pending-foreground: 84 79 73;
+    --set-error-background: 251 230 227;
+    --set-error-foreground: 163 41 39;
+    --chart1: 7 92 85;
+    --chart2: 199 101 55;
   }
 
   .dark {
-    --primary: 182 234 58;
-    --primary-foreground: 9 16 24;
-    --card: 20 25 31;
-    --secondary: 33 40 47;
-    --secondary-foreground: 239 242 246;
-    --background: 10 14 19;
-    --popover: 20 25 31;
-    --popover-foreground: 239 242 246;
-    --muted: 29 34 40;
-    --muted-foreground: 172 178 185;
-    --destructive: 255 100 95;
-    --foreground: 239 242 246;
-    --border: 50 57 65;
-    --input: 50 57 65;
-    --ring: 182 234 58;
-    --accent: 43 53 31;
-    --accent-foreground: 239 242 246;
+    --radius: 0.875rem;
+    --brand-teal: 7 92 85;
+    --brand-terracotta: 199 101 55;
+    --primary: 112 207 182;
+    --primary-foreground: 13 37 30;
+    --card: 27 37 34;
+    --secondary: 42 57 53;
+    --secondary-foreground: 234 243 239;
+    --background: 17 25 24;
+    --popover: 27 37 34;
+    --popover-foreground: 245 242 237;
+    --muted: 38 51 47;
+    --muted-foreground: 184 199 192;
+    --destructive: 242 138 128;
+    --destructive-foreground: 54 21 18;
+    --foreground: 245 242 237;
+    --border: 58 75 69;
+    --input: 73 94 86;
+    --ring: 112 207 182;
+    --accent: 73 50 41;
+    --accent-foreground: 244 194 166;
+    --success: 112 207 182;
+    --success-foreground: 13 37 30;
+    --warning: 241 180 126;
+    --warning-foreground: 58 35 19;
+    --set-complete-background: 27 64 55;
+    --set-complete-foreground: 162 234 216;
+    --set-active-background: 7 92 85;
+    --set-active-foreground: 255 255 255;
+    --set-pending-background: 39 50 46;
+    --set-pending-foreground: 216 224 220;
+    --set-error-background: 76 40 38;
+    --set-error-foreground: 255 197 190;
+    --chart1: 112 207 182;
+    --chart2: 236 161 123;
   }
 }
 
 @theme inline {
+  --color-brand-teal: rgb(var(--brand-teal));
+  --color-brand-terracotta: rgb(var(--brand-terracotta));
   --color-primary: rgb(var(--primary));
   --color-primary-foreground: rgb(var(--primary-foreground));
   --color-card: rgb(var(--card));
@@ -62,10 +101,25 @@ body {
   --color-muted: rgb(var(--muted));
   --color-muted-foreground: rgb(var(--muted-foreground));
   --color-destructive: rgb(var(--destructive));
+  --color-destructive-foreground: rgb(var(--destructive-foreground));
   --color-foreground: rgb(var(--foreground));
   --color-border: rgb(var(--border));
   --color-input: rgb(var(--input));
   --color-ring: rgb(var(--ring));
   --color-accent: rgb(var(--accent));
   --color-accent-foreground: rgb(var(--accent-foreground));
+  --color-success: rgb(var(--success));
+  --color-success-foreground: rgb(var(--success-foreground));
+  --color-warning: rgb(var(--warning));
+  --color-warning-foreground: rgb(var(--warning-foreground));
+  --color-set-complete-background: rgb(var(--set-complete-background));
+  --color-set-complete-foreground: rgb(var(--set-complete-foreground));
+  --color-set-active-background: rgb(var(--set-active-background));
+  --color-set-active-foreground: rgb(var(--set-active-foreground));
+  --color-set-pending-background: rgb(var(--set-pending-background));
+  --color-set-pending-foreground: rgb(var(--set-pending-foreground));
+  --color-set-error-background: rgb(var(--set-error-background));
+  --color-set-error-foreground: rgb(var(--set-error-foreground));
+  --color-chart1: rgb(var(--chart1));
+  --color-chart2: rgb(var(--chart2));
 }
