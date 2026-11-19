@@ -13,12 +13,17 @@ COPY . .
 RUN pnpm install --frozen-lockfile
 RUN pnpm --filter @gym/api db:generate && pnpm --filter @gym/api build
 
-# Migration image intentionally carries Prisma CLI/schema, unlike runtime.
-FROM build AS migrate
+# Deploy only the API workspace with its migration tooling. Unlike the full
+# build stage, the migration image must not contain unrelated web/mobile deps.
+FROM build AS migration-deps
+RUN pnpm --filter @gym/api deploy /app/migrate
+
+FROM ${NODE_BASE_IMAGE} AS migrate
 ENV NODE_ENV=production
-WORKDIR /workspace/apps/api
+WORKDIR /app
+COPY --from=migration-deps /app/migrate/ ./
 USER node
-CMD ["../../node_modules/.bin/prisma", "migrate", "deploy", "--config", "prisma7.config.ts"]
+CMD ["./node_modules/.bin/prisma", "migrate", "deploy", "--config", "prisma7.config.ts"]
 
 # pnpm 12 deploy creates a self-contained isolated production dependency tree.
 # Built dist/ is copied explicitly: the repository gitignore excludes it.

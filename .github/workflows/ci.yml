@@ -779,10 +779,16 @@ jobs:
             node --version
           '
           docker run --rm --entrypoint sh gym-platform-api:migrate-ci -ec '
-            test -x ../../node_modules/.bin/prisma
-            test -d prisma/migrations
+            test -x node_modules/.bin/prisma
+            test -f prisma7.config.ts
+            test -f prisma/migrations/migration_lock.toml
+            test -d prisma/schemas
             test "$(id -u)" -ne 0
+            node_modules/.bin/prisma --version
           '
+          echo "Docker image size (bytes):"
+          docker image inspect gym-platform-api:runtime-ci gym-platform-api:migrate-ci \
+            --format '{{.RepoTags}} {{.Size}}'
 
   api-e2e-suite:
     name: API e2e suite / PostgreSQL 17
