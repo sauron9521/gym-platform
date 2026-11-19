@@ -71,7 +71,10 @@ test('English personal-records rate limit gives a localized, labelled retry', as
 
   await signInEnglish(page);
   await expect(page.getByText('Too many requests. Please try again later.')).toBeVisible();
+  const beforeRetry = requests;
   await page.getByRole('button', { name: 'Retry loading personal records' }).click();
-  await expect.poll(() => requests).toBe(2);
+  // Background session checks may have refetched once already; test the action,
+  // not an assumption about the total number of requests on initial mount.
+  await expect.poll(() => requests).toBeGreaterThan(beforeRetry);
   await expect(page.getByText('Too many requests. Please try again later.')).toBeVisible();
 });
