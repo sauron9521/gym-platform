@@ -7,7 +7,9 @@
     "changeLanguage": "Change language",
     "retry": "Try again",
     "back": "Back",
-    "close": "Close"
+    "close": "Close",
+    "languageLoadError": "Could not load your language preference.",
+    "languageUpdateError": "Could not save your language. Please try again."
   },
   "navigation": {
     "features": "Features",
@@ -50,6 +52,74 @@
       "signUpPrompt": "Don't have an account yet?",
       "signUp": "Sign up"
     },
+    "dashboard": {
+      "pageTitle": "Dashboard",
+      "greeting": "Welcome, {name}!",
+      "signOut": "Sign out",
+      "signingOut": "Signing out…",
+      "nextStep": "Your next step",
+      "heroTitle": "Plan workouts. Track progress.",
+      "heroDescription": "Create a workout, add exercises and sets. Review your sessions and their status in your training log.",
+      "createWorkout": "Create workout",
+      "openJournal": "Open workout log",
+      "shortcutsTitle": "Quick access",
+      "shortcutsDescription": "Go to the OVRANTO section you need.",
+      "shortcutLink": "Open {title}",
+      "shortcuts": {
+        "exercisesTitle": "Exercise library",
+        "exercisesDescription": "Find exercises for your training sessions.",
+        "profileTitle": "My profile",
+        "profileDescription": "View and update your personal information.",
+        "athleteProgramsTitle": "My programs",
+        "athleteProgramsDescription": "Review your assigned training programs.",
+        "athleteTrainersTitle": "My trainers",
+        "athleteTrainersDescription": "Review your connections with trainers.",
+        "trainerProgramsTitle": "Training programs",
+        "trainerProgramsDescription": "Manage programs for your athletes.",
+        "trainerAthletesTitle": "My athletes",
+        "trainerAthletesDescription": "Manage athletes you train."
+      },
+      "workoutHero": {
+        "checkingActive": "Checking workouts",
+        "loadingActive": "Loading your current workout…",
+        "errorActive": "Could not check workouts",
+        "checkingUpcoming": "Finding your next workout",
+        "loadingUpcoming": "Checking your schedule…",
+        "errorUpcoming": "Could not load your schedule",
+        "errorDefault": "Could not load workouts. Try again.",
+        "errorForbidden": "You do not have permission to view these workouts.",
+        "errorBadRequest": "Invalid workout search parameters.",
+        "errorRateLimited": "Too many requests. Please try again later.",
+        "retry": "Try again",
+        "activeStatus": "Workout in progress",
+        "activeIntro": "The most recently added workout that is still in progress.",
+        "startedAt": "Started: {date}.",
+        "activeCount": "Workouts in progress: {count}",
+        "continueWorkout": "Continue workout",
+        "noUpcoming": "There are no active or upcoming scheduled workouts.",
+        "upcomingStatus": "Next scheduled workout",
+        "scheduledAt": "Scheduled: {date}",
+        "exerciseCount": "Exercises: {count}",
+        "viewAndStart": "View and start",
+        "dateUnavailable": "Date unavailable"
+      },
+      "kpi": {
+        "title": "Workout totals by status",
+        "description": "Lifetime counts by status. Cancelled workouts are excluded.",
+        "planned": "Planned",
+        "active": "In progress",
+        "completed": "Completed",
+        "loading": "Loading…",
+        "unavailable": "Data unavailable",
+        "retry": "Retry",
+        "retryStatus": "Retry loading: {status}",
+        "retryRecords": "Retry loading personal records",
+        "recordsTitle": "Personal records",
+        "recordsDescription": "Exercises with a recorded lifetime best weight.",
+        "recordsErrorDefault": "Could not load personal records.",
+        "recordsErrorRateLimited": "Too many requests. Please try again later."
+      }
+    },
     "authFields": {
       "email": "Email address",
       "password": "Password",
@@ -63,11 +133,39 @@
       "sessionUnavailable": "Could not verify the session. Try again.",
       "network": "Cannot reach the API. Please try again.",
       "created": "Account created",
-      "createdNotice": "Registration created a session, but the email still needs verification.",
+      "createdNotice": "Your account has been created, but your email address still needs verification.",
       "openDashboard": "Go to dashboard",
       "resendPrompt": "Didn't get an email?",
       "resend": "Resend email",
-      "passwordHint": "At least 8 characters, upper- and lowercase letters, a number and a special character."
+      "passwordHint": "At least 8 characters, with uppercase and lowercase letters, a number and a special character."
+    },
+    "authValidation": {
+      "emailRequired": "Enter your email address.",
+      "emailInvalid": "Enter a valid email address.",
+      "emailTooLong": "Email address is too long.",
+      "passwordRequired": "Enter your password.",
+      "passwordWhitespace": "Password cannot consist only of spaces.",
+      "passwordMinLength": "Password must contain at least 8 characters.",
+      "passwordConfirmation": "Confirm your password.",
+      "passwordMismatch": "Passwords do not match."
+    },
+    "loginErrors": {
+      "badInput": "Check your email address and password.",
+      "invalidCredentials": "Incorrect email address or password.",
+      "security": "Your request was blocked by security settings. Check the application origin.",
+      "rateLimited": "Too many sign-in attempts. Try again later.",
+      "unknown": "Could not sign in. Please try again."
+    },
+    "registrationErrors": {
+      "badInput": "Check your email address and password strength.",
+      "security": "Your request was blocked by security settings. Check the application address.",
+      "duplicate": "An account with this email address already exists.",
+      "rateLimited": "Too many registration attempts. Try again later.",
+      "unknown": "Could not create an account. Please try again."
+    },
+    "registrationEmail": {
+      "submitted": "Your verification email request was accepted. Check your inbox and spam folder.",
+      "retryRequired": "Your account was created, but the verification email could not be requested. Try sending it again after signing in."
     },
     "register": {
       "title": "Create an account",

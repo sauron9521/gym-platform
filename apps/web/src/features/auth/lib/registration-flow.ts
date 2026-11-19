@@ -1,19 +1,42 @@
-/** Use HTTP status, never an untrusted backend error body. */
+/** Use safe HTTP status, never untrusted backend error text. */
 export type VerificationEmailStatus = 'SUBMITTED' | 'RETRY_REQUIRED';
 
-export function getRegistrationErrorMessage(status: number): string {
+export type RegistrationErrorKey =
+  | 'badInput'
+  | 'security'
+  | 'duplicate'
+  | 'rateLimited'
+  | 'unknown';
+
+export function getRegistrationErrorKey(status: number): RegistrationErrorKey {
   switch (status) {
     case 400:
-      return 'Перевірте електронну пошту та надійність пароля.';
+      return 'badInput';
     case 403:
-      return 'Запит заблоковано налаштуваннями безпеки. Перевірте адресу застосунку.';
+      return 'security';
     case 409:
-      return 'Обліковий запис із цією поштою вже існує.';
+      return 'duplicate';
     case 429:
-      return 'Забагато спроб реєстрації. Спробуйте пізніше.';
+      return 'rateLimited';
     default:
-      return 'Не вдалося створити обліковий запис. Спробуйте ще раз.';
+      return 'unknown';
   }
+}
+
+export function getRegistrationEmailKey(status: VerificationEmailStatus) {
+  return status === 'SUBMITTED' ? ('submitted' as const) : ('retryRequired' as const);
+}
+
+const defaultErrors: Record<RegistrationErrorKey, string> = {
+  badInput: 'Перевірте електронну пошту та надійність пароля.',
+  security: 'Запит заблоковано налаштуваннями безпеки. Перевірте адресу застосунку.',
+  duplicate: 'Обліковий запис із цією поштою вже існує.',
+  rateLimited: 'Забагато спроб реєстрації. Спробуйте пізніше.',
+  unknown: 'Не вдалося створити обліковий запис. Спробуйте ще раз.',
+};
+
+export function getRegistrationErrorMessage(status: number): string {
+  return defaultErrors[getRegistrationErrorKey(status)];
 }
 
 export function getRegistrationEmailMessage(status: VerificationEmailStatus): string {

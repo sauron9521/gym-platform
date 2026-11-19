@@ -1,7 +1,6 @@
 /**
  * sRGB equivalents of the canonical Dark Performance OKLCH CSS palette.
- * React Native StyleSheet cannot evaluate CSS OKLCH variables.
- * Keep these values aligned with src/dark.css (and Mobile's UniWind dark layer).
+ * Generated from palette-source.json; edit the source and run pnpm tokens:generate.
  */
 export const nativePalette = {
   background: '#0a0e13',

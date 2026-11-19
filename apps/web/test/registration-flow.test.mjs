@@ -6,7 +6,7 @@ import {
   getRegistrationEmailMessage,
   getRegistrationErrorMessage,
 } from '../src/features/auth/lib/registration-flow.ts';
-import { registrationSchema } from '../src/features/auth/lib/registration-schema.ts';
+import { createRegistrationSchema, registrationSchema } from '../src/features/auth/lib/registration-schema.ts';
 
 const valid = {
   email: 'user@example.test',
@@ -70,7 +70,8 @@ test('sign-up uses RHF and typed API without roles or credential persistence', a
     'utf8',
   );
   assert.match(form, /useForm<RegistrationValues>/);
-  assert.match(form, /zodResolver\(registrationSchema\)/);
+  assert.match(form, /zodResolver\(schema\)/);
+  assert.match(form, /createRegistrationSchema/);
   assert.match(form, /handleSubmit\(submit\)/);
   assert.match(form, /webApi.POST\('\/auth\/register'/);
   assert.match(form, /body: \{ email: values\.email, password: values\.password \}/);
@@ -80,4 +81,20 @@ test('sign-up uses RHF and typed API without roles or credential persistence', a
   assert.doesNotMatch(form, /localStorage|sessionStorage|document.cookie/);
   assert.match(schema, /'\/auth\/register': \{/);
   assert.match(schema, /verificationEmailStatus: 'SUBMITTED' \| 'RETRY_REQUIRED'/);
+});
+
+test('registration schema uses locale-specific validation errors', () => {
+  const translated = createRegistrationSchema({
+    emailRequired: 'Email is required.',
+    emailInvalid: 'Enter a valid email.',
+    emailTooLong: 'Email too long.',
+    passwordMinLength: 'Password is too short.',
+    passwordWhitespace: 'Password cannot be blank.',
+    passwordConfirmation: 'Confirm password.',
+    passwordMismatch: 'Passwords do not match.',
+  });
+  const result = translated.safeParse({ ...valid, confirmation: 'WrongPassword1!' });
+  assert.equal(result.success, false);
+  if (result.success) return;
+  assert.equal(result.error.issues[0]?.message, 'Passwords do not match.');
 });

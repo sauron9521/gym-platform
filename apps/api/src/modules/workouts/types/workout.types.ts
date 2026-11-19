@@ -61,6 +61,7 @@ export type WorkoutListQuery = {
   limit: number;
   status?: WorkoutStatus;
   view?: 'summary' | 'full';
+  sort?: 'scheduledAtAsc' | 'completedAtDesc';
   scheduledFrom?: Date;
   scheduledTo?: Date;
 };

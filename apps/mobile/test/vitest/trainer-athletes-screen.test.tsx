@@ -59,7 +59,7 @@ describe('TrainerAthletesScreen native', () => {
   it('deduplicates athletes and allows a manual refresh', async () => {
     const view = await render(<TrainerAthletesScreen />);
     expect(view.getAllByText('Спортсмен · athlete-')).toHaveLength(1);
-    await fireEvent(view.getByTestId('trainer-athletes-list'), 'refresh');
+    await fireEvent.press(view.getByTestId('trainer-athletes-refresh'));
     expect(refetch).toHaveBeenCalledTimes(1);
   });
 

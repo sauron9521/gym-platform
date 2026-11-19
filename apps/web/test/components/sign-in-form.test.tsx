@@ -14,8 +14,13 @@ vi.mock('@tanstack/react-query', () => ({ useQueryClient: () => ({ clear }) }));
 vi.mock('@/shared/api/client', () => ({ webApi: { POST: post, GET: get } }));
 vi.mock('next-intl', async () => {
   const { getMessages } = await import('@gym/i18n');
-  const messages = getMessages('uk').web.authFields;
-  return { useTranslations: () => (key: keyof typeof messages) => messages[key] };
+  const messages = getMessages('uk').web;
+  return {
+    useTranslations: (namespace: string) => (key: string) => {
+      const group = namespace.slice('web.'.length) as keyof typeof messages;
+      return (messages[group] as Record<string, string>)[key] ?? key;
+    },
+  };
 });
 
 import { SignInForm } from '../../src/features/auth/ui/sign-in-form';

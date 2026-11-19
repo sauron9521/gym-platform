@@ -1,17 +1,31 @@
-/** UI decisions are based on HTTP status, never on an untrusted error body. */
-export function getLoginErrorMessage(status: number): string {
+/** Localize based on safe HTTP status, never an untrusted response body. */
+export type LoginErrorKey = 'badInput' | 'invalidCredentials' | 'security' | 'rateLimited' | 'unknown';
+
+export function getLoginErrorKey(status: number): LoginErrorKey {
   switch (status) {
     case 400:
-      return 'Перевірте адресу електронної пошти та пароль.';
+      return 'badInput';
     case 401:
-      return 'Невірна електронна пошта або пароль.';
+      return 'invalidCredentials';
     case 403:
-      return 'Запит заблоковано налаштуваннями безпеки. Перевірте origin вебзастосунку.';
+      return 'security';
     case 429:
-      return 'Забагато спроб входу. Спробуйте пізніше.';
+      return 'rateLimited';
     default:
-      return 'Не вдалося увійти. Спробуйте ще раз.';
+      return 'unknown';
   }
+}
+
+const defaultMessages: Record<LoginErrorKey, string> = {
+  badInput: 'Перевірте адресу електронної пошти та пароль.',
+  invalidCredentials: 'Невірна електронна пошта або пароль.',
+  security: 'Запит заблоковано налаштуваннями безпеки. Перевірте origin вебзастосунку.',
+  rateLimited: 'Забагато спроб входу. Спробуйте пізніше.',
+  unknown: 'Не вдалося увійти. Спробуйте ще раз.',
+};
+
+export function getLoginErrorMessage(status: number): string {
+  return defaultMessages[getLoginErrorKey(status)];
 }
 
 export type SessionDecision = 'authenticated' | 'unauthenticated' | 'forbidden' | 'error';

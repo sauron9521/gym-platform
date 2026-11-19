@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -9,11 +9,11 @@ import { useForm } from 'react-hook-form';
 import { webApi } from '@/shared/api/client';
 import { Button } from '@/shared/ui/button';
 import {
-  getRegistrationEmailMessage,
-  getRegistrationErrorMessage,
+  getRegistrationEmailKey,
+  getRegistrationErrorKey,
   type VerificationEmailStatus,
 } from '../lib/registration-flow';
-import { registrationSchema, type RegistrationValues } from '../lib/registration-schema';
+import { createRegistrationSchema, type RegistrationValues } from '../lib/registration-schema';
 
 type RegistrationSuccess = {
   email: string;
@@ -22,6 +22,22 @@ type RegistrationSuccess = {
 
 export function SignUpForm() {
   const t = useTranslations('web.authFields');
+  const validation = useTranslations('web.authValidation');
+  const registrationError = useTranslations('web.registrationErrors');
+  const verification = useTranslations('web.registrationEmail');
+  const schema = useMemo(
+    () =>
+      createRegistrationSchema({
+        emailRequired: validation('emailRequired'),
+        emailInvalid: validation('emailInvalid'),
+        emailTooLong: validation('emailTooLong'),
+        passwordMinLength: validation('passwordMinLength'),
+        passwordWhitespace: validation('passwordWhitespace'),
+        passwordConfirmation: validation('passwordConfirmation'),
+        passwordMismatch: validation('passwordMismatch'),
+      }),
+    [validation],
+  );
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<RegistrationSuccess | null>(null);
   const {
@@ -30,7 +46,7 @@ export function SignUpForm() {
     reset,
     formState: { errors, isSubmitting },
   } = useForm<RegistrationValues>({
-    resolver: zodResolver(registrationSchema),
+    resolver: zodResolver(schema),
     defaultValues: { email: '', password: '', confirmation: '' },
     mode: 'onBlur',
     reValidateMode: 'onChange',
@@ -45,7 +61,7 @@ export function SignUpForm() {
         body: { email: values.email, password: values.password },
       });
       if (response.status !== 201 || !data) {
-        setError(getRegistrationErrorMessage(response.status));
+        setError(registrationError(getRegistrationErrorKey(response.status)));
         return;
       }
 
@@ -56,7 +72,7 @@ export function SignUpForm() {
         verificationEmailStatus: data.verificationEmailStatus,
       });
     } catch {
-      setError('Немає з’єднання з API. Спробуйте ще раз.');
+      setError(t('network'));
     }
   }
 
@@ -68,7 +84,7 @@ export function SignUpForm() {
         </h2>
         <p className="text-sm text-muted-foreground">{success.email}</p>
         <p role="status" className="text-sm leading-6">
-          {getRegistrationEmailMessage(success.verificationEmailStatus)}
+          {verification(getRegistrationEmailKey(success.verificationEmailStatus))}
         </p>
         <p className="text-sm text-muted-foreground">
           {t('createdNotice')}
