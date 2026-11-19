@@ -70,6 +70,8 @@ test('brand home link accessible names include the visible OVRANTO tagline', () 
   for (const link of brandLinks) {
     expect(link.textContent).toContain('OVRANTO');
   }
+  const desktopLink = brandLinks.find((link) => link.className.includes('mb-10'));
+  expect(desktopLink?.textContent).toContain('OVRANTO PERFORMANCE PLATFORM');
 });
 
 test('mobile navigation opens, closes on Escape and restores keyboard focus', () => {
