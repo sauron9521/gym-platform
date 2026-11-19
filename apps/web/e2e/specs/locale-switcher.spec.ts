@@ -54,7 +54,9 @@ async function signInForLocaleTest(page: import('@playwright/test').Page, email:
   await expect(page.getByRole('combobox', { name: /^(Мова|Language)$/ })).toBeEnabled();
 }
 
-test('account locale persists across reload and login, overriding a guest cookie', async ({ page }) => {
+test('account locale persists across reload and login, overriding a guest cookie', async ({
+  page,
+}) => {
   await signInForLocaleTest(page, 'locale@example.test');
   await page.getByRole('combobox', { name: 'Мова' }).selectOption('en');
   await expect(page.locator('html')).toHaveAttribute('lang', 'en');
@@ -76,7 +78,9 @@ test('account locale persists across reload and login, overriding a guest cookie
   expect(cookie?.value).toBe('en');
 });
 
-test('failed authenticated preference PATCH preserves locale and permits explicit retry', async ({ page }) => {
+test('failed authenticated preference PATCH preserves locale and permits explicit retry', async ({
+  page,
+}) => {
   await signInForLocaleTest(page, 'locale-error@example.test');
 
   let patches = 0;
@@ -90,7 +94,7 @@ test('failed authenticated preference PATCH preserves locale and permits explici
 
   const switcher = page.getByRole('combobox', { name: /^(Мова|Language)$/ });
   await switcher.selectOption('en');
-  await expect(page.getByRole('alert')).toContainText('Не вдалося зберегти мову');
+  await expect(page.getByRole('alert').filter({ hasText: 'Не вдалося зберегти мову' })).toBeVisible();
   await expect(page.locator('html')).toHaveAttribute('lang', 'uk');
   await expect(switcher).toHaveValue('uk');
   let cookie = (await page.context().cookies()).find((item) => item.name === 'gym-locale');
