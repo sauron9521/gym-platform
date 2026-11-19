@@ -9,7 +9,7 @@ import {
 } from '@nestjs/common';
 import { AuthNoStoreInterceptor } from '../interceptors/auth-no-store.interceptor.js';
 import { EmailVerificationService, Public, SignInService } from '@nestjs/authentication';
-import { Throttle } from '@nestjs/throttler';
+import { RateLimit } from '#src/common/rate-limit/rate-limit.policies';
 import { ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import {
   registrationResponseSchema,
@@ -36,7 +36,7 @@ export class AuthController {
     private readonly emailVerificationService: EmailVerificationService,
   ) {}
 
-  @Throttle({ default: { limit: 3, ttl: 60000 } })
+  @RateLimit('auth')
   @Post('register')
   @ApiCreatedResponse({ schema: registrationResponseSchema })
   async signUp(@Body({ schema: signUpSchema }) signUpDto: SignUpInput) {
@@ -58,7 +58,7 @@ export class AuthController {
     return { ...user, verificationEmailStatus };
   }
 
-  @Throttle({ default: { limit: 3, ttl: 60000 } })
+  @RateLimit('auth')
   @Post('login')
   @HttpCode(200)
   @ApiOkResponse({ schema: sessionSignInResponseSchema })

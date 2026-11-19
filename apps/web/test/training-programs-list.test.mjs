@@ -137,7 +137,7 @@ test('athlete journal uses a privacy-safe TanStack Query assignment summary', as
     'utf8',
   );
   const dashboard = await readFile(
-    new URL('../src/widgets/dashboard/ui/dashboard-screen.tsx', import.meta.url),
+    new URL('../src/widgets/dashboard/ui/dashboard-home.tsx', import.meta.url),
     'utf8',
   );
 

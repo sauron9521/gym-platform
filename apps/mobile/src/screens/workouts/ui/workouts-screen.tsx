@@ -28,7 +28,6 @@ export function WorkoutsScreen() {
     isError,
     error,
     isFetching,
-    isRefetching,
     hasNextPage,
     isFetchingNextPage,
     isFetchNextPageError,
@@ -61,8 +60,7 @@ export function WorkoutsScreen() {
       contentContainerStyle={styles.content}
       data={workouts}
       keyExtractor={(workout) => workout.id}
-      refreshing={isRefetching && !isFetchingNextPage}
-      onRefresh={() => void refetch()}
+      bounces={false}
       onEndReached={() => {
         // Prevent failed-page retry loops and overlapping refresh/page fetches.
         if (hasNextPage && !isFetching && !isFetchNextPageError) void fetchNextPage();
