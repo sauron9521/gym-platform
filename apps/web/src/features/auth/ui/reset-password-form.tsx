@@ -7,10 +7,7 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { webApi } from '@/shared/api/client';
 import { Button } from '@/shared/ui/button';
 import { FormFeedback } from '@/shared/ui/form-feedback';
-import {
-  getResetPasswordErrorKey,
-  validatePasswordResetInput,
-} from '../lib/password-reset-flow';
+import { getResetPasswordErrorKey, validatePasswordResetInput } from '../lib/password-reset-flow';
 
 export function ResetPasswordForm({ token }: { token: string | null }) {
   const t = useTranslations('web.recovery');
@@ -70,7 +67,9 @@ export function ResetPasswordForm({ token }: { token: string | null }) {
   if (!token) {
     return (
       <div className="mt-8 space-y-4">
-        <p role="alert" className="text-sm text-destructive">{t('missingLink')}</p>
+        <p role="alert" className="text-sm text-destructive">
+          {t('missingLink')}
+        </p>
         <Button asChild variant="outline">
           <Link href="/forgot-password">{t('requestLink')}</Link>
         </Button>
@@ -81,7 +80,9 @@ export function ResetPasswordForm({ token }: { token: string | null }) {
   if (completed) {
     return (
       <section className="mt-8 space-y-5">
-        <p role="status" className="text-sm leading-6">{t('resetSuccess')}</p>
+        <p role="status" className="text-sm leading-6">
+          {t('resetSuccess')}
+        </p>
         <Button asChild className="w-full">
           <Link href="/login">{t('goLogin')}</Link>
         </Button>
