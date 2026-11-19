@@ -1,5 +1,5 @@
-import { fireEvent, render, waitFor } from '@testing-library/react-native';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { cleanup, fireEvent, render, waitFor } from '@testing-library/react-native';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { useExercisesQuery } from '@/features/exercises/model/exercises-query';
 import { ExercisePicker } from '@/features/exercises/ui/exercise-picker';
@@ -38,6 +38,8 @@ describe('ExercisePicker (native)', () => {
     vi.clearAllMocks();
     prepareQuery();
   });
+
+  afterEach(() => cleanup());
 
   it('selects a non-archived exercise without showing archived options', async () => {
     const onSelect = vi.fn();
@@ -86,7 +88,7 @@ describe('ExercisePicker (native)', () => {
   });
 
   it('offers an accessible retry instead of stale exercise choices on errors', async () => {
-    prepareQuery({ isError: true, error: new Error('Мережева помилка') });
+    prepareQuery({ data: undefined, isError: true, error: new Error('Мережева помилка') });
     const view = await render(<ExercisePicker selectedId="" onSelect={vi.fn()} />);
 
     await fireEvent.press(view.getByTestId('workout-exercise-open'));
@@ -113,14 +115,14 @@ describe('ExercisePicker (native)', () => {
     await fireEvent.press(view.getByTestId('workout-exercise-open'));
     await fireEvent.press(view.getByRole('button', { name: 'Жим лежачи' }));
 
-    view.rerender(<ExercisePicker selectedId="exercise-1" onSelect={onSelect} />);
+    await view.rerender(<ExercisePicker selectedId="exercise-1" onSelect={onSelect} />);
     expect(view.getByText('Жим лежачи')).toBeTruthy();
 
     // A form reset or external change must never display a different ID's cached name.
-    view.rerender(<ExercisePicker selectedId="different-id" onSelect={onSelect} />);
+    await view.rerender(<ExercisePicker selectedId="different-id" onSelect={onSelect} />);
     expect(view.getByText('Вправу обрано')).toBeTruthy();
 
-    view.rerender(<ExercisePicker selectedId="" onSelect={onSelect} />);
+    await view.rerender(<ExercisePicker selectedId="" onSelect={onSelect} />);
     expect(view.getByText('Обрати вправу')).toBeTruthy();
   });
 
