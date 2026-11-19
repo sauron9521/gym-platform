@@ -32,7 +32,24 @@
   },
   "errors": {
     "unknown": "Something went wrong. Try again.",
-    "network": "Check your internet connection and try again."
+    "network": "Check your internet connection and try again.",
+    "badRequest": "Check the values you entered.",
+    "unauthorized": "Please sign in.",
+    "forbidden": "You do not have permission for this action.",
+    "notFound": "The requested information was not found.",
+    "methodNotAllowed": "This action is not supported.",
+    "conflict": "This action conflicts with the current state.",
+    "payloadTooLarge": "The request is too large.",
+    "unsupportedMediaType": "This data format is not supported.",
+    "unprocessableEntity": "Some submitted values are invalid.",
+    "rateLimited": "Too many requests. Try again later.",
+    "unavailable": "The service is temporarily unavailable.",
+    "invalidType": "Invalid value type.",
+    "invalidFormat": "Invalid format.",
+    "invalidValue": "Invalid value.",
+    "unrecognizedKeys": "Unexpected fields were submitted.",
+    "tooSmall": "The value is too small.",
+    "tooBig": "The value is too large."
   },
   "web": {
     "navigation": {
