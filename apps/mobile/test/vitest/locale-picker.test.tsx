@@ -3,7 +3,8 @@ import { Text } from 'react-native';
 import { useIntl } from 'react-intl';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { AccountLocaleSync } from '@/shared/i18n/account-locale-sync';
+import { AccountLocalePicker } from '@/features/profile/ui/account-locale-picker';
+import { AccountLocaleSync } from '@/features/profile/ui/account-locale-sync';
 import { LocalePicker } from '@/shared/i18n/locale-picker';
 import { LocaleProvider } from '@/shared/i18n/locale-provider';
 
@@ -31,12 +32,12 @@ function TranslatedHeading() {
   return <Text>{intl.formatMessage({ id: 'mobile.profile.myProfile' })}</Text>;
 }
 
-function renderPicker(syncAccount = false) {
+function renderPicker(syncAccount = false, authenticated = false) {
   return render(
     <LocaleProvider>
       {syncAccount ? <AccountLocaleSync /> : null}
       <TranslatedHeading />
-      <LocalePicker />
+      {authenticated ? <AccountLocalePicker /> : <LocalePicker />}
     </LocaleProvider>,
   );
 }
@@ -88,7 +89,7 @@ describe('Mobile language persistence and verified account preference', () => {
   it('retains the selected language and storage when account PATCH fails', async () => {
     state.account = { id: 'athlete', preferredLocale: 'en' };
     state.patch.mockResolvedValue({ response: { status: 503 } });
-    const view = await renderPicker();
+    const view = await renderPicker(false, true);
     await waitFor(() => expect(view.getByText('My profile')).toBeTruthy());
 
     fireEvent.press(view.getByText('Українська'));
@@ -108,7 +109,7 @@ describe('Mobile language persistence and verified account preference', () => {
       response: { status: 200 },
       data: { preferredLocale: 'uk' },
     });
-    const view = await renderPicker();
+    const view = await renderPicker(false, true);
     await waitFor(() => expect(view.getByText('My profile')).toBeTruthy());
     fireEvent.press(view.getByText('Українська'));
     await waitFor(() => expect(view.getByText('Мій профіль')).toBeTruthy());
@@ -122,7 +123,7 @@ describe('Mobile language persistence and verified account preference', () => {
       response: { status: 200 },
       data: { preferredLocale: 'en' },
     });
-    const view = await renderPicker();
+    const view = await renderPicker(false, true);
     await waitFor(() => expect(view.getByText('My profile')).toBeTruthy());
 
     fireEvent.press(view.getByText('Українська'));

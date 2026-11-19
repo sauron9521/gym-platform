@@ -1,43 +1,27 @@
-import { useRef, useState } from 'react';
+import type { Locale } from '@gym/i18n';
 import { useIntl } from 'react-intl';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { useAuth } from '@/features/auth/model/auth-context';
 import { palette } from '@/shared/config/theme';
 import { useLocaleSelection } from './locale-provider';
 
-export function LocalePicker() {
-  const { locale, setLocale } = useLocaleSelection();
-  const { account, getApi } = useAuth();
-  const intl = useIntl();
-  const [pending, setPending] = useState(false);
-  const [error, setError] = useState(false);
-  const requestInFlight = useRef(false);
+type Props = {
+  disabled?: boolean;
+  error?: string | null;
+  onSelect?: (locale: Locale) => void;
+};
 
-  async function select(next: 'uk' | 'en') {
-    if (next === locale || pending || requestInFlight.current) return;
-    requestInFlight.current = true;
-    setPending(true);
-    setError(false);
-    try {
-      if (account) {
-        const api = getApi();
-        if (!api) throw new Error('API unavailable');
-        const response = await api.PATCH('/users/me/preferences', {
-          body: { preferredLocale: next },
-        });
-        if (response.response.status !== 200 || response.data?.preferredLocale !== next) {
-          throw new Error('Locale preference not confirmed');
-        }
-      }
-      setLocale(next);
-    } catch {
-      setError(true);
-    } finally {
-      requestInFlight.current = false;
-      setPending(false);
-    }
-  }
+/** Reusable UI: guests update local preference; authenticated persistence is injected by a feature. */
+export function LocalePicker({ disabled = false, error, onSelect }: Props) {
+  const { locale, setLocale } = useLocaleSelection();
+  const intl = useIntl();
+
+  const choose = (next: Locale) => {
+    if (disabled || next === locale) return;
+    if (onSelect) onSelect(next);
+    else setLocale(next);
+  };
+
   return (
     <View>
       <View
@@ -46,18 +30,18 @@ export function LocalePicker() {
       >
         <Pressable
           accessibilityRole="button"
-          disabled={pending}
-          accessibilityState={{ selected: locale === 'uk', disabled: pending }}
-          onPress={() => void select('uk')}
+          disabled={disabled}
+          accessibilityState={{ selected: locale === 'uk', disabled }}
+          onPress={() => choose('uk')}
           style={styles.button}
         >
           <Text style={styles.label}>Українська</Text>
         </Pressable>
         <Pressable
           accessibilityRole="button"
-          disabled={pending}
-          accessibilityState={{ selected: locale === 'en', disabled: pending }}
-          onPress={() => void select('en')}
+          disabled={disabled}
+          accessibilityState={{ selected: locale === 'en', disabled }}
+          onPress={() => choose('en')}
           style={styles.button}
         >
           <Text style={styles.label}>English</Text>
@@ -65,7 +49,7 @@ export function LocalePicker() {
       </View>
       {error ? (
         <Text accessibilityRole="alert" accessibilityLiveRegion="polite" style={styles.label}>
-          {intl.formatMessage({ id: 'common.languageUpdateError' })}
+          {error}
         </Text>
       ) : null}
     </View>

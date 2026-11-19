@@ -1,9 +1,9 @@
 import { useEffect } from 'react';
 
 import { useAuth } from '@/features/auth/model/auth-context';
-import { useLocaleSelection } from './locale-provider';
+import { useLocaleSelection } from '@/shared/i18n/locale-provider';
 
-/** Respect the explicit account language after session restoration/sign-in. */
+/** Apply saved account preference only after verified session restoration or sign-in. */
 export function AccountLocaleSync() {
   const { account } = useAuth();
   const { setLocale } = useLocaleSelection();

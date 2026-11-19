@@ -13,7 +13,7 @@ import { palette } from '@/shared/config/theme';
 import { OfflineBanner } from '@/shared/ui/offline-banner';
 import { MobileErrorBoundary } from '@/shared/ui/mobile-error-boundary';
 import { LocaleProvider } from '@/shared/i18n/locale-provider';
-import { AccountLocaleSync } from '@/shared/i18n/account-locale-sync';
+import { AccountLocaleSync } from '@/features/profile/ui/account-locale-sync';
 
 function Navigation() {
   const { account, restoring } = useAuth();
