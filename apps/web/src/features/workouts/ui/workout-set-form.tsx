@@ -113,10 +113,7 @@ export function WorkoutSetForm({
 
   function submitAndNext() {
     if (busy || requestInFlight.current) return;
-    void handleSubmit(
-      (values) => send('COMPLETED', values, true),
-      showValidationErrors,
-    )();
+    void handleSubmit((values) => send('COMPLETED', values, true), showValidationErrors)();
   }
 
   function applyPlan() {
@@ -174,9 +171,7 @@ export function WorkoutSetForm({
             </Button>
           )}
         </div>
-        <div className="grid grid-cols-2 gap-3">
-          {primaryFields.map(renderField)}
-        </div>
+        <div className="grid grid-cols-2 gap-3">{primaryFields.map(renderField)}</div>
         {(plan.actualReps !== null || plan.actualWeightKg !== null) && (
           <p className="text-xs text-muted-foreground">
             Планові значення підставляються лише після натискання — перевірте фактичний результат.
@@ -192,9 +187,7 @@ export function WorkoutSetForm({
           Додаткові показники та нотатки
         </summary>
         <div className="space-y-4 pt-3">
-          <div className="grid gap-3 sm:grid-cols-2">
-            {additionalFields.map(renderField)}
-          </div>
+          <div className="grid gap-3 sm:grid-cols-2">{additionalFields.map(renderField)}</div>
           <div className="space-y-1">
             <label htmlFor={`workout-set-${set.id}-notes`} className="block text-sm font-medium">
               Нотатки
