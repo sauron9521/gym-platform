@@ -20,10 +20,7 @@ describe('safe manual GitHub milestone sync', () => {
 
   it('does not assign roadmaps, pull requests, deferred AI or optional M08', () => {
     assert.equal(issuePhase(issue(353, ['type:roadmap', 'phase:M01'])), null);
-    assert.equal(
-      issuePhase({ ...issue(44, ['type:task', 'phase:M01']), pull_request: {} }),
-      null,
-    );
+    assert.equal(issuePhase({ ...issue(44, ['type:task', 'phase:M01']), pull_request: {} }), null);
     assert.equal(issuePhase(issue(358, ['type:epic', 'status:deferred'])), null);
     assert.equal(issuePhase(issue(357, ['type:epic', 'phase:M08'])), null);
     assert.equal(issuePhase(issue(357, ['type:epic', 'phase:M08']), true), 'M08');
@@ -53,47 +50,28 @@ describe('safe manual GitHub milestone sync', () => {
       /Conflicting/,
     );
     assert.throws(
-      () => buildPlan([issue(281, ['type:epic', 'phase:M01'], {
-        title: 'M02 — Other',
-        number: 2,
-      })], []),
+      () =>
+        buildPlan(
+          [
+            issue(281, ['type:epic', 'phase:M01'], {
+              title: 'M02 — Other',
+              number: 2,
+            }),
+          ],
+          [],
+        ),
       /Unexpected/,
     );
     assert.throws(
-      () => buildPlan([], [
-        { title: 'M01 — A', number: 1, state: 'open' },
-        { title: 'M01 — B', number: 2, state: 'open' },
-      ]),
+      () =>
+        buildPlan(
+          [],
+          [
+            { title: 'M01 — A', number: 1, state: 'open' },
+            { title: 'M01 — B', number: 2, state: 'open' },
+          ],
+        ),
       /Duplicate/,
     );
   });
-});
-
-// DEBUG_FORMAT_START
-import { readFileSync, mkdtempSync, writeFileSync, rmSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { join, resolve } from 'node:path';
-import { spawnSync } from 'node:child_process';
-import prettier from 'prettier';
-
-it('temporary: print exact Prettier format diffs for PR source', async () => {
-  for (const relative of ['scripts/roadmap-milestones.mjs', 'scripts/roadmap-milestones.test.mjs']) {
-    const path = resolve(relative);
-    let before = readFileSync(path, 'utf8');
-    if (relative.endsWith('.test.mjs')) {
-      before = before.split('// DEBUG_FORMAT_START')[0].trimEnd() + '\n';
-    }
-    const after = await prettier.format(before, {
-      ...(await prettier.resolveConfig(path)),
-      filepath: path,
-    });
-    const folder = mkdtempSync(join(tmpdir(), 'roadmap-format-'));
-    const a = join(folder, 'before.txt');
-    const b = join(folder, 'after.txt');
-    writeFileSync(a, before);
-    writeFileSync(b, after);
-    const result = spawnSync('diff', ['-u', a, b], { encoding: 'utf8' });
-    console.log('PRETTIER_FORMAT_DIFF ' + relative + '\n' + result.stdout);
-    rmSync(folder, { recursive: true, force: true });
-  }
 });
