@@ -4,16 +4,14 @@ import { cleanup, fireEvent, render, screen, within } from '@testing-library/rea
 import type { WorkoutDetailsData } from '@/features/workouts/lib/workout-details';
 
 vi.mock('@/features/workouts/ui/workout-set-form', () => ({
-  WorkoutSetForm: ({
-    onSaved,
-    onClose,
-  }: {
-    onSaved: () => void;
-    onClose: () => void;
-  }) => (
+  WorkoutSetForm: ({ onSaved, onClose }: { onSaved: () => void; onClose: () => void }) => (
     <div data-testid="set-editor">
-      <button type="button" onClick={onSaved}>Тестове збереження</button>
-      <button type="button" onClick={onClose}>Тестове закриття</button>
+      <button type="button" onClick={onSaved}>
+        Тестове збереження
+      </button>
+      <button type="button" onClick={onClose}>
+        Тестове закриття
+      </button>
     </div>
   ),
 }));
@@ -110,9 +108,7 @@ test('opens one set editor and locks other set actions until it closes', () => {
   fireEvent.click(screen.getByRole('button', { name: 'Записати результат' }));
   expect(onEditSet).toHaveBeenCalledWith('set-1');
 
-  view.rerender(
-    <WorkoutExercises workout={workout} editingSetId="set-1" onEditSet={onEditSet} />,
-  );
+  view.rerender(<WorkoutExercises workout={workout} editingSetId="set-1" onEditSet={onEditSet} />);
   expect(screen.getByTestId('set-editor')).toBeTruthy();
   for (const button of screen.getAllByRole('button', { name: 'Змінити результат' })) {
     expect((button as HTMLButtonElement).disabled).toBe(true);
@@ -124,11 +120,7 @@ test('opens one set editor and locks other set actions until it closes', () => {
 test('never offers set editing for a finished or planned workout', () => {
   for (const status of ['COMPLETED', 'PLANNED'] as const) {
     const view = render(
-      <WorkoutExercises
-        workout={exampleWorkout(status)}
-        editingSetId={null}
-        onEditSet={vi.fn()}
-      />,
+      <WorkoutExercises workout={exampleWorkout(status)} editingSetId={null} onEditSet={vi.fn()} />,
     );
     expect(screen.queryByRole('button', { name: 'Записати результат' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Змінити результат' })).toBeNull();
@@ -146,21 +138,23 @@ test('handles an empty exercise and missing performance without inventing values
         id: 'exercise-timed',
         exerciseNameSnapshot: 'Велотренажер',
         notes: null,
-        sets: [{
-          ...setFields,
-          id: 'set-timed',
-          setNumber: 1,
-          setType: 'WORKING',
-          status: 'COMPLETED',
-          plannedReps: null,
-          actualReps: null,
-          plannedWeightKg: null,
-          actualWeightKg: null,
-          plannedDurationSeconds: 90,
-          actualDurationSeconds: 95,
-          plannedDistanceMeters: 300,
-          actualDistanceMeters: 310,
-        }],
+        sets: [
+          {
+            ...setFields,
+            id: 'set-timed',
+            setNumber: 1,
+            setType: 'WORKING',
+            status: 'COMPLETED',
+            plannedReps: null,
+            actualReps: null,
+            plannedWeightKg: null,
+            actualWeightKg: null,
+            plannedDurationSeconds: 90,
+            actualDurationSeconds: 95,
+            plannedDistanceMeters: 300,
+            actualDistanceMeters: 310,
+          },
+        ],
       },
     ],
   } as unknown as WorkoutDetailsData;
