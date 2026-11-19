@@ -6,7 +6,7 @@ import { WorkoutDetails } from '@/features/workouts/ui/workout-details';
 import { verifyServerSession } from '@/shared/api/server-session';
 
 export const metadata: Metadata = {
-  title: 'Деталі тренування | Gym Platform',
+  title: 'Деталі тренування | OVRANTO',
   robots: { index: false },
 };
 
