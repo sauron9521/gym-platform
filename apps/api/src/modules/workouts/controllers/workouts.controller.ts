@@ -80,8 +80,9 @@ export class WorkoutsController {
   @ApiQuery({
     name: 'sort',
     required: false,
-    enum: ['scheduledAtAsc'],
-    description: 'Order by planned date ascending; requires status=PLANNED and scheduledFrom.',
+    enum: ['scheduledAtAsc', 'completedAtDesc'],
+    description:
+      'Order by planned date ascending (requires status=PLANNED and scheduledFrom) or by completion date descending (requires status=COMPLETED).',
   })
   @ApiOkResponse({
     schema: { oneOf: [workoutListResponseSchema, workoutSummaryListResponseSchema] },

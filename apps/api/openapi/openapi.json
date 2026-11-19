@@ -4393,10 +4393,10 @@
             "required": false,
             "in": "query",
             "schema": {
-              "enum": ["scheduledAtAsc"],
+              "enum": ["scheduledAtAsc", "completedAtDesc"],
               "type": "string"
             },
-            "description": "Order by planned date ascending; requires status=PLANNED and scheduledFrom."
+            "description": "Order by planned date ascending (requires status=PLANNED and scheduledFrom) or by completion date descending (requires status=COMPLETED)."
           },
           {
             "name": "scheduledFrom",

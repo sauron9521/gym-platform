@@ -1,15 +1,18 @@
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 
-const { useQueryMock, onAuthFailure } = vi.hoisted(() => ({
+const { useQueryMock, onAuthFailure, apiGetMock } = vi.hoisted(() => ({
   useQueryMock: vi.fn(),
   onAuthFailure: vi.fn(),
+  apiGetMock: vi.fn(),
 }));
 
 vi.mock('@tanstack/react-query', () => ({
   useQuery: useQueryMock,
   queryOptions: (options: unknown) => options,
 }));
+
+vi.mock('@/shared/api/client', () => ({ webApi: { GET: apiGetMock } }));
 
 vi.mock('@/shared/api/use-auth-failure', () => ({
   useAuthFailure: () => onAuthFailure,
@@ -19,6 +22,20 @@ import { WorkoutListRequestError } from '@/features/workouts/api/workouts-list-q
 import { DashboardCompletedSessions } from '@/widgets/dashboard/ui/dashboard-completed-sessions';
 
 const completed = [
+  {
+    id: 'workout-4',
+    title: 'Розтяжка',
+    status: 'COMPLETED',
+    completedAt: '2026-11-14T09:00:00Z',
+    exerciseCount: 2,
+  },
+  {
+    id: 'workout-3',
+    title: 'Присідання',
+    status: 'COMPLETED',
+    completedAt: '2026-11-12T09:00:00Z',
+    exerciseCount: 3,
+  },
   {
     id: 'workout-1',
     title: 'Жим лежачи',
@@ -33,39 +50,30 @@ const completed = [
     completedAt: null,
     exerciseCount: 5,
   },
-  {
-    id: 'workout-3',
-    title: 'Присідання',
-    status: 'COMPLETED',
-    completedAt: '2026-11-12T09:00:00Z',
-    exerciseCount: 3,
-  },
-  {
-    id: 'workout-4',
-    title: 'Розтяжка',
-    status: 'COMPLETED',
-    completedAt: '2026-11-14T09:00:00Z',
-    exerciseCount: 2,
-  },
 ];
 
 beforeEach(() => {
   useQueryMock.mockReset();
   onAuthFailure.mockReset();
+  apiGetMock.mockReset();
 });
 
 afterEach(cleanup);
 
-test('uses the existing completed-workout query key and displays loading status', () => {
+test('uses a dedicated completion-sorted query key and displays loading status', () => {
   useQueryMock.mockReturnValue({ isPending: true, isFetching: true, isError: false, error: null });
   render(<DashboardCompletedSessions />);
   expect(screen.getByRole('status').textContent).toContain('Завантажуємо');
   expect(screen.queryByRole('link', { name: 'Деталі' })).toBeNull();
   const options = useQueryMock.mock.calls[0]?.[0] as { queryKey: unknown };
-  expect(options.queryKey).toEqual(['workouts', 'list', { filter: 'COMPLETED', page: 1 }]);
+  expect(options.queryKey).toEqual([
+    'workouts',
+    'list',
+    { filter: 'COMPLETED', page: 1, sort: 'completedAtDesc' },
+  ]);
 });
 
-test('shows at most three real records in API order without inventing dates', () => {
+test('shows three latest completions in API order with accurate exercise counts', () => {
   useQueryMock.mockReturnValue({
     isPending: false,
     isFetching: false,
@@ -75,14 +83,53 @@ test('shows at most three real records in API order without inventing dates', ()
   });
   render(<DashboardCompletedSessions />);
   expect(screen.getAllByRole('link', { name: 'Деталі' })).toHaveLength(3);
+  expect(screen.getByText('Розтяжка')).toBeTruthy();
+  expect(screen.queryByText('Тяга')).toBeNull();
   expect(screen.getByText('Жим лежачи')).toBeTruthy();
-  expect(screen.queryByText('Розтяжка')).toBeNull();
-  expect(screen.getByText('Завершено: Час завершення не вказано')).toBeTruthy();
   expect(screen.getByText('Вправ: 4')).toBeTruthy();
   expect(screen.getAllByRole('link', { name: 'Деталі' })[0].getAttribute('href')).toBe(
-    '/workouts/workout-1',
+    '/workouts/workout-4',
   );
-  expect(screen.getByText('Останні додані записи серед завершених тренувань.')).toBeTruthy();
+  expect(screen.getByText('Останні тренування за датою завершення.')).toBeTruthy();
+});
+
+test('requests a server-sorted completed page rather than sorting an incomplete client page', async () => {
+  apiGetMock.mockResolvedValue({
+    response: { status: 200 },
+    data: { data: [], meta: { total: 0, totalPages: 0 } },
+  });
+  useQueryMock.mockReturnValue({ isPending: true, isFetching: true, isError: false, error: null });
+  render(<DashboardCompletedSessions />);
+
+  const options = useQueryMock.mock.lastCall?.[0] as {
+    queryFn: (context: { signal: AbortSignal }) => Promise<unknown>;
+  };
+  const signal = new AbortController().signal;
+  await options.queryFn({ signal });
+  expect(apiGetMock).toHaveBeenCalledWith('/workouts', {
+    signal,
+    params: {
+      query: {
+        page: 1,
+        limit: 10,
+        view: 'summary',
+        status: 'COMPLETED',
+        sort: 'completedAtDesc',
+      },
+    },
+  });
+});
+
+test('shows a legacy missing completion timestamp truthfully when it is returned', () => {
+  useQueryMock.mockReturnValue({
+    isPending: false,
+    isFetching: false,
+    isError: false,
+    error: null,
+    data: { workouts: [completed[3]], total: 1, totalPages: 1 },
+  });
+  render(<DashboardCompletedSessions />);
+  expect(screen.getByText('Завершено: Час завершення не вказано')).toBeTruthy();
 });
 
 test('shows a real empty state without a fabricated completion count', () => {
