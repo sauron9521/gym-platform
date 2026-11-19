@@ -461,8 +461,8 @@ importers:
   apps/mobile:
     dependencies:
       '@expo/html-elements':
-        specifier: ^0.12.5
-        version: 0.12.5
+        specifier: ^58.0.3
+        version: 58.0.3(react-native-web@0.21.4(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(react-native@0.88.1(@babel/core@7.29.13(supports-color@10.2.2))(@react-native/metro-config@0.88.1(@babel/core@7.29.13(supports-color@10.2.2))(supports-color@10.2.2))(@types/react@19.3.0)(react@19.3.1)(supports-color@10.2.2))(react@19.3.1)
       '@gluestack-ui/core':
         specifier: ^5.0.15
         version: 5.0.15(9b7780af989a37ea46f915d54372af6e)
@@ -1589,8 +1589,15 @@ packages:
     resolution: {integrity: sha512-u73rWDHOYijO1wT60uKjtuoGBKsU9/MFSh7WEE63K2jJ0ML8eycUCXF9FmLf3EVzzIjYIPu6Ns04LR7FVGh6mA==}
     hasBin: true
 
-  '@expo/html-elements@0.12.5':
-    resolution: {integrity: sha512-28KWO88YKykKU7ke5sEQs5TivFRMs1Aktz13xxgqAf5rTgb+lka0VKVt3W2fG7ksbUQ407rtUqz7SEAq298NvQ==}
+  '@expo/html-elements@58.0.3':
+    resolution: {integrity: sha512-cwH+Nwa5Fyb3U9fRVrwhqr2GClyQIqnxV2sfpBfLd3lqaaOrwALJspuyPjJeylmhviceAwnM8sTt403b2st6Xw==}
+    peerDependencies:
+      react: '*'
+      react-native: '*'
+      react-native-web: '*'
+    peerDependenciesMeta:
+      react-native-web:
+        optional: true
 
   '@expo/image-utils@0.12.7':
     resolution: {integrity: sha512-fuiRQxvvkbj932BamtYh1UKuyRJ5tXBJ3XxpGm5pT4zzynPmygd3RtOQrzIhcsIZGcG6i1n+KvrszYRnk3evqQ==}
@@ -9928,7 +9935,12 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@expo/html-elements@0.12.5': {}
+  '@expo/html-elements@58.0.3(react-native-web@0.21.4(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(react-native@0.88.1(@babel/core@7.29.13(supports-color@10.2.2))(@react-native/metro-config@0.88.1(@babel/core@7.29.13(supports-color@10.2.2))(supports-color@10.2.2))(@types/react@19.3.0)(react@19.3.1)(supports-color@10.2.2))(react@19.3.1)':
+    dependencies:
+      react: 19.3.1
+      react-native: 0.88.1(@babel/core@7.29.13(supports-color@10.2.2))(@react-native/metro-config@0.88.1(@babel/core@7.29.13(supports-color@10.2.2))(supports-color@10.2.2))(@types/react@19.3.0)(react@19.3.1)(supports-color@10.2.2)
+    optionalDependencies:
+      react-native-web: 0.21.4(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
 
   '@expo/image-utils@0.12.7(supports-color@10.2.2)(typescript@6.0.3)':
     dependencies:
