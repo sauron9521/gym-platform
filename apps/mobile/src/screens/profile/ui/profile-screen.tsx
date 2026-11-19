@@ -5,7 +5,7 @@ import { useIntl } from 'react-intl';
 import { useAuth } from '@/features/auth/model/auth-context';
 import { useAccountQuery } from '@/features/profile/model/account-query';
 import { palette } from '@/shared/config/theme';
-import { LocalePicker } from '@/shared/i18n/locale-picker';
+import { AccountLocalePicker } from '@/features/profile/ui/account-locale-picker';
 
 export function ProfileScreen() {
   const router = useRouter();
@@ -28,7 +28,7 @@ export function ProfileScreen() {
     <ScrollView style={styles.container} contentContainerStyle={styles.content} bounces={false}>
       <Text style={styles.heading}>{name}</Text>
       <Text style={styles.subheading}>{t('mobile.profile.apiData')}</Text>
-      <LocalePicker />
+      <AccountLocalePicker />
       <View style={styles.card}>
         <Text style={styles.label}>{t('mobile.profile.email')}</Text>
         <Text style={styles.value}>{currentAccount.email}</Text>
