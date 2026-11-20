@@ -8,6 +8,7 @@ import {
 } from '@tanstack/react-query';
 
 import { useAuth } from '@/features/auth/model/auth-context';
+import { hasAthleteAccess } from '@/features/auth/model/account-capabilities';
 import { nextAssignmentPage } from '@/features/programs/lib/assignment-pagination';
 import { accountQueryKeys } from '@/shared/api/query-client';
 import {
@@ -18,15 +19,15 @@ import {
 class SessionExpiredError extends Error {}
 
 function useProgramsApi() {
-  const { account, getApi, signOut } = useAuth();
-  return { account, getApi, signOut };
+  const { account, capabilities, getApi, signOut } = useAuth();
+  return { account, capabilities, getApi, signOut };
 }
 
 export function useProgramAssignments() {
-  const { account, getApi, signOut } = useProgramsApi();
+  const { account, capabilities, getApi, signOut } = useProgramsApi();
   return useInfiniteQuery({
     queryKey: [...accountQueryKeys.all, account?.id ?? 'signed-out', 'program-assignments'],
-    enabled: account?.role === 'ATHLETE',
+    enabled: hasAthleteAccess(capabilities),
     initialPageParam: 1,
     queryFn: async ({ signal, pageParam }) => {
       const api = getApi();
@@ -51,10 +52,10 @@ export function useProgramAssignments() {
 }
 
 export function useProgramAssignment(id: string) {
-  const { account, getApi, signOut } = useProgramsApi();
+  const { account, capabilities, getApi, signOut } = useProgramsApi();
   return useQuery({
     queryKey: [...accountQueryKeys.all, account?.id ?? 'signed-out', 'program-assignment', id],
-    enabled: account?.role === 'ATHLETE' && Boolean(id),
+    enabled: hasAthleteAccess(capabilities) && Boolean(id),
     queryFn: async ({ signal }) => {
       const api = getApi();
       if (!api) throw new Error('Немає доступу до API.');
@@ -76,7 +77,7 @@ export function useProgramAssignment(id: string) {
 }
 
 export function useCreateWorkoutFromProgram(assignmentId: string) {
-  const { account, getApi, signOut } = useProgramsApi();
+  const { account, capabilities, getApi, signOut } = useProgramsApi();
   const queryClient = useQueryClient();
   const attempts = useRef(new Map<string, string>());
   return useMutation({
@@ -84,7 +85,7 @@ export function useCreateWorkoutFromProgram(assignmentId: string) {
       if (!onlineManager.isOnline()) throw new Error('Немає мережі. Тренування не створено.');
       const api = getApi();
       if (!api) throw new Error('Немає доступу до API.');
-      if (account?.role !== 'ATHLETE') {
+      if (!hasAthleteAccess(capabilities)) {
         throw new Error('Створення тренувань із програми доступне лише спортсмену.');
       }
       const key = getProgramWorkoutAttempt(

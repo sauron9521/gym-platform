@@ -16,7 +16,7 @@ test('dashboard reads real workouts, assignments and seven-day analytics', () =>
 });
 
 test('athlete-only query hooks live in a separate conditionally mounted child', () => {
-  expect(screen).toContain("account?.role === 'ATHLETE'");
+  expect(screen).toContain('hasAthleteAccess(capabilities)');
   expect(screen).toContain('function AthleteDashboard()');
   expect(screen).toContain('isAthlete ? <AthleteDashboard /> : null');
   expect(screen).toContain("router.push('/progress')");

@@ -27,7 +27,7 @@ test('native token flow guards protected routes and avoids plaintext storage', (
     'utf8',
   );
   assert.match(layout, /Stack\.Protected/);
-  assert.match(layout, /guard=\{Boolean\(account\)\}/);
+  assert.match(layout, /guard=\{Boolean\(account && hasMobileAccess\(capabilities\)\)\}/);
   assert.match(auth, /guestApi\.POST\('\/auth\/token'/);
   assert.match(auth, /api\.POST\('\/auth\/token\/revoke'/);
   assert.match(auth, /api\.GET\('\/users\/me'/);

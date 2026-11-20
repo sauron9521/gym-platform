@@ -2,6 +2,7 @@ import { useInfiniteQuery } from '@tanstack/react-query';
 import type { paths } from '@gym/api-client';
 
 import { useAuth } from '@/features/auth/model/auth-context';
+import { hasTrainerAccess } from '@/features/auth/model/account-capabilities';
 import {
   isSessionExpired,
   mobileReadError,
@@ -15,11 +16,11 @@ export type TrainerAthletesPage =
 
 /** Trainer-only active relationships, scoped to the currently authenticated account. */
 export function useTrainerAthletes() {
-  const { account, getApi, signOut } = useAuth();
+  const { account, capabilities, getApi, signOut } = useAuth();
 
   return useInfiniteQuery({
     queryKey: [...accountQueryKeys.all, account?.id ?? 'signed-out', 'trainer-athletes', 'ACTIVE'],
-    enabled: account?.role === 'TRAINER',
+    enabled: hasTrainerAccess(capabilities),
     initialPageParam: 1,
     queryFn: async ({ pageParam, signal }) => {
       const api = getApi();

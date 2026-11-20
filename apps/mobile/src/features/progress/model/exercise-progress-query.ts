@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 
 import { useAuth } from '@/features/auth/model/auth-context';
+import { hasAthleteAccess } from '@/features/auth/model/account-capabilities';
 import type { ProgressRange } from '@/features/progress/model/workout-summary-query';
 import { accountQueryKeys } from '@/shared/api/query-client';
 
@@ -9,7 +10,7 @@ class AccessDeniedError extends Error {}
 
 /** Exercise analytics are never shared between accounts or exercise identifiers. */
 export function useExerciseProgress(exerciseId: string, range: ProgressRange) {
-  const { account, getApi, signOut } = useAuth();
+  const { account, capabilities, getApi, signOut } = useAuth();
 
   return useQuery({
     queryKey: [
@@ -19,7 +20,7 @@ export function useExerciseProgress(exerciseId: string, range: ProgressRange) {
       exerciseId,
       range,
     ],
-    enabled: account?.role === 'ATHLETE' && Boolean(exerciseId),
+    enabled: hasAthleteAccess(capabilities) && Boolean(exerciseId),
     queryFn: async ({ signal }) => {
       const api = getApi();
       if (!api) throw new Error('Немає доступу до API.');

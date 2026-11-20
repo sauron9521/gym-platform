@@ -49,7 +49,7 @@ test('create route is protected and mutation only navigates after success', () =
   const screen = read('../src/screens/workouts/ui/create-workout-screen.tsx');
   const model = read('../src/features/workouts/model/workout-create.ts');
   assert.match(layout, /name="workouts\/new"/);
-  assert.ok(layout.includes("<Stack.Protected guard={account?.role === 'ATHLETE'}>"));
+  assert.ok(layout.includes('<Stack.Protected guard={hasAthleteAccess(capabilities)}>'));
   assert.match(screen, /await createWorkout\.mutateAsync/);
   assert.match(screen, /router\.back\(\)/);
   assert.match(model, /api\.POST\('\/workouts'/);
@@ -88,6 +88,6 @@ test('manual creation locks submission, sends idempotency header and refreshes s
   assert.match(model, /retry: false/);
   assert.match(model, /invalidateQueries\(\{ queryKey: accountQueryKeys\.workouts/);
   assert.doesNotMatch(model, /getQueryData\(accountQueryKeys\.me/);
-  assert.match(model, /account\.role !== 'ATHLETE'/);
-  assert.match(list, /account\?\.role === 'ATHLETE'/);
+  assert.match(model, /!hasAthleteAccess\(capabilities\)/);
+  assert.match(list, /hasAthleteAccess\(capabilities\)/);
 });

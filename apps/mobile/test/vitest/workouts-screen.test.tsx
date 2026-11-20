@@ -16,6 +16,7 @@ vi.mock('@/features/workouts/model/workouts-query', () => ({ useWorkoutsQuery: v
 function prepare(role: 'ATHLETE' | 'TRAINER', pageError = false) {
   vi.mocked(useAuth).mockReturnValue({
     account: { id: 'user-1', role },
+    capabilities: { athlete: role === 'ATHLETE', trainer: role === 'TRAINER', admin: false },
   } as unknown as ReturnType<typeof useAuth>);
 
   vi.mocked(useWorkoutsQuery).mockReturnValue({
