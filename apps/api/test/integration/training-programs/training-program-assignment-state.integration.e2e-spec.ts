@@ -218,7 +218,7 @@ describe('TrainingProgramAssignmentRepository eligibility (PostgreSQL)', () => {
 
       await prisma.trainerProfile.update({
         where: { userId: trainerId },
-        data: { isActive: false, revokedAt: new Date() },
+        data: { isActive: false, revokedAt: new Date(), revokedById: reviewerId },
       });
 
       expect(await createAssignment()).toBeNull();
@@ -294,7 +294,7 @@ describe('TrainingProgramAssignmentRepository eligibility (PostgreSQL)', () => {
           expect(blocked).toBe(true);
           await tx.trainerProfile.update({
             where: { userId: trainerId },
-            data: { isActive: false, revokedAt: new Date() },
+            data: { isActive: false, revokedAt: new Date(), revokedById: reviewerId },
           });
         },
         { timeout: 15_000 },
