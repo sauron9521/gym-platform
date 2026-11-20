@@ -479,13 +479,19 @@ test('trainer relationships query redirects on 401 without showing private conta
   await expect(page.getByRole('region', { name: 'Список підопічних' })).toHaveCount(0);
 });
 
-test('trainer can access own programs but not athlete-only pages', async ({ page }) => {
+test('legacy trainer can access own programs and personal athlete pages', async ({ page }) => {
   await signIn(page, 'trainer@example.test');
+  const capabilities = await page.request.get('/backend/users/me/capabilities');
+  expect(capabilities.status()).toBe(200);
+  expect(await capabilities.json()).toEqual({ athlete: true, trainer: true, admin: false });
+
   await page.goto('/trainer/programs');
   await expect(page.getByRole('heading', { name: 'Тренувальні програми' })).toBeVisible();
   await expect(page.getByText('Програм не знайдено')).toBeVisible();
+
   await page.goto('/athlete/programs');
-  await expect(page.getByRole('heading', { name: 'Доступ заборонено' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Мої програми' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Доступ заборонено' })).toHaveCount(0);
 });
 
 test('workout details query handles 401 without revealing private workout data', async ({
