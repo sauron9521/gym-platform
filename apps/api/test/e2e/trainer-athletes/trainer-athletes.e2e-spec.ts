@@ -548,6 +548,59 @@ describe('TrainerAthletes (HTTP + PostgreSQL)', () => {
         });
         ids.push(trainerInvites.body.id);
 
+        // Approved ATHLETE-role trainers must never receive former-athlete
+        // contact details through history or mutation responses.
+        const cancelled = await request(app!.getHttpServer())
+          .post(`/trainer-athletes/${trainerInvites.body.id}/cancel`)
+          .set('Cookie', approvedCookie)
+          .send({ reason: 'Invitation withdrawn' });
+        expect(cancelled.status).toBe(200);
+        expect(cancelled.body.status).toBe('CANCELLED');
+        expect(JSON.stringify(cancelled.body)).not.toContain(firstAthlete.email);
+
+        const firstAthleteCookie = await login(firstAthlete.email);
+        const [trainerHistoryDetail, trainerHistoryList, athleteHistoryDetail] =
+          await Promise.all([
+            request(app!.getHttpServer())
+              .get(`/trainer-athletes/${trainerInvites.body.id}`)
+              .set('Cookie', approvedCookie),
+            request(app!.getHttpServer())
+              .get('/trainer-athletes')
+              .set('Cookie', approvedCookie)
+              .query({ status: 'CANCELLED', page: 1, limit: 100 }),
+            request(app!.getHttpServer())
+              .get(`/trainer-athletes/${trainerInvites.body.id}`)
+              .set('Cookie', firstAthleteCookie),
+          ]);
+
+        expect(trainerHistoryDetail.status).toBe(200);
+        expect(trainerHistoryList.status).toBe(200);
+        expect(athleteHistoryDetail.status).toBe(200);
+        expect(JSON.stringify(trainerHistoryDetail.body)).not.toContain(firstAthlete.email);
+        const trainerHistoricalItem = trainerHistoryList.body.data.find(
+          (item: { id: string }) => item.id === trainerInvites.body.id,
+        );
+        expect(trainerHistoricalItem).toBeDefined();
+        expect(JSON.stringify(trainerHistoricalItem)).not.toContain(firstAthlete.email);
+        expect(athleteHistoryDetail.body.athlete.email).toBe(firstAthlete.email);
+
+        // The same account still retains full history from its ATHLETE side.
+        const ownAthleteHistory = await prisma.trainerAthlete.create({
+          data: {
+            trainerId: trainerOne.id,
+            athleteId: approved.id,
+            initiatedById: trainerOne.id,
+            status: 'TERMINATED',
+          },
+          select: { id: true },
+        });
+        ids.push(ownAthleteHistory.id);
+        const ownHistory = await request(app!.getHttpServer())
+          .get(`/trainer-athletes/${ownAthleteHistory.id}`)
+          .set('Cookie', approvedCookie);
+        expect(ownHistory.status).toBe(200);
+        expect(ownHistory.body.athlete.email).toBe(approved.email);
+
         const athleteInvites = await request(app!.getHttpServer())
           .post('/trainer-athletes')
           .set('Cookie', secondAthleteCookie)
