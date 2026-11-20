@@ -18,6 +18,6 @@ import { AvatarPublicController } from './controllers/avatar-public.controller.j
     AvatarOrphanCleanupService,
   ],
   controllers: [UsersController, AvatarPublicController],
-  exports: [UsersRepository],
+  exports: [UsersRepository, UsersService],
 })
 export class UsersModule {}
