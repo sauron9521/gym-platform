@@ -120,13 +120,20 @@ export class TrainerAthletesRepository {
     return relationships.map((item) => item.athleteId);
   }
 
-  async findManyForTrainer({
-    where,
-    skip,
-    take,
-    orderBy = [{ createdAt: 'desc' }, { id: 'desc' }],
-  }: FindManyTrainerAthletesParams) {
-    // First load a page without sensitive fields.
+  /**
+   * Safe mixed-role history: every page is loaded with the restricted
+   * projection first, then full details are fetched only while the
+   * relationship is open or the current user is its athlete.
+   */
+  async findManyForParticipant(
+    {
+      where,
+      skip,
+      take,
+      orderBy = [{ createdAt: 'desc' }, { id: 'desc' }],
+    }: FindManyTrainerAthletesParams,
+    actorId: string,
+  ) {
     const [historical, total] = await this.prisma.$transaction([
       this.prisma.trainerAthlete.findMany({
         where,
@@ -135,23 +142,29 @@ export class TrainerAthletesRepository {
         orderBy,
         select: trainerAthleteHistoricalSelect,
       }),
-
       this.prisma.trainerAthlete.count({ where }),
     ]);
 
-    // Full details are available only for open relationships.
-    const openIds = historical
-      .filter((item) => item.status === 'ACTIVE' || item.status === 'PENDING')
+    const fullIds = historical
+      .filter(
+        (item) =>
+          item.athleteId === actorId ||
+          item.status === 'ACTIVE' ||
+          item.status === 'PENDING',
+      )
       .map((item) => item.id);
 
-    const openRelationships = openIds.length
+    const fullRelationships = fullIds.length
       ? await this.prisma.trainerAthlete.findMany({
           where: {
             AND: [
               where,
               {
-                id: { in: openIds },
-                status: { in: ['ACTIVE', 'PENDING'] },
+                id: { in: fullIds },
+                OR: [
+                  { status: { in: ['ACTIVE', 'PENDING'] } },
+                  { athleteId: actorId },
+                ],
               },
             ],
           },
@@ -159,10 +172,10 @@ export class TrainerAthletesRepository {
         })
       : [];
 
-    const openById = new Map(openRelationships.map((item) => [item.id, item]));
+    const fullById = new Map(fullRelationships.map((item) => [item.id, item]));
 
     return {
-      data: historical.map((item) => openById.get(item.id) ?? item),
+      data: historical.map((item) => fullById.get(item.id) ?? item),
       meta: {
         total,
         skip,
