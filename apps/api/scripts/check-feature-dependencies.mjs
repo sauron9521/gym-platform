@@ -8,6 +8,9 @@ import { parseModuleImports } from './import-parser.mjs';
 // use a module/service/type API rather than reaching into private internals.
 const APPROVED_INTERNAL_IMPORTS = new Map([
   ['users/repositories/users.repository', new Set(['auth', 'trainer-athletes'])],
+  // Transactional Trainer–Athlete creation must apply the exact Users capability policy
+  // while holding the participant/Profile row locks in the same Prisma transaction.
+  ['users/policies/account-capabilities.policy', new Set(['trainer-athletes'])],
   ['exercises/policies/exercise-access.policy', new Set(['workouts'])],
   ['exercises/selects/exercise.select', new Set(['workouts'])],
   ['workouts/policies/workout-access.policy', new Set(['workout-analytics'])],
