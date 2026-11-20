@@ -769,6 +769,138 @@ describe('TrainerAthletes (HTTP + PostgreSQL)', () => {
   });
 
   describe('Accept and decline', () => {
+    it('accepts an approved ATHLETE-role trainer, then rejects revocation and allows cleanup', async () => {
+      const approved = await createUser(
+        `approved-transition-${randomUUID()}@example.com`,
+        'ATHLETE',
+      );
+      const firstAthlete = await createUser(
+        `transition-athlete-one-${randomUUID()}@example.com`,
+        'ATHLETE',
+      );
+      const secondAthlete = await createUser(
+        `transition-athlete-two-${randomUUID()}@example.com`,
+        'ATHLETE',
+      );
+      const ids: string[] = [];
+
+      try {
+        await prisma.trainerProfile.create({
+          data: {
+            userId: approved.id,
+            isActive: true,
+            approvedAt: new Date(),
+            approvedById: trainerOne.id,
+          },
+        });
+
+        const trainerCookie = await login(approved.email);
+        const athleteOneCookie = await login(firstAthlete.email);
+        const athleteTwoCookie = await login(secondAthlete.email);
+
+        const initial = await request(app!.getHttpServer())
+          .post('/trainer-athletes')
+          .set('Cookie', athleteOneCookie)
+          .send({ userId: approved.id });
+        expect(initial.status).toBe(201);
+        ids.push(initial.body.id);
+
+        const accepted = await request(app!.getHttpServer())
+          .post(`/trainer-athletes/${initial.body.id}/accept`)
+          .set('Cookie', trainerCookie);
+        expect(accepted.status).toBe(200);
+        expect(accepted.body).toMatchObject({
+          trainerId: approved.id,
+          athleteId: firstAthlete.id,
+          status: 'ACTIVE',
+        });
+
+        const second = await request(app!.getHttpServer())
+          .post('/trainer-athletes')
+          .set('Cookie', athleteTwoCookie)
+          .send({ userId: approved.id });
+        expect(second.status).toBe(201);
+        ids.push(second.body.id);
+
+        // The original session remains valid, but TrainerProfile is revoked.
+        await prisma.trainerProfile.update({
+          where: { userId: approved.id },
+          data: { isActive: false, revokedAt: new Date(), revokedById: trainerOne.id },
+        });
+
+        const noActivation = await request(app!.getHttpServer())
+          .post(`/trainer-athletes/${second.body.id}/accept`)
+          .set('Cookie', trainerCookie);
+        expect(noActivation.status).toBe(409);
+
+        const stillPending = await prisma.trainerAthlete.findUnique({
+          where: { id: second.body.id },
+          select: { status: true },
+        });
+        expect(stillPending?.status).toBe('PENDING');
+
+        // Revoked trainers can exit an invitation and an active relationship.
+        const declined = await request(app!.getHttpServer())
+          .post(`/trainer-athletes/${second.body.id}/decline`)
+          .set('Cookie', trainerCookie);
+        expect(declined.status).toBe(200);
+        expect(declined.body.status).toBe('DECLINED');
+        expect(JSON.stringify(declined.body)).not.toContain(secondAthlete.email);
+
+        const terminated = await request(app!.getHttpServer())
+          .post(`/trainer-athletes/${initial.body.id}/terminate`)
+          .set('Cookie', trainerCookie)
+          .send({ reason: 'Trainer permission revoked' });
+        expect(terminated.status).toBe(200);
+        expect(terminated.body.status).toBe('TERMINATED');
+        expect(JSON.stringify(terminated.body)).not.toContain(firstAthlete.email);
+      } finally {
+        await prisma.trainerAthlete.deleteMany({ where: { id: { in: ids } } });
+        await prisma.trainerProfile.deleteMany({ where: { userId: approved.id } });
+      }
+    }, 30_000);
+
+    it('rejects a stale trainer session after an account is promoted to admin', async () => {
+      const trainer = await createUser(
+        `transition-admin-${randomUUID()}@example.com`,
+        'TRAINER',
+      );
+      const athlete = await createUser(
+        `transition-admin-athlete-${randomUUID()}@example.com`,
+        'ATHLETE',
+      );
+      const cookie = await login(trainer.email);
+      const relationship = await prisma.trainerAthlete.create({
+        data: {
+          trainerId: trainer.id,
+          athleteId: athlete.id,
+          initiatedById: trainer.id,
+          status: 'PENDING',
+        },
+        select: { id: true },
+      });
+
+      try {
+        await prisma.user.update({
+          where: { id: trainer.id },
+          data: { role: 'ADMIN' },
+        });
+
+        const response = await request(app!.getHttpServer())
+          .post(`/trainer-athletes/${relationship.id}/cancel`)
+          .set('Cookie', cookie);
+        expect(response.status).toBe(403);
+
+        const current = await prisma.trainerAthlete.findUnique({
+          where: { id: relationship.id },
+          select: { status: true },
+        });
+        expect(current?.status).toBe('PENDING');
+      } finally {
+        await prisma.trainerAthlete.deleteMany({ where: { id: relationship.id } });
+      }
+    }, 20_000);
+
     it('should reject acceptance by the request initiator', async () => {
       const response = await request(app!.getHttpServer())
         .post(`/trainer-athletes/${trainerInitiatedRelationshipId}/accept`)
