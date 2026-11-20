@@ -10,9 +10,10 @@ import { ThrottlerGuard } from '@nestjs/throttler';
 
 import request from 'supertest';
 
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import { AppModule } from '../../../src/app.module.js';
+import { TrainerAthletesRepository } from '../../../src/modules/trainer-athletes/repositories/trainer-athletes.repository.js';
 import { PrismaService } from '../../../src/infra/database/index.js';
 import { useTestDatabase } from '../../utility/test-db-helper.js';
 
@@ -493,6 +494,113 @@ describe('TrainerAthletes (HTTP + PostgreSQL)', () => {
   });
 
   describe('POST /trainer-athletes', () => {
+    it('rejects an invitation when trainer approval is revoked after preflight', async () => {
+      const approved = await createUser(
+        `invite-race-trainer-${randomUUID()}@example.com`,
+        'ATHLETE',
+      );
+      const athlete = await createUser(
+        `invite-race-athlete-${randomUUID()}@example.com`,
+        'ATHLETE',
+      );
+
+      await prisma.trainerProfile.create({
+        data: {
+          userId: approved.id,
+          isActive: true,
+          approvedAt: new Date(),
+          approvedById: trainerOne.id,
+        },
+      });
+
+      const cookie = await login(approved.email);
+      const repository = app!.get(TrainerAthletesRepository);
+      const createWithLocks = repository.createWithCurrentCapabilities.bind(repository);
+      let intercepted = 0;
+
+      // The service has already read approval when it reaches the repository.
+      // Revoke it at exactly this boundary, before the locked DB transaction.
+      const spy = vi.spyOn(repository, 'createWithCurrentCapabilities').mockImplementation(
+        async (input) => {
+          intercepted += 1;
+          await prisma.trainerProfile.update({
+            where: { userId: approved.id },
+            data: { isActive: false, revokedAt: new Date(), revokedById: trainerOne.id },
+          });
+          return createWithLocks(input);
+        },
+      );
+
+      try {
+        const response = await request(app!.getHttpServer())
+          .post('/trainer-athletes')
+          .set('Cookie', cookie)
+          .send({ userId: athlete.id });
+
+        expect(response.status).toBe(409);
+        expect(intercepted).toBe(1);
+        expect(response.body.message).toBe('Relationship participants are no longer eligible');
+
+        const unauthorizedRows = await prisma.trainerAthlete.count({
+          where: { trainerId: approved.id, athleteId: athlete.id },
+        });
+        expect(unauthorizedRows).toBe(0);
+      } finally {
+        spy.mockRestore();
+        await prisma.trainerProfile.deleteMany({ where: { userId: approved.id } });
+      }
+    }, 25_000);
+
+    it('rejects an invitation when the target trainer is revoked after preflight', async () => {
+      const approved = await createUser(
+        `invite-target-trainer-${randomUUID()}@example.com`,
+        'ATHLETE',
+      );
+      const athlete = await createUser(
+        `invite-target-athlete-${randomUUID()}@example.com`,
+        'ATHLETE',
+      );
+
+      await prisma.trainerProfile.create({
+        data: {
+          userId: approved.id,
+          isActive: true,
+          approvedAt: new Date(),
+          approvedById: trainerOne.id,
+        },
+      });
+
+      const cookie = await login(athlete.email);
+      const repository = app!.get(TrainerAthletesRepository);
+      const createWithLocks = repository.createWithCurrentCapabilities.bind(repository);
+      const spy = vi.spyOn(repository, 'createWithCurrentCapabilities').mockImplementation(
+        async (input) => {
+          await prisma.trainerProfile.update({
+            where: { userId: approved.id },
+            data: { isActive: false, revokedAt: new Date(), revokedById: trainerOne.id },
+          });
+          return createWithLocks(input);
+        },
+      );
+
+      try {
+        const response = await request(app!.getHttpServer())
+          .post('/trainer-athletes')
+          .set('Cookie', cookie)
+          .send({ userId: approved.id });
+
+        expect(response.status).toBe(409);
+        expect(
+          await prisma.trainerAthlete.count({
+            where: { trainerId: approved.id, athleteId: athlete.id },
+          }),
+        ).toBe(0);
+      } finally {
+        spy.mockRestore();
+        await prisma.trainerProfile.deleteMany({ where: { userId: approved.id } });
+      }
+    }, 25_000);
+
     it('uses current capabilities for approved, revoked and dual-role invitations', async () => {
       const approved = await createUser(
         `approved-relationship-${randomUUID()}@example.com`,
