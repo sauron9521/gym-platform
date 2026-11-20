@@ -104,54 +104,48 @@ export class TrainerAthletesService {
       take: query.limit,
     };
 
-    if (actor.role === 'TRAINER') {
-      return this.trainerAthletesRepository.findManyForTrainer(params);
-    }
-
-    return this.trainerAthletesRepository.findMany(params);
+    // Redact ended trainer-side relationships based on relationship ownership,
+    // regardless of a user's legacy TRAINER/ATHLETE session role.
+    return this.trainerAthletesRepository.findManyForParticipant(params, actor.id);
   }
 
   // FIND ONE
-
   async findOne(id: string, actor: TrainerAthleteActor) {
     this.assertParticipantRole(actor);
 
-    const accessWhere: Prisma.TrainerAthleteWhereInput = {
+    // Full contact fields are permitted for active/pending collaboration, or
+    // when the actor was the ATHLETE in this specific relationship.
+    // Former trainers receive the safe historical projection even when they
+    // retain an ATHLETE account role after TrainerProfile approval/revocation.
+    const participantWhere: Prisma.TrainerAthleteWhereInput = {
       OR: [{ trainerId: actor.id }, { athleteId: actor.id }],
     };
 
-    if (actor.role === 'TRAINER') {
-      const openRelationship = await this.trainerAthletesRepository.findById(id, {
-        AND: [
-          accessWhere,
-          {
-            status: {
-              in: ['ACTIVE', 'PENDING'],
-            },
-          },
-        ],
-      });
+    const fullRelationship = await this.trainerAthletesRepository.findById(id, {
+      AND: [
+        participantWhere,
+        {
+          OR: [
+            { status: { in: ['ACTIVE', 'PENDING'] } },
+            { athleteId: actor.id },
+          ],
+        },
+      ],
+    });
 
-      if (openRelationship) {
-        return openRelationship;
-      }
-
-      const historical = await this.trainerAthletesRepository.findHistoricalById(id, accessWhere);
-
-      if (!historical) {
-        throw new NotFoundException('Relationship not found');
-      }
-
-      return historical;
+    if (fullRelationship) {
+      return fullRelationship;
     }
 
-    const relationship = await this.trainerAthletesRepository.findById(id, accessWhere);
+    const historical = await this.trainerAthletesRepository.findHistoricalById(id, {
+      trainerId: actor.id,
+    });
 
-    if (!relationship) {
+    if (!historical) {
       throw new NotFoundException('Relationship not found');
     }
 
-    return relationship;
+    return historical;
   }
 
   // ACCEPT REQUEST
@@ -189,7 +183,7 @@ export class TrainerAthletesService {
         status: 'DECLINED',
         respondedAt: new Date(),
       },
-      actor.role === 'TRAINER',
+      relationship.trainerId === actor.id,
     );
   }
 
@@ -216,7 +210,7 @@ export class TrainerAthletesService {
         },
         endReason: input.reason ?? null,
       },
-      actor.role === 'TRAINER',
+      relationship.trainerId === actor.id,
     );
   }
 
@@ -230,7 +224,7 @@ export class TrainerAthletesService {
       id,
       actorId: actor.id,
       reason: input.reason,
-      redactForTrainer: actor.role === 'TRAINER',
+      redactForTrainer: relationship.trainerId === actor.id,
     });
 
     if (!terminated) {
