@@ -22,6 +22,7 @@ describe('TrainingProgramAssignmentService', () => {
     findRestrictedAssignmentById: vi.fn(),
     updateAssignment: vi.fn(),
     completeAssignmentIfNoUnfinishedWorkouts: vi.fn(),
+    cancelAssignmentIfTrainerEligible: vi.fn(),
   };
   const crud = { findOne: vi.fn() };
   const versions = { findVersion: vi.fn() };
@@ -40,7 +41,14 @@ describe('TrainingProgramAssignmentService', () => {
     athleteId: athlete.id,
     status: 'ACTIVE',
   };
-  const activeAssignment = { id: assignmentId, status: 'ACTIVE' };
+  const activeAssignment = {
+    id: assignmentId,
+    status: 'ACTIVE',
+    athleteId: athlete.id,
+    assignedById: trainer.id,
+    trainerAthleteId: relationship.id,
+    trainerAthlete: { trainerId: trainer.id, athleteId: athlete.id, status: 'ACTIVE' },
+  };
   const prismaError = (code: string) =>
     new Prisma.PrismaClientKnownRequestError('Concurrent write', {
       code,
@@ -298,11 +306,39 @@ describe('TrainingProgramAssignmentService', () => {
     expect(repository.findRestrictedAssignmentById).not.toHaveBeenCalled();
   });
 
-  it('forbids trainer completion without querying the assignment', async () => {
+  it('forbids completing someone else\'s assignment even with athlete capability', async () => {
     await expect(service.completeAssignment(assignmentId, trainer)).rejects.toBeInstanceOf(
       ForbiddenException,
     );
-    expect(repository.findAssignmentById).not.toHaveBeenCalled();
+    expect(repository.completeAssignmentIfNoUnfinishedWorkouts).not.toHaveBeenCalled();
+  });
+
+  it('allows a TRAINER-role account to complete its own athlete-side assignment', async () => {
+    repository.findAssignmentById.mockResolvedValue({
+      ...activeAssignment,
+      athleteId: trainer.id,
+    });
+    repository.completeAssignmentIfNoUnfinishedWorkouts.mockResolvedValue({
+      status: 'COMPLETED',
+      assignment: { id: assignmentId, status: 'COMPLETED' },
+    });
+
+    await expect(service.completeAssignment(assignmentId, trainer)).resolves.toMatchObject({
+      status: 'COMPLETED',
+    });
+    expect(repository.completeAssignmentIfNoUnfinishedWorkouts).toHaveBeenCalledWith({
+      assignmentId,
+      athleteId: trainer.id,
+      completedAt: expect.any(Date),
+    });
+  });
+
+  it('rejects completion after admin promotion despite a stale ATHLETE session', async () => {
+    access.assertAssignmentParticipant.mockRejectedValue(new ForbiddenException());
+    await expect(service.completeAssignment(assignmentId, athlete)).rejects.toThrow(
+      ForbiddenException,
+    );
+    expect(repository.completeAssignmentIfNoUnfinishedWorkouts).not.toHaveBeenCalled();
   });
 
   it('refuses completion of an already completed assignment', async () => {
@@ -355,11 +391,47 @@ describe('TrainingProgramAssignmentService', () => {
     await expect(service.completeAssignment(assignmentId, athlete)).rejects.toBe(failure);
   });
 
-  it('forbids athlete cancellation without loading the assignment', async () => {
+  it('forbids cancellation when trainer capability is not active', async () => {
     await expect(service.cancelAssignment(assignmentId, athlete)).rejects.toBeInstanceOf(
       ForbiddenException,
     );
-    expect(repository.findAssignmentById).not.toHaveBeenCalled();
+    expect(repository.cancelAssignmentIfTrainerEligible).not.toHaveBeenCalled();
+  });
+
+  it('allows approved ATHLETE-role trainers to cancel their own assignments', async () => {
+    const approvedTrainer: TrainingProgramActor = { id: trainer.id, role: 'ATHLETE' };
+    access.assertTrainer.mockResolvedValueOnce(undefined);
+    repository.cancelAssignmentIfTrainerEligible.mockResolvedValue({
+      ...activeAssignment,
+      status: 'CANCELLED',
+    });
+    await expect(service.cancelAssignment(assignmentId, approvedTrainer)).resolves.toMatchObject({
+      status: 'CANCELLED',
+    });
+    expect(access.assertTrainer).toHaveBeenCalledWith(approvedTrainer);
+    expect(repository.cancelAssignmentIfTrainerEligible).toHaveBeenCalledOnce();
+  });
+
+  it('rejects trainer cancellation of another trainer\'s assignment', async () => {
+    repository.findAssignmentById.mockResolvedValue({
+      ...activeAssignment,
+      assignedById: 'other-trainer',
+    });
+    await expect(service.cancelAssignment(assignmentId, trainer)).rejects.toThrow(
+      ForbiddenException,
+    );
+    expect(repository.cancelAssignmentIfTrainerEligible).not.toHaveBeenCalled();
+  });
+
+  it('rejects cancellation when the relationship trainer differs from the actor', async () => {
+    repository.findAssignmentById.mockResolvedValue({
+      ...activeAssignment,
+      trainerAthlete: { trainerId: 'other-trainer' },
+    });
+    await expect(service.cancelAssignment(assignmentId, trainer)).rejects.toThrow(
+      ForbiddenException,
+    );
+    expect(repository.cancelAssignmentIfTrainerEligible).not.toHaveBeenCalled();
   });
 
   it('refuses cancellation of an already ended assignment', async () => {
@@ -370,44 +442,52 @@ describe('TrainingProgramAssignmentService', () => {
     await expect(service.cancelAssignment(assignmentId, trainer)).rejects.toBeInstanceOf(
       ConflictException,
     );
-    expect(repository.updateAssignment).not.toHaveBeenCalled();
+    expect(repository.cancelAssignmentIfTrainerEligible).not.toHaveBeenCalled();
   });
 
-  it('trims the cancellation reason and conditionally updates only an ACTIVE assignment', async () => {
+  it('trims the cancellation reason and writes only through guarded repository mutation', async () => {
     const cancelled = { id: assignmentId, status: 'CANCELLED' };
-    repository.updateAssignment.mockResolvedValue(cancelled);
+    repository.cancelAssignmentIfTrainerEligible.mockResolvedValue(cancelled);
     await expect(
       service.cancelAssignment(assignmentId, trainer, {
         reason: '  Assigned new program  ',
       }),
     ).resolves.toBe(cancelled);
-    expect(repository.updateAssignment).toHaveBeenCalledExactlyOnceWith(
-      {
-        id: assignmentId,
-        status: 'ACTIVE',
-      },
-      {
-        status: 'CANCELLED',
-        endedAt: expect.any(Date),
-        endedBy: { connect: { id: trainer.id } },
-        endReason: 'Assigned new program',
-      },
-    );
+    expect(repository.cancelAssignmentIfTrainerEligible).toHaveBeenCalledExactlyOnceWith({
+      assignmentId,
+      trainerId: trainer.id,
+      endedAt: expect.any(Date),
+      reason: 'Assigned new program',
+    });
   });
 
   it.each([{ reason: undefined }, { reason: null }, { reason: '   ' }])(
     'normalizes a missing or blank reason to null %j',
     async (input) => {
       await service.cancelAssignment(assignmentId, trainer, input);
-      expect(repository.updateAssignment).toHaveBeenCalledWith(
-        expect.anything(),
-        expect.objectContaining({ endReason: null }),
+      expect(repository.cancelAssignmentIfTrainerEligible).toHaveBeenCalledWith(
+        expect.objectContaining({ reason: null }),
       );
     },
   );
 
+  it('returns conflict when current trainer authorization or relationship changed during the transaction', async () => {
+    repository.cancelAssignmentIfTrainerEligible.mockResolvedValue(null);
+    await expect(service.cancelAssignment(assignmentId, trainer)).rejects.toThrow(
+      ConflictException,
+    );
+  });
+
+  it('refuses a stale TRAINER-role actor whose persisted trainer approval was revoked', async () => {
+    access.assertTrainer.mockRejectedValue(new ForbiddenException());
+    await expect(service.cancelAssignment(assignmentId, trainer)).rejects.toThrow(
+      ForbiddenException,
+    );
+    expect(repository.cancelAssignmentIfTrainerEligible).not.toHaveBeenCalled();
+  });
+
   it('maps an already-ended concurrent cancellation to conflict', async () => {
-    repository.updateAssignment.mockRejectedValue(prismaError('P2025'));
+    repository.cancelAssignmentIfTrainerEligible.mockRejectedValue(prismaError('P2025'));
     await expect(service.cancelAssignment(assignmentId, trainer)).rejects.toBeInstanceOf(
       ConflictException,
     );
@@ -415,7 +495,7 @@ describe('TrainingProgramAssignmentService', () => {
 
   it('preserves unexpected cancellation write errors for diagnostics', async () => {
     const failure = new Error('Database unavailable');
-    repository.updateAssignment.mockRejectedValue(failure);
+    repository.cancelAssignmentIfTrainerEligible.mockRejectedValue(failure);
     await expect(service.cancelAssignment(assignmentId, trainer)).rejects.toBe(failure);
   });
 
