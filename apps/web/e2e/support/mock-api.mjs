@@ -147,6 +147,17 @@ const server = createServer(async (request, response) => {
       return send(response, 200, accountResponse(session));
     }
 
+    // Match the live persisted-capability policy: a legacy TRAINER without a
+    // profile is BOTH a trainer and an athlete. The fixture has no moderator
+    // profile state; real approval/revocation is exercised by PostgreSQL E2E.
+    if (request.method === 'GET' && route === '/users/me/capabilities') {
+      return send(response, 200, {
+        athlete: true,
+        trainer: session.account.role === 'TRAINER',
+        admin: false,
+      });
+    }
+
     if (request.method === 'PATCH' && route === '/users/me/preferences') {
       const body = await readBody(request);
       if (
@@ -177,9 +188,8 @@ const server = createServer(async (request, response) => {
     }
 
     if (request.method === 'GET' && route === '/workouts') {
-      if (session.account.role !== 'ATHLETE') {
-        return send(response, 403, { message: 'Forbidden' });
-      }
+      // Personal workouts remain an Athlete feature for legacy trainers too.
+      // This fixture only includes non-admin authenticated identities.
       const matching = workouts.filter(
         (workout) =>
           !url.searchParams.has('status') || workout.status === url.searchParams.get('status'),

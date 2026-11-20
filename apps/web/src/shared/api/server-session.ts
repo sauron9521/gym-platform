@@ -68,3 +68,58 @@ export async function verifyServerSession(
     return { kind: 'unavailable' };
   }
 }
+
+export type ServerCapability = 'athlete' | 'trainer';
+
+type PersistedCapabilities = {
+  athlete: boolean;
+  trainer: boolean;
+  admin: boolean;
+};
+
+function isPersistedCapabilities(value: unknown): value is PersistedCapabilities {
+  if (typeof value !== 'object' || value === null) return false;
+  const grants = value as Record<string, unknown>;
+  return (
+    typeof grants.athlete === 'boolean' &&
+    typeof grants.trainer === 'boolean' &&
+    typeof grants.admin === 'boolean'
+  );
+}
+
+/**
+ * Only capability-gated server pages make this additional uncached request.
+ * /users/me remains the source of legacy account display fields, while the
+ * live grants endpoint (not User.role) decides entry to a trainer/athlete route.
+ * The fixed upstream receives only the current request's Cookie header.
+ */
+export async function verifyServerCapability(
+  cookieHeader: string,
+  required: ServerCapability,
+  upstream = getApiUpstreamOrigin(process.env.GYM_API_INTERNAL_URL),
+  send: typeof fetch = fetch,
+): Promise<ServerSessionResult> {
+  const session = await verifyServerSession(cookieHeader, upstream, send);
+  if (session.kind !== 'authenticated') return session;
+
+  try {
+    const response = await send(upstream + '/users/me/capabilities', {
+      headers: { cookie: cookieHeader, accept: 'application/json' },
+      cache: 'no-store',
+      redirect: 'error',
+      signal: AbortSignal.timeout(5000),
+    });
+
+    if (response.status === 401) return { kind: 'unauthenticated' };
+    if (response.status === 403) return { kind: 'forbidden' };
+    if (response.status !== 200) return { kind: 'unavailable' };
+
+    const grants: unknown = await response.json();
+    if (!isPersistedCapabilities(grants)) return { kind: 'unavailable' };
+    if (grants.admin || !grants[required]) return { kind: 'forbidden' };
+
+    return session;
+  } catch {
+    return { kind: 'unavailable' };
+  }
+}

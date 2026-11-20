@@ -3,7 +3,7 @@ import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 
 import { AthleteProgramsList } from '@/features/training-programs/ui/athlete-programs-list';
-import { verifyServerSession } from '@/shared/api/server-session';
+import { verifyServerCapability } from '@/shared/api/server-session';
 
 export const metadata: Metadata = {
   title: 'Мої програми | Gym Platform',
@@ -14,7 +14,7 @@ export const dynamic = 'force-dynamic';
 
 export default async function AthleteProgramsPage() {
   const cookieHeader = (await headers()).get('cookie') ?? '';
-  const session = await verifyServerSession(cookieHeader);
+  const session = await verifyServerCapability(cookieHeader, 'athlete');
 
   if (session.kind === 'unauthenticated') redirect('/login');
 
@@ -29,7 +29,7 @@ export default async function AthleteProgramsPage() {
     );
   }
 
-  if (session.kind !== 'authenticated' || session.user.role !== 'ATHLETE') {
+  if (session.kind !== 'authenticated') {
     return (
       <main className="mx-auto max-w-3xl px-6 py-16">
         <h1 className="text-2xl font-semibold">Доступ заборонено</h1>

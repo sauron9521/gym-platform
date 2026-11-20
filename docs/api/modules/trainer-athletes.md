@@ -16,6 +16,10 @@ Authenticated invitation/relationship management with accept, decline, cancellat
 
 Relationship state affects trainer access to exercises and program assignment. The termination flow may require exercising copy/visibility rules for previously shared exercises; never replace it with an untested direct database update.
 
+## Browser-friendly read throttling (E14 / #361)
+
+Authenticated `GET /trainer-athletes` and `GET /trainer-athletes/:id` use the shared **`read` preset (60 requests per minute)**, consistent with account/profile read endpoints. Rapid Next.js navigation and client-side list refreshes must not consume the lower mutation budget; this matters because a capability-gated route also verifies the current session. All invitation and lifecycle **POST** operations retain the original stricter global limit. Identity checks, per-participant SQL filters and historical contact redaction remain unchanged.
+
 ## Transactional invitation capability guard (M05 / #291)
 
 `POST /trainer-athletes` still performs its existing preflight capability and pair checks for clear client errors, but the final authorization decision now happens **inside the same PostgreSQL transaction as the invitation insertion**:
