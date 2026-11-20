@@ -241,18 +241,11 @@ describe('TrainingProgramAssignmentRepository privacy and completion', () => {
   it('restricts individual historical details to non-active relationships', async () => {
     const historical = { id: 'assignment-ended', status: 'CANCELLED' };
     prisma.trainingProgramAssignment.findFirst.mockResolvedValue(historical);
-    const result = await repository.findRestrictedAssignmentById(
-      'assignment-ended',
-      trainerWhere,
-    );
+    const result = await repository.findRestrictedAssignmentById('assignment-ended', trainerWhere);
     expect(result).toBe(historical);
     expect(prisma.trainingProgramAssignment.findFirst).toHaveBeenCalledExactlyOnceWith({
       where: {
-        AND: [
-          { id: 'assignment-ended' },
-          trainerWhere,
-
-        ],
+        AND: [{ id: 'assignment-ended' }, trainerWhere],
       },
       select: trainingProgramAssignmentHistoricalSelect,
     });
