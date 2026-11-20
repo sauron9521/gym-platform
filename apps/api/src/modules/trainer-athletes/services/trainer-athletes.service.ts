@@ -8,7 +8,6 @@ import {
 
 import { Prisma } from '#prisma/client';
 
-import { UsersRepository } from '#src/modules/users/repositories/users.repository';
 import { UsersService } from '#src/modules/users/services/users.service';
 import { TrainerAthletesRepository } from '../repositories/trainer-athletes.repository.js';
 import { TrainerAthleteTerminationService } from './trainer-athlete-termination.service.js';
@@ -26,43 +25,39 @@ import type {
 export class TrainerAthletesService {
   constructor(
     private readonly trainerAthletesRepository: TrainerAthletesRepository,
-    private readonly usersRepository: UsersRepository,
     private readonly terminationService: TrainerAthleteTerminationService,
     private readonly usersService: UsersService,
   ) {}
 
   // CREATE REQUEST
   async create(actor: TrainerAthleteActor, input: CreateTrainerAthleteInput) {
-    this.assertParticipantRole(actor);
-
     if (actor.id === input.userId) {
       throw new BadRequestException('You cannot create a relationship with yourself');
     }
 
-    const target = await this.usersRepository.findUserById(input.userId);
+    // Read both current DB capabilities: a JWT role or a public client flag
+    // must never grant trainer privileges after approval is revoked.
+    const actorCapabilities = await this.usersService.findMyCapabilities(actor.id);
+    if (!actorCapabilities.athlete || actorCapabilities.admin) {
+      throw new ForbiddenException('Only athletes and active trainers can invite participants');
+    }
+    const targetCapabilities = await this.usersService.findMyCapabilities(input.userId);
 
-    if (!target) {
-      throw new NotFoundException('User not found');
+    const trainerInvitesAthlete = actorCapabilities.trainer && targetCapabilities.athlete;
+    const athleteInvitesTrainer = actorCapabilities.athlete && targetCapabilities.trainer;
+
+    // This endpoint only carries userId, not the intended relationship roles.
+    // When both people have Trainer capability, avoid silently reversing the
+    // invitation or granting an unintended trainer-to-athlete relationship.
+    if (trainerInvitesAthlete && athleteInvitesTrainer) {
+      throw new BadRequestException('Invitation roles are ambiguous');
+    }
+    if (!trainerInvitesAthlete && !athleteInvitesTrainer) {
+      throw new BadRequestException('An athlete and an active trainer are required');
     }
 
-    let trainerId: string;
-    let athleteId: string;
-
-    if (actor.role === 'TRAINER') {
-      if (target.role !== 'ATHLETE') {
-        throw new BadRequestException('A trainer can only invite an athlete');
-      }
-
-      trainerId = actor.id;
-      athleteId = target.id;
-    } else {
-      if (target.role !== 'TRAINER') {
-        throw new BadRequestException('An athlete can only invite a trainer');
-      }
-
-      trainerId = target.id;
-      athleteId = actor.id;
-    }
+    const trainerId = trainerInvitesAthlete ? actor.id : input.userId;
+    const athleteId = trainerInvitesAthlete ? input.userId : actor.id;
 
     const existing = await this.trainerAthletesRepository.findOpenByPair(trainerId, athleteId);
 
@@ -109,54 +104,45 @@ export class TrainerAthletesService {
       take: query.limit,
     };
 
-    if (actor.role === 'TRAINER') {
-      return this.trainerAthletesRepository.findManyForTrainer(params);
-    }
-
-    return this.trainerAthletesRepository.findMany(params);
+    // Redact ended trainer-side relationships based on relationship ownership,
+    // regardless of a user's legacy TRAINER/ATHLETE session role.
+    return this.trainerAthletesRepository.findManyForParticipant(params, actor.id);
   }
 
   // FIND ONE
-
   async findOne(id: string, actor: TrainerAthleteActor) {
     this.assertParticipantRole(actor);
 
-    const accessWhere: Prisma.TrainerAthleteWhereInput = {
+    // Full contact fields are permitted for active/pending collaboration, or
+    // when the actor was the ATHLETE in this specific relationship.
+    // Former trainers receive the safe historical projection even when they
+    // retain an ATHLETE account role after TrainerProfile approval/revocation.
+    const participantWhere: Prisma.TrainerAthleteWhereInput = {
       OR: [{ trainerId: actor.id }, { athleteId: actor.id }],
     };
 
-    if (actor.role === 'TRAINER') {
-      const openRelationship = await this.trainerAthletesRepository.findById(id, {
-        AND: [
-          accessWhere,
-          {
-            status: {
-              in: ['ACTIVE', 'PENDING'],
-            },
-          },
-        ],
-      });
+    const fullRelationship = await this.trainerAthletesRepository.findById(id, {
+      AND: [
+        participantWhere,
+        {
+          OR: [{ status: { in: ['ACTIVE', 'PENDING'] } }, { athleteId: actor.id }],
+        },
+      ],
+    });
 
-      if (openRelationship) {
-        return openRelationship;
-      }
-
-      const historical = await this.trainerAthletesRepository.findHistoricalById(id, accessWhere);
-
-      if (!historical) {
-        throw new NotFoundException('Relationship not found');
-      }
-
-      return historical;
+    if (fullRelationship) {
+      return fullRelationship;
     }
 
-    const relationship = await this.trainerAthletesRepository.findById(id, accessWhere);
+    const historical = await this.trainerAthletesRepository.findHistoricalById(id, {
+      trainerId: actor.id,
+    });
 
-    if (!relationship) {
+    if (!historical) {
       throw new NotFoundException('Relationship not found');
     }
 
-    return relationship;
+    return historical;
   }
 
   // ACCEPT REQUEST
@@ -194,7 +180,7 @@ export class TrainerAthletesService {
         status: 'DECLINED',
         respondedAt: new Date(),
       },
-      actor.role === 'TRAINER',
+      relationship.trainerId === actor.id,
     );
   }
 
@@ -221,7 +207,7 @@ export class TrainerAthletesService {
         },
         endReason: input.reason ?? null,
       },
-      actor.role === 'TRAINER',
+      relationship.trainerId === actor.id,
     );
   }
 
@@ -235,7 +221,7 @@ export class TrainerAthletesService {
       id,
       actorId: actor.id,
       reason: input.reason,
-      redactForTrainer: actor.role === 'TRAINER',
+      redactForTrainer: relationship.trainerId === actor.id,
     });
 
     if (!terminated) {

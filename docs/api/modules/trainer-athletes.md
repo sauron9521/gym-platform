@@ -16,6 +16,19 @@ Authenticated invitation/relationship management with accept, decline, cancellat
 
 Relationship state affects trainer access to exercises and program assignment. The termination flow may require exercising copy/visibility rules for previously shared exercises; never replace it with an untested direct database update.
 
+## Create invitations with live capabilities (M05 / E1 #291)
+
+`POST /trainer-athletes` resolves the authenticated initiator and target using fresh, persisted `UsersService.findMyCapabilities` reads. It does **not** use `User.role` or the session role for trainer authorization.
+
+- An approved trainer whose legacy role remains `ATHLETE` can invite an athlete; an ordinary athlete can invite an approved `ATHLETE`-role trainer.
+- A revoked or inactive TrainerProfile does not grant trainer capability, even if the session still says `TRAINER`. Existing legacy `TRAINER` users without any profile remain compatible during migration.
+- A missing/deleted target returns 404; admin initiators are forbidden; self-invitation, pairs without an active trainer, or ambiguous pairs are rejected before any relationship write.
+- Both accounts with active trainer capability are **ambiguous** with the existing `{ userId }` request body (both can also be athletes). The API returns 400 rather than choosing roles silently; explicit trainer/athlete intent is a separate API contract decision.
+- Duplicate open pairs keep their existing 409/concurrency handling. No new privileges, schema migration, or self-service role assignment are introduced.
+- **Historical privacy is based on each relationship's side**, not the current session role: a former trainer receives a redacted list/detail and redacted decline/cancel/terminate response, even when their account role remains `ATHLETE`. An athlete keeps full access to their own history. List queries first load a restricted projection; a second SQL query allows full contact fields only for open relationships or an actor who is the relationship's athlete.
+
+Remaining capability migration: full relationship list/detail authorization, accept/decline/cancel/terminate privilege checks, mixed-role training-program assignments and #361 cross-product E2E. Historical response redaction is hardened here, but remaining mutation permissions are not yet migrated. A future concurrency hardening slice should guard against revocation racing an in-flight invitation. No Trainer Web protected routes are enabled by this PR.
+
 ## Live capability for exercise sharing (E1 #291)
 
 `getExerciseAccessContext` reads the **current persisted** `athlete` and `trainer` capabilities via `UsersService.findMyCapabilities`, instead of trusting the legacy session `role`:
@@ -23,7 +36,7 @@ Relationship state affects trainer access to exercises and program assignment. T
 - Approved trainers with a legacy `ATHLETE` role can have both athlete-side and trainer-side relationship access. The exercise visibility predicate also recognizes explicitly shared athlete exercises for these accounts; it still requires an active relationship and an unrevoked trainer-access grant in the SQL query.
 - Explicitly revoked trainer capability no longer exposes athlete exercise access through old trainer relationships, even if the session still says `TRAINER`.
 - Admin/deleted accounts and failed DB lookups never grant exercise-sharing privileges. Ownership is still constrained to the authenticated user ID.
-- This is an intentionally narrow access-context slice: relationship invitation, list, detail, mutation and historical-redaction branches still require capability migration in subsequent PRs. Existing API response contracts and Prisma schema are unchanged.
+- The initial exercise-sharing access-context slice is complete; invitation creation and historical response redaction are covered by the subsequent create-invitations slice above. Full relationship mutation authorization still requires follow-up. Existing API response contracts and Prisma schema are unchanged.
 
 **Tests:** `test/e2e/trainer-athletes/trainer-athletes.e2e-spec.ts`, `test/e2e/trainer-athletes/trainer-athlete-exercise-copy.e2e-spec.ts` and module tests. Verify both parties' permissions and unauthorized transitions.
 
