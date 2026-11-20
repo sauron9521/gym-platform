@@ -26,6 +26,10 @@ export function buildExerciseVisibilityWhere(
           createdById: actor.id,
         },
 
+        // Approved ATHLETE-role trainers may also read explicitly shared athlete exercises.
+        ...(access.activeAthleteIds.length > 0
+          ? [sharedAthleteExerciseWhere(actor, access)]
+          : []),
         {
           source: 'TRAINER_CUSTOM',
           createdById: {
@@ -55,28 +59,7 @@ export function buildExerciseVisibilityWhere(
           createdById: actor.id,
         },
 
-        {
-          source: 'ATHLETE_CUSTOM',
-          visibility: 'SELECTED_TRAINERS',
-          createdById: {
-            in: access.activeAthleteIds,
-          },
-          trainerAccesses: {
-            some: {
-              trainerId: actor.id,
-              revokedAt: null,
-            },
-          },
-          // Both an unrevoked grant and a currently ACTIVE relationship
-          // are required; a once-valid context cannot restore old access.
-          createdBy: {
-            is: {
-              athleteRelationships: {
-                some: { trainerId: actor.id, status: 'ACTIVE' },
-              },
-            },
-          },
-        },
+        sharedAthleteExerciseWhere(actor, access),
       ],
     };
   }
@@ -173,5 +156,27 @@ export function getExerciseManagementWhere(
     createdById: actor.id,
     source: exercise.source,
     isArchived: false,
+  };
+}
+
+/** Same unrevoked grant + active relationship predicate for legacy and newly approved trainers. */
+function sharedAthleteExerciseWhere(
+  actor: ExerciseActor,
+  access: ExerciseAccessContext,
+): Prisma.ExerciseWhereInput {
+  return {
+    source: 'ATHLETE_CUSTOM',
+    visibility: 'SELECTED_TRAINERS',
+    createdById: { in: access.activeAthleteIds },
+    trainerAccesses: {
+      some: { trainerId: actor.id, revokedAt: null },
+    },
+    createdBy: {
+      is: {
+        athleteRelationships: {
+          some: { trainerId: actor.id, status: 'ACTIVE' },
+        },
+      },
+    },
   };
 }
