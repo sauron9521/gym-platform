@@ -7,13 +7,16 @@ import {
 } from '../policies/workout-access.policy.js';
 
 describe('workout access and pagination policies', () => {
-  it('limits personal workout management to ATHLETE role', () => {
-    expect(() => assertWorkoutAthlete({ id: 'athlete-1', role: 'ATHLETE' })).not.toThrow();
-    expect(() => assertWorkoutAthlete({ id: 'trainer-1', role: 'TRAINER' })).toThrow(
+  it('enforces persisted athlete capability instead of a legacy JWT role', () => {
+    expect(() => assertWorkoutAthlete({ athlete: true, admin: false })).not.toThrow();
+    expect(() => assertWorkoutAthlete({ athlete: false, admin: false })).toThrow(
       ForbiddenException,
     );
-    expect(() => assertWorkoutAthlete({ id: 'admin-1', role: 'ADMIN' })).toThrow(
+    expect(() => assertWorkoutAthlete({ athlete: false, admin: true })).toThrow(
       'Only athletes can manage personal workouts',
+    );
+    expect(() => assertWorkoutAthlete({ athlete: true, admin: true })).toThrow(
+      ForbiddenException,
     );
   });
 
