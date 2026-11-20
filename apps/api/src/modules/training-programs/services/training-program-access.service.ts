@@ -5,6 +5,8 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 
+import { UsersRepository } from '#src/modules/users/repositories/users.repository';
+import { deriveAccountCapabilities } from '#src/modules/users/policies/account-capabilities.policy';
 import { TrainingProgramCrudRepository } from '../repositories/training-program-crud.repository.js';
 import { TrainingProgramVersionRepository } from '../repositories/training-program-version.repository.js';
 
@@ -15,16 +17,19 @@ export class TrainingProgramAccessService {
   constructor(
     private readonly crudRepository: TrainingProgramCrudRepository,
     private readonly versionRepository: TrainingProgramVersionRepository,
+    private readonly usersRepository: UsersRepository,
   ) {}
 
-  assertTrainer(actor: TrainingProgramActor): void {
-    if (actor.role !== 'TRAINER') {
-      throw new ForbiddenException('Only trainers can manage training programs');
+  /** Check the persisted account on every operation, not an outdated session role. */
+  async assertTrainer(actor: TrainingProgramActor): Promise<void> {
+    const account = await this.usersRepository.findCapabilitySnapshot(actor.id);
+    if (!account || !deriveAccountCapabilities(account).trainer) {
+      throw new ForbiddenException('Only active trainers can manage training programs');
     }
   }
 
   async assertEditableDraft(actor: TrainingProgramActor, programId: string, versionId: string) {
-    this.assertTrainer(actor);
+    await this.assertTrainer(actor);
 
     const program = await this.crudRepository.findProgramById(programId, {
       trainerId: actor.id,
