@@ -6,6 +6,10 @@ import { Test } from '@nestjs/testing';
 
 import { PrismaModule, PrismaService } from '../../../src/infra/database/index.js';
 import { TrainingProgramAssignmentRepository } from '../../../src/modules/training-programs/repositories/training-program-assignment.repository.js';
+import {
+  assignmentFullReadWhere,
+  assignmentParticipantWhere,
+} from '../../../src/modules/training-programs/policies/training-program-assignment-read.policy.js';
 import { useTestDatabase } from '../../utility/test-db-helper.js';
 
 describe('TrainingProgramAssignmentRepository eligibility (PostgreSQL)', () => {
@@ -307,6 +311,98 @@ describe('TrainingProgramAssignmentRepository eligibility (PostgreSQL)', () => {
       await prisma.trainerProfile.deleteMany({ where: { userId: trainerId } });
     }
   }, 25_000);
+
+  it('redacts active trainer assignment contacts after approval revocation', async () => {
+    const reviewer = await prisma.user.create({
+      data: {
+        email: `assignment-read-reviewer-${randomUUID()}@example.com`,
+        passwordHash: 'test-password-hash',
+        role: 'ADMIN',
+      },
+    });
+    let profileCreated = false;
+
+    try {
+      await prisma.trainerProfile.create({
+        data: {
+          userId: trainerId,
+          isActive: true,
+          approvedAt: new Date(),
+          approvedById: reviewer.id,
+        },
+      });
+      profileCreated = true;
+
+      const assignment = await createAssignment();
+      expect(assignment).not.toBeNull();
+
+      const listBefore = await repository.findManyAssignmentsForParticipant(
+        { where: assignmentParticipantWhere(trainerId), skip: 0, take: 10 },
+        trainerId,
+      );
+      expect(listBefore.data).toHaveLength(1);
+      expect(listBefore.data[0]?.athlete).toHaveProperty('email');
+
+      await prisma.trainerProfile.update({
+        where: { userId: trainerId },
+        data: { isActive: false, revokedAt: new Date(), revokedById: reviewer.id },
+      });
+
+      const listAfter = await repository.findManyAssignmentsForParticipant(
+        { where: assignmentParticipantWhere(trainerId), skip: 0, take: 10 },
+        trainerId,
+      );
+      expect(listAfter.data).toHaveLength(1);
+      expect(listAfter.data[0]?.athlete).not.toHaveProperty('email');
+
+      const full = await repository.findAssignmentById(
+        assignment!.id,
+        assignmentFullReadWhere(trainerId),
+      );
+      expect(full).toBeNull();
+
+      const restricted = await repository.findRestrictedAssignmentById(
+        assignment!.id,
+        assignmentParticipantWhere(trainerId),
+      );
+      expect(restricted?.athlete).not.toHaveProperty('email');
+      expect(restricted?.status).toBe('ACTIVE');
+    } finally {
+      if (profileCreated) {
+        await prisma.trainerProfile.delete({ where: { userId: trainerId } });
+      }
+      await prisma.user.delete({ where: { id: reviewer.id } });
+    }
+  });
+
+  it('keeps full own-athlete history when the user also has trainer capability', async () => {
+    const assignment = await createAssignment();
+    expect(assignment).not.toBeNull();
+
+    await prisma.user.update({ where: { id: athleteId }, data: { role: 'TRAINER' } });
+
+    try {
+      await prisma.trainingProgramAssignment.update({
+        where: { id: assignment!.id },
+        data: { status: 'COMPLETED', completedAt: new Date() },
+      });
+
+      const history = await repository.findManyAssignmentsForParticipant(
+        { where: assignmentParticipantWhere(athleteId), skip: 0, take: 10 },
+        athleteId,
+      );
+      expect(history.data).toHaveLength(1);
+      expect(history.data[0]?.athlete).toHaveProperty('email');
+
+      const full = await repository.findAssignmentDetailsById(
+        assignment!.id,
+        assignmentFullReadWhere(athleteId),
+      );
+      expect(full?.athlete).toHaveProperty('email');
+    } finally {
+      await prisma.user.update({ where: { id: athleteId }, data: { role: 'ATHLETE' } });
+    }
+  });
 
   it('rejects an unpublished version without inserting an assignment', async () => {
     await prisma.trainingProgramVersion.update({
