@@ -112,6 +112,90 @@ describe('TrainerAthletesRepository', () => {
     });
   });
 
+  describe('findManyForParticipant', () => {
+    it('redacts ended trainer-side history but preserves athlete history and open records', async () => {
+      const actorId = 'dual-user';
+      const where = {
+        OR: [{ trainerId: actorId }, { athleteId: actorId }],
+      } satisfies Prisma.TrainerAthleteWhereInput;
+      const restricted = [
+        {
+          id: 'trainer-history',
+          trainerId: actorId,
+          athleteId: 'athlete-1',
+          status: 'TERMINATED',
+          athlete: { id: 'athlete-1' },
+        },
+        {
+          id: 'athlete-history',
+          trainerId: 'other-trainer',
+          athleteId: actorId,
+          status: 'TERMINATED',
+          athlete: { id: actorId },
+        },
+        {
+          id: 'open-relationship',
+          trainerId: actorId,
+          athleteId: 'athlete-2',
+          status: 'ACTIVE',
+          athlete: { id: 'athlete-2' },
+        },
+      ];
+      prisma.$transaction.mockResolvedValue([restricted, 3]);
+      prisma.trainerAthlete.findMany.mockResolvedValue([
+        {
+          ...restricted[1],
+          athlete: { id: actorId, email: 'me@example.com' },
+        },
+        {
+          ...restricted[2],
+          athlete: { id: 'athlete-2', email: 'active@example.com' },
+        },
+      ]);
+
+      const result = await repository.findManyForParticipant(
+        { where, skip: 0, take: 10 },
+        actorId,
+      );
+
+      expect(result.data[0]).toEqual(restricted[0]);
+      expect(result.data[0]?.athlete).not.toHaveProperty('email');
+      expect(result.data[1]?.athlete).toHaveProperty('email', 'me@example.com');
+      expect(result.data[2]?.athlete).toHaveProperty('email', 'active@example.com');
+      expect(result.meta).toEqual({ total: 3, skip: 0, take: 10, totalPages: 1 });
+
+      expect(prisma.trainerAthlete.findMany).toHaveBeenNthCalledWith(2, {
+        where: {
+          AND: [
+            where,
+            {
+              id: { in: ['athlete-history', 'open-relationship'] },
+              OR: [
+                { status: { in: ['ACTIVE', 'PENDING'] } },
+                { athleteId: actorId },
+              ],
+            },
+          ],
+        },
+        select: expect.any(Object),
+      });
+    });
+
+    it('does not requery contact fields for only historical trainer-side records', async () => {
+      prisma.$transaction.mockResolvedValue([
+        [{ id: 'former', trainerId: 'trainer-1', athleteId: 'athlete-1', status: 'DECLINED' }],
+        1,
+      ]);
+      const result = await repository.findManyForParticipant(
+        { where: { trainerId: 'trainer-1' }, skip: 0, take: 20 },
+        'trainer-1',
+      );
+
+      expect(result.data).toHaveLength(1);
+      expect(prisma.trainerAthlete.findMany).toHaveBeenCalledTimes(1);
+    });
+  });
+
   describe('findById', () => {
     it('should return a relationship by ID with conditions', async () => {
       const relationship = {
