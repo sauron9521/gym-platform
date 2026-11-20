@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '#src/infra/database/index';
 import { Prisma } from '#prisma/client';
+import { deriveAccountCapabilities } from '#src/modules/users/policies/account-capabilities.policy';
 import {
   trainingProgramAssignmentSelect,
   trainingProgramAssignmentDetailsSelect,
@@ -305,6 +306,48 @@ export class TrainingProgramAssignmentRepository {
       `;
 
       if (programs.length !== 1) {
+        return null;
+      }
+
+      // The service's initial capability read is not authoritative. Moderation
+      // can revoke approval before the program/relationship locks above.
+      // Lock users in deterministic order, then the trainer's existing
+      // TrainerProfile, and re-read persisted eligibility before INSERT.
+      // FOR UPDATE on users also blocks FK-backed creation of a missing
+      // TrainerProfile until this transaction commits.
+      const participantIds = [input.trainerId, input.athleteId].sort();
+      const lockedParticipants = await tx.$queryRaw<Array<{ id: string }>>`
+        SELECT "id"
+        FROM "users"
+        WHERE "id" IN (${Prisma.join(participantIds)})
+        ORDER BY "id"
+        FOR UPDATE
+      `;
+      if (lockedParticipants.length !== 2) return null;
+
+      await tx.$queryRaw`
+        SELECT "id"
+        FROM "trainer_profiles"
+        WHERE "user_id" = ${input.trainerId}
+        FOR UPDATE
+      `;
+
+      const participants = await tx.user.findMany({
+        where: { id: { in: participantIds }, deletedAt: null },
+        select: {
+          id: true,
+          role: true,
+          trainerProfile: { select: { isActive: true } },
+        },
+      });
+      const trainer = participants.find((user) => user.id === input.trainerId);
+      const athlete = participants.find((user) => user.id === input.athleteId);
+      if (
+        !trainer ||
+        !athlete ||
+        !deriveAccountCapabilities(trainer).trainer ||
+        !deriveAccountCapabilities(athlete).athlete
+      ) {
         return null;
       }
 
