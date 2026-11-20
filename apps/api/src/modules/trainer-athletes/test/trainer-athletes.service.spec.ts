@@ -483,6 +483,75 @@ describe('TrainerAthletesService', () => {
   });
 
   describe('accept', () => {
+    it('rejects accepting when the trainer capability has been revoked', async () => {
+      repository.findById.mockResolvedValue(pendingRelationship);
+      usersService.findMyCapabilities.mockImplementation(async () => ({
+        athlete: true,
+        trainer: false,
+        admin: false,
+      }));
+
+      await expect(service.accept(pendingRelationship.id, athlete)).rejects.toThrow(
+        ConflictException,
+      );
+      expect(repository.update).not.toHaveBeenCalled();
+    });
+
+    it('allows an approved ATHLETE-role trainer to accept an athlete invitation', async () => {
+      repository.findById.mockResolvedValue({
+        ...pendingRelationship,
+        initiatedById: athlete.id,
+      });
+      repository.update.mockResolvedValue(activeRelationship);
+      const approvedTrainer: TrainerAthleteActor = { id: trainer.id, role: 'ATHLETE' };
+
+      await expect(service.accept(pendingRelationship.id, approvedTrainer)).resolves.toEqual(
+        activeRelationship,
+      );
+      expect(repository.update).toHaveBeenCalledOnce();
+    });
+
+    it('rejects activation after an actor is promoted to admin', async () => {
+      repository.findById.mockResolvedValue(pendingRelationship);
+      usersService.findMyCapabilities.mockImplementation(async (id: string) => ({
+        athlete: id !== athlete.id ? true : false,
+        trainer: false,
+        admin: id === athlete.id,
+      }));
+
+      await expect(service.accept(pendingRelationship.id, athlete)).rejects.toThrow(
+        ForbiddenException,
+      );
+      expect(repository.update).not.toHaveBeenCalled();
+    });
+
+    it('rejects acceptance when the athlete account is not eligible', async () => {
+      repository.findById.mockResolvedValue({
+        ...pendingRelationship,
+        initiatedById: athlete.id,
+      });
+      usersService.findMyCapabilities.mockImplementation(async (id: string) => ({
+        athlete: id !== athlete.id,
+        trainer: id === trainer.id,
+        admin: false,
+      }));
+
+      await expect(service.accept(pendingRelationship.id, trainer)).rejects.toThrow(
+        ConflictException,
+      );
+      expect(repository.update).not.toHaveBeenCalled();
+    });
+
+    it('does not activate a pending relationship when capability lookup fails', async () => {
+      repository.findById.mockResolvedValue(pendingRelationship);
+      usersService.findMyCapabilities.mockRejectedValue(new Error('Database unavailable'));
+
+      await expect(service.accept(pendingRelationship.id, athlete)).rejects.toThrow(
+        'Database unavailable',
+      );
+      expect(repository.update).not.toHaveBeenCalled();
+    });
+
     it('should allow the recipient to accept a request', async () => {
       repository.findById.mockResolvedValue(pendingRelationship);
       repository.update.mockResolvedValue(activeRelationship);
@@ -492,10 +561,21 @@ describe('TrainerAthletesService', () => {
       expect(result).toEqual(activeRelationship);
 
       expect(repository.update).toHaveBeenCalledWith(
-        {
+        expect.objectContaining({
           id: pendingRelationship.id,
           status: 'PENDING',
-        },
+          trainer: {
+            is: {
+              deletedAt: null,
+              role: { not: 'ADMIN' },
+              OR: [
+                { trainerProfile: { is: { isActive: true } } },
+                { role: 'TRAINER', trainerProfile: { is: null } },
+              ],
+            },
+          },
+          athlete: { is: { deletedAt: null, role: { not: 'ADMIN' } } },
+        }),
         expect.objectContaining({
           status: 'ACTIVE',
           respondedAt: expect.any(Date),
@@ -526,6 +606,37 @@ describe('TrainerAthletesService', () => {
   });
 
   describe('decline', () => {
+    it('still allows the revoked trainer recipient to decline a pending request', async () => {
+      repository.findById.mockResolvedValue({
+        ...pendingRelationship,
+        initiatedById: athlete.id,
+      });
+      usersService.findMyCapabilities.mockImplementation(async () => ({
+        athlete: true,
+        trainer: false,
+        admin: false,
+      }));
+      repository.update.mockResolvedValue({ ...pendingRelationship, status: 'DECLINED' });
+
+      await service.decline(pendingRelationship.id, trainer);
+
+      expect(repository.update).toHaveBeenCalledOnce();
+    });
+
+    it('denies a stale session when the participant becomes admin', async () => {
+      repository.findById.mockResolvedValue(pendingRelationship);
+      usersService.findMyCapabilities.mockResolvedValue({
+        athlete: false,
+        trainer: false,
+        admin: true,
+      });
+
+      await expect(service.decline(pendingRelationship.id, athlete)).rejects.toThrow(
+        ForbiddenException,
+      );
+      expect(repository.update).not.toHaveBeenCalled();
+    });
+
     it('should allow the recipient to decline a request', async () => {
       repository.findById.mockResolvedValue(pendingRelationship);
 
@@ -580,6 +691,20 @@ describe('TrainerAthletesService', () => {
   });
 
   describe('cancel', () => {
+    it('allows revoked trainer initiator to cancel instead of being stuck pending', async () => {
+      repository.findById.mockResolvedValue(pendingRelationship);
+      usersService.findMyCapabilities.mockResolvedValue({
+        athlete: true,
+        trainer: false,
+        admin: false,
+      });
+      repository.update.mockResolvedValue({ ...pendingRelationship, status: 'CANCELLED' });
+
+      await service.cancel(pendingRelationship.id, trainer);
+
+      expect(repository.update).toHaveBeenCalledOnce();
+    });
+
     it('should allow the initiator to cancel a pending request', async () => {
       repository.findById.mockResolvedValue(pendingRelationship);
 
@@ -637,6 +762,37 @@ describe('TrainerAthletesService', () => {
   });
 
   describe('terminate', () => {
+    it('allows a revoked trainer to terminate an active relationship', async () => {
+      repository.findById.mockResolvedValue(activeRelationship);
+      usersService.findMyCapabilities.mockResolvedValue({
+        athlete: true,
+        trainer: false,
+        admin: false,
+      });
+      terminationService.terminateWithExerciseCopies.mockResolvedValue({
+        ...activeRelationship,
+        status: 'TERMINATED',
+      });
+
+      await service.terminate(activeRelationship.id, trainer, {});
+
+      expect(terminationService.terminateWithExerciseCopies).toHaveBeenCalledOnce();
+    });
+
+    it('denies termination when the current account is admin', async () => {
+      repository.findById.mockResolvedValue(activeRelationship);
+      usersService.findMyCapabilities.mockResolvedValue({
+        athlete: false,
+        trainer: false,
+        admin: true,
+      });
+
+      await expect(service.terminate(activeRelationship.id, trainer, {})).rejects.toThrow(
+        ForbiddenException,
+      );
+      expect(terminationService.terminateWithExerciseCopies).not.toHaveBeenCalled();
+    });
+
     it('should allow a trainer to terminate an active relationship', async () => {
       repository.findById.mockResolvedValue({
         id: 'relationship-1',

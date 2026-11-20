@@ -151,11 +151,27 @@ export class TrainerAthletesService {
 
     this.assertRecipient(relationship, actor);
     this.assertStatus(relationship.status, 'PENDING');
+    await this.assertCanAccept(actor, relationship);
 
     return this.updateWithConflictHandling(
       {
         id,
         status: 'PENDING',
+        // Fail closed if moderation revokes TrainerProfile between the
+        // capability lookup and the conditional PostgreSQL update.
+        trainer: {
+          is: {
+            deletedAt: null,
+            role: { not: 'ADMIN' },
+            OR: [
+              { trainerProfile: { is: { isActive: true } } },
+              { role: 'TRAINER', trainerProfile: { is: null } },
+            ],
+          },
+        },
+        athlete: {
+          is: { deletedAt: null, role: { not: 'ADMIN' } },
+        },
       },
       {
         status: 'ACTIVE',
@@ -170,6 +186,7 @@ export class TrainerAthletesService {
 
     this.assertRecipient(relationship, actor);
     this.assertStatus(relationship.status, 'PENDING');
+    await this.assertCurrentParticipant(actor);
 
     return this.updateWithConflictHandling(
       {
@@ -193,6 +210,7 @@ export class TrainerAthletesService {
     }
 
     this.assertStatus(relationship.status, 'PENDING');
+    await this.assertCurrentParticipant(actor);
 
     return this.updateWithConflictHandling(
       {
@@ -216,6 +234,8 @@ export class TrainerAthletesService {
     const relationship = await this.findOne(id, actor);
 
     this.assertStatus(relationship.status, 'ACTIVE');
+    // A revoked trainer must still be able to end a collaboration safely.
+    await this.assertCurrentParticipant(actor);
 
     const terminated = await this.terminationService.terminateWithExerciseCopies({
       id,
@@ -249,6 +269,34 @@ export class TrainerAthletesService {
   }
 
   // HELPERS
+  private async assertCurrentParticipant(actor: TrainerAthleteActor) {
+    const capabilities = await this.usersService.findMyCapabilities(actor.id);
+    if (!capabilities.athlete || capabilities.admin) {
+      throw new ForbiddenException('Only active participants can manage relationships');
+    }
+
+    return capabilities;
+  }
+
+  private async assertCanAccept(
+    actor: TrainerAthleteActor,
+    relationship: { trainerId: string; athleteId: string },
+  ) {
+    const current = await this.assertCurrentParticipant(actor);
+    const trainer =
+      relationship.trainerId === actor.id
+        ? current
+        : await this.usersService.findMyCapabilities(relationship.trainerId);
+    const athlete =
+      relationship.athleteId === actor.id
+        ? current
+        : await this.usersService.findMyCapabilities(relationship.athleteId);
+
+    if (!trainer.trainer || !athlete.athlete) {
+      throw new ConflictException('Relationship participants are no longer eligible');
+    }
+  }
+
   private assertParticipantRole(actor: TrainerAthleteActor): void {
     if (actor.role !== 'ATHLETE' && actor.role !== 'TRAINER') {
       throw new ForbiddenException('Only trainers and athletes can manage relationships');
