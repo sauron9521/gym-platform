@@ -15,6 +15,7 @@ describe('TrainingProgramAssignmentRepository eligibility (PostgreSQL)', () => {
 
   let trainerId: string;
   let athleteId: string;
+  let reviewerId: string;
   let relationshipId: string;
   let programId: string;
   let versionId: string;
@@ -62,6 +63,16 @@ describe('TrainingProgramAssignmentRepository eligibility (PostgreSQL)', () => {
       select: { id: true },
     });
     athleteId = athlete.id;
+
+    const reviewer = await prisma.user.create({
+      data: {
+        email: `assignment-state-reviewer-${suffix}@example.com`,
+        passwordHash: 'test-password-hash',
+        role: 'ADMIN',
+      },
+      select: { id: true },
+    });
+    reviewerId = reviewer.id;
 
     const relationship = await prisma.trainerAthlete.create({
       data: {
@@ -159,6 +170,9 @@ describe('TrainingProgramAssignmentRepository eligibility (PostgreSQL)', () => {
     if (trainerId) {
       await prisma.user.delete({ where: { id: trainerId } });
     }
+    if (reviewerId) {
+      await prisma.user.delete({ where: { id: reviewerId } });
+    }
     await app?.close();
   }, 20_000);
 
@@ -190,6 +204,7 @@ describe('TrainingProgramAssignmentRepository eligibility (PostgreSQL)', () => {
         userId: trainerId,
         isActive: true,
         approvedAt: new Date(),
+        approvedById: reviewerId,
       },
     });
 
@@ -239,6 +254,7 @@ describe('TrainingProgramAssignmentRepository eligibility (PostgreSQL)', () => {
         userId: trainerId,
         isActive: true,
         approvedAt: new Date(),
+        approvedById: reviewerId,
       },
     });
 
