@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { Prisma } from '#prisma/client';
 import { ExercisesService } from '#src/modules/exercises/services/exercises.service';
+import { UsersService } from '#src/modules/users/services/users.service';
 import { WorkoutsRepository } from '../repositories/workouts.repository.js';
 import {
   assertWorkoutAthlete,
@@ -30,11 +31,12 @@ export class WorkoutsService {
     private readonly workoutsRepository: WorkoutsRepository,
     private readonly exercisesService: ExercisesService,
     private readonly trainerAthletesService: TrainerAthletesService,
+    private readonly usersService: UsersService,
   ) {}
 
   // CREATE
   async create(actor: WorkoutActor, input: CreateWorkoutInput, idempotencyKey?: string) {
-    assertWorkoutAthlete(actor);
+    assertWorkoutAthlete(await this.usersService.findMyCapabilities(actor.id));
     const idempotency = workoutIdempotency(idempotencyKey, 'manual', input);
 
     return this.createIdempotently(actor.id, idempotency, async () => {
@@ -134,7 +136,7 @@ export class WorkoutsService {
     input: CreateWorkoutFromProgramInput,
     idempotencyKey?: string,
   ) {
-    assertWorkoutAthlete(actor);
+    assertWorkoutAthlete(await this.usersService.findMyCapabilities(actor.id));
     const idempotency = workoutIdempotency(idempotencyKey, 'from-program', input);
 
     return this.createIdempotently(actor.id, idempotency, async () => {
@@ -156,7 +158,7 @@ export class WorkoutsService {
 
   // FIND MANY
   async findMany(actor: WorkoutActor, query: WorkoutListQuery) {
-    assertWorkoutAthlete(actor);
+    assertWorkoutAthlete(await this.usersService.findMyCapabilities(actor.id));
     validateWorkoutPagination(query);
 
     if (query.scheduledFrom && query.scheduledTo && query.scheduledFrom > query.scheduledTo) {
@@ -215,7 +217,7 @@ export class WorkoutsService {
 
   // FIND ONE
   async findOne(id: string, actor: WorkoutActor) {
-    assertWorkoutAthlete(actor);
+    assertWorkoutAthlete(await this.usersService.findMyCapabilities(actor.id));
 
     const workout = await this.workoutsRepository.findById(id, {
       athleteId: actor.id,
