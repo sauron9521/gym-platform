@@ -9,6 +9,7 @@ import { Prisma } from '#prisma/client';
 
 import { UsersService } from '#src/modules/users/services/users.service';
 import { TrainerAthletesRepository } from '../repositories/trainer-athletes.repository.js';
+import { fullRelationshipReadWhere } from '../policies/trainer-athlete-read.policy.js';
 import { TrainerAthletesService } from '../services/trainer-athletes.service.js';
 import { TrainerAthleteTerminationService } from '../services/trainer-athlete-termination.service.js';
 
@@ -22,7 +23,7 @@ describe('TrainerAthletesService', () => {
     findMany: vi.fn(),
     findManyForParticipant: vi.fn(),
     findById: vi.fn(),
-    findHistoricalById: vi.fn(),
+    findRestrictedById: vi.fn(),
     findOpenByPair: vi.fn(),
     update: vi.fn(),
     findActiveTrainerIdsForAthlete: vi.fn(),
@@ -304,6 +305,64 @@ describe('TrainerAthletesService', () => {
   });
 
   describe('findMany', () => {
+    it('allows an approved ATHLETE-role trainer to list active collaborations', async () => {
+      const approvedTrainer: TrainerAthleteActor = { id: trainer.id, role: 'ATHLETE' };
+      repository.findManyForParticipant.mockResolvedValue({
+        data: [activeRelationship],
+        meta: { total: 1, skip: 0, take: 20, totalPages: 1 },
+      });
+
+      await service.findMany(approvedTrainer, { page: 1, limit: 20 });
+
+      expect(repository.findManyForParticipant).toHaveBeenCalledWith(
+        expect.objectContaining({ where: expect.any(Object) }),
+        trainer.id,
+        true,
+      );
+    });
+
+    it('keeps only redacted trainer-side reads after TrainerProfile revocation', async () => {
+      usersService.findMyCapabilities.mockResolvedValue({
+        athlete: true,
+        trainer: false,
+        admin: false,
+      });
+      repository.findManyForParticipant.mockResolvedValue({
+        data: [],
+        meta: { total: 0, skip: 0, take: 20, totalPages: 0 },
+      });
+
+      await service.findMany(trainer, { page: 1, limit: 20 });
+
+      expect(repository.findManyForParticipant).toHaveBeenCalledWith(
+        expect.any(Object),
+        trainer.id,
+        false,
+      );
+    });
+
+    it('rejects reading relationships with an obsolete ATHLETE session after admin promotion', async () => {
+      usersService.findMyCapabilities.mockResolvedValue({
+        athlete: false,
+        trainer: false,
+        admin: true,
+      });
+
+      await expect(service.findMany(athlete, { page: 1, limit: 20 })).rejects.toThrow(
+        ForbiddenException,
+      );
+      expect(repository.findManyForParticipant).not.toHaveBeenCalled();
+    });
+
+    it('fails closed when the current account is deleted or unavailable', async () => {
+      usersService.findMyCapabilities.mockRejectedValue(new NotFoundException('User not found'));
+
+      await expect(service.findMany(athlete, { page: 1, limit: 20 })).rejects.toThrow(
+        NotFoundException,
+      );
+      expect(repository.findManyForParticipant).not.toHaveBeenCalled();
+    });
+
     it('should return relationships for the current trainer', async () => {
       const response = {
         data: [pendingRelationship],
@@ -335,6 +394,7 @@ describe('TrainerAthletesService', () => {
           take: 20,
         },
         trainer.id,
+        true,
       );
     });
 
@@ -351,6 +411,75 @@ describe('TrainerAthletesService', () => {
   });
 
   describe('findOne', () => {
+    it('returns redacted details for a revoked trainer with an ACTIVE relationship', async () => {
+      usersService.findMyCapabilities.mockResolvedValue({
+        athlete: true,
+        trainer: false,
+        admin: false,
+      });
+      const redacted = {
+        id: activeRelationship.id,
+        trainerId: trainer.id,
+        athleteId: athlete.id,
+        status: 'ACTIVE',
+        athlete: { id: athlete.id, role: 'ATHLETE' },
+      };
+      repository.findById.mockResolvedValue(null);
+      repository.findRestrictedById.mockResolvedValue(redacted);
+
+      const result = await service.findOne(activeRelationship.id, trainer);
+
+      expect(result).toEqual(redacted);
+      expect(repository.findById).toHaveBeenCalledWith(
+        activeRelationship.id,
+        fullRelationshipReadWhere(trainer.id, false),
+      );
+      expect(repository.findRestrictedById).toHaveBeenCalledWith(activeRelationship.id, {
+        trainerId: trainer.id,
+      });
+    });
+
+    it('allows cleanup reads for revoked trainers with PENDING relationships', async () => {
+      usersService.findMyCapabilities.mockResolvedValue({
+        athlete: true,
+        trainer: false,
+        admin: false,
+      });
+      repository.findById.mockResolvedValue(null);
+      repository.findRestrictedById.mockResolvedValue(pendingRelationship);
+
+      await expect(service.findOne(pendingRelationship.id, trainer)).resolves.toMatchObject({
+        status: 'PENDING',
+      });
+    });
+
+    it('rejects detail reads for newly promoted admins even with an old TRAINER session', async () => {
+      usersService.findMyCapabilities.mockResolvedValue({
+        athlete: false,
+        trainer: false,
+        admin: true,
+      });
+
+      await expect(service.findOne(activeRelationship.id, trainer)).rejects.toThrow(
+        ForbiddenException,
+      );
+      expect(repository.findById).not.toHaveBeenCalled();
+      expect(repository.findRestrictedById).not.toHaveBeenCalled();
+    });
+
+    it('allows currently eligible participants even if their session had an ADMIN role', async () => {
+      const oldAdminSession: TrainerAthleteActor = { id: athlete.id, role: 'ADMIN' };
+      repository.findById.mockResolvedValue(pendingRelationship);
+
+      await expect(service.findOne(pendingRelationship.id, oldAdminSession)).resolves.toEqual(
+        pendingRelationship,
+      );
+      expect(repository.findById).toHaveBeenCalledWith(
+        pendingRelationship.id,
+        fullRelationshipReadWhere(athlete.id, false),
+      );
+    });
+
     it('redacts former trainer history even when the session role is ATHLETE', async () => {
       const approvedTrainer: TrainerAthleteActor = { id: trainer.id, role: 'ATHLETE' };
       const restricted = {
@@ -361,10 +490,10 @@ describe('TrainerAthletesService', () => {
         athlete: { id: athlete.id, role: 'ATHLETE' },
       };
       repository.findById.mockResolvedValue(null);
-      repository.findHistoricalById.mockResolvedValue(restricted);
+      repository.findRestrictedById.mockResolvedValue(restricted);
 
       await expect(service.findOne(restricted.id, approvedTrainer)).resolves.toEqual(restricted);
-      expect(repository.findHistoricalById).toHaveBeenCalledWith(restricted.id, {
+      expect(repository.findRestrictedById).toHaveBeenCalledWith(restricted.id, {
         trainerId: trainer.id,
       });
     });
@@ -376,18 +505,12 @@ describe('TrainerAthletesService', () => {
 
       expect(result).toEqual(pendingRelationship);
 
-      expect(repository.findById).toHaveBeenCalledWith(pendingRelationship.id, {
-        AND: [
-          {
-            OR: [{ trainerId: trainer.id }, { athleteId: trainer.id }],
-          },
-          {
-            OR: [{ status: { in: ['ACTIVE', 'PENDING'] } }, { athleteId: trainer.id }],
-          },
-        ],
-      });
+      expect(repository.findById).toHaveBeenCalledWith(
+        pendingRelationship.id,
+        fullRelationshipReadWhere(trainer.id, true),
+      );
 
-      expect(repository.findHistoricalById).not.toHaveBeenCalled();
+      expect(repository.findRestrictedById).not.toHaveBeenCalled();
     });
 
     it('should hide relationships from unrelated users', async () => {
@@ -424,26 +547,20 @@ describe('TrainerAthletesService', () => {
       repository.findById.mockResolvedValue(null);
 
       // The repository returns a safe historical projection.
-      repository.findHistoricalById.mockResolvedValue(historicalRelationship);
+      repository.findRestrictedById.mockResolvedValue(historicalRelationship);
 
       const result = await service.findOne(historicalRelationship.id, trainer);
 
       expect(result).toEqual(historicalRelationship);
 
-      expect(repository.findHistoricalById).toHaveBeenCalledWith(historicalRelationship.id, {
+      expect(repository.findRestrictedById).toHaveBeenCalledWith(historicalRelationship.id, {
         trainerId: trainer.id,
       });
 
-      expect(repository.findById).toHaveBeenCalledWith(historicalRelationship.id, {
-        AND: [
-          {
-            OR: [{ trainerId: trainer.id }, { athleteId: trainer.id }],
-          },
-          {
-            OR: [{ status: { in: ['ACTIVE', 'PENDING'] } }, { athleteId: trainer.id }],
-          },
-        ],
-      });
+      expect(repository.findById).toHaveBeenCalledWith(
+        historicalRelationship.id,
+        fullRelationshipReadWhere(trainer.id, true),
+      );
     });
 
     it('should preserve full historical relationship access for the athlete', async () => {
@@ -468,17 +585,13 @@ describe('TrainerAthletesService', () => {
 
       expect(result).toEqual(historicalRelationship);
 
-      expect(repository.findById).toHaveBeenCalledWith(historicalRelationship.id, {
-        AND: [
-          { OR: [{ trainerId: athlete.id }, { athleteId: athlete.id }] },
-          {
-            OR: [{ status: { in: ['ACTIVE', 'PENDING'] } }, { athleteId: athlete.id }],
-          },
-        ],
-      });
+      expect(repository.findById).toHaveBeenCalledWith(
+        historicalRelationship.id,
+        fullRelationshipReadWhere(athlete.id, false),
+      );
 
       // The athlete must not use the restricted trainer path.
-      expect(repository.findHistoricalById).not.toHaveBeenCalled();
+      expect(repository.findRestrictedById).not.toHaveBeenCalled();
     });
   });
 

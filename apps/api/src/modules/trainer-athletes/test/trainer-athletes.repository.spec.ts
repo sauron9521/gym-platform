@@ -2,7 +2,11 @@ import { PrismaService } from '#src/infra/database/index';
 import { Prisma } from '#prisma/client';
 
 import { TrainerAthletesRepository } from '../repositories/trainer-athletes.repository.js';
-import { trainerAthleteSelect } from '../selects/trainer-athlete.select.js';
+import { fullRelationshipReadWhere } from '../policies/trainer-athlete-read.policy.js';
+import {
+  trainerAthleteHistoricalSelect,
+  trainerAthleteSelect,
+} from '../selects/trainer-athlete.select.js';
 
 describe('TrainerAthletesRepository', () => {
   let repository: TrainerAthletesRepository;
@@ -113,6 +117,55 @@ describe('TrainerAthletesRepository', () => {
   });
 
   describe('findManyForParticipant', () => {
+    it('never requeries open trainer contact fields after capability revocation', async () => {
+      prisma.$transaction.mockResolvedValue([
+        [
+          { id: 'open', trainerId: 'trainer-1', athleteId: 'athlete-1', status: 'ACTIVE' },
+          { id: 'pending', trainerId: 'trainer-1', athleteId: 'athlete-2', status: 'PENDING' },
+        ],
+        2,
+      ]);
+
+      const result = await repository.findManyForParticipant(
+        { where: { trainerId: 'trainer-1' }, skip: 0, take: 20 },
+        'trainer-1',
+        false,
+      );
+
+      expect(result.data).toHaveLength(2);
+      expect(prisma.trainerAthlete.findMany).toHaveBeenCalledTimes(1);
+    });
+
+    it('restricts the second SQL query to the current athlete side after revocation', async () => {
+      const actorId = 'dual-user';
+      const where = { OR: [{ trainerId: actorId }, { athleteId: actorId }] };
+      prisma.$transaction.mockResolvedValue([
+        [
+          { id: 'former-trainer-open', trainerId: actorId, athleteId: 'other', status: 'ACTIVE' },
+          { id: 'own-athlete-history', trainerId: 'trainer-2', athleteId: actorId, status: 'ENDED' },
+        ],
+        2,
+      ]);
+      prisma.trainerAthlete.findMany.mockResolvedValue([
+        { id: 'own-athlete-history', athleteId: actorId, status: 'TERMINATED' },
+      ]);
+
+      await repository.findManyForParticipant({ where, skip: 0, take: 10 }, actorId, false);
+
+      expect(prisma.trainerAthlete.findMany).toHaveBeenNthCalledWith(2, {
+        where: {
+          AND: [
+            where,
+            {
+              id: { in: ['own-athlete-history'] },
+              ...fullRelationshipReadWhere(actorId, false),
+            },
+          ],
+        },
+        select: trainerAthleteSelect,
+      });
+    });
+
     it('redacts trainer history but preserves athlete and open records', async () => {
       const actorId = 'dual-user';
       const where = {
@@ -153,7 +206,11 @@ describe('TrainerAthletesRepository', () => {
         },
       ]);
 
-      const result = await repository.findManyForParticipant({ where, skip: 0, take: 10 }, actorId);
+      const result = await repository.findManyForParticipant(
+        { where, skip: 0, take: 10 },
+        actorId,
+        true,
+      );
 
       expect(result.data[0]).toEqual(restricted[0]);
       expect(result.data[0]?.athlete).not.toHaveProperty('email');
@@ -167,7 +224,7 @@ describe('TrainerAthletesRepository', () => {
             where,
             {
               id: { in: ['athlete-history', 'open-relationship'] },
-              OR: [{ status: { in: ['ACTIVE', 'PENDING'] } }, { athleteId: actorId }],
+              ...fullRelationshipReadWhere(actorId, true),
             },
           ],
         },
@@ -183,10 +240,32 @@ describe('TrainerAthletesRepository', () => {
       const result = await repository.findManyForParticipant(
         { where: { trainerId: 'trainer-1' }, skip: 0, take: 20 },
         'trainer-1',
+        true,
       );
 
       expect(result.data).toHaveLength(1);
       expect(prisma.trainerAthlete.findMany).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('findRestrictedById', () => {
+    it('keeps only the restricted projection for open or ended relationships', async () => {
+      prisma.trainerAthlete.findFirst.mockResolvedValue({
+        id: 'active-relationship',
+        status: 'ACTIVE',
+      });
+
+      const result = await repository.findRestrictedById('active-relationship', {
+        trainerId: 'trainer-1',
+      });
+
+      expect(result).toMatchObject({ status: 'ACTIVE' });
+      expect(prisma.trainerAthlete.findFirst).toHaveBeenCalledWith({
+        where: {
+          AND: [{ id: 'active-relationship' }, { trainerId: 'trainer-1' }],
+        },
+        select: trainerAthleteHistoricalSelect,
+      });
     });
   });
 
