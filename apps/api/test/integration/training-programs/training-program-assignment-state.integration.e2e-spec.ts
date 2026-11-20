@@ -15,6 +15,7 @@ describe('TrainingProgramAssignmentRepository eligibility (PostgreSQL)', () => {
 
   let trainerId: string;
   let athleteId: string;
+  let reviewerId: string;
   let relationshipId: string;
   let programId: string;
   let versionId: string;
@@ -62,6 +63,16 @@ describe('TrainingProgramAssignmentRepository eligibility (PostgreSQL)', () => {
       select: { id: true },
     });
     athleteId = athlete.id;
+
+    const reviewer = await prisma.user.create({
+      data: {
+        email: `assignment-state-reviewer-${suffix}@example.com`,
+        passwordHash: 'test-password-hash',
+        role: 'ADMIN',
+      },
+      select: { id: true },
+    });
+    reviewerId = reviewer.id;
 
     const relationship = await prisma.trainerAthlete.create({
       data: {
@@ -159,6 +170,9 @@ describe('TrainingProgramAssignmentRepository eligibility (PostgreSQL)', () => {
     if (trainerId) {
       await prisma.user.delete({ where: { id: trainerId } });
     }
+    if (reviewerId) {
+      await prisma.user.delete({ where: { id: reviewerId } });
+    }
     await app?.close();
   }, 20_000);
 
@@ -179,6 +193,120 @@ describe('TrainingProgramAssignmentRepository eligibility (PostgreSQL)', () => {
       }),
     ).toBe(1);
   });
+
+  it('supports approved ATHLETE-role trainers and blocks revoked TrainerProfiles at write time', async () => {
+    await prisma.user.update({
+      where: { id: trainerId },
+      data: { role: 'ATHLETE' },
+    });
+    await prisma.trainerProfile.create({
+      data: {
+        userId: trainerId,
+        isActive: true,
+        approvedAt: new Date(),
+        approvedById: reviewerId,
+      },
+    });
+
+    try {
+      const authorized = await createAssignment();
+      expect(authorized).toMatchObject({ assignedById: trainerId, athleteId });
+
+      await prisma.trainingProgramAssignment.delete({
+        where: { id: authorized!.id },
+      });
+
+      await prisma.trainerProfile.update({
+        where: { userId: trainerId },
+        data: { isActive: false, revokedAt: new Date(), revokedById: reviewerId },
+      });
+
+      expect(await createAssignment()).toBeNull();
+      expect(await prisma.trainingProgramAssignment.count({ where: { versionId } })).toBe(0);
+    } finally {
+      await prisma.trainerProfile.deleteMany({ where: { userId: trainerId } });
+      await prisma.user.update({
+        where: { id: trainerId },
+        data: { role: 'TRAINER' },
+      });
+    }
+  });
+
+  it('denies assignment writes for an athlete promoted to admin', async () => {
+    await prisma.user.update({
+      where: { id: athleteId },
+      data: { role: 'ADMIN' },
+    });
+    try {
+      expect(await createAssignment()).toBeNull();
+      expect(await prisma.trainingProgramAssignment.count({ where: { versionId } })).toBe(0);
+    } finally {
+      await prisma.user.update({
+        where: { id: athleteId },
+        data: { role: 'ATHLETE' },
+      });
+    }
+  });
+
+  it('serializes assignment creation against a concurrent trainer approval revocation', async () => {
+    await prisma.trainerProfile.create({
+      data: {
+        userId: trainerId,
+        isActive: true,
+        approvedAt: new Date(),
+        approvedById: reviewerId,
+      },
+    });
+
+    let creation:
+      | ReturnType<TrainingProgramAssignmentRepository['createAssignmentForActiveRelationship']>
+      | undefined;
+    let blocked = false;
+
+    try {
+      await prisma.$transaction(
+        async (tx) => {
+          const [holder] = await tx.$queryRaw<Array<{ pid: number }>>`
+            SELECT pg_backend_pid()::integer AS pid
+            FROM "trainer_profiles"
+            WHERE "user_id" = ${trainerId}
+            FOR UPDATE
+          `;
+          expect(holder).toBeDefined();
+
+          creation = createAssignment();
+
+          for (let attempt = 0; attempt < 60; attempt++) {
+            const [state] = await prisma.$queryRaw<Array<{ is_blocked: boolean }>>`
+              SELECT EXISTS (
+                SELECT 1 FROM pg_stat_activity AS activity
+                WHERE activity.datname = current_database()
+                  AND ${holder!.pid} = ANY(pg_blocking_pids(activity.pid))
+              ) AS is_blocked
+            `;
+            if (state?.is_blocked) {
+              blocked = true;
+              break;
+            }
+            await new Promise<void>((resolve) => setTimeout(resolve, 50));
+          }
+
+          expect(blocked).toBe(true);
+          await tx.trainerProfile.update({
+            where: { userId: trainerId },
+            data: { isActive: false, revokedAt: new Date(), revokedById: reviewerId },
+          });
+        },
+        { timeout: 15_000 },
+      );
+
+      expect(await creation).toBeNull();
+      expect(await prisma.trainingProgramAssignment.count({ where: { versionId } })).toBe(0);
+    } finally {
+      if (creation) await creation.catch(() => undefined);
+      await prisma.trainerProfile.deleteMany({ where: { userId: trainerId } });
+    }
+  }, 25_000);
 
   it('rejects an unpublished version without inserting an assignment', async () => {
     await prisma.trainingProgramVersion.update({

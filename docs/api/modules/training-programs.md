@@ -1,5 +1,13 @@
 # Training programs module
 
+## Live trainer capability at program assignment INSERT (M05 / #291)
+
+`assignVersionToAthlete` already checks `TrainingProgramAccessService.assertTrainer` against the current persisted account, including approved `ATHLETE`-role trainers. Because moderation may revoke approval after that initial check, `createAssignmentForActiveRelationship` now **rechecks both parties inside its existing PostgreSQL transaction**.
+
+The existing source-exercise → relationship → version → program lock order remains unchanged. After those checks, the transaction locks both user records in stable ID order and the trainer's optional `TrainerProfile` row (`FOR UPDATE`), then reuses `deriveAccountCapabilities` on the current user/profile snapshots. An inactive/revoked trainer, deleted account, promoted admin or otherwise ineligible athlete cannot receive a newly inserted assignment. The legacy `TRAINER` without a profile remains compatible; a revoked explicit profile overrides that legacy role. Profile revocation and assignment insertion serialize rather than racing. No schema changes or API payload changes.
+
+**Remaining #291 scope:** migrate assignment read/list/history and completion/cancellation permissions away from `actor.role`; then #361 cross-product security matrix before Trainer Web protected routes.
+
 **Source:** [`apps/api/src/modules/training-programs/`](../../../apps/api/src/modules/training-programs/)
 
 Programs have versioned content. This module manages program lifecycle, versions (draft/published), workouts, exercises, sets, athlete assignments and assignment transitions. All exposed controllers advertise bearer authentication.

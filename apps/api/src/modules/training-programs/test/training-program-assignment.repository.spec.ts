@@ -237,7 +237,15 @@ describe('TrainingProgramAssignmentRepository', () => {
           .fn()
           .mockResolvedValueOnce([{ id: input.trainerAthleteId }])
           .mockResolvedValueOnce([{ id: input.versionId }])
-          .mockResolvedValueOnce([{ id: input.programId }]),
+          .mockResolvedValueOnce([{ id: input.programId }])
+          .mockResolvedValueOnce([{ id: input.athleteId }, { id: input.trainerId }])
+          .mockResolvedValueOnce([]),
+        user: {
+          findMany: vi.fn().mockResolvedValue([
+            { id: input.trainerId, role: 'TRAINER', trainerProfile: null },
+            { id: input.athleteId, role: 'ATHLETE', trainerProfile: null },
+          ]),
+        },
         trainingProgramAssignment: {
           create: vi.fn().mockResolvedValue(assignment),
         },
@@ -245,7 +253,7 @@ describe('TrainingProgramAssignmentRepository', () => {
       models.$transaction.mockImplementation(async (callback) => callback(tx));
 
       const result = await repository.createAssignmentForActiveRelationship(input);
-      expect(tx.$queryRaw).toHaveBeenCalledTimes(3);
+      expect(tx.$queryRaw).toHaveBeenCalledTimes(5);
 
       const queries = tx.$queryRaw.mock.calls.map(([parts]) =>
         (parts as readonly string[]).join('?'),
@@ -255,6 +263,10 @@ describe('TrainingProgramAssignmentRepository', () => {
       expect(queries[2]).toContain('FOR SHARE');
       expect(queries[1]).toContain('"status" = \'PUBLISHED\'');
       expect(queries[2]).toContain('"status" <> \'ARCHIVED\'');
+      expect(queries[3]).toContain('FROM "users"');
+      expect(queries[3]).toContain('FOR UPDATE');
+      expect(queries[4]).toContain('FROM "trainer_profiles"');
+      expect(queries[4]).toContain('FOR UPDATE');
 
       expect(tx.trainingProgramAssignment.create).toHaveBeenCalledWith({
         data: {
@@ -344,14 +356,22 @@ describe('TrainingProgramAssignmentRepository', () => {
           ])
           .mockResolvedValueOnce([{ id: input.trainerAthleteId }])
           .mockResolvedValueOnce([{ id: input.versionId }])
-          .mockResolvedValueOnce([{ id: input.programId }]),
+          .mockResolvedValueOnce([{ id: input.programId }])
+          .mockResolvedValueOnce([{ id: input.athleteId }, { id: input.trainerId }])
+          .mockResolvedValueOnce([]),
+        user: {
+          findMany: vi.fn().mockResolvedValue([
+            { id: input.trainerId, role: 'TRAINER', trainerProfile: null },
+            { id: input.athleteId, role: 'ATHLETE', trainerProfile: null },
+          ]),
+        },
         trainingProgramAssignment: { create: vi.fn().mockResolvedValue(assignment) },
       };
       models.$transaction.mockImplementation(async (callback) => callback(tx));
 
       const result = await repository.createAssignmentForActiveRelationship(input);
       expect(result).toEqual(assignment);
-      expect(tx.$queryRaw).toHaveBeenCalledTimes(4);
+      expect(tx.$queryRaw).toHaveBeenCalledTimes(6);
       const queries = tx.$queryRaw.mock.calls.map(([parts]) =>
         (parts as readonly string[]).join('?'),
       );
@@ -361,6 +381,8 @@ describe('TrainingProgramAssignmentRepository', () => {
       expect(queries[1]).toContain('FOR UPDATE');
       expect(queries[2]).toContain('FROM "training_program_versions"');
       expect(queries[3]).toContain('FROM "training_programs"');
+      expect(queries[4]).toContain('FROM "users"');
+      expect(queries[5]).toContain('FROM "trainer_profiles"');
       expect(tx.$queryRaw.mock.invocationCallOrder[3]).toBeLessThan(
         tx.trainingProgramAssignment.create.mock.invocationCallOrder[0]!,
       );
