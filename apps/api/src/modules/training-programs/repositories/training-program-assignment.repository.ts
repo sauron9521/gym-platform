@@ -83,7 +83,12 @@ export class TrainingProgramAssignmentRepository {
     // 2. Recheck every page row at query time: own athlete history
     // stays full, but trainers only see contacts with live approval AND an
     // active relationship. Revoked trainer rows remain redacted.
-    const ids = historicalAssignments.map((assignment) => assignment.id);
+    const ids = historicalAssignments
+      .filter(
+        (assignment) =>
+          assignment.athleteId === actorId || assignment.trainerAthlete.status === 'ACTIVE',
+      )
+      .map((assignment) => assignment.id);
     const fullAssignments =
       ids.length > 0
         ? await this.prisma.trainingProgramAssignment.findMany({
