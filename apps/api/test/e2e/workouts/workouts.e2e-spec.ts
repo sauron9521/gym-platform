@@ -2488,12 +2488,12 @@ describe('Workouts (HTTP + PostgreSQL)', () => {
 
       expect(unrelatedResponse.status).toBe(404);
 
-      // Former trainer cannot access an athlete-only endpoint.
+      // Former trainers retain personal Athlete access but cannot read others' workouts.
       const trainerResponse = await request(app!.getHttpServer())
         .get(`/workouts/${workoutId}`)
         .set('Cookie', trainerCookie);
 
-      expect(trainerResponse.status).toBe(403);
+      expect(trainerResponse.status).toBe(404);
 
       // 10. Historical workout remains in the athlete's list.
       const listResponse = await request(app!.getHttpServer())
