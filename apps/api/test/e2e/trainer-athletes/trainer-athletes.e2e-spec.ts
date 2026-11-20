@@ -520,16 +520,16 @@ describe('TrainerAthletes (HTTP + PostgreSQL)', () => {
 
       // The service has already read approval when it reaches the repository.
       // Revoke it at exactly this boundary, before the locked DB transaction.
-      const spy = vi.spyOn(repository, 'createWithCurrentCapabilities').mockImplementation(
-        async (input) => {
+      const spy = vi
+        .spyOn(repository, 'createWithCurrentCapabilities')
+        .mockImplementation(async (input) => {
           intercepted += 1;
           await prisma.trainerProfile.update({
             where: { userId: approved.id },
             data: { isActive: false, revokedAt: new Date(), revokedById: trainerOne.id },
           });
           return createWithLocks(input);
-        },
-      );
+        });
 
       try {
         const response = await request(app!.getHttpServer())
@@ -573,15 +573,15 @@ describe('TrainerAthletes (HTTP + PostgreSQL)', () => {
       const cookie = await login(athlete.email);
       const repository = app!.get(TrainerAthletesRepository);
       const createWithLocks = repository.createWithCurrentCapabilities.bind(repository);
-      const spy = vi.spyOn(repository, 'createWithCurrentCapabilities').mockImplementation(
-        async (input) => {
+      const spy = vi
+        .spyOn(repository, 'createWithCurrentCapabilities')
+        .mockImplementation(async (input) => {
           await prisma.trainerProfile.update({
             where: { userId: approved.id },
             data: { isActive: false, revokedAt: new Date(), revokedById: trainerOne.id },
           });
           return createWithLocks(input);
-        },
-      );
+        });
 
       try {
         const response = await request(app!.getHttpServer())

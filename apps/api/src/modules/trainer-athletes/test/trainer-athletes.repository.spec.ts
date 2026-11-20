@@ -372,10 +372,7 @@ describe('TrainerAthletesRepository', () => {
 
     beforeEach(() => {
       vi.resetAllMocks();
-      tx.$queryRaw.mockResolvedValueOnce([
-        { id: 'athlete-1' },
-        { id: 'trainer-1' },
-      ]);
+      tx.$queryRaw.mockResolvedValueOnce([{ id: 'athlete-1' }, { id: 'trainer-1' }]);
       tx.$queryRaw.mockResolvedValueOnce([{ id: 'profile-1' }]);
       tx.user.findMany.mockResolvedValue([trainer, athlete]);
       tx.trainerAthlete.create.mockResolvedValue({
