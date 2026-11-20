@@ -3989,6 +3989,60 @@
         "tags": ["Trainer & Athlete Relationships"]
       }
     },
+    "/trainer-dashboard/overview": {
+      "get": {
+        "operationId": "TrainerDashboardController_overview",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "asOf": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "windowStart": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "activeClients": {
+                      "type": "integer"
+                    },
+                    "activeProgramAssignments": {
+                      "type": "integer"
+                    },
+                    "completedProgramWorkouts30d": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "asOf",
+                    "windowStart",
+                    "activeClients",
+                    "activeProgramAssignments",
+                    "completedProgramWorkouts30d"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "accessToken": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "tags": ["Trainer Dashboard"]
+      }
+    },
     "/workouts": {
       "post": {
         "operationId": "WorkoutsController_create",
