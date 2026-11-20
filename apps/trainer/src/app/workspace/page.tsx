@@ -21,24 +21,25 @@ export default async function TrainerWorkspacePage() {
   const t = getTrainerCopy((await getLocale()) as Locale);
 
   if (access.kind !== 'allowed') {
-    const title =
-      access.kind === 'unauthenticated'
-        ? t.signInRequired
-        : access.kind === 'forbidden'
-          ? t.trainerAccessDenied
-          : t.trainerAccessUnavailable;
-    const description =
-      access.kind === 'unauthenticated'
-        ? t.signInRequiredDescription
-        : access.kind === 'forbidden'
-          ? t.trainerAccessDeniedDescription
-          : t.trainerAccessUnavailableDescription;
+    const messages = {
+      unauthenticated: {
+        title: t.signInRequired,
+        description: t.signInRequiredDescription,
+      },
+      forbidden: {
+        title: t.trainerAccessDenied,
+        description: t.trainerAccessDeniedDescription,
+      },
+      unavailable: {
+        title: t.trainerAccessUnavailable,
+        description: t.trainerAccessUnavailableDescription,
+      },
+    };
+    const { title, description } = messages[access.kind];
 
     return (
       <section aria-labelledby="workspace-access" className="max-w-2xl space-y-4">
-        <h1 id="workspace-access" className="text-3xl font-semibold">
-          {title}
-        </h1>
+        <h1 id="workspace-access" className="text-3xl font-semibold">{title}</h1>
         <p className="text-muted-foreground">{description}</p>
         <Link
           href="/"
@@ -55,9 +56,7 @@ export default async function TrainerWorkspacePage() {
       <p className="text-sm font-bold tracking-[0.1em] text-primary uppercase">
         {t.pageEyebrow}
       </p>
-      <h1 id="workspace-title" className="text-3xl font-semibold">
-        {t.workspaceTitle}
-      </h1>
+      <h1 id="workspace-title" className="text-3xl font-semibold">{t.workspaceTitle}</h1>
       <p className="text-muted-foreground">{t.workspaceDescription}</p>
     </section>
   );

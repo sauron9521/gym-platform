@@ -34,10 +34,7 @@ describe('Trainer server capability boundary', () => {
       redirect: 'error',
     });
     expect(calls[0]?.options?.signal).toBeInstanceOf(AbortSignal);
-    expect(Object.keys((calls[0]?.options?.headers ?? {}) as object)).toEqual([
-      'cookie',
-      'accept',
-    ]);
+    expect(Object.keys((calls[0]?.options?.headers ?? {}) as object)).toEqual(['cookie', 'accept']);
   });
 
   it('permits an approved ATHLETE-role trainer without checking a stale session role', async () => {
@@ -48,28 +45,18 @@ describe('Trainer server capability boundary', () => {
   });
 
   it.each([
-    [{ athlete: true, trainer: false, admin: false }, 'revoked or pending trainer'],
-    [{ athlete: true, trainer: true, admin: true }, 'inconsistent admin privileges'],
-    [{ athlete: false, trainer: false, admin: true }, 'admin-only account'],
-    [{ athlete: true, trainer: 'true', admin: false }, 'malformed trainer field'],
-    [{ athlete: true, trainer: true }, 'missing admin field'],
-    [[], 'array payload'],
-    [null, 'null payload'],
-  ])('does not grant access for %j (%s)', async (grants, _label) => {
+    [{ athlete: true, trainer: false, admin: false }, 'forbidden'],
+    [{ athlete: true, trainer: true, admin: true }, 'forbidden'],
+    [{ athlete: false, trainer: false, admin: true }, 'forbidden'],
+    [{ athlete: true, trainer: 'true', admin: false }, 'unavailable'],
+    [{ athlete: true, trainer: true }, 'unavailable'],
+    [[], 'unavailable'],
+    [null, 'unavailable'],
+  ] as const)('does not grant access for invalid or revoked grants', async (grants, kind) => {
     const access = await verifyTrainerAccess(cookie, apiOrigin, async () =>
       Response.json(grants),
     );
-    expect(access.kind).not.toBe('allowed');
-    expect(access.kind).toBe(
-      grants && !Array.isArray(grants) &&
-        typeof grants === 'object' &&
-        'admin' in grants &&
-        typeof grants.admin === 'boolean' &&
-        'trainer' in grants &&
-        typeof grants.trainer === 'boolean'
-        ? 'forbidden'
-        : 'unavailable',
-    );
+    expect(access).toEqual({ kind });
   });
 
   it.each([
@@ -106,10 +93,7 @@ describe('Trainer server capability boundary', () => {
   });
 
   it('keeps the workspace an uncached server route guarded before content is rendered', async () => {
-    const page = await readFile(
-      new URL('../src/app/workspace/page.tsx', import.meta.url),
-      'utf8',
-    );
+    const page = await readFile(new URL('../src/app/workspace/page.tsx', import.meta.url), 'utf8');
     expect(page).toContain("export const dynamic = 'force-dynamic'");
     expect(page).toContain("const cookieHeader = (await headers()).get('cookie') ?? ''");
     expect(page).toContain('await verifyTrainerAccess(cookieHeader)');
