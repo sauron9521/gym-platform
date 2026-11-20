@@ -163,6 +163,48 @@ describe('Users /me (HTTP + PostgreSQL)', () => {
     }
   });
 
+  it('enforces live trainer access on training-program reads after approval and revocation', async () => {
+    const list = (cookie: string) =>
+      request(app.getHttpServer())
+        .get('/training-programs')
+        .query({ page: 1, limit: 10 })
+        .set('Cookie', cookie);
+
+    expect((await request(app.getHttpServer()).get('/training-programs')).status).toBe(401);
+    expect((await list(athleteCookie)).status).toBe(403);
+    expect((await list(adminCookie)).status).toBe(403);
+    expect((await list(otherCookie)).status).toBe(200);
+
+    await prisma.trainerProfile.create({
+      data: { userId: athleteId, isActive: true, approvedAt: new Date(), approvedById: reviewerId },
+    });
+    try {
+      const approved = await list(athleteCookie);
+      expect(approved.status).toBe(200);
+
+      await prisma.trainerProfile.update({
+        where: { userId: athleteId },
+        data: { isActive: false, revokedAt: new Date(), revokedById: reviewerId },
+      });
+      expect((await list(athleteCookie)).status).toBe(403);
+
+      // Explicit revocation overrides the legacy TRAINER role without invalidating the session.
+      await prisma.trainerProfile.create({
+        data: {
+          userId: otherId,
+          isActive: false,
+          revokedAt: new Date(),
+          revokedById: reviewerId,
+        },
+      });
+      expect((await list(otherCookie)).status).toBe(403);
+    } finally {
+      await prisma.trainerProfile.deleteMany({
+        where: { userId: { in: [athleteId, otherId] } },
+      });
+    }
+  });
+
   it('returns current account with null profile and no secrets', async () => {
     const response = await request(app.getHttpServer())
       .get('/users/me')

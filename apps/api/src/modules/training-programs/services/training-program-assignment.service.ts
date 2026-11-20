@@ -38,7 +38,7 @@ export class TrainingProgramAssignmentService {
     versionId: string,
     input: CreateTrainingProgramAssignmentInput,
   ) {
-    this.accessService.assertTrainer(actor);
+    await this.accessService.assertTrainer(actor);
 
     const program = await this.crudService.findOne(programId, actor);
 

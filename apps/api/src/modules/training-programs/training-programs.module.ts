@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 
 import { ExercisesModule } from '#src/modules/exercises/exercises.module';
 import { TrainerAthletesModule } from '#src/modules/trainer-athletes/trainer-athletes.module';
+import { UsersModule } from '#src/modules/users/users.module';
 
 import { TrainingProgramsController } from './controllers/training-programs.controller.js';
 import { TrainingProgramAssignmentsController } from './controllers/training-program-assignments.controller.js';
@@ -27,7 +28,7 @@ import { TrainingProgramVersionService } from './services/training-program-versi
 import { TrainingProgramAssignmentService } from './services/training-program-assignment.service.js';
 
 @Module({
-  imports: [ExercisesModule, TrainerAthletesModule],
+  imports: [ExercisesModule, TrainerAthletesModule, UsersModule],
   exports: [TrainingProgramsService],
   // Register literal /assignments routes before /:programId.
   controllers: [

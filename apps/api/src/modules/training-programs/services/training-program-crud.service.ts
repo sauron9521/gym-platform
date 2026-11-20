@@ -24,7 +24,7 @@ export class TrainingProgramCrudService {
   ) {}
 
   async create(actor: TrainingProgramActor, input: CreateTrainingProgramInput) {
-    this.accessService.assertTrainer(actor);
+    await this.accessService.assertTrainer(actor);
 
     try {
       return await this.repository.createProgramWithDraft({
@@ -43,7 +43,7 @@ export class TrainingProgramCrudService {
   }
 
   async findMany(actor: TrainingProgramActor, query: TrainingProgramListQuery) {
-    this.accessService.assertTrainer(actor);
+    await this.accessService.assertTrainer(actor);
     this.validatePagination(query);
 
     return this.repository.findMany({
@@ -57,7 +57,7 @@ export class TrainingProgramCrudService {
   }
 
   async findOne(id: string, actor: TrainingProgramActor) {
-    this.accessService.assertTrainer(actor);
+    await this.accessService.assertTrainer(actor);
 
     const program = await this.repository.findProgramById(id, {
       trainerId: actor.id,

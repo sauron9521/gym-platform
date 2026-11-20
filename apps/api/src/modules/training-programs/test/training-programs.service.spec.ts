@@ -202,6 +202,9 @@ describe('TrainingProgramsService', () => {
     const accessService = new TrainingProgramAccessService(
       crudRepositoryMock,
       versionRepositoryMock,
+      {
+        hasTrainerCapability: vi.fn(async (id: string) => id === trainer.id),
+      } as never,
     );
 
     const crudService = new TrainingProgramCrudService(crudRepositoryMock, accessService);
