@@ -1,5 +1,16 @@
 # Training programs module
 
+## Assignment reads: dual capabilities and revoked trainer privacy (M05 / #291)
+
+Both assignment list and individual GET endpoints now check the current persisted participant capabilities, not the legacy role from the session.
+
+- The participant scope includes **both** the actor's own athlete assignments and trainer-side program assignments, even if the account is simultaneously an athlete and an approved trainer. Pagination and status filtering apply to the combined result, without duplicating rows.
+- Every list page initially uses the email-free historical projection; a second SQL query returns full fields only for own-athlete assignments, regardless of assignment age, or trainer-side assignments with both a currently approved/legacy-eligible trainer and an `ACTIVE` trainer-athlete relationship.
+- Both the full SQL query and the basic/detail GET SQL queries revalidate current account state and TrainerProfile approval at read time. Revocation between a capability check and SQL cannot restore email/workout details.
+- Revoked trainers retain only restricted relationship/assignment identifiers and status for their own records. Current administrators and deleted participants cannot read assignments, even with stale session role claims.
+- Completion and cancellation still use legacy role checks and are intentionally deferred to the next scoped PR; assignment creation already has an independent transactional capability guard.
+- No Prisma migrations or API route changes.
+
 ## Live trainer capability at program assignment INSERT (M05 / #291)
 
 `assignVersionToAthlete` already checks `TrainingProgramAccessService.assertTrainer` against the current persisted account, including approved `ATHLETE`-role trainers. Because moderation may revoke approval after that initial check, `createAssignmentForActiveRelationship` now **rechecks both parties inside its existing PostgreSQL transaction**.

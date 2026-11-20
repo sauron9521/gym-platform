@@ -10,6 +10,11 @@ import { Prisma } from '#prisma/client';
 
 import { TrainerAthletesService } from '#src/modules/trainer-athletes/services/trainer-athletes.service';
 
+import {
+  assignmentFullReadWhere,
+  assignmentParticipantWhere,
+} from '../policies/training-program-assignment-read.policy.js';
+
 import { TrainingProgramAssignmentRepository } from '../repositories/training-program-assignment.repository.js';
 import { TrainingProgramAccessService } from './training-program-access.service.js';
 import { TrainingProgramCrudService } from './training-program-crud.service.js';
@@ -103,88 +108,64 @@ export class TrainingProgramAssignmentService {
     actor: TrainingProgramActor,
     query: TrainingProgramAssignmentListQuery,
   ) {
-    this.assertAssignmentParticipant(actor);
+    await this.accessService.assertAssignmentParticipant(actor);
     this.validateAssignmentPagination(query);
-
-    const accessWhere = this.getAssignmentAccessWhere(actor);
 
     const params = {
       where: {
-        AND: [accessWhere, ...(query.status ? [{ status: query.status }] : [])],
+        AND: [
+          assignmentParticipantWhere(actor.id),
+          ...(query.status ? [{ status: query.status }] : []),
+        ],
       },
       skip: (query.page - 1) * query.limit,
       take: query.limit,
       ...(query.view === 'summary' ? { view: 'summary' as const } : {}),
     } satisfies Parameters<TrainingProgramAssignmentRepository['findManyAssignments']>[0];
 
-    if (actor.role === 'TRAINER') {
-      return this.repository.findManyAssignmentsForTrainer(params);
-    }
-
-    // Athletes retain full access to their own history.
-    return this.repository.findManyAssignments(params);
+    return this.repository.findManyAssignmentsForParticipant(params, actor.id);
   }
 
   async findOneAssignment(assignmentId: string, actor: TrainingProgramActor) {
-    this.assertAssignmentParticipant(actor);
+    await this.accessService.assertAssignmentParticipant(actor);
 
-    const assignment = await this.repository.findAssignmentById(
+    // Both full and restricted projections are guarded by current persisted
+    // account state. A revoked trainer can read IDs/status, not athlete contact.
+    const full = await this.repository.findAssignmentById(
       assignmentId,
-      this.getAssignmentAccessWhere(actor),
+      assignmentFullReadWhere(actor.id),
+    );
+    if (full) return full;
+
+    const restricted = await this.repository.findRestrictedAssignmentById(
+      assignmentId,
+      assignmentParticipantWhere(actor.id),
     );
 
-    if (!assignment) {
+    if (!restricted) {
       throw new NotFoundException('Training program assignment not found.');
     }
-
-    return assignment;
+    return restricted;
   }
 
   async findOneAssignmentDetails(assignmentId: string, actor: TrainingProgramActor) {
-    this.assertAssignmentParticipant(actor);
+    await this.accessService.assertAssignmentParticipant(actor);
 
-    const accessWhere = this.getAssignmentAccessWhere(actor);
+    const full = await this.repository.findAssignmentDetailsById(
+      assignmentId,
+      assignmentFullReadWhere(actor.id),
+    );
+    if (full) return full;
 
-    if (actor.role === 'TRAINER') {
-      // Full details only while collaboration is active.
-      const activeAssignment = await this.repository.findAssignmentDetailsById(assignmentId, {
-        AND: [
-          accessWhere,
-          {
-            trainerAthlete: {
-              is: {
-                status: 'ACTIVE',
-              },
-            },
-          },
-        ],
-      });
+    const restricted = await this.repository.findRestrictedAssignmentById(
+      assignmentId,
+      assignmentParticipantWhere(actor.id),
+    );
 
-      if (activeAssignment) {
-        return activeAssignment;
-      }
-
-      // Historical access excludes sensitive fields.
-      const historicalAssignment = await this.repository.findHistoricalAssignmentDetailsById(
-        assignmentId,
-        accessWhere,
-      );
-
-      if (!historicalAssignment) {
-        throw new NotFoundException('Training program assignment not found.');
-      }
-
-      return historicalAssignment;
-    }
-
-    // Athletes can access their own complete history.
-    const assignment = await this.repository.findAssignmentDetailsById(assignmentId, accessWhere);
-
-    if (!assignment) {
+    if (!restricted) {
       throw new NotFoundException('Training program assignment not found.');
     }
-
-    return assignment;
+    return restricted;
   }
 
   async completeAssignment(assignmentId: string, actor: TrainingProgramActor) {
@@ -255,34 +236,6 @@ export class TrainingProgramAssignmentService {
 
       throw error;
     }
-  }
-
-  private assertAssignmentParticipant(actor: TrainingProgramActor): void {
-    if (actor.role !== 'TRAINER' && actor.role !== 'ATHLETE') {
-      throw new ForbiddenException('Only trainers and athletes can access program assignments.');
-    }
-  }
-
-  private getAssignmentAccessWhere(
-    actor: TrainingProgramActor,
-  ): Prisma.TrainingProgramAssignmentWhereInput {
-    if (actor.role === 'TRAINER') {
-      return {
-        version: {
-          program: {
-            trainerId: actor.id,
-          },
-        },
-      };
-    }
-
-    if (actor.role === 'ATHLETE') {
-      return {
-        athleteId: actor.id,
-      };
-    }
-
-    throw new ForbiddenException();
   }
 
   private validateAssignmentPagination(query: TrainingProgramAssignmentListQuery): void {

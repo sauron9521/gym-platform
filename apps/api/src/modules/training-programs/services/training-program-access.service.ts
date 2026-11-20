@@ -26,6 +26,14 @@ export class TrainingProgramAccessService {
     }
   }
 
+  /** Fresh persisted account check for read/list access; no session role gating. */
+  async assertAssignmentParticipant(actor: TrainingProgramActor): Promise<void> {
+    const capabilities = await this.usersService.findMyCapabilities(actor.id);
+    if (!capabilities.athlete || capabilities.admin) {
+      throw new ForbiddenException('Only active participants can access program assignments');
+    }
+  }
+
   async assertEditableDraft(actor: TrainingProgramActor, programId: string, versionId: string) {
     await this.assertTrainer(actor);
 

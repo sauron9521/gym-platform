@@ -6,22 +6,26 @@ import {
 } from '@nestjs/common';
 import { Prisma } from '#prisma/client';
 import { TrainingProgramAssignmentService } from '../services/training-program-assignment.service.js';
+import {
+  assignmentFullReadWhere,
+  assignmentParticipantWhere,
+} from '../policies/training-program-assignment-read.policy.js';
 import type { TrainingProgramActor } from '../types/training-program.types.js';
 
 describe('TrainingProgramAssignmentService', () => {
   const repository = {
     createAssignmentForActiveRelationship: vi.fn(),
     findManyAssignments: vi.fn(),
-    findManyAssignmentsForTrainer: vi.fn(),
+    findManyAssignmentsForParticipant: vi.fn(),
     findAssignmentById: vi.fn(),
     findAssignmentDetailsById: vi.fn(),
-    findHistoricalAssignmentDetailsById: vi.fn(),
+    findRestrictedAssignmentById: vi.fn(),
     updateAssignment: vi.fn(),
     completeAssignmentIfNoUnfinishedWorkouts: vi.fn(),
   };
   const crud = { findOne: vi.fn() };
   const versions = { findVersion: vi.fn() };
-  const access = { assertTrainer: vi.fn() };
+  const access = { assertTrainer: vi.fn(), assertAssignmentParticipant: vi.fn() };
   const trainerAthletes = { findOne: vi.fn() };
   const trainer: TrainingProgramActor = { id: 'trainer-1', role: 'TRAINER' };
   const athlete: TrainingProgramActor = { id: 'athlete-1', role: 'ATHLETE' };
@@ -55,6 +59,9 @@ describe('TrainingProgramAssignmentService', () => {
     );
     access.assertTrainer.mockImplementation((actor: TrainingProgramActor) => {
       if (actor.role !== 'TRAINER') throw new ForbiddenException();
+    });
+    access.assertAssignmentParticipant.mockImplementation(async (actor: TrainingProgramActor) => {
+      if (actor.id === admin.id) throw new ForbiddenException();
     });
     crud.findOne.mockResolvedValue({ id: programId, status: 'DRAFT' });
     versions.findVersion.mockResolvedValue({ id: versionId, status: 'PUBLISHED' });
@@ -166,117 +173,129 @@ describe('TrainingProgramAssignmentService', () => {
     await expect(service.findManyAssignments(trainer, query)).rejects.toBeInstanceOf(
       BadRequestException,
     );
-    expect(repository.findManyAssignments).not.toHaveBeenCalled();
-    expect(repository.findManyAssignmentsForTrainer).not.toHaveBeenCalled();
+    expect(repository.findManyAssignmentsForParticipant).not.toHaveBeenCalled();
   });
 
-  it('refuses all assignment list access to administrators', async () => {
-    await expect(service.findManyAssignments(admin, { page: 1, limit: 10 })).rejects.toBeInstanceOf(
+  it('denies assignment list reads after admin promotion, despite a stale session', async () => {
+    access.assertAssignmentParticipant.mockRejectedValue(new ForbiddenException());
+    await expect(service.findManyAssignments(trainer, { page: 1, limit: 10 })).rejects.toThrow(
       ForbiddenException,
     );
-    expect(repository.findManyAssignments).not.toHaveBeenCalled();
+    expect(repository.findManyAssignmentsForParticipant).not.toHaveBeenCalled();
   });
 
-  it('scopes trainer assignment lists to owned programs and uses privacy-aware repository', async () => {
+  it('returns one paginated scope containing both trainer and athlete assignments', async () => {
     const result = { data: [], meta: { total: 0 } };
-    repository.findManyAssignmentsForTrainer.mockResolvedValue(result);
+    repository.findManyAssignmentsForParticipant.mockResolvedValue(result);
+    const actor: TrainingProgramActor = { id: trainer.id, role: 'ATHLETE' };
     await expect(
-      service.findManyAssignments(trainer, {
+      service.findManyAssignments(actor, {
         page: 3,
         limit: 5,
         status: 'ACTIVE',
         view: 'summary',
       }),
     ).resolves.toBe(result);
-    expect(repository.findManyAssignmentsForTrainer).toHaveBeenCalledExactlyOnceWith({
-      where: {
-        AND: [{ version: { program: { trainerId: trainer.id } } }, { status: 'ACTIVE' }],
+    expect(access.assertAssignmentParticipant).toHaveBeenCalledWith(actor);
+    expect(repository.findManyAssignmentsForParticipant).toHaveBeenCalledExactlyOnceWith(
+      {
+        where: {
+          AND: [assignmentParticipantWhere(actor.id), { status: 'ACTIVE' }],
+        },
+        skip: 10,
+        take: 5,
+        view: 'summary',
       },
-      skip: 10,
-      take: 5,
-      view: 'summary',
-    });
-    expect(repository.findManyAssignments).not.toHaveBeenCalled();
-  });
-
-  it('scopes athlete assignment lists to themselves without a trainer join', async () => {
-    const result = { data: [], meta: { total: 0 } };
-    repository.findManyAssignments.mockResolvedValue(result);
-    await expect(service.findManyAssignments(athlete, { page: 1, limit: 20 })).resolves.toBe(
-      result,
+      actor.id,
     );
-    expect(repository.findManyAssignments).toHaveBeenCalledExactlyOnceWith({
-      where: { AND: [{ athleteId: athlete.id }] },
-      skip: 0,
-      take: 20,
-    });
-    expect(repository.findManyAssignmentsForTrainer).not.toHaveBeenCalled();
   });
 
-  it('hides assignments outside the actor scope', async () => {
-    repository.findAssignmentById.mockResolvedValue(null);
-    await expect(service.findOneAssignment(assignmentId, trainer)).rejects.toBeInstanceOf(
-      NotFoundException,
+  it('does not suppress athlete history for a TRAINER-role dual-capability user', async () => {
+    repository.findManyAssignmentsForParticipant.mockResolvedValue({ data: [], meta: {} });
+    await service.findManyAssignments(trainer, { page: 1, limit: 20 });
+    expect(repository.findManyAssignmentsForParticipant).toHaveBeenCalledWith(
+      {
+        where: { AND: [assignmentParticipantWhere(trainer.id)] },
+        skip: 0,
+        take: 20,
+      },
+      trainer.id,
     );
-    expect(repository.findAssignmentById).toHaveBeenCalledExactlyOnceWith(assignmentId, {
-      version: { program: { trainerId: trainer.id } },
-    });
   });
 
-  it('prevents administrators from looking up assignments', async () => {
-    await expect(service.findOneAssignment(assignmentId, admin)).rejects.toBeInstanceOf(
-      ForbiddenException,
-    );
-    expect(repository.findAssignmentById).not.toHaveBeenCalled();
-  });
-
-  it('returns active relationship details to the trainer with a scoped status predicate', async () => {
+  it('returns full details for the own-athlete side of an ended assignment', async () => {
     const details = { id: assignmentId, workouts: [{ id: 'workout-1' }] };
     repository.findAssignmentDetailsById.mockResolvedValue(details);
     await expect(service.findOneAssignmentDetails(assignmentId, trainer)).resolves.toBe(details);
-    expect(repository.findAssignmentDetailsById).toHaveBeenCalledExactlyOnceWith(assignmentId, {
-      AND: [
-        { version: { program: { trainerId: trainer.id } } },
-        { trainerAthlete: { is: { status: 'ACTIVE' } } },
-      ],
-    });
-    expect(repository.findHistoricalAssignmentDetailsById).not.toHaveBeenCalled();
-  });
-
-  it('falls back to a restricted historical projection if trainer access ended', async () => {
-    repository.findAssignmentDetailsById.mockResolvedValue(null);
-    const historical = { id: assignmentId, status: 'CANCELLED' };
-    repository.findHistoricalAssignmentDetailsById.mockResolvedValue(historical);
-    await expect(service.findOneAssignmentDetails(assignmentId, trainer)).resolves.toBe(historical);
-    expect(repository.findHistoricalAssignmentDetailsById).toHaveBeenCalledExactlyOnceWith(
+    expect(repository.findAssignmentDetailsById).toHaveBeenCalledExactlyOnceWith(
       assignmentId,
-      { version: { program: { trainerId: trainer.id } } },
+      assignmentFullReadWhere(trainer.id),
     );
+    expect(repository.findRestrictedAssignmentById).not.toHaveBeenCalled();
   });
 
-  it('hides historical details when the trainer does not own the program', async () => {
+  it('redacts a trainer detail read when approval was revoked, even while ACTIVE', async () => {
     repository.findAssignmentDetailsById.mockResolvedValue(null);
-    repository.findHistoricalAssignmentDetailsById.mockResolvedValue(null);
-    await expect(service.findOneAssignmentDetails(assignmentId, trainer)).rejects.toBeInstanceOf(
-      NotFoundException,
+    const restricted = { id: assignmentId, status: 'ACTIVE', athlete: { id: athlete.id } };
+    repository.findRestrictedAssignmentById.mockResolvedValue(restricted);
+    await expect(service.findOneAssignmentDetails(assignmentId, trainer)).resolves.toEqual(
+      restricted,
+    );
+    expect(repository.findRestrictedAssignmentById).toHaveBeenCalledExactlyOnceWith(
+      assignmentId,
+      assignmentParticipantWhere(trainer.id),
     );
   });
 
-  it('allows an athlete to retrieve full details from their own history', async () => {
-    const details = { id: assignmentId, workouts: [{ id: 'workout-1' }] };
-    repository.findAssignmentDetailsById.mockResolvedValue(details);
-    await expect(service.findOneAssignmentDetails(assignmentId, athlete)).resolves.toBe(details);
-    expect(repository.findAssignmentDetailsById).toHaveBeenCalledExactlyOnceWith(assignmentId, {
-      athleteId: athlete.id,
+  it('redacts historical trainer details when a relationship is no longer ACTIVE', async () => {
+    repository.findAssignmentDetailsById.mockResolvedValue(null);
+    repository.findRestrictedAssignmentById.mockResolvedValue({
+      id: assignmentId,
+      status: 'TERMINATED',
     });
-    expect(repository.findHistoricalAssignmentDetailsById).not.toHaveBeenCalled();
+    await expect(service.findOneAssignmentDetails(assignmentId, trainer)).resolves.toMatchObject({
+      status: 'TERMINATED',
+    });
   });
 
-  it('hides another athlete assignment details', async () => {
+  it('returns 404 for unrelated users or absent assignments', async () => {
     repository.findAssignmentDetailsById.mockResolvedValue(null);
-    await expect(service.findOneAssignmentDetails(assignmentId, athlete)).rejects.toBeInstanceOf(
+    repository.findRestrictedAssignmentById.mockResolvedValue(null);
+    await expect(service.findOneAssignmentDetails(assignmentId, athlete)).rejects.toThrow(
       NotFoundException,
     );
+  });
+
+  it('uses full-or-redacted projections for the basic GET assignment endpoint', async () => {
+    const full = { id: assignmentId, athlete: { email: 'athlete@example.com' } };
+    repository.findAssignmentById.mockResolvedValueOnce(full).mockResolvedValueOnce(null);
+    repository.findRestrictedAssignmentById.mockResolvedValue({
+      id: assignmentId,
+      athlete: { id: athlete.id },
+    });
+
+    await expect(service.findOneAssignment(assignmentId, athlete)).resolves.toBe(full);
+    await expect(service.findOneAssignment(assignmentId, trainer)).resolves.toMatchObject({
+      id: assignmentId,
+    });
+    expect(repository.findAssignmentById).toHaveBeenNthCalledWith(
+      1,
+      assignmentId,
+      assignmentFullReadWhere(athlete.id),
+    );
+    expect(repository.findRestrictedAssignmentById).toHaveBeenCalledWith(
+      assignmentId,
+      assignmentParticipantWhere(trainer.id),
+    );
+  });
+
+  it('rejects a formerly permitted session when persisted participant lookup fails', async () => {
+    access.assertAssignmentParticipant.mockRejectedValue(new NotFoundException('User not found'));
+    await expect(service.findOneAssignment(assignmentId, trainer)).rejects.toThrow(
+      NotFoundException,
+    );
+    expect(repository.findAssignmentById).not.toHaveBeenCalled();
+    expect(repository.findRestrictedAssignmentById).not.toHaveBeenCalled();
   });
 
   it('forbids trainer completion without querying the assignment', async () => {
