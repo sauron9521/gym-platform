@@ -39,7 +39,9 @@ export default async function TrainerWorkspacePage() {
 
     return (
       <section aria-labelledby="workspace-access" className="max-w-2xl space-y-4">
-        <h1 id="workspace-access" className="text-3xl font-semibold">{title}</h1>
+        <h1 id="workspace-access" className="text-3xl font-semibold">
+          {title}
+        </h1>
         <p className="text-muted-foreground">{description}</p>
         <Link
           href="/"
@@ -53,10 +55,10 @@ export default async function TrainerWorkspacePage() {
 
   return (
     <section aria-labelledby="workspace-title" className="max-w-3xl space-y-4">
-      <p className="text-sm font-bold tracking-[0.1em] text-primary uppercase">
-        {t.pageEyebrow}
-      </p>
-      <h1 id="workspace-title" className="text-3xl font-semibold">{t.workspaceTitle}</h1>
+      <p className="text-sm font-bold tracking-[0.1em] text-primary uppercase">{t.pageEyebrow}</p>
+      <h1 id="workspace-title" className="text-3xl font-semibold">
+        {t.workspaceTitle}
+      </h1>
       <p className="text-muted-foreground">{t.workspaceDescription}</p>
     </section>
   );

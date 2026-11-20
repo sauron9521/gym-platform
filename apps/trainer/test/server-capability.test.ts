@@ -53,9 +53,7 @@ describe('Trainer server capability boundary', () => {
     [[], 'unavailable'],
     [null, 'unavailable'],
   ] as const)('does not grant access for invalid or revoked grants', async (grants, kind) => {
-    const access = await verifyTrainerAccess(cookie, apiOrigin, async () =>
-      Response.json(grants),
-    );
+    const access = await verifyTrainerAccess(cookie, apiOrigin, async () => Response.json(grants));
     expect(access).toEqual({ kind });
   });
 
@@ -66,8 +64,10 @@ describe('Trainer server capability boundary', () => {
     [500, 'unavailable'],
     [503, 'unavailable'],
   ] as const)('fails closed for upstream HTTP %i', async (status, kind) => {
-    const access = await verifyTrainerAccess(cookie, apiOrigin, async () =>
-      new Response(null, { status }),
+    const access = await verifyTrainerAccess(
+      cookie,
+      apiOrigin,
+      async () => new Response(null, { status }),
     );
     expect(access).toEqual({ kind });
   });
@@ -78,8 +78,10 @@ describe('Trainer server capability boundary', () => {
     });
     expect(offline).toEqual({ kind: 'unavailable' });
 
-    const invalidJson = await verifyTrainerAccess(cookie, apiOrigin, async () =>
-      new Response('not-json', { status: 200 }),
+    const invalidJson = await verifyTrainerAccess(
+      cookie,
+      apiOrigin,
+      async () => new Response('not-json', { status: 200 }),
     );
     expect(invalidJson).toEqual({ kind: 'unavailable' });
 
