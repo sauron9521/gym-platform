@@ -202,6 +202,12 @@ describe('TrainingProgramsService', () => {
     const accessService = new TrainingProgramAccessService(
       crudRepositoryMock,
       versionRepositoryMock,
+      {
+        findCapabilitySnapshot: vi.fn(async (id: string) => ({
+          role: id === trainer.id ? 'TRAINER' : 'ATHLETE',
+          trainerProfile: null,
+        })),
+      } as never,
     );
 
     const crudService = new TrainingProgramCrudService(crudRepositoryMock, accessService);
