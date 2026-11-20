@@ -203,10 +203,7 @@ describe('TrainingProgramsService', () => {
       crudRepositoryMock,
       versionRepositoryMock,
       {
-        findCapabilitySnapshot: vi.fn(async (id: string) => ({
-          role: id === trainer.id ? 'TRAINER' : 'ATHLETE',
-          trainerProfile: null,
-        })),
+        hasTrainerCapability: vi.fn(async (id: string) => id === trainer.id),
       } as never,
     );
 
