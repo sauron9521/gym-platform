@@ -153,6 +153,174 @@ describe('TrainerAthletes (HTTP + PostgreSQL)', () => {
     }
   }, 20_000);
 
+  it('serves scoped dashboard counts without leaking other trainers or ended activity', async () => {
+    const relationId = randomUUID();
+    const foreignRelationId = randomUUID();
+    const programId = randomUUID();
+    const foreignProgramId = randomUUID();
+    const versionId = randomUUID();
+    const foreignVersionId = randomUUID();
+    const assignmentId = randomUUID();
+    const foreignAssignmentId = randomUUID();
+    const now = new Date();
+
+    try {
+      await prisma.trainerAthlete.createMany({
+        data: [
+          {
+            id: relationId,
+            trainerId: trainerOne.id,
+            athleteId: athleteOne.id,
+            initiatedById: trainerOne.id,
+            status: 'ACTIVE',
+          },
+          {
+            id: foreignRelationId,
+            trainerId: trainerTwo.id,
+            athleteId: athleteTwo.id,
+            initiatedById: trainerTwo.id,
+            status: 'ACTIVE',
+          },
+        ],
+      });
+      await prisma.trainingProgram.createMany({
+        data: [
+          { id: programId, trainerId: trainerOne.id, status: 'PUBLISHED' },
+          { id: foreignProgramId, trainerId: trainerTwo.id, status: 'PUBLISHED' },
+        ],
+      });
+      await prisma.trainingProgramVersion.createMany({
+        data: [
+          { id: versionId, programId, version: 1, title: 'Trainer program', status: 'PUBLISHED' },
+          {
+            id: foreignVersionId,
+            programId: foreignProgramId,
+            version: 1,
+            title: 'Other trainer',
+            status: 'PUBLISHED',
+          },
+        ],
+      });
+      await prisma.trainingProgramAssignment.createMany({
+        data: [
+          {
+            id: assignmentId,
+            versionId,
+            trainerAthleteId: relationId,
+            athleteId: athleteOne.id,
+            assignedById: trainerOne.id,
+            status: 'ACTIVE',
+          },
+          {
+            id: foreignAssignmentId,
+            versionId: foreignVersionId,
+            trainerAthleteId: foreignRelationId,
+            athleteId: athleteTwo.id,
+            assignedById: trainerTwo.id,
+            status: 'ACTIVE',
+          },
+        ],
+      });
+      await prisma.workout.createMany({
+        data: [
+          {
+            title: 'Completed own plan',
+            athleteId: athleteOne.id,
+            createdById: trainerOne.id,
+            programAssignmentId: assignmentId,
+            status: 'COMPLETED',
+            completedAt: new Date(now.getTime() - 86_400_000),
+          },
+          {
+            title: 'Too old for dashboard window',
+            athleteId: athleteOne.id,
+            createdById: trainerOne.id,
+            programAssignmentId: assignmentId,
+            status: 'COMPLETED',
+            completedAt: new Date(now.getTime() - 32 * 86_400_000),
+          },
+          {
+            title: 'Incomplete workout',
+            athleteId: athleteOne.id,
+            createdById: trainerOne.id,
+            programAssignmentId: assignmentId,
+            status: 'PLANNED',
+          },
+          {
+            title: 'Another trainer private workout',
+            athleteId: athleteTwo.id,
+            createdById: trainerTwo.id,
+            programAssignmentId: foreignAssignmentId,
+            status: 'COMPLETED',
+            completedAt: new Date(now.getTime() - 86_400_000),
+          },
+        ],
+      });
+
+      const me = await request(app!.getHttpServer())
+        .get('/trainer-dashboard/overview')
+        .set('Cookie', trainerOneCookie);
+      expect(me.status).toBe(200);
+      expect(me.body).toMatchObject({
+        activeClients: 1,
+        activeProgramAssignments: 1,
+        completedProgramWorkouts30d: 1,
+      });
+      expect(Date.parse(me.body.asOf) - Date.parse(me.body.windowStart)).toBe(30 * 86_400_000);
+      expect(JSON.stringify(me.body)).not.toContain(athleteTwo.email);
+
+      const other = await request(app!.getHttpServer())
+        .get('/trainer-dashboard/overview')
+        .set('Cookie', trainerTwoCookie);
+      expect(other.status).toBe(200);
+      expect(other.body).toMatchObject({
+        activeClients: 1,
+        activeProgramAssignments: 1,
+        completedProgramWorkouts30d: 1,
+      });
+
+      const denied = await request(app!.getHttpServer())
+        .get('/trainer-dashboard/overview')
+        .set('Cookie', athleteOneCookie);
+      expect(denied.status).toBe(403);
+      const unauthenticated = await request(app!.getHttpServer()).get(
+        '/trainer-dashboard/overview',
+      );
+      expect(unauthenticated.status).toBe(401);
+
+      // Existing browser cookie must not confer Trainer rights after role
+      // change in the database; the API checks current grants on each read.
+      await prisma.user.update({
+        where: { id: trainerOne.id },
+        data: { role: 'ATHLETE' },
+      });
+      const revoked = await request(app!.getHttpServer())
+        .get('/trainer-dashboard/overview')
+        .set('Cookie', trainerOneCookie);
+      expect(revoked.status).toBe(403);
+    } finally {
+      await prisma.user.update({
+        where: { id: trainerOne.id },
+        data: { role: 'TRAINER' },
+      });
+      await prisma.workout.deleteMany({
+        where: { programAssignmentId: { in: [assignmentId, foreignAssignmentId] } },
+      });
+      await prisma.trainingProgramAssignment.deleteMany({
+        where: { id: { in: [assignmentId, foreignAssignmentId] } },
+      });
+      await prisma.trainingProgramVersion.deleteMany({
+        where: { id: { in: [versionId, foreignVersionId] } },
+      });
+      await prisma.trainingProgram.deleteMany({
+        where: { id: { in: [programId, foreignProgramId] } },
+      });
+      await prisma.trainerAthlete.deleteMany({
+        where: { id: { in: [relationId, foreignRelationId] } },
+      });
+    }
+  });
+
   it('paginates only owned trainer collaborations without leaking athlete-side or tenant records', async () => {
     const relationships = await Promise.all([
       prisma.trainerAthlete.create({
