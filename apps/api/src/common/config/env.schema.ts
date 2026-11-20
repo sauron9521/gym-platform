@@ -129,6 +129,17 @@ const baseEnvSchema = z.object({
       .regex(/^[A-Za-z0-9_-]{43,128}$/)
       .optional(),
   ),
+  TRAINER_APP_URL: z.preprocess(
+    emptyToUndefined,
+    z
+      .string()
+      .trim()
+      .refine(
+        (value) => isPublicHttpUrl(value) && new URL(value).origin === value,
+        'Must be an HTTP(S) origin without path, query or credentials',
+      )
+      .optional(),
+  ),
   ADMIN_APP_URL: z.preprocess(
     emptyToUndefined,
     z
@@ -212,6 +223,14 @@ export const envSchema = baseEnvSchema.superRefine((env, ctx) => {
       code: 'custom',
       path: ['MAIL_FROM'],
       message: 'MAIL_FROM is required in production',
+    });
+  }
+
+  if (env.TRAINER_APP_URL && new URL(env.TRAINER_APP_URL).protocol !== 'https:') {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['TRAINER_APP_URL'],
+      message: 'Production Trainer origin must use HTTPS',
     });
   }
 

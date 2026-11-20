@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { getLocale } from 'next-intl/server';
 
 import type { Locale } from '@gym/i18n';
@@ -23,6 +24,12 @@ export default async function HomePage() {
       >
         <h2 className="text-xl font-semibold">{t.status}</h2>
         <p className="mt-3 text-sm leading-6 text-muted-foreground">{t.statusDescription}</p>
+        <Link
+          href="/login"
+          className="mt-6 inline-flex min-h-11 items-center rounded-lg bg-primary px-5 font-semibold text-primary-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+        >
+          {t.loginLink}
+        </Link>
       </section>
     </div>
   );

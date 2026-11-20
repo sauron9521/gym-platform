@@ -38,6 +38,20 @@ export const trainerCopy = {
     workspaceTitle: 'Захищений простір тренера',
     workspaceDescription:
       'Актуальні права тренера підтверджені сервером. Інструменти клієнтів і програм з’являться окремими PR.',
+    loginTitle: 'Вхід для тренера',
+    loginDescription:
+      'Використовуйте свій звичайний обліковий запис OVRANTO. Доступ відкривається лише після схвалення тренерського профілю.',
+    loginEmail: 'Електронна пошта',
+    loginPassword: 'Пароль',
+    loginSubmit: 'Увійти',
+    loginSubmitting: 'Перевіряємо доступ…',
+    loginInvalidCredentials: 'Неправильна електронна пошта або пароль.',
+    loginRateLimited: 'Забагато спроб входу. Спробуйте пізніше.',
+    loginSecurity: 'Запит відхилено перевіркою безпеки. Перевірте адресу Trainer.',
+    loginNotApproved: 'Тренерський доступ не схвалено або його відкликано.',
+    loginMfaRequired: 'Додаткова перевірка входу ще не підтримується в Trainer.',
+    loginUnavailable: 'Не вдалося підтвердити сесію або права. Спробуйте пізніше.',
+    loginLink: 'Перейти до входу тренера',
     returnHome: 'На головну',
   },
   en: {
@@ -76,6 +90,20 @@ export const trainerCopy = {
     workspaceTitle: 'Protected trainer workspace',
     workspaceDescription:
       'The server verified your current trainer grant. Client and program tools will follow in separate PRs.',
+    loginTitle: 'Trainer sign-in',
+    loginDescription:
+      'Use your existing OVRANTO account. An approved trainer profile is required to enter the workspace.',
+    loginEmail: 'Email address',
+    loginPassword: 'Password',
+    loginSubmit: 'Sign in',
+    loginSubmitting: 'Checking access…',
+    loginInvalidCredentials: 'Incorrect email address or password.',
+    loginRateLimited: 'Too many attempts. Please try again later.',
+    loginSecurity: 'The request failed security checks. Verify the Trainer origin.',
+    loginNotApproved: 'Trainer access has not been approved or has been revoked.',
+    loginMfaRequired: 'Additional sign-in verification is not yet supported in Trainer.',
+    loginUnavailable: 'Could not verify your session or permissions. Please try later.',
+    loginLink: 'Sign in to Trainer',
     returnHome: 'Back to overview',
   },
 } as const satisfies Record<Locale, Record<string, string>>;

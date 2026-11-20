@@ -55,6 +55,7 @@ import { WorkoutAnalyticsModule } from '#src/modules/workout-analytics/workout-a
           trustedOrigins: getSessionTrustedOrigins(
             config.getOrThrow('APP_URL'),
             config.get('ADMIN_APP_URL'),
+            config.get('TRAINER_APP_URL'),
           ),
         },
         emailVerification: {

@@ -44,10 +44,12 @@ export default async function TrainerWorkspacePage() {
         </h1>
         <p className="text-muted-foreground">{description}</p>
         <Link
-          href="/"
+          href={access.kind === 'unauthenticated' || access.kind === 'forbidden' ? '/login' : '/'}
           className="inline-flex min-h-11 items-center rounded-lg border border-border px-4 font-semibold hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
         >
-          {t.returnHome}
+          {access.kind === 'unauthenticated' || access.kind === 'forbidden'
+            ? t.loginLink
+            : t.returnHome}
         </Link>
       </section>
     );
