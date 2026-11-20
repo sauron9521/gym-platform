@@ -75,6 +75,10 @@ describe('TrainingProgramAssignmentService', () => {
     versions.findVersion.mockResolvedValue({ id: versionId, status: 'PUBLISHED' });
     trainerAthletes.findOne.mockResolvedValue(relationship);
     repository.findAssignmentById.mockResolvedValue(activeAssignment);
+    repository.cancelAssignmentIfTrainerEligible.mockResolvedValue({
+      ...activeAssignment,
+      status: 'CANCELLED',
+    });
   });
 
   it('creates an assignment only from a published owned program and active relationship', async () => {
