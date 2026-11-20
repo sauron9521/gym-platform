@@ -6,7 +6,7 @@ import type { TrainingProgramActor } from '../types/training-program.types.js';
 describe('TrainingProgramAccessService', () => {
   const programs = { findProgramById: vi.fn() };
   const versions = { findVersionForEditing: vi.fn() };
-  const users = { findCapabilitySnapshot: vi.fn() };
+  const users = { hasTrainerCapability: vi.fn() };
 
   const trainer: TrainingProgramActor = { id: 'trainer-1', role: 'TRAINER' };
   const athlete: TrainingProgramActor = { id: 'athlete-1', role: 'ATHLETE' };
@@ -31,10 +31,7 @@ describe('TrainingProgramAccessService', () => {
   beforeEach(() => {
     vi.resetAllMocks();
     service = new TrainingProgramAccessService(programs as never, versions as never, users as never);
-    users.findCapabilitySnapshot.mockImplementation(async (id: string) => ({
-      role: id.startsWith('trainer-') ? 'TRAINER' : 'ATHLETE',
-      trainerProfile: null,
-    }));
+    users.hasTrainerCapability.mockImplementation(async (id: string) => id.startsWith('trainer-'));
     programs.findProgramById.mockResolvedValue({
       id: 'program-1',
       trainerId: trainer.id,
@@ -46,15 +43,12 @@ describe('TrainingProgramAccessService', () => {
   it('reads the current database capability rather than trusting the actor role', async () => {
     await expect(service.assertTrainer(trainer)).resolves.toBeUndefined();
     await expect(service.assertTrainer(athlete)).rejects.toThrow(ForbiddenException);
-    expect(users.findCapabilitySnapshot).toHaveBeenNthCalledWith(1, trainer.id);
-    expect(users.findCapabilitySnapshot).toHaveBeenNthCalledWith(2, athlete.id);
+    expect(users.hasTrainerCapability).toHaveBeenNthCalledWith(1, trainer.id);
+    expect(users.hasTrainerCapability).toHaveBeenNthCalledWith(2, athlete.id);
   });
 
   it('allows a newly approved trainer while retaining ATHLETE as the legacy role', async () => {
-    users.findCapabilitySnapshot.mockResolvedValue({
-      role: 'ATHLETE',
-      trainerProfile: { isActive: true },
-    });
+    users.hasTrainerCapability.mockResolvedValue(true);
     await expect(service.assertTrainer(athlete)).resolves.toBeUndefined();
     const result = await service.assertEditableDraft(athlete, 'program-1', 'version-1');
     expect(result).toEqual(draft());
@@ -63,14 +57,8 @@ describe('TrainingProgramAccessService', () => {
     });
   });
 
-  it.each([
-    [{ role: 'ATHLETE', trainerProfile: null }, 'pending athlete'],
-    [{ role: 'ATHLETE', trainerProfile: { isActive: false } }, 'inactive applicant'],
-    [{ role: 'TRAINER', trainerProfile: { isActive: false } }, 'revoked legacy trainer'],
-    [{ role: 'ADMIN', trainerProfile: { isActive: true } }, 'administrator'],
-    [null, 'deleted account'],
-  ] as const)('refuses %s (%s) before looking up a program', async (snapshot) => {
-    users.findCapabilitySnapshot.mockResolvedValue(snapshot);
+  it('denies an inactive or deleted trainer before a program lookup', async () => {
+    users.hasTrainerCapability.mockResolvedValue(false);
     await expect(service.assertEditableDraft(trainer, 'program-1', 'version-1')).rejects.toThrow(
       ForbiddenException,
     );
@@ -79,12 +67,12 @@ describe('TrainingProgramAccessService', () => {
   });
 
   it('does not trust a forged TRAINER role when the database says ATHLETE', async () => {
-    users.findCapabilitySnapshot.mockResolvedValue({ role: 'ATHLETE', trainerProfile: null });
+    users.hasTrainerCapability.mockResolvedValue(false);
     await expect(service.assertTrainer(trainer)).rejects.toThrow(ForbiddenException);
   });
 
   it('fails closed on a database lookup error', async () => {
-    users.findCapabilitySnapshot.mockRejectedValue(new Error('Database unavailable'));
+    users.hasTrainerCapability.mockRejectedValue(new Error('Database unavailable'));
     await expect(service.assertEditableDraft(trainer, 'program-1', 'version-1')).rejects.toThrow(
       'Database unavailable',
     );
