@@ -294,8 +294,10 @@ describe('TrainingProgramAssignmentRepository privacy and completion', () => {
       });
       const sql = (tx.$queryRaw.mock.calls[0]![0] as readonly string[]).join('?');
       expect(sql).toContain('FROM "training_program_assignments"');
-      expect(sql).toContain('FOR UPDATE');
-      expect(sql).toContain('"status" = \'ACTIVE\'');
+      expect(sql).toContain('JOIN "users"');
+      expect(sql).toContain('athlete."role" <> \'ADMIN\'');
+      expect(sql).toContain('FOR UPDATE OF assignment, athlete');
+      expect(sql).toContain('assignment."status" = \'ACTIVE\'');
       expect(tx.workout.count).not.toHaveBeenCalled();
       expect(tx.trainingProgramAssignment.update).not.toHaveBeenCalled();
     });
@@ -343,6 +345,127 @@ describe('TrainingProgramAssignmentRepository privacy and completion', () => {
       await expect(repository.completeAssignmentIfNoUnfinishedWorkouts(input)).rejects.toBe(
         failure,
       );
+    });
+  });
+
+  describe('cancelAssignmentIfTrainerEligible', () => {
+    const input = {
+      assignmentId: 'assignment-1',
+      trainerId: 'trainer-1',
+      endedAt: new Date('2026-11-20T12:00:00.000Z'),
+      reason: 'Reassigned',
+    };
+    const tx = {
+      $queryRaw: vi.fn(),
+      user: { findUnique: vi.fn() },
+      trainingProgramAssignment: { findUnique: vi.fn(), update: vi.fn() },
+    };
+
+    beforeEach(() => {
+      vi.resetAllMocks();
+      prisma.$transaction.mockImplementation(async (callback) => callback(tx));
+      tx.trainingProgramAssignment.findUnique.mockResolvedValue({
+        trainerAthleteId: 'relationship-1',
+      });
+      tx.$queryRaw
+        .mockResolvedValueOnce([{ id: 'relationship-1' }])
+        .mockResolvedValueOnce([{ id: input.assignmentId }])
+        .mockResolvedValueOnce([{ id: input.trainerId }])
+        .mockResolvedValueOnce([]);
+      tx.user.findUnique.mockResolvedValue({
+        id: input.trainerId,
+        role: 'TRAINER',
+        deletedAt: null,
+        trainerProfile: null,
+      });
+      tx.trainingProgramAssignment.update.mockResolvedValue({
+        id: input.assignmentId,
+        status: 'CANCELLED',
+      });
+    });
+
+    it('locks relationship, assignment, account and TrainerProfile before writing', async () => {
+      const cancelled = await repository.cancelAssignmentIfTrainerEligible(input);
+      expect(cancelled).toMatchObject({ status: 'CANCELLED' });
+      const queries = tx.$queryRaw.mock.calls.map(
+        ([parts]) => (parts as readonly string[]).join('?'),
+      );
+      expect(queries).toHaveLength(4);
+      expect(queries[0]).toContain('FROM "trainer_athletes"');
+      expect(queries[0]).toContain('FOR UPDATE');
+      expect(queries[1]).toContain('FROM "training_program_assignments"');
+      expect(queries[1]).toContain('program."trainer_id"');
+      expect(queries[2]).toContain('FROM "users"');
+      expect(queries[3]).toContain('FROM "trainer_profiles"');
+      expect(tx.trainingProgramAssignment.update).toHaveBeenCalledExactlyOnceWith({
+        where: { id: input.assignmentId, status: 'ACTIVE' },
+        data: {
+          status: 'CANCELLED',
+          endedAt: input.endedAt,
+          endedBy: { connect: { id: input.trainerId } },
+          endReason: input.reason,
+        },
+        select: trainingProgramAssignmentSelect,
+      });
+    });
+
+    it('authorizes an approved ATHLETE-role trainer from current persisted profile', async () => {
+      tx.user.findUnique.mockResolvedValue({
+        id: input.trainerId,
+        role: 'ATHLETE',
+        deletedAt: null,
+        trainerProfile: { isActive: true },
+      });
+      await expect(repository.cancelAssignmentIfTrainerEligible(input)).resolves.toMatchObject({
+        status: 'CANCELLED',
+      });
+    });
+
+    it('does not cancel after revocation, even when the legacy JWT still says TRAINER', async () => {
+      tx.user.findUnique.mockResolvedValue({
+        id: input.trainerId,
+        role: 'TRAINER',
+        deletedAt: null,
+        trainerProfile: { isActive: false },
+      });
+      await expect(repository.cancelAssignmentIfTrainerEligible(input)).resolves.toBeNull();
+      expect(tx.trainingProgramAssignment.update).not.toHaveBeenCalled();
+    });
+
+    it('does not cancel for deleted or admin-promoted trainers', async () => {
+      tx.user.findUnique.mockResolvedValue({
+        id: input.trainerId,
+        role: 'ADMIN',
+        deletedAt: null,
+        trainerProfile: null,
+      });
+      await expect(repository.cancelAssignmentIfTrainerEligible(input)).resolves.toBeNull();
+      expect(tx.trainingProgramAssignment.update).not.toHaveBeenCalled();
+    });
+
+    it('refuses cancellation when another trainer owns the relationship', async () => {
+      tx.$queryRaw.mockReset();
+      tx.$queryRaw.mockResolvedValueOnce([]);
+      await expect(repository.cancelAssignmentIfTrainerEligible(input)).resolves.toBeNull();
+      expect(tx.trainingProgramAssignment.update).not.toHaveBeenCalled();
+    });
+
+    it('refuses cancellation when the program ownership or assignment state changed', async () => {
+      tx.$queryRaw.mockReset();
+      tx.$queryRaw
+        .mockResolvedValueOnce([{ id: 'relationship-1' }])
+        .mockResolvedValueOnce([]);
+      await expect(repository.cancelAssignmentIfTrainerEligible(input)).resolves.toBeNull();
+      expect(tx.trainingProgramAssignment.update).not.toHaveBeenCalled();
+    });
+
+    it('does not fail open on a database or profile lock error', async () => {
+      tx.$queryRaw.mockReset();
+      tx.$queryRaw.mockRejectedValueOnce(new Error('DB unavailable'));
+      await expect(repository.cancelAssignmentIfTrainerEligible(input)).rejects.toThrow(
+        'DB unavailable',
+      );
+      expect(tx.trainingProgramAssignment.update).not.toHaveBeenCalled();
     });
   });
 
