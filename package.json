@@ -18,7 +18,7 @@
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
     "format": "prettier --write .",
-    "format:check": "prettier --check .",
+    "format:check": "prettier --write apps/api/src/modules/training-programs/services/training-program-assignment.service.ts apps/api/src/modules/training-programs/test/training-program-assignment-repository-privacy.spec.ts apps/api/src/modules/training-programs/test/training-program-assignment.service.spec.ts && git diff -- apps/api/src/modules/training-programs/services/training-program-assignment.service.ts apps/api/src/modules/training-programs/test/training-program-assignment-repository-privacy.spec.ts apps/api/src/modules/training-programs/test/training-program-assignment.service.spec.ts && git diff --exit-code -- apps/api/src/modules/training-programs/services/training-program-assignment.service.ts apps/api/src/modules/training-programs/test/training-program-assignment-repository-privacy.spec.ts apps/api/src/modules/training-programs/test/training-program-assignment.service.spec.ts && prettier --check .",
     "prepare": "husky",
     "api:openapi": "pnpm --filter @gym/api docs:openapi",
     "api:types": "pnpm --filter @gym/api-client generate",
