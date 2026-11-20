@@ -225,14 +225,19 @@ describe('Users /me (HTTP + PostgreSQL)', () => {
     const http = app.getHttpServer();
 
     const me = () => request(http).get('/users/me').set('Cookie', athleteCookie);
-    const grants = () =>
-      request(http).get('/users/me/capabilities').set('Cookie', athleteCookie);
+    const grants = () => request(http).get('/users/me/capabilities').set('Cookie', athleteCookie);
     const workouts = () =>
       request(http).get('/workouts').query({ page: 1, limit: 20 }).set('Cookie', athleteCookie);
     const analytics = () =>
-      request(http).get('/workout-analytics/summary').query({ range: '7d' }).set('Cookie', athleteCookie);
+      request(http)
+        .get('/workout-analytics/summary')
+        .query({ range: '7d' })
+        .set('Cookie', athleteCookie);
     const trainerPrograms = () =>
-      request(http).get('/training-programs').query({ page: 1, limit: 20 }).set('Cookie', athleteCookie);
+      request(http)
+        .get('/training-programs')
+        .query({ page: 1, limit: 20 })
+        .set('Cookie', athleteCookie);
 
     try {
       const initial = await me();
@@ -278,7 +283,12 @@ describe('Users /me (HTTP + PostgreSQL)', () => {
       // role (onboarding approval does not rewrite the legacy role).
       await prisma.user.update({ where: { id: athleteId }, data: { role: 'ATHLETE' } });
       await prisma.trainerProfile.create({
-        data: { userId: athleteId, isActive: true, approvedAt: new Date(), approvedById: reviewerId },
+        data: {
+          userId: athleteId,
+          isActive: true,
+          approvedAt: new Date(),
+          approvedById: reviewerId,
+        },
       });
       expect((await me()).body).toMatchObject({ id: athleteId, role: 'ATHLETE' });
       expect((await grants()).body).toEqual({ athlete: true, trainer: true, admin: false });

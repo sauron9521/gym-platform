@@ -15,9 +15,7 @@ describe('workout access and pagination policies', () => {
     expect(() => assertWorkoutAthlete({ athlete: false, admin: true })).toThrow(
       'Only athletes can manage personal workouts',
     );
-    expect(() => assertWorkoutAthlete({ athlete: true, admin: true })).toThrow(
-      ForbiddenException,
-    );
+    expect(() => assertWorkoutAthlete({ athlete: true, admin: true })).toThrow(ForbiddenException);
   });
 
   it('validates pagination within the existing inclusive range', () => {
