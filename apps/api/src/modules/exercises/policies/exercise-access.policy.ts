@@ -27,9 +27,7 @@ export function buildExerciseVisibilityWhere(
         },
 
         // Approved ATHLETE-role trainers may also read explicitly shared athlete exercises.
-        ...(access.activeAthleteIds.length > 0
-          ? [sharedAthleteExerciseWhere(actor, access)]
-          : []),
+        ...(access.activeAthleteIds.length > 0 ? [sharedAthleteExerciseWhere(actor, access)] : []),
         {
           source: 'TRAINER_CUSTOM',
           createdById: {
