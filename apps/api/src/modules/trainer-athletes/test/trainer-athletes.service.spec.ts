@@ -20,7 +20,7 @@ describe('TrainerAthletesService', () => {
   const repository = {
     create: vi.fn(),
     findMany: vi.fn(),
-    findManyForTrainer: vi.fn(),
+    findManyForParticipant: vi.fn(),
     findById: vi.fn(),
     findHistoricalById: vi.fn(),
     findOpenByPair: vi.fn(),
@@ -323,7 +323,7 @@ describe('TrainerAthletesService', () => {
         },
       };
 
-      repository.findManyForTrainer.mockResolvedValue(response);
+      repository.findManyForParticipant.mockResolvedValue(response);
 
       const result = await service.findMany(trainer, {
         page: 1,
@@ -333,14 +333,17 @@ describe('TrainerAthletesService', () => {
 
       expect(result).toEqual(response);
 
-      expect(repository.findManyForTrainer).toHaveBeenCalledWith({
-        where: {
-          OR: [{ trainerId: trainer.id }, { athleteId: trainer.id }],
-          status: 'PENDING',
+      expect(repository.findManyForParticipant).toHaveBeenCalledWith(
+        {
+          where: {
+            OR: [{ trainerId: trainer.id }, { athleteId: trainer.id }],
+            status: 'PENDING',
+          },
+          skip: 0,
+          take: 20,
         },
-        skip: 0,
-        take: 20,
-      });
+        trainer.id,
+      );
     });
 
     it('should reject invalid pagination', async () => {
@@ -351,11 +354,29 @@ describe('TrainerAthletesService', () => {
         }),
       ).rejects.toThrow(BadRequestException);
 
-      expect(repository.findMany).not.toHaveBeenCalled();
+      expect(repository.findManyForParticipant).not.toHaveBeenCalled();
     });
   });
 
   describe('findOne', () => {
+    it('redacts former trainer history even when the session role is ATHLETE', async () => {
+      const approvedTrainer: TrainerAthleteActor = { id: trainer.id, role: 'ATHLETE' };
+      const restricted = {
+        id: 'relationship-1',
+        trainerId: trainer.id,
+        athleteId: athlete.id,
+        status: 'TERMINATED',
+        athlete: { id: athlete.id, role: 'ATHLETE' },
+      };
+      repository.findById.mockResolvedValue(null);
+      repository.findHistoricalById.mockResolvedValue(restricted);
+
+      await expect(service.findOne(restricted.id, approvedTrainer)).resolves.toEqual(restricted);
+      expect(repository.findHistoricalById).toHaveBeenCalledWith(restricted.id, {
+        trainerId: trainer.id,
+      });
+    });
+
     it('should return a relationship for its participant', async () => {
       repository.findById.mockResolvedValue(pendingRelationship);
 
@@ -369,9 +390,10 @@ describe('TrainerAthletesService', () => {
             OR: [{ trainerId: trainer.id }, { athleteId: trainer.id }],
           },
           {
-            status: {
-              in: ['ACTIVE', 'PENDING'],
-            },
+            OR: [
+              { status: { in: ['ACTIVE', 'PENDING'] } },
+              { athleteId: trainer.id },
+            ],
           },
         ],
       });
@@ -420,7 +442,7 @@ describe('TrainerAthletesService', () => {
       expect(result).toEqual(historicalRelationship);
 
       expect(repository.findHistoricalById).toHaveBeenCalledWith(historicalRelationship.id, {
-        OR: [{ trainerId: trainer.id }, { athleteId: trainer.id }],
+        trainerId: trainer.id,
       });
 
       expect(repository.findById).toHaveBeenCalledWith(historicalRelationship.id, {
@@ -429,9 +451,10 @@ describe('TrainerAthletesService', () => {
             OR: [{ trainerId: trainer.id }, { athleteId: trainer.id }],
           },
           {
-            status: {
-              in: ['ACTIVE', 'PENDING'],
-            },
+            OR: [
+              { status: { in: ['ACTIVE', 'PENDING'] } },
+              { athleteId: trainer.id },
+            ],
           },
         ],
       });
@@ -460,7 +483,15 @@ describe('TrainerAthletesService', () => {
       expect(result).toEqual(historicalRelationship);
 
       expect(repository.findById).toHaveBeenCalledWith(historicalRelationship.id, {
-        OR: [{ trainerId: athlete.id }, { athleteId: athlete.id }],
+        AND: [
+          { OR: [{ trainerId: athlete.id }, { athleteId: athlete.id }] },
+          {
+            OR: [
+              { status: { in: ['ACTIVE', 'PENDING'] } },
+              { athleteId: athlete.id },
+            ],
+          },
+        ],
       });
 
       // The athlete must not use the restricted trainer path.
@@ -537,6 +568,23 @@ describe('TrainerAthletesService', () => {
       );
     });
 
+    it('redacts decline responses for approved ATHLETE-role trainers', async () => {
+      const approvedTrainer: TrainerAthleteActor = { id: trainer.id, role: 'ATHLETE' };
+      repository.findById.mockResolvedValue({
+        ...pendingRelationship,
+        initiatedById: athlete.id,
+      });
+      repository.update.mockResolvedValue({ ...pendingRelationship, status: 'DECLINED' });
+
+      await service.decline(pendingRelationship.id, approvedTrainer);
+
+      expect(repository.update).toHaveBeenCalledWith(
+        { id: pendingRelationship.id, status: 'PENDING' },
+        expect.objectContaining({ status: 'DECLINED' }),
+        true,
+      );
+    });
+
     it('should reject decline by the initiator', async () => {
       repository.findById.mockResolvedValue(pendingRelationship);
 
@@ -576,6 +624,20 @@ describe('TrainerAthletesService', () => {
           },
           endReason: 'Changed my plans',
         }),
+        true,
+      );
+    });
+
+    it('redacts cancellation responses for approved ATHLETE-role trainers', async () => {
+      const approvedTrainer: TrainerAthleteActor = { id: trainer.id, role: 'ATHLETE' };
+      repository.findById.mockResolvedValue(pendingRelationship);
+      repository.update.mockResolvedValue({ ...pendingRelationship, status: 'CANCELLED' });
+
+      await service.cancel(pendingRelationship.id, approvedTrainer, {});
+
+      expect(repository.update).toHaveBeenCalledWith(
+        { id: pendingRelationship.id, status: 'PENDING' },
+        expect.objectContaining({ status: 'CANCELLED' }),
         true,
       );
     });
@@ -645,6 +707,24 @@ describe('TrainerAthletesService', () => {
         actorId: athlete.id,
         reason: 'Cooperation ended by athlete',
         redactForTrainer: false,
+      });
+    });
+
+    it('redacts terminated relationship responses for approved ATHLETE-role trainers', async () => {
+      const approvedTrainer: TrainerAthleteActor = { id: trainer.id, role: 'ATHLETE' };
+      repository.findById.mockResolvedValue(activeRelationship);
+      terminationService.terminateWithExerciseCopies.mockResolvedValue({
+        ...activeRelationship,
+        status: 'TERMINATED',
+      });
+
+      await service.terminate(activeRelationship.id, approvedTrainer, {});
+
+      expect(terminationService.terminateWithExerciseCopies).toHaveBeenCalledWith({
+        id: activeRelationship.id,
+        actorId: trainer.id,
+        reason: undefined,
+        redactForTrainer: true,
       });
     });
 
