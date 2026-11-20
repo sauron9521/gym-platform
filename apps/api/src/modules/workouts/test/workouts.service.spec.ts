@@ -8,6 +8,7 @@ import {
 import { Prisma } from '#prisma/client';
 
 import { ExercisesService } from '#src/modules/exercises/services/exercises.service';
+import { UsersService } from '#src/modules/users/services/users.service';
 import { WorkoutsRepository } from '../repositories/workouts.repository.js';
 import { WorkoutsService } from '../services/workouts.service.js';
 import { workoutIdempotency } from '../utils/workout-idempotency.js';
@@ -48,6 +49,8 @@ describe('WorkoutsService', () => {
     id: 'trainer-1',
     role: 'TRAINER',
   };
+  const staleAdmin: WorkoutActor = { id: 'admin-1', role: 'ATHLETE' };
+  const usersService = { findMyCapabilities: vi.fn() };
 
   const availableExercise = {
     id: 'exercise-1',
@@ -127,12 +130,47 @@ describe('WorkoutsService', () => {
     exercisesService.findAvailableForWorkout.mockResolvedValue([availableExercise]);
 
     trainerAthletesService.getExerciseAccessContext.mockResolvedValue(exerciseAccess);
+    usersService.findMyCapabilities.mockImplementation(async (id: string) => ({
+      athlete: id !== staleAdmin.id,
+      trainer: id === trainer.id,
+      admin: id === staleAdmin.id,
+    }));
 
     service = new WorkoutsService(
       repository as unknown as WorkoutsRepository,
       exercisesService as unknown as ExercisesService,
       trainerAthletesService as unknown as TrainerAthletesService,
+      usersService as unknown as UsersService,
     );
+  });
+
+  it('preserves personal workout list scope for a legacy TRAINER identity', async () => {
+    repository.findMany.mockResolvedValue({ data: [], meta: { total: 0 } });
+
+    await service.findMany(trainer, { page: 1, limit: 20 });
+
+    expect(usersService.findMyCapabilities).toHaveBeenCalledWith(trainer.id);
+    expect(repository.findMany).toHaveBeenCalledWith({
+      where: { athleteId: trainer.id },
+      skip: 0,
+      take: 20,
+    });
+  });
+
+  it('denies a promoted admin reusing an old TRAINER session', async () => {
+    const oldSession: WorkoutActor = { id: staleAdmin.id, role: 'TRAINER' };
+    await expect(service.findMany(oldSession, { page: 1, limit: 20 })).rejects.toThrow(
+      ForbiddenException,
+    );
+    expect(repository.findMany).not.toHaveBeenCalled();
+  });
+
+  it('fails closed if the persisted account is deleted or unavailable', async () => {
+    usersService.findMyCapabilities.mockRejectedValue(new NotFoundException('User not found'));
+    await expect(service.findMany(athlete, { page: 1, limit: 20 })).rejects.toThrow(
+      NotFoundException,
+    );
+    expect(repository.findMany).not.toHaveBeenCalled();
   });
 
   it('should use active trainer access when creating a workout', async () => {
@@ -188,9 +226,10 @@ describe('WorkoutsService', () => {
       });
     });
 
-    it('should reject non-athletes', async () => {
-      await expect(service.createFromProgram(trainer, input)).rejects.toThrow(ForbiddenException);
-
+    it('rejects admin-promoted accounts even with stale ATHLETE sessions', async () => {
+      await expect(service.createFromProgram(staleAdmin, input)).rejects.toThrow(
+        ForbiddenException,
+      );
       expect(repository.createFromProgram).not.toHaveBeenCalled();
     });
 
@@ -262,9 +301,8 @@ describe('WorkoutsService', () => {
       );
     });
 
-    it('should reject non-athletes', async () => {
-      await expect(service.create(trainer, createInput)).rejects.toThrow(ForbiddenException);
-
+    it('rejects admin-promoted accounts even with stale ATHLETE sessions', async () => {
+      await expect(service.create(staleAdmin, createInput)).rejects.toThrow(ForbiddenException);
       expect(repository.create).not.toHaveBeenCalled();
     });
 
@@ -519,9 +557,8 @@ describe('WorkoutsService', () => {
       await expect(service.findOne('workout-1', athlete)).rejects.toThrow(NotFoundException);
     });
 
-    it('should reject non-athletes', async () => {
-      await expect(service.findOne('workout-1', trainer)).rejects.toThrow(ForbiddenException);
-
+    it('rejects current admins without querying private workout rows', async () => {
+      await expect(service.findOne('workout-1', staleAdmin)).rejects.toThrow(ForbiddenException);
       expect(repository.findById).not.toHaveBeenCalled();
     });
   });
