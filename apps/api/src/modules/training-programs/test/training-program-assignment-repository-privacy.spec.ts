@@ -41,11 +41,14 @@ describe('TrainingProgramAssignmentRepository privacy and completion', () => {
       .mockResolvedValueOnce([])
       .mockResolvedValueOnce([activeDetails]);
 
-    const result = await repository.findManyAssignmentsForParticipant({
-      where: trainerWhere,
-      skip: 2,
-      take: 2,
-    }, 'trainer-1');
+    const result = await repository.findManyAssignmentsForParticipant(
+      {
+        where: trainerWhere,
+        skip: 2,
+        take: 2,
+      },
+      'trainer-1',
+    );
 
     expect(prisma.trainingProgramAssignment.findMany).toHaveBeenNthCalledWith(1, {
       where: trainerWhere,
@@ -79,11 +82,14 @@ describe('TrainingProgramAssignmentRepository privacy and completion', () => {
     prisma.$transaction.mockResolvedValue([[activeHistorical], 1]);
     prisma.trainingProgramAssignment.findMany.mockResolvedValueOnce([]).mockResolvedValueOnce([]);
 
-    const result = await repository.findManyAssignmentsForParticipant({
-      where: trainerWhere,
-      skip: 0,
-      take: 20,
-    }, 'trainer-1');
+    const result = await repository.findManyAssignmentsForParticipant(
+      {
+        where: trainerWhere,
+        skip: 0,
+        take: 20,
+      },
+      'trainer-1',
+    );
     expect(result.data).toEqual([activeHistorical]);
     expect(prisma.trainingProgramAssignment.findMany).toHaveBeenCalledTimes(2);
     expect(prisma.trainingProgramAssignment.findMany.mock.calls[1]?.[0]?.where).toEqual({
@@ -99,11 +105,14 @@ describe('TrainingProgramAssignmentRepository privacy and completion', () => {
 
   it('skips sensitive detail queries if all trainer relationships are ended', async () => {
     prisma.$transaction.mockResolvedValue([[endedHistorical], 1]);
-    const result = await repository.findManyAssignmentsForParticipant({
-      where: trainerWhere,
-      skip: 0,
-      take: 10,
-    }, 'trainer-1');
+    const result = await repository.findManyAssignmentsForParticipant(
+      {
+        where: trainerWhere,
+        skip: 0,
+        take: 10,
+      },
+      'trainer-1',
+    );
     expect(result.data).toEqual([endedHistorical]);
     expect(result.meta.totalPages).toBe(1);
     expect(prisma.trainingProgramAssignment.findMany).toHaveBeenCalledTimes(1);
@@ -116,13 +125,16 @@ describe('TrainingProgramAssignmentRepository privacy and completion', () => {
       .mockResolvedValueOnce([])
       .mockResolvedValueOnce([activeSummary]);
 
-    const result = await repository.findManyAssignmentsForParticipant({
-      where: trainerWhere,
-      skip: 0,
-      take: 20,
-      view: 'summary',
-      orderBy: [{ id: 'asc' }],
-    }, 'trainer-1');
+    const result = await repository.findManyAssignmentsForParticipant(
+      {
+        where: trainerWhere,
+        skip: 0,
+        take: 20,
+        view: 'summary',
+        orderBy: [{ id: 'asc' }],
+      },
+      'trainer-1',
+    );
 
     expect(prisma.trainingProgramAssignment.findMany).toHaveBeenNthCalledWith(
       1,
@@ -146,11 +158,14 @@ describe('TrainingProgramAssignmentRepository privacy and completion', () => {
       { id: 'assignment-b', workouts: ['b'] },
       { id: 'assignment-a', workouts: ['a'] },
     ]);
-    const result = await repository.findManyAssignmentsForParticipant({
-      where: trainerWhere,
-      skip: 0,
-      take: 3,
-    }, 'trainer-1');
+    const result = await repository.findManyAssignmentsForParticipant(
+      {
+        where: trainerWhere,
+        skip: 0,
+        take: 3,
+      },
+      'trainer-1',
+    );
     expect(result.data).toEqual([
       { id: 'assignment-a', workouts: ['a'] },
       endedHistorical,
@@ -208,11 +223,14 @@ describe('TrainingProgramAssignmentRepository privacy and completion', () => {
 
   it('returns an empty historical page without loading active details', async () => {
     prisma.$transaction.mockResolvedValue([[], 0]);
-    const result = await repository.findManyAssignmentsForParticipant({
-      where: trainerWhere,
-      skip: 0,
-      take: 10,
-    }, 'trainer-1');
+    const result = await repository.findManyAssignmentsForParticipant(
+      {
+        where: trainerWhere,
+        skip: 0,
+        take: 10,
+      },
+      'trainer-1',
+    );
     expect(result).toEqual({
       data: [],
       meta: { total: 0, skip: 0, take: 10, totalPages: 0 },
