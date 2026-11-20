@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
-      run: ${{ steps.select.outputs.full == 'true' || steps.select.outputs.api == 'true' || steps.select.outputs.web == 'true' || steps.select.outputs.client == 'true' }}
+      run: ${{ steps.select.outputs.full == 'true' || steps.select.outputs.api == 'true' || steps.select.outputs.web == 'true' || steps.select.outputs.trainer == 'true' || steps.select.outputs.client == 'true' }}
     steps:
       - name: Checkout complete history for safe PR diff
         uses: actions/checkout@v7
@@ -65,7 +65,8 @@ jobs:
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/gym_browser_test
       TEST_DATABASE_URL: postgresql://postgres:postgres@postgres:5432/gym_browser_test
       APP_URL: http://127.0.0.1:3200
-      CORS_ORIGINS: http://127.0.0.1:3200
+      CORS_ORIGINS: http://127.0.0.1:3200,http://localhost:3202
+      TRAINER_APP_URL: http://localhost:3202
       JWT_ISSUER: http://127.0.0.1:3200
       JWT_SECRET: browser-integration-test-only-secret-123456
     steps:

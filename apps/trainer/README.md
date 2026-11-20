@@ -20,6 +20,28 @@ pnpm --filter @gym/trainer test
 pnpm --filter @gym/trainer build
 ```
 
+## Real-browser security regression
+
+The existing `Web / Integration E2E` workflow runs
+`apps/web/e2e/integration/trainer-web-auth.spec.ts` against real NestJS,
+PostgreSQL, and the independent Trainer Next app; it is not a mocked auth test.
+The Trainer server only starts for that spec. `127.0.0.1:3200` (Athlete Web)
+and `localhost:3202` (Trainer Web) are intentionally **different hosts**
+so host-only session cookie isolation can be asserted.
+
+The test checks unauthenticated and pending Trainer access, approval,
+revocation, ADMIN denial, rejected forged Origin, cookie flags and host isolation,
+and actual sign-out with subsequent 401. It uses **only** the disposable
+`*_test` database guarded by the existing Web integration harness; the test
+creates a reviewer fixture directly in that database and removes it afterward.
+Never run it against development or production databases.
+
+Run with the existing Playwright PostgreSQL setup using the documented Web
+integration environment; use `WEB_E2E_TRAINER=1` to start Trainer when
+running this one spec directly. CI sets that flag automatically for
+`trainer-web-auth.spec.ts` and includes changes under `apps/trainer/**`
+in the browser-regression trigger.
+
 ## Product and security boundaries
 
 - One existing `User` identity and one NestJS API. No second Trainer users/passwords/service.

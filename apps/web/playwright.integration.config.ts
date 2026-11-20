@@ -21,6 +21,8 @@ if (!localTestDatabase && !ciServiceDatabase) {
 
 const webOrigin = 'http://127.0.0.1:3200';
 const apiOrigin = 'http://127.0.0.1:3201';
+// Different hostnames are intentional: browser cookies must stay host-only.
+const trainerOrigin = 'http://localhost:3202';
 
 export default defineConfig({
   testDir: './e2e/integration',
@@ -48,7 +50,8 @@ export default defineConfig({
         NODE_ENV: 'test',
         PORT: '3201',
         APP_URL: webOrigin,
-        CORS_ORIGINS: webOrigin,
+        CORS_ORIGINS: `${webOrigin},${trainerOrigin}`,
+        TRAINER_APP_URL: trainerOrigin,
         JWT_ISSUER: webOrigin,
       },
     },
@@ -60,5 +63,18 @@ export default defineConfig({
       timeout: 180_000,
       env: { GYM_API_INTERNAL_URL: apiOrigin },
     },
+    ...(process.env.WEB_E2E_TRAINER === '1'
+      ? [
+          {
+            name: 'next-trainer',
+            command: 'pnpm --filter @gym/trainer exec next dev --hostname localhost --port 3202',
+            cwd: '../..',
+            url: `${trainerOrigin}/login`,
+            reuseExistingServer: false,
+            timeout: 180_000,
+            env: { GYM_API_INTERNAL_URL: apiOrigin },
+          },
+        ]
+      : []),
   ],
 });
