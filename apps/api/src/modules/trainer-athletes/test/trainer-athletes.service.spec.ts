@@ -99,10 +99,7 @@ describe('TrainerAthletesService', () => {
       const result = await service.create(athlete, { userId: 'athlete-2' });
 
       expect(result).toMatchObject({ trainerId: athlete.id, athleteId: 'athlete-2' });
-      expect(repository.findOpenByPair).toHaveBeenCalledExactlyOnceWith(
-        athlete.id,
-        'athlete-2',
-      );
+      expect(repository.findOpenByPair).toHaveBeenCalledExactlyOnceWith(athlete.id, 'athlete-2');
     });
 
     it('allows a regular athlete to invite a newly approved ATHLETE-role trainer', async () => {
@@ -116,10 +113,7 @@ describe('TrainerAthletesService', () => {
 
       await service.create(athlete, { userId: 'approved-1' });
 
-      expect(repository.findOpenByPair).toHaveBeenCalledExactlyOnceWith(
-        'approved-1',
-        athlete.id,
-      );
+      expect(repository.findOpenByPair).toHaveBeenCalledExactlyOnceWith('approved-1', athlete.id);
     });
 
     it('rejects a revoked TRAINER session trying to invite an athlete', async () => {
@@ -256,7 +250,6 @@ describe('TrainerAthletesService', () => {
     });
 
     it('should reject a trainer inviting another trainer', async () => {
-
       await expect(service.create(trainer, { userId: trainer.id + '-2' })).rejects.toThrow(
         BadRequestException,
       );
@@ -266,7 +259,6 @@ describe('TrainerAthletesService', () => {
     });
 
     it('should reject an athlete inviting another athlete', async () => {
-
       await expect(service.create(athlete, { userId: athlete.id + '-2' })).rejects.toThrow(
         BadRequestException,
       );
