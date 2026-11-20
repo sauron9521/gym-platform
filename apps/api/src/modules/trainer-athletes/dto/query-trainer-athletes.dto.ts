@@ -8,6 +8,8 @@ export const queryTrainerAthletesSchema = z.strictObject({
   limit: z.coerce.number().int().min(1).max(100).default(20),
 
   status: trainerAthleteStatusSchema.optional(),
+  // Limit trainer dashboard pagination to collaborations owned as trainer.
+  scope: z.enum(['trainer']).optional(),
 });
 
 export type QueryTrainerAthletesDto = z.infer<typeof queryTrainerAthletesSchema>;

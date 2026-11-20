@@ -88,8 +88,17 @@ export class TrainerAthletesService {
     const capabilities = await this.assertCurrentParticipant(actor);
     this.validatePagination(query);
 
+    // Trainer-only read mode is required for accurate dashboard pagination.
+    // A person can simultaneously be an athlete under another trainer, so
+    // pagination must be scoped in PostgreSQL, never filtered after the fact.
+    if (query.scope === 'trainer' && !capabilities.trainer) {
+      throw new ForbiddenException('Current trainer approval is required');
+    }
+
     const where: Prisma.TrainerAthleteWhereInput = {
-      OR: [{ trainerId: actor.id }, { athleteId: actor.id }],
+      ...(query.scope === 'trainer'
+        ? { trainerId: actor.id }
+        : { OR: [{ trainerId: actor.id }, { athleteId: actor.id }] }),
       ...(query.status ? { status: query.status } : {}),
     };
 

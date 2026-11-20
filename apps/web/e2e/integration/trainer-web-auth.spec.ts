@@ -21,6 +21,12 @@ test('Trainer browser requires live approval, protects Origin/cookies, and revok
   const email = `trainer-browser-${id}@example.test`;
   const reviewerId = randomUUID();
   const profileId = randomUUID();
+  const dashboardAthleteId = randomUUID();
+  const dashboardRelationId = randomUUID();
+  const otherTrainerId = randomUUID();
+  const otherRelationId = randomUUID();
+  const dashboardAthleteEmail = `trainer-client-${dashboardAthleteId}@example.test`;
+  const otherTrainerEmail = `foreign-trainer-${otherTrainerId}@example.test`;
 
   // Exercise a real server-rendered route without an authenticated session.
   await page.context().addCookies([{ name: 'gym-locale', value: 'en', url: trainerOrigin }]);
@@ -72,7 +78,44 @@ test('Trainer browser requires live approval, protects Origin/cookies, and revok
 
     await login();
     await expect(page).toHaveURL(`${trainerOrigin}/workspace`);
-    await expect(page.getByRole('heading', { name: 'Protected trainer workspace' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Trainer dashboard' })).toBeVisible();
+    await expect(page.getByText('No active clients yet.')).toBeVisible();
+
+    // The same identity may be an athlete under a second trainer. Its trainer
+    // dashboard must scope SQL BEFORE pagination/count, never show that
+    // other trainer or leak their email.
+    await withDisposableDatabase(async (db) => {
+      await db.query(
+        'INSERT INTO "users" ("id", "email", "password_hash", "role", "updated_at") VALUES ($1, $2, $3, $4, NOW()), ($5, $6, $7, $8, NOW())',
+        [
+          dashboardAthleteId,
+          dashboardAthleteEmail,
+          'no-usable-password',
+          'ATHLETE',
+          otherTrainerId,
+          otherTrainerEmail,
+          'no-usable-password',
+          'TRAINER',
+        ],
+      );
+      await db.query(
+        'INSERT INTO "trainer_athletes" ("id", "trainer_id", "athlete_id", "initiated_by_id", "status", "updated_at") VALUES ($1, $2, $3, $2, $4, NOW()), ($5, $6, $2, $6, $4, NOW())',
+        [
+          dashboardRelationId,
+          user.id,
+          dashboardAthleteId,
+          'ACTIVE',
+          otherRelationId,
+          otherTrainerId,
+        ],
+      );
+    });
+    await page.goto(`${trainerOrigin}/workspace`);
+    await expect(page.getByRole('heading', { name: 'My clients' })).toBeVisible();
+    await expect(page.getByText(dashboardAthleteEmail)).toBeVisible();
+    await expect(page.getByRole('region', { name: 'Active clients' })).toContainText('1');
+    await expect(page.getByText(otherTrainerEmail)).toHaveCount(0);
+    await expect(page.getByText('No active clients yet.')).toHaveCount(0);
 
     const authenticatedCookies = (await page.context().cookies([trainerOrigin])).filter(
       (cookie) => cookie.httpOnly,
@@ -156,6 +199,14 @@ test('Trainer browser requires live approval, protects Origin/cookies, and revok
     await expect(page.getByRole('button', { name: 'Sign out' })).toHaveCount(0);
   } finally {
     await withDisposableDatabase(async (db) => {
+      await db.query('DELETE FROM "trainer_athletes" WHERE "id" IN ($1, $2)', [
+        dashboardRelationId,
+        otherRelationId,
+      ]);
+      await db.query('DELETE FROM "users" WHERE "id" IN ($1, $2)', [
+        dashboardAthleteId,
+        otherTrainerId,
+      ]);
       await db.query('DELETE FROM "trainer_profiles" WHERE "user_id" = $1', [user.id]);
       await db.query('DELETE FROM "users" WHERE "id" = $1', [reviewerId]);
     });

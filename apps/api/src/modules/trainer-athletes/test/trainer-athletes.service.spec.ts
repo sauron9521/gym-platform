@@ -339,6 +339,45 @@ describe('TrainerAthletesService', () => {
       );
     });
 
+    it('scopes Trainer dashboard pagination in PostgreSQL before counting', async () => {
+      const response = {
+        data: [activeRelationship],
+        meta: { total: 1, skip: 8, take: 8, totalPages: 2 },
+      };
+      repository.findManyForParticipant.mockResolvedValue(response);
+      const result = await service.findMany(trainer, {
+        page: 2,
+        limit: 8,
+        status: 'ACTIVE',
+        scope: 'trainer',
+      });
+
+      expect(result).toEqual(response);
+      expect(repository.findManyForParticipant).toHaveBeenCalledWith(
+        {
+          where: { trainerId: trainer.id, status: 'ACTIVE' },
+          skip: 8,
+          take: 8,
+        },
+        trainer.id,
+        true,
+      );
+    });
+
+    it('rejects trainer-scoped reads for athletes and revoked trainers before querying', async () => {
+      for (const actor of [athlete, trainer]) {
+        usersService.findMyCapabilities.mockResolvedValueOnce({
+          athlete: true,
+          trainer: false,
+          admin: false,
+        });
+        await expect(
+          service.findMany(actor, { page: 1, limit: 8, scope: 'trainer' }),
+        ).rejects.toThrow(ForbiddenException);
+      }
+      expect(repository.findManyForParticipant).not.toHaveBeenCalled();
+    });
+
     it('keeps only redacted trainer-side reads after TrainerProfile revocation', async () => {
       usersService.findMyCapabilities.mockResolvedValue({
         athlete: true,
