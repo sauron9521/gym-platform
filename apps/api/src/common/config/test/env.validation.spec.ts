@@ -113,7 +113,8 @@ describe('validateEnv', () => {
 
   it('accepts exact production Trainer origin for independent cookie sessions', () => {
     expect(
-      validateEnv({ ...validProd, TRAINER_APP_URL: 'https://trainer.example.test' }).TRAINER_APP_URL,
+      validateEnv({ ...validProd, TRAINER_APP_URL: 'https://trainer.example.test' })
+        .TRAINER_APP_URL,
     ).toBe('https://trainer.example.test');
     expect(validateEnv({ ...validDev, TRAINER_APP_URL: '' }).TRAINER_APP_URL).toBeUndefined();
   });

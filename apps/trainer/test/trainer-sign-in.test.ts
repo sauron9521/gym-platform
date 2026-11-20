@@ -5,12 +5,16 @@ import { signInTrainer } from '../src/features/auth/lib/trainer-sign-in';
 describe('Trainer browser sign-in safety', () => {
   it('authenticates only after the same-origin cookie session has a current trainer grant', async () => {
     const requests: Array<{ input: string; init?: RequestInit }> = [];
-    const result = await signInTrainer('trainer@example.test', 'very-secret', async (input, init) => {
-      requests.push({ input: String(input), init });
-      return requests.length === 1
-        ? Response.json({ mfaRequired: false })
-        : Response.json({ athlete: true, trainer: true, admin: false });
-    });
+    const result = await signInTrainer(
+      'trainer@example.test',
+      'very-secret',
+      async (input, init) => {
+        requests.push({ input: String(input), init });
+        return requests.length === 1
+          ? Response.json({ mfaRequired: false })
+          : Response.json({ athlete: true, trainer: true, admin: false });
+      },
+    );
 
     expect(result).toBe('authenticated');
     expect(requests.map((request) => request.input)).toEqual([
@@ -53,21 +57,24 @@ describe('Trainer browser sign-in safety', () => {
     [{ athlete: false, trainer: false, admin: true }, 'notApproved'],
     [{ athlete: true, trainer: 'yes', admin: false }, 'unavailable'],
     [{ athlete: true, trainer: true }, 'unavailable'],
-  ] as const)('clears an issued session when capabilities are insufficient', async (grants, expected) => {
-    const paths: string[] = [];
-    const result = await signInTrainer('a@example.test', 'secret', async (input) => {
-      paths.push(String(input));
-      if (paths.length === 1) return Response.json({ mfaRequired: false });
-      if (paths.length === 2) return Response.json(grants);
-      return new Response(null, { status: 204 });
-    });
-    expect(result).toBe(expected);
-    expect(paths).toEqual([
-      '/backend/auth/login',
-      '/backend/users/me/capabilities',
-      '/backend/auth/sign-out',
-    ]);
-  });
+  ] as const)(
+    'clears an issued session when capabilities are insufficient',
+    async (grants, expected) => {
+      const paths: string[] = [];
+      const result = await signInTrainer('a@example.test', 'secret', async (input) => {
+        paths.push(String(input));
+        if (paths.length === 1) return Response.json({ mfaRequired: false });
+        if (paths.length === 2) return Response.json(grants);
+        return new Response(null, { status: 204 });
+      });
+      expect(result).toBe(expected);
+      expect(paths).toEqual([
+        '/backend/auth/login',
+        '/backend/users/me/capabilities',
+        '/backend/auth/sign-out',
+      ]);
+    },
+  );
 
   it('clears a pending MFA challenge without granting a trainer workspace', async () => {
     const requests: string[] = [];

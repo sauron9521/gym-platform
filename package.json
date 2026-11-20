@@ -18,7 +18,7 @@
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
     "format": "prettier --write .",
-    "format:check": "prettier --write apps/api/src/common/config/test/env.validation.spec.ts apps/trainer/src/app/workspace/page.tsx apps/trainer/test/trainer-sign-in.test.ts && git diff -- apps/api/src/common/config/test/env.validation.spec.ts apps/trainer/src/app/workspace/page.tsx apps/trainer/test/trainer-sign-in.test.ts && prettier --check .",
+    "format:check": "prettier --check .",
     "prepare": "husky",
     "api:openapi": "pnpm --filter @gym/api docs:openapi",
     "api:types": "pnpm --filter @gym/api-client generate",
