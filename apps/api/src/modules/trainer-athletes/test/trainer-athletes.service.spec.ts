@@ -82,7 +82,7 @@ describe('TrainerAthletesService', () => {
   });
 
   describe('create', () => {
-    it('allows an approved ATHLETE to invite an athlete without changing the session role', async () => {
+    it('approved ATHLETE can invite an athlete without changing session role', async () => {
       usersService.findMyCapabilities.mockImplementation(async (id: string) => ({
         athlete: true,
         trainer: id === athlete.id,
@@ -143,7 +143,7 @@ describe('TrainerAthletesService', () => {
       expect(repository.create).not.toHaveBeenCalled();
     });
 
-    it('rejects ambiguous dual-trainer invitations rather than selecting a role from session data', async () => {
+    it('rejects ambiguous dual-trainer invitations', async () => {
       usersService.findMyCapabilities.mockResolvedValue({
         athlete: true,
         trainer: true,
@@ -382,10 +382,7 @@ describe('TrainerAthletesService', () => {
             OR: [{ trainerId: trainer.id }, { athleteId: trainer.id }],
           },
           {
-            OR: [
-              { status: { in: ['ACTIVE', 'PENDING'] } },
-              { athleteId: trainer.id },
-            ],
+            OR: [{ status: { in: ['ACTIVE', 'PENDING'] } }, { athleteId: trainer.id }],
           },
         ],
       });
@@ -443,10 +440,7 @@ describe('TrainerAthletesService', () => {
             OR: [{ trainerId: trainer.id }, { athleteId: trainer.id }],
           },
           {
-            OR: [
-              { status: { in: ['ACTIVE', 'PENDING'] } },
-              { athleteId: trainer.id },
-            ],
+            OR: [{ status: { in: ['ACTIVE', 'PENDING'] } }, { athleteId: trainer.id }],
           },
         ],
       });
@@ -478,10 +472,7 @@ describe('TrainerAthletesService', () => {
         AND: [
           { OR: [{ trainerId: athlete.id }, { athleteId: athlete.id }] },
           {
-            OR: [
-              { status: { in: ['ACTIVE', 'PENDING'] } },
-              { athleteId: athlete.id },
-            ],
+            OR: [{ status: { in: ['ACTIVE', 'PENDING'] } }, { athleteId: athlete.id }],
           },
         ],
       });

@@ -113,7 +113,7 @@ describe('TrainerAthletesRepository', () => {
   });
 
   describe('findManyForParticipant', () => {
-    it('redacts ended trainer-side history but preserves athlete history and open records', async () => {
+    it('redacts trainer history but preserves athlete and open records', async () => {
       const actorId = 'dual-user';
       const where = {
         OR: [{ trainerId: actorId }, { athleteId: actorId }],
@@ -153,10 +153,7 @@ describe('TrainerAthletesRepository', () => {
         },
       ]);
 
-      const result = await repository.findManyForParticipant(
-        { where, skip: 0, take: 10 },
-        actorId,
-      );
+      const result = await repository.findManyForParticipant({ where, skip: 0, take: 10 }, actorId);
 
       expect(result.data[0]).toEqual(restricted[0]);
       expect(result.data[0]?.athlete).not.toHaveProperty('email');
@@ -170,10 +167,7 @@ describe('TrainerAthletesRepository', () => {
             where,
             {
               id: { in: ['athlete-history', 'open-relationship'] },
-              OR: [
-                { status: { in: ['ACTIVE', 'PENDING'] } },
-                { athleteId: actorId },
-              ],
+              OR: [{ status: { in: ['ACTIVE', 'PENDING'] } }, { athleteId: actorId }],
             },
           ],
         },

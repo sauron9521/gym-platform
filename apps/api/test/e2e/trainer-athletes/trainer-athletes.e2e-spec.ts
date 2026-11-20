@@ -559,19 +559,18 @@ describe('TrainerAthletes (HTTP + PostgreSQL)', () => {
         expect(JSON.stringify(cancelled.body)).not.toContain(firstAthlete.email);
 
         const firstAthleteCookie = await login(firstAthlete.email);
-        const [trainerHistoryDetail, trainerHistoryList, athleteHistoryDetail] =
-          await Promise.all([
-            request(app!.getHttpServer())
-              .get(`/trainer-athletes/${trainerInvites.body.id}`)
-              .set('Cookie', approvedCookie),
-            request(app!.getHttpServer())
-              .get('/trainer-athletes')
-              .set('Cookie', approvedCookie)
-              .query({ status: 'CANCELLED', page: 1, limit: 100 }),
-            request(app!.getHttpServer())
-              .get(`/trainer-athletes/${trainerInvites.body.id}`)
-              .set('Cookie', firstAthleteCookie),
-          ]);
+        const [trainerHistoryDetail, trainerHistoryList, athleteHistoryDetail] = await Promise.all([
+          request(app!.getHttpServer())
+            .get(`/trainer-athletes/${trainerInvites.body.id}`)
+            .set('Cookie', approvedCookie),
+          request(app!.getHttpServer())
+            .get('/trainer-athletes')
+            .set('Cookie', approvedCookie)
+            .query({ status: 'CANCELLED', page: 1, limit: 100 }),
+          request(app!.getHttpServer())
+            .get(`/trainer-athletes/${trainerInvites.body.id}`)
+            .set('Cookie', firstAthleteCookie),
+        ]);
 
         expect(trainerHistoryDetail.status).toBe(200);
         expect(trainerHistoryList.status).toBe(200);

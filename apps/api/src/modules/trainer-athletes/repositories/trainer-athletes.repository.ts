@@ -148,9 +148,7 @@ export class TrainerAthletesRepository {
     const fullIds = historical
       .filter(
         (item) =>
-          item.athleteId === actorId ||
-          item.status === 'ACTIVE' ||
-          item.status === 'PENDING',
+          item.athleteId === actorId || item.status === 'ACTIVE' || item.status === 'PENDING',
       )
       .map((item) => item.id);
 
@@ -161,10 +159,7 @@ export class TrainerAthletesRepository {
               where,
               {
                 id: { in: fullIds },
-                OR: [
-                  { status: { in: ['ACTIVE', 'PENDING'] } },
-                  { athleteId: actorId },
-                ],
+                OR: [{ status: { in: ['ACTIVE', 'PENDING'] } }, { athleteId: actorId }],
               },
             ],
           },

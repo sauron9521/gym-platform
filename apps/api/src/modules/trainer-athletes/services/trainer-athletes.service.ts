@@ -125,10 +125,7 @@ export class TrainerAthletesService {
       AND: [
         participantWhere,
         {
-          OR: [
-            { status: { in: ['ACTIVE', 'PENDING'] } },
-            { athleteId: actor.id },
-          ],
+          OR: [{ status: { in: ['ACTIVE', 'PENDING'] } }, { athleteId: actor.id }],
         },
       ],
     });
