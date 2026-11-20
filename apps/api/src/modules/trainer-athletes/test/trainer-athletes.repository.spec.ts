@@ -1,3 +1,5 @@
+import { ConflictException } from '@nestjs/common';
+
 import { PrismaService } from '#src/infra/database/index';
 import { Prisma } from '#prisma/client';
 
@@ -389,10 +391,11 @@ describe('TrainerAthletesRepository', () => {
 
       expect(result).toMatchObject({ status: 'PENDING', ...invitation });
       expect(tx.$queryRaw).toHaveBeenCalledTimes(2);
-      expect(tx.$queryRaw.mock.calls[0]?.[0].sql).toContain('FOR UPDATE');
-      expect(tx.$queryRaw.mock.calls[0]?.[0].values).toEqual(['athlete-1', 'trainer-1']);
-      expect(tx.$queryRaw.mock.calls[1]?.[0].sql).toContain('"trainer_profiles"');
-      expect(tx.$queryRaw.mock.calls[1]?.[0].sql).toContain('FOR UPDATE');
+      expect(tx.$queryRaw.mock.calls[0]?.[0].join('')).toContain('FOR UPDATE');
+      expect(tx.$queryRaw.mock.calls[0]?.[1].values).toEqual(['athlete-1', 'trainer-1']);
+      expect(tx.$queryRaw.mock.calls[1]?.[0].join('')).toContain('"trainer_profiles"');
+      expect(tx.$queryRaw.mock.calls[1]?.[0].join('')).toContain('FOR UPDATE');
+      expect(tx.$queryRaw.mock.calls[1]?.[1]).toBe('trainer-1');
       expect(tx.user.findMany).toHaveBeenCalledWith({
         where: { id: { in: ['athlete-1', 'trainer-1'] }, deletedAt: null },
         select: {
