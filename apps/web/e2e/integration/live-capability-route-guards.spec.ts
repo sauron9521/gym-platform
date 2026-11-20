@@ -38,7 +38,9 @@ test('real API: browser route guards follow live trainer and athlete grants on t
     await expect(page.getByRole('heading', { name: 'Доступ заборонено' })).toBeVisible();
   }
 
-  async function athleteAllowed(path: '/athlete/programs' | '/athlete/trainers' = '/athlete/programs') {
+  async function athleteAllowed(
+    path: '/athlete/programs' | '/athlete/trainers' = '/athlete/programs',
+  ) {
     await page.goto(path);
     await expect(
       page.getByRole('heading', {
