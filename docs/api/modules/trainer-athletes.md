@@ -20,7 +20,7 @@ Relationship state affects trainer access to exercises and program assignment. T
 
 `getExerciseAccessContext` reads the **current persisted** `athlete` and `trainer` capabilities via `UsersService.findMyCapabilities`, instead of trusting the legacy session `role`:
 
-- Approved trainers with a legacy `ATHLETE` role can have both athlete-side and trainer-side relationship access.
+- Approved trainers with a legacy `ATHLETE` role can have both athlete-side and trainer-side relationship access. The exercise visibility predicate also recognizes explicitly shared athlete exercises for these accounts; it still requires an active relationship and an unrevoked trainer-access grant in the SQL query.
 - Explicitly revoked trainer capability no longer exposes athlete exercise access through old trainer relationships, even if the session still says `TRAINER`.
 - Admin/deleted accounts and failed DB lookups never grant exercise-sharing privileges. Ownership is still constrained to the authenticated user ID.
 - This is an intentionally narrow access-context slice: relationship invitation, list, detail, mutation and historical-redaction branches still require capability migration in subsequent PRs. Existing API response contracts and Prisma schema are unchanged.
