@@ -14,6 +14,12 @@ export class UsersService {
     private readonly avatarService: AvatarService,
   ) {}
 
+  /** Internal authorization facade: no role claims or client flags are trusted. */
+  async hasTrainerCapability(userId: string): Promise<boolean> {
+    const account = await this.usersRepository.findCapabilitySnapshot(userId);
+    return account !== null && deriveAccountCapabilities(account).trainer;
+  }
+
   /** Uses a fresh DB projection so moderation/revocation takes effect on the next read. */
   async findMyCapabilities(userId: string) {
     const account = await this.usersRepository.findCapabilitySnapshot(userId);
