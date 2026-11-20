@@ -104,19 +104,17 @@ test('capability guard allows a persisted ATHLETE trainer, even if /users/me rol
     async (url, init) => {
       seen.push({ url, init });
       return Response.json(
-        url.endsWith('/capabilities')
-          ? { athlete: true, trainer: true, admin: false }
-          : account,
+        url.endsWith('/capabilities') ? { athlete: true, trainer: true, admin: false } : account,
       );
     },
   );
 
   assert.equal(result.kind, 'authenticated');
   assert.equal(result.user.role, 'ATHLETE');
-  assert.deepEqual(seen.map(({ url }) => url), [
-    'https://api.internal.test/users/me',
-    'https://api.internal.test/users/me/capabilities',
-  ]);
+  assert.deepEqual(
+    seen.map(({ url }) => url),
+    ['https://api.internal.test/users/me', 'https://api.internal.test/users/me/capabilities'],
+  );
   for (const { init } of seen) {
     assert.equal(init.headers.cookie, '__Host-sid=opaque');
     assert.equal(init.cache, 'no-store');
@@ -154,9 +152,7 @@ test('capability guard does not trust an ADMIN role or an inconsistent admin gra
     'https://api.internal.test',
     async (url) =>
       Response.json(
-        url.endsWith('/capabilities')
-          ? { athlete: true, trainer: true, admin: true }
-          : account,
+        url.endsWith('/capabilities') ? { athlete: true, trainer: true, admin: true } : account,
       ),
   );
   assert.deepEqual(granted, { kind: 'forbidden' });
@@ -164,10 +160,15 @@ test('capability guard does not trust an ADMIN role or an inconsistent admin gra
 
 test('capability guard fails closed on auth failures, malformed grants, outages and redirects', async () => {
   let calls = 0;
-  const notSignedIn = await verifyServerCapability('', 'trainer', 'https://api.internal.test', async () => {
-    calls += 1;
-    throw new Error('should not fetch');
-  });
+  const notSignedIn = await verifyServerCapability(
+    '',
+    'trainer',
+    'https://api.internal.test',
+    async () => {
+      calls += 1;
+      throw new Error('should not fetch');
+    },
+  );
   assert.deepEqual(notSignedIn, { kind: 'unauthenticated' });
   assert.equal(calls, 0);
 
@@ -182,9 +183,7 @@ test('capability guard fails closed on auth failures, malformed grants, outages 
       'trainer',
       'https://api.internal.test',
       async (url) =>
-        url.endsWith('/capabilities')
-          ? new Response(null, { status })
-          : Response.json(account),
+        url.endsWith('/capabilities') ? new Response(null, { status }) : Response.json(account),
     );
     assert.equal(result.kind, expected);
   }

@@ -21,29 +21,35 @@ test('real API: browser route guards follow live trainer and athlete grants on t
     return response.json();
   }
 
-  async function trainerAllowed() {
-    await page.goto('/trainer/programs');
-    await expect(page.getByRole('heading', { name: 'Тренувальні програми' })).toBeVisible();
-    await page.goto('/trainer/athletes');
-    await expect(page.getByRole('heading', { name: 'Мої підопічні' })).toBeVisible();
-    await page.goto('/trainer/programs/new');
-    await expect(page.getByRole('heading', { name: 'Створити програму' })).toBeVisible();
+  async function trainerAllowed(
+    path: '/trainer/programs' | '/trainer/athletes' | '/trainer/programs/new' = '/trainer/programs',
+  ) {
+    const headings = {
+      '/trainer/programs': 'Тренувальні програми',
+      '/trainer/athletes': 'Мої підопічні',
+      '/trainer/programs/new': 'Створити програму',
+    };
+    await page.goto(path);
+    await expect(page.getByRole('heading', { name: headings[path] })).toBeVisible();
   }
 
-  async function trainerDenied() {
-    for (const path of ['/trainer/programs', '/trainer/athletes', '/trainer/programs/new']) {
-      await page.goto(path);
-      await expect(page.getByRole('heading', { name: 'Доступ заборонено' })).toBeVisible();
-    }
+  async function trainerDenied(path = '/trainer/programs') {
+    await page.goto(path);
+    await expect(page.getByRole('heading', { name: 'Доступ заборонено' })).toBeVisible();
   }
 
-  async function athleteAllowed() {
-    await page.goto('/athlete/programs');
-    await expect(page.getByRole('heading', { name: 'Мої програми' })).toBeVisible();
-    await page.goto('/athlete/trainers');
-    await expect(page.getByRole('heading', { name: 'Мої тренери' })).toBeVisible();
+  async function athleteAllowed(path: '/athlete/programs' | '/athlete/trainers' = '/athlete/programs') {
+    await page.goto(path);
+    await expect(
+      page.getByRole('heading', {
+        name: path === '/athlete/trainers' ? 'Мої тренери' : 'Мої програми',
+      }),
+    ).toBeVisible();
   }
 
+  // Keep this regression below the shared one-minute API read budget: each
+  // Next navigation performs two server auth reads, plus client profile reads.
+  // Exercise every route across the matrix, without repeating every URL in every state.
   try {
     expect(await grants()).toEqual({ athlete: true, trainer: false, admin: false });
     await trainerDenied();
@@ -64,7 +70,9 @@ test('real API: browser route guards follow live trainer and athlete grants on t
 
     expect(await grants()).toEqual({ athlete: true, trainer: true, admin: false });
     await trainerAllowed();
-    await athleteAllowed();
+    await trainerAllowed('/trainer/athletes');
+    await trainerAllowed('/trainer/programs/new');
+    await athleteAllowed('/athlete/trainers');
 
     // Revocation is immediately visible to Next's uncached server guard.
     await withDisposableDatabase(async (db) => {
@@ -74,7 +82,7 @@ test('real API: browser route guards follow live trainer and athlete grants on t
       );
     });
     expect(await grants()).toEqual({ athlete: true, trainer: false, admin: false });
-    await trainerDenied();
+    await trainerDenied('/trainer/athletes');
     await athleteAllowed();
 
     // A stale role=TRAINER does not override an explicitly revoked profile.
@@ -85,8 +93,8 @@ test('real API: browser route guards follow live trainer and athlete grants on t
       ]);
     });
     expect(await grants()).toEqual({ athlete: true, trainer: false, admin: false });
-    await trainerDenied();
-    await athleteAllowed();
+    await trainerDenied('/trainer/programs/new');
+    await athleteAllowed('/athlete/trainers');
 
     // Legacy trainer with no profile has both grants; neither Web side may be lost.
     await withDisposableDatabase(async (db) => {
@@ -104,11 +112,9 @@ test('real API: browser route guards follow live trainer and athlete grants on t
       ]);
     });
     expect(await grants()).toEqual({ athlete: false, trainer: false, admin: true });
-    await trainerDenied();
-    for (const path of ['/athlete/programs', '/athlete/trainers']) {
-      await page.goto(path);
-      await expect(page.getByRole('heading', { name: 'Доступ заборонено' })).toBeVisible();
-    }
+    await trainerDenied('/trainer/athletes');
+    await page.goto('/athlete/programs');
+    await expect(page.getByRole('heading', { name: 'Доступ заборонено' })).toBeVisible();
   } finally {
     await withDisposableDatabase(async (db) => {
       await db.query('DELETE FROM "trainer_profiles" WHERE "user_id" = $1', [athlete.id]);
