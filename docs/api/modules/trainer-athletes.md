@@ -16,6 +16,16 @@ Authenticated invitation/relationship management with accept, decline, cancellat
 
 Relationship state affects trainer access to exercises and program assignment. The termination flow may require exercising copy/visibility rules for previously shared exercises; never replace it with an untested direct database update.
 
+## Live capability checks for relationship reads (M05 / #291)
+
+Both `GET /trainer-athletes` and `GET /trainer-athletes/:id` now load **current persisted** user capabilities via `UsersService.findMyCapabilities`, not the role captured by an older session. Deleted and current-admin accounts cannot read relationship details even if a prior session identifies them as an athlete or trainer.
+
+- The relationship's **own athlete** retains full contact/history access while their account remains an eligible participant.
+- A trainer may read full contact details only if TrainerProfile approval (or compatible legacy trainer permission) is still active **and** that particular relationship is `ACTIVE` or `PENDING`.
+- After trainer capability is revoked, the trainer can still read only a restricted projection (IDs, status and relationship metadata) for their own open/ended relationships so `decline`, `cancel` and `terminate` remain usable; emails are not returned.
+- List reads query the restricted projection first, then fetch contacts only for authorized rows. The follow-up SQL query and the detail SQL query also verify current account eligibility and TrainerProfile status, so revocation between the initial capability read and the DB query cannot restore contact visibility.
+- No data is exposed to unrelated users. Historical records from the user's own `athleteId` side remain fully visible, even when the user also has (or previously had) trainer capability. No schema/API contract changes or migrations.
+
 ## Live capabilities for relationship transitions (M05 / #291)
 
 The `accept / decline / cancel / terminate` endpoints re-read the current database capabilities of the authenticated participant. Legacy session roles are not used to grant mutation privileges:
@@ -25,7 +35,7 @@ The `accept / decline / cancel / terminate` endpoints re-read the current databa
 - Admin/deleted participants are not allowed to perform relationship mutations even with stale ATHLETE/TRAINER session claims. Response redaction continues to use the participant's side in the specific relationship.
 - Termination retains its atomic program-assignment/exercise-copy/access-revocation transaction. No Prisma schema changes.
 
-Remaining follow-ups: list/detail authorization migration; transactional capability checks for creation and other revocation races; mixed-role training-program assignments; #361 cross-product E2E before protected Trainer Web routes.
+Remaining follow-ups: transactional capability checks for invitation creation and other revocation races; mixed-role training-program assignments; #361 cross-product E2E before protected Trainer Web routes.
 
 ## Create invitations with live capabilities (M05 / E1 #291)
 
@@ -38,7 +48,7 @@ Remaining follow-ups: list/detail authorization migration; transactional capabil
 - Duplicate open pairs keep their existing 409/concurrency handling. No new privileges, schema migration, or self-service role assignment are introduced.
 - **Historical privacy is based on each relationship's side**, not the current session role: a former trainer receives a redacted list/detail and redacted decline/cancel/terminate response, even when their account role remains `ATHLETE`. An athlete keeps full access to their own history. List queries first load a restricted projection; a second SQL query allows full contact fields only for open relationships or an actor who is the relationship's athlete.
 
-Remaining capability migration: full relationship list/detail authorization, accept/decline/cancel/terminate privilege checks, mixed-role training-program assignments and #361 cross-product E2E. Historical response redaction is hardened here, but remaining mutation permissions are not yet migrated. A future concurrency hardening slice should guard against revocation racing an in-flight invitation. No Trainer Web protected routes are enabled by this PR.
+The list/detail authorization and relationship transition permission migrations are covered by the read and lifecycle sections above. Remaining scope includes transactional creation race hardening, mixed-role training-program assignments and #361 cross-product E2E. A future concurrency hardening slice should guard against revocation racing an in-flight invitation. No Trainer Web protected routes are enabled by this PR.
 
 ## Live capability for exercise sharing (E1 #291)
 

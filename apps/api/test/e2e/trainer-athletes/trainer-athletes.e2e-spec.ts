@@ -709,6 +709,144 @@ describe('TrainerAthletes (HTTP + PostgreSQL)', () => {
   });
 
   describe('GET /trainer-athletes', () => {
+    it('updates read privacy after approval revocation and denies stale admin sessions', async () => {
+      const approved = await createUser(
+        `read-approved-${randomUUID()}@example.com`,
+        'ATHLETE',
+      );
+      const athlete = await createUser(`read-athlete-${randomUUID()}@example.com`, 'ATHLETE');
+      const invited = await createUser(`read-invited-${randomUUID()}@example.com`, 'ATHLETE');
+      const ids: string[] = [];
+
+      try {
+        await prisma.trainerProfile.create({
+          data: {
+            userId: approved.id,
+            isActive: true,
+            approvedAt: new Date(),
+            approvedById: trainerOne.id,
+          },
+        });
+
+        const cookie = await login(approved.email);
+        const active = await prisma.trainerAthlete.create({
+          data: {
+            trainerId: approved.id,
+            athleteId: athlete.id,
+            initiatedById: approved.id,
+            status: 'ACTIVE',
+          },
+          select: { id: true },
+        });
+        ids.push(active.id);
+
+        const pending = await prisma.trainerAthlete.create({
+          data: {
+            trainerId: approved.id,
+            athleteId: invited.id,
+            initiatedById: approved.id,
+            status: 'PENDING',
+          },
+          select: { id: true },
+        });
+        ids.push(pending.id);
+
+        // The same user is also an athlete in another, already ended relationship.
+        const ownHistory = await prisma.trainerAthlete.create({
+          data: {
+            trainerId: trainerOne.id,
+            athleteId: approved.id,
+            initiatedById: approved.id,
+            status: 'TERMINATED',
+          },
+          select: { id: true },
+        });
+        ids.push(ownHistory.id);
+
+        const [beforeList, beforeDetails] = await Promise.all([
+          request(app!.getHttpServer()).get('/trainer-athletes').set('Cookie', cookie),
+          request(app!.getHttpServer())
+            .get(`/trainer-athletes/${active.id}`)
+            .set('Cookie', cookie),
+        ]);
+        expect(beforeList.status).toBe(200);
+        expect(beforeDetails.status).toBe(200);
+        expect(beforeDetails.body.athlete.email).toBe(athlete.email);
+
+        await prisma.trainerProfile.update({
+          where: { userId: approved.id },
+          data: { isActive: false, revokedAt: new Date(), revokedById: trainerOne.id },
+        });
+
+        const [revokedList, activeDetails, pendingDetails, ownHistoryDetails] =
+          await Promise.all([
+            request(app!.getHttpServer()).get('/trainer-athletes').set('Cookie', cookie),
+            request(app!.getHttpServer())
+              .get(`/trainer-athletes/${active.id}`)
+              .set('Cookie', cookie),
+            request(app!.getHttpServer())
+              .get(`/trainer-athletes/${pending.id}`)
+              .set('Cookie', cookie),
+            request(app!.getHttpServer())
+              .get(`/trainer-athletes/${ownHistory.id}`)
+              .set('Cookie', cookie),
+          ]);
+
+        expect(revokedList.status).toBe(200);
+        expect(activeDetails.status).toBe(200);
+        expect(pendingDetails.status).toBe(200);
+        expect(ownHistoryDetails.status).toBe(200);
+        expect(activeDetails.body.status).toBe('ACTIVE');
+        expect(pendingDetails.body.status).toBe('PENDING');
+
+        for (const item of [activeDetails.body, pendingDetails.body]) {
+          expect(JSON.stringify(item)).not.toContain(athlete.email);
+          expect(JSON.stringify(item)).not.toContain(invited.email);
+          expect(item.athlete).not.toHaveProperty('email');
+        }
+
+        const activeListItem = revokedList.body.data.find(
+          (item: { id: string }) => item.id === active.id,
+        );
+        const pendingListItem = revokedList.body.data.find(
+          (item: { id: string }) => item.id === pending.id,
+        );
+        expect(activeListItem).toBeDefined();
+        expect(pendingListItem).toBeDefined();
+        expect(activeListItem.athlete).not.toHaveProperty('email');
+        expect(pendingListItem.athlete).not.toHaveProperty('email');
+        expect(ownHistoryDetails.body.athlete.email).toBe(approved.email);
+
+        // Read-only redaction does not lock out an existing trainer's cleanup actions.
+        const ended = await request(app!.getHttpServer())
+          .post(`/trainer-athletes/${active.id}/terminate`)
+          .set('Cookie', cookie)
+          .send({ reason: 'Revoked trainer access' });
+        const cancelled = await request(app!.getHttpServer())
+          .post(`/trainer-athletes/${pending.id}/cancel`)
+          .set('Cookie', cookie);
+        expect(ended.status).toBe(200);
+        expect(cancelled.status).toBe(200);
+
+        await prisma.user.update({
+          where: { id: approved.id },
+          data: { role: 'ADMIN' },
+        });
+
+        const [deniedList, deniedDetails] = await Promise.all([
+          request(app!.getHttpServer()).get('/trainer-athletes').set('Cookie', cookie),
+          request(app!.getHttpServer())
+            .get(`/trainer-athletes/${ownHistory.id}`)
+            .set('Cookie', cookie),
+        ]);
+        expect(deniedList.status).toBe(403);
+        expect(deniedDetails.status).toBe(403);
+      } finally {
+        await prisma.trainerAthlete.deleteMany({ where: { id: { in: ids } } });
+        await prisma.trainerProfile.deleteMany({ where: { userId: approved.id } });
+      }
+    }, 40_000);
+
     it('should return relationships for the trainer', async () => {
       const response = await request(app!.getHttpServer())
         .get('/trainer-athletes')
