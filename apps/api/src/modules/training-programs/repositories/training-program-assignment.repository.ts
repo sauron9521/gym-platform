@@ -355,21 +355,109 @@ export class TrainingProgramAssignmentRepository {
     });
   }
 
+  /**
+   * A cancellation is a trainer-side mutation. Serialize with relationship
+   * termination and trainer moderation; repeat every permission under DB locks
+   * before updating the assignment, rather than trusting the prior GET.
+   */
+  async cancelAssignmentIfTrainerEligible(input: {
+    assignmentId: string;
+    trainerId: string;
+    endedAt: Date;
+    reason: string | null;
+  }) {
+    return this.prisma.$transaction(async (tx) => {
+      const current = await tx.trainingProgramAssignment.findUnique({
+        where: { id: input.assignmentId },
+        select: { trainerAthleteId: true },
+      });
+      if (!current) return null;
+
+      // Termination also locks the relationship before touching assignments.
+      const relationships = await tx.$queryRaw<Array<{ id: string }>>`
+        SELECT "id"
+        FROM "trainer_athletes"
+        WHERE "id" = ${current.trainerAthleteId}
+          AND "trainer_id" = ${input.trainerId}
+          AND "status" = 'ACTIVE'
+        FOR UPDATE
+      `;
+      if (relationships.length !== 1) return null;
+
+      const assignments = await tx.$queryRaw<Array<{ id: string }>>`
+        SELECT assignment."id"
+        FROM "training_program_assignments" AS assignment
+        JOIN "training_program_versions" AS version ON version."id" = assignment."version_id"
+        JOIN "training_programs" AS program ON program."id" = version."program_id"
+        WHERE assignment."id" = ${input.assignmentId}
+          AND assignment."trainer_athlete_id" = ${current.trainerAthleteId}
+          AND assignment."assigned_by_id" = ${input.trainerId}
+          AND program."trainer_id" = ${input.trainerId}
+          AND assignment."status" = 'ACTIVE'
+        FOR UPDATE OF assignment
+      `;
+      if (assignments.length !== 1) return null;
+
+      const users = await tx.$queryRaw<Array<{ id: string }>>`
+        SELECT "id"
+        FROM "users"
+        WHERE "id" = ${input.trainerId} AND "deleted_at" IS NULL
+        FOR UPDATE
+      `;
+      if (users.length !== 1) return null;
+
+      await tx.$queryRaw`
+        SELECT "id"
+        FROM "trainer_profiles"
+        WHERE "user_id" = ${input.trainerId}
+        FOR UPDATE
+      `;
+
+      const trainer = await tx.user.findUnique({
+        where: { id: input.trainerId },
+        select: {
+          id: true,
+          role: true,
+          deletedAt: true,
+          trainerProfile: { select: { isActive: true } },
+        },
+      });
+      if (!trainer || trainer.deletedAt || !deriveAccountCapabilities(trainer).trainer) {
+        return null;
+      }
+
+      return tx.trainingProgramAssignment.update({
+        where: { id: input.assignmentId, status: 'ACTIVE' },
+        data: {
+          status: 'CANCELLED',
+          endedAt: input.endedAt,
+          endedBy: { connect: { id: input.trainerId } },
+          endReason: input.reason,
+        },
+        select: trainingProgramAssignmentSelect,
+      });
+    });
+  }
+
   async completeAssignmentIfNoUnfinishedWorkouts(input: {
     assignmentId: string;
     athleteId: string;
     completedAt: Date;
   }) {
     return this.prisma.$transaction(async (tx) => {
+      // Lock the assignment and the actual athlete account together.
+      // An admin promotion/deletion cannot race completion after this check.
       const assignments = await tx.$queryRaw<Array<{ id: string }>>`
-      SELECT "id"
-      FROM "training_program_assignments"
-      WHERE
-        "id" = ${input.assignmentId}
-        AND "athlete_id" = ${input.athleteId}
-        AND "status" = 'ACTIVE'
-      FOR UPDATE
-    `;
+        SELECT assignment."id"
+        FROM "training_program_assignments" AS assignment
+        JOIN "users" AS athlete ON athlete."id" = assignment."athlete_id"
+        WHERE assignment."id" = ${input.assignmentId}
+          AND assignment."athlete_id" = ${input.athleteId}
+          AND assignment."status" = 'ACTIVE'
+          AND athlete."deleted_at" IS NULL
+          AND athlete."role" <> 'ADMIN'
+        FOR UPDATE OF assignment, athlete
+      `;
 
       if (assignments.length !== 1) {
         return { status: 'NOT_ACTIVE' as const };

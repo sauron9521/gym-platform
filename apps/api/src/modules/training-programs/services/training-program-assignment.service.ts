@@ -169,11 +169,13 @@ export class TrainingProgramAssignmentService {
   }
 
   async completeAssignment(assignmentId: string, actor: TrainingProgramActor) {
-    if (actor.role !== 'ATHLETE') {
-      throw new ForbiddenException('Only athletes can complete their program assignments.');
-    }
-
     const assignment = await this.findOneAssignment(assignmentId, actor);
+
+    // A TRAINER-role user can also be an athlete. The relationship side,
+    // not the session's role, determines who can complete an assignment.
+    if (assignment.athleteId !== actor.id) {
+      throw new ForbiddenException('Only the assigned athlete can complete this program.');
+    }
 
     if (assignment.status !== 'ACTIVE') {
       throw new ConflictException('Only active assignments can be completed.');
@@ -204,36 +206,34 @@ export class TrainingProgramAssignmentService {
     actor: TrainingProgramActor,
     input: CancelTrainingProgramAssignmentInput = {},
   ) {
-    if (actor.role !== 'TRAINER') {
-      throw new ForbiddenException('Only trainers can cancel program assignments.');
-    }
+    // Cancelling somebody else's training is a trainer privilege, not an
+    // athlete-side cleanup operation. Read the current approval, not JWT role.
+    await this.accessService.assertTrainer(actor);
 
     const assignment = await this.findOneAssignment(assignmentId, actor);
-
+    if (assignment.assignedById !== actor.id || assignment.trainerAthlete.trainerId !== actor.id) {
+      throw new ForbiddenException('Only the assigning trainer can cancel this program.');
+    }
     if (assignment.status !== 'ACTIVE') {
       throw new ConflictException('Only active assignments can be cancelled.');
     }
 
     try {
-      return await this.repository.updateAssignment(
-        {
-          id: assignmentId,
-          status: 'ACTIVE',
-        },
-        {
-          status: 'CANCELLED',
-          endedAt: new Date(),
-          endedBy: {
-            connect: { id: actor.id },
-          },
-          endReason: input.reason?.trim() || null,
-        },
-      );
+      const cancelled = await this.repository.cancelAssignmentIfTrainerEligible({
+        assignmentId,
+        trainerId: actor.id,
+        endedAt: new Date(),
+        reason: input.reason?.trim() || null,
+      });
+
+      if (!cancelled) {
+        throw new ConflictException('Assignment or trainer eligibility has changed. Reload.');
+      }
+      return cancelled;
     } catch (error) {
       if (this.isPrismaError(error, 'P2025')) {
         throw new ConflictException('Assignment state has changed. Reload and try again.');
       }
-
       throw error;
     }
   }

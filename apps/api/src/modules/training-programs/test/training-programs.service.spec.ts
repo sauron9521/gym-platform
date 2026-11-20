@@ -59,6 +59,7 @@ describe('TrainingProgramsService', () => {
     findAssignmentDetailsById: vi.fn(),
     updateAssignment: vi.fn(),
     completeAssignmentIfNoUnfinishedWorkouts: vi.fn(),
+    cancelAssignmentIfTrainerEligible: vi.fn(),
     findManyAssignmentsForParticipant: vi.fn(),
     findRestrictedAssignmentById: vi.fn(),
   };
@@ -100,6 +101,9 @@ describe('TrainingProgramsService', () => {
   const activeAssignment = {
     id: 'assignment-1',
     athleteId: 'athlete-1',
+    assignedById: trainer.id,
+    trainerAthleteId: 'relationship-1',
+    trainerAthlete: { trainerId: trainer.id, athleteId: 'athlete-1', status: 'ACTIVE' },
     status: 'ACTIVE',
   };
 
@@ -179,6 +183,7 @@ describe('TrainingProgramsService', () => {
       findAssignmentDetailsById: repository.findAssignmentDetailsById,
       updateAssignment: repository.updateAssignment,
       completeAssignmentIfNoUnfinishedWorkouts: repository.completeAssignmentIfNoUnfinishedWorkouts,
+      cancelAssignmentIfTrainerEligible: repository.cancelAssignmentIfTrainerEligible,
       findManyAssignmentsForParticipant: repository.findManyAssignmentsForParticipant,
       findRestrictedAssignmentById: repository.findRestrictedAssignmentById,
     } as unknown as TrainingProgramAssignmentRepository;
@@ -1041,7 +1046,7 @@ describe('TrainingProgramsService', () => {
         completedAt: expect.any(Date),
       });
 
-      expect(repository.updateAssignment).not.toHaveBeenCalled();
+      expect(repository.cancelAssignmentIfTrainerEligible).not.toHaveBeenCalled();
 
       expect(result).toEqual(completed);
     });
@@ -1051,11 +1056,11 @@ describe('TrainingProgramsService', () => {
         ForbiddenException,
       );
 
-      expect(repository.updateAssignment).not.toHaveBeenCalled();
+      expect(repository.cancelAssignmentIfTrainerEligible).not.toHaveBeenCalled();
     });
 
     it('should allow the owning trainer to cancel an active assignment', async () => {
-      repository.updateAssignment.mockResolvedValue({
+      repository.cancelAssignmentIfTrainerEligible.mockResolvedValue({
         ...activeAssignment,
         status: 'CANCELLED',
       });
@@ -1064,20 +1069,12 @@ describe('TrainingProgramsService', () => {
         reason: 'Program updated',
       });
 
-      expect(repository.updateAssignment).toHaveBeenCalledWith(
-        {
-          id: 'assignment-1',
-          status: 'ACTIVE',
-        },
-        expect.objectContaining({
-          status: 'CANCELLED',
-          endedAt: expect.any(Date),
-          endedBy: {
-            connect: { id: trainer.id },
-          },
-          endReason: 'Program updated',
-        }),
-      );
+      expect(repository.cancelAssignmentIfTrainerEligible).toHaveBeenCalledWith({
+        assignmentId: 'assignment-1',
+        trainerId: trainer.id,
+        endedAt: expect.any(Date),
+        reason: 'Program updated',
+      });
     });
 
     it('should reject cancellation by an athlete', async () => {
@@ -1085,7 +1082,7 @@ describe('TrainingProgramsService', () => {
         ForbiddenException,
       );
 
-      expect(repository.updateAssignment).not.toHaveBeenCalled();
+      expect(repository.cancelAssignmentIfTrainerEligible).not.toHaveBeenCalled();
     });
 
     it('should reject completing an already completed assignment', async () => {
@@ -1098,7 +1095,7 @@ describe('TrainingProgramsService', () => {
         ConflictException,
       );
 
-      expect(repository.updateAssignment).not.toHaveBeenCalled();
+      expect(repository.cancelAssignmentIfTrainerEligible).not.toHaveBeenCalled();
     });
 
     it('should reject cancelling an already cancelled assignment', async () => {
@@ -1111,7 +1108,7 @@ describe('TrainingProgramsService', () => {
         ConflictException,
       );
 
-      expect(repository.updateAssignment).not.toHaveBeenCalled();
+      expect(repository.cancelAssignmentIfTrainerEligible).not.toHaveBeenCalled();
     });
 
     it('requests a compact athlete assignment list when asked', async () => {
@@ -1154,7 +1151,7 @@ describe('TrainingProgramsService', () => {
         completedAt: expect.any(Date),
       });
 
-      expect(repository.updateAssignment).not.toHaveBeenCalled();
+      expect(repository.cancelAssignmentIfTrainerEligible).not.toHaveBeenCalled();
     });
 
     it('should reject completion when assignment becomes inactive', async () => {
@@ -1172,7 +1169,7 @@ describe('TrainingProgramsService', () => {
         completedAt: expect.any(Date),
       });
 
-      expect(repository.updateAssignment).not.toHaveBeenCalled();
+      expect(repository.cancelAssignmentIfTrainerEligible).not.toHaveBeenCalled();
     });
   });
 });
