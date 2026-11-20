@@ -142,7 +142,12 @@ describe('TrainerAthletesRepository', () => {
       prisma.$transaction.mockResolvedValue([
         [
           { id: 'former-trainer-open', trainerId: actorId, athleteId: 'other', status: 'ACTIVE' },
-          { id: 'own-athlete-history', trainerId: 'trainer-2', athleteId: actorId, status: 'ENDED' },
+          {
+            id: 'own-athlete-history',
+            trainerId: 'trainer-2',
+            athleteId: actorId,
+            status: 'TERMINATED',
+          },
         ],
         2,
       ]);

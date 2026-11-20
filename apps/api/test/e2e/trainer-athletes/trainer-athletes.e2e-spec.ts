@@ -710,10 +710,7 @@ describe('TrainerAthletes (HTTP + PostgreSQL)', () => {
 
   describe('GET /trainer-athletes', () => {
     it('updates read privacy after approval revocation and denies stale admin sessions', async () => {
-      const approved = await createUser(
-        `read-approved-${randomUUID()}@example.com`,
-        'ATHLETE',
-      );
+      const approved = await createUser(`read-approved-${randomUUID()}@example.com`, 'ATHLETE');
       const athlete = await createUser(`read-athlete-${randomUUID()}@example.com`, 'ATHLETE');
       const invited = await createUser(`read-invited-${randomUUID()}@example.com`, 'ATHLETE');
       const ids: string[] = [];
@@ -778,19 +775,18 @@ describe('TrainerAthletes (HTTP + PostgreSQL)', () => {
           data: { isActive: false, revokedAt: new Date(), revokedById: trainerOne.id },
         });
 
-        const [revokedList, activeDetails, pendingDetails, ownHistoryDetails] =
-          await Promise.all([
-            request(app!.getHttpServer()).get('/trainer-athletes').set('Cookie', cookie),
-            request(app!.getHttpServer())
-              .get(`/trainer-athletes/${active.id}`)
-              .set('Cookie', cookie),
-            request(app!.getHttpServer())
-              .get(`/trainer-athletes/${pending.id}`)
-              .set('Cookie', cookie),
-            request(app!.getHttpServer())
-              .get(`/trainer-athletes/${ownHistory.id}`)
-              .set('Cookie', cookie),
-          ]);
+        const [revokedList, activeDetails, pendingDetails, ownHistoryDetails] = await Promise.all([
+          request(app!.getHttpServer()).get('/trainer-athletes').set('Cookie', cookie),
+          request(app!.getHttpServer())
+            .get(`/trainer-athletes/${active.id}`)
+            .set('Cookie', cookie),
+          request(app!.getHttpServer())
+            .get(`/trainer-athletes/${pending.id}`)
+            .set('Cookie', cookie),
+          request(app!.getHttpServer())
+            .get(`/trainer-athletes/${ownHistory.id}`)
+            .set('Cookie', cookie),
+        ]);
 
         expect(revokedList.status).toBe(200);
         expect(activeDetails.status).toBe(200);
