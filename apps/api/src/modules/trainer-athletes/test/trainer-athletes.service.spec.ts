@@ -8,6 +8,7 @@ import {
 import { Prisma } from '#prisma/client';
 
 import { UsersRepository } from '#src/modules/users/repositories/users.repository';
+import { UsersService } from '#src/modules/users/services/users.service';
 import { TrainerAthletesRepository } from '../repositories/trainer-athletes.repository.js';
 import { TrainerAthletesService } from '../services/trainer-athletes.service.js';
 import { TrainerAthleteTerminationService } from '../services/trainer-athlete-termination.service.js';
@@ -35,6 +36,10 @@ describe('TrainerAthletesService', () => {
 
   const terminationService = {
     terminateWithExerciseCopies: vi.fn(),
+  };
+
+  const usersService = {
+    findMyCapabilities: vi.fn(),
   };
 
   const trainer: TrainerAthleteActor = {
@@ -79,11 +84,18 @@ describe('TrainerAthletesService', () => {
 
   beforeEach(() => {
     vi.resetAllMocks();
+    usersService.findMyCapabilities.mockImplementation(async (id: string) => ({
+      athlete: id !== admin.id,
+      trainer: id === trainer.id,
+      admin: id === admin.id,
+    }));
+    repository.findActiveTrainerIdsForAthlete.mockResolvedValue([]);
 
     service = new TrainerAthletesService(
       repository as unknown as TrainerAthletesRepository,
       usersRepository as unknown as UsersRepository,
       terminationService as unknown as TrainerAthleteTerminationService,
+      usersService as unknown as UsersService,
     );
   });
 
@@ -568,6 +580,51 @@ describe('TrainerAthletesService', () => {
   });
 
   describe('getExerciseAccessContext', () => {
+    it('allows an approved ATHLETE to exercise both athlete and trainer access', async () => {
+      usersService.findMyCapabilities.mockResolvedValue({
+        athlete: true,
+        trainer: true,
+        admin: false,
+      });
+      repository.findActiveTrainerIdsForAthlete.mockResolvedValue(['own-trainer']);
+      repository.findActiveAthleteIdsForTrainer.mockResolvedValue(['own-athlete']);
+
+      const result = await service.getExerciseAccessContext(athlete);
+
+      expect(result).toEqual({
+        activeTrainerIds: ['own-trainer'],
+        activeAthleteIds: ['own-athlete'],
+      });
+      expect(usersService.findMyCapabilities).toHaveBeenCalledExactlyOnceWith(athlete.id);
+    });
+
+    it('revokes trainer-side access even with a stale TRAINER session role', async () => {
+      usersService.findMyCapabilities.mockResolvedValue({
+        athlete: true,
+        trainer: false,
+        admin: false,
+      });
+      repository.findActiveTrainerIdsForAthlete.mockResolvedValue(['own-trainer']);
+
+      const result = await service.getExerciseAccessContext(trainer);
+
+      expect(result).toEqual({
+        activeTrainerIds: ['own-trainer'],
+        activeAthleteIds: [],
+      });
+      expect(repository.findActiveAthleteIdsForTrainer).not.toHaveBeenCalled();
+    });
+
+    it('refuses to query relationships when account capability lookup fails', async () => {
+      usersService.findMyCapabilities.mockRejectedValue(new Error('Database unavailable'));
+
+      await expect(service.getExerciseAccessContext(trainer)).rejects.toThrow(
+        'Database unavailable',
+      );
+      expect(repository.findActiveTrainerIdsForAthlete).not.toHaveBeenCalled();
+      expect(repository.findActiveAthleteIdsForTrainer).not.toHaveBeenCalled();
+    });
+
     it('should return active trainer IDs for an athlete', async () => {
       repository.findActiveTrainerIdsForAthlete.mockResolvedValue(['trainer-1', 'trainer-2']);
 
