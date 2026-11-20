@@ -81,6 +81,8 @@ describe('validateEnv', () => {
     ['CORS origin with path', { CORS_ORIGINS: 'https://app.example.test/path' }],
     ['URL credentials', { APP_URL: 'https://user:pw@app.example.test' }],
     ['invalid SMTP protocol', { SMTP_URL: 'https://smtp.example.test' }],
+    ['Trainer origin with path', { TRAINER_APP_URL: 'https://trainer.example.test/private' }],
+    ['Trainer origin credentials', { TRAINER_APP_URL: 'https://u:p@trainer.example.test' }],
     ['invalid Redis protocol', { REDIS_URL: 'https://redis.example.test' }],
     ['Redis URL query', { REDIS_URL: 'redis://localhost:6379/?foo=bar' }],
     ['all proxies trusted', { TRUSTED_PROXY_CIDRS: '0.0.0.0/0' }],
@@ -99,6 +101,7 @@ describe('validateEnv', () => {
     ['HTTP app URL', { APP_URL: 'http://app.example.test' }],
     ['HTTP issuer', { JWT_ISSUER: 'http://api.example.test' }],
     ['HTTP origin', { CORS_ORIGINS: 'http://app.example.test' }],
+    ['HTTP Trainer origin', { TRAINER_APP_URL: 'http://trainer.example.test' }],
     ['missing SMTP', { SMTP_URL: undefined }],
     ['unencrypted SMTP', { SMTP_URL: 'smtp://mailer.example.test:587' }],
     ['missing sender', { MAIL_FROM: undefined }],
@@ -106,6 +109,13 @@ describe('validateEnv', () => {
     expect(() => validateEnv({ ...validProd, ...override })).toThrow(
       'Invalid environment configuration',
     );
+  });
+
+  it('accepts exact production Trainer origin for independent cookie sessions', () => {
+    expect(
+      validateEnv({ ...validProd, TRAINER_APP_URL: 'https://trainer.example.test' }).TRAINER_APP_URL,
+    ).toBe('https://trainer.example.test');
+    expect(validateEnv({ ...validDev, TRAINER_APP_URL: '' }).TRAINER_APP_URL).toBeUndefined();
   });
 
   it('never exposes credential values in validation diagnostics', () => {

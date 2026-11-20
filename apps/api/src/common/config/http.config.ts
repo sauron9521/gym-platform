@@ -19,12 +19,14 @@ export function getCsrfTrustedOrigins(
   appUrl: AppEnv['APP_URL'],
   corsOrigins: string[],
   adminUrl?: AppEnv['ADMIN_APP_URL'],
+  trainerUrl?: AppEnv['TRAINER_APP_URL'],
 ): string[] {
   return [
     ...new Set([
       getWebAppOrigin(appUrl),
       ...corsOrigins,
       ...(adminUrl ? [new URL(adminUrl).origin] : []),
+      ...(trainerUrl ? [new URL(trainerUrl).origin] : []),
     ]),
   ];
 }
@@ -33,6 +35,13 @@ export function getCsrfTrustedOrigins(
 export function getSessionTrustedOrigins(
   appUrl: AppEnv['APP_URL'],
   adminUrl?: AppEnv['ADMIN_APP_URL'],
+  trainerUrl?: AppEnv['TRAINER_APP_URL'],
 ): string[] {
-  return [...new Set([getWebAppOrigin(appUrl), ...(adminUrl ? [new URL(adminUrl).origin] : [])])];
+  return [
+    ...new Set([
+      getWebAppOrigin(appUrl),
+      ...(adminUrl ? [new URL(adminUrl).origin] : []),
+      ...(trainerUrl ? [new URL(trainerUrl).origin] : []),
+    ]),
+  ];
 }
