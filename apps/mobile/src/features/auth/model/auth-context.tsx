@@ -1,3 +1,4 @@
+import { AppState } from 'react-native';
 import {
   createContext,
   useCallback,
@@ -11,6 +12,11 @@ import type { paths } from '@gym/api-client';
 import { useQueryClient } from '@tanstack/react-query';
 
 import { createMobileApi } from '@/shared/api/client';
+import {
+  hasMobileAccess,
+  parseAccountCapabilities,
+  type AccountCapabilities,
+} from './account-capabilities';
 import { accountQueryKeys } from '@/shared/api/query-client';
 import {
   getMobileLoginError,
@@ -24,6 +30,7 @@ export type Account = paths['/users/me']['get']['responses'][200]['content']['ap
 type Result = { success: true } | { success: false; message: string };
 type AuthValue = {
   account: Account | null;
+  capabilities: AccountCapabilities | null;
   restoring: boolean;
   recoveryAvailable: boolean;
   retryVerification: () => Promise<Result>;
@@ -39,6 +46,7 @@ const AuthContext = createContext<AuthValue | null>(null);
  */
 export function AuthProvider({ children }: PropsWithChildren) {
   const [account, setAccount] = useState<Account | null>(null);
+  const [capabilities, setCapabilities] = useState<AccountCapabilities | null>(null);
   const [restoring, setRestoring] = useState(true);
   const [recoveryAvailable, setRecoveryAvailable] = useState(false);
   const queryClient = useQueryClient();
@@ -77,6 +85,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
           // Expired or replayed refresh tokens invalidate all private UI state.
           queryClient.clear();
           setAccount(null);
+          setCapabilities(null);
         },
       ),
   );
@@ -114,12 +123,32 @@ export function AuthProvider({ children }: PropsWithChildren) {
         if (!active || session.revision !== revision) return;
 
         if (response.response.status === 200 && response.data) {
-          queryClient.clear();
-          queryClient.setQueryData(accountQueryKeys.me(response.data.id), response.data);
-          setAccount(response.data);
-          setRecoveryAvailable(false);
+          const grantResult = await api.GET('/users/me/capabilities');
+          if (!active || session.revision !== revision) return;
+          const grants =
+            grantResult.response.status === 200 ? parseAccountCapabilities(grantResult.data) : null;
+          if (hasMobileAccess(grants)) {
+            queryClient.clear();
+            queryClient.setQueryData(accountQueryKeys.me(response.data.id), response.data);
+            setCapabilities(grants);
+            setAccount(response.data);
+            setRecoveryAvailable(false);
+          } else if (
+            grantResult.response.status === 401 ||
+            grantResult.response.status === 403 ||
+            (grants && !hasMobileAccess(grants))
+          ) {
+            await session.clear();
+            setCapabilities(null);
+            setRecoveryAvailable(false);
+          } else if (session.canRevalidate()) {
+            // Keep the rotated token after transient errors, but private
+            // navigation stays locked until both account and grants verify.
+            setRecoveryAvailable(true);
+          }
         } else if (response.response.status === 401 || response.response.status === 403) {
           await session.clear();
+          setCapabilities(null);
           setRecoveryAvailable(false);
         } else if (
           active &&
@@ -162,14 +191,32 @@ export function AuthProvider({ children }: PropsWithChildren) {
         return { success: false, message: 'Сесія змінилася. Спробуйте ще раз.' };
       }
       if (result.response.status === 200 && result.data) {
-        queryClient.clear();
-        queryClient.setQueryData(accountQueryKeys.me(result.data.id), result.data);
-        setAccount(result.data);
-        setRecoveryAvailable(false);
-        return { success: true };
-      }
-      if (result.response.status === 401 || result.response.status === 403) {
+        const grantResult = await api.GET('/users/me/capabilities');
+        if (session.revision !== revision) {
+          return { success: false, message: 'Session changed during verification.' };
+        }
+        const grants =
+          grantResult.response.status === 200 ? parseAccountCapabilities(grantResult.data) : null;
+        if (hasMobileAccess(grants)) {
+          queryClient.clear();
+          queryClient.setQueryData(accountQueryKeys.me(result.data.id), result.data);
+          setCapabilities(grants);
+          setAccount(result.data);
+          setRecoveryAvailable(false);
+          return { success: true };
+        }
+        if (
+          grantResult.response.status === 401 ||
+          grantResult.response.status === 403 ||
+          (grants && !hasMobileAccess(grants))
+        ) {
+          await session.clear();
+          setCapabilities(null);
+          setRecoveryAvailable(false);
+        }
+      } else if (result.response.status === 401 || result.response.status === 403) {
         await session.clear();
+        setCapabilities(null);
         setRecoveryAvailable(false);
       }
       return { success: false, message: 'Не вдалося підтвердити сесію.' };
@@ -217,8 +264,18 @@ export function AuthProvider({ children }: PropsWithChildren) {
           return { success: false, message: 'Не вдалося підтвердити вхід.' };
         }
 
+        const grantResult = await api.GET('/users/me/capabilities');
+        if (session.revision !== revision || grantResult.response.status !== 200) {
+          return { success: false, message: 'Unable to verify account permissions.' };
+        }
+        const grants = parseAccountCapabilities(grantResult.data);
+        if (!hasMobileAccess(grants)) {
+          return { success: false, message: 'Account is not eligible for Mobile access.' };
+        }
+
         queryClient.clear();
         queryClient.setQueryData(accountQueryKeys.me(me.data.id), me.data);
+        setCapabilities(grants);
         setAccount(me.data);
         verified = true;
         return { success: true };
@@ -230,6 +287,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
           await session.clear().catch(() => undefined);
           queryClient.clear();
           setAccount(null);
+          setCapabilities(null);
           if (issuedRefreshToken) {
             try {
               await guestApi.POST('/auth/token/revoke', {
@@ -250,6 +308,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
     const guestApi = getGuestApi();
     queryClient.clear();
     setAccount(null);
+    setCapabilities(null);
     setRecoveryAvailable(false);
     await session.clear().catch(() => undefined);
     if (guestApi && refreshToken) {
@@ -261,9 +320,88 @@ export function AuthProvider({ children }: PropsWithChildren) {
     }
   }, [getGuestApi, queryClient, session]);
 
+  // Revalidate persisted grants on foreground; old roles and cached claims
+  // are never enough to unlock a privileged navigation stack.
+  useEffect(() => {
+    if (!account) return;
+    let alive = true;
+    let checkGeneration = 0;
+    const revalidate = async () => {
+      const currentCheck = ++checkGeneration;
+      const revision = session.revision;
+      setCapabilities(null);
+      queryClient.clear();
+      try {
+        const api = getApi();
+        if (!api) throw new Error('Mobile API unavailable');
+        const response = await api.GET('/users/me/capabilities');
+        if (!alive || currentCheck !== checkGeneration || session.revision !== revision) return;
+        const grants =
+          response.response.status === 200 ? parseAccountCapabilities(response.data) : null;
+        if (hasMobileAccess(grants)) {
+          setCapabilities(grants);
+          return;
+        }
+        if (
+          response.response.status === 401 ||
+          response.response.status === 403 ||
+          (grants && !hasMobileAccess(grants))
+        ) {
+          await session.clear();
+          if (!alive || currentCheck !== checkGeneration) return;
+          setRecoveryAvailable(false);
+          setCapabilities(null);
+          setAccount(null);
+          return;
+        } else {
+          setRecoveryAvailable(session.canRevalidate());
+        }
+      } catch {
+        if (!alive || currentCheck !== checkGeneration || session.revision !== revision) return;
+        setRecoveryAvailable(session.canRevalidate());
+      }
+      if (alive && currentCheck === checkGeneration && session.revision === revision) {
+        setCapabilities(null);
+        setAccount(null);
+      }
+    };
+    const subscription = AppState.addEventListener('change', (state) => {
+      if (state === 'background' || state === 'inactive') {
+        ++checkGeneration;
+        setCapabilities(null);
+        queryClient.clear();
+      } else if (state === 'active') {
+        void revalidate();
+      }
+    });
+    return () => {
+      alive = false;
+      ++checkGeneration;
+      subscription.remove();
+    };
+  }, [account, getApi, queryClient, session]);
+
   const value = useMemo(
-    () => ({ account, restoring, recoveryAvailable, retryVerification, signIn, signOut, getApi }),
-    [account, restoring, recoveryAvailable, retryVerification, signIn, signOut, getApi],
+    () => ({
+      account,
+      capabilities,
+      restoring,
+      recoveryAvailable,
+      retryVerification,
+      signIn,
+      signOut,
+      getApi,
+    }),
+    [
+      account,
+      capabilities,
+      restoring,
+      recoveryAvailable,
+      retryVerification,
+      signIn,
+      signOut,
+      getApi,
+    ],
   );
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

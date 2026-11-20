@@ -29,6 +29,7 @@ const refetchPrograms = vi.fn();
 
 function setAccount(role: 'ATHLETE' | 'TRAINER') {
   vi.mocked(useAuth).mockReturnValue({
+    capabilities: { athlete: role === 'ATHLETE', trainer: role === 'TRAINER', admin: false },
     account: {
       id: 'account-1',
       role,

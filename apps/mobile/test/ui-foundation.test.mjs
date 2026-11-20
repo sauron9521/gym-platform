@@ -41,8 +41,11 @@ test('native form scroll views preserve safe-area and keyboard behavior', () => 
 test('Gluestack root provider preserves authenticated route guards', () => {
   const layout = read('../src/app/_layout.tsx');
   assert.match(layout, /<GluestackUIProvider/);
-  assert.match(layout, /<Stack\.Protected guard=\{Boolean\(account\)\}>/);
-  assert.match(layout, /<Stack\.Protected guard=\{!account\}>/);
+  assert.match(
+    layout,
+    /<Stack\.Protected guard=\{Boolean\(account && hasMobileAccess\(capabilities\)\)\}>/,
+  );
+  assert.match(layout, /<Stack\.Protected guard=\{!account \|\| !capabilities\}>/);
 });
 
 test('Expo uses its default Babel setup and TypeScript resolves aliases to src', () => {

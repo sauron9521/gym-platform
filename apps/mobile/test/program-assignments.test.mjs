@@ -40,7 +40,7 @@ test('assigned programs use typed API and never retry writes automatically', () 
   assert.match(file, /getProgramWorkoutAttempt/);
   assert.match(file, /clearProgramWorkoutAttempt/);
   assert.match(file, /retry: false/);
-  assert.match(file, /account\?\.role !== 'ATHLETE'/);
+  assert.match(file, /!hasAthleteAccess\(capabilities\)/);
   assert.doesNotMatch(file, /getQueryData\(accountQueryKeys\.me/);
 });
 
@@ -50,5 +50,5 @@ test('program navigation is protected without dropping athlete workout creation'
   assert.match(layout, /name="programs\/\[id\]"/);
   assert.match(layout, /name="workouts\/new"/);
   assert.match(layout, /mode="dark"/);
-  assert.match(tabs, /href: account\?\.role === 'ATHLETE' \? undefined : null/);
+  assert.match(tabs, /href: hasAthleteAccess\(capabilities\) \? undefined : null/);
 });

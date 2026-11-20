@@ -2,6 +2,7 @@ import { useRef } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { useAuth } from '@/features/auth/model/auth-context';
+import { hasAthleteAccess } from '@/features/auth/model/account-capabilities';
 import { accountQueryKeys } from '@/shared/api/query-client';
 
 import {
@@ -16,14 +17,14 @@ import {
 } from '../lib/create-workout-schema';
 
 export function useCreateMobileWorkout() {
-  const { account, getApi, signOut } = useAuth();
+  const { account, capabilities, getApi, signOut } = useAuth();
   const queryClient = useQueryClient();
   const attempt = useRef<WorkoutCreationAttempt | null>(null);
   return useMutation({
     mutationFn: async (input: CreateOneWorkout): Promise<string> => {
       const api = getApi();
       if (!api) throw new Error('Не налаштовано адресу API.');
-      if (!account || account.role !== 'ATHLETE') {
+      if (!account || !hasAthleteAccess(capabilities)) {
         throw new Error('Створення власного тренування доступне лише спортсмену.');
       }
       // Retain the key after a timeout: a manual retry must not create a duplicate.
@@ -57,7 +58,7 @@ export function useCreateMobileWorkout() {
 
 /** Multi-exercise POST with explicit idempotency and no automatic mutation retry. */
 export function useCreateMultiMobileWorkout() {
-  const { account, getApi, signOut } = useAuth();
+  const { account, capabilities, getApi, signOut } = useAuth();
   const queryClient = useQueryClient();
   const attempt = useRef<WorkoutCreationAttempt | null>(null);
 
@@ -65,7 +66,7 @@ export function useCreateMultiMobileWorkout() {
     mutationFn: async (form: MobileMultiWorkoutForm): Promise<string> => {
       const api = getApi();
       if (!api) throw new Error('Не налаштовано адресу API.');
-      if (!account || account.role !== 'ATHLETE') {
+      if (!account || !hasAthleteAccess(capabilities)) {
         throw new Error('Створення тренування доступне лише спортсмену.');
       }
       // Prevent invalid programmatic calls from bypassing the RHF/Zod form.

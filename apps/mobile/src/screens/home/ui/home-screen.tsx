@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { useAuth } from '@/features/auth/model/auth-context';
+import { hasAthleteAccess } from '@/features/auth/model/account-capabilities';
 import { useAccountQuery } from '@/features/profile/model/account-query';
 import { useProgramAssignments } from '@/features/programs/model/program-assignments-query';
 import { useWorkoutSummary } from '@/features/progress/model/workout-summary-query';
@@ -96,11 +97,11 @@ function AthleteDashboard() {
 
 export function HomeScreen() {
   const router = useRouter();
-  const { account } = useAuth();
+  const { account, capabilities } = useAuth();
   const { data: accountData } = useAccountQuery();
   const queryClient = useQueryClient();
   const [refreshing, setRefreshing] = useState(false);
-  const isAthlete = account?.role === 'ATHLETE';
+  const isAthlete = hasAthleteAccess(capabilities);
   const profile = accountData?.profile ?? account?.profile;
   const displayName = profile?.displayName?.trim() || profile?.firstName?.trim();
 
@@ -116,7 +117,7 @@ export function HomeScreen() {
           type: 'active',
         }),
       ];
-      if (account.role === 'ATHLETE') {
+      if (hasAthleteAccess(capabilities)) {
         requests.push(
           queryClient.refetchQueries({
             queryKey: [...accountQueryKeys.workouts(account.id), 'ALL'],
@@ -139,7 +140,7 @@ export function HomeScreen() {
     } finally {
       setRefreshing(false);
     }
-  }, [account, queryClient, refreshing]);
+  }, [account, capabilities, queryClient, refreshing]);
 
   return (
     <ScrollView
