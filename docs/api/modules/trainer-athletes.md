@@ -16,6 +16,17 @@ Authenticated invitation/relationship management with accept, decline, cancellat
 
 Relationship state affects trainer access to exercises and program assignment. The termination flow may require exercising copy/visibility rules for previously shared exercises; never replace it with an untested direct database update.
 
+## Live capabilities for relationship transitions (M05 / #291)
+
+The `accept / decline / cancel / terminate` endpoints re-read the current database capabilities of the authenticated participant. Legacy session roles are not used to grant mutation privileges:
+
+- **Accept** requires the initiator/recipient to satisfy their actual `trainerId` and `athleteId` sides: the trainer must currently have trainer capability and the athlete must still have athlete capability. A conditional Prisma update repeats these predicates at write time, so a revocation between checking and writing cannot activate the relationship. Revoked trainers or ineligible athletes cause a conflict rather than activating.
+- **Decline, cancel and terminate** remain available to participants whose trainer capability was revoked, provided their account is still a valid athlete. These are exit/cleanup actions, not new grants. Existing recipient/initiator, relationship-status and ownership checks still apply.
+- Admin/deleted participants are not allowed to perform relationship mutations even with stale ATHLETE/TRAINER session claims. Response redaction continues to use the participant's side in the specific relationship.
+- Termination retains its atomic program-assignment/exercise-copy/access-revocation transaction. No Prisma schema changes.
+
+Remaining follow-ups: list/detail authorization migration; transactional capability checks for creation and other revocation races; mixed-role training-program assignments; #361 cross-product E2E before protected Trainer Web routes.
+
 ## Create invitations with live capabilities (M05 / E1 #291)
 
 `POST /trainer-athletes` resolves the authenticated initiator and target using fresh, persisted `UsersService.findMyCapabilities` reads. It does **not** use `User.role` or the session role for trainer authorization.
