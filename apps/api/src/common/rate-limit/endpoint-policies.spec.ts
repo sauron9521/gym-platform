@@ -9,6 +9,7 @@ import { AuthController } from '#src/modules/auth/controllers/auth.controller';
 import { UsersController } from '#src/modules/users/controllers/users.controller';
 import { TrainerApplicationsController } from '#src/modules/trainer-onboarding/controllers/trainer-applications.controller';
 import { TrainerReviewController } from '#src/modules/trainer-onboarding/controllers/trainer-review.controller';
+import { TrainerAthletesController } from '#src/modules/trainer-athletes/controllers/trainer-athletes.controller';
 
 describe('Endpoint-aware throttling policies', () => {
   it('centralizes the global default and every semantic endpoint budget', () => {
@@ -48,6 +49,8 @@ describe('Endpoint-aware throttling policies', () => {
     [TrainerReviewController, 'approve', 3],
     [TrainerReviewController, 'reject', 3],
     [TrainerReviewController, 'revoke', 3],
+    [TrainerAthletesController, 'findMany', 60],
+    [TrainerAthletesController, 'findOne', 60],
   ] as const)(
     'defines the intended per-minute limit for %s.%s',
     (controller, methodName, limit) => {
@@ -73,6 +76,18 @@ describe('Endpoint-aware throttling policies', () => {
       )?.value;
       expect(handler).toBeTypeOf('function');
       expect(Reflect.getMetadata(limitKey, handler)).toBeUndefined();
+    }
+  });
+
+  it('keeps Trainer–Athlete mutation throttles separate from frequent private reads', () => {
+    for (const methodName of ['create', 'accept', 'decline', 'cancel', 'terminate'] as const) {
+      const handler = Object.getOwnPropertyDescriptor(
+        TrainerAthletesController.prototype,
+        methodName,
+      )?.value;
+      expect(handler).toBeTypeOf('function');
+      expect(Reflect.getMetadata(limitKey, handler)).toBeUndefined();
+      expect(Reflect.getMetadata(ttlKey, handler)).toBeUndefined();
     }
   });
 
