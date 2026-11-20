@@ -485,7 +485,7 @@ describe('TrainerAthletesService', () => {
   describe('accept', () => {
     it('rejects accepting when the trainer capability has been revoked', async () => {
       repository.findById.mockResolvedValue(pendingRelationship);
-      usersService.findMyCapabilities.mockImplementation(async (id: string) => ({
+      usersService.findMyCapabilities.mockImplementation(async () => ({
         athlete: true,
         trainer: false,
         admin: false,
