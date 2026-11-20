@@ -1,4 +1,5 @@
 import { TrainingProgramAssignmentRepository } from '../repositories/training-program-assignment.repository.js';
+import { assignmentFullReadWhere } from '../policies/training-program-assignment-read.policy.js';
 import {
   trainingProgramAssignmentHistoricalSelect,
   trainingProgramAssignmentSelect,
@@ -40,11 +41,11 @@ describe('TrainingProgramAssignmentRepository privacy and completion', () => {
       .mockResolvedValueOnce([])
       .mockResolvedValueOnce([activeDetails]);
 
-    const result = await repository.findManyAssignmentsForTrainer({
+    const result = await repository.findManyAssignmentsForParticipant({
       where: trainerWhere,
       skip: 2,
       take: 2,
-    });
+    }, 'trainer-1');
 
     expect(prisma.trainingProgramAssignment.findMany).toHaveBeenNthCalledWith(1, {
       where: trainerWhere,
@@ -62,7 +63,7 @@ describe('TrainingProgramAssignmentRepository privacy and completion', () => {
           trainerWhere,
           {
             id: { in: ['assignment-active'] },
-            trainerAthlete: { is: { status: 'ACTIVE' } },
+            ...assignmentFullReadWhere('trainer-1'),
           },
         ],
       },
@@ -78,11 +79,11 @@ describe('TrainingProgramAssignmentRepository privacy and completion', () => {
     prisma.$transaction.mockResolvedValue([[activeHistorical], 1]);
     prisma.trainingProgramAssignment.findMany.mockResolvedValueOnce([]).mockResolvedValueOnce([]);
 
-    const result = await repository.findManyAssignmentsForTrainer({
+    const result = await repository.findManyAssignmentsForParticipant({
       where: trainerWhere,
       skip: 0,
       take: 20,
-    });
+    }, 'trainer-1');
     expect(result.data).toEqual([activeHistorical]);
     expect(prisma.trainingProgramAssignment.findMany).toHaveBeenCalledTimes(2);
     expect(prisma.trainingProgramAssignment.findMany.mock.calls[1]?.[0]?.where).toEqual({
@@ -90,7 +91,7 @@ describe('TrainingProgramAssignmentRepository privacy and completion', () => {
         trainerWhere,
         {
           id: { in: ['assignment-active'] },
-          trainerAthlete: { is: { status: 'ACTIVE' } },
+          ...assignmentFullReadWhere('trainer-1'),
         },
       ],
     });
@@ -98,11 +99,11 @@ describe('TrainingProgramAssignmentRepository privacy and completion', () => {
 
   it('skips sensitive detail queries if all trainer relationships are ended', async () => {
     prisma.$transaction.mockResolvedValue([[endedHistorical], 1]);
-    const result = await repository.findManyAssignmentsForTrainer({
+    const result = await repository.findManyAssignmentsForParticipant({
       where: trainerWhere,
       skip: 0,
       take: 10,
-    });
+    }, 'trainer-1');
     expect(result.data).toEqual([endedHistorical]);
     expect(result.meta.totalPages).toBe(1);
     expect(prisma.trainingProgramAssignment.findMany).toHaveBeenCalledTimes(1);
@@ -115,13 +116,13 @@ describe('TrainingProgramAssignmentRepository privacy and completion', () => {
       .mockResolvedValueOnce([])
       .mockResolvedValueOnce([activeSummary]);
 
-    const result = await repository.findManyAssignmentsForTrainer({
+    const result = await repository.findManyAssignmentsForParticipant({
       where: trainerWhere,
       skip: 0,
       take: 20,
       view: 'summary',
       orderBy: [{ id: 'asc' }],
-    });
+    }, 'trainer-1');
 
     expect(prisma.trainingProgramAssignment.findMany).toHaveBeenNthCalledWith(
       1,
@@ -145,11 +146,11 @@ describe('TrainingProgramAssignmentRepository privacy and completion', () => {
       { id: 'assignment-b', workouts: ['b'] },
       { id: 'assignment-a', workouts: ['a'] },
     ]);
-    const result = await repository.findManyAssignmentsForTrainer({
+    const result = await repository.findManyAssignmentsForParticipant({
       where: trainerWhere,
       skip: 0,
       take: 3,
-    });
+    }, 'trainer-1');
     expect(result.data).toEqual([
       { id: 'assignment-a', workouts: ['a'] },
       endedHistorical,
@@ -157,13 +158,61 @@ describe('TrainingProgramAssignmentRepository privacy and completion', () => {
     ]);
   });
 
+  it('keeps revoked trainer-side ACTIVE rows restricted when the full query denies them', async () => {
+    const redacted = {
+      id: 'revoked-trainer-active',
+      athleteId: 'other-athlete',
+      athlete: { id: 'other-athlete', role: 'ATHLETE' },
+      trainerAthlete: { status: 'ACTIVE' },
+    };
+    prisma.$transaction.mockResolvedValue([[redacted], 1]);
+    prisma.trainingProgramAssignment.findMany.mockResolvedValue([]);
+
+    const result = await repository.findManyAssignmentsForParticipant(
+      { where: trainerWhere, skip: 0, take: 20 },
+      'trainer-1',
+    );
+
+    expect(result.data).toEqual([redacted]);
+    expect(prisma.trainingProgramAssignment.findMany).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        where: {
+          AND: [
+            trainerWhere,
+            { id: { in: ['revoked-trainer-active'] }, ...assignmentFullReadWhere('trainer-1') },
+          ],
+        },
+      }),
+    );
+  });
+
+  it('requeries ended athlete-side assignments for their full personal history', async () => {
+    const own = {
+      id: 'own-athlete-ended',
+      athleteId: 'dual-user',
+      trainerAthlete: { status: 'TERMINATED' },
+    };
+    prisma.$transaction.mockResolvedValue([[own], 1]);
+    const full = { ...own, athlete: { id: 'dual-user', email: 'dual@example.com' } };
+    prisma.trainingProgramAssignment.findMany.mockResolvedValue([full]);
+
+    const result = await repository.findManyAssignmentsForParticipant(
+      { where: { athleteId: 'dual-user' }, skip: 0, take: 20 },
+      'dual-user',
+    );
+
+    expect(result.data).toEqual([full]);
+    expect(prisma.trainingProgramAssignment.findMany).toHaveBeenCalledTimes(2);
+  });
+
   it('returns an empty historical page without loading active details', async () => {
     prisma.$transaction.mockResolvedValue([[], 0]);
-    const result = await repository.findManyAssignmentsForTrainer({
+    const result = await repository.findManyAssignmentsForParticipant({
       where: trainerWhere,
       skip: 0,
       take: 10,
-    });
+    }, 'trainer-1');
     expect(result).toEqual({
       data: [],
       meta: { total: 0, skip: 0, take: 10, totalPages: 0 },
@@ -174,7 +223,7 @@ describe('TrainingProgramAssignmentRepository privacy and completion', () => {
   it('restricts individual historical details to non-active relationships', async () => {
     const historical = { id: 'assignment-ended', status: 'CANCELLED' };
     prisma.trainingProgramAssignment.findFirst.mockResolvedValue(historical);
-    const result = await repository.findHistoricalAssignmentDetailsById(
+    const result = await repository.findRestrictedAssignmentById(
       'assignment-ended',
       trainerWhere,
     );
@@ -184,7 +233,7 @@ describe('TrainingProgramAssignmentRepository privacy and completion', () => {
         AND: [
           { id: 'assignment-ended' },
           trainerWhere,
-          { trainerAthlete: { is: { status: { not: 'ACTIVE' } } } },
+
         ],
       },
       select: trainingProgramAssignmentHistoricalSelect,
