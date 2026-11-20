@@ -5,8 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 
-import { UsersRepository } from '#src/modules/users/repositories/users.repository';
-import { deriveAccountCapabilities } from '#src/modules/users/policies/account-capabilities.policy';
+import { UsersService } from '#src/modules/users/services/users.service';
 import { TrainingProgramCrudRepository } from '../repositories/training-program-crud.repository.js';
 import { TrainingProgramVersionRepository } from '../repositories/training-program-version.repository.js';
 
@@ -17,13 +16,12 @@ export class TrainingProgramAccessService {
   constructor(
     private readonly crudRepository: TrainingProgramCrudRepository,
     private readonly versionRepository: TrainingProgramVersionRepository,
-    private readonly usersRepository: UsersRepository,
+    private readonly usersService: UsersService,
   ) {}
 
   /** Check the persisted account on every operation, not an outdated session role. */
   async assertTrainer(actor: TrainingProgramActor): Promise<void> {
-    const account = await this.usersRepository.findCapabilitySnapshot(actor.id);
-    if (!account || !deriveAccountCapabilities(account).trainer) {
+    if (!(await this.usersService.hasTrainerCapability(actor.id))) {
       throw new ForbiddenException('Only active trainers can manage training programs');
     }
   }
