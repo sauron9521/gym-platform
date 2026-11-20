@@ -387,8 +387,8 @@ describe('TrainingProgramAssignmentRepository privacy and completion', () => {
     it('locks relationship, assignment, account and TrainerProfile before writing', async () => {
       const cancelled = await repository.cancelAssignmentIfTrainerEligible(input);
       expect(cancelled).toMatchObject({ status: 'CANCELLED' });
-      const queries = tx.$queryRaw.mock.calls.map(
-        ([parts]) => (parts as readonly string[]).join('?'),
+      const queries = tx.$queryRaw.mock.calls.map(([parts]) =>
+        (parts as readonly string[]).join('?'),
       );
       expect(queries).toHaveLength(4);
       expect(queries[0]).toContain('FROM "trainer_athletes"');
@@ -452,9 +452,7 @@ describe('TrainingProgramAssignmentRepository privacy and completion', () => {
 
     it('refuses cancellation when the program ownership or assignment state changed', async () => {
       tx.$queryRaw.mockReset();
-      tx.$queryRaw
-        .mockResolvedValueOnce([{ id: 'relationship-1' }])
-        .mockResolvedValueOnce([]);
+      tx.$queryRaw.mockResolvedValueOnce([{ id: 'relationship-1' }]).mockResolvedValueOnce([]);
       await expect(repository.cancelAssignmentIfTrainerEligible(input)).resolves.toBeNull();
       expect(tx.trainingProgramAssignment.update).not.toHaveBeenCalled();
     });

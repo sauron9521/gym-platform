@@ -211,10 +211,7 @@ export class TrainingProgramAssignmentService {
     await this.accessService.assertTrainer(actor);
 
     const assignment = await this.findOneAssignment(assignmentId, actor);
-    if (
-      assignment.assignedById !== actor.id ||
-      assignment.trainerAthlete.trainerId !== actor.id
-    ) {
+    if (assignment.assignedById !== actor.id || assignment.trainerAthlete.trainerId !== actor.id) {
       throw new ForbiddenException('Only the assigning trainer can cancel this program.');
     }
     if (assignment.status !== 'ACTIVE') {

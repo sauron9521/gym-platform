@@ -310,7 +310,7 @@ describe('TrainingProgramAssignmentService', () => {
     expect(repository.findRestrictedAssignmentById).not.toHaveBeenCalled();
   });
 
-  it('forbids completing someone else\'s assignment even with athlete capability', async () => {
+  it("forbids completing someone else's assignment even with athlete capability", async () => {
     await expect(service.completeAssignment(assignmentId, trainer)).rejects.toBeInstanceOf(
       ForbiddenException,
     );
@@ -416,7 +416,7 @@ describe('TrainingProgramAssignmentService', () => {
     expect(repository.cancelAssignmentIfTrainerEligible).toHaveBeenCalledOnce();
   });
 
-  it('rejects trainer cancellation of another trainer\'s assignment', async () => {
+  it("rejects trainer cancellation of another trainer's assignment", async () => {
     repository.findAssignmentById.mockResolvedValue({
       ...activeAssignment,
       assignedById: 'other-trainer',
