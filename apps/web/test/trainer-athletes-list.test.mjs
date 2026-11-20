@@ -80,15 +80,17 @@ test('status error messages are safe and suitable for retry', () => {
   assert.equal(getTrainerAthleteListErrorMessage(), getTrainerAthleteListErrorMessage(500));
 });
 
-test('protected trainer page verifies identity and role before showing private data', async () => {
+test('protected trainer page verifies identity and current grants before showing private data', async () => {
   const page = await readFile(
     new URL('../src/app/(protected)/trainer/athletes/page.tsx', import.meta.url),
     'utf8',
   );
-  assert.match(page, /verifyServerSession/);
+  assert.match(page, /verifyServerCapability/);
   assert.match(page, /session.kind === 'unauthenticated'/);
   assert.match(page, /session.kind === 'unavailable'/);
-  assert.match(page, /session.user.role !== 'TRAINER'/);
+  assert.match(page, /verifyServerCapability\(cookieHeader, 'trainer'\)/);
+  assert.doesNotMatch(page, /session\.user\.role/);
+  assert.match(page, /session.kind !== 'authenticated'/);
   assert.match(page, /actorId=/);
   assert.match(page, /actorRole="TRAINER"/);
   assert.match(page, /robots: \{ index: false \}/);
