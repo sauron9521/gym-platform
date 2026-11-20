@@ -52,6 +52,9 @@ export const trainerCopy = {
     loginMfaRequired: 'Додаткова перевірка входу ще не підтримується в Trainer.',
     loginUnavailable: 'Не вдалося підтвердити сесію або права. Спробуйте пізніше.',
     loginLink: 'Перейти до входу тренера',
+    logout: 'Вийти з облікового запису',
+    loggingOut: 'Завершення сесії…',
+    logoutUnavailable: 'Не вдалося завершити сесію. Спробуйте ще раз.',
     returnHome: 'На головну',
   },
   en: {
@@ -104,6 +107,9 @@ export const trainerCopy = {
     loginMfaRequired: 'Additional sign-in verification is not yet supported in Trainer.',
     loginUnavailable: 'Could not verify your session or permissions. Please try later.',
     loginLink: 'Sign in to Trainer',
+    logout: 'Sign out',
+    loggingOut: 'Signing out…',
+    logoutUnavailable: 'Could not end your session. Please try again.',
     returnHome: 'Back to overview',
   },
 } as const satisfies Record<Locale, Record<string, string>>;

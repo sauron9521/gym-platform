@@ -5,6 +5,7 @@ import { getLocale } from 'next-intl/server';
 
 import type { Locale } from '@gym/i18n';
 
+import { TrainerSignOutButton } from '@/features/auth/ui/trainer-sign-out-button';
 import { verifyTrainerAccess } from '@/shared/api/server-capability';
 import { getTrainerCopy } from '@/shared/i18n/copy';
 
@@ -62,6 +63,7 @@ export default async function TrainerWorkspacePage() {
         {t.workspaceTitle}
       </h1>
       <p className="text-muted-foreground">{t.workspaceDescription}</p>
+      <TrainerSignOutButton />
     </section>
   );
 }
