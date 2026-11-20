@@ -30,7 +30,11 @@ describe('TrainingProgramAccessService', () => {
 
   beforeEach(() => {
     vi.resetAllMocks();
-    service = new TrainingProgramAccessService(programs as never, versions as never, users as never);
+    service = new TrainingProgramAccessService(
+      programs as never,
+      versions as never,
+      users as never,
+    );
     users.hasTrainerCapability.mockImplementation(async (id: string) => id.startsWith('trainer-'));
     programs.findProgramById.mockResolvedValue({
       id: 'program-1',
