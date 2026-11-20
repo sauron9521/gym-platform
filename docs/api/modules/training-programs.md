@@ -17,7 +17,7 @@ The ellipsis above stands for the **same** `/training-programs/:programId/versio
 
 ## Trainer capability cutover (E1 #291)
 
-Program CRUD and draft/version/workout/exercise/set operations authorize the authenticated account via `UsersRepository.findCapabilitySnapshot(actor.id)` and `deriveAccountCapabilities()` on every request. Authorization is independent of the session's legacy `role` value:
+Program CRUD and draft/version/workout/exercise/set operations authorize the authenticated account via the public `UsersService.hasTrainerCapability(actor.id)` facade (which derives permissions from the current DB snapshot) on every request. Authorization is independent of the session's legacy `role` value:
 
 - An approved `ATHLETE` with an active `TrainerProfile` can manage their **own** training programs without losing personal athlete access.
 - An explicitly revoked profile denies access even when the legacy `role` is `TRAINER`; deleted users, pending applicants and administrators are denied.
