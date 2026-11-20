@@ -9,6 +9,7 @@ import {
 import { Prisma } from '#prisma/client';
 
 import { UsersService } from '#src/modules/users/services/users.service';
+import { fullRelationshipReadWhere } from '../policies/trainer-athlete-read.policy.js';
 import { TrainerAthletesRepository } from '../repositories/trainer-athletes.repository.js';
 import { TrainerAthleteTerminationService } from './trainer-athlete-termination.service.js';
 
@@ -90,7 +91,7 @@ export class TrainerAthletesService {
 
   // FIND MANY
   async findMany(actor: TrainerAthleteActor, query: TrainerAthleteListQuery) {
-    this.assertParticipantRole(actor);
+    const capabilities = await this.assertCurrentParticipant(actor);
     this.validatePagination(query);
 
     const where: Prisma.TrainerAthleteWhereInput = {
@@ -106,43 +107,38 @@ export class TrainerAthletesService {
 
     // Redact ended trainer-side relationships based on relationship ownership,
     // regardless of a user's legacy TRAINER/ATHLETE session role.
-    return this.trainerAthletesRepository.findManyForParticipant(params, actor.id);
+    return this.trainerAthletesRepository.findManyForParticipant(
+      params,
+      actor.id,
+      capabilities.trainer,
+    );
   }
 
   // FIND ONE
   async findOne(id: string, actor: TrainerAthleteActor) {
-    this.assertParticipantRole(actor);
+    const capabilities = await this.assertCurrentParticipant(actor);
 
-    // Full contact fields are permitted for active/pending collaboration, or
-    // when the actor was the ATHLETE in this specific relationship.
-    // Former trainers receive the safe historical projection even when they
-    // retain an ATHLETE account role after TrainerProfile approval/revocation.
-    const participantWhere: Prisma.TrainerAthleteWhereInput = {
-      OR: [{ trainerId: actor.id }, { athleteId: actor.id }],
-    };
-
-    const fullRelationship = await this.trainerAthletesRepository.findById(id, {
-      AND: [
-        participantWhere,
-        {
-          OR: [{ status: { in: ['ACTIVE', 'PENDING'] } }, { athleteId: actor.id }],
-        },
-      ],
-    });
+    const fullRelationship = await this.trainerAthletesRepository.findById(
+      id,
+      fullRelationshipReadWhere(actor.id, capabilities.trainer),
+    );
 
     if (fullRelationship) {
       return fullRelationship;
     }
 
-    const historical = await this.trainerAthletesRepository.findHistoricalById(id, {
+    // A revoked trainer must still be able to view the minimal relationship
+    // state needed to decline, cancel, or terminate it, without contact fields.
+    // This applies to PENDING / ACTIVE as well as historical relationships.
+    const restricted = await this.trainerAthletesRepository.findRestrictedById(id, {
       trainerId: actor.id,
     });
 
-    if (!historical) {
+    if (!restricted) {
       throw new NotFoundException('Relationship not found');
     }
 
-    return historical;
+    return restricted;
   }
 
   // ACCEPT REQUEST
@@ -294,12 +290,6 @@ export class TrainerAthletesService {
 
     if (!trainer.trainer || !athlete.athlete) {
       throw new ConflictException('Relationship participants are no longer eligible');
-    }
-  }
-
-  private assertParticipantRole(actor: TrainerAthleteActor): void {
-    if (actor.role !== 'ATHLETE' && actor.role !== 'TRAINER') {
-      throw new ForbiddenException('Only trainers and athletes can manage relationships');
     }
   }
 

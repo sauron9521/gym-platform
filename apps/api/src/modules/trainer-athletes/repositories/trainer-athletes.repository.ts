@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 
 import { PrismaService } from '#src/infra/database/index';
+import { fullRelationshipReadWhere } from '../policies/trainer-athlete-read.policy.js';
 import type { Prisma } from '#prisma/client';
 import {
   trainerAthleteHistoricalSelect,
@@ -133,6 +134,7 @@ export class TrainerAthletesRepository {
       orderBy = [{ createdAt: 'desc' }, { id: 'desc' }],
     }: FindManyTrainerAthletesParams,
     actorId: string,
+    hasTrainerCapability: boolean,
   ) {
     const [historical, total] = await this.prisma.$transaction([
       this.prisma.trainerAthlete.findMany({
@@ -148,7 +150,8 @@ export class TrainerAthletesRepository {
     const fullIds = historical
       .filter(
         (item) =>
-          item.athleteId === actorId || item.status === 'ACTIVE' || item.status === 'PENDING',
+          item.athleteId === actorId ||
+          (hasTrainerCapability && (item.status === 'ACTIVE' || item.status === 'PENDING')),
       )
       .map((item) => item.id);
 
@@ -159,7 +162,7 @@ export class TrainerAthletesRepository {
               where,
               {
                 id: { in: fullIds },
-                OR: [{ status: { in: ['ACTIVE', 'PENDING'] } }, { athleteId: actorId }],
+                ...fullRelationshipReadWhere(actorId, hasTrainerCapability),
               },
             ],
           },
@@ -180,19 +183,9 @@ export class TrainerAthletesRepository {
     };
   }
 
-  async findHistoricalById(id: string, where: Prisma.TrainerAthleteWhereInput) {
+  async findRestrictedById(id: string, where: Prisma.TrainerAthleteWhereInput) {
     return this.prisma.trainerAthlete.findFirst({
-      where: {
-        AND: [
-          { id },
-          where,
-          {
-            status: {
-              in: ['TERMINATED', 'DECLINED', 'CANCELLED'],
-            },
-          },
-        ],
-      },
+      where: { AND: [{ id }, where] },
       select: trainerAthleteHistoricalSelect,
     });
   }
