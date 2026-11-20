@@ -861,10 +861,7 @@ describe('TrainerAthletes (HTTP + PostgreSQL)', () => {
     }, 30_000);
 
     it('rejects a stale trainer session after an account is promoted to admin', async () => {
-      const trainer = await createUser(
-        `transition-admin-${randomUUID()}@example.com`,
-        'TRAINER',
-      );
+      const trainer = await createUser(`transition-admin-${randomUUID()}@example.com`, 'TRAINER');
       const athlete = await createUser(
         `transition-admin-athlete-${randomUUID()}@example.com`,
         'ATHLETE',
