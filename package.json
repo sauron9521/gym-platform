@@ -18,7 +18,7 @@
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
     "format": "prettier --write .",
-    "format:check": "prettier --check .",
+    "format:check": "prettier --write apps/api/src/modules/trainer-athletes/test/trainer-athletes.repository.spec.ts apps/api/test/e2e/trainer-athletes/trainer-athletes.e2e-spec.ts && git diff -- apps/api/src/modules/trainer-athletes/test/trainer-athletes.repository.spec.ts apps/api/test/e2e/trainer-athletes/trainer-athletes.e2e-spec.ts && git diff --exit-code -- apps/api/src/modules/trainer-athletes/test/trainer-athletes.repository.spec.ts apps/api/test/e2e/trainer-athletes/trainer-athletes.e2e-spec.ts && prettier --check .",
     "prepare": "husky",
     "api:openapi": "pnpm --filter @gym/api docs:openapi",
     "api:types": "pnpm --filter @gym/api-client generate",
