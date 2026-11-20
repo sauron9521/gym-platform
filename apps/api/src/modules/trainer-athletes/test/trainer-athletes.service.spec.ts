@@ -19,7 +19,7 @@ describe('TrainerAthletesService', () => {
   let service: TrainerAthletesService;
 
   const repository = {
-    create: vi.fn(),
+    createWithCurrentCapabilities: vi.fn(),
     findMany: vi.fn(),
     findManyForParticipant: vi.fn(),
     findById: vi.fn(),
@@ -83,6 +83,36 @@ describe('TrainerAthletesService', () => {
   });
 
   describe('create', () => {
+    it('rejects if trainer approval is revoked after the initial capability lookup', async () => {
+      repository.findOpenByPair.mockResolvedValue(null);
+      repository.createWithCurrentCapabilities.mockRejectedValue(
+        new ConflictException('Relationship participants are no longer eligible'),
+      );
+
+      await expect(service.create(trainer, { userId: athlete.id })).rejects.toThrow(
+        ConflictException,
+      );
+
+      expect(usersService.findMyCapabilities).toHaveBeenCalledTimes(2);
+      expect(repository.createWithCurrentCapabilities).toHaveBeenCalledExactlyOnceWith({
+        trainerId: trainer.id,
+        athleteId: athlete.id,
+        initiatedById: trainer.id,
+      });
+    });
+
+    it('rejects if the target athlete loses eligibility during the invitation transaction', async () => {
+      repository.findOpenByPair.mockResolvedValue(null);
+      repository.createWithCurrentCapabilities.mockRejectedValue(
+        new ConflictException('Relationship participants are no longer eligible'),
+      );
+
+      await expect(service.create(trainer, { userId: athlete.id })).rejects.toThrow(
+        ConflictException,
+      );
+      expect(repository.createWithCurrentCapabilities).toHaveBeenCalledOnce();
+    });
+
     it('approved ATHLETE can invite an athlete without changing session role', async () => {
       usersService.findMyCapabilities.mockImplementation(async (id: string) => ({
         athlete: true,
@@ -90,7 +120,7 @@ describe('TrainerAthletesService', () => {
         admin: false,
       }));
       repository.findOpenByPair.mockResolvedValue(null);
-      repository.create.mockResolvedValue({
+      repository.createWithCurrentCapabilities.mockResolvedValue({
         ...pendingRelationship,
         trainerId: athlete.id,
         athleteId: 'athlete-2',
@@ -110,7 +140,7 @@ describe('TrainerAthletesService', () => {
         admin: false,
       }));
       repository.findOpenByPair.mockResolvedValue(null);
-      repository.create.mockResolvedValue(pendingRelationship);
+      repository.createWithCurrentCapabilities.mockResolvedValue(pendingRelationship);
 
       await service.create(athlete, { userId: 'approved-1' });
 
@@ -128,7 +158,7 @@ describe('TrainerAthletesService', () => {
         BadRequestException,
       );
       expect(repository.findOpenByPair).not.toHaveBeenCalled();
-      expect(repository.create).not.toHaveBeenCalled();
+      expect(repository.createWithCurrentCapabilities).not.toHaveBeenCalled();
     });
 
     it('rejects an athlete inviting a trainer whose capability was revoked', async () => {
@@ -141,7 +171,7 @@ describe('TrainerAthletesService', () => {
       await expect(service.create(athlete, { userId: trainer.id })).rejects.toThrow(
         BadRequestException,
       );
-      expect(repository.create).not.toHaveBeenCalled();
+      expect(repository.createWithCurrentCapabilities).not.toHaveBeenCalled();
     });
 
     it('rejects ambiguous dual-trainer invitations', async () => {
@@ -164,7 +194,7 @@ describe('TrainerAthletesService', () => {
         'Database unavailable',
       );
       expect(repository.findOpenByPair).not.toHaveBeenCalled();
-      expect(repository.create).not.toHaveBeenCalled();
+      expect(repository.createWithCurrentCapabilities).not.toHaveBeenCalled();
     });
 
     it('does not permit an athlete to invite an admin target', async () => {
@@ -177,12 +207,12 @@ describe('TrainerAthletesService', () => {
       await expect(service.create(athlete, { userId: admin.id })).rejects.toThrow(
         BadRequestException,
       );
-      expect(repository.create).not.toHaveBeenCalled();
+      expect(repository.createWithCurrentCapabilities).not.toHaveBeenCalled();
     });
 
     it('should allow a trainer to invite an athlete', async () => {
       repository.findOpenByPair.mockResolvedValue(null);
-      repository.create.mockResolvedValue(pendingRelationship);
+      repository.createWithCurrentCapabilities.mockResolvedValue(pendingRelationship);
 
       const result = await service.create(trainer, {
         userId: athlete.id,
@@ -192,22 +222,16 @@ describe('TrainerAthletesService', () => {
 
       expect(repository.findOpenByPair).toHaveBeenCalledWith(trainer.id, athlete.id);
 
-      expect(repository.create).toHaveBeenCalledWith({
-        trainer: {
-          connect: { id: trainer.id },
-        },
-        athlete: {
-          connect: { id: athlete.id },
-        },
-        initiatedBy: {
-          connect: { id: trainer.id },
-        },
+      expect(repository.createWithCurrentCapabilities).toHaveBeenCalledWith({
+        trainerId: trainer.id,
+        athleteId: athlete.id,
+        initiatedById: trainer.id,
       });
     });
 
     it('should allow an athlete to invite a trainer', async () => {
       repository.findOpenByPair.mockResolvedValue(null);
-      repository.create.mockResolvedValue({
+      repository.createWithCurrentCapabilities.mockResolvedValue({
         ...pendingRelationship,
         initiatedById: athlete.id,
       });
@@ -216,16 +240,10 @@ describe('TrainerAthletesService', () => {
         userId: trainer.id,
       });
 
-      expect(repository.create).toHaveBeenCalledWith({
-        trainer: {
-          connect: { id: trainer.id },
-        },
-        athlete: {
-          connect: { id: athlete.id },
-        },
-        initiatedBy: {
-          connect: { id: athlete.id },
-        },
+      expect(repository.createWithCurrentCapabilities).toHaveBeenCalledWith({
+        trainerId: trainer.id,
+        athleteId: athlete.id,
+        initiatedById: athlete.id,
       });
     });
 
@@ -235,7 +253,7 @@ describe('TrainerAthletesService', () => {
       );
 
       expect(usersService.findMyCapabilities).not.toHaveBeenCalled();
-      expect(repository.create).not.toHaveBeenCalled();
+      expect(repository.createWithCurrentCapabilities).not.toHaveBeenCalled();
     });
 
     it('should reject a missing target user', async () => {
@@ -247,7 +265,7 @@ describe('TrainerAthletesService', () => {
         NotFoundException,
       );
 
-      expect(repository.create).not.toHaveBeenCalled();
+      expect(repository.createWithCurrentCapabilities).not.toHaveBeenCalled();
     });
 
     it('should reject a trainer inviting another trainer', async () => {
@@ -256,7 +274,7 @@ describe('TrainerAthletesService', () => {
       );
 
       expect(repository.findOpenByPair).not.toHaveBeenCalled();
-      expect(repository.create).not.toHaveBeenCalled();
+      expect(repository.createWithCurrentCapabilities).not.toHaveBeenCalled();
     });
 
     it('should reject an athlete inviting another athlete', async () => {
@@ -264,7 +282,7 @@ describe('TrainerAthletesService', () => {
         BadRequestException,
       );
 
-      expect(repository.create).not.toHaveBeenCalled();
+      expect(repository.createWithCurrentCapabilities).not.toHaveBeenCalled();
     });
 
     it('should reject users with unsupported roles', async () => {
@@ -285,13 +303,13 @@ describe('TrainerAthletesService', () => {
         ConflictException,
       );
 
-      expect(repository.create).not.toHaveBeenCalled();
+      expect(repository.createWithCurrentCapabilities).not.toHaveBeenCalled();
     });
 
     it('should handle a concurrent duplicate request', async () => {
       repository.findOpenByPair.mockResolvedValue(null);
 
-      repository.create.mockRejectedValue(
+      repository.createWithCurrentCapabilities.mockRejectedValue(
         new Prisma.PrismaClientKnownRequestError('Unique constraint failed', {
           code: 'P2002',
           clientVersion: '7.10.1',

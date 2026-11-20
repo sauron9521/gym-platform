@@ -16,6 +16,16 @@ Authenticated invitation/relationship management with accept, decline, cancellat
 
 Relationship state affects trainer access to exercises and program assignment. The termination flow may require exercising copy/visibility rules for previously shared exercises; never replace it with an untested direct database update.
 
+## Transactional invitation capability guard (M05 / #291)
+
+`POST /trainer-athletes` still performs its existing preflight capability and pair checks for clear client errors, but the final authorization decision now happens **inside the same PostgreSQL transaction as the invitation insertion**:
+
+- Locks both participants' `users` rows in sorted ID order using `FOR UPDATE`; also locks the trainer's existing `trainer_profiles` row. PostgreSQL foreign-key locks prevent concurrent profile creation from bypassing a missing-profile legacy trainer check.
+- Re-reads both user records, soft-delete state, role and TrainerProfile approval under these locks. Only an active trainer (approved profile or compatible legacy `TRAINER` without profile) and a valid non-admin athlete are eligible. A changed/deleted account or revoked trainer rejects with HTTP 409, and no relationship is inserted.
+- Moderation that already holds a conflicting lock completes first, and a later invitation sees its new state. If invitation creation acquires the locks first, moderation waits until insertion commits, defining an explicit transaction ordering.
+- Preserves 400 for invalid initial role pairs, 404 for a missing initial target, 409 for duplicate open pairs (including concurrent `P2002` races), and the existing response projection. No raw SQL string interpolation, database migrations or public API payload changes.
+- Tests cover both invitation directions, approved `ATHLETE`-role trainers, target/admin changes, and deterministic HTTP/PostgreSQL revocation between the preflight and the database write.
+
 ## Live capability checks for relationship reads (M05 / #291)
 
 Both `GET /trainer-athletes` and `GET /trainer-athletes/:id` now load **current persisted** user capabilities via `UsersService.findMyCapabilities`, not the role captured by an older session. Deleted and current-admin accounts cannot read relationship details even if a prior session identifies them as an athlete or trainer.
@@ -35,7 +45,7 @@ The `accept / decline / cancel / terminate` endpoints re-read the current databa
 - Admin/deleted participants are not allowed to perform relationship mutations even with stale ATHLETE/TRAINER session claims. Response redaction continues to use the participant's side in the specific relationship.
 - Termination retains its atomic program-assignment/exercise-copy/access-revocation transaction. No Prisma schema changes.
 
-Remaining follow-ups: transactional capability checks for invitation creation and other revocation races; mixed-role training-program assignments; #361 cross-product E2E before protected Trainer Web routes.
+Remaining follow-ups: mixed-role training-program assignments and #361 cross-product E2E before protected Trainer Web routes.
 
 ## Create invitations with live capabilities (M05 / E1 #291)
 
@@ -48,7 +58,7 @@ Remaining follow-ups: transactional capability checks for invitation creation an
 - Duplicate open pairs keep their existing 409/concurrency handling. No new privileges, schema migration, or self-service role assignment are introduced.
 - **Historical privacy is based on each relationship's side**, not the current session role: a former trainer receives a redacted list/detail and redacted decline/cancel/terminate response, even when their account role remains `ATHLETE`. An athlete keeps full access to their own history. List queries first load a restricted projection; a second SQL query allows full contact fields only for open relationships or an actor who is the relationship's athlete.
 
-The list/detail authorization and relationship transition permission migrations are covered by the read and lifecycle sections above. Remaining scope includes transactional creation race hardening, mixed-role training-program assignments and #361 cross-product E2E. A future concurrency hardening slice should guard against revocation racing an in-flight invitation. No Trainer Web protected routes are enabled by this PR.
+The list/detail authorization, relationship transition permission migrations and transactional invitation creation are covered above. Remaining scope includes mixed-role training-program assignments and #361 cross-product E2E. No Trainer Web protected routes are enabled by this PR.
 
 ## Live capability for exercise sharing (E1 #291)
 

@@ -1,8 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import { ConflictException, Injectable } from '@nestjs/common';
 
 import { PrismaService } from '#src/infra/database/index';
+import { deriveAccountCapabilities } from '#src/modules/users/policies/account-capabilities.policy';
 import { fullRelationshipReadWhere } from '../policies/trainer-athlete-read.policy.js';
-import type { Prisma } from '#prisma/client';
+import { Prisma } from '#prisma/client';
 import {
   trainerAthleteHistoricalSelect,
   trainerAthleteSelect,
@@ -71,10 +72,79 @@ export class TrainerAthletesRepository {
   }
 
   // CREATE
-  async create(data: Prisma.TrainerAthleteCreateInput) {
-    return this.prisma.trainerAthlete.create({
-      data,
-      select: trainerAthleteSelect,
+  async createWithCurrentCapabilities({
+    trainerId,
+    athleteId,
+    initiatedById,
+  }: {
+    trainerId: string;
+    athleteId: string;
+    initiatedById: string;
+  }) {
+    // All validation below takes place while the same PostgreSQL transaction
+    // holds locks protecting changes to the relevant account/profile rows.
+    // This serializes profile revocation with invitation creation.
+    if (trainerId === athleteId || (initiatedById !== trainerId && initiatedById !== athleteId)) {
+      throw new ConflictException('Invalid relationship participants');
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      // Lock accounts in stable order to avoid deadlocks when two users send
+      // invitations simultaneously. FOR UPDATE also blocks FK-backed profile
+      // creation until this transaction has committed.
+      const ids = [trainerId, athleteId].sort();
+      const lockedUsers = await tx.$queryRaw<Array<{ id: string }>>`
+        SELECT "id"
+        FROM "users"
+        WHERE "id" IN (${Prisma.join(ids)})
+        ORDER BY "id"
+        FOR UPDATE
+      `;
+
+      if (lockedUsers.length !== 2) {
+        throw new ConflictException('Relationship participants are no longer eligible');
+      }
+
+      // User row locks alone do not block updates to an *existing*
+      // TrainerProfile. Lock its row too, so is_active cannot change between
+      // the capability snapshot and the INSERT. A missing profile remains
+      // protected from concurrent creation by the user FK lock above.
+      await tx.$queryRaw`
+        SELECT "id"
+        FROM "trainer_profiles"
+        WHERE "user_id" = ${trainerId}
+        FOR UPDATE
+      `;
+
+      const participants = await tx.user.findMany({
+        where: { id: { in: ids }, deletedAt: null },
+        select: {
+          id: true,
+          role: true,
+          trainerProfile: { select: { isActive: true } },
+        },
+      });
+
+      const trainer = participants.find((person) => person.id === trainerId);
+      const athlete = participants.find((person) => person.id === athleteId);
+
+      if (
+        !trainer ||
+        !athlete ||
+        !deriveAccountCapabilities(trainer).trainer ||
+        !deriveAccountCapabilities(athlete).athlete
+      ) {
+        throw new ConflictException('Relationship participants are no longer eligible');
+      }
+
+      return tx.trainerAthlete.create({
+        data: {
+          trainer: { connect: { id: trainerId } },
+          athlete: { connect: { id: athleteId } },
+          initiatedBy: { connect: { id: initiatedById } },
+        },
+        select: trainerAthleteSelect,
+      });
     });
   }
 

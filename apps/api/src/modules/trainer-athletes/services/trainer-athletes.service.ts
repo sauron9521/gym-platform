@@ -66,20 +66,14 @@ export class TrainerAthletesService {
       throw new ConflictException('An active or pending relationship already exists');
     }
 
-    const data = {
-      trainer: {
-        connect: { id: trainerId },
-      },
-      athlete: {
-        connect: { id: athleteId },
-      },
-      initiatedBy: {
-        connect: { id: actor.id },
-      },
-    } satisfies Prisma.TrainerAthleteCreateInput;
-
     try {
-      return await this.trainerAthletesRepository.create(data);
+      // Preflight checks above provide clear API errors, but must not be
+      // authoritative: moderation can revoke a TrainerProfile before INSERT.
+      return await this.trainerAthletesRepository.createWithCurrentCapabilities({
+        trainerId,
+        athleteId,
+        initiatedById: actor.id,
+      });
     } catch (error) {
       if (this.isPrismaError(error, 'P2002')) {
         throw new ConflictException('An active or pending relationship already exists');

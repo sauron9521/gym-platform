@@ -1,3 +1,5 @@
+import { ConflictException } from '@nestjs/common';
+
 import { PrismaService } from '#src/infra/database/index';
 import { Prisma } from '#prisma/client';
 
@@ -352,57 +354,129 @@ describe('TrainerAthletesRepository', () => {
     });
   });
 
-  describe('create', () => {
-    it('should create a relationship with selected fields', async () => {
-      const data = {
-        trainer: {
-          connect: { id: 'trainer-1' },
-        },
-        athlete: {
-          connect: { id: 'athlete-1' },
-        },
-        initiatedBy: {
-          connect: { id: 'trainer-1' },
-        },
-      };
+  describe('createWithCurrentCapabilities', () => {
+    const invitation = {
+      trainerId: 'trainer-1',
+      athleteId: 'athlete-1',
+      initiatedById: 'trainer-1',
+    };
 
-      const relationship = {
+    const trainer = { id: 'trainer-1', role: 'TRAINER', trainerProfile: null };
+    const athlete = { id: 'athlete-1', role: 'ATHLETE', trainerProfile: null };
+
+    const tx = {
+      $queryRaw: vi.fn(),
+      user: { findMany: vi.fn() },
+      trainerAthlete: { create: vi.fn() },
+    };
+
+    beforeEach(() => {
+      vi.resetAllMocks();
+      tx.$queryRaw.mockResolvedValueOnce([{ id: 'athlete-1' }, { id: 'trainer-1' }]);
+      tx.$queryRaw.mockResolvedValueOnce([{ id: 'profile-1' }]);
+      tx.user.findMany.mockResolvedValue([trainer, athlete]);
+      tx.trainerAthlete.create.mockResolvedValue({
         id: 'relationship-1',
-        trainerId: 'trainer-1',
-        athleteId: 'athlete-1',
+        ...invitation,
         status: 'PENDING',
-      };
-
-      prisma.trainerAthlete.create.mockResolvedValue(relationship);
-
-      const result = await repository.create(data);
-
-      expect(prisma.trainerAthlete.create).toHaveBeenCalledWith({
-        data,
-        select: trainerAthleteSelect,
       });
-
-      expect(result).toEqual(relationship);
+      prisma.$transaction.mockImplementation(async (callback) => callback(tx));
     });
 
-    it('should propagate database errors', async () => {
-      const error = new Error('Database connection failed');
+    it('locks both users and the trainer profile before inserting', async () => {
+      const result = await repository.createWithCurrentCapabilities(invitation);
 
-      prisma.trainerAthlete.create.mockRejectedValue(error);
+      expect(result).toMatchObject({ status: 'PENDING', ...invitation });
+      expect(tx.$queryRaw).toHaveBeenCalledTimes(2);
+      expect(tx.$queryRaw.mock.calls[0]?.[0].join('')).toContain('FOR UPDATE');
+      expect(tx.$queryRaw.mock.calls[0]?.[1].values).toEqual(['athlete-1', 'trainer-1']);
+      expect(tx.$queryRaw.mock.calls[1]?.[0].join('')).toContain('"trainer_profiles"');
+      expect(tx.$queryRaw.mock.calls[1]?.[0].join('')).toContain('FOR UPDATE');
+      expect(tx.$queryRaw.mock.calls[1]?.[1]).toBe('trainer-1');
+      expect(tx.user.findMany).toHaveBeenCalledWith({
+        where: { id: { in: ['athlete-1', 'trainer-1'] }, deletedAt: null },
+        select: {
+          id: true,
+          role: true,
+          trainerProfile: { select: { isActive: true } },
+        },
+      });
+      expect(tx.trainerAthlete.create).toHaveBeenCalledWith({
+        data: {
+          trainer: { connect: { id: 'trainer-1' } },
+          athlete: { connect: { id: 'athlete-1' } },
+          initiatedBy: { connect: { id: 'trainer-1' } },
+        },
+        select: trainerAthleteSelect,
+      });
+    });
 
+    it('supports an approved ATHLETE-role trainer', async () => {
+      tx.user.findMany.mockResolvedValue([
+        { ...trainer, role: 'ATHLETE', trainerProfile: { isActive: true } },
+        athlete,
+      ]);
+
+      await expect(repository.createWithCurrentCapabilities(invitation)).resolves.toMatchObject({
+        status: 'PENDING',
+      });
+    });
+
+    it('refuses to insert when an existing TrainerProfile is revoked', async () => {
+      tx.user.findMany.mockResolvedValue([
+        { ...trainer, trainerProfile: { isActive: false } },
+        athlete,
+      ]);
+
+      await expect(repository.createWithCurrentCapabilities(invitation)).rejects.toThrow(
+        ConflictException,
+      );
+      expect(tx.trainerAthlete.create).not.toHaveBeenCalled();
+    });
+
+    it('rejects the athlete becoming admin between preflight and transaction', async () => {
+      tx.user.findMany.mockResolvedValue([trainer, { ...athlete, role: 'ADMIN' }]);
+
+      await expect(repository.createWithCurrentCapabilities(invitation)).rejects.toThrow(
+        ConflictException,
+      );
+      expect(tx.trainerAthlete.create).not.toHaveBeenCalled();
+    });
+
+    it('rejects missing or soft-deleted participants', async () => {
+      tx.user.findMany.mockResolvedValue([trainer]);
+
+      await expect(repository.createWithCurrentCapabilities(invitation)).rejects.toThrow(
+        ConflictException,
+      );
+      expect(tx.trainerAthlete.create).not.toHaveBeenCalled();
+    });
+
+    it('rejects a missing account lock before querying the profile', async () => {
+      tx.$queryRaw.mockReset();
+      tx.$queryRaw.mockResolvedValueOnce([{ id: 'trainer-1' }]);
+
+      await expect(repository.createWithCurrentCapabilities(invitation)).rejects.toThrow(
+        ConflictException,
+      );
+      expect(tx.$queryRaw).toHaveBeenCalledOnce();
+      expect(tx.trainerAthlete.create).not.toHaveBeenCalled();
+    });
+
+    it('rolls back rather than bypassing the guard on a DB error', async () => {
+      const error = new Error('Database unavailable');
+      tx.$queryRaw.mockReset();
+      tx.$queryRaw.mockRejectedValueOnce(error);
+
+      await expect(repository.createWithCurrentCapabilities(invitation)).rejects.toBe(error);
+      expect(tx.trainerAthlete.create).not.toHaveBeenCalled();
+    });
+
+    it('prevents malformed requests from writing a non-participant initiator', async () => {
       await expect(
-        repository.create({
-          trainer: {
-            connect: { id: 'trainer-1' },
-          },
-          athlete: {
-            connect: { id: 'athlete-1' },
-          },
-          initiatedBy: {
-            connect: { id: 'trainer-1' },
-          },
-        }),
-      ).rejects.toBe(error);
+        repository.createWithCurrentCapabilities({ ...invitation, initiatedById: 'outsider' }),
+      ).rejects.toThrow(ConflictException);
+      expect(prisma.$transaction).not.toHaveBeenCalled();
     });
   });
 
