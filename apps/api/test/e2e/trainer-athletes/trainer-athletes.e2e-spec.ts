@@ -762,9 +762,7 @@ describe('TrainerAthletes (HTTP + PostgreSQL)', () => {
 
         const [beforeList, beforeDetails] = await Promise.all([
           request(app!.getHttpServer()).get('/trainer-athletes').set('Cookie', cookie),
-          request(app!.getHttpServer())
-            .get(`/trainer-athletes/${active.id}`)
-            .set('Cookie', cookie),
+          request(app!.getHttpServer()).get(`/trainer-athletes/${active.id}`).set('Cookie', cookie),
         ]);
         expect(beforeList.status).toBe(200);
         expect(beforeDetails.status).toBe(200);
@@ -777,9 +775,7 @@ describe('TrainerAthletes (HTTP + PostgreSQL)', () => {
 
         const [revokedList, activeDetails, pendingDetails, ownHistoryDetails] = await Promise.all([
           request(app!.getHttpServer()).get('/trainer-athletes').set('Cookie', cookie),
-          request(app!.getHttpServer())
-            .get(`/trainer-athletes/${active.id}`)
-            .set('Cookie', cookie),
+          request(app!.getHttpServer()).get(`/trainer-athletes/${active.id}`).set('Cookie', cookie),
           request(app!.getHttpServer())
             .get(`/trainer-athletes/${pending.id}`)
             .set('Cookie', cookie),
