@@ -2,9 +2,6 @@ import { describe, expect, it } from 'vitest';
 
 import { signInTrainer } from '../src/features/auth/lib/trainer-sign-in';
 
-const signedIn = Response.json({ mfaRequired: false });
-const trainer = Response.json({ athlete: true, trainer: true, admin: false });
-
 describe('Trainer browser sign-in safety', () => {
   it('authenticates only after the same-origin cookie session has a current trainer grant', async () => {
     const requests: Array<{ input: string; init?: RequestInit }> = [];
