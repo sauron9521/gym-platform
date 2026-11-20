@@ -3,6 +3,7 @@
 import { BrandLogo } from '@gym/ui-web';
 import type { Locale } from '@gym/i18n';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { useState, type ReactNode } from 'react';
 
 import { getTrainerCopy } from '@/shared/i18n/copy';
@@ -19,13 +20,14 @@ export function TrainerShell({
   initialTheme: ThemePreference;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const pathname = usePathname();
   const t = getTrainerCopy(locale);
 
   const navigation = (
     <nav aria-label={t.navigation} className="flex flex-col gap-2">
       <Link
-        href="/"
-        aria-current="page"
+        href="/workspace"
+        aria-current={pathname === '/workspace' ? 'page' : undefined}
         onClick={() => setMenuOpen(false)}
         className="rounded-lg border border-primary/20 bg-primary/10 px-4 py-3 font-medium text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
       >

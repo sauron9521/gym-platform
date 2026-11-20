@@ -2162,6 +2162,7 @@ export interface operations {
         page?: number;
         limit?: number;
         status?: 'PENDING' | 'ACTIVE' | 'DECLINED' | 'CANCELLED' | 'TERMINATED';
+        scope?: 'trainer';
       };
       header?: never;
       path?: never;

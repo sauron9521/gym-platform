@@ -153,6 +153,66 @@ describe('TrainerAthletes (HTTP + PostgreSQL)', () => {
     }
   }, 20_000);
 
+  it('paginates only owned trainer collaborations without leaking athlete-side or tenant records', async () => {
+    const relationships = await Promise.all([
+      prisma.trainerAthlete.create({
+        data: {
+          trainerId: trainerOne.id,
+          athleteId: athleteOne.id,
+          initiatedById: trainerOne.id,
+          status: 'ACTIVE',
+        },
+        select: { id: true },
+      }),
+      prisma.trainerAthlete.create({
+        data: {
+          trainerId: trainerTwo.id,
+          athleteId: trainerOne.id,
+          initiatedById: trainerTwo.id,
+          status: 'ACTIVE',
+        },
+        select: { id: true },
+      }),
+    ]);
+
+    try {
+      const response = await request(app!.getHttpServer())
+        .get('/trainer-athletes')
+        .set('Cookie', trainerOneCookie)
+        .query({ page: 1, limit: 1, status: 'ACTIVE', scope: 'trainer' });
+
+      expect(response.status).toBe(200);
+      expect(response.body.meta).toMatchObject({ total: 1, take: 1, totalPages: 1 });
+      expect(response.body.data).toHaveLength(1);
+      expect(response.body.data[0]).toMatchObject({
+        trainerId: trainerOne.id,
+        athleteId: athleteOne.id,
+        status: 'ACTIVE',
+        athlete: { id: athleteOne.id, email: athleteOne.email },
+      });
+      expect(JSON.stringify(response.body)).not.toContain(trainerTwo.email);
+
+      const athleteDenied = await request(app!.getHttpServer())
+        .get('/trainer-athletes')
+        .set('Cookie', athleteOneCookie)
+        .query({ status: 'ACTIVE', scope: 'trainer' });
+      expect(athleteDenied.status).toBe(403);
+
+      const foreignTrainer = await request(app!.getHttpServer())
+        .get('/trainer-athletes')
+        .set('Cookie', trainerTwoCookie)
+        .query({ status: 'ACTIVE', scope: 'trainer' });
+      expect(foreignTrainer.status).toBe(200);
+      expect(foreignTrainer.body.meta.total).toBe(1);
+      expect(foreignTrainer.body.data[0].trainerId).toBe(trainerTwo.id);
+      expect(JSON.stringify(foreignTrainer.body)).not.toContain(athleteOne.email);
+    } finally {
+      await prisma.trainerAthlete.deleteMany({
+        where: { id: { in: relationships.map((item) => item.id) } },
+      });
+    }
+  });
+
   it('should hide athlete identity details when athlete initiated and ended collaboration', async () => {
     let relationshipId: string | undefined;
 

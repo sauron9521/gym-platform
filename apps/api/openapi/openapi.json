@@ -2320,6 +2320,15 @@
               "type": "string",
               "enum": ["PENDING", "ACTIVE", "DECLINED", "CANCELLED", "TERMINATED"]
             }
+          },
+          {
+            "name": "scope",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["trainer"]
+            }
           }
         ],
         "responses": {
