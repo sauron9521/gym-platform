@@ -12,7 +12,10 @@ const APPROVED_INTERNAL_IMPORTS = new Map([
   // while holding the participant/Profile row locks in the same Prisma transaction.
   // Training-program assignment writes must reuse the same canonical policy
   // under PostgreSQL user/profile locks; avoid a divergent role predicate.
-  ['users/policies/account-capabilities.policy', new Set(['trainer-athletes', 'training-programs'])],
+  [
+    'users/policies/account-capabilities.policy',
+    new Set(['trainer-athletes', 'training-programs']),
+  ],
   ['exercises/policies/exercise-access.policy', new Set(['workouts'])],
   ['exercises/selects/exercise.select', new Set(['workouts'])],
   ['workouts/policies/workout-access.policy', new Set(['workout-analytics'])],
