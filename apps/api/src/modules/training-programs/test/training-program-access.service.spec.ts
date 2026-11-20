@@ -6,7 +6,7 @@ import type { TrainingProgramActor } from '../types/training-program.types.js';
 describe('TrainingProgramAccessService', () => {
   const programs = { findProgramById: vi.fn() };
   const versions = { findVersionForEditing: vi.fn() };
-  const users = { hasTrainerCapability: vi.fn() };
+  const users = { hasTrainerCapability: vi.fn(), findMyCapabilities: vi.fn() };
 
   const trainer: TrainingProgramActor = { id: 'trainer-1', role: 'TRAINER' };
   const athlete: TrainingProgramActor = { id: 'athlete-1', role: 'ATHLETE' };
@@ -36,12 +36,33 @@ describe('TrainingProgramAccessService', () => {
       users as never,
     );
     users.hasTrainerCapability.mockImplementation(async (id: string) => id.startsWith('trainer-'));
+    users.findMyCapabilities.mockResolvedValue({ athlete: true, trainer: false, admin: false });
     programs.findProgramById.mockResolvedValue({
       id: 'program-1',
       trainerId: trainer.id,
       status: 'DRAFT',
     });
     versions.findVersionForEditing.mockResolvedValue(draft());
+  });
+
+  it('authorizes a current participant based on persisted capabilities, not the session role', async () => {
+    await expect(service.assertAssignmentParticipant(athlete)).resolves.toBeUndefined();
+    await expect(
+      service.assertAssignmentParticipant({ id: athlete.id, role: 'ADMIN' }),
+    ).resolves.toBeUndefined();
+    expect(users.findMyCapabilities).toHaveBeenCalledWith(athlete.id);
+  });
+
+  it('rejects a promoted or deleted participant despite an outdated session role', async () => {
+    users.findMyCapabilities.mockResolvedValue({
+      athlete: false,
+      trainer: false,
+      admin: true,
+    });
+    await expect(service.assertAssignmentParticipant(trainer)).rejects.toThrow(ForbiddenException);
+
+    users.findMyCapabilities.mockRejectedValue(new NotFoundException('User not found'));
+    await expect(service.assertAssignmentParticipant(athlete)).rejects.toThrow(NotFoundException);
   });
 
   it('reads the current database capability rather than trusting the actor role', async () => {
