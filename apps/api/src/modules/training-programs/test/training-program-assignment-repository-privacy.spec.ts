@@ -297,6 +297,7 @@ describe('TrainingProgramAssignmentRepository privacy and completion', () => {
     const tx = {
       trainingProgramVersion: { findFirst: vi.fn() },
       $queryRaw: vi.fn(),
+      user: { findMany: vi.fn() },
       trainingProgramAssignment: { create: vi.fn() },
     };
 
@@ -333,14 +334,20 @@ describe('TrainingProgramAssignmentRepository privacy and completion', () => {
         ])
         .mockResolvedValueOnce([{ id: input.trainerAthleteId }])
         .mockResolvedValueOnce([{ id: input.versionId }])
-        .mockResolvedValueOnce([{ id: input.programId }]);
+        .mockResolvedValueOnce([{ id: input.programId }])
+        .mockResolvedValueOnce([{ id: input.athleteId }, { id: input.trainerId }])
+        .mockResolvedValueOnce([]);
+      tx.user.findMany.mockResolvedValue([
+        { id: input.trainerId, role: 'TRAINER', trainerProfile: null },
+        { id: input.athleteId, role: 'ATHLETE', trainerProfile: null },
+      ]);
       const assignment = { id: 'assignment-1' };
       tx.trainingProgramAssignment.create.mockResolvedValue(assignment);
 
       await expect(repository.createAssignmentForActiveRelationship(input)).resolves.toBe(
         assignment,
       );
-      expect(tx.$queryRaw).toHaveBeenCalledTimes(4);
+      expect(tx.$queryRaw).toHaveBeenCalledTimes(6);
       const sourceLockSql = (tx.$queryRaw.mock.calls[0]![0] as readonly string[]).join('?');
       expect(sourceLockSql).toContain('FROM "exercises"');
       expect(sourceLockSql).toContain('FOR SHARE');
