@@ -44,6 +44,25 @@ describe('UsersService', () => {
     await expect(service.findMyCapabilities('gone')).rejects.toThrow(NotFoundException);
   });
 
+  it('checks live trainer capability without granting it to a revoked profile', async () => {
+    repository.findCapabilitySnapshot
+      .mockResolvedValueOnce({ role: 'ATHLETE', trainerProfile: { isActive: true } })
+      .mockResolvedValueOnce({ role: 'ATHLETE', trainerProfile: { isActive: false } })
+      .mockResolvedValueOnce({ role: 'TRAINER', trainerProfile: null })
+      .mockResolvedValueOnce({ role: 'TRAINER', trainerProfile: { isActive: false } })
+      .mockResolvedValueOnce({ role: 'ADMIN', trainerProfile: { isActive: true } })
+      .mockResolvedValueOnce(null);
+    for (const granted of [true, false, true, false, false, false]) {
+      await expect(service.hasTrainerCapability('actor-1')).resolves.toBe(granted);
+    }
+    expect(repository.findCapabilitySnapshot).toHaveBeenCalledTimes(6);
+  });
+
+  it('does not grant trainer access if the capability lookup fails', async () => {
+    repository.findCapabilitySnapshot.mockRejectedValue(new Error('Database unavailable'));
+    await expect(service.hasTrainerCapability('actor-1')).rejects.toThrow('Database unavailable');
+  });
+
   it('returns a user without a profile as profile: null', async () => {
     repository.findMe.mockResolvedValue({
       id: 'user-1',
