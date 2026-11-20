@@ -9,6 +9,7 @@ import {
 import { Prisma } from '#prisma/client';
 
 import { UsersRepository } from '#src/modules/users/repositories/users.repository';
+import { UsersService } from '#src/modules/users/services/users.service';
 import { TrainerAthletesRepository } from '../repositories/trainer-athletes.repository.js';
 import { TrainerAthleteTerminationService } from './trainer-athlete-termination.service.js';
 
@@ -27,6 +28,7 @@ export class TrainerAthletesService {
     private readonly trainerAthletesRepository: TrainerAthletesRepository,
     private readonly usersRepository: UsersRepository,
     private readonly terminationService: TrainerAthleteTerminationService,
+    private readonly usersService: UsersService,
   ) {}
 
   // CREATE REQUEST
@@ -245,32 +247,19 @@ export class TrainerAthletesService {
 
   // EXERCISE ACCESS CONTEXT
   async getExerciseAccessContext(actor: TrainerAthleteActor): Promise<ExerciseAccessContext> {
-    if (actor.role === 'ATHLETE') {
-      const activeTrainerIds = await this.trainerAthletesRepository.findActiveTrainerIdsForAthlete(
-        actor.id,
-      );
+    // Trust the current persisted account, never the role captured in a session.
+    // An approved trainer can also be an athlete; a revoked trainer cannot read
+    // athlete-owned exercises through previously active trainer relationships.
+    const capabilities = await this.usersService.findMyCapabilities(actor.id);
 
-      return {
-        activeTrainerIds,
-        activeAthleteIds: [],
-      };
-    }
+    const activeTrainerIds = capabilities.athlete
+      ? await this.trainerAthletesRepository.findActiveTrainerIdsForAthlete(actor.id)
+      : [];
+    const activeAthleteIds = capabilities.trainer
+      ? await this.trainerAthletesRepository.findActiveAthleteIdsForTrainer(actor.id)
+      : [];
 
-    if (actor.role === 'TRAINER') {
-      const activeAthleteIds = await this.trainerAthletesRepository.findActiveAthleteIdsForTrainer(
-        actor.id,
-      );
-
-      return {
-        activeTrainerIds: [],
-        activeAthleteIds,
-      };
-    }
-
-    return {
-      activeTrainerIds: [],
-      activeAthleteIds: [],
-    };
+    return { activeTrainerIds, activeAthleteIds };
   }
 
   // HELPERS
