@@ -26,6 +26,18 @@ export const trainerCopy = {
     unavailable: 'Зараз недоступно',
     retry: 'Спробувати ще раз',
     notFound: 'Сторінку не знайдено',
+    signInRequired: 'Потрібен вхід',
+    signInRequiredDescription:
+      'Увійдіть у Trainer, щоб перейти до захищених інструментів. Вхід буде доданий окремим кроком.',
+    trainerAccessDenied: 'Доступ тренера не підтверджено',
+    trainerAccessDeniedDescription:
+      'Доступ можливий після схвалення профілю тренера. Відкликані права не відкривають робочий простір.',
+    trainerAccessUnavailable: 'Не вдалося перевірити доступ',
+    trainerAccessUnavailableDescription:
+      'Зараз неможливо перевірити права в API. Приватні сторінки залишаються закритими.',
+    workspaceTitle: 'Захищений простір тренера',
+    workspaceDescription:
+      'Актуальні права тренера підтверджені сервером. Інструменти клієнтів і програм з’являться окремими PR.',
     returnHome: 'На головну',
   },
   en: {
@@ -52,6 +64,18 @@ export const trainerCopy = {
     unavailable: 'Temporarily unavailable',
     retry: 'Try again',
     notFound: 'Page not found',
+    signInRequired: 'Sign-in required',
+    signInRequiredDescription:
+      'Sign in to Trainer to open protected tools. The sign-in flow will be added separately.',
+    trainerAccessDenied: 'Trainer access not approved',
+    trainerAccessDeniedDescription:
+      'An approved trainer profile is required. Revoked grants never unlock the workspace.',
+    trainerAccessUnavailable: 'Unable to verify access',
+    trainerAccessUnavailableDescription:
+      'The API cannot verify account capabilities. Protected pages remain inaccessible.',
+    workspaceTitle: 'Protected trainer workspace',
+    workspaceDescription:
+      'The server verified your current trainer grant. Client and program tools will follow in separate PRs.',
     returnHome: 'Back to overview',
   },
 } as const satisfies Record<Locale, Record<string, string>>;
