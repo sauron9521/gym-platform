@@ -239,9 +239,11 @@ test('Trainer browser requires live approval, protects Origin/cookies, and revok
     await expect(selectableVersions.getByText(ownProgramTitle)).toBeVisible();
     await expect(selectableVersions.getByText(ownDraftVersionTitle)).toHaveCount(0);
     await page.getByRole('link', { name: 'Select version' }).click({ timeout: 10_000 });
-    await expect(page.getByRole('status')).toContainText('Selected version:');
-    await expect(page.getByRole('status')).toContainText(ownProgramTitle);
+    await expect(page.getByText('Selected version:', { exact: false })).toContainText(
+      ownProgramTitle,
+    );
     await expect(page.getByRole('status')).toContainText('No assignment has been created.');
+    await expect(page.getByRole('button', { name: 'Assign version to client' })).toBeEnabled();
     await expect(page.getByText(foreignProgramTitle)).toHaveCount(0);
 
     // A crafted foreign program ID must never cause cross-trainer version reads.
@@ -260,6 +262,56 @@ test('Trainer browser requires live approval, protects Origin/cookies, and revok
         [dashboardRelationId],
       );
       expect(count.rows[0]?.count).toBe(0);
+    });
+
+    // The selected v1 is eligible: real browser -> Trainer rewrite -> Nest
+    // POST -> PostgreSQL. Two same-tick button clicks must issue one POST.
+    await page.goto(`${choicePath}?page=1&programId=${ownProgramId}&versionId=${ownVersionId}`);
+    const posted: string[] = [];
+    page.on('request', (request) => {
+      if (
+        request.method() === 'POST' &&
+        request
+          .url()
+          .includes(`/training-programs/${ownProgramId}/versions/${ownVersionId}/assignments`)
+      ) {
+        posted.push(request.url());
+      }
+    });
+    const assignButton = page.getByRole('button', { name: 'Assign version to client' });
+    await expect(assignButton).toBeEnabled();
+    await assignButton.evaluate((element) => {
+      (element as HTMLButtonElement).click();
+      (element as HTMLButtonElement).click();
+    });
+    await expect(page.getByRole('status')).toContainText('Program assigned.');
+    await expect(assignButton).toBeDisabled();
+    expect(posted).toHaveLength(1);
+    await withDisposableDatabase(async (db) => {
+      const result = await db.query(
+        'SELECT "version_id", "status" FROM "training_program_assignments" WHERE "trainer_athlete_id" = $1',
+        [dashboardRelationId],
+      );
+      expect(result.rows).toHaveLength(1);
+      expect(result.rows[0]).toMatchObject({ version_id: ownVersionId, status: 'ACTIVE' });
+    });
+    await expect(page.getByRole('link', { name: 'Review client assignments' })).toBeVisible();
+
+    // A new page may attempt an already-active version; Nest and the DB
+    // partial unique index resolve that attempt to a 409, never a second row.
+    await page.goto(`${choicePath}?page=1&programId=${ownProgramId}&versionId=${ownVersionId}`);
+    await page.getByRole('button', { name: 'Assign version to client' }).click();
+    await expect(page.getByRole('status')).toContainText('Conflict:');
+    await expect(page.getByRole('button', { name: 'Assign version to client' })).toBeDisabled();
+    await withDisposableDatabase(async (db) => {
+      const result = await db.query(
+        'SELECT COUNT(*)::int AS count FROM "training_program_assignments" WHERE "trainer_athlete_id" = $1',
+        [dashboardRelationId],
+      );
+      expect(result.rows[0]?.count).toBe(1);
+      await db.query('DELETE FROM "training_program_assignments" WHERE "trainer_athlete_id" = $1', [
+        dashboardRelationId,
+      ]);
     });
 
     await withDisposableDatabase(async (db) => {
