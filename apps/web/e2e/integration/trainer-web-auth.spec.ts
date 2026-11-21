@@ -25,6 +25,12 @@ test('Trainer browser requires live approval, protects Origin/cookies, and revok
   const dashboardRelationId = randomUUID();
   const otherTrainerId = randomUUID();
   const otherRelationId = randomUUID();
+  const ownProgramId = randomUUID();
+  const ownVersionId = randomUUID();
+  const foreignProgramId = randomUUID();
+  const foreignVersionId = randomUUID();
+  const ownProgramTitle = `Trainer dashboard own ${randomUUID()}`;
+  const foreignProgramTitle = `Trainer dashboard foreign ${randomUUID()}`;
   const dashboardAthleteEmail = `trainer-client-${dashboardAthleteId}@example.test`;
   const otherTrainerEmail = `foreign-trainer-${otherTrainerId}@example.test`;
 
@@ -80,6 +86,8 @@ test('Trainer browser requires live approval, protects Origin/cookies, and revok
     await expect(page).toHaveURL(`${trainerOrigin}/workspace`);
     await expect(page.getByRole('heading', { name: 'Trainer dashboard' })).toBeVisible();
     await expect(page.getByText('No active clients yet.')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Recent programs' })).toBeVisible();
+    await expect(page.getByText('No programs yet.')).toBeVisible();
     await expect(page.getByRole('region', { name: 'Active clients' })).toContainText('0');
     await expect(page.getByRole('region', { name: 'Programs' })).toContainText('0');
     await expect(page.getByRole('region', { name: 'Progress' })).toContainText('0');
@@ -115,6 +123,22 @@ test('Trainer browser requires live approval, protects Origin/cookies, and revok
           otherTrainerId,
         ],
       );
+      await db.query(
+        'INSERT INTO "training_programs" ("id", "trainer_id", "status", "updated_at") VALUES ($1, $2, $3, NOW()), ($4, $5, $3, NOW())',
+        [ownProgramId, user.id, 'DRAFT', foreignProgramId, otherTrainerId],
+      );
+      await db.query(
+        'INSERT INTO "training_program_versions" ("id", "program_id", "version", "title", "description", "status", "updated_at") VALUES ($1, $2, 1, $3, NULL, $4, NOW()), ($5, $6, 1, $7, NULL, $4, NOW())',
+        [
+          ownVersionId,
+          ownProgramId,
+          ownProgramTitle,
+          'DRAFT',
+          foreignVersionId,
+          foreignProgramId,
+          foreignProgramTitle,
+        ],
+      );
     });
     await page.goto(`${trainerOrigin}/workspace`);
     await expect(page.getByRole('heading', { name: 'My clients' })).toBeVisible();
@@ -123,6 +147,10 @@ test('Trainer browser requires live approval, protects Origin/cookies, and revok
     await expect(page.getByRole('region', { name: 'Programs' })).toContainText('0');
     await expect(page.getByRole('region', { name: 'Progress' })).toContainText('0');
     await expect(page.getByText(otherTrainerEmail)).toHaveCount(0);
+    await expect(page.getByText(ownProgramTitle)).toBeVisible();
+    await expect(page.getByText(foreignProgramTitle)).toHaveCount(0);
+    await expect(page.getByText('Total programs:')).toBeVisible();
+    await expect(page.getByText('No programs yet.')).toHaveCount(0);
     await expect(page.getByText('No active clients yet.')).toHaveCount(0);
 
     const authenticatedCookies = (await page.context().cookies([trainerOrigin])).filter(
@@ -208,6 +236,14 @@ test('Trainer browser requires live approval, protects Origin/cookies, and revok
     await expect(page.getByRole('button', { name: 'Sign out' })).toHaveCount(0);
   } finally {
     await withDisposableDatabase(async (db) => {
+      await db.query('DELETE FROM "training_program_versions" WHERE "id" IN ($1, $2)', [
+        ownVersionId,
+        foreignVersionId,
+      ]);
+      await db.query('DELETE FROM "training_programs" WHERE "id" IN ($1, $2)', [
+        ownProgramId,
+        foreignProgramId,
+      ]);
       await db.query('DELETE FROM "trainer_athletes" WHERE "id" IN ($1, $2)', [
         dashboardRelationId,
         otherRelationId,

@@ -9,6 +9,7 @@ import { TrainerSignOutButton } from '@/features/auth/ui/trainer-sign-out-button
 import { verifyTrainerAccess } from '@/shared/api/server-capability';
 import { loadTrainerClients, parseTrainerClientsPage } from '@/shared/api/trainer-clients';
 import { loadTrainerOverview } from '@/shared/api/trainer-overview';
+import { loadTrainerRecentPrograms } from '@/shared/api/trainer-recent-programs';
 import { getTrainerCopy } from '@/shared/i18n/copy';
 
 type TrainerCopy = ReturnType<typeof getTrainerCopy>;
@@ -95,17 +96,18 @@ export default async function TrainerWorkspacePage({
   // Only after the fresh server-side grant check can we fetch private rows.
   const { clientsPage } = await searchParams;
   const page = parseTrainerClientsPage(clientsPage);
-  const [result, overview] = await Promise.all([
+  const [result, overview, programs] = await Promise.all([
     loadTrainerClients(cookieHeader, page),
     loadTrainerOverview(cookieHeader),
+    loadTrainerRecentPrograms(cookieHeader),
   ]);
 
   // A grant can be revoked between the initial capability check and either read.
   // Never show even successful private rows when one endpoint now denies access.
-  if (result.kind === 'unauthenticated' || overview.kind === 'unauthenticated') {
+  if ([result.kind, overview.kind, programs.kind].includes('unauthenticated')) {
     return <WorkspaceAccessNotice kind="unauthenticated" t={t} />;
   }
-  if (result.kind === 'forbidden' || overview.kind === 'forbidden') {
+  if ([result.kind, overview.kind, programs.kind].includes('forbidden')) {
     return <WorkspaceAccessNotice kind="forbidden" t={t} />;
   }
 
@@ -144,6 +146,59 @@ export default async function TrainerWorkspacePage({
           unavailable={t.metricUnavailable}
         />
       </div>
+
+      <section
+        aria-labelledby="dashboard-programs-title"
+        className="rounded-2xl border border-border bg-card p-5 sm:p-7"
+      >
+        <div className="mb-5 space-y-1">
+          <h2 id="dashboard-programs-title" className="text-xl font-semibold">
+            {t.recentProgramsHeading}
+          </h2>
+          <p className="text-sm text-muted-foreground">{t.recentProgramsDescription}</p>
+        </div>
+        {programs.kind !== 'ready' ? (
+          <div role="alert" className="rounded-xl border border-border bg-muted/40 p-4">
+            <p className="font-medium">{t.programsUnavailable}</p>
+            <Link
+              href="/workspace"
+              prefetch={false}
+              className="mt-3 inline-flex min-h-11 items-center rounded-lg border border-border px-4 font-semibold hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+            >
+              {t.retry}
+            </Link>
+          </div>
+        ) : programs.programs.length === 0 ? (
+          <p className="rounded-xl border border-dashed border-border p-6 text-muted-foreground">
+            {t.programsEmpty}
+          </p>
+        ) : (
+          <>
+            <p className="mb-2 text-xs text-muted-foreground">
+              {t.programsTotal}: <span className="tabular-nums">{programs.total}</span>
+            </p>
+            <ul className="divide-y divide-border" aria-label={t.recentProgramsHeading}>
+              {programs.programs.map((program) => (
+                <li
+                  key={program.id}
+                  className="flex min-w-0 items-center justify-between gap-3 py-3"
+                >
+                  <span className="min-w-0 truncate font-medium" title={program.title}>
+                    {program.title}
+                  </span>
+                  <span className="shrink-0 rounded-full border border-border px-3 py-1 text-xs text-muted-foreground">
+                    {program.status === 'DRAFT'
+                      ? t.programStatusDraft
+                      : program.status === 'PUBLISHED'
+                        ? t.programStatusPublished
+                        : t.programStatusArchived}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
+      </section>
 
       <section
         aria-labelledby="dashboard-clients-title"

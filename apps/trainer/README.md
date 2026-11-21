@@ -49,6 +49,28 @@ unavailable, unsafe origin and strict SSR transport. The real
 `trainer-web-auth.spec.ts` browser/PostgreSQL E2E verifies authorized
 0/1 aggregates, other-trainer isolation, revocation and expired sessions.
 
+## Trainer Dashboard — recent owned program preview (#364)
+
+The existing protected Trainer Dashboard also shows the five most recently
+updated programs belonging to the approved trainer, using the existing typed
+`GET /training-programs?page=1&limit=5` API. Server-side authorization checks
+the current Trainer grant and filters SQL by `trainerId` before pagination.
+A program preview is **not** an active athlete assignment: the existing KPI
+continues to report assigned program counts separately.
+
+The preview displays each program's latest version title and its actual
+draft/published/archived status, plus the API's total program count. It is
+**read-only**; the separate Trainer Program Builder remains owned by #365.
+The client never receives arbitrary unbounded program rows, credentials or
+unapproved trainer program data. API 401/403 invalidates the entire protected
+workspace even after a previous capability read; API outage/invalid response
+hides only the program preview and renders a retry. True empty results show
+"No programs yet", not a fabricated zero in place of a failed fetch.
+
+Relevant tests cover trusted origin, exact five-item limit, malformed payloads,
+empty and revoked states. The real Trainer browser/PostgreSQL test seeds
+one owned and one foreign trainer program and asserts only the owned preview.
+
 ## Real-browser security regression
 
 The existing `Web / Integration E2E` workflow runs
