@@ -26,10 +26,10 @@ Ukrainian and English copy is sourced from `@gym/i18n`.
 read-only account directory restricted to explicitly allowlisted Super Admin
 operators. Ordinary ADMIN sessions see no records. Roles, Exercise catalog,
 Moderation, Audit and Settings stay non-interactive placeholders until server-side
-permissions and corresponding APIs are implemented. The only operational status
-shown is the live server-gated API readiness response; no synthetic KPIs, user
-records, privileged mutations or sensitive account fields are rendered. Unauthorized
-requests never fetch readiness or render the workspace. A successful build does not
+permissions and corresponding APIs are implemented. Overview shows live API readiness, while the Users route renders only
+PII-minimized account rows for explicitly authorized operators. No synthetic
+KPIs, privileged mutations or unrelated account fields are rendered. Unauthorized
+requests never fetch readiness or privileged data. A successful build does not
 make this Admin console ready for production.
 
 ## Admin Users directory UI (#387, follow-up to #592)
@@ -63,5 +63,6 @@ still needs independent staging/security checks.
 - Validate cookie scope, secure backend routing and browser E2E with a
   disposable staging account. Do not deploy privileged workflows before then.
 
-**Foundation only:** no SUPERADMIN permissions, moderation CRUD, durable
-audit history or production admin release is enabled in this PR.
+**Read-only operator UI only:** the existing Super Admin read permission does not
+authorize account mutations, role assignment, moderation CRUD, durable audit
+history or a production Admin release.
