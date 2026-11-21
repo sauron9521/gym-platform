@@ -174,6 +174,7 @@ export function WorkoutDetailsScreen({ id }: { id: string }) {
                   editable={workout.status === 'IN_PROGRESS'}
                   reconciling={reconciling}
                   canonicalSnapshotAt={details.dataUpdatedAt}
+                  canonicalReadVersion={details.canonicalReadVersion}
                 />
               ))}
             </View>

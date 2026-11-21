@@ -7,6 +7,10 @@ export const accountQueryKeys = {
   workouts: (userId: string) => ['account', 'workouts', userId] as const,
   workoutDetail: (userId: string, workoutId: string) =>
     ['account', 'workout', userId, workoutId] as const,
+  // Separate GET-only proof: ordinary setQueryData/PATCH responses must not
+  // be mistaken for successful canonical reconciliation.
+  workoutDetailRead: (userId: string, workoutId: string) =>
+    ['account', 'workout-read', userId, workoutId] as const,
 };
 
 export function createMobileQueryClient() {
