@@ -10,6 +10,8 @@ import { UsersController } from '#src/modules/users/controllers/users.controller
 import { TrainerApplicationsController } from '#src/modules/trainer-onboarding/controllers/trainer-applications.controller';
 import { TrainerReviewController } from '#src/modules/trainer-onboarding/controllers/trainer-review.controller';
 import { TrainerAthletesController } from '#src/modules/trainer-athletes/controllers/trainer-athletes.controller';
+import { TrainingProgramsController } from '#src/modules/training-programs/controllers/training-programs.controller';
+import { TrainingProgramVersionsController } from '#src/modules/training-programs/controllers/training-program-versions.controller';
 
 describe('Endpoint-aware throttling policies', () => {
   it('centralizes the global default and every semantic endpoint budget', () => {
@@ -51,6 +53,8 @@ describe('Endpoint-aware throttling policies', () => {
     [TrainerReviewController, 'revoke', 3],
     [TrainerAthletesController, 'findMany', 60],
     [TrainerAthletesController, 'findOne', 60],
+    [TrainingProgramsController, 'findMany', 60],
+    [TrainingProgramVersionsController, 'findVersions', 60],
   ] as const)(
     'defines the intended per-minute limit for %s.%s',
     (controller, methodName, limit) => {

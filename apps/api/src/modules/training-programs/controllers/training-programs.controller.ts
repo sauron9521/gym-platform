@@ -12,6 +12,7 @@ import {
   trainingProgramResponseSchema,
   trainingProgramListResponseSchema,
 } from '#src/infra/openapi/response-contracts';
+import { RateLimit } from '#src/common/rate-limit/rate-limit.policies';
 import { TrainingProgramsService } from '../services/training-programs.service.js';
 import type { TrainingProgramActor } from '../types/training-program.types.js';
 
@@ -48,6 +49,7 @@ export class TrainingProgramsController {
   }
 
   @Get()
+  @RateLimit('read')
   @ApiOkResponse({ schema: trainingProgramListResponseSchema })
   findMany(
     @CurrentUser() actor: TrainingProgramActor,
