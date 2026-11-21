@@ -66,4 +66,37 @@ describe('AdminUsersController security contract', () => {
     ).rejects.toThrow('DB unavailable');
     expect(audit.record).not.toHaveBeenCalled();
   });
+  it('uses the same post-auth permission guard on detail and audits successful reads only', async () => {
+    const handler = Object.getOwnPropertyDescriptor(
+      AdminUsersController.prototype,
+      'detail',
+    )?.value;
+    const guards: unknown[] = Reflect.getMetadata(GUARDS_METADATA, handler);
+    expect(guards).toContain(AdminUsersReadGuard);
+    const account = { id: otherId, email: 'person@example.test', status: 'ACTIVE' };
+    const users = { findForAdminDetails: vi.fn().mockResolvedValue(account) };
+    const audit = { record: vi.fn() };
+    const controller = new AdminUsersController(users as never, audit as never);
+    const req = {} as never;
+    await expect(controller.detail(otherId, { id: operatorId }, req)).resolves.toEqual(account);
+    expect(users.findForAdminDetails).toHaveBeenCalledExactlyOnceWith(otherId);
+    expect(audit.record).toHaveBeenCalledExactlyOnceWith(
+      { actorId: operatorId, permission: 'admin.accounts.read', outcome: 'allowed' },
+      req,
+    );
+  });
+
+  it('does not audit not-found or failed detail reads as allowed', async () => {
+    const users = { findForAdminDetails: vi.fn().mockResolvedValue(null) };
+    const audit = { record: vi.fn() };
+    const controller = new AdminUsersController(users as never, audit as never);
+    await expect(controller.detail(otherId, { id: operatorId }, {} as never)).rejects.toThrow(
+      'User not found',
+    );
+    users.findForAdminDetails.mockRejectedValueOnce(new Error('DB unavailable'));
+    await expect(controller.detail(otherId, { id: operatorId }, {} as never)).rejects.toThrow(
+      'DB unavailable',
+    );
+    expect(audit.record).not.toHaveBeenCalled();
+  });
 });

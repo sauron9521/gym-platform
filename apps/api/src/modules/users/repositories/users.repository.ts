@@ -7,6 +7,7 @@ import {
   profileAvatarOwnerSelect,
   userAvatarKeySelect,
   adminUserListSelect,
+  adminUserDetailSelect,
   userEmailVerificationSelect,
   userSelect,
   userSelectWithCredentials,
@@ -53,6 +54,15 @@ export class UsersRepository {
         totalPages: Math.ceil(total / query.limit),
       },
     };
+  }
+
+  /** Explicitly allowlisted operator details; never select credentials or profile data. */
+  async findForAdminDetails(id: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id, deletedAt: null },
+      select: adminUserDetailSelect,
+    });
+    return user ? { ...user, status: 'ACTIVE' as const } : null;
   }
 
   async create(email: string, passwordHash: string) {

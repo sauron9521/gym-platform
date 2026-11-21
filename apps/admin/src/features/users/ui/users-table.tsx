@@ -35,6 +35,7 @@ export type DirectoryCopy = {
   apply: string;
   clear: string;
   newestFirst: string;
+  viewDetails: string;
 };
 
 const controlStyle =
@@ -132,7 +133,16 @@ export function UsersTable({
             {available &&
               result.data.map((user) => (
                 <tr key={user.id} className="border-b border-border last:border-b-0">
-                  <td className="px-4 py-3 font-medium">{user.email}</td>
+                  <td className="px-4 py-3 font-medium">
+                    <Link
+                      href={`/users/${user.id}`}
+                      prefetch={false}
+                      aria-label={`${copy.viewDetails}: ${user.email}`}
+                      className="rounded text-primary underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                    >
+                      {user.email}
+                    </Link>
+                  </td>
                   <td className="px-4 py-3 text-muted-foreground">
                     {{ ATHLETE: copy.athlete, TRAINER: copy.trainer, ADMIN: copy.admin }[user.role]}
                   </td>

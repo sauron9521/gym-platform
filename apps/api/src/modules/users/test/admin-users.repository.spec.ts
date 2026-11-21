@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import { UsersRepository } from '../repositories/users.repository.js';
-import { adminUserListSelect } from '../selects/user.select.js';
+import { adminUserDetailSelect, adminUserListSelect } from '../selects/user.select.js';
 import type { PrismaService } from '#src/infra/database/index';
 
 describe('UsersRepository.listForAdmin', () => {
@@ -57,5 +57,43 @@ describe('UsersRepository.listForAdmin', () => {
     expect(adminUserListSelect).not.toHaveProperty('passwordHash');
     expect(adminUserListSelect).not.toHaveProperty('deletedAt');
     expect(adminUserListSelect).not.toHaveProperty('profile');
+  });
+  it('selects minimal detail fields and hides missing/soft-deleted accounts', async () => {
+    const account = {
+      id: 'f09d7567-626e-45d8-99f1-829ce4204fbd',
+      email: 'person@example.test',
+      role: 'TRAINER',
+      emailVerified: true,
+      createdAt: new Date('2026-11-01T00:00:00Z'),
+      updatedAt: new Date('2026-11-21T00:00:00Z'),
+    };
+    const prisma = { user: { findUnique: vi.fn().mockResolvedValue(account) } };
+    const repo = new UsersRepository(prisma as unknown as PrismaService);
+    const found = await repo.findForAdminDetails(account.id);
+    expect(prisma.user.findUnique).toHaveBeenCalledExactlyOnceWith({
+      where: { id: account.id, deletedAt: null },
+      select: adminUserDetailSelect,
+    });
+    expect(found).toEqual({ ...account, status: 'ACTIVE' });
+    expect(Object.keys(found!).sort()).toEqual([
+      'createdAt',
+      'email',
+      'emailVerified',
+      'id',
+      'role',
+      'status',
+      'updatedAt',
+    ]);
+    for (const forbidden of [
+      'profile',
+      'passwordHash',
+      'deletedAt',
+      'sessions',
+      'preferredLocale',
+    ]) {
+      expect(adminUserDetailSelect).not.toHaveProperty(forbidden);
+    }
+    prisma.user.findUnique.mockResolvedValueOnce(null);
+    await expect(repo.findForAdminDetails(account.id)).resolves.toBeNull();
   });
 });

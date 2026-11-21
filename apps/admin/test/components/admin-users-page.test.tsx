@@ -23,7 +23,10 @@ vi.mock('next-intl/server', async () => {
     getLocale: async () => localeState.current,
     getTranslations: async (namespace: string) => (key: string) => {
       const admin = getMessages(localeState.current).admin;
-      const catalog = (namespace === 'admin.users' ? admin.users : admin) as Record<string, string>;
+      const catalog = (namespace === 'admin.users' ? admin.users : admin) as unknown as Record<
+        string,
+        string
+      >;
       return catalog[key];
     },
   };

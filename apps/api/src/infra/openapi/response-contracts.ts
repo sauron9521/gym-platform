@@ -214,6 +214,17 @@ export const adminUserListResponseSchema = paginatedSchema(
   }),
 );
 
+/** Read-only operator detail, matching adminUserDetailSelect with derived ACTIVE status. */
+export const adminUserDetailResponseSchema = objectSchema({
+  id: uuidSchema,
+  email: stringSchema,
+  role: enumSchema(['ATHLETE', 'TRAINER', 'ADMIN']),
+  status: enumSchema(['ACTIVE']),
+  createdAt: dateTimeSchema,
+  emailVerified: booleanSchema,
+  updatedAt: dateTimeSchema,
+});
+
 /** Explicit summary list response: no nested exercises, sets, or notes. */
 export const workoutSummaryResponseSchema = objectSchema({
   id: uuidSchema,

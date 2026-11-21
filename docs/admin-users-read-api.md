@@ -78,6 +78,31 @@ and validated operator allowlist on every request. A global permissions guard
 runs before route authentication; adding its decorator directly would deny all
 valid requests.
 
+## Read-only account details — `GET /admin/users/:userId`
+
+For an existing non-deleted user, returns exactly seven keys: `id`, `email`,
+`role`, `status` (derived `ACTIVE`), `createdAt`, `emailVerified`, and
+`updatedAt`. Date fields are serialized as ISO 8601 strings. No profile,
+biometrics, tokens, credentials, preferences, session data or soft-deletion
+metadata is selected. Neither a separate staff role nor new database state is
+created.
+
+The same post-authentication `admin.accounts.read` operator allowlist is
+rechecked independently for each detail request; the URL's account UUID does
+not grant any authorization. UUID syntax is validated; malformed ID -> 400.
+Missing, soft-deleted, or unknown users -> 404. Anonymous -> 401; valid
+sessions without explicit Super Admin read permission -> 403 **even for
+nonexistent users**. The response is uncached (`no-store`), read-only, rate
+limited, and logs a pseudonymized allowed-read event on success only.
+
+The Next.js `/users/[id]` page fetches this endpoint from a fixed
+server-only API origin after independently validating the ADMIN session.
+It rejects unexpected response fields before rendering, never runs a
+browser-side privileged fetch, and hides all account data on authorization,
+validation, network, or response-schema failure. Localized UK/EN read-only
+display and a link back to the directory are provided. Any browser/staging
+audit must verify cookie boundaries and actual operator access.
+
 ## Test and rollout gates
 
 - Unit tests: strict Zod query; minimal Prisma select; permission-decorated
@@ -86,6 +111,7 @@ valid requests.
   403, operator success, limit/page ordering, role/search/date filters, absent
   soft-deleted accounts and secrets, invalid 400, immediate permission revoke.
 - Verify CI `API e2e / PostgreSQL 17`, `Quality`, and production build.
-- **Keep #292 open** until secure Admin UI wiring, details API and true
-  status operations are separately implemented/tested. Never merge without
+- **Keep #292 open** until actual account status lifecycle and final staging
+  permissions/cookie security tests are verified. Directory and details
+  read-only slices are implemented but do not authorize any mutations. Never merge without
   owner review; production Admin remains NO-GO pending staging evidence.

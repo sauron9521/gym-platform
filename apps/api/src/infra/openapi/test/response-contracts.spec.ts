@@ -1,4 +1,5 @@
 import {
+  adminUserDetailResponseSchema,
   archivedExerciseResponseSchema,
   registrationResponseSchema,
   sessionSignInResponseSchema,
@@ -27,7 +28,7 @@ import {
   type ResponseSchema,
 } from '../response-contracts.js';
 import { exerciseSelect } from '#src/modules/exercises/selects/exercise.select';
-import { userSelect } from '#src/modules/users/selects/user.select';
+import { adminUserDetailSelect, userSelect } from '#src/modules/users/selects/user.select';
 import {
   workoutSelect,
   workoutSetSelect,
@@ -67,6 +68,14 @@ function assertMatchesSelect(schema: ResponseSchema, select: Record<string, unkn
 }
 
 describe('OpenAPI response projections vs Prisma selects', () => {
+  it('matches the privileged account detail select without extra fields', () => {
+    const expected = Object.keys(adminUserDetailSelect).sort().concat('status').sort();
+    expect(Object.keys(adminUserDetailResponseSchema.properties ?? {}).sort()).toEqual(expected);
+    expect(adminUserDetailResponseSchema.properties).not.toHaveProperty('passwordHash');
+    expect(adminUserDetailResponseSchema.properties).not.toHaveProperty('deletedAt');
+    expect(adminUserDetailResponseSchema.properties).not.toHaveProperty('profile');
+  });
+
   it('documents the signup delivery outcome without credential fields', () => {
     const keys = [...Object.keys(userSelect), 'verificationEmailStatus'].sort();
     expect(Object.keys(registrationResponseSchema.properties ?? {}).sort()).toEqual(keys);

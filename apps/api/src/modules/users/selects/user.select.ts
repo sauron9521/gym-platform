@@ -37,6 +37,13 @@ export const adminUserListSelect = {
   createdAt: true,
 } satisfies Prisma.UserSelect;
 
+/** Operator account detail projection; excludes sensitive profile, sessions and credentials. */
+export const adminUserDetailSelect = {
+  ...adminUserListSelect,
+  emailVerified: true,
+  updatedAt: true,
+} satisfies Prisma.UserSelect;
+
 /** Internal only: never return passwordHash in public API responses. */
 export const userSelectWithCredentials = {
   ...userSelect,
