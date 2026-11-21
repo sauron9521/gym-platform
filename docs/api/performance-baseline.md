@@ -54,15 +54,47 @@ Nearest-rank p95 uses the sorted sample at `ceil(0.95 * N)`; with only
 exploratory rather than a statistically stable performance SLO.
 JSON output has no tokens, response bodies, arbitrary URLs or user labels.
 
+## Prisma SQL query counts (second slice)
+
+A dedicated **test-only** PostgreSQL E2E suite measures the number of SQL
+statement events emitted by Prisma for the same four read routes. It creates
+two throwaway accounts (athlete and trainer), authenticates through the normal
+session flow, and issues **serial** requests within short counting windows:
+one warmup and five measured requests per route. This is an additional
+measurement, not a production endpoint or middleware.
+
+With a dedicated PostgreSQL database ending in `_test` and Redis configured as
+in [API testing](testing.md), run from the monorepo root:
+
+```sh
+API_PERF_SQL_REPORT=1 pnpm --filter @gym/api exec vitest run --config vitest.config.e2e.ts test/e2e/infra/performance-query-count.e2e-spec.ts
+```
+
+The opt-in `API_PERF_SQL_REPORT` log contains only route **keys** and numeric
+min/p50/p95/max SQL query counts. It excludes SQL text, parameter values,
+response payloads, tokens and account identities. The suite uses a separate
+PrismaClient with `query` **event emission enabled only in this E2E process**;
+production `PrismaService` and Prometheus telemetry remain unchanged. The
+database-name guard refuses non-test databases before any connection. The
+HTTP throughput, caching, query optimization and response contracts are not
+modified.
+
+Counts represent all Prisma SQL events in each **sequential in-process request
+window**, including session/auth queries. They can also include unrelated
+scheduled DB work, so isolate the test runner and compare only runs with the
+same seeded dataset, roles, fixture shape and configuration. A minimal pair
+of accounts and an empty workout/program dataset cannot stand in for a
+realistic populated load fixture. The HTTP benchmark's latency sample count
+and the SQL probe's query sample count are deliberately different; **do not
+combine their percentiles into one per-request measurement**.
+
 ## Remaining acceptance criteria
 
-This collector **does not instrument Prisma query counts or SQL execution
-plans**. Issue #313 remains open until a separately reviewed disposable-DB
-slice records per-route query counts and `EXPLAIN (ANALYZE, BUFFERS)` plans
-under fixed fixtures, and before/after real measurements are attached.
-Do not enable SQL query logging on production or include bound PII values
-in benchmark reports. No index/cache optimization is justified by this
-harness alone.
+Issue #313 remains open until fixed-size **populated PostgreSQL fixtures**,
+`EXPLAIN (ANALYZE, BUFFERS)` plans, and reproducible before/after comparisons
+are recorded. Do not enable SQL query logging on production or include bound
+PII values in reports. Do not add speculative indexes or caching based on
+these exploratory numbers alone.
 
 The API's existing `/internal/metrics` histograms are service-wide and
 unlabeled (intentional privacy/cardinality design); they must not be
