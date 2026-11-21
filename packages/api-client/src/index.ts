@@ -3,6 +3,8 @@ import createClient from 'openapi-fetch';
 import type { paths } from './generated/schema.js';
 
 export type { paths, components, operations } from './generated/schema.js';
+export { classifyHttpFailure, parseRetryAfterSeconds } from './errors';
+export type { ApiFailureKind } from './errors';
 
 /**
  * Fully typed, fetch-based Gym API client.
