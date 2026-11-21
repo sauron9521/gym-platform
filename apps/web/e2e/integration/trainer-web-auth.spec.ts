@@ -39,6 +39,8 @@ test('Trainer browser requires live approval, protects Origin/cookies, and revok
   await page.goto(`${trainerOrigin}/workspace`);
   await expect(page.getByRole('heading', { name: 'Sign-in required' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Sign out' })).toHaveCount(0);
+  await page.goto(`${trainerOrigin}/workspace/clients/${dashboardRelationId}`);
+  await expect(page.getByRole('heading', { name: 'Sign-in required' })).toBeVisible();
 
   // Browser registration reuses the existing Nest identity. The disposable DB
   // is explicitly test-only; there is no bypass endpoint for trainer approval.
@@ -86,6 +88,9 @@ test('Trainer browser requires live approval, protects Origin/cookies, and revok
     await expect(page).toHaveURL(`${trainerOrigin}/workspace`);
     await expect(page.getByRole('heading', { name: 'Trainer dashboard' })).toBeVisible();
     await expect(page.getByText('No active clients yet.')).toBeVisible();
+    await page.goto(`${trainerOrigin}/workspace/clients/${dashboardRelationId}`);
+    await expect(page.getByRole('heading', { name: 'Client not found' })).toBeVisible();
+    await page.goto(`${trainerOrigin}/workspace`);
     await expect(page.getByRole('heading', { name: 'Recent programs' })).toBeVisible();
     await expect(page.getByText('No programs yet.')).toBeVisible();
     await expect(page.getByRole('region', { name: 'Active clients' })).toContainText('0');
@@ -153,6 +158,29 @@ test('Trainer browser requires live approval, protects Origin/cookies, and revok
     await expect(page.getByText('No programs yet.')).toHaveCount(0);
     await expect(page.getByText('No active clients yet.')).toHaveCount(0);
 
+    // The active client list opens a protected SSR progress page backed by
+    // TWO real Nest reads; historical and foreign relationships must not leak.
+    await page.getByRole('link', { name: 'View progress' }).click();
+    await expect(page).toHaveURL(`${trainerOrigin}/workspace/clients/${dashboardRelationId}`);
+    await expect(page.getByRole('heading', { name: 'Client progress' })).toBeVisible();
+    await expect(page.getByText(dashboardAthleteEmail)).toBeVisible();
+    await expect(page.getByRole('region', { name: 'Active assignments' })).toContainText('0');
+    await expect(page.getByRole('region', { name: 'Completed workouts (30 days)' })).toContainText(
+      '0',
+    );
+    await expect(
+      page.getByText(
+        'No active assignments or completed assigned-program workouts in the last 30 days.',
+      ),
+    ).toBeVisible();
+    await expect(page.getByText(otherTrainerEmail)).toHaveCount(0);
+    await page.goto(`${trainerOrigin}/workspace/clients/${otherRelationId}`);
+    await expect(page.getByRole('heading', { name: 'Client not found' })).toBeVisible();
+    await expect(page.getByText(dashboardAthleteEmail)).toHaveCount(0);
+    await page.goto(`${trainerOrigin}/workspace/clients/not-a-uuid`);
+    await expect(page.getByRole('heading', { name: 'Client not found' })).toBeVisible();
+    await page.goto(`${trainerOrigin}/workspace`);
+
     const authenticatedCookies = (await page.context().cookies([trainerOrigin])).filter(
       (cookie) => cookie.httpOnly,
     );
@@ -186,6 +214,9 @@ test('Trainer browser requires live approval, protects Origin/cookies, and revok
     await expect(page.getByRole('heading', { name: 'Trainer access not approved' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Sign out' })).toHaveCount(0);
     await expect(page.getByRole('region', { name: 'Programs', exact: true })).toHaveCount(0);
+    await page.goto(`${trainerOrigin}/workspace/clients/${dashboardRelationId}`);
+    await expect(page.getByRole('heading', { name: 'Trainer access not approved' })).toBeVisible();
+    await expect(page.getByText(dashboardAthleteEmail)).toHaveCount(0);
 
     // Restore approval, then verify that current ADMIN elevation denies Trainer
     // even though the old browser session and TrainerProfile are unchanged.
@@ -201,6 +232,8 @@ test('Trainer browser requires live approval, protects Origin/cookies, and revok
     });
     await page.goto(`${trainerOrigin}/workspace`);
     await expect(page.getByRole('heading', { name: 'Trainer access not approved' })).toBeVisible();
+    await page.goto(`${trainerOrigin}/workspace/clients/${dashboardRelationId}`);
+    await expect(page.getByRole('heading', { name: 'Trainer access not approved' })).toBeVisible();
 
     await withDisposableDatabase(async (db) => {
       await db.query('UPDATE "users" SET "role" = $1, "updated_at" = NOW() WHERE "id" = $2', [
@@ -208,6 +241,17 @@ test('Trainer browser requires live approval, protects Origin/cookies, and revok
         user.id,
       ]);
     });
+    await page.goto(`${trainerOrigin}/workspace/clients/${dashboardRelationId}`);
+    await expect(page.getByText(dashboardAthleteEmail)).toBeVisible();
+    await withDisposableDatabase(async (db) => {
+      await db.query(
+        'UPDATE "trainer_athletes" SET "status" = $1, "updated_at" = NOW() WHERE "id" = $2',
+        ['TERMINATED', dashboardRelationId],
+      );
+    });
+    await page.goto(`${trainerOrigin}/workspace/clients/${dashboardRelationId}`);
+    await expect(page.getByRole('heading', { name: 'Client not found' })).toBeVisible();
+    await expect(page.getByText(dashboardAthleteEmail)).toHaveCount(0);
     await page.goto(`${trainerOrigin}/workspace`);
     await expect(page.getByRole('button', { name: 'Sign out' })).toBeVisible();
 
