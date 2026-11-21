@@ -1,7 +1,8 @@
+import { getMessages as getSharedMessages, defaultLocale, type Locale } from '@gym/i18n';
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 import { NextIntlClientProvider } from 'next-intl';
-import { getMessages } from 'next-intl/server';
+import { getLocale, getMessages } from 'next-intl/server';
 
 import { getSiteOrigin, isIndexingEnabled, siteDescription } from '@/shared/lib/seo';
 import { SiteFooter } from '@/widgets/layout/ui/site-footer';
@@ -40,15 +41,17 @@ export const metadata: Metadata = {
 };
 
 export default async function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
-  const messages = await getMessages();
+  const [locale, messages] = await Promise.all([getLocale(), getMessages()]);
+  const siteLocale: Locale = locale === 'en' ? 'en' : defaultLocale;
+  const skipToContent = getSharedMessages(siteLocale).landing.shell.skipToContent;
   return (
-    <html lang="uk">
+    <html lang={locale}>
       <body className="flex min-h-screen flex-col">
         <a
           href="#main-content"
           className="sr-only rounded-md bg-primary px-4 py-2 font-medium text-primary-foreground focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[100]"
         >
-          Перейти до вмісту
+          {skipToContent}
         </a>
         {origin ? (
           <script
@@ -64,10 +67,10 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
             }}
           />
         ) : null}
-        <NextIntlClientProvider locale="uk" messages={messages}>
-          <SiteHeader />
+        <NextIntlClientProvider locale={locale} messages={messages}>
+          <SiteHeader locale={siteLocale} />
           {children}
-          <SiteFooter />
+          <SiteFooter locale={siteLocale} />
         </NextIntlClientProvider>
       </body>
     </html>

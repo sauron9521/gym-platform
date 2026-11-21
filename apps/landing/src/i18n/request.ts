@@ -1,8 +1,11 @@
-import { defaultLocale, getMessages } from '@gym/i18n';
+import { defaultLocale, getMessages, isLocale } from '@gym/i18n';
 import { getRequestConfig } from 'next-intl/server';
 
-/** Stage 1: keep existing Ukrainian URLs and SEO unchanged. */
-export default getRequestConfig(async () => ({
-  locale: defaultLocale,
-  messages: getMessages(defaultLocale),
-}));
+export default getRequestConfig(async ({ requestLocale }) => {
+  const requested = await requestLocale;
+  const locale =
+    process.env.LANDING_ENABLE_I18N_ROUTES === 'true' && isLocale(requested)
+      ? requested
+      : defaultLocale;
+  return { locale, messages: getMessages(locale) };
+});

@@ -643,6 +643,7 @@
       "ctaSecondary": "About the project"
     },
     "shell": {
+      "skipToContent": "Skip to content",
       "homeAria": "home page",
       "mainNav": "Main navigation",
       "mobileNav": "Mobile navigation",

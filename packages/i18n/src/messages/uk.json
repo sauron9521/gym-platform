@@ -643,6 +643,7 @@
       "ctaSecondary": "Про проєкт"
     },
     "shell": {
+      "skipToContent": "Перейти до вмісту",
       "homeAria": "головна сторінка",
       "mainNav": "Основна навігація",
       "mobileNav": "Мобільна навігація",
