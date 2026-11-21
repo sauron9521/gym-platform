@@ -11,6 +11,7 @@ vi.mock('@gym/api-client', () => ({
   createBrowserSessionClient: () => ({ POST: post, GET: get }),
 }));
 vi.mock('next/navigation', () => ({ useRouter: () => router }));
+vi.mock('@/shared/ui/locale-switcher', () => ({ LocaleSwitcher: () => null }));
 vi.mock('next-intl', () => ({
   useTranslations: (namespace: string) => (key: string) => namespace + '.' + key,
 }));

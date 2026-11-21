@@ -15,6 +15,21 @@ rather than sharing credentials with the Web site.
    administrator account. The client verifies `GET /users/me`, and the
    Admin home page checks role and session **again on the server**.
 
+## OVRANTO read-only workspace shell (#387)
+
+The authenticated home uses the approved OVRANTO Light/Dark semantic tokens and
+Manrope with a compact desktop sidebar, accessible mobile navigation and a
+manual System/Light/Dark preference stored in the existing `ovranto-theme` cookie.
+Ukrainian and English copy is sourced from `@gym/i18n`.
+
+Only **Overview** links to a real route. Users, Roles, Exercise catalog,
+Moderation, Audit and Settings are non-interactive placeholders until server-side
+permissions and corresponding APIs are implemented. The only operational status
+shown is the live server-gated API readiness response; no synthetic KPIs, user
+records, privileged mutations or sensitive account fields are rendered. Unauthorized
+requests never fetch readiness or render the workspace. A successful build does not
+make this Admin console ready for production.
+
 ## Mandatory manual staging checks before deploying an operational console
 
 - Verify host-only, Secure, HttpOnly and SameSite cookie behavior through
