@@ -131,10 +131,20 @@ gate, **not** a statistically controlled A/B benchmark. Never interpret
 a single short sample, small synthetic dataset, or divergent hardware as
 proof of a performance gain.
 
-## Manual two-revision A/B workflow (opt-in)
+## A/A smoke on benchmark PRs and manual two-revision A/B
 
-After the A/B harness is merged into `main`, open **Actions →
-API Performance / Manual A-B comparison → Run workflow** on `main`.
+When a same-repository pull request changes the A/B workflow,
+its comparison script/tests or the populated E2E fixture, GitHub Actions
+automatically exercises the **same pinned PR head SHA twice** as an
+A/A pipeline smoke. Ordinary application PRs do not run this expensive
+benchmark. Fork pull requests cannot run this job; the job has
+**read-only repository permission**, and the databases are local disposable
+PostgreSQL 17 services. Only the numeric sanitized comparison is uploaded.
+An A/A smoke validates infrastructure, not optimization performance.
+
+The workflow also retains explicit manual two-revision mode. Once merged
+into `main`, open **Actions →
+API Performance / A-A smoke and manual A-B comparison → Run workflow** on `main`.
 Supply two **full 40-character commit SHAs** (`before_sha` and
 `after_sha`). GitHub runs the two checkouts sequentially on the **same
 Ubuntu 24.04 runner**, Node 24 and PostgreSQL 17 service.

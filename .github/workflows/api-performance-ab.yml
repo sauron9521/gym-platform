@@ -1,6 +1,14 @@
-name: API Performance / Manual A-B comparison
+name: API Performance / A-A smoke and manual A-B comparison
 
 on:
+  # Run the complete A/A pipeline only when its implementation changes.
+  # Do not run a performance benchmark on ordinary application PRs.
+  pull_request:
+    paths:
+      - '.github/workflows/api-performance-ab.yml'
+      - 'scripts/api-performance-ab.mjs'
+      - 'scripts/api-performance-ab.test.mjs'
+      - 'apps/api/test/e2e/infra/performance-query-count.e2e-spec.ts'
   workflow_dispatch:
     inputs:
       before_sha:
@@ -21,12 +29,17 @@ concurrency:
 
 jobs:
   compare:
-    if: github.ref == 'refs/heads/main'
+    # PR smoke is limited to same-repository branches; manual A/B only runs from main.
+    if: >-
+      (github.event_name == 'pull_request' &&
+        github.event.pull_request.head.repo.full_name == github.repository) ||
+      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main')
     runs-on: ubuntu-24.04
     timeout-minutes: 40
     env:
-      BEFORE_SHA: ${{ inputs.before_sha }}
-      AFTER_SHA: ${{ inputs.after_sha }}
+      # PR: run A/A with the same immutable PR head commit. Manual: honor both input SHAs.
+      BEFORE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || inputs.before_sha }}
+      AFTER_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || inputs.after_sha }}
       NODE_ENV: test
       TEST_REDIS_URL: redis://127.0.0.1:6379
       CORS_ORIGINS: http://localhost:3000
@@ -62,7 +75,7 @@ jobs:
           --health-retries 10
 
     steps:
-      - name: Checkout trusted runner and comparison scripts from main
+      - name: Checkout runner scripts for the selected event
         uses: actions/checkout@v7
         with:
           persist-credentials: false
@@ -80,14 +93,14 @@ jobs:
       - name: Checkout before revision (read-only)
         uses: actions/checkout@v7
         with:
-          ref: ${{ inputs.before_sha }}
+          ref: ${{ env.BEFORE_SHA }}
           path: before
           persist-credentials: false
 
       - name: Checkout after revision (read-only)
         uses: actions/checkout@v7
         with:
-          ref: ${{ inputs.after_sha }}
+          ref: ${{ env.AFTER_SHA }}
           path: after
           persist-credentials: false
 
