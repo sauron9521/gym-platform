@@ -334,7 +334,24 @@ async function main() {
       args.slice(0, 3).map((path) => readFile(path, 'utf8').then(JSON.parse)),
     );
     const result = compareAB(manifest, before, after);
-    await writeFile(args[3], JSON.stringify(result, null, 2) + '\n', { flag: 'wx', mode: 0o600 });
+    const runId = process.env.GITHUB_RUN_ID;
+    const attempt = process.env.GITHUB_RUN_ATTEMPT;
+    if (runId !== undefined || attempt !== undefined) {
+      // Immutable metadata from the Actions runner allows a later read-only
+      // summary to reject copied artifacts masquerading as independent trials.
+      if (
+        !/^[1-9][0-9]{0,18}$/.test(runId ?? '') ||
+        !/^[1-9][0-9]{0,4}$/.test(attempt ?? '') ||
+        !Number.isSafeInteger(Number(attempt))
+      ) {
+        throw new ABValidationError('Invalid GitHub Actions run provenance');
+      }
+      result.run = { githubRunId: runId, githubAttempt: Number(attempt) };
+    }
+    await writeFile(args[3], JSON.stringify(result, null, 2) + '\n', {
+      flag: 'wx',
+      mode: 0o600,
+    });
   } else {
     throw new ABValidationError(
       'Usage: api-performance-ab.mjs preflight|extract|compare (see API A/B runbook)',

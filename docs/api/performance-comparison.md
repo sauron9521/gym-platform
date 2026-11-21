@@ -214,6 +214,48 @@ results as exploratory evidence; repeat runs and examine full
 SQL plans before considering indexes or caching. The workflow
 does not change, deploy, or migrate any live database.
 
+## Repeated A/B summary: minimum three independent attempts
+
+The CI workflow still produces **one paired comparison per run attempt**.
+For a real `perf/*` PR, run the same pinned A/B job and use GitHub
+Actions **Re-run jobs** at least twice more without changing either commit.
+Each new `comparison.json` automatically includes the GitHub Actions
+`run.githubRunId` and `run.githubAttempt` supplied by the runner.
+A/A comparisons cannot be used as evidence of an implementation improvement.
+
+Download and extract each attempt's **sanitized** `comparison.json`
+artifact, keeping each one in a separate file before its 7-day expiry.
+The artifacts are ZIP archives; the CLI consumes extracted JSON, not ZIP:
+
+```sh
+pnpm perf:api:repeats /tmp/ab-attempt-1.json /tmp/ab-attempt-2.json /tmp/ab-attempt-3.json > /tmp/ab-repeat-summary.json
+```
+
+The read-only script `scripts/api-performance-repeats.mjs` accepts **3–12**
+paired reports, fails closed on missing/duplicate GitHub run-attempt IDs,
+A/A results, changed before/after full commit SHAs, different persisted
+fixture SHA-256 fingerprints, missing/duplicated/unknown routes or metrics,
+inconsistent numeric deltas and changed decoded response sizes (including
+drift **between** attempts). It only emits recognized route/metric names,
+commit SHAs, run-attempt identifiers, numeric summaries and an interpretation
+caveat. It never outputs input payloads, raw SQL, cookies, tokens or paths.
+
+For each route, the report records the **median across attempts** of
+the measured before/after HTTP p50 and p95, the **median/min/max of paired
+percentage deltas**, counts of lower/higher/unchanged attempts, and the
+directional consistency. It also summarizes Prisma query-count p95
+and checks the decoded response p95 byte count. Direction labels like
+`consistently-lower` are **descriptive, not pass/fail gates or statistical
+confidence claims**. Do not automatically approve a PR merely because
+all three readings are lower; repeat with larger representative fixtures,
+check p95 variability and review the relevant SQL plans.
+
+Older A/B artifacts created **before this provenance extension** lack
+an Actions run ID and attempt number. They remain valid historical
+observations but deliberately **cannot** be combined by this strict
+independence-checking CLI. Record those results in Issue #313 separately
+rather than inventing run metadata.
+
 ## Issue completion
 
 Issue #313 remains open until we capture real before/after results on

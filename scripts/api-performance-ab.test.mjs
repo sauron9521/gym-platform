@@ -259,10 +259,27 @@ describe('API A/B comparison runner', () => {
       const comparison = spawnSync(
         process.execPath,
         [file, 'compare', meta, clean, other, compared],
-        { encoding: 'utf8' },
+        {
+          encoding: 'utf8',
+          env: { ...process.env, GITHUB_RUN_ID: '44943009699', GITHUB_RUN_ATTEMPT: '2' },
+        },
       );
       assert.equal(comparison.status, 0, comparison.stderr);
-      assert.equal(JSON.parse(readFileSync(compared, 'utf8')).comparisons.length, 2);
+      const record = JSON.parse(readFileSync(compared, 'utf8'));
+      assert.equal(record.comparisons.length, 2);
+      assert.deepEqual(record.run, { githubRunId: '44943009699', githubAttempt: 2 });
+
+      const badProvenance = spawnSync(
+        process.execPath,
+        [file, 'compare', meta, clean, other, join(directory, 'withheld-secret.json')],
+        {
+          encoding: 'utf8',
+          env: { ...process.env, GITHUB_RUN_ID: 'secret/../../bad', GITHUB_RUN_ATTEMPT: '2' },
+        },
+      );
+      assert.equal(badProvenance.status, 1);
+      assert.match(badProvenance.stderr, /Invalid GitHub Actions run provenance/);
+      assert.doesNotMatch(badProvenance.stderr, /secret\/|withheld-secret/);
 
       const malformed = join(directory, 'malformed-test-log');
       writeFileSync(malformed, 'API_PERF_PROFILE {"password":"secret-data"}');
