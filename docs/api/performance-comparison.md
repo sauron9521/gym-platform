@@ -131,20 +131,40 @@ gate, **not** a statistically controlled A/B benchmark. Never interpret
 a single short sample, small synthetic dataset, or divergent hardware as
 proof of a performance gain.
 
-## A/A smoke on benchmark PRs and manual two-revision A/B
+## Targeted PR A/B, harness A/A, and manual two-revision A/B
 
-When a same-repository pull request changes the A/B workflow,
-its comparison script/tests or the populated E2E fixture, GitHub Actions
-automatically exercises the **same pinned PR head SHA twice** as an
-A/A pipeline smoke. Ordinary application PRs do not run this expensive
-benchmark. Fork pull requests cannot run this job; the job has
-**read-only repository permission**, and the databases are local disposable
-PostgreSQL 17 services. Only the numeric sanitized comparison is uploaded.
-An A/A smoke validates infrastructure, not optimization performance.
+A same-repository PR changing the benchmark workflow, comparison
+script/tests or populated E2E fixture normally runs **A/A**: identical
+pinned PR head SHA twice, verifying the infrastructure without claiming
+a performance improvement.
+
+For a focused SQL optimization, a PR whose branch starts with
+`perf/` and changes
+`apps/api/src/modules/exercises/repositories/exercises.repository.ts`
+automatically performs a genuine **base-vs-head A/B** instead. The
+two full SHAs are pinned by the GitHub PR event. The immutable fixture,
+schema, migration and lockfile compatibility gate still applies; if
+any differs, the job fails closed. This is intentionally scoped to one
+repository file, not every application change. Since CI runners are
+not statistically controlled laboratories, even real A/B deltas remain
+exploratory and must be interpreted alongside unchanged response bytes,
+SQL counts and repeated measurements. In particular, **fewer SQL events
+are not evidence of lower HTTP tail latency**. PR #549 was closed unmerged
+because its genuinely paired measurements reduced Exercises queries 12→11
+but the latest serial candidate's p95 varied in direction across three runs
+(−5.8%, +22.5%, +18.2%). Record at least three independent runs with the
+same fixture fingerprints and inspect the range and direction of p95 changes;
+if tail latency appears worse or inconsistent, do not claim a performance
+gain. These few runs are still not a statistical significance test.
+
+Ordinary application PRs do not run this expensive benchmark.
+Fork pull requests cannot run this job; the job has **read-only repository
+permission**, and the databases are separate local disposable PostgreSQL 17
+services. Only the numeric sanitized comparison is uploaded.
 
 The workflow also retains explicit manual two-revision mode. Once merged
 into `main`, open **Actions →
-API Performance / A-A smoke and manual A-B comparison → Run workflow** on `main`.
+API Performance / PR A-A or A-B and manual comparison → Run workflow** on `main`.
 Supply two **full 40-character commit SHAs** (`before_sha` and
 `after_sha`). GitHub runs the two checkouts sequentially on the **same
 Ubuntu 24.04 runner**, Node 24 and PostgreSQL 17 service.

@@ -191,11 +191,16 @@ describe('API A/B comparison runner', () => {
     assert.match(workflow, /'\.github\/workflows\/api-performance-ab\.yml'/);
     assert.match(
       workflow,
-      /github\.event\.pull_request\.head\.repo\.full_name == github\.repository/,
+      /'apps\/api\/src\/modules\/exercises\/repositories\/exercises\.repository\.ts'/,
     );
     assert.match(
       workflow,
-      /BEFORE_SHA: \$\{\{ github\.event_name == 'pull_request' && github\.event\.pull_request\.head\.sha \|\| inputs\.before_sha \}\}/,
+      /github\.event\.pull_request\.head\.repo\.full_name == github\.repository/,
+    );
+    assert.match(workflow, /startsWith\(github\.head_ref, 'perf\/'\)/);
+    assert.match(
+      workflow,
+      /BEFORE_SHA: \$\{\{ github\.event_name == 'pull_request' && startsWith\(github\.head_ref, 'perf\/'\) && github\.event\.pull_request\.base\.sha \|\| github\.event_name == 'pull_request' && github\.event\.pull_request\.head\.sha \|\| inputs\.before_sha \}\}/,
     );
     assert.match(
       workflow,
