@@ -169,6 +169,39 @@ before the server may call existing `GET /training-programs/:id/versions`.
   real Trainer Next/Nest/PostgreSQL browser verification cover client eligibility,
   published/draft/foreign boundaries, selection and no mutations.
 
+## Trainer single-attempt assignment confirmation (#366)
+
+The existing protected program/version picker now offers an explicit
+**Assign version to client** button only for a server-validated PUBLISHED
+version and currently ACTIVE trainer-owned client. The browser calls the
+existing Nest `POST /training-programs/:programId/versions/:versionId/assignments`
+once through Trainer's **same-origin `/backend`** proxy, with
+`trainerAthleteId` in a strictly typed JSON body and HttpOnly cookies handled
+by the browser. No browser JWT, new write endpoint, Prisma schema, or new
+backend authorization. Nest validates current trainer approval, program/version
+ownership and publication, active relationship, and persisted account
+eligibility again within the locked transaction.
+
+- A synchronous `useRef` lock prevents duplicate events _before React
+  renders the disabled button_. Every attempted POST remains disabled for that
+  page instance, including conflicts and uncertain outcomes.
+- HTTP **201** is confirmed only if its response has a valid assignment UUID,
+  matching program/version/relationship IDs and ACTIVE status. HTTP **409**
+  is a conflict; 401/403/404/400/429 show distinct safe messages.
+- **HTTP 5xx, network loss, timeout, redirect or malformed 201 are ambiguous**:
+  the database transaction may already have committed. Never retry the POST
+  automatically. The UI shows a clear ambiguous state, permanently blocks
+  resubmission from the current page and provides a **read-only link to the
+  existing client assignment list** for manual verification. Confirmation,
+  conflict, and ambiguous states never appear as a fabricated success.
+- Uses `credentials: 'same-origin'`, redirect rejection, no-store, an
+  12-second request timeout and the API's existing CSRF/Origin policy.
+  Test fixtures and unit tests cover duplicate taps, exact single POST,
+  201/malformed/409/401/403/404/429/5xx/lost-response and successful real
+  browser/Nest/PostgreSQL creation. **Not a cross-tab idempotency key**:
+  another tab can initiate a separate request; the API's partial unique index
+  prevents two ACTIVE assignments of the same version to the same athlete.
+
 ## Real-browser security regression
 
 The existing `Web / Integration E2E` workflow runs
