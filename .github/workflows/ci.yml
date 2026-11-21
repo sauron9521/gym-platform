@@ -884,6 +884,13 @@ jobs:
       - name: Apply test database migrations
         run: pnpm --filter @gym/api db:migrate:deploy
 
+      - name: Verify migrated test database matches Prisma schema
+        if: matrix.shard == 1
+        run: >-
+          pnpm --filter @gym/api exec prisma migrate diff
+          --config prisma7.config.ts
+          --from-config-datasource --to-schema prisma/schemas --exit-code
+
       - name: Seed test exercise library
         run: pnpm --filter @gym/api db:seed
 

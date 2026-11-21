@@ -153,6 +153,37 @@ describe('TrainerAthletes (HTTP + PostgreSQL)', () => {
     }
   }, 20_000);
 
+  it('enforces one open relationship per pair in PostgreSQL and allows a new relationship after termination', async () => {
+    const trainer = await createUser(`open-pair-trainer-${randomUUID()}@example.com`, 'TRAINER');
+    const athlete = await createUser(`open-pair-athlete-${randomUUID()}@example.com`, 'ATHLETE');
+    const pair = {
+      trainerId: trainer.id,
+      athleteId: athlete.id,
+      initiatedById: trainer.id,
+    };
+    const pending = await prisma.trainerAthlete.create({ data: { ...pair, status: 'PENDING' } });
+
+    await expect(
+      prisma.trainerAthlete.create({ data: { ...pair, status: 'ACTIVE' } }),
+    ).rejects.toMatchObject({ code: 'P2002' });
+
+    await prisma.trainerAthlete.update({
+      where: { id: pending.id },
+      data: { status: 'ACTIVE' },
+    });
+    await expect(
+      prisma.trainerAthlete.create({ data: { ...pair, status: 'PENDING' } }),
+    ).rejects.toMatchObject({ code: 'P2002' });
+
+    await prisma.trainerAthlete.update({
+      where: { id: pending.id },
+      data: { status: 'TERMINATED', endedAt: new Date(), endedById: trainer.id },
+    });
+    const renewed = await prisma.trainerAthlete.create({ data: { ...pair, status: 'PENDING' } });
+
+    expect(renewed.status).toBe('PENDING');
+  });
+
   it('serves scoped dashboard counts without leaking other trainers or ended activity', async () => {
     const relationId = randomUUID();
     const foreignRelationId = randomUUID();

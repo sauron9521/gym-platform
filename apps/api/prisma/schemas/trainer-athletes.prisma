@@ -36,7 +36,8 @@ model TrainerAthlete {
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  @@unique([trainerId, athleteId], where: raw("status IN ('PENDING', 'ACTIVE')"), map: "trainer_athletes_open_pair_key")
+  // Use PostgreSQL's introspected predicate so migration diffs recognize the existing index.
+  @@unique([trainerId, athleteId], map: "trainer_athletes_open_pair_key", where: raw("(status = ANY (ARRAY['PENDING'::\"TrainerAthleteStatus\", 'ACTIVE'::\"TrainerAthleteStatus\"]))"))
   @@index([trainerId, status, createdAt])
   @@index([athleteId, status, createdAt])
   @@index([initiatedById, createdAt])
