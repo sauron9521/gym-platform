@@ -76,6 +76,27 @@ describe('ExercisesRepository', () => {
       });
     });
 
+    it('does not start the count until the list read has finished', async () => {
+      let resolveList: (items: { id: string }[]) => void = () => {};
+      const deferred = new Promise<{ id: string }[]>((resolve) => {
+        resolveList = resolve;
+      });
+      prisma.exercise.findMany.mockReturnValue(deferred);
+      prisma.exercise.count.mockResolvedValue(1);
+
+      const pending = repository.findMany({ where: { source: 'GLOBAL' }, skip: 0, take: 20 });
+      expect(prisma.exercise.findMany).toHaveBeenCalledOnce();
+      expect(prisma.exercise.count).not.toHaveBeenCalled();
+
+      resolveList([{ id: 'exercise-1' }]);
+      await expect(pending).resolves.toMatchObject({
+        data: [{ id: 'exercise-1' }],
+        meta: { total: 1, totalPages: 1 },
+      });
+      expect(prisma.exercise.count).toHaveBeenCalledOnce();
+      expect(prisma.$transaction).not.toHaveBeenCalled();
+    });
+
     it('should use custom ordering when provided', async () => {
       prisma.exercise.findMany.mockResolvedValue([]);
       prisma.exercise.count.mockResolvedValue(0);

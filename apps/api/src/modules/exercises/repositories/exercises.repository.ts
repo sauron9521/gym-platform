@@ -21,20 +21,18 @@ export class ExercisesRepository {
     take,
     orderBy = [{ name: 'asc' }, { id: 'asc' }],
   }: FindManyExercisesParams) {
-    // Pagination queries are read-only and independent. Under PostgreSQL's
-    // default READ COMMITTED isolation, the old array transaction did not
-    // guarantee a single shared snapshot across these two statements.
-    // Parallel reads avoid an unnecessary BEGIN/COMMIT round trip.
-    const [data, total] = await Promise.all([
-      this.prisma.exercise.findMany({
-        where,
-        skip,
-        take,
-        orderBy,
-        select: exerciseSelect,
-      }),
-      this.prisma.exercise.count({ where }),
-    ]);
+    // Keep pagination reads sequential to avoid competing for DB connections.
+    // The original array transaction, under PostgreSQL's default READ COMMITTED
+    // isolation, did not guarantee a shared snapshot across these statements.
+    // Avoid its explicit transaction overhead without changing the query shapes.
+    const data = await this.prisma.exercise.findMany({
+      where,
+      skip,
+      take,
+      orderBy,
+      select: exerciseSelect,
+    });
+    const total = await this.prisma.exercise.count({ where });
 
     return {
       data,
