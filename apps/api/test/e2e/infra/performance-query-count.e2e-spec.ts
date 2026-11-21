@@ -26,7 +26,7 @@ const WARMUPS = 2;
 const SAMPLES = 25;
 const POPULATION = 128;
 const BASE_DATE = Date.UTC(2026, 0, 1);
-const FIXTURE_VERSION = 'http-reads-populated-v1-128';
+const FIXTURE_VERSION = 'http-reads-populated-v2-128-relations';
 const PASSWORD = 'StrongPassword123!';
 const A_B_FIXTURE_NAMESPACE = 'gym-platform-ab-fixture-v1';
 
@@ -93,6 +93,8 @@ describe('API Prisma SQL query count baseline (disposable PostgreSQL)', () => {
   const workoutIds: string[] = [];
   const programIds: string[] = [];
   const exerciseIds: string[] = [];
+  const muscleGroupIds: string[] = [];
+  const equipmentIds: string[] = [];
   let athleteCookie: string;
   let trainerCookie: string;
   let fixtureFingerprint: string | undefined;
@@ -120,6 +122,10 @@ describe('API Prisma SQL query count baseline (disposable PostgreSQL)', () => {
         prisma.trainingProgram.count(),
         prisma.trainingProgramVersion.count(),
         prisma.exercise.count(),
+        prisma.muscleGroup.count(),
+        prisma.equipment.count(),
+        prisma.exerciseMuscleGroup.count(),
+        prisma.exerciseEquipment.count(),
       ]);
       if (populations.some((value) => value !== 0)) {
         throw new Error('A/B profiling requires an empty, freshly migrated test database');
@@ -190,6 +196,32 @@ describe('API Prisma SQL query count baseline (disposable PostgreSQL)', () => {
       createdAt: new Date(BASE_DATE + index * 60_000),
       updatedAt: new Date(BASE_DATE + index * 60_000),
     }));
+    const muscles = [
+      {
+        id: syntheticId('muscle-0', deterministic),
+        name: `Perf muscle A ${fixtureId}`,
+        slug: `perf-muscle-a-${fixtureId}`,
+      },
+      {
+        id: syntheticId('muscle-1', deterministic),
+        name: `Perf muscle B ${fixtureId}`,
+        slug: `perf-muscle-b-${fixtureId}`,
+      },
+    ];
+    const equipment = [
+      {
+        id: syntheticId('equipment-0', deterministic),
+        name: `Perf equipment A ${fixtureId}`,
+        slug: `perf-equipment-a-${fixtureId}`,
+      },
+      {
+        id: syntheticId('equipment-1', deterministic),
+        name: `Perf equipment B ${fixtureId}`,
+        slug: `perf-equipment-b-${fixtureId}`,
+      },
+    ];
+    muscleGroupIds.push(...muscles.map(({ id }) => id));
+    equipmentIds.push(...equipment.map(({ id }) => id));
     const exercises = Array.from({ length: POPULATION }, (_, index) => ({
       id: syntheticId(`exercise-${index}`, deterministic),
       name: `Perf exercise ${String(index + 1).padStart(3, '0')}`,
@@ -215,7 +247,30 @@ describe('API Prisma SQL query count baseline (disposable PostgreSQL)', () => {
         updatedAt,
       })),
     });
+    await prisma.muscleGroup.createMany({ data: muscles });
+    await prisma.equipment.createMany({ data: equipment });
     await prisma.exercise.createMany({ data: exercises });
+    const muscleLinks = exercises.flatMap(({ id }, index) => [
+      { exerciseId: id, muscleGroupId: muscles[index % 2]!.id, role: 'PRIMARY' as const },
+      ...(index % 4 === 0
+        ? [{ exerciseId: id, muscleGroupId: muscles[1]!.id, role: 'SECONDARY' as const }]
+        : []),
+    ]);
+    const equipmentLinks = exercises.flatMap(({ id }, index) => [
+      ...(index % 2 === 0 ? [{ exerciseId: id, equipmentId: equipment[0]!.id }] : []),
+      ...(index % 4 === 0 ? [{ exerciseId: id, equipmentId: equipment[1]!.id }] : []),
+    ]);
+    await prisma.exerciseMuscleGroup.createMany({ data: muscleLinks });
+    await prisma.exerciseEquipment.createMany({ data: equipmentLinks });
+
+    expect(await prisma.muscleGroup.count({ where: { id: { in: muscleGroupIds } } })).toBe(2);
+    expect(await prisma.equipment.count({ where: { id: { in: equipmentIds } } })).toBe(2);
+    expect(
+      await prisma.exerciseMuscleGroup.count({ where: { exerciseId: { in: exerciseIds } } }),
+    ).toBe(POPULATION + POPULATION / 4);
+    expect(
+      await prisma.exerciseEquipment.count({ where: { exerciseId: { in: exerciseIds } } }),
+    ).toBe(POPULATION / 2 + POPULATION / 4);
 
     expect(await prisma.workout.count({ where: { id: { in: workoutIds } } })).toBe(POPULATION);
     expect(await prisma.trainingProgram.count({ where: { id: { in: programIds } } })).toBe(
@@ -226,63 +281,96 @@ describe('API Prisma SQL query count baseline (disposable PostgreSQL)', () => {
     // Hash real persisted fixture rows, not just a user-supplied label.
     // Raw rows, emails and IDs never leave the test process.
     if (deterministic) {
-      const [users, workoutsPersisted, programsPersisted, versionsPersisted, exercisesPersisted] =
-        await Promise.all([
-          prisma.user.findMany({
-            where: { id: { in: [athleteId, trainerId] } },
-            orderBy: { id: 'asc' },
-            select: { id: true, role: true, createdAt: true, updatedAt: true },
-          }),
-          prisma.workout.findMany({
-            where: { id: { in: workoutIds } },
-            orderBy: { id: 'asc' },
-            select: {
-              id: true,
-              athleteId: true,
-              createdById: true,
-              title: true,
-              status: true,
-              createdAt: true,
-              updatedAt: true,
-            },
-          }),
-          prisma.trainingProgram.findMany({
-            where: { id: { in: programIds } },
-            orderBy: { id: 'asc' },
-            select: { id: true, trainerId: true, status: true, createdAt: true, updatedAt: true },
-          }),
-          prisma.trainingProgramVersion.findMany({
-            where: { programId: { in: programIds } },
-            orderBy: { id: 'asc' },
-            select: {
-              id: true,
-              programId: true,
-              title: true,
-              version: true,
-              status: true,
-              createdAt: true,
-              updatedAt: true,
-            },
-          }),
-          prisma.exercise.findMany({
-            where: { id: { in: exerciseIds } },
-            orderBy: { id: 'asc' },
-            select: {
-              id: true,
-              name: true,
-              source: true,
-              exerciseType: true,
-              isArchived: true,
-              createdAt: true,
-              updatedAt: true,
-            },
-          }),
-        ]);
+      const [
+        users,
+        workoutsPersisted,
+        programsPersisted,
+        versionsPersisted,
+        exercisesPersisted,
+        musclesPersisted,
+        equipmentPersisted,
+        muscleLinksPersisted,
+        equipmentLinksPersisted,
+      ] = await Promise.all([
+        prisma.user.findMany({
+          where: { id: { in: [athleteId, trainerId] } },
+          orderBy: { id: 'asc' },
+          select: { id: true, role: true, createdAt: true, updatedAt: true },
+        }),
+        prisma.workout.findMany({
+          where: { id: { in: workoutIds } },
+          orderBy: { id: 'asc' },
+          select: {
+            id: true,
+            athleteId: true,
+            createdById: true,
+            title: true,
+            status: true,
+            createdAt: true,
+            updatedAt: true,
+          },
+        }),
+        prisma.trainingProgram.findMany({
+          where: { id: { in: programIds } },
+          orderBy: { id: 'asc' },
+          select: { id: true, trainerId: true, status: true, createdAt: true, updatedAt: true },
+        }),
+        prisma.trainingProgramVersion.findMany({
+          where: { programId: { in: programIds } },
+          orderBy: { id: 'asc' },
+          select: {
+            id: true,
+            programId: true,
+            title: true,
+            version: true,
+            status: true,
+            createdAt: true,
+            updatedAt: true,
+          },
+        }),
+        prisma.exercise.findMany({
+          where: { id: { in: exerciseIds } },
+          orderBy: { id: 'asc' },
+          select: {
+            id: true,
+            name: true,
+            source: true,
+            exerciseType: true,
+            isArchived: true,
+            createdAt: true,
+            updatedAt: true,
+          },
+        }),
+        prisma.muscleGroup.findMany({
+          where: { id: { in: muscleGroupIds } },
+          orderBy: { id: 'asc' },
+          select: { id: true, name: true, slug: true },
+        }),
+        prisma.equipment.findMany({
+          where: { id: { in: equipmentIds } },
+          orderBy: { id: 'asc' },
+          select: { id: true, name: true, slug: true },
+        }),
+        prisma.exerciseMuscleGroup.findMany({
+          where: { exerciseId: { in: exerciseIds } },
+          orderBy: [{ exerciseId: 'asc' }, { muscleGroupId: 'asc' }],
+          select: { exerciseId: true, muscleGroupId: true, role: true },
+        }),
+        prisma.exerciseEquipment.findMany({
+          where: { exerciseId: { in: exerciseIds } },
+          orderBy: [{ exerciseId: 'asc' }, { equipmentId: 'asc' }],
+          select: { exerciseId: true, equipmentId: true },
+        }),
+      ]);
       expect(users).toHaveLength(2);
       expect(workoutsPersisted).toHaveLength(POPULATION);
       expect(programsPersisted).toHaveLength(POPULATION);
       expect(versionsPersisted).toHaveLength(POPULATION);
       expect(exercisesPersisted).toHaveLength(POPULATION);
+      expect(musclesPersisted).toHaveLength(2);
+      expect(equipmentPersisted).toHaveLength(2);
+      expect(muscleLinksPersisted).toHaveLength(POPULATION + POPULATION / 4);
+      expect(equipmentLinksPersisted).toHaveLength(POPULATION / 2 + POPULATION / 4);
       fixtureFingerprint = createHash('sha256')
         .update(
           JSON.stringify({
@@ -291,6 +379,10 @@ describe('API Prisma SQL query count baseline (disposable PostgreSQL)', () => {
             programsPersisted,
             versionsPersisted,
             exercisesPersisted,
+            musclesPersisted,
+            equipmentPersisted,
+            muscleLinksPersisted,
+            equipmentLinksPersisted,
           }),
         )
         .digest('hex');
@@ -322,7 +414,14 @@ describe('API Prisma SQL query count baseline (disposable PostgreSQL)', () => {
           await prisma.trainingProgram.deleteMany({ where: { id: { in: programIds } } });
         }
         if (exerciseIds.length) {
+          // The two join tables cascade on exercise deletion.
           await prisma.exercise.deleteMany({ where: { id: { in: exerciseIds } } });
+        }
+        if (muscleGroupIds.length) {
+          await prisma.muscleGroup.deleteMany({ where: { id: { in: muscleGroupIds } } });
+        }
+        if (equipmentIds.length) {
+          await prisma.equipment.deleteMany({ where: { id: { in: equipmentIds } } });
         }
         const userIds = [athleteId, trainerId].filter((id): id is string => Boolean(id));
         if (userIds.length) {
@@ -417,6 +516,20 @@ describe('API Prisma SQL query count baseline (disposable PostgreSQL)', () => {
           decodedBytes = Buffer.byteLength(serialized, 'utf8');
           expect(decodedBytes).toBeGreaterThan(0);
           if (route.key === 'exercises') {
+            // Confirm relation rows from the benchmark's actual API response,
+            // not just Prisma fixture counts. No IDs or body are printed.
+            expect(
+              response.body.data.every(
+                (exercise: { muscleGroups?: unknown[] }) =>
+                  Array.isArray(exercise.muscleGroups) && exercise.muscleGroups.length >= 1,
+              ),
+            ).toBe(true);
+            expect(
+              response.body.data.some(
+                (exercise: { equipment?: unknown[] }) =>
+                  Array.isArray(exercise.equipment) && exercise.equipment.length > 0,
+              ),
+            ).toBe(true);
             exerciseDigest = createHash('sha256').update(serialized).digest('hex');
           }
         } finally {
@@ -500,6 +613,10 @@ describe('API Prisma SQL query count baseline (disposable PostgreSQL)', () => {
               trainingPrograms: POPULATION,
               trainingProgramVersions: POPULATION,
               exercises: POPULATION,
+              muscleGroups: 2,
+              equipmentTypes: 2,
+              exerciseMuscleLinks: POPULATION + POPULATION / 4,
+              exerciseEquipmentLinks: POPULATION / 2 + POPULATION / 4,
             },
             http: httpReport,
             sql: sqlReport,

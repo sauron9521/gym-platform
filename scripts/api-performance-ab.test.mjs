@@ -30,7 +30,7 @@ function profile(fingerprint = FINGERPRINT, latency = 12) {
   return {
     schemaVersion: 1,
     fixture: {
-      recipe: 'http-reads-populated-v1-128',
+      recipe: 'http-reads-populated-v2-128-relations',
       fingerprint,
       athleteAccounts: 1,
       trainerAccounts: 1,
@@ -38,6 +38,10 @@ function profile(fingerprint = FINGERPRINT, latency = 12) {
       trainingPrograms: 128,
       trainingProgramVersions: 128,
       exercises: 128,
+      muscleGroups: 2,
+      equipmentTypes: 2,
+      exerciseMuscleLinks: 160,
+      exerciseEquipmentLinks: 96,
     },
     http: {
       schemaVersion: 1,
@@ -156,6 +160,27 @@ describe('API A/B comparison runner', () => {
     const sanitized = sanitizeProfile(secret);
     assert.equal(sanitized.http.results[3].responseSha256, RESPONSE_SHA);
     assert.doesNotMatch(JSON.stringify(sanitized), /do-not-leak|responseBody|email/i);
+  });
+
+  it('requires the exact relation-populated fixture recipe and persisted link counts', () => {
+    const oldRecipe = profile();
+    oldRecipe.fixture.recipe = 'http-reads-populated-v1-128';
+    assert.throws(() => sanitizeProfile(oldRecipe), /Unsupported deterministic fixture recipe/);
+
+    const missing = profile();
+    delete missing.fixture.exerciseMuscleLinks;
+    assert.throws(() => sanitizeProfile(missing), /Unexpected fixture population/);
+
+    const different = profile();
+    different.fixture.exerciseEquipmentLinks = 95;
+    assert.throws(
+      () => compareAB(manifest(), profile(), different),
+      /Unexpected fixture population/,
+    );
+
+    const unrelated = profile();
+    unrelated.fixture.equipmentTypes = 3;
+    assert.throws(() => sanitizeProfile(unrelated), /Unexpected fixture population/);
   });
 
   it('rejects missing, duplicated, unknown, unapproved HTTP routes and nonnumeric metrics', () => {

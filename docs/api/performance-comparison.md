@@ -184,10 +184,29 @@ import**. The test enables deterministic fixture IDs only when its
 database name and loopback connection match those dedicated A/B
 names. This makes the synthetic records (128 workouts, 128 programs
 and versions, 128 global exercises and two users) reproducible
-between the two databases. The test hashes its **persisted** selected
-fixture rows and reports a SHA-256 fingerprint without exposing
-account IDs or raw records. If fingerprints differ, the comparison
-fails closed.
+between the two databases. The **v2 relational Exercises fixture** also
+creates two distinct synthetic muscle groups and two equipment types
+with deterministic IDs, and attaches **160 exercise-muscle rows**
+(128 PRIMARY, 32 SECONDARY) plus **96 exercise-equipment rows**
+(64 links to the first equipment type and 32 to the second).
+Every exercise has one primary muscle, 1 in 4 gets a second muscle,
+and 1 in 2 has equipment, with 1 in 4 having two types. Those proportions create
+populated nested relations rather than measuring an empty projection.
+In non-A/B E2E mode, entity IDs and names are unique per run, so
+concurrent suites do not share ownership. The test deletes only
+its own exercise and taxonomy IDs (link rows cascade), not existing
+global catalog data.
+
+The test hashes its **persisted** selected fixture rows, including
+all taxonomy objects and association roles/IDs in stable order,
+and reports a SHA-256 fingerprint without exposing account IDs,
+names, slugs or raw records. An exact expected relation count is
+checked in each independently seeded database. If fingerprints
+differ, the comparison fails closed. The HTTP suite additionally
+asserts that the actual Exercises endpoint returns nonempty nested
+muscle and equipment relations on its synthetic page. The v2 fixture
+recipe is intentionally incompatible with older v1 A/B captures;
+do not compare historical performance numbers across fixture recipes.
 
 Both revisions independently run 2 warmups and 25 serialized
 GET measurements per route; the workflow extracts only the allowlisted
