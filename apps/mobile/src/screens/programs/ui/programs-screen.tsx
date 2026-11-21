@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { useRouter } from 'expo-router';
+import { useIntl } from 'react-intl';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { uniqueAssignments } from '@/features/programs/lib/assignment-pagination';
@@ -8,10 +9,31 @@ import { palette } from '@/shared/config/theme';
 import { AsyncResourceState } from '@/shared/ui/async-resource-state';
 
 function EmptyAssignedPrograms() {
-  return <AsyncResourceState kind="empty" message="Активних призначень немає." />;
+  const intl = useIntl();
+  return (
+    <AsyncResourceState
+      kind="empty"
+      message={intl.formatMessage({ id: 'mobile.programList.empty' })}
+    />
+  );
 }
 
 export function ProgramsScreen() {
+  const intl = useIntl();
+  const t = (key: string, values?: Record<string, string | number>) =>
+    intl.formatMessage({ id: `mobile.programList.${key}` }, values);
+  const statusLabel = (status: string) => {
+    switch (status) {
+      case 'ACTIVE':
+        return t('statusActive');
+      case 'COMPLETED':
+        return t('statusCompleted');
+      case 'TERMINATED':
+        return t('statusTerminated');
+      default:
+        return t('statusUnknown');
+    }
+  };
   const router = useRouter();
   const query = useProgramAssignments();
   const pages = query.data?.pages;
@@ -39,13 +61,14 @@ export function ProgramsScreen() {
       bounces={false}
       ListHeaderComponent={
         <View style={styles.header}>
-          <Text style={styles.title}>Мої програми</Text>
-          <Text style={styles.muted}>Активні програми, призначені тренером</Text>
-          {loading ? <AsyncResourceState kind="loading" message="Завантаження програм" /> : null}
+          <Text style={styles.title}>{t('title')}</Text>
+          <Text style={styles.muted}>{t('description')}</Text>
+          {loading ? <AsyncResourceState kind="loading" message={t('loading')} /> : null}
           {initialError ? (
             <AsyncResourceState
               kind="error"
-              message={query.error?.message ?? 'Не вдалося завантажити програми.'}
+              message={t('loadFailed')}
+              retryLabel={t('retryDefault')}
               onRetry={refresh}
               retrying={fetching}
             />
@@ -53,8 +76,8 @@ export function ProgramsScreen() {
           {query.isRefetchError && query.data ? (
             <AsyncResourceState
               kind="error"
-              message="Не вдалося оновити програми. Показано попередні дані."
-              retryLabel="Повторити оновлення"
+              message={t('refreshFailed')}
+              retryLabel={t('retryRefresh')}
               onRetry={refresh}
               retrying={fetching}
             />
@@ -65,13 +88,13 @@ export function ProgramsScreen() {
       renderItem={({ item }) => (
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={`Відкрити програму ${item.version.title}`}
+          accessibilityLabel={t('open', { title: item.version.title })}
           onPress={() => router.push({ pathname: '/programs/[id]', params: { id: item.id } })}
           style={styles.card}
         >
           <Text style={styles.heading}>{item.version.title}</Text>
           <Text style={styles.muted}>
-            Версія {item.version.version} · {item.status}
+            {t('version', { version: item.version.version })} · {statusLabel(item.status)}
           </Text>
         </Pressable>
       )}
@@ -80,8 +103,8 @@ export function ProgramsScreen() {
           {query.isFetchNextPageError && query.hasNextPage ? (
             <AsyncResourceState
               kind="error"
-              message="Не вдалося завантажити наступну сторінку програм."
-              retryLabel="Повторити сторінку"
+              message={t('loadMoreFailed')}
+              retryLabel={t('retryPage')}
               onRetry={loadMore}
               retrying={fetching}
             />
@@ -90,27 +113,27 @@ export function ProgramsScreen() {
             <Pressable
               testID="programs-load-more"
               accessibilityRole="button"
-              accessibilityLabel="Показати більше програм"
+              accessibilityLabel={t('showMore')}
               accessibilityState={{ disabled: !canLoadMore }}
               disabled={!canLoadMore}
               onPress={loadMore}
               style={styles.button}
             >
               <Text style={styles.buttonText}>
-                {query.isFetchingNextPage ? 'Завантаження…' : 'Показати більше програм'}
+                {query.isFetchingNextPage ? t('loadingMore') : t('showMore')}
               </Text>
             </Pressable>
           ) : null}
           <Pressable
             testID="programs-refresh"
             accessibilityRole="button"
-            accessibilityLabel="Оновити програми"
+            accessibilityLabel={t('refresh')}
             accessibilityState={{ disabled: fetching }}
             disabled={fetching}
             onPress={refresh}
             style={styles.button}
           >
-            <Text style={styles.buttonText}>Оновити програми</Text>
+            <Text style={styles.buttonText}>{t('refresh')}</Text>
           </Pressable>
         </View>
       }
