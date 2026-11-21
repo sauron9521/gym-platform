@@ -2,6 +2,11 @@
 
 This index groups developer-facing API documentation and operational runbooks. Production deployment is **not** enabled by these guides; migration cutover remains NO-GO.
 
+## Product strategy and business decisions
+
+- [Owner-approved product strategy index](product-strategy/README.md) — S01 v1.0 Trainer-first strategy, Beta retention, MVP boundaries; S02 not started
+- [Business governance](business-governance/README.md) — staff roles, approvals and operating policies
+
 ## Application development
 
 - [ADR-005: product ownership and Trainer Web migration](architecture/adr-005-product-ownership-trainer-migration.md) — M05 app boundaries, route inventory, migration order and security gates
