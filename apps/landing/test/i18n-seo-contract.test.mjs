@@ -2,6 +2,8 @@ import { afterEach, describe, expect, it } from 'vitest';
 
 import sitemap from '../src/app/sitemap';
 import { localizedMetadata, localizedPageMetadata } from '../src/i18n/seo';
+import { isEnglishPageReady } from '../src/i18n/published-pages';
+import { getMessages } from '@gym/i18n';
 import { publicRoutes } from '../src/shared/config/navigation';
 
 const vars = ['LANDING_SITE_URL', 'LANDING_ALLOW_INDEXING', 'LANDING_ENABLE_I18N_ROUTES'];
@@ -50,18 +52,37 @@ describe('Landing localized SEO publication', () => {
   it('publishes only translated locale URLs, excluding all unfinished English routes', () => {
     setOptions();
     const urls = sitemap();
-    expect(urls).toHaveLength(publicRoutes.length + 1);
+    expect(urls).toHaveLength(publicRoutes.length + 2);
 
     const expected = [
       origin + '/uk',
       origin + '/en',
-      ...publicRoutes.filter((path) => path !== '/').map((path) => origin + '/uk' + path),
+      ...publicRoutes
+        .filter((path) => path !== '/')
+        .flatMap((path) =>
+          path === '/features'
+            ? [origin + '/uk/features', origin + '/en/features']
+            : [origin + '/uk' + path],
+        ),
     ];
     expect(urls.map(({ url }) => url)).toEqual(expected);
     expect(new Set(urls.map((item) => item.url)).size).toBe(expected.length);
-    expect(urls.every(({ url }) => !url.includes('/en/'))).toBe(true);
+    expect(urls.filter(({ url }) => url.includes('/en/')).map(({ url }) => url)).toEqual([
+      origin + '/en/features',
+    ]);
     expect(urls.every(({ url }) => url !== origin + '/')).toBe(true);
-    expect(urls.slice(2).every((item) => item.alternates === undefined)).toBe(true);
+    expect(
+      urls
+        .slice(2)
+        .filter((item) => item.url.includes('/features'))
+        .every((item) => item.alternates?.languages?.en === origin + '/en/features'),
+    ).toBe(true);
+    expect(
+      urls
+        .slice(2)
+        .filter((item) => !item.url.includes('/features'))
+        .every((item) => item.alternates === undefined),
+    ).toBe(true);
   });
 
   it('gives both homepages reciprocal and identical hreflang pairs', () => {
@@ -100,13 +121,13 @@ describe('Landing localized SEO publication', () => {
       description: 'Каталог вправ та програми тренувань.',
     };
     const metadata = localizedPageMetadata({
-      path: '/features',
+      path: '/about',
       locale: 'uk',
       original: originalPage,
     });
     expect(metadata.title).toBe(originalPage.title);
     expect(metadata.description).toBe(originalPage.description);
-    expect(metadata.alternates.canonical).toBe(origin + '/uk/features');
+    expect(metadata.alternates.canonical).toBe(origin + '/uk/about');
     expect(metadata.alternates.languages).toBeUndefined();
     expect(metadata.openGraph.locale).toBe('uk_UA');
     expect(metadata.openGraph.description).toBe(originalPage.description);
@@ -117,8 +138,8 @@ describe('Landing localized SEO publication', () => {
     setOptions();
     const unavailable = localizedMetadata({
       locale: 'en',
-      path: '/features',
-      title: 'Features',
+      path: '/about',
+      title: 'About',
       description: 'Untranslated content',
       englishReady: false,
     });
@@ -154,5 +175,55 @@ describe('Landing localized SEO publication', () => {
     setOptions({ url: null });
     expect(home('en').alternates).toBeUndefined();
     expect(home('en').robots.index).toBe(false);
+  });
+});
+
+describe('Features secondary-page bilingual SEO', () => {
+  it('only allows English publication for home and fully translated Features', () => {
+    expect(isEnglishPageReady('/')).toBe(true);
+    expect(isEnglishPageReady('/features')).toBe(true);
+    for (const path of [
+      '/about',
+      '/apps',
+      '/apps/mobile',
+      '/apps/web',
+      '/for-athletes',
+      '/for-trainers',
+    ]) {
+      expect(isEnglishPageReady(path)).toBe(false);
+    }
+  });
+
+  it('pairs canonical, hreflang and locale-specific metadata for both Features pages', () => {
+    setOptions();
+    const languages = { uk: origin + '/uk/features', en: origin + '/en/features' };
+    for (const locale of ['en', 'uk']) {
+      const t = getMessages(locale).landing.features;
+      const seo = localizedMetadata({
+        locale,
+        path: '/features',
+        title: t.metaTitle,
+        description: t.metaDescription,
+        englishReady: isEnglishPageReady('/features'),
+      });
+      expect(seo.alternates.canonical).toBe(languages[locale]);
+      expect(seo.alternates.languages).toEqual(languages);
+      expect(seo.robots.index).toBe(true);
+      expect(seo.openGraph.locale).toBe(locale === 'en' ? 'en_US' : 'uk_UA');
+      expect(seo.description).toBe(t.metaDescription);
+      expect(seo.title).toBe(t.metaTitle);
+    }
+    const entries = sitemap().filter(({ url }) => url.endsWith('/features'));
+    expect(entries).toHaveLength(2);
+    expect(entries.every(({ alternates }) => alternates.languages.en === languages.en)).toBe(true);
+  });
+
+  it('never advertises English Features when disabled or when no indexable production origin exists', () => {
+    setOptions({ localeRoutes: false });
+    expect(sitemap().find(({ url }) => url.endsWith('/en/features'))).toBeUndefined();
+    setOptions({ indexing: false });
+    expect(sitemap()).toEqual([]);
+    setOptions({ url: null });
+    expect(sitemap()).toEqual([]);
   });
 });

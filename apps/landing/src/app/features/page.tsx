@@ -1,3 +1,4 @@
+import { defaultLocale, getMessages, type Locale } from '@gym/i18n';
 import Link from 'next/link';
 
 import { pageMetadata } from '@/shared/lib/seo';
@@ -16,53 +17,49 @@ export const metadata = pageMetadata({
   path: '/features',
 });
 
-const capabilities = [
-  {
-    title: 'Бібліотека вправ',
-    description: 'Знаходь вправи та формуй власний набір рухів для тренувань.',
-    href: '/for-athletes',
-    linkLabel: 'Для спортсменів',
-  },
-  {
-    title: 'Журнал тренувань',
-    description: 'Плануй робочі підходи та відстежуй виконану роботу.',
-    href: '/for-athletes',
-    linkLabel: 'Тренування спортсмена',
-  },
-  {
-    title: 'Програми та версії',
-    description: 'Працюй із послідовними тренувальними програмами.',
-    href: '/for-trainers',
-    linkLabel: 'Для тренерів',
-  },
-  {
-    title: 'Тренер і спортсмен',
-    description: 'Організовуй взаємодію навколо тренувального плану.',
-    href: '/for-trainers',
-    linkLabel: 'Можливості тренера',
-  },
-] as const;
+export default function FeaturesPage({ locale = defaultLocale }: { locale?: Locale } = {}) {
+  const t = getMessages(locale).landing.features;
+  const capabilities = [
+    {
+      title: t.libraryTitle,
+      description: t.libraryDescription,
+      href: '/for-athletes',
+      linkLabel: t.libraryAction,
+    },
+    {
+      title: t.journalTitle,
+      description: t.journalDescription,
+      href: '/for-athletes',
+      linkLabel: t.journalAction,
+    },
+    {
+      title: t.programsTitle,
+      description: t.programsDescription,
+      href: '/for-trainers',
+      linkLabel: t.programsAction,
+    },
+    {
+      title: t.coachingTitle,
+      description: t.coachingDescription,
+      href: '/for-trainers',
+      linkLabel: t.coachingAction,
+    },
+  ] as const;
 
-export default function FeaturesPage() {
   return (
     <main id="main-content" className="flex-1">
       <MarketingSection>
         <Container>
-          <p className="text-sm font-bold tracking-widest text-primary uppercase">
-            Можливості платформи
-          </p>
+          <p className="text-sm font-bold tracking-widest text-primary uppercase">{t.eyebrow}</p>
           <h1 className="mt-6 max-w-3xl text-4xl font-bold tracking-tight text-balance sm:text-6xl">
-            Більше контролю над кожним тренуванням
+            {t.heading}
           </h1>
-          <p className="mt-6 max-w-2xl text-lg leading-8 text-muted-foreground">
-            Gym Platform розвиває інструменти для планування, виконання та аналізу тренувань.
-            Частина можливостей ще перебуває в розробці.
-          </p>
+          <p className="mt-6 max-w-2xl text-lg leading-8 text-muted-foreground">{t.description}</p>
           <Link
             className="mt-8 inline-flex font-semibold text-primary hover:underline"
             href="/apps"
           >
-            Переглянути застосунки
+            {t.browseApps}
           </Link>
         </Container>
       </MarketingSection>
@@ -70,22 +67,22 @@ export default function FeaturesPage() {
         <Container>
           <SectionHeading
             id="capabilities"
-            eyebrow="Функціонал"
-            title="Усе, що допомагає прогресувати"
-            description="Окремі інструменти працюють як частини спільної платформи."
+            eyebrow={t.capabilitiesEyebrow}
+            title={t.capabilitiesTitle}
+            description={t.capabilitiesDescription}
           />
           <div className="mt-10 grid gap-5 sm:grid-cols-2">
             {capabilities.map((item) => (
-              <FeatureCard key={item.title} {...item} />
+              <FeatureCard key={item.href + item.title} {...item} />
             ))}
           </div>
         </Container>
       </MarketingSection>
       <CallToAction
-        title="Вибери свій сценарій тренувань"
-        description="Дізнайся, як Gym Platform створюється для різних користувачів."
-        primary={{ href: '/for-athletes', label: 'Я спортсмен' }}
-        secondary={{ href: '/for-trainers', label: 'Я тренер' }}
+        title={t.ctaTitle}
+        description={t.ctaDescription}
+        primary={{ href: '/for-athletes', label: t.ctaAthlete }}
+        secondary={{ href: '/for-trainers', label: t.ctaTrainer }}
       />
     </main>
   );
