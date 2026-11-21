@@ -43,6 +43,7 @@ model Exercise {
   copiedFromExercise   Exercise?  @relation("ExerciseCopies", fields: [copiedFromExerciseId], references: [id], onDelete: Restrict)
   copiedExercises      Exercise[] @relation("ExerciseCopies")
 
+  translations ExerciseTranslation[]
   muscleGroups ExerciseMuscleGroup[]
   equipment    ExerciseEquipment[]
 
@@ -69,6 +70,7 @@ model MuscleGroup {
   name String @unique @db.VarChar(80)
   slug String @unique @db.VarChar(80)
 
+  translations MuscleGroupTranslation[]
   exercises ExerciseMuscleGroup[]
 
   @@map("muscle_groups")
@@ -92,6 +94,7 @@ model Equipment {
   name String @unique @db.VarChar(80)
   slug String @unique @db.VarChar(80)
 
+  translations EquipmentTranslation[]
   exercises ExerciseEquipment[]
 
   @@map("equipment")
@@ -144,4 +147,35 @@ model ExerciseAthleteAssignment {
   @@index([athleteId, revokedAt])
   @@index([assignedById])
   @@map("exercise_athlete_assignments")
+}
+
+/** Translation records are for curated global catalog entries, not user-authored exercises. */
+model ExerciseTranslation {
+  exerciseId String @map("exercise_id")
+  locale String @db.VarChar(10)
+  name String @db.VarChar(120)
+  description String? @db.Text
+  instructions String? @db.Text
+  exercise Exercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+  @@id([exerciseId, locale])
+  @@index([locale])
+  @@map("exercise_translations")
+}
+
+model MuscleGroupTranslation {
+  muscleGroupId String @map("muscle_group_id")
+  locale String @db.VarChar(10)
+  name String @db.VarChar(80)
+  muscleGroup MuscleGroup @relation(fields: [muscleGroupId], references: [id], onDelete: Cascade)
+  @@id([muscleGroupId, locale])
+  @@map("muscle_group_translations")
+}
+
+model EquipmentTranslation {
+  equipmentId String @map("equipment_id")
+  locale String @db.VarChar(10)
+  name String @db.VarChar(80)
+  equipment Equipment @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+  @@id([equipmentId, locale])
+  @@map("equipment_translations")
 }
