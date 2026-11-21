@@ -2,6 +2,8 @@ import { randomUUID } from 'node:crypto';
 
 import { PrismaPg } from '@prisma/adapter-pg';
 import { Prisma, PrismaClient } from '#prisma/client';
+
+import { exerciseSelect } from '../../../src/modules/exercises/selects/exercise.select.js';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import {
@@ -10,6 +12,7 @@ import {
   type ExplainRow,
 } from '../../utility/safe-explain-plan.js';
 import { useTestDatabase } from '../../utility/test-db-helper.js';
+import { SafePrismaQueryWindow } from '../../utility/safe-prisma-query-profile.js';
 
 const ACTIVE_GLOBAL = 2_048;
 const ARCHIVED_GLOBAL = 256;
@@ -91,14 +94,18 @@ const SCENARIOS = [
 type QueryContext = { athleteId: string; muscleSlug: string; equipmentSlug: string };
 
 describe('Exercises multi-thousand-row SQL plans (rollback-only PostgreSQL)', () => {
-  let prisma: PrismaClient;
+  let prisma: PrismaClient<'query'>;
+  const prismaQueryWindow = new SafePrismaQueryWindow();
 
   beforeAll(async () => {
     // Hard fail before opening any database connection unless this is a *_test DB.
     useTestDatabase();
     prisma = new PrismaClient({
       adapter: new PrismaPg({ connectionString: process.env.TEST_DATABASE_URL! }),
-    });
+      log: [{ emit: 'event', level: 'query' }],
+    }) as PrismaClient<'query'>;
+    // Explicit SELECT-only, sanitized observation; never read event.params or log SQL.
+    prisma.$on('query', (event) => prismaQueryWindow.observe(event));
     await prisma.$connect();
   }, 20_000);
 
@@ -116,6 +123,8 @@ describe('Exercises multi-thousand-row SQL plans (rollback-only PostgreSQL)', ()
       plan: ReturnType<typeof sanitizeExplain>;
       diagnostics: ReturnType<typeof summarizeExplainDiagnostics>;
     }> = [];
+    const prismaReads: Array<ReturnType<SafePrismaQueryWindow['end']> & { matchedRows: number }> =
+      [];
 
     const rows: Prisma.ExerciseCreateManyInput[] = [
       ...Array.from({ length: ACTIVE_GLOBAL }, (_, index) => ({
@@ -238,6 +247,71 @@ describe('Exercises multi-thousand-row SQL plans (rollback-only PostgreSQL)', ()
             observations.push({ scenario: scenario.key, plan, diagnostics });
           }
 
+          // Observe the actual SQL emitted by Prisma for the production
+          // ExercisesRepository projection and service filter shapes. Keep
+          // the fixture in the SAME rollback-only PostgreSQL transaction.
+          // This is direct Prisma read-path profiling, not an HTTP request.
+          const publicWhere: Prisma.ExerciseWhereInput = {
+            AND: [{ source: 'GLOBAL' }, { isArchived: false }],
+          };
+          const filteredWhere = (filter: Prisma.ExerciseWhereInput): Prisma.ExerciseWhereInput => ({
+            AND: [{ source: 'GLOBAL' }, { isArchived: false }, filter],
+          });
+          const searchWhere = filteredWhere({
+            name: { contains: 'bench', mode: 'insensitive' },
+          });
+          const muscleWhere = filteredWhere({
+            muscleGroups: { some: { muscleGroup: { slug: chest.slug } } },
+          });
+          const equipmentWhere = filteredWhere({
+            equipment: { some: { equipment: { slug: barbell.slug } } },
+          });
+          const athleteVisibleWhere: Prisma.ExerciseWhereInput = {
+            AND: [
+              { isArchived: false },
+              {
+                OR: [{ source: 'GLOBAL' }, { source: 'ATHLETE_CUSTOM', createdById: athleteId }],
+              },
+            ],
+          };
+          const readPage = async (where: Prisma.ExerciseWhereInput, skip = 0) => {
+            const results = await tx.exercise.findMany({
+              where,
+              take: PAGE_SIZE,
+              skip,
+              orderBy: [{ name: 'asc' }, { id: 'asc' }],
+              select: exerciseSelect,
+            });
+            // Never serialize the actual exercise records or user identifiers.
+            return results.length;
+          };
+          const countRows = (where: Prisma.ExerciseWhereInput) => tx.exercise.count({ where });
+          const reads: Array<{ scenario: string; run: () => Promise<number> }> = [
+            { scenario: 'global-page', run: () => readPage(publicWhere, 200) },
+            { scenario: 'global-count', run: () => countRows(publicWhere) },
+            { scenario: 'search-page', run: () => readPage(searchWhere) },
+            { scenario: 'search-count', run: () => countRows(searchWhere) },
+            { scenario: 'muscle-page', run: () => readPage(muscleWhere) },
+            { scenario: 'muscle-count', run: () => countRows(muscleWhere) },
+            { scenario: 'equipment-page', run: () => readPage(equipmentWhere) },
+            { scenario: 'athlete-visible-page', run: () => readPage(athleteVisibleWhere) },
+          ];
+          for (const read of reads) {
+            prismaQueryWindow.begin(read.scenario);
+            try {
+              const matchedRows = await read.run();
+              // Query events are emitted by Prisma; flush the event microtask
+              // before closing this isolated, non-overlapping observation.
+              await new Promise<void>((resolve) => setImmediate(resolve));
+              const profile = prismaQueryWindow.end(read.scenario);
+              expect(profile.queryCount).toBeGreaterThan(0);
+              expect(matchedRows).toBeGreaterThan(0);
+              prismaReads.push({ ...profile, matchedRows });
+            } finally {
+              prismaQueryWindow.reset();
+            }
+          }
+
           throw ROLLBACK;
         },
         { timeout: 90_000, maxWait: 10_000 },
@@ -247,6 +321,7 @@ describe('Exercises multi-thousand-row SQL plans (rollback-only PostgreSQL)', ()
     }
 
     expect(observations.map(({ scenario }) => scenario)).toEqual(SCENARIOS.map(({ key }) => key));
+    expect(prismaReads.map(({ scenario }) => scenario)).toEqual(SCENARIOS.map(({ key }) => key));
     expect(await prisma.exercise.count({ where: { id: { in: exerciseIds } } })).toBe(0);
     expect(await prisma.user.count({ where: { id: athleteId } })).toBe(0);
 
@@ -266,8 +341,10 @@ describe('Exercises multi-thousand-row SQL plans (rollback-only PostgreSQL)', ()
               muscleGroupMatches: Math.ceil(ACTIVE_GLOBAL / 3),
               equipmentMatches: ACTIVE_GLOBAL / 2,
             },
-            methodology: 'representative fixed SELECT shapes; rollback-only test fixture',
+            methodology:
+              'fixed SQL plans and actual Prisma SELECT projection/filter shapes; rollback-only test fixture',
             plans: observations,
+            prismaReads,
           }),
       );
     }
