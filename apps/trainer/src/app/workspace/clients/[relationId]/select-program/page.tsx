@@ -6,6 +6,7 @@ import { getLocale } from 'next-intl/server';
 import type { Locale } from '@gym/i18n';
 
 import { TrainerSignOutButton } from '@/features/auth/ui/trainer-sign-out-button';
+import { TrainerAssignVersionButton } from '@/features/training-programs/ui/trainer-assign-version-button';
 import { verifyTrainerAccess } from '@/shared/api/server-capability';
 import { loadTrainerClientProgress } from '@/shared/api/trainer-client-progress';
 import {
@@ -275,14 +276,14 @@ export default async function TrainerChooseClientProgramPage({
                 </ul>
               )}
               {choices.selection.selectedVersion ? (
-                <p
-                  role="status"
-                  className="mt-5 rounded-xl border border-border bg-muted/40 p-5 font-medium"
-                >
-                  {t.programChoiceSelectedVersion}: {choices.selection.selectedVersion.title} —{' '}
-                  {t.clientAssignmentVersion} {choices.selection.selectedVersion.version}.{' '}
-                  {t.programChoiceNothingSaved}
-                </p>
+                <TrainerAssignVersionButton
+                  relationId={relationId}
+                  programId={choices.selection.program.id}
+                  versionId={choices.selection.selectedVersion.id}
+                  versionTitle={choices.selection.selectedVersion.title}
+                  versionNumber={choices.selection.selectedVersion.version}
+                  clientPath={clientPath}
+                />
               ) : null}
             </section>
           ) : null}
