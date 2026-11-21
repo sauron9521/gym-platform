@@ -100,6 +100,9 @@ export function WorkoutsList() {
         <Button asChild>
           <Link href="/workouts/new">{t('create')}</Link>
         </Button>
+        <Button asChild variant="outline">
+          <Link href="/workouts/calendar">{t('calendar')}</Link>
+        </Button>
       </div>
 
       <div className="flex flex-wrap items-end justify-between gap-4">
