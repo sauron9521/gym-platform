@@ -1,31 +1,41 @@
-/** Status-only UI decisions: never display untrusted backend error payloads. */
-export function getVerificationErrorMessage(status: number): string {
+/** Translate status-derived keys only; never render untrusted API error bodies. */
+export function getVerificationErrorKey(
+  status: number,
+): 'invalidToken' | 'forbidden' | 'rateLimited' | 'verificationFailed' {
   switch (status) {
     case 400:
-      return 'Посилання недійсне, уже використане або термін його дії минув.';
+      return 'invalidToken';
     case 403:
-      return 'Запит заблоковано налаштуваннями безпеки. Перевірте адресу застосунку.';
+      return 'forbidden';
     case 429:
-      return 'Забагато спроб. Спробуйте трохи пізніше.';
+      return 'rateLimited';
     default:
-      return 'Не вдалося підтвердити адресу. Спробуйте пізніше.';
+      return 'verificationFailed';
   }
 }
 
-export function getResendErrorMessage(status: number): string {
+export function getResendErrorKey(
+  status: number,
+):
+  | 'signInRequired'
+  | 'forbidden'
+  | 'alreadyVerified'
+  | 'resendRateLimited'
+  | 'mailUnavailable'
+  | 'resendFailed' {
   switch (status) {
     case 401:
-      return 'Увійдіть в обліковий запис, щоб повторно надіслати лист.';
+      return 'signInRequired';
     case 403:
-      return 'Запит заблоковано налаштуваннями безпеки. Перевірте адресу застосунку.';
+      return 'forbidden';
     case 409:
-      return 'Ця електронна адреса вже підтверджена.';
+      return 'alreadyVerified';
     case 429:
-      return 'Забагато запитів. Спробуйте трохи пізніше.';
+      return 'resendRateLimited';
     case 503:
-      return 'Поштовий сервіс тимчасово недоступний. Спробуйте пізніше.';
+      return 'mailUnavailable';
     default:
-      return 'Не вдалося надіслати лист. Спробуйте ще раз.';
+      return 'resendFailed';
   }
 }
 
