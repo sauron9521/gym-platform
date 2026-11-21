@@ -8,7 +8,69 @@ import type { Locale } from '@gym/i18n';
 import { TrainerSignOutButton } from '@/features/auth/ui/trainer-sign-out-button';
 import { verifyTrainerAccess } from '@/shared/api/server-capability';
 import { loadTrainerClients, parseTrainerClientsPage } from '@/shared/api/trainer-clients';
+import { loadTrainerOverview } from '@/shared/api/trainer-overview';
 import { getTrainerCopy } from '@/shared/i18n/copy';
+
+type TrainerCopy = ReturnType<typeof getTrainerCopy>;
+type BlockedKind = 'unauthenticated' | 'forbidden' | 'unavailable';
+
+function WorkspaceAccessNotice({ kind, t }: { kind: BlockedKind; t: TrainerCopy }) {
+  const messages = {
+    unauthenticated: {
+      title: t.signInRequired,
+      description: t.signInRequiredDescription,
+    },
+    forbidden: {
+      title: t.trainerAccessDenied,
+      description: t.trainerAccessDeniedDescription,
+    },
+    unavailable: {
+      title: t.trainerAccessUnavailable,
+      description: t.trainerAccessUnavailableDescription,
+    },
+  };
+  const { title, description } = messages[kind];
+  return (
+    <section aria-labelledby="workspace-access" className="max-w-2xl space-y-4">
+      <h1 id="workspace-access" className="text-3xl font-semibold">
+        {title}
+      </h1>
+      <p className="text-muted-foreground">{description}</p>
+      <Link
+        href={kind === 'unauthenticated' || kind === 'forbidden' ? '/login' : '/'}
+        className="inline-flex min-h-11 items-center rounded-lg border border-border px-4 font-semibold hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+      >
+        {kind === 'unauthenticated' || kind === 'forbidden' ? t.loginLink : t.returnHome}
+      </Link>
+    </section>
+  );
+}
+
+function DashboardMetric({
+  label,
+  value,
+  description,
+  unavailable,
+}: {
+  label: string;
+  value: number | null;
+  description: string;
+  unavailable: string;
+}) {
+  return (
+    <section className="rounded-2xl border border-border bg-card p-6" aria-label={label}>
+      <p className="text-sm font-semibold text-muted-foreground">{label}</p>
+      {value === null ? (
+        <p className="mt-3 text-sm text-muted-foreground" role="status">
+          {unavailable}
+        </p>
+      ) : (
+        <p className="mt-3 text-4xl font-bold text-primary tabular-nums">{value}</p>
+      )}
+      <p className="mt-3 text-xs text-muted-foreground">{description}</p>
+    </section>
+  );
+}
 
 export const metadata: Metadata = {
   title: 'Dashboard | OVRANTO Trainer',
@@ -27,44 +89,25 @@ export default async function TrainerWorkspacePage({
   const t = getTrainerCopy((await getLocale()) as Locale);
 
   if (access.kind !== 'allowed') {
-    const messages = {
-      unauthenticated: {
-        title: t.signInRequired,
-        description: t.signInRequiredDescription,
-      },
-      forbidden: {
-        title: t.trainerAccessDenied,
-        description: t.trainerAccessDeniedDescription,
-      },
-      unavailable: {
-        title: t.trainerAccessUnavailable,
-        description: t.trainerAccessUnavailableDescription,
-      },
-    };
-    const { title, description } = messages[access.kind];
-
-    return (
-      <section aria-labelledby="workspace-access" className="max-w-2xl space-y-4">
-        <h1 id="workspace-access" className="text-3xl font-semibold">
-          {title}
-        </h1>
-        <p className="text-muted-foreground">{description}</p>
-        <Link
-          href={access.kind === 'unauthenticated' || access.kind === 'forbidden' ? '/login' : '/'}
-          className="inline-flex min-h-11 items-center rounded-lg border border-border px-4 font-semibold hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-        >
-          {access.kind === 'unauthenticated' || access.kind === 'forbidden'
-            ? t.loginLink
-            : t.returnHome}
-        </Link>
-      </section>
-    );
+    return <WorkspaceAccessNotice kind={access.kind} t={t} />;
   }
 
   // Only after the fresh server-side grant check can we fetch private rows.
   const { clientsPage } = await searchParams;
   const page = parseTrainerClientsPage(clientsPage);
-  const result = await loadTrainerClients(cookieHeader, page);
+  const [result, overview] = await Promise.all([
+    loadTrainerClients(cookieHeader, page),
+    loadTrainerOverview(cookieHeader),
+  ]);
+
+  // A grant can be revoked between the initial capability check and either read.
+  // Never show even successful private rows when one endpoint now denies access.
+  if (result.kind === 'unauthenticated' || overview.kind === 'unauthenticated') {
+    return <WorkspaceAccessNotice kind="unauthenticated" t={t} />;
+  }
+  if (result.kind === 'forbidden' || overview.kind === 'forbidden') {
+    return <WorkspaceAccessNotice kind="forbidden" t={t} />;
+  }
 
   return (
     <section aria-labelledby="workspace-title" className="space-y-8">
@@ -82,26 +125,24 @@ export default async function TrainerWorkspacePage({
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
-        <section
-          className="rounded-2xl border border-border bg-card p-6"
-          aria-label={t.activeClients}
-        >
-          <p className="text-sm font-semibold text-muted-foreground">{t.activeClients}</p>
-          {result.kind === 'ready' ? (
-            <p className="mt-3 text-4xl font-bold text-primary tabular-nums">{result.total}</p>
-          ) : (
-            <p className="mt-3 text-sm text-muted-foreground">{t.dashboardUnavailable}</p>
-          )}
-          <p className="mt-3 text-xs text-muted-foreground">{t.activeClientsDescription}</p>
-        </section>
-        <section className="rounded-2xl border border-border bg-card p-6">
-          <p className="text-sm font-semibold text-muted-foreground">{t.programs}</p>
-          <p className="mt-3 text-sm text-muted-foreground">{t.programSummaryPending}</p>
-        </section>
-        <section className="rounded-2xl border border-border bg-card p-6">
-          <p className="text-sm font-semibold text-muted-foreground">{t.progressTitle}</p>
-          <p className="mt-3 text-sm text-muted-foreground">{t.progressSummaryPending}</p>
-        </section>
+        <DashboardMetric
+          label={t.activeClients}
+          value={overview.kind === 'ready' ? overview.activeClients : null}
+          description={t.activeClientsDescription}
+          unavailable={t.metricUnavailable}
+        />
+        <DashboardMetric
+          label={t.programs}
+          value={overview.kind === 'ready' ? overview.activeProgramAssignments : null}
+          description={t.activeProgramAssignmentsDescription}
+          unavailable={t.metricUnavailable}
+        />
+        <DashboardMetric
+          label={t.progressTitle}
+          value={overview.kind === 'ready' ? overview.completedProgramWorkouts30d : null}
+          description={t.completedProgramWorkoutsDescription}
+          unavailable={t.metricUnavailable}
+        />
       </div>
 
       <section
@@ -117,13 +158,7 @@ export default async function TrainerWorkspacePage({
 
         {result.kind !== 'ready' ? (
           <div role="alert" className="space-y-3 rounded-xl border border-border bg-muted/40 p-4">
-            <p className="font-medium">
-              {result.kind === 'unauthenticated'
-                ? t.signInRequired
-                : result.kind === 'forbidden'
-                  ? t.trainerAccessDenied
-                  : t.dashboardUnavailable}
-            </p>
+            <p className="font-medium">{t.dashboardUnavailable}</p>
             <p className="text-sm text-muted-foreground">{t.dashboardRetryDescription}</p>
             <Link
               href="/workspace"

@@ -80,6 +80,12 @@ test('Trainer browser requires live approval, protects Origin/cookies, and revok
     await expect(page).toHaveURL(`${trainerOrigin}/workspace`);
     await expect(page.getByRole('heading', { name: 'Trainer dashboard' })).toBeVisible();
     await expect(page.getByText('No active clients yet.')).toBeVisible();
+    await expect(page.getByRole('region', { name: 'Active clients' })).toContainText('0');
+    await expect(page.getByRole('region', { name: 'Programs' })).toContainText('0');
+    await expect(page.getByRole('region', { name: 'Progress' })).toContainText('0');
+    await expect(
+      page.getByText('Program summaries will appear after the read API integration.'),
+    ).toHaveCount(0);
 
     // The same identity may be an athlete under a second trainer. Its trainer
     // dashboard must scope SQL BEFORE pagination/count, never show that
@@ -114,6 +120,8 @@ test('Trainer browser requires live approval, protects Origin/cookies, and revok
     await expect(page.getByRole('heading', { name: 'My clients' })).toBeVisible();
     await expect(page.getByText(dashboardAthleteEmail)).toBeVisible();
     await expect(page.getByRole('region', { name: 'Active clients' })).toContainText('1');
+    await expect(page.getByRole('region', { name: 'Programs' })).toContainText('0');
+    await expect(page.getByRole('region', { name: 'Progress' })).toContainText('0');
     await expect(page.getByText(otherTrainerEmail)).toHaveCount(0);
     await expect(page.getByText('No active clients yet.')).toHaveCount(0);
 
@@ -149,6 +157,7 @@ test('Trainer browser requires live approval, protects Origin/cookies, and revok
     await page.goto(`${trainerOrigin}/workspace`);
     await expect(page.getByRole('heading', { name: 'Trainer access not approved' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Sign out' })).toHaveCount(0);
+    await expect(page.getByRole('region', { name: 'Programs' })).toHaveCount(0);
 
     // Restore approval, then verify that current ADMIN elevation denies Trainer
     // even though the old browser session and TrainerProfile are unchanged.
