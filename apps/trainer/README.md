@@ -99,6 +99,37 @@ real browser/Nest/PostgreSQL Trainer E2E verifies navigation, own versus
 foreign clients, revocation and ended collaboration. No new API, Prisma
 migration, client-side auth store, or workout permission widening.
 
+## Trainer client assigned programs — summary list (#364/#366)
+
+The existing protected `/workspace/clients/[relationId]` page now shows
+a separate **bounded read-only** list of programs assigned to that active
+client. It calls only the existing
+`GET /training-programs/assignments?trainerAthleteId=...&view=summary&page=N&limit=8`
+API introduced in #489 **after** fresh trainer capability and
+`/trainer-dashboard/clients/:relationId/progress` plus ACTIVE relationship
+checks. The Nest API filters rows and count by trainer/relationship in SQL
+_before_ pagination; no client-side filter of participant-wide history.
+
+- Displays assigned version title/number, assignment status
+  ACTIVE/COMPLETED/CANCELLED/TERMINATED and total, with uk/en copy.
+  An empty first page, an out-of-range page and a failed request have
+  **distinct** states. Invalid page parameters normalize to page 1.
+- A post-progress API 401/403/404 hides **the entire private client
+  page**, not just this section, to handle revocation/termination races.
+  5xx, malformed payload and timeout isolate the assignment section with
+  a retry link; valid zero metrics and contact stay available.
+- Strict server-side checks reject mismatched relationship IDs, redacted
+  response rows, wrong program trainer IDs, duplicates, unexpected status
+  or pagination metadata; no historical assignment email/workout arrays
+  are passed to the browser.
+- Links are no-prefetch, dynamic SSR, noindex. Uses the existing trusted
+  host-only cookie transport, `@gym/api-client`, Next/i18n/layout and
+  database. No write endpoints, dependency or schema changes.
+- Unit tests cover real request shape, eight-item bounds and page selection,
+  401/403/404 and redaction, malformed data, origins and timeout; the
+  real-browser/PostgreSQL Trainer integration adds 9 owned + 1 foreign
+  assignment fixtures, tests pages 1/2 and deletion after the suite.
+
 ## Real-browser security regression
 
 The existing `Web / Integration E2E` workflow runs
