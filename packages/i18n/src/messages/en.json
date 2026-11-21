@@ -589,6 +589,15 @@
       "range30d": "Last 30 days",
       "range90d": "Last 90 days"
     },
+    "exerciseRecords": {
+      "group": "Records for selected period",
+      "title": "Best results for {range}",
+      "weight": "Heaviest weight: {value}",
+      "days": "Training days: {count}",
+      "volume": "Highest daily volume: {value}",
+      "kg": "{value} kg",
+      "volumeDate": "{value} kg ({date})"
+    },
     "exerciseCatalog": {
       "title": "Exercise catalog",
       "search": "Search exercises",
