@@ -11,6 +11,7 @@ import {
 import type { WorkoutDetails } from '@/features/workouts/model/workout-details-query';
 import {
   WorkoutSetRateLimitError,
+  WorkoutSetOutcomeUnknownError,
   useWorkoutSetMutation,
 } from '@/features/workouts/model/workout-set-mutation';
 import { palette } from '@/shared/config/theme';
@@ -23,17 +24,21 @@ export function WorkoutSetRow({
   editable,
   reconciling = false,
   canonicalSnapshotAt,
+  canonicalReadVersion = 0,
 }: {
   workoutId: string;
   set: WorkoutSet;
   editable: boolean;
   reconciling?: boolean;
   canonicalSnapshotAt?: number;
+  canonicalReadVersion?: number;
 }) {
   const mutation = useWorkoutSetMutation(workoutId);
   const submitLock = useRef(false);
   const [editing, setEditing] = useState(false);
   const [retryAt, setRetryAt] = useState<number | null>(null);
+  // A lost response must not unlock another PATCH before a later canonical GET.
+  const [unverifiedReadVersion, setUnverifiedReadVersion] = useState<number | null>(null);
   // A PATCH response is authoritative even if the details query has no cache yet.
   // Once a newer server snapshot arrives, use it instead of the local acknowledgment.
   const [confirmedResult, setConfirmedResult] = useState<{
@@ -52,6 +57,9 @@ export function WorkoutSetRow({
   const isSaved = visibleSet.status !== 'PENDING';
   const isEditing = !isSaved || editing;
   const limited = retryAt !== null;
+  const uncertainWriteUnverified =
+    unverifiedReadVersion !== null && canonicalReadVersion <= unverifiedReadVersion;
+  const writingBlocked = reconciling || uncertainWriteUnverified;
   const {
     control,
     handleSubmit,
@@ -84,6 +92,13 @@ export function WorkoutSetRow({
     return () => clearTimeout(timeout);
   }, [retryAt]);
 
+  const captureWriteFailure = (error: unknown, previousSnapshotAt: number) => {
+    if (error instanceof WorkoutSetOutcomeUnknownError && !error.canonicalStateVerified) {
+      setUnverifiedReadVersion(Math.max(previousSnapshotAt, error.readVersionAtFailure));
+    }
+    captureRateLimit(error);
+  };
+
   const captureRateLimit = (error: unknown) => {
     if (error instanceof WorkoutSetRateLimitError) {
       setRetryAt(Date.now() + error.retryAfterSeconds * 1000);
@@ -98,10 +113,11 @@ export function WorkoutSetRow({
       !editable ||
       !isEditing ||
       limited ||
-      reconciling
+      writingBlocked
     )
       return;
     submitLock.current = true;
+    const before = canonicalReadVersion;
     void handleSubmit(
       async (values) => {
         try {
@@ -116,7 +132,7 @@ export function WorkoutSetRow({
           });
           setEditing(false);
         } catch (error) {
-          captureRateLimit(error);
+          captureWriteFailure(error, before);
           throw error;
         } finally {
           submitLock.current = false;
@@ -137,10 +153,11 @@ export function WorkoutSetRow({
       !editable ||
       !isEditing ||
       limited ||
-      reconciling
+      writingBlocked
     )
       return;
     submitLock.current = true;
+    const before = canonicalReadVersion;
     void mutation
       .mutateAsync({ setId: set.id, body: { status: 'SKIPPED' } })
       .then((updated) => {
@@ -152,7 +169,7 @@ export function WorkoutSetRow({
         setEditing(false);
       })
       .catch((error: unknown) => {
-        captureRateLimit(error);
+        captureWriteFailure(error, before);
       })
       .finally(() => {
         submitLock.current = false;
@@ -162,7 +179,8 @@ export function WorkoutSetRow({
       });
   };
 
-  const savingDisabled = !editable || mutation.isPending || isSubmitting || limited || reconciling;
+  const savingDisabled =
+    !editable || mutation.isPending || isSubmitting || limited || writingBlocked;
   return (
     <View style={styles.container}>
       <View style={styles.headingRow}>
@@ -287,6 +305,11 @@ export function WorkoutSetRow({
           ) : null}
         </>
       ) : null}
+      {uncertainWriteUnverified ? (
+        <Text accessibilityRole="alert" testID={`set-uncertain-${set.id}`} style={styles.error}>
+          Запис міг бути збережений. Повторне надсилання заблоковано до перевірки стану із сервера.
+        </Text>
+      ) : null}
       {limited ? (
         <Text accessibilityRole="alert" style={styles.error}>
           Ліміт запитів вичерпано. Повторне збереження тимчасово заблоковано.
@@ -295,7 +318,11 @@ export function WorkoutSetRow({
       {mutation.isPending ? <ActivityIndicator accessibilityLabel="Зберігаємо підхід" /> : null}
       {mutation.isError ? (
         <Text accessibilityRole="alert" style={styles.error}>
-          {mutation.error.message}
+          {mutation.error instanceof WorkoutSetOutcomeUnknownError &&
+          (mutation.error.canonicalStateVerified ||
+            (unverifiedReadVersion !== null && !uncertainWriteUnverified))
+            ? 'Стан отримано із сервера. Перевірте підхід перед новою дією.'
+            : mutation.error.message}
         </Text>
       ) : null}
     </View>

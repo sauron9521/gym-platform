@@ -207,6 +207,35 @@ or network reconnection. A lost write response must be reconciled with GET;
 any subsequent write still requires explicit user action. This is _not_ an
 offline write queue or a device-level E2E acceptance claim.
 
+### Ambiguous workout-set writes: lost PATCH response (#324 follow-up)
+
+A rejected HTTP 409/429 and an offline **preflight** are definitive failures:
+no automatic GET reconciliation is needed for a request that the server rejected
+or that the client never sent. Once a PATCH has been attempted, however, a
+transport exception, HTTP 408/5xx, or HTTP 200 without a usable response body
+**cannot prove the write was rejected**. These outcomes use an explicit
+`WorkoutSetOutcomeUnknownError` rather than a generic "not saved" message.
+
+For an unknown result, the mutation hook **never replays PATCH**. It invalidates
+only the active account's current workout GET, checks the verified session
+cache, and requests a read-only server snapshot if online and the workout
+screen is mounted. Unsuccessful GET, offline or sign-out do **not** count as
+verification. The pending GET remains eligible for an explicit screen-focus
+or network-reconnect refetch from the previous reconciliation slice.
+
+While the outcome is unverified, the row blocks both complete and skip actions
+and announces why resubmission is unsafe. The UI releases that block only
+after a **new successful canonical GET** for this account and workout. This is
+tracked with a separate account-scoped `workoutDetailRead` counter, incremented
+only by successful, non-aborted GET reads. The minimum required revision is
+captured **after** the first failed verification (not at PATCH submission), so
+a GET that raced with a lost response cannot accidentally release the lock;
+a sibling set's PATCH cache update
+cannot fake verification. After GET, the server-provided set status is shown;
+any later change still requires an **explicit user press**. No private state
+is persisted for replay or sent to analytics, and device-level interruption
+acceptance remains separate from component tests.
+
 ## Windows + pnpm Expo Router entry
 
 The mobile package uses its own `apps/mobile/index.js` entry file, which imports

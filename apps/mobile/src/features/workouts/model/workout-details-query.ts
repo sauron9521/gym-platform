@@ -30,7 +30,7 @@ export function useWorkoutDetailsQuery(workoutId: string) {
     }, [queryClient, account?.id, workoutId]),
   );
 
-  return useQuery({
+  const query = useQuery({
     queryKey: accountQueryKeys.workoutDetail(account?.id ?? 'signed-out', workoutId),
     enabled: Boolean(account && workoutId),
     queryFn: async ({ signal }) => {
@@ -47,6 +47,18 @@ export function useWorkoutDetailsQuery(workoutId: string) {
       if (response.response.status !== 200 || !response.data) {
         throw mobileReadError(response.response.status, 'Не вдалося завантажити тренування.');
       }
+      // Increment only for a successful canonical GET. A PATCH cache update
+      // must never satisfy the proof required after an ambiguous write.
+      if (
+        !signal.aborted &&
+        account?.id &&
+        queryClient.getQueryData(accountQueryKeys.me(account.id))
+      ) {
+        queryClient.setQueryData<number>(
+          accountQueryKeys.workoutDetailRead(account.id, workoutId),
+          (previous) => (previous ?? 0) + 1,
+        );
+      }
       return response.data;
     },
     retry: shouldRetryMobileRead,
@@ -55,6 +67,15 @@ export function useWorkoutDetailsQuery(workoutId: string) {
     refetchOnWindowFocus: 'always',
     refetchOnReconnect: 'always',
   });
+
+  return {
+    ...query,
+    canonicalReadVersion: account?.id
+      ? (queryClient.getQueryData<number>(
+          accountQueryKeys.workoutDetailRead(account.id, workoutId),
+        ) ?? 0)
+      : 0,
+  };
 }
 
 export function useWorkoutTransition(workoutId: string) {

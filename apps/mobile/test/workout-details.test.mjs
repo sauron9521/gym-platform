@@ -37,3 +37,17 @@ test('protected detail route uses typed API and account-scoped invalidation', ()
   assert.match(screen, /useWorkoutDetailsQuery/);
   assert.doesNotMatch(query, /localStorage|AsyncStorage|console\.log/);
 });
+
+test('only verified GET increments the account-scoped canonical read proof', () => {
+  const query = read('../src/features/workouts/model/workout-details-query.ts');
+  const mutation = read('../src/features/workouts/model/workout-set-mutation.ts');
+  const screen = read('../src/screens/workouts/ui/workout-details-screen.tsx');
+  assert.match(query, /workoutDetailRead\(account\.id, workoutId\)/);
+  assert.match(query, /queryClient\.setQueryData<number>/);
+  assert.doesNotMatch(mutation, /queryClient\.setQueryData<number>\(/);
+  assert.match(screen, /canonicalReadVersion=\{details\.canonicalReadVersion\}/);
+  assert.notDeepEqual(
+    accountQueryKeys.workoutDetailRead('athlete', 'w'),
+    accountQueryKeys.workoutDetailRead('coach', 'w'),
+  );
+});

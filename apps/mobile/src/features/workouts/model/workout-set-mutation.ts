@@ -6,6 +6,13 @@ import type { paths } from '@gym/api-client';
 import { useAuth } from '@/features/auth/model/auth-context';
 import { accountQueryKeys } from '@/shared/api/query-client';
 import type { WorkoutDetails } from './workout-details-query';
+import {
+  isUncertainWorkoutSetResponse,
+  WorkoutSetOutcomeUnknownError,
+} from '../lib/workout-set-write-outcome';
+import { reconcileWorkoutAfterUncertainWrite } from './workout-reconciliation';
+
+export { WorkoutSetOutcomeUnknownError } from '../lib/workout-set-write-outcome';
 
 export class WorkoutSetRateLimitError extends Error {
   constructor(readonly retryAfterSeconds: number) {
@@ -28,10 +35,19 @@ export function useWorkoutSetMutation(workoutId: string) {
       if (!onlineManager.isOnline()) throw new Error('Немає мережі. Підхід не надіслано.');
       const api = getApi();
       if (!api) throw new Error('Не налаштовано адресу API.');
-      const response = await api.PATCH('/workouts/{id}/sets/{setId}', {
-        params: { path: { id: workoutId, setId } },
-        body,
-      });
+      const patchSet = () =>
+        api.PATCH('/workouts/{id}/sets/{setId}', {
+          params: { path: { id: workoutId, setId } },
+          body,
+        });
+      let response: Awaited<ReturnType<typeof patchSet>>;
+      try {
+        response = await patchSet();
+      } catch {
+        // The request may have reached the server; a lost response is not a rejection.
+        // Do not expose transport details or retry this write automatically.
+        throw new WorkoutSetOutcomeUnknownError();
+      }
       if (response.response.status === 401) {
         await signOut();
         throw new Error('Сесію завершено. Увійдіть повторно.');
@@ -41,6 +57,9 @@ export function useWorkoutSetMutation(workoutId: string) {
         throw new WorkoutSetRateLimitError(
           Number.isFinite(retryAfter) && retryAfter > 0 ? Math.ceil(retryAfter) : 60,
         );
+      }
+      if (isUncertainWorkoutSetResponse(response.response.status, Boolean(response.data))) {
+        throw new WorkoutSetOutcomeUnknownError();
       }
       if (response.response.status !== 200 || !response.data) {
         throw new Error(
@@ -52,6 +71,28 @@ export function useWorkoutSetMutation(workoutId: string) {
       return response.data;
     },
     networkMode: 'always',
+    onError: async (error) => {
+      if (!(error instanceof WorkoutSetOutcomeUnknownError)) return;
+      try {
+        error.canonicalStateVerified = await reconcileWorkoutAfterUncertainWrite(
+          queryClient,
+          account?.id ?? null,
+          workoutId,
+        );
+      } catch {
+        // Reconciliation itself must never turn an unknown write into a new write.
+        error.canonicalStateVerified = false;
+      } finally {
+        // A different GET might have completed while PATCH was in flight.
+        // Record the current verified read as the *minimum* proof required
+        // before the user can explicitly attempt another write.
+        error.readVersionAtFailure = account
+          ? (queryClient.getQueryData<number>(
+              accountQueryKeys.workoutDetailRead(account.id, workoutId),
+            ) ?? 0)
+          : 0;
+      }
+    },
     onSuccess: async (updated) => {
       if (Platform.OS !== 'web') {
         void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(

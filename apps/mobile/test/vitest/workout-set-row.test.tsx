@@ -1,10 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, waitFor } from '@testing-library/react-native';
 
-import { useWorkoutSetMutation } from '@/features/workouts/model/workout-set-mutation';
+import {
+  useWorkoutSetMutation,
+  WorkoutSetOutcomeUnknownError,
+} from '@/features/workouts/model/workout-set-mutation';
 import { WorkoutSetRow } from '@/screens/workouts/ui/workout-set-row';
 
-vi.mock('@/features/workouts/model/workout-set-mutation', () => ({
+vi.mock('@/features/workouts/model/workout-set-mutation', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/features/workouts/model/workout-set-mutation')>()),
   useWorkoutSetMutation: vi.fn(),
 }));
 
@@ -141,6 +145,102 @@ describe('WorkoutSetRow (React Native)', () => {
     await fireEvent.press(view.getByTestId('set-complete-set-1'));
     await fireEvent.press(view.getByTestId('set-skip-set-1'));
     expect(mutateAsync).not.toHaveBeenCalled();
+  });
+
+  it('lost PATCH response blocks duplicate completion until canonical GET succeeds', async () => {
+    const unknown = new WorkoutSetOutcomeUnknownError();
+    unknown.readVersionAtFailure = 6;
+    mutateAsync.mockRejectedValue(unknown);
+    vi.mocked(useWorkoutSetMutation).mockReturnValue({
+      mutateAsync,
+      isPending: false,
+      isError: true,
+      error: unknown,
+    } as unknown as ReturnType<typeof useWorkoutSetMutation>);
+
+    const view = await render(
+      <WorkoutSetRow
+        workoutId="workout-1"
+        set={set}
+        editable
+        canonicalSnapshotAt={100}
+        canonicalReadVersion={5}
+      />,
+    );
+    await fireEvent.press(view.getByTestId('set-complete-set-1'));
+    await waitFor(() => expect(view.getByTestId('set-uncertain-set-1')).toBeTruthy());
+    expect(view.getByTestId('set-complete-set-1').props.accessibilityState.disabled).toBe(true);
+    await fireEvent.press(view.getByTestId('set-complete-set-1'));
+    await fireEvent.press(view.getByTestId('set-skip-set-1'));
+    expect(mutateAsync).toHaveBeenCalledTimes(1);
+
+    // A different set's successful PATCH could update the shared cache timestamp.
+    // It must NOT unlock the uncertain row without a verified read.
+    await view.rerender(
+      <WorkoutSetRow
+        workoutId="workout-1"
+        set={set}
+        editable
+        canonicalSnapshotAt={101}
+        canonicalReadVersion={5}
+      />,
+    );
+    expect(view.getByTestId('set-uncertain-set-1')).toBeTruthy();
+    expect(view.getByTestId('set-complete-set-1').props.accessibilityState.disabled).toBe(true);
+    expect(mutateAsync).toHaveBeenCalledTimes(1);
+
+    // A GET completed before the error was classified does not count.
+    await view.rerender(
+      <WorkoutSetRow
+        workoutId="workout-1"
+        set={set}
+        editable
+        canonicalSnapshotAt={102}
+        canonicalReadVersion={6}
+      />,
+    );
+    expect(view.getByTestId('set-uncertain-set-1')).toBeTruthy();
+    expect(mutateAsync).toHaveBeenCalledTimes(1);
+
+    // Only a GET verified after the outcome became unknown can unlock writes.
+    await view.rerender(
+      <WorkoutSetRow
+        workoutId="workout-1"
+        set={set}
+        editable
+        canonicalSnapshotAt={103}
+        canonicalReadVersion={7}
+      />,
+    );
+    expect(view.queryByTestId('set-uncertain-set-1')).toBeNull();
+    expect(view.getByText('Очікує')).toBeTruthy();
+    expect(view.getByTestId('set-complete-set-1').props.accessibilityState.disabled).toBe(false);
+    expect(mutateAsync).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not lock if the lost response was already reconciled with an authoritative GET', async () => {
+    const unknown = new WorkoutSetOutcomeUnknownError();
+    unknown.canonicalStateVerified = true;
+    mutateAsync.mockRejectedValue(unknown);
+    vi.mocked(useWorkoutSetMutation).mockReturnValue({
+      mutateAsync,
+      isPending: false,
+      isError: true,
+      error: unknown,
+    } as unknown as ReturnType<typeof useWorkoutSetMutation>);
+    const view = await render(
+      <WorkoutSetRow
+        workoutId="workout-1"
+        set={set}
+        editable
+        canonicalSnapshotAt={101}
+        canonicalReadVersion={6}
+      />,
+    );
+    await fireEvent.press(view.getByTestId('set-complete-set-1'));
+    await waitFor(() => expect(view.getByText(/Стан отримано із сервера/)).toBeTruthy());
+    expect(view.queryByTestId('set-uncertain-set-1')).toBeNull();
+    expect(mutateAsync).toHaveBeenCalledTimes(1);
   });
 
   it('rejects a second immediate completion while the first request is pending', async () => {
