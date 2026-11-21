@@ -8,6 +8,18 @@
     ".": {
       "types": "./src/index.ts",
       "default": "./src/index.ts"
+    },
+    "./async": {
+      "types": "./src/async.ts",
+      "default": "./src/async.ts"
+    },
+    "./locales": {
+      "types": "./src/locales.ts",
+      "default": "./src/locales.ts"
+    },
+    "./request-locale": {
+      "types": "./src/request-locale.ts",
+      "default": "./src/request-locale.ts"
     }
   },
   "scripts": {

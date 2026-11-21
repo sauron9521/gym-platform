@@ -1,1 +1,1 @@
-export { resolveRequestLocale } from '@gym/i18n';
+export { resolveRequestLocale } from '@gym/i18n/request-locale';
