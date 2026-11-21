@@ -1,19 +1,14 @@
-'use client';
+import Link from 'next/link';
 
-import { useMemo, useState } from 'react';
-
-export type UserDirectoryRow = {
-  id: string;
-  email: string;
-  role: 'ATHLETE' | 'TRAINER' | 'ADMIN';
-  status: 'ACTIVE' | 'SUSPENDED';
-  createdAt: string;
-};
+import {
+  directoryPageHref,
+  type DirectoryFilters,
+  type DirectoryResult,
+} from '@/shared/api/admin-directory';
 
 export type DirectoryCopy = {
   search: string;
   allRoles: string;
-  allStatuses: string;
   email: string;
   role: string;
   status: string;
@@ -22,11 +17,14 @@ export type DirectoryCopy = {
   trainer: string;
   admin: string;
   active: string;
-  suspended: string;
-  sortEmail: string;
-  sortJoined: string;
   unavailableTitle: string;
   unavailableDescription: string;
+  forbiddenTitle: string;
+  forbiddenDescription: string;
+  invalidTitle: string;
+  invalidDescription: string;
+  expiredTitle: string;
+  expiredDescription: string;
   emptyTitle: string;
   emptyDescription: string;
   page: string;
@@ -34,125 +32,90 @@ export type DirectoryCopy = {
   previous: string;
   next: string;
   rows: string;
+  apply: string;
+  clear: string;
+  newestFirst: string;
 };
 
-const PAGE_SIZE = 10;
+const controlStyle =
+  'h-11 w-full rounded-lg border border-input bg-background px-3 text-foreground disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring';
 
 export function UsersTable({
-  rows,
-  available,
+  result,
+  filters,
   locale,
   copy,
 }: {
-  rows: readonly UserDirectoryRow[];
-  available: boolean;
+  result: DirectoryResult;
+  filters: DirectoryFilters;
   locale: 'uk' | 'en';
   copy: DirectoryCopy;
 }) {
-  const [search, setSearch] = useState('');
-  const [role, setRole] = useState('all');
-  const [status, setStatus] = useState('all');
-  const [order, setOrder] = useState<'recent' | 'oldest' | 'email'>('recent');
-  const [page, setPage] = useState(1);
-
-  const filtered = useMemo(() => {
-    if (!available) return [];
-    const query = search.trim().toLocaleLowerCase(locale);
-    return rows
-      .filter(
-        (user) =>
-          (query === '' || user.email.toLocaleLowerCase(locale).includes(query)) &&
-          (role === 'all' || user.role === role) &&
-          (status === 'all' || user.status === status),
-      )
-      .sort((a, b) =>
-        order === 'email'
-          ? a.email.localeCompare(b.email, locale) || a.id.localeCompare(b.id)
-          : (order === 'recent'
-              ? b.createdAt.localeCompare(a.createdAt)
-              : a.createdAt.localeCompare(b.createdAt)) || a.id.localeCompare(b.id),
-      );
-  }, [available, rows, search, role, status, order, locale]);
-
-  const pages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-  const currentPage = Math.min(page, pages);
-  const visible = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
-  const roleLabels = { ATHLETE: copy.athlete, TRAINER: copy.trainer, ADMIN: copy.admin };
-  const statusLabels = { ACTIVE: copy.active, SUSPENDED: copy.suspended };
+  const available = result.kind === 'ready';
+  const notices = {
+    forbidden: [copy.forbiddenTitle, copy.forbiddenDescription],
+    unavailable: [copy.unavailableTitle, copy.unavailableDescription],
+    invalid: [copy.invalidTitle, copy.invalidDescription],
+    unauthenticated: [copy.expiredTitle, copy.expiredDescription],
+  } as const;
 
   return (
     <div className="space-y-5">
-      <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_11rem_11rem]">
-        <label className="space-y-1.5 text-sm font-medium">
-          <span>{copy.search}</span>
-          <input
-            type="search"
-            value={search}
-            onChange={(event) => {
-              setSearch(event.target.value);
-              setPage(1);
-            }}
-            disabled={!available}
-            placeholder={copy.search}
-            className="h-11 w-full rounded-lg border border-input bg-background px-3 text-foreground disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-          />
-        </label>
-        <label className="space-y-1.5 text-sm font-medium">
-          <span>{copy.role}</span>
-          <select
-            value={role}
-            onChange={(event) => {
-              setRole(event.target.value);
-              setPage(1);
-            }}
-            disabled={!available}
-            className="h-11 w-full rounded-lg border border-input bg-background px-3 disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-          >
-            <option value="all">{copy.allRoles}</option>
-            <option value="ATHLETE">{copy.athlete}</option>
-            <option value="TRAINER">{copy.trainer}</option>
-            <option value="ADMIN">{copy.admin}</option>
-          </select>
-        </label>
-        <label className="space-y-1.5 text-sm font-medium">
-          <span>{copy.status}</span>
-          <select
-            value={status}
-            onChange={(event) => {
-              setStatus(event.target.value);
-              setPage(1);
-            }}
-            disabled={!available}
-            className="h-11 w-full rounded-lg border border-input bg-background px-3 disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-          >
-            <option value="all">{copy.allStatuses}</option>
-            <option value="ACTIVE">{copy.active}</option>
-            <option value="SUSPENDED">{copy.suspended}</option>
-          </select>
-        </label>
-      </div>
+      <form action="/users" method="get" className="space-y-3">
+        <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_11rem]">
+          <label className="space-y-1.5 text-sm font-medium">
+            <span>{copy.search}</span>
+            <input
+              name="search"
+              type="search"
+              defaultValue={filters.search}
+              disabled={!available}
+              minLength={2}
+              maxLength={100}
+              placeholder={copy.search}
+              className={controlStyle}
+            />
+          </label>
+          <label className="space-y-1.5 text-sm font-medium">
+            <span>{copy.role}</span>
+            <select
+              name="role"
+              defaultValue={filters.role}
+              disabled={!available}
+              className={controlStyle}
+            >
+              <option value="">{copy.allRoles}</option>
+              <option value="ATHLETE">{copy.athlete}</option>
+              <option value="TRAINER">{copy.trainer}</option>
+              <option value="ADMIN">{copy.admin}</option>
+            </select>
+          </label>
+        </div>
+        {available && (
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              type="submit"
+              className="min-h-10 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+            >
+              {copy.apply}
+            </button>
+            <Link
+              href="/users"
+              className="inline-flex min-h-10 items-center rounded-lg border border-border px-4 py-2 text-sm font-semibold hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+            >
+              {copy.clear}
+            </Link>
+            <span className="text-xs text-muted-foreground">{copy.newestFirst}</span>
+          </div>
+        )}
+      </form>
 
       <div className="overflow-x-auto rounded-xl border border-border bg-card">
         <table className="w-full min-w-[38rem] border-collapse text-left text-sm">
           <thead className="border-b border-border bg-muted/50 text-xs tracking-wide text-muted-foreground">
             <tr>
-              <th
-                scope="col"
-                className="px-4 py-3 font-semibold"
-                aria-sort={order === 'email' ? 'ascending' : 'none'}
-              >
-                <button
-                  type="button"
-                  disabled={!available}
-                  onClick={() => {
-                    setOrder('email');
-                    setPage(1);
-                  }}
-                  className="rounded text-left font-semibold enabled:hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-                  aria-label={copy.sortEmail}
-                >
-                  {copy.email}
-                </button>
+              <th scope="col" className="px-4 py-3 font-semibold">
+                {copy.email}
               </th>
               <th scope="col" className="px-4 py-3 font-semibold">
                 {copy.role}
@@ -160,55 +123,47 @@ export function UsersTable({
               <th scope="col" className="px-4 py-3 font-semibold">
                 {copy.status}
               </th>
-              <th
-                scope="col"
-                className="px-4 py-3 font-semibold"
-                aria-sort={
-                  order === 'recent' ? 'descending' : order === 'oldest' ? 'ascending' : 'none'
-                }
-              >
-                <button
-                  type="button"
-                  disabled={!available}
-                  onClick={() => {
-                    setOrder((current) => (current === 'recent' ? 'oldest' : 'recent'));
-                    setPage(1);
-                  }}
-                  className="rounded text-left font-semibold enabled:hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-                  aria-label={copy.sortJoined}
-                >
-                  {copy.joined}
-                </button>
+              <th scope="col" className="px-4 py-3 font-semibold">
+                {copy.joined}
               </th>
             </tr>
           </thead>
           <tbody>
-            {visible.map((user) => (
-              <tr key={user.id} className="border-b border-border last:border-b-0">
-                <td className="px-4 py-3 font-medium">{user.email}</td>
-                <td className="px-4 py-3 text-muted-foreground">{roleLabels[user.role]}</td>
-                <td className="px-4 py-3">
-                  <span className="rounded-md bg-muted px-2 py-1 text-xs text-foreground">
-                    {statusLabels[user.status]}
-                  </span>
-                </td>
-                <td className="px-4 py-3 text-muted-foreground">
-                  {Number.isNaN(Date.parse(user.createdAt))
-                    ? '—'
-                    : new Intl.DateTimeFormat(locale === 'uk' ? 'uk-UA' : 'en-US', {
-                        dateStyle: 'medium',
-                        timeZone: 'UTC',
-                      }).format(new Date(user.createdAt))}
-                </td>
-              </tr>
-            ))}
+            {available &&
+              result.data.map((user) => (
+                <tr key={user.id} className="border-b border-border last:border-b-0">
+                  <td className="px-4 py-3 font-medium">{user.email}</td>
+                  <td className="px-4 py-3 text-muted-foreground">
+                    {{ ATHLETE: copy.athlete, TRAINER: copy.trainer, ADMIN: copy.admin }[user.role]}
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className="rounded-md bg-muted px-2 py-1 text-xs text-foreground">
+                      {copy.active}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-muted-foreground">
+                    {new Intl.DateTimeFormat(locale === 'uk' ? 'uk-UA' : 'en-US', {
+                      dateStyle: 'medium',
+                      timeZone: 'UTC',
+                    }).format(new Date(user.createdAt))}
+                  </td>
+                </tr>
+              ))}
           </tbody>
         </table>
-        {visible.length === 0 && (
-          <div className="space-y-2 px-5 py-12 text-center" role={available ? 'status' : 'alert'}>
-            <p className="font-semibold">{available ? copy.emptyTitle : copy.unavailableTitle}</p>
+        {!available && (
+          <div className="space-y-2 px-5 py-12 text-center" role="alert">
+            <p className="font-semibold">{notices[result.kind][0]}</p>
             <p className="mx-auto max-w-lg text-sm text-muted-foreground">
-              {available ? copy.emptyDescription : copy.unavailableDescription}
+              {notices[result.kind][1]}
+            </p>
+          </div>
+        )}
+        {available && result.data.length === 0 && (
+          <div className="space-y-2 px-5 py-12 text-center" role="status">
+            <p className="font-semibold">{copy.emptyTitle}</p>
+            <p className="mx-auto max-w-lg text-sm text-muted-foreground">
+              {copy.emptyDescription}
             </p>
           </div>
         )}
@@ -217,29 +172,43 @@ export function UsersTable({
       {available && (
         <div className="flex flex-wrap items-center justify-between gap-3 text-sm">
           <p role="status" className="text-muted-foreground">
-            {filtered.length} {copy.rows}
+            {result.meta.total} {copy.rows}
           </p>
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              disabled={currentPage === 1}
-              onClick={() => setPage((value) => Math.max(1, value - 1))}
-              className="rounded-lg border border-border px-3 py-2 disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-            >
-              {copy.previous}
-            </button>
+          <nav aria-label={copy.page} className="flex items-center gap-3">
+            {filters.page > 1 ? (
+              <Link
+                href={directoryPageHref(filters, filters.page - 1)}
+                className="rounded-lg border border-border px-3 py-2 hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+              >
+                {copy.previous}
+              </Link>
+            ) : (
+              <span
+                aria-disabled="true"
+                className="rounded-lg border border-border px-3 py-2 opacity-50"
+              >
+                {copy.previous}
+              </span>
+            )}
             <span aria-live="polite">
-              {copy.page} {currentPage} {copy.of} {pages}
+              {copy.page} {filters.page} {copy.of} {Math.max(1, result.meta.totalPages)}
             </span>
-            <button
-              type="button"
-              disabled={currentPage >= pages}
-              onClick={() => setPage((value) => Math.min(pages, value + 1))}
-              className="rounded-lg border border-border px-3 py-2 disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-            >
-              {copy.next}
-            </button>
-          </div>
+            {filters.page < result.meta.totalPages ? (
+              <Link
+                href={directoryPageHref(filters, filters.page + 1)}
+                className="rounded-lg border border-border px-3 py-2 hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+              >
+                {copy.next}
+              </Link>
+            ) : (
+              <span
+                aria-disabled="true"
+                className="rounded-lg border border-border px-3 py-2 opacity-50"
+              >
+                {copy.next}
+              </span>
+            )}
+          </nav>
         </div>
       )}
     </div>

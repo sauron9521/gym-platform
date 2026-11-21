@@ -22,8 +22,9 @@ Manrope with a compact desktop sidebar, accessible mobile navigation and a
 manual System/Light/Dark preference stored in the existing `ovranto-theme` cookie.
 Ukrainian and English copy is sourced from `@gym/i18n`.
 
-**Overview** and **Users** link to real routes; the latter is an unavailable,
-read-only UI until the protected list API exists. Roles, Exercise catalog,
+**Overview** and **Users** link to real routes; the latter is a server-rendered,
+read-only account directory restricted to explicitly allowlisted Super Admin
+operators. Ordinary ADMIN sessions see no records. Roles, Exercise catalog,
 Moderation, Audit and Settings stay non-interactive placeholders until server-side
 permissions and corresponding APIs are implemented. The only operational status
 shown is the live server-gated API readiness response; no synthetic KPIs, user
@@ -33,19 +34,23 @@ make this Admin console ready for production.
 
 ## Admin Users directory UI (#387, follow-up to #592)
 
-The `/users` route is independently guarded by the server-side Admin session check.
-Its responsive directory UI includes accessible table headings, searchable email,
-role/status filters, deterministic sorting and pagination, all covered with isolated
-component fixtures. The navigation from Overview is active, but the actual table
-is **explicitly unavailable** and all controls are disabled in production until
-the authenticated, PII-minimized list API from #292 is implemented and reviewed.
+The `/users` route verifies the Admin session on the Next.js server **before**
+requesting `GET /admin/users` from a fixed, server-only NestJS origin. The API
+independently requires `admin.accounts.read` (persisted ADMIN role **and** explicit
+`SUPERADMIN_USER_IDS` allowlist); ordinary ADMIN sessions receive 403. No session
+cookie, raw API response or upstream address is sent to browser JavaScript.
 
-No fake account counts or fixture records are rendered in a real session, and the
-page does not fetch `GET /users`, since that endpoint does not exist yet. This
-PR does not add account mutations, status changes, privileged queries or route
-permissions beyond the current ADMIN gate. Route/component tests verify that
-non-admin requests never render account data or controls. The UI is not yet a
-production operational directory.
+Email search (2–100 chars), role filter and 20-row pagination are implemented as
+standard GET forms/links and **server-side API queries**, not filtering a single
+page client-side. The API's fixed newest-first order is shown explicitly; no
+unsupported email sorting or `SUSPENDED` filter is offered, because the API
+has no suspension lifecycle. Counts come from backend `meta.total`, not fixtures.
+`force-dynamic`, uncached upstream fetch and no-store response headers protect
+against shared HTML caching. The response is checked against an exact PII-minimal
+schema before rendering. 401/403/invalid/unavailable all fail closed with
+**zero** account rows and disabled controls. This slice adds no user mutations,
+role assignment, durable audit or details view. Production operational rollout
+still needs independent staging/security checks.
 
 ## Mandatory manual staging checks before deploying an operational console
 

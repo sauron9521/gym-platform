@@ -6,6 +6,18 @@ import { getAdminApiOrigin } from './src/shared/api/upstream.mjs';
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   transpilePackages: ['@gym/api-client', '@gym/i18n', '@gym/ui-web'],
+  async headers() {
+    return [
+      {
+        source: '/users',
+        headers: [
+          { key: 'Cache-Control', value: 'private, no-store, max-age=0' },
+          { key: 'Referrer-Policy', value: 'no-referrer' },
+          { key: 'X-Robots-Tag', value: 'noindex, nofollow' },
+        ],
+      },
+    ];
+  },
   async rewrites() {
     return [
       {
