@@ -200,7 +200,33 @@ retained for **7 days**.
 
 The `comparison.json` file provides HTTP p50/p95, decoded response
 bytes and Prisma query count deltas for Users, Workouts, Training
-Programs and Exercises. It does **not** include EXPLAIN: that probe
+Programs and Exercises. It now also contains a privacy-safe
+`responseEquivalence.exercises = "identical-serialized-json"` verdict,
+which is emitted **only after the validator confirms** matching SHA-256
+fingerprints of the **actual serialized JSON bodies** of
+`GET /exercises?limit=20` from the two isolated A/B databases.
+Within each revision the benchmark asserts that all 25 recorded
+Exercises responses have the same SHA-256; unstable responses fail the
+test before comparison. Raw responses, IDs, parameters, cookies and
+tokens are **never included** in artifacts. The digest itself is used
+only by the private comparison step and is not copied to
+`comparison.json`.
+
+The hash is calculated from the exact `JSON.stringify(response.body)`
+representation and is intentionally strict: key order changes may
+also cause a mismatch, even when JSON objects would be semantically
+equivalent after key sorting. This fail-closed behavior catches content
+changes that **decoded byte length alone cannot detect**. It only
+covers the **Exercises** route under the synthetic benchmark dataset,
+not the other three measured routes or every authorized visibility
+condition. Existing decoded-byte comparison is retained for all routes.
+A/A (same-revision) runs establish the equivalence-check pipeline;
+genuine A/B runs need different pinned code revisions and repeated
+measurements. Historical reports without this digest are incompatible
+with the upgraded A/B validator and cannot be used to assert response
+equivalence retroactively.
+
+It does **not** include EXPLAIN: that probe
 uses a different SQL-shape experiment. A run with the **same SHA
 for before and after** is labeled `A/A pipeline smoke`; it verifies
 the measurement pipeline but does not measure a code improvement.

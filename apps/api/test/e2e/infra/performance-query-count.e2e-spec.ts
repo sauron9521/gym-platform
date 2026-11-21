@@ -369,6 +369,7 @@ describe('API Prisma SQL query count baseline (disposable PostgreSQL)', () => {
       samples: number;
       latencyMs: { min: number; p50: number; p95: number; max: number };
       decodedResponseBytes: { min: number; p50: number; p95: number; max: number };
+      responseSha256?: string;
     }> = [];
 
     const summarize = (values: number[]) => {
@@ -386,6 +387,9 @@ describe('API Prisma SQL query count baseline (disposable PostgreSQL)', () => {
       const counts: number[] = [];
       const latencies: number[] = [];
       const byteSizes: number[] = [];
+      // An exact digest of the synthetic Exercises JSON response, never the body.
+      // Bytes alone cannot establish A/B response equivalence.
+      const exerciseDigests: string[] = [];
       const cookie = route.actor === 'athlete' ? athleteCookie : trainerCookie;
 
       for (let attempt = 0; attempt < WARMUPS + SAMPLES; attempt++) {
@@ -394,6 +398,7 @@ describe('API Prisma SQL query count baseline (disposable PostgreSQL)', () => {
         let count: number;
         let elapsedMs: number;
         let decodedBytes: number;
+        let exerciseDigest: string | undefined;
         try {
           const response = await request(app!.getHttpServer())
             .get(route.path)
@@ -408,8 +413,12 @@ describe('API Prisma SQL query count baseline (disposable PostgreSQL)', () => {
             expect(response.body.data).toHaveLength(20);
           }
           // Nest's default compact JSON serialization; this is NOT compressed wire size.
-          decodedBytes = Buffer.byteLength(JSON.stringify(response.body), 'utf8');
+          const serialized = JSON.stringify(response.body);
+          decodedBytes = Buffer.byteLength(serialized, 'utf8');
           expect(decodedBytes).toBeGreaterThan(0);
+          if (route.key === 'exercises') {
+            exerciseDigest = createHash('sha256').update(serialized).digest('hex');
+          }
         } finally {
           count = window.end();
         }
@@ -418,7 +427,17 @@ describe('API Prisma SQL query count baseline (disposable PostgreSQL)', () => {
           counts.push(count);
           latencies.push(elapsedMs);
           byteSizes.push(decodedBytes);
+          if (route.key === 'exercises') {
+            expect(exerciseDigest).toMatch(/^[a-f0-9]{64}$/);
+            exerciseDigests.push(exerciseDigest!);
+          }
         }
+      }
+
+      if (route.key === 'exercises') {
+        // Reject changing/unstable exercise responses within the same 25-sample run.
+        expect(exerciseDigests).toHaveLength(SAMPLES);
+        expect(new Set(exerciseDigests).size).toBe(1);
       }
 
       expect(counts.every((count) => Number.isInteger(count) && count > 0)).toBe(true);
@@ -434,6 +453,7 @@ describe('API Prisma SQL query count baseline (disposable PostgreSQL)', () => {
         samples: SAMPLES,
         latencyMs: summarize(latencies),
         decodedResponseBytes: summarize(byteSizes),
+        ...(route.key === 'exercises' ? { responseSha256: exerciseDigests[0]! } : {}),
       });
     }
 
