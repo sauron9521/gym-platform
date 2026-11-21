@@ -155,6 +155,11 @@ before the server may call existing `GET /training-programs/:id/versions`.
   missing or archived programs show safe unavailable/not-found states.
   The version list is capped at 40 rows and malformed/cross-program data
   never enters the UI. Real owned program pagination is server-side.
+- `GET /training-programs` and `GET /training-programs/:id/versions`
+  use the existing centralized `RateLimit('read')` preset (60/minute).
+  The former 10/minute global preset exhausted during legitimate SSR
+  chooser navigation; this changes **only** these two owner-scoped read
+  handlers, not mutation budgets or the global policy.
 - There are **no writes, assignment creation, client-side session state or
   automatic confirmation**. A selected version is only reflected in a
   server-rendered confirmation that explicitly says nothing has been saved.

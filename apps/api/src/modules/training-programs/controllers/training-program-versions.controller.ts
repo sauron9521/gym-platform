@@ -8,6 +8,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 
+import { RateLimit } from '#src/common/rate-limit/rate-limit.policies';
 import {
   trainingProgramVersionResponseSchema,
   trainingProgramVersionListItemSchema,
@@ -34,6 +35,7 @@ export class TrainingProgramVersionsController {
   // VERSIONS
 
   @Get(':programId/versions')
+  @RateLimit('read')
   @ApiOkResponse({ schema: { type: 'array', items: trainingProgramVersionListItemSchema } })
   findVersions(
     @Param('programId', { schema: trainingProgramIdSchema })
