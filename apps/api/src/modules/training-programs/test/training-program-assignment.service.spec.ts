@@ -196,6 +196,111 @@ describe('TrainingProgramAssignmentService', () => {
     expect(repository.findManyAssignmentsForParticipant).not.toHaveBeenCalled();
   });
 
+  it('scopes a client-specific summary in PostgreSQL before LIMIT/OFFSET/COUNT', async () => {
+    const result = { data: [], meta: { total: 0 } };
+    repository.findManyAssignments.mockResolvedValue(result);
+
+    const query = {
+      page: 2,
+      limit: 5,
+      trainerAthleteId: relationship.id,
+      status: 'COMPLETED' as const,
+      view: 'summary' as const,
+    };
+    await expect(service.findManyAssignments(trainer, query)).resolves.toEqual(result);
+    expect(access.assertAssignmentParticipant).toHaveBeenCalledWith(trainer);
+    expect(access.assertTrainer).toHaveBeenCalledWith(trainer);
+    expect(trainerAthletes.findOne).toHaveBeenCalledWith(relationship.id, trainer);
+    expect(repository.findManyAssignmentsForParticipant).not.toHaveBeenCalled();
+    expect(repository.findManyAssignments).toHaveBeenCalledWith({
+      where: {
+        AND: [
+          { trainerAthleteId: relationship.id },
+          {
+            trainerAthlete: {
+              is: { id: relationship.id, trainerId: trainer.id, status: 'ACTIVE' },
+            },
+          },
+          { version: { program: { trainerId: trainer.id } } },
+          assignmentFullReadWhere(trainer.id),
+          { status: 'COMPLETED' },
+        ],
+      },
+      skip: 5,
+      take: 5,
+      view: 'summary',
+    });
+  });
+
+  it.each(['PENDING', 'TERMINATED', 'CANCELLED'] as const)(
+    'rejects filtered client relation when status is %s without querying assignments',
+    async (status) => {
+      trainerAthletes.findOne.mockResolvedValue({ ...relationship, status });
+      await expect(
+        service.findManyAssignments(trainer, {
+          page: 1,
+          limit: 5,
+          view: 'summary',
+          trainerAthleteId: relationship.id,
+        }),
+      ).rejects.toThrow(NotFoundException);
+      expect(repository.findManyAssignments).not.toHaveBeenCalled();
+    },
+  );
+
+  it('returns the same 404 for a foreign or missing filtered relationship', async () => {
+    trainerAthletes.findOne.mockResolvedValueOnce({ ...relationship, trainerId: 'another' });
+    await expect(
+      service.findManyAssignments(trainer, {
+        page: 1,
+        limit: 5,
+        view: 'summary',
+        trainerAthleteId: relationship.id,
+      }),
+    ).rejects.toThrow(NotFoundException);
+    trainerAthletes.findOne.mockRejectedValueOnce(new NotFoundException());
+    await expect(
+      service.findManyAssignments(trainer, {
+        page: 1,
+        limit: 5,
+        view: 'summary',
+        trainerAthleteId: relationship.id,
+      }),
+    ).rejects.toThrow(NotFoundException);
+    expect(repository.findManyAssignments).not.toHaveBeenCalled();
+  });
+
+  it('rejects nontrainer, revoked and admin filtered read before looking up a relationship', async () => {
+    for (const actor of [athlete, admin, trainer]) {
+      vi.clearAllMocks();
+      if (actor.id === trainer.id) {
+        access.assertTrainer.mockRejectedValueOnce(new ForbiddenException('revoked'));
+      }
+      await expect(
+        service.findManyAssignments(actor, {
+          page: 1,
+          limit: 5,
+          view: 'summary',
+          trainerAthleteId: relationship.id,
+        }),
+      ).rejects.toThrow(ForbiddenException);
+      expect(trainerAthletes.findOne).not.toHaveBeenCalled();
+      expect(repository.findManyAssignments).not.toHaveBeenCalled();
+    }
+  });
+
+  it('rejects unbounded full-mode filtered reads; existing participant full mode is preserved', async () => {
+    await expect(
+      service.findManyAssignments(trainer, {
+        page: 1,
+        limit: 5,
+        trainerAthleteId: relationship.id,
+      }),
+    ).rejects.toThrow(BadRequestException);
+    expect(trainerAthletes.findOne).not.toHaveBeenCalled();
+    expect(repository.findManyAssignments).not.toHaveBeenCalled();
+  });
+
   it('returns one paginated scope containing both trainer and athlete assignments', async () => {
     const result = { data: [], meta: { total: 0 } };
     repository.findManyAssignmentsForParticipant.mockResolvedValue(result);

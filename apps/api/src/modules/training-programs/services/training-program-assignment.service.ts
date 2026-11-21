@@ -111,6 +111,49 @@ export class TrainingProgramAssignmentService {
     await this.accessService.assertAssignmentParticipant(actor);
     this.validateAssignmentPagination(query);
 
+    // Opt-in trainer client detail: never apply the relationship filter after
+    // participant-wide pagination, which would return incorrect totals/pages.
+    if (query.trainerAthleteId) {
+      if (query.view !== 'summary') {
+        throw new BadRequestException('Filtered trainer assignment lists require summary view.');
+      }
+      await this.accessService.assertTrainer(actor);
+      const relationship = await this.trainerAthletesService.findOne(query.trainerAthleteId, actor);
+      if (relationship.trainerId !== actor.id || relationship.status !== 'ACTIVE') {
+        // Foreign, missing, pending and ended relations are indistinguishable.
+        throw new NotFoundException('Active trainer client not found.');
+      }
+
+      const params = {
+        where: {
+          AND: [
+            { trainerAthleteId: query.trainerAthleteId },
+            {
+              trainerAthlete: {
+                is: {
+                  id: query.trainerAthleteId,
+                  trainerId: actor.id,
+                  status: 'ACTIVE' as const,
+                },
+              },
+            },
+            { version: { program: { trainerId: actor.id } } },
+            // Authorization is checked again in both DB queries, not only
+            // against stale session roles or the initial relationship read.
+            assignmentFullReadWhere(actor.id),
+            ...(query.status ? [{ status: query.status }] : []),
+          ],
+        },
+        skip: (query.page - 1) * query.limit,
+        take: query.limit,
+        view: 'summary' as const,
+      } satisfies Parameters<TrainingProgramAssignmentRepository['findManyAssignments']>[0];
+
+      return this.repository.findManyAssignments(params);
+    }
+
+    // Historical participant list semantics (including an athlete's own
+    // history) remain byte-for-byte unchanged for all existing callers.
     const params = {
       where: {
         AND: [

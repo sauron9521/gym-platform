@@ -53,6 +53,18 @@ describe('TrainingProgramAssignmentsController', () => {
     expect(service.findManyAssignments).toHaveBeenCalledWith(actor, query);
   });
 
+  it('forwards a trainer relationship filter only as validated query data', async () => {
+    const query = {
+      page: 1,
+      limit: 8,
+      view: 'summary' as const,
+      trainerAthleteId: '123e4567-e89b-42d3-a456-426614174000',
+    };
+    service.findManyAssignments.mockResolvedValue({ data: [], meta: { total: 0 } });
+    await controller.findManyAssignments(actor, query);
+    expect(service.findManyAssignments).toHaveBeenCalledExactlyOnceWith(actor, query);
+  });
+
   it('should return one assignment with full program details', async () => {
     const details = {
       id: 'assignment-1',

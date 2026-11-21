@@ -294,6 +294,59 @@ describe('TrainerAthletes (HTTP + PostgreSQL)', () => {
         .set('Cookie', trainerTwoCookie);
       expect(otherTrainerDenied.status).toBe(404);
 
+      // Only the currently approved trainer can request a DB-scoped client
+      // assignment page. Other trainers, athletes and ended relations must
+      // not be used to infer another client's programs or counts.
+      const ownAssignments = await request(app!.getHttpServer())
+        .get('/training-programs/assignments')
+        .set('Cookie', trainerOneCookie)
+        .query({ page: 1, limit: 5, view: 'summary', trainerAthleteId: relationId });
+      expect(ownAssignments.status).toBe(200);
+      expect(ownAssignments.body.meta).toMatchObject({
+        total: 1,
+        skip: 0,
+        take: 5,
+        totalPages: 1,
+      });
+      expect(ownAssignments.body.data).toHaveLength(1);
+      expect(ownAssignments.body.data[0]).toMatchObject({
+        id: assignmentId,
+        trainerAthleteId: relationId,
+        status: 'ACTIVE',
+        version: { title: 'Trainer program' },
+      });
+      expect(ownAssignments.body.data[0]).not.toHaveProperty('workouts');
+      expect(JSON.stringify(ownAssignments.body)).not.toContain(athleteTwo.email);
+
+      for (const disallowedId of [foreignRelationId, randomUUID()]) {
+        const foreignAssignments = await request(app!.getHttpServer())
+          .get('/training-programs/assignments')
+          .set('Cookie', trainerOneCookie)
+          .query({ page: 1, limit: 5, view: 'summary', trainerAthleteId: disallowedId });
+        expect(foreignAssignments.status).toBe(404);
+        expect(JSON.stringify(foreignAssignments.body)).not.toContain(athleteTwo.email);
+      }
+      const ownAsOtherTrainer = await request(app!.getHttpServer())
+        .get('/training-programs/assignments')
+        .set('Cookie', trainerTwoCookie)
+        .query({ page: 1, limit: 5, view: 'summary', trainerAthleteId: relationId });
+      expect(ownAsOtherTrainer.status).toBe(404);
+      const athleteFiltered = await request(app!.getHttpServer())
+        .get('/training-programs/assignments')
+        .set('Cookie', athleteOneCookie)
+        .query({ page: 1, limit: 5, view: 'summary', trainerAthleteId: relationId });
+      expect(athleteFiltered.status).toBe(403);
+      const unboundedFiltered = await request(app!.getHttpServer())
+        .get('/training-programs/assignments')
+        .set('Cookie', trainerOneCookie)
+        .query({ page: 1, limit: 5, trainerAthleteId: relationId });
+      expect(unboundedFiltered.status).toBe(400);
+      const invalidFiltered = await request(app!.getHttpServer())
+        .get('/training-programs/assignments')
+        .set('Cookie', trainerOneCookie)
+        .query({ page: 1, limit: 5, view: 'summary', trainerAthleteId: 'invalid-id' });
+      expect(invalidFiltered.status).toBe(400);
+
       const other = await request(app!.getHttpServer())
         .get('/trainer-dashboard/overview')
         .set('Cookie', trainerTwoCookie);
@@ -339,6 +392,11 @@ describe('TrainerAthletes (HTTP + PostgreSQL)', () => {
         .get(`/trainer-dashboard/clients/${relationId}/progress`)
         .set('Cookie', trainerOneCookie);
       expect(revokedClient.status).toBe(403);
+      const revokedFiltered = await request(app!.getHttpServer())
+        .get('/training-programs/assignments')
+        .set('Cookie', trainerOneCookie)
+        .query({ page: 1, limit: 5, view: 'summary', trainerAthleteId: relationId });
+      expect(revokedFiltered.status).toBe(403);
 
       // After restoring trainer eligibility, an ended collaboration must
       // still return indistinguishable 404, never its previous counts.
@@ -354,6 +412,11 @@ describe('TrainerAthletes (HTTP + PostgreSQL)', () => {
         .get(`/trainer-dashboard/clients/${relationId}/progress`)
         .set('Cookie', trainerOneCookie);
       expect(endedClient.status).toBe(404);
+      const endedAssignments = await request(app!.getHttpServer())
+        .get('/training-programs/assignments')
+        .set('Cookie', trainerOneCookie)
+        .query({ page: 1, limit: 5, view: 'summary', trainerAthleteId: relationId });
+      expect(endedAssignments.status).toBe(404);
     } finally {
       await prisma.user.update({
         where: { id: trainerOne.id },
