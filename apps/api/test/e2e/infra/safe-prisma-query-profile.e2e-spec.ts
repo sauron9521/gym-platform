@@ -71,6 +71,36 @@ describe('Privacy-safe Prisma SQL profile window', () => {
     });
   });
 
+  it('counts only exact BEGIN/COMMIT/ROLLBACK controls for opted-in repository windows', () => {
+    const profile = new SafePrismaQueryWindow();
+    profile.begin('private-page', { trackTransaction: true });
+    profile.observe({ query: 'BEGIN', duration: 0.02 });
+    profile.observe({ query: 'SELECT * FROM "public"."exercises"', duration: 1.25 });
+    profile.observe({ query: 'INSERT INTO "public"."exercises" VALUES ($1)', duration: 2 });
+    profile.observe({ query: 'COMMIT', duration: 0.04 });
+    const output = profile.end('private-page');
+
+    expect(output.queryCount).toBe(1);
+    expect(output.transactionControls).toEqual({ begin: 1, commit: 1, rollback: 0 });
+    expect(output.sql[0].tables).toEqual(['exercises']);
+    expect(JSON.stringify(output)).not.toContain('INSERT');
+    expect(JSON.stringify(output)).not.toContain('COMMIT');
+    expect(JSON.stringify(output)).not.toContain('SELECT *');
+  });
+
+  it('tracks rolled-back transactions without exposing SQL or private parameters', () => {
+    const profile = new SafePrismaQueryWindow();
+    profile.begin('private-search-page', { trackTransaction: true });
+    profile.observe({ query: 'begin', duration: 0.01 });
+    profile.observe({ query: 'select "id" from "exercises" where "id" = $1', duration: 0.3 });
+    profile.observe({ query: 'rollback', duration: 0.01 });
+    const result = profile.end('private-search-page');
+
+    expect(result.transactionControls).toEqual({ begin: 1, commit: 0, rollback: 1 });
+    expect(result.queryCount).toBe(1);
+    expect(result.sql[0].bindPlaceholders).toBe(1);
+  });
+
   it('rejects invalid scenario labels, nested windows, missing events and mismatched ends', () => {
     const profile = new SafePrismaQueryWindow();
     expect(() => profile.begin('secret@example.test')).toThrow('Invalid profile scenario label');

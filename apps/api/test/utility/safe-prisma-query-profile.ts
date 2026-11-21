@@ -45,18 +45,45 @@ export type SanitizedPrismaQuery = NonNullable<ReturnType<typeof sanitizeQuery>>
  * errors, identifiers or personally identifying values leave this scope.
  */
 export class SafePrismaQueryWindow {
-  private active: { scenario: string; samples: SanitizedPrismaQuery[] } | null = null;
+  private active: {
+    scenario: string;
+    samples: SanitizedPrismaQuery[];
+    trackTransaction: boolean;
+    transactionControls: { begin: number; commit: number; rollback: number };
+  } | null = null;
 
-  begin(scenario: string) {
+  begin(scenario: string, options: { trackTransaction?: boolean } = {}) {
     if (this.active) throw new Error('Concurrent Prisma query profiling windows forbidden');
     if (!/^[a-z]+(?:-[a-z]+)*$/.test(scenario)) {
       throw new Error('Invalid profile scenario label');
     }
-    this.active = { scenario, samples: [] };
+    this.active = {
+      scenario,
+      samples: [],
+      trackTransaction: options.trackTransaction === true,
+      transactionControls: { begin: 0, commit: 0, rollback: 0 },
+    };
   }
 
   observe(event: QueryEvent) {
     if (!this.active) return;
+    if (this.active.trackTransaction) {
+      // Exact allowlisted control statements only; never retain event.query or params.
+      // Driver event timing for transaction controls is intentionally not reported.
+      const statement = event.query.trim().toUpperCase();
+      if (statement === 'BEGIN') {
+        this.active.transactionControls.begin++;
+        return;
+      }
+      if (statement === 'COMMIT') {
+        this.active.transactionControls.commit++;
+        return;
+      }
+      if (statement === 'ROLLBACK') {
+        this.active.transactionControls.rollback++;
+        return;
+      }
+    }
     const safe = sanitizeQuery(event);
     if (safe) this.active.samples.push(safe);
   }
@@ -65,13 +92,14 @@ export class SafePrismaQueryWindow {
     if (!this.active || this.active.scenario !== scenario) {
       throw new Error('Mismatched Prisma query profiling window');
     }
-    const { samples } = this.active;
+    const { samples, trackTransaction, transactionControls } = this.active;
     this.active = null;
     if (samples.length === 0) throw new Error('No Prisma SELECT query events observed');
     return {
       scenario,
       queryCount: samples.length,
       sql: samples,
+      ...(trackTransaction ? { transactionControls } : {}),
     };
   }
 

@@ -248,6 +248,43 @@ The fixture is uncommitted and has unrefreshed planner statistics. These
 observations identify the next SQL pattern for controlled, statistically
 interpreted A/B tests; they do **not** justify adding an index themselves.
 
+## Actual ExercisesRepository array-transaction profile (Issue #313)
+
+The additional `performance-exercises-repository.e2e-spec.ts` runs the
+**unchanged production `ExercisesRepository.findMany`**, including its Prisma
+`$transaction([findMany, count])` and public `exerciseSelect` relation
+projection. This addresses the gap between the direct Prisma statements
+captured above and the repository's actual pagination/total-count behavior.
+
+The repository array transaction cannot read rows left uncommitted in a
+**separate** interactive transaction. This deliberately independent E2E
+probe therefore creates **256 active + 32 archived privately owned synthetic
+exercises** and optional muscle/equipment links on a `*_test` database,
+commits those unique fixture rows, and tests four isolated actor-scoped
+read shapes: page 3 (OFFSET 40), name search, muscle-group filter, and
+equipment filter. It verifies the expected totals, pagination metadata,
+returned row ownership and absence of archived items. An unconditional
+`finally` deletes **only the fixture's own exercise IDs, relation
+metadata and synthetic user**, then post-cleanup assertions verify
+that no synthetic exercises or user remain. Never run on production; this
+fixture intentionally differs from the rollback-only EXPLAIN probe.
+
+Each repository call gets its own non-overlapping Prisma query-event window.
+In addition to the existing safe SELECT fingerprints, table allowlist,
+placeholder counts and timings, the new **opt-in transaction counter**
+records _counts only_ of exact `BEGIN`, `COMMIT` and `ROLLBACK`
+control events, without recording or printing SQL or bound data. Its output
+is under `API_PERF_EXERCISE_REPOSITORY` in the PostgreSQL 17 API E2E
+GitHub Actions logs, alongside the existing `API_PERF_EXERCISE_PLANS`.
+
+The elapsed per-operation time includes the repository call itself,
+whereas SQL event timings reflect driver observations. Neither constitutes
+an HTTP p95, statistically significant speed-up, a trace of actual
+authentication/authorization handlers, or evidence for a specific index.
+Do not compare timings between these different fixtures as if they were
+A/B results. Before changing ORM loading strategy or indexes, capture
+repeated identical-fixture A/B HTTP timings and confirm response equivalence.
+
 ## Compare before/after captures
 
 Use the [API performance comparison guide](performance-comparison.md) and
