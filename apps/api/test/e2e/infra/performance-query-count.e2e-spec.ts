@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { performance } from 'node:perf_hooks';
 
 import { PasswordHasher } from '@nestjs/authentication';
 import { StandardSchemaValidationPipe, type INestApplication } from '@nestjs/common';
@@ -21,8 +22,11 @@ const ROUTES: Route[] = [
   { key: 'exercises', path: '/exercises?limit=20', actor: 'athlete' },
 ];
 
-const WARMUPS = 1;
-const SAMPLES = 5;
+const WARMUPS = 2;
+const SAMPLES = 25;
+const POPULATION = 128;
+const BASE_DATE = Date.UTC(2026, 0, 1);
+const FIXTURE_VERSION = 'http-reads-populated-v1-128';
 const PASSWORD = 'StrongPassword123!';
 
 /** Counts only Prisma-emitted SQL query events, never captures SQL or parameters. */
@@ -47,11 +51,6 @@ class QueryWindow {
   }
 }
 
-function percentile(samples: number[], rank: number): number {
-  const sorted = [...samples].sort((a, b) => a - b);
-  return sorted[Math.ceil((rank / 100) * sorted.length) - 1]!;
-}
-
 function sessionCookie(header: string | string[] | undefined): string {
   const cookies = Array.isArray(header) ? header : header ? [header] : [];
   const cookie = cookies
@@ -66,6 +65,9 @@ describe('API Prisma SQL query count baseline (disposable PostgreSQL)', () => {
   let prisma: PrismaClient<'query'> | undefined;
   let athleteId: string | undefined;
   let trainerId: string | undefined;
+  const workoutIds: string[] = [];
+  const programIds: string[] = [];
+  const exerciseIds: string[] = [];
   let athleteCookie: string;
   let trainerCookie: string;
   const window = new QueryWindow();
@@ -115,6 +117,57 @@ describe('API Prisma SQL query count baseline (disposable PostgreSQL)', () => {
       })
     ).id;
 
+    // Deterministic synthetic shape, generated IDs to avoid collisions with parallel runs.
+    // Ownership-scoped cleanup below removes even partially created fixture rows.
+    const workouts = Array.from({ length: POPULATION }, (_, index) => ({
+      id: randomUUID(),
+      title: `Perf workout ${String(index + 1).padStart(3, '0')}`,
+      athleteId: athleteId!,
+      createdById: athleteId!,
+      status: 'PLANNED' as const,
+      createdAt: new Date(BASE_DATE + index * 60_000),
+      updatedAt: new Date(BASE_DATE + index * 60_000),
+    }));
+    const programs = Array.from({ length: POPULATION }, (_, index) => ({
+      id: randomUUID(),
+      trainerId: trainerId!,
+      status: 'DRAFT' as const,
+      createdAt: new Date(BASE_DATE + index * 60_000),
+      updatedAt: new Date(BASE_DATE + index * 60_000),
+    }));
+    const exercises = Array.from({ length: POPULATION }, (_, index) => ({
+      id: randomUUID(),
+      name: `Perf exercise ${String(index + 1).padStart(3, '0')}`,
+      source: 'GLOBAL' as const,
+      exerciseType: 'STRENGTH' as const,
+      isArchived: false,
+      createdAt: new Date(BASE_DATE + index * 60_000),
+      updatedAt: new Date(BASE_DATE + index * 60_000),
+    }));
+    workoutIds.push(...workouts.map(({ id }) => id));
+    programIds.push(...programs.map(({ id }) => id));
+    exerciseIds.push(...exercises.map(({ id }) => id));
+    await prisma.workout.createMany({ data: workouts });
+    await prisma.trainingProgram.createMany({ data: programs });
+    await prisma.trainingProgramVersion.createMany({
+      data: programs.map(({ id, createdAt, updatedAt }, index) => ({
+        id: randomUUID(),
+        programId: id,
+        version: 1,
+        title: `Perf program ${String(index + 1).padStart(3, '0')}`,
+        status: 'DRAFT' as const,
+        createdAt,
+        updatedAt,
+      })),
+    });
+    await prisma.exercise.createMany({ data: exercises });
+
+    expect(await prisma.workout.count({ where: { id: { in: workoutIds } } })).toBe(POPULATION);
+    expect(await prisma.trainingProgram.count({ where: { id: { in: programIds } } })).toBe(
+      POPULATION,
+    );
+    expect(await prisma.exercise.count({ where: { id: { in: exerciseIds } } })).toBe(POPULATION);
+
     async function login(email: string): Promise<string> {
       const response = await request(app!.getHttpServer())
         .post('/auth/login')
@@ -129,8 +182,24 @@ describe('API Prisma SQL query count baseline (disposable PostgreSQL)', () => {
 
   afterAll(async () => {
     try {
-      if (prisma && athleteId && trainerId) {
-        await prisma.user.deleteMany({ where: { id: { in: [athleteId, trainerId] } } });
+      if (prisma) {
+        // Only rows owned by this fixture. Never truncate or delete unrelated DB data.
+        if (workoutIds.length) {
+          await prisma.workout.deleteMany({ where: { id: { in: workoutIds } } });
+        }
+        if (programIds.length) {
+          await prisma.trainingProgramVersion.deleteMany({
+            where: { programId: { in: programIds } },
+          });
+          await prisma.trainingProgram.deleteMany({ where: { id: { in: programIds } } });
+        }
+        if (exerciseIds.length) {
+          await prisma.exercise.deleteMany({ where: { id: { in: exerciseIds } } });
+        }
+        const userIds = [athleteId, trainerId].filter((id): id is string => Boolean(id));
+        if (userIds.length) {
+          await prisma.user.deleteMany({ where: { id: { in: userIds } } });
+        }
       }
     } finally {
       await app?.close();
@@ -150,57 +219,134 @@ describe('API Prisma SQL query count baseline (disposable PostgreSQL)', () => {
     expect(() => window.end()).toThrow('No active query window');
   });
 
-  it('records repeatable counts for critical read routes without capturing SQL', async () => {
-    const results: Array<{
+  it('profiles populated authenticated reads with matching HTTP and SQL windows', async () => {
+    const sqlResults: Array<{
       route: string;
       samples: number;
       queryCount: { min: number; p50: number; p95: number; max: number };
     }> = [];
+    const httpResults: Array<{
+      route: string;
+      method: 'GET';
+      path: string;
+      samples: number;
+      latencyMs: { min: number; p50: number; p95: number; max: number };
+      decodedResponseBytes: { min: number; p50: number; p95: number; max: number };
+    }> = [];
+
+    const summarize = (values: number[]) => {
+      expect(values).toHaveLength(SAMPLES);
+      const sorted = [...values].sort((a, b) => a - b);
+      return {
+        min: sorted[0]!,
+        p50: sorted[Math.ceil(sorted.length / 2) - 1]!,
+        p95: sorted[Math.ceil(sorted.length * 0.95) - 1]!,
+        max: sorted.at(-1)!,
+      };
+    };
 
     for (const route of ROUTES) {
       const counts: number[] = [];
+      const latencies: number[] = [];
+      const byteSizes: number[] = [];
       const cookie = route.actor === 'athlete' ? athleteCookie : trainerCookie;
 
       for (let attempt = 0; attempt < WARMUPS + SAMPLES; attempt++) {
         window.begin();
+        const start = performance.now();
         let count: number;
+        let elapsedMs: number;
+        let decodedBytes: number;
         try {
           const response = await request(app!.getHttpServer())
             .get(route.path)
             .set('Cookie', cookie);
+
+          elapsedMs = Number((performance.now() - start).toFixed(3));
           expect(response.status).toBe(200);
+          if (route.key === 'users-me') {
+            expect(response.body.id).toBe(athleteId);
+          } else {
+            // Verify that a successful response actually contains a full page.
+            expect(response.body.data).toHaveLength(20);
+          }
+          // Nest's default compact JSON serialization; this is NOT compressed wire size.
+          decodedBytes = Buffer.byteLength(JSON.stringify(response.body), 'utf8');
+          expect(decodedBytes).toBeGreaterThan(0);
         } finally {
           count = window.end();
         }
-        if (attempt >= WARMUPS) counts.push(count);
+
+        if (attempt >= WARMUPS) {
+          counts.push(count);
+          latencies.push(elapsedMs);
+          byteSizes.push(decodedBytes);
+        }
       }
 
-      expect(counts).toHaveLength(SAMPLES);
       expect(counts.every((count) => Number.isInteger(count) && count > 0)).toBe(true);
-      results.push({
+      sqlResults.push({
         route: route.key,
         samples: SAMPLES,
-        queryCount: {
-          min: Math.min(...counts),
-          p50: percentile(counts, 50),
-          p95: percentile(counts, 95),
-          max: Math.max(...counts),
-        },
+        queryCount: summarize(counts),
+      });
+      httpResults.push({
+        route: route.key,
+        method: 'GET',
+        path: route.path,
+        samples: SAMPLES,
+        latencyMs: summarize(latencies),
+        decodedResponseBytes: summarize(byteSizes),
       });
     }
 
-    expect(results.map((item) => item.route)).toEqual(ROUTES.map((item) => item.key));
-    // Explicit opt-in: CI assertions run without printing metrics by default.
+    expect(sqlResults.map(({ route }) => route)).toEqual(ROUTES.map(({ key }) => key));
+    expect(httpResults.map(({ route }) => route)).toEqual(ROUTES.map(({ key }) => key));
+
+    const sqlReport = {
+      schemaVersion: 1,
+      method: 'test-scoped Prisma query events; serial HTTP requests',
+      warmups: WARMUPS,
+      results: sqlResults,
+    };
+    const httpReport = {
+      schemaVersion: 1,
+      capturedAt: new Date().toISOString(),
+      nodeVersion: process.version,
+      methodology: {
+        concurrency: 1,
+        warmupPerRoute: WARMUPS,
+        samplesPerRoute: SAMPLES,
+        pauseMs: 0,
+        latency: 'elapsed time through complete response body read',
+        bytes: 'decoded response body size, not network transfer bytes',
+      },
+      results: httpResults,
+    };
+
+    // Report only allowlisted route identifiers, numeric metrics and fixture recipe.
+    // Never log SQL statements, SQL parameters, cookies, tokens or response bodies.
     if (process.env.API_PERF_SQL_REPORT === '1') {
+      console.info('API_PERF_SQL_REPORT ' + JSON.stringify(sqlReport));
+    }
+    if (process.env.API_PERF_PROFILE_REPORT === '1') {
       console.info(
-        'API_PERF_SQL_REPORT ' +
+        'API_PERF_PROFILE ' +
           JSON.stringify({
             schemaVersion: 1,
-            method: 'test-scoped Prisma query events; serial HTTP requests',
-            warmups: WARMUPS,
-            results,
+            fixture: {
+              recipe: FIXTURE_VERSION,
+              athleteAccounts: 1,
+              trainerAccounts: 1,
+              workouts: POPULATION,
+              trainingPrograms: POPULATION,
+              trainingProgramVersions: POPULATION,
+              exercises: POPULATION,
+            },
+            http: httpReport,
+            sql: sqlReport,
           }),
       );
     }
-  }, 60_000);
+  }, 90_000);
 });

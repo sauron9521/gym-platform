@@ -60,9 +60,14 @@ with genuine measurements; the script does not generate sample results):
 The above numbers and SHA are **illustrative only**, not a Gym Platform
 measurement. In an actual bundle, paste in the **whole unmodified** result
 of `pnpm perf:api:baseline` as the HTTP `report` (all selected routes).
-For `sql.report`, use the JSON following `API_PERF_SQL_REPORT` in the
-[query-count E2E](performance-baseline.md#prisma-sql-query-counts-second-slice)
-logs. For `explain.report`, use the JSON following `API_PERF_EXPLAIN` in
+For a paired HTTP + Prisma capture, take `http` and `sql` from the
+`API_PERF_PROFILE` JSON in the
+[populated E2E suite](performance-baseline.md#populated-http--prisma-query-baseline-fifth-slice).
+For a SQL-only capture, `API_PERF_SQL_REPORT` remains supported. The same
+operator-provided fixture/environment context can be used **within each
+source** for a genuine paired comparison, but this is not automatically
+validated by the tool. For `explain.report`, use the JSON following
+`API_PERF_EXPLAIN` in
 the [EXPLAIN E2E](performance-baseline.md#postgresql-plan-captures-third-slice)
 logs. Strip the log prefix and use the JSON object itself; do not copy log
 timestamps or incidental test output. Never paste authentication tokens,

@@ -54,39 +54,53 @@ Nearest-rank p95 uses the sorted sample at `ceil(0.95 * N)`; with only
 exploratory rather than a statistically stable performance SLO.
 JSON output has no tokens, response bodies, arbitrary URLs or user labels.
 
-## Prisma SQL query counts (second slice)
+## Populated HTTP + Prisma query baseline (fifth slice)
 
-A dedicated **test-only** PostgreSQL E2E suite measures the number of SQL
-statement events emitted by Prisma for the same four read routes. It creates
-two throwaway accounts (athlete and trainer), authenticates through the normal
-session flow, and issues **serial** requests within short counting windows:
-one warmup and five measured requests per route. This is an additional
-measurement, not a production endpoint or middleware.
+The **test-only** PostgreSQL E2E suite measures the same four authenticated
+GET requests with both HTTP wall-clock timing and Prisma query-event counts,
+using **one sequential request window** per sample. The fixture consists of
+one athlete, one legacy trainer, 128 planned workouts, 128 trainer programs
+(with 128 draft versions) and 128 global exercises. Row payload shapes,
+timestamps and list page sizes are fixed; randomly generated IDs prevent
+collisions with parallel test runs. These are minimal synthetic rows, not a
+realistic production dataset of exercise sets, translations or assignments.
 
-With a dedicated PostgreSQL database ending in `_test` and Redis configured as
-in [API testing](testing.md), run from the monorepo root:
+The suite requires `TEST_DATABASE_URL` pointing to a disposable database whose
+name ends in `_test` and the normal test Redis configuration. It inserts
+fixtures before opening the measurement windows, checks the row counts, then
+cleans up **only its own fixture IDs**, including dependent program versions
+and authenticated test accounts. It does not truncate or reset shared tables.
+
+From the monorepo root:
 
 ```sh
-API_PERF_SQL_REPORT=1 pnpm --filter @gym/api exec vitest run --config vitest.config.e2e.ts test/e2e/infra/performance-query-count.e2e-spec.ts
+API_PERF_PROFILE_REPORT=1 pnpm --filter @gym/api exec vitest run --config vitest.config.e2e.ts test/e2e/infra/performance-query-count.e2e-spec.ts
 ```
 
-The opt-in `API_PERF_SQL_REPORT` log contains only route **keys** and numeric
-min/p50/p95/max SQL query counts. It excludes SQL text, parameter values,
-response payloads, tokens and account identities. The suite uses a separate
-PrismaClient with `query` **event emission enabled only in this E2E process**;
-production `PrismaService` and Prometheus telemetry remain unchanged. The
-database-name guard refuses non-test databases before any connection. The
-HTTP throughput, caching, query optimization and response contracts are not
-modified.
+Defaults: **2 warmups + 25 measured requests per route**, serial requests,
+no extra pause between requests. The report line `API_PERF_PROFILE` contains
+two separate, comparator-compatible JSON reports, `http` and `sql`, plus an
+allowlisted fixture recipe and numeric row counts. An existing
+`API_PERF_SQL_REPORT=1` flag remains available to print just the SQL report.
+The API PostgreSQL E2E CI suite enables the combined report for review.
 
-Counts represent all Prisma SQL events in each **sequential in-process request
-window**, including session/auth queries. They can also include unrelated
-scheduled DB work, so isolate the test runner and compare only runs with the
-same seeded dataset, roles, fixture shape and configuration. A minimal pair
-of accounts and an empty workout/program dataset cannot stand in for a
-realistic populated load fixture. The HTTP benchmark's latency sample count
-and the SQL probe's query sample count are deliberately different; **do not
-combine their percentiles into one per-request measurement**.
+The HTTP samples include full-body response consumption and estimate decoded
+payload bytes by re-serializing the parsed JSON body (the Nest JSON responses
+use compact serialization). This is **not** a measurement of compressed
+network bytes. The SQL counts include session/authentication queries, and
+potential unrelated scheduled queries if any happen during a window. No raw
+SQL, query parameters, cookies, response objects, account IDs or emails are
+retained in either report. Production PrismaService and HTTP endpoints remain
+unchanged.
+
+Compared with the original two-account-only query-counter suite, this
+populated fixture provides meaningful pagination pages for Workouts, Programs
+and Exercises. It **does not** claim statistical performance baselines from
+GitHub CI: runner contention, cache state and background tasks may vary, and
+randomized fixture identifiers mean the database is not byte-for-byte
+identical between independent runs. The HTTP loopback sampler above uses a
+different protocol/session setup and must not be mixed into the same
+request-level trace.
 
 ## PostgreSQL plan captures (third slice)
 
@@ -123,9 +137,10 @@ This is exploratory, not a stable query-performance SLO.
 
 Use the [API performance comparison guide](performance-comparison.md) and
 `pnpm perf:api:compare` to validate independent before/after capture bundles
-before interpreting latency, Prisma query counts or SQL plans. Different
-HTTP, query-count and EXPLAIN fixture populations are compared **only within
-their own source**, not combined into a single traced request.
+before interpreting latency, Prisma query counts or SQL plans. The populated E2E suite captures
+HTTP and query-count metrics from **the same request windows**, while EXPLAIN
+is an independent synthetic SELECT experiment and must not be treated as
+part of those traced HTTP requests.
 
 ## Remaining acceptance criteria
 
