@@ -306,6 +306,7 @@
       "network": "Cannot reach the API. Try again later."
     },
     "workoutList": {
+      "calendar": "Workout calendar",
       "journal": "Workout journal",
       "title": "My workouts",
       "description": "Review upcoming, ongoing and completed workouts.",
@@ -342,6 +343,29 @@
       "forbiddenDescription": "You do not have permission to view workouts.",
       "unavailableTitle": "Service temporarily unavailable",
       "unavailableDescription": "Could not verify your session. Try again later."
+    },
+    "workoutCalendar": {
+      "title": "Workout calendar",
+      "back": "All workouts",
+      "description": "Workouts with a scheduled date",
+      "previous": "Previous month",
+      "next": "Next month",
+      "loading": "Loading calendar…",
+      "retry": "Try again",
+      "empty": "No scheduled workouts this month.",
+      "errorTooMany": "Too many workouts for this month. Narrow the date range.",
+      "errorIncomplete": "Could not load the entire month.",
+      "weekdayMon": "Mon",
+      "weekdayTue": "Tue",
+      "weekdayWed": "Wed",
+      "weekdayThu": "Thu",
+      "weekdayFri": "Fri",
+      "weekdaySat": "Sat",
+      "weekdaySun": "Sun",
+      "statusPlanned": "Planned",
+      "statusInProgress": "In progress",
+      "statusCompleted": "Completed",
+      "statusCancelled": "Cancelled"
     },
     "exerciseCatalog": {
       "library": "Exercise library",

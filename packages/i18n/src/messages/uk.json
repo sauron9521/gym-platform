@@ -126,7 +126,7 @@
         "planned": "Заплановані",
         "active": "У процесі",
         "completed": "Завершені",
-        "loading": "Завантажуємо…",
+        "loading": "��авантажуємо…",
         "unavailable": "Дані недоступні",
         "retry": "Повторити",
         "retryStatus": "Повторити завантаження: {status}",
@@ -306,6 +306,7 @@
       "network": "Немає з’єднання з API. Спробуйте пізніше."
     },
     "workoutList": {
+      "calendar": "Календар тренувань",
       "journal": "Тренувальний журнал",
       "title": "Мої тренування",
       "description": "Переглядайте заплановані, поточні та завершені тренування.",
@@ -342,6 +343,29 @@
       "forbiddenDescription": "Немає дозволу переглядати тренування.",
       "unavailableTitle": "Сервіс тимчасово недоступний",
       "unavailableDescription": "Не вдалося перевірити сесію. Спробуйте пізніше."
+    },
+    "workoutCalendar": {
+      "title": "Календар тренувань",
+      "back": "Усі тренування",
+      "description": "Тренування зі збереженою датою планування",
+      "previous": "Попередній місяць",
+      "next": "Наступний місяць",
+      "loading": "Завантаження календаря…",
+      "retry": "Повторити",
+      "empty": "На цей місяць немає запланованих тренувань.",
+      "errorTooMany": "У цьому місяці забагато тренувань для перегляду. Звузьте період.",
+      "errorIncomplete": "Не вдалося завантажити весь місяць.",
+      "weekdayMon": "Пн",
+      "weekdayTue": "Вт",
+      "weekdayWed": "Ср",
+      "weekdayThu": "Чт",
+      "weekdayFri": "Пт",
+      "weekdaySat": "Сб",
+      "weekdaySun": "Нд",
+      "statusPlanned": "Заплановано",
+      "statusInProgress": "У процесі",
+      "statusCompleted": "Завершено",
+      "statusCancelled": "Скасовано"
     },
     "exerciseCatalog": {
       "library": "Бібліотека вправ",
