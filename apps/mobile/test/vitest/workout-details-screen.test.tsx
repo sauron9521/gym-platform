@@ -99,6 +99,36 @@ describe('WorkoutDetailsScreen (real React Native renderer)', () => {
     expect(view.getByText(/Для завершення потрібен/)).toBeTruthy();
   });
 
+  it('shows a read-only checking state and blocks completion while refreshing canonical sets', async () => {
+    prepareWorkout('IN_PROGRESS', 'COMPLETED');
+    vi.mocked(useWorkoutDetailsQuery).mockReturnValue({
+      ...vi.mocked(useWorkoutDetailsQuery)('workout-123'),
+      isFetching: true,
+      isPending: false,
+      isError: false,
+    } as ReturnType<typeof useWorkoutDetailsQuery>);
+    const view = await render(<WorkoutDetailsScreen id="workout-123" />);
+    expect(view.getByTestId('workout-reconciling')).toBeTruthy();
+    const action = view.getByTestId('workout-status-action');
+    expect(action.props.accessibilityState.disabled).toBe(true);
+    await fireEvent.press(action);
+    expect(mutate).not.toHaveBeenCalled();
+  });
+
+  it('does not display cached completed sets after a failed canonical revalidation', async () => {
+    prepareWorkout('IN_PROGRESS', 'COMPLETED');
+    vi.mocked(useWorkoutDetailsQuery).mockReturnValue({
+      ...vi.mocked(useWorkoutDetailsQuery)('workout-123'),
+      isFetching: false,
+      isError: true,
+      error: new Error('Не вдалося перевірити стан підходів.'),
+    } as ReturnType<typeof useWorkoutDetailsQuery>);
+    const view = await render(<WorkoutDetailsScreen id="workout-123" />);
+    expect(view.getByText('Не вдалося перевірити стан підходів.')).toBeTruthy();
+    expect(view.queryByTestId('workout-status-action')).toBeNull();
+    expect(mutate).not.toHaveBeenCalled();
+  });
+
   it('keeps completion disabled when all sets are skipped', async () => {
     prepareWorkout('IN_PROGRESS', 'SKIPPED');
     const view = await render(<WorkoutDetailsScreen id="workout-123" />);

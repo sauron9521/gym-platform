@@ -109,6 +109,40 @@ describe('WorkoutSetRow (React Native)', () => {
     expect(mutateAsync).toHaveBeenCalledTimes(1);
   });
 
+  it('new canonical GET snapshot supersedes an older local completion receipt', async () => {
+    mutateAsync.mockResolvedValue({
+      ...set,
+      status: 'COMPLETED',
+      actualReps: 8,
+      actualWeightKg: '60',
+    });
+    const view = await render(
+      <WorkoutSetRow workoutId="workout-1" set={set} editable canonicalSnapshotAt={1} />,
+    );
+    await fireEvent.press(view.getByTestId('set-complete-set-1'));
+    await waitFor(() => expect(view.getByText('✓ Збережено')).toBeTruthy());
+
+    // A new authoritative GET responds PENDING with the same updatedAt/revision.
+    // Earlier local acknowledgement must not conceal this canonical response.
+    await view.rerender(
+      <WorkoutSetRow workoutId="workout-1" set={set} editable canonicalSnapshotAt={2} />,
+    );
+    await waitFor(() => expect(view.getByText('Очікує')).toBeTruthy());
+    expect(view.queryByText('✓ Збережено')).toBeNull();
+    expect(mutateAsync).toHaveBeenCalledTimes(1);
+  });
+
+  it('disables edits and does not resend a PATCH during reconciliation', async () => {
+    const view = await render(
+      <WorkoutSetRow workoutId="workout-1" set={set} editable reconciling />,
+    );
+    expect(view.getByTestId('set-complete-set-1').props.accessibilityState.disabled).toBe(true);
+    expect(view.getByTestId('set-skip-set-1').props.accessibilityState.disabled).toBe(true);
+    await fireEvent.press(view.getByTestId('set-complete-set-1'));
+    await fireEvent.press(view.getByTestId('set-skip-set-1'));
+    expect(mutateAsync).not.toHaveBeenCalled();
+  });
+
   it('rejects a second immediate completion while the first request is pending', async () => {
     let finish!: (value: { id: string }) => void;
     mutateAsync.mockImplementation(

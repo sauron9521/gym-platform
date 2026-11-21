@@ -1,3 +1,5 @@
+import { useCallback } from 'react';
+import { useFocusEffect } from 'expo-router';
 import { onlineManager, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { paths } from '@gym/api-client';
 
@@ -9,6 +11,7 @@ import {
   shouldRetryMobileRead,
 } from '@/shared/api/api-error-policy';
 import { accountQueryKeys } from '@/shared/api/query-client';
+import { reconcileWorkoutOnFocus } from './workout-reconciliation';
 
 export type WorkoutDetails =
   paths['/workouts/{id}']['get']['responses'][200]['content']['application/json'];
@@ -17,6 +20,15 @@ export type WorkoutTransition = 'start' | 'complete';
 
 export function useWorkoutDetailsQuery(workoutId: string) {
   const { account, getApi, signOut } = useAuth();
+  const queryClient = useQueryClient();
+
+  useFocusEffect(
+    useCallback(() => {
+      void reconcileWorkoutOnFocus(queryClient, account?.id ?? null, workoutId).catch(
+        () => undefined,
+      );
+    }, [queryClient, account?.id, workoutId]),
+  );
 
   return useQuery({
     queryKey: accountQueryKeys.workoutDetail(account?.id ?? 'signed-out', workoutId),
@@ -38,6 +50,10 @@ export function useWorkoutDetailsQuery(workoutId: string) {
       return response.data;
     },
     retry: shouldRetryMobileRead,
+    // Always read canonical state after native background/foreground and reconnect,
+    // even inside the default 30-second cache stale window. This is GET-only.
+    refetchOnWindowFocus: 'always',
+    refetchOnReconnect: 'always',
   });
 }
 

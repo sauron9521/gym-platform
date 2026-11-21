@@ -52,13 +52,21 @@ export function useWorkoutSetMutation(workoutId: string) {
       return response.data;
     },
     networkMode: 'always',
-    onSuccess: (updated) => {
+    onSuccess: async (updated) => {
       if (Platform.OS !== 'web') {
         void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(
           () => undefined,
         );
       }
-      if (!account) return;
+      if (!account || !queryClient.getQueryData(accountQueryKeys.me(account.id))) return;
+      // Do not let a concurrently completing stale GET overwrite the server's
+      // successful PATCH response after app resume. GET supports abort signals.
+      await queryClient.cancelQueries({
+        queryKey: accountQueryKeys.workoutDetail(account.id, workoutId),
+        exact: true,
+      });
+      // Account could be revoked while the cancellation promise is in flight.
+      if (!queryClient.getQueryData(accountQueryKeys.me(account.id))) return;
       queryClient.setQueryData<WorkoutDetails>(
         accountQueryKeys.workoutDetail(account.id, workoutId),
         (current) =>

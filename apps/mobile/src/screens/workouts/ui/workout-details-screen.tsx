@@ -82,7 +82,8 @@ export function WorkoutDetailsScreen({ id }: { id: string }) {
   const allSets = workout?.exercises.flatMap((exercise) => exercise.sets) ?? [];
   const progress = workoutSetProgress(allSets);
   const completionAllowed = canCompleteWorkout(allSets);
-  const busy = transition.isPending || titleUpdate.isPending || cancellation.isPending;
+  const reconciling = details.isFetching && !details.isPending;
+  const busy = transition.isPending || titleUpdate.isPending || cancellation.isPending || reconciling;
   const cancellable = workout?.status === 'PLANNED' || workout?.status === 'IN_PROGRESS';
   const releaseLock = () => { writeLock.current = false; };
 
@@ -135,6 +136,11 @@ export function WorkoutDetailsScreen({ id }: { id: string }) {
       testID="workout-details-scroll"
     >
       {details.isPending ? <ActivityIndicator accessibilityLabel="Завантаження" /> : null}
+      {reconciling ? (
+        <Text accessibilityLiveRegion="polite" testID="workout-reconciling" style={styles.muted}>
+          Перевіряємо актуальний стан підходів…
+        </Text>
+      ) : null}
       {details.isError ? (
         <Text accessibilityRole="alert" style={styles.error}>
           {details.error.message}
@@ -166,6 +172,8 @@ export function WorkoutDetailsScreen({ id }: { id: string }) {
                   workoutId={id}
                   set={set}
                   editable={workout.status === 'IN_PROGRESS'}
+                  reconciling={reconciling}
+                  canonicalSnapshotAt={details.dataUpdatedAt}
                 />
               ))}
             </View>
