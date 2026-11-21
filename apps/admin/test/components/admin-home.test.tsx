@@ -1,14 +1,17 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { cleanup, render, screen } from '@testing-library/react';
 
-const { headersMock, sessionMock, healthMock, localeState } = vi.hoisted(() => ({
+const { headersMock, cookiesMock, sessionMock, healthMock, localeState } = vi.hoisted(() => ({
   headersMock: vi.fn(),
+  cookiesMock: vi.fn(),
   sessionMock: vi.fn(),
   healthMock: vi.fn(),
   localeState: { current: 'uk' as 'uk' | 'en' },
 }));
 
-vi.mock('next/headers', () => ({ headers: headersMock }));
+vi.mock('next/headers', () => ({ headers: headersMock, cookies: cookiesMock }));
+vi.mock('@/shared/ui/locale-switcher', () => ({ LocaleSwitcher: () => null }));
+vi.mock('@/shared/ui/theme-switcher', () => ({ ThemeSwitcher: () => null }));
 vi.mock('@/shared/api/admin-session', () => ({ readAdminSession: sessionMock }));
 vi.mock('@/shared/api/admin-health', () => ({ readAdminHealth: healthMock }));
 
@@ -30,6 +33,7 @@ beforeEach(() => {
   vi.resetAllMocks();
   healthMock.mockResolvedValue('healthy');
   localeState.current = 'uk';
+  cookiesMock.mockResolvedValue({ get: () => undefined });
   headersMock.mockResolvedValue({
     get: (name: string) => (name === 'cookie' ? 'sid=browser-session' : null),
   });
@@ -65,11 +69,22 @@ describe('AdminHomePage server-side access control', () => {
 
     expect(screen.getByRole('heading', { level: 1, name: 'Адміністративна консоль' })).toBeTruthy();
     expect(screen.getByText('Доступ підтверджено NestJS API.')).toBeTruthy();
-    expect(screen.getByText('Gym Platform Admin')).toBeTruthy();
+    expect(screen.getAllByText('OVRANTO')).toHaveLength(2);
     expect(screen.queryByRole('alert')).toBeNull();
     expect(screen.getByText(/PostgreSQL та обмеження запитів/)).toBeTruthy();
     expect(healthMock).toHaveBeenCalledOnce();
     expect(sessionMock).toHaveBeenCalledExactlyOnceWith('sid=browser-session');
+  });
+
+  test('shows read-only navigation without fake privileged routes', async () => {
+    sessionMock.mockResolvedValue({ kind: 'admin', id: 'admin-123' });
+    const { container } = render(await AdminHomePage());
+
+    expect(screen.getAllByRole('navigation')).toHaveLength(2);
+    expect(screen.getAllByText('Користувачі').length).toBeGreaterThan(0);
+    expect(container.querySelectorAll('a[href="/"]')).toHaveLength(2);
+    expect(container.querySelectorAll('a[href="/users"]')).toHaveLength(0);
+    expect(container.querySelectorAll('[aria-disabled="true"]').length).toBeGreaterThan(0);
   });
 
   test('shows a safe degraded signal when API readiness is unavailable', async () => {
@@ -88,6 +103,7 @@ describe('AdminHomePage server-side access control', () => {
 
     expect(healthMock).not.toHaveBeenCalled();
     expect(screen.queryByRole('status')).toBeNull();
+    expect(screen.queryByRole('navigation')).toBeNull();
   });
 
   test('keeps the server session ID and cookie out of HTML', async () => {
