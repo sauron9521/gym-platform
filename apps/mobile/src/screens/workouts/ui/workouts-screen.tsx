@@ -1,25 +1,36 @@
 import { useMemo, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useIntl } from 'react-intl';
 
 import { useAuth } from '@/features/auth/model/auth-context';
 import { hasAthleteAccess } from '@/features/auth/model/account-capabilities';
-import {
-  workoutStatusLabel,
-  type WorkoutState,
-} from '@/features/workouts/lib/workout-presentation';
+import type { WorkoutState } from '@/features/workouts/lib/workout-presentation';
 import { useWorkoutsQuery, type WorkoutFilter } from '@/features/workouts/model/workouts-query';
 import { palette } from '@/shared/config/theme';
-
-const filters: { title: string; value: WorkoutFilter }[] = [
-  { title: 'Усі', value: undefined },
-  { title: 'Заплановано', value: 'PLANNED' },
-  { title: 'Триває', value: 'IN_PROGRESS' },
-  { title: 'Завершено', value: 'COMPLETED' },
-  { title: 'Скасовано', value: 'CANCELLED' },
-];
+import {
+  MobileAccessDeniedError,
+  MobileReadHttpError,
+  MobileSessionExpiredError,
+} from '@/shared/api/api-error-policy';
 
 export function WorkoutsScreen() {
+  const intl = useIntl();
+  const t = (key: string, values?: Record<string, string>) =>
+    intl.formatMessage({ id: `mobile.workoutList.${key}` }, values);
+  const filters: { title: string; value: WorkoutFilter }[] = [
+    { title: t('all'), value: undefined },
+    { title: t('planned'), value: 'PLANNED' },
+    { title: t('active'), value: 'IN_PROGRESS' },
+    { title: t('completed'), value: 'COMPLETED' },
+    { title: t('cancelled'), value: 'CANCELLED' },
+  ];
+  const statusKeys = {
+    PLANNED: 'statusPlanned',
+    IN_PROGRESS: 'statusActive',
+    COMPLETED: 'statusCompleted',
+    CANCELLED: 'statusCancelled',
+  } as const satisfies Record<WorkoutState, string>;
   const router = useRouter();
   const { capabilities } = useAuth();
   const [filter, setFilter] = useState<WorkoutFilter>(undefined);
@@ -35,6 +46,16 @@ export function WorkoutsScreen() {
     fetchNextPage,
     refetch,
   } = useWorkoutsQuery(filter);
+  const getErrorKey = (): string => {
+    if (error instanceof MobileSessionExpiredError) return 'errorSessionExpired';
+    if (error instanceof MobileAccessDeniedError) return 'errorForbidden';
+    if (error instanceof MobileReadHttpError) {
+      if (error.status === 403) return 'errorForbidden';
+      if (error.status === 429) return 'errorRateLimited';
+      if (error.status >= 500) return 'errorUnavailable';
+    }
+    return 'errorDefault';
+  };
   const workouts = useMemo(() => {
     const items: { id: string; title: string; status: WorkoutState; scheduledAt: string | null }[] =
       [];
@@ -69,23 +90,23 @@ export function WorkoutsScreen() {
       onEndReachedThreshold={0.45}
       ListHeaderComponent={
         <View style={styles.heading}>
-          <Text style={styles.title}>Мої тренування</Text>
-          <Text style={styles.subtitle}>Історія та заплановані тренування</Text>
+          <Text style={styles.title}>{t('title')}</Text>
+          <Text style={styles.subtitle}>{t('subtitle')}</Text>
           {hasAthleteAccess(capabilities) ? (
             <Pressable
               testID="workouts-create"
               accessibilityRole="button"
-              accessibilityLabel="Створити тренування"
+              accessibilityLabel={t('createAria')}
               style={styles.button}
               onPress={() => router.push('/workouts/new')}
             >
-              <Text style={styles.buttonText}>Нове тренування</Text>
+              <Text style={styles.buttonText}>{t('create')}</Text>
             </Pressable>
           ) : null}
           <View style={styles.filters}>
             {filters.map((choice) => (
               <Pressable
-                key={choice.title}
+                key={choice.value ?? 'ALL'}
                 testID={`workouts-filter-${choice.value ?? 'ALL'}`}
                 accessibilityRole="button"
                 accessibilityState={{ selected: choice.value === filter }}
@@ -98,38 +119,38 @@ export function WorkoutsScreen() {
           </View>
           {isError ? (
             <Text accessibilityRole="alert" style={styles.error}>
-              {error.message}
+              {t(getErrorKey())}
             </Text>
           ) : null}
-          {isPending ? <Text style={styles.subtitle}>Завантаження…</Text> : null}
+          {isPending ? <Text style={styles.subtitle}>{t('loading')}</Text> : null}
         </View>
       }
       ListEmptyComponent={
-        !isPending && !isError ? (
-          <Text style={styles.subtitle}>Тренувань за вибраним фільтром немає.</Text>
-        ) : undefined
+        !isPending && !isError ? <Text style={styles.subtitle}>{t('empty')}</Text> : undefined
       }
       renderItem={({ item }) => (
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={`Відкрити тренування ${item.title}`}
+          accessibilityLabel={t('open', { title: item.title })}
           onPress={() => router.push({ pathname: '/workouts/[id]', params: { id: item.id } })}
           style={styles.card}
         >
           <Text style={styles.cardTitle}>{item.title}</Text>
-          <Text style={styles.subtitle}>{workoutStatusLabel(item.status)}</Text>
+          <Text style={styles.subtitle}>{t(statusKeys[item.status])}</Text>
           {item.scheduledAt ? (
             <Text style={styles.subtitle}>
-              {new Date(item.scheduledAt).toLocaleDateString('uk-UA')}
+              {new Intl.DateTimeFormat(intl.locale === 'en' ? 'en-US' : 'uk-UA', {
+                day: 'numeric',
+                month: 'short',
+                year: 'numeric',
+              }).format(new Date(item.scheduledAt))}
             </Text>
           ) : null}
         </Pressable>
       )}
       ListFooterComponent={
         <View style={styles.footer}>
-          {isFetchingNextPage ? (
-            <Text style={styles.subtitle}>Завантаження наступної сторінки…</Text>
-          ) : null}
+          {isFetchingNextPage ? <Text style={styles.subtitle}>{t('nextLoading')}</Text> : null}
           {hasNextPage && !isFetchingNextPage ? (
             <Pressable
               testID="workouts-load-more"
@@ -139,7 +160,7 @@ export function WorkoutsScreen() {
               style={styles.moreButton}
             >
               <Text style={styles.subtitle}>
-                {isFetchNextPageError ? 'Помилка завантаження. Спробувати ще' : 'Показати ще'}
+                {isFetchNextPageError ? t('nextError') : t('loadMore')}
               </Text>
             </Pressable>
           ) : null}
@@ -150,7 +171,7 @@ export function WorkoutsScreen() {
             onPress={() => void refetch()}
             style={styles.button}
           >
-            <Text style={styles.buttonText}>{isFetching ? 'Оновлення…' : 'Оновити список'}</Text>
+            <Text style={styles.buttonText}>{isFetching ? t('refreshing') : t('refresh')}</Text>
           </Pressable>
         </View>
       }
