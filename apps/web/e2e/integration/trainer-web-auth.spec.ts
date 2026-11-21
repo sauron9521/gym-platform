@@ -29,6 +29,8 @@ test('Trainer browser requires live approval, protects Origin/cookies, and revok
   const ownVersionId = randomUUID();
   const foreignProgramId = randomUUID();
   const foreignVersionId = randomUUID();
+  const ownAssignmentIds = Array.from({ length: 9 }, () => randomUUID());
+  const foreignAssignmentId = randomUUID();
   const ownProgramTitle = `Trainer dashboard own ${randomUUID()}`;
   const foreignProgramTitle = `Trainer dashboard foreign ${randomUUID()}`;
   const dashboardAthleteEmail = `trainer-client-${dashboardAthleteId}@example.test`;
@@ -174,11 +176,95 @@ test('Trainer browser requires live approval, protects Origin/cookies, and revok
       ),
     ).toBeVisible();
     await expect(page.getByText(otherTrainerEmail)).toHaveCount(0);
+    await expect(
+      page.getByText('No programs have been assigned to this client yet.'),
+    ).toBeVisible();
     await page.goto(`${trainerOrigin}/workspace/clients/${otherRelationId}`);
     await expect(page.getByRole('heading', { name: 'Client not found' })).toBeVisible();
     await expect(page.getByText(dashboardAthleteEmail)).toHaveCount(0);
     await page.goto(`${trainerOrigin}/workspace/clients/not-a-uuid`);
     await expect(page.getByRole('heading', { name: 'Client not found' })).toBeVisible();
+    await page.goto(`${trainerOrigin}/workspace`);
+
+    // Insert nine owner-assigned versions and one other trainer assignment.
+    // The backend's WHERE/LIMIT/COUNT must exclude the latter before page 1/2.
+    // Use a published program version as the actual assignment domain requires.
+    await withDisposableDatabase(async (db) => {
+      await db.query(
+        'UPDATE "training_programs" SET "status" = $1, "updated_at" = NOW() WHERE "id" IN ($2, $3)',
+        ['PUBLISHED', ownProgramId, foreignProgramId],
+      );
+      await db.query(
+        'UPDATE "training_program_versions" SET "status" = $1, "published_at" = NOW(), "updated_at" = NOW() WHERE "id" IN ($2, $3)',
+        ['PUBLISHED', ownVersionId, foreignVersionId],
+      );
+
+      const insertSql =
+        'INSERT INTO "training_program_assignments" ("id", "version_id", "trainer_athlete_id", "athlete_id", "assigned_by_id", "status", "assigned_at", "updated_at") ' +
+        "VALUES ($1, $2, $3, $4, $5, $6, NOW() - ($7::int * INTERVAL '1 minute'), NOW())";
+      for (let index = 0; index < ownAssignmentIds.length; index++) {
+        await db.query(insertSql, [
+          ownAssignmentIds[index],
+          ownVersionId,
+          dashboardRelationId,
+          dashboardAthleteId,
+          user.id,
+          index === 0 ? 'ACTIVE' : 'COMPLETED',
+          String(index),
+        ]);
+      }
+      await db.query(insertSql, [
+        foreignAssignmentId,
+        foreignVersionId,
+        otherRelationId,
+        user.id,
+        otherTrainerId,
+        'ACTIVE',
+        '0',
+      ]);
+    });
+
+    await page.goto(`${trainerOrigin}/workspace/clients/${dashboardRelationId}`);
+    await expect(page.getByRole('heading', { name: 'Client progress' })).toBeVisible();
+    await expect(page.getByRole('region', { name: 'Active assignments' })).toContainText('1');
+    const ownAssignedList = page.getByRole('list', { name: 'Assigned programs' });
+    await expect(ownAssignedList.getByRole('listitem')).toHaveCount(8);
+    await expect(page.getByText('Total assignments:')).toBeVisible();
+    await expect(page.getByText('9', { exact: true })).toBeVisible();
+    await expect(ownAssignedList.getByText('Active', { exact: true })).toHaveCount(1);
+    await expect(ownAssignedList.getByText('Completed', { exact: true })).toHaveCount(7);
+    await expect(ownAssignedList.getByText(ownProgramTitle)).toHaveCount(8);
+    await expect(page.getByText(foreignProgramTitle)).toHaveCount(0);
+
+    await page.getByRole('link', { name: 'Next' }).click();
+    await expect(page).toHaveURL(
+      `${trainerOrigin}/workspace/clients/${dashboardRelationId}?assignmentsPage=2`,
+    );
+    const pageTwo = page.getByRole('list', { name: 'Assigned programs' });
+    await expect(pageTwo.getByRole('listitem')).toHaveCount(1);
+    await expect(pageTwo.getByText('Completed', { exact: true })).toBeVisible();
+    await expect(page.getByText(foreignProgramTitle)).toHaveCount(0);
+    await page.getByRole('link', { name: 'Back', exact: true }).click();
+    await expect(page).toHaveURL(
+      `${trainerOrigin}/workspace/clients/${dashboardRelationId}?assignmentsPage=1`,
+    );
+    await expect(
+      page.getByRole('list', { name: 'Assigned programs' }).getByRole('listitem'),
+    ).toHaveCount(8);
+
+    await page.goto(
+      `${trainerOrigin}/workspace/clients/${dashboardRelationId}?assignmentsPage=100`,
+    );
+    await expect(
+      page.getByText('No assignments on this page. Return to an earlier page.'),
+    ).toBeVisible();
+    await page.goto(
+      `${trainerOrigin}/workspace/clients/${dashboardRelationId}?assignmentsPage=invalid`,
+    );
+    await expect(
+      page.getByRole('list', { name: 'Assigned programs' }).getByRole('listitem'),
+    ).toHaveCount(8);
+
     await page.goto(`${trainerOrigin}/workspace`);
 
     const authenticatedCookies = (await page.context().cookies([trainerOrigin])).filter(
@@ -280,6 +366,10 @@ test('Trainer browser requires live approval, protects Origin/cookies, and revok
     await expect(page.getByRole('button', { name: 'Sign out' })).toHaveCount(0);
   } finally {
     await withDisposableDatabase(async (db) => {
+      await db.query(
+        'DELETE FROM "training_program_assignments" WHERE "trainer_athlete_id" IN ($1, $2)',
+        [dashboardRelationId, otherRelationId],
+      );
       await db.query('DELETE FROM "training_program_versions" WHERE "id" IN ($1, $2)', [
         ownVersionId,
         foreignVersionId,
