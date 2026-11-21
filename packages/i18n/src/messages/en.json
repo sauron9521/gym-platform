@@ -542,6 +542,28 @@
       "statusCompleted": "Completed",
       "statusTerminated": "Terminated",
       "statusUnknown": "Status unavailable"
+    },
+    "progressView": {
+      "title": "My progress",
+      "exerciseStats": "Exercise statistics",
+      "loading": "Loading statistics",
+      "retry": "Retry",
+      "workouts": "Workouts",
+      "activeDays": "Active days",
+      "sets": "Sets",
+      "volume": "Volume, kg",
+      "chart": "Daily training volume",
+      "noData": "No data available for this period.",
+      "noVolume": "No recorded strength volume in this period.",
+      "updated": "Gym API data as of {date}",
+      "bar": "{date}: {volume} kg",
+      "refresh": "Refresh statistics",
+      "refreshing": "Refreshing…",
+      "refreshAria": "Refresh progress",
+      "error": "Could not load statistics. Try again.",
+      "range7d": "Last 7 days",
+      "range30d": "Last 30 days",
+      "range90d": "Last 90 days"
     }
   },
   "landing": {
