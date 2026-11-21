@@ -5,13 +5,27 @@ import { getLocale, getTranslations } from 'next-intl/server';
 
 import { UsersTable, type DirectoryCopy } from '@/features/users/ui/users-table';
 import { readAdminSession } from '@/shared/api/admin-session';
+import {
+  parseDirectoryFilters,
+  readAdminDirectory,
+  type DirectoryFilters,
+  type DirectoryResult,
+} from '@/shared/api/admin-directory';
 import { parseThemePreference, THEME_COOKIE_NAME } from '@/shared/lib/theme-preference';
 import { LocaleSwitcher } from '@/shared/ui/locale-switcher';
 import { ThemeSwitcher } from '@/shared/ui/theme-switcher';
 
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
-export default async function AdminUsersPage() {
+type SearchParams = Record<string, string | string[] | undefined>;
+const DEFAULT_FILTERS: DirectoryFilters = { page: 1, search: '', role: '' };
+
+export default async function AdminUsersPage({
+  searchParams,
+}: {
+  searchParams?: Promise<SearchParams>;
+} = {}) {
   const [admin, t, locale] = await Promise.all([
     getTranslations('admin'),
     getTranslations('admin.users'),
@@ -34,13 +48,19 @@ export default async function AdminUsersPage() {
     );
   }
 
+  // Read the authenticated API only after verifying the Admin session, never
+  // trust the presence of a cookie or user-controlled query parameters alone.
+  const parsed = parseDirectoryFilters((await searchParams) ?? {});
+  const filters = parsed.kind === 'valid' ? parsed.filters : DEFAULT_FILTERS;
+  const result: DirectoryResult =
+    parsed.kind === 'valid' ? await readAdminDirectory(cookie, filters) : { kind: 'invalid' };
+
   const cookieStore = await cookies();
   const theme = parseThemePreference(cookieStore.get(THEME_COOKIE_NAME)?.value);
 
   const copy: DirectoryCopy = {
     search: t('search'),
     allRoles: t('allRoles'),
-    allStatuses: t('allStatuses'),
     email: t('email'),
     role: t('role'),
     status: t('status'),
@@ -49,11 +69,14 @@ export default async function AdminUsersPage() {
     trainer: t('trainer'),
     admin: t('admin'),
     active: t('active'),
-    suspended: t('suspended'),
-    sortEmail: t('sortEmail'),
-    sortJoined: t('sortJoined'),
     unavailableTitle: t('unavailableTitle'),
     unavailableDescription: t('unavailableDescription'),
+    forbiddenTitle: t('forbiddenTitle'),
+    forbiddenDescription: t('forbiddenDescription'),
+    invalidTitle: t('invalidTitle'),
+    invalidDescription: t('invalidDescription'),
+    expiredTitle: t('expiredTitle'),
+    expiredDescription: t('expiredDescription'),
     emptyTitle: t('emptyTitle'),
     emptyDescription: t('emptyDescription'),
     page: t('page'),
@@ -61,6 +84,9 @@ export default async function AdminUsersPage() {
     previous: t('previous'),
     next: t('next'),
     rows: t('rows'),
+    apply: t('apply'),
+    clear: t('clear'),
+    newestFirst: t('newestFirst'),
   };
 
   return (
@@ -99,8 +125,8 @@ export default async function AdminUsersPage() {
         </div>
         <Card className="space-y-5 p-5 sm:p-6">
           <UsersTable
-            rows={[]}
-            available={false}
+            result={result}
+            filters={filters}
             locale={locale === 'en' ? 'en' : 'uk'}
             copy={copy}
           />

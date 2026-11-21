@@ -488,7 +488,7 @@
     "navOpen": "Open",
     "users": {
       "title": "Users",
-      "intro": "Account directory with search and filters. Records will appear after the protected Admin API is connected.",
+      "intro": "Protected read-only directory for authorized operators. Search and pagination run on the server.",
       "back": "Back to overview",
       "search": "Search by email",
       "allRoles": "All roles",
@@ -505,14 +505,23 @@
       "sortEmail": "Sort by email",
       "sortJoined": "Sort by registration date",
       "unavailableTitle": "User directory unavailable",
-      "unavailableDescription": "The protected Admin user-list API is not connected yet. Search and filters are disabled; no account records are fetched.",
+      "unavailableDescription": "The protected directory cannot be loaded. Check API availability and try again.",
       "emptyTitle": "No users match",
       "emptyDescription": "Try changing your search or filters.",
       "page": "Page",
       "of": "of",
       "previous": "Previous",
       "next": "Next",
-      "rows": "records"
+      "rows": "records",
+      "forbiddenTitle": "Insufficient permissions",
+      "forbiddenDescription": "The account directory is available only to explicitly authorized Super Admin operators.",
+      "invalidTitle": "Invalid search parameters",
+      "invalidDescription": "Reset filters and try again. Search must contain 2 to 100 characters.",
+      "expiredTitle": "Session expired",
+      "expiredDescription": "Sign in again to view the directory.",
+      "apply": "Apply filters",
+      "clear": "Clear filters",
+      "newestFirst": "Sorted by newest registration first"
     }
   },
   "mobile": {
