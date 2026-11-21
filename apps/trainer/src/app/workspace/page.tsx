@@ -247,6 +247,13 @@ export default async function TrainerWorkspacePage({
                   </p>
                   <p className="text-xs text-muted-foreground">{t.activeRelation}</p>
                 </div>
+                <Link
+                  href={`/workspace/clients/${encodeURIComponent(client.id)}`}
+                  prefetch={false}
+                  className="ml-auto inline-flex min-h-11 shrink-0 items-center rounded-lg border border-border px-3 text-sm font-semibold text-primary hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                >
+                  {t.clientProgressLink}
+                </Link>
               </li>
             ))}
           </ul>

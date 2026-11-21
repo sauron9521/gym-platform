@@ -71,6 +71,34 @@ Relevant tests cover trusted origin, exact five-item limit, malformed payloads,
 empty and revoked states. The real Trainer browser/PostgreSQL test seeds
 one owned and one foreign trainer program and asserts only the owned preview.
 
+## Trainer individual client progress (#364, API #487)
+
+The protected dynamic `/workspace/clients/[relationId]` route is linked only
+from the server-validated, paginated **active trainer-owned client list**.
+It first checks the current Trainer grant. It then uses the existing typed
+`GET /trainer-dashboard/clients/:relationId/progress` backend authorization
+(approved trainer + ACTIVE owner relationship + assigned-program counts) and,
+**only after success**, reads `GET /trainer-athletes/:id` for the client's
+contact email. Both requests share the existing strict host-only cookie,
+trusted-origin, no-cache, no-redirect, five-second timeout transport.
+
+No email, counts or other private data render unless **both** responses are
+200 with matching ACTIVE relationship identity and valid progress metrics.
+Invalid/non-UUID IDs never hit the API. Missing, foreign, closed or redacted
+relationships show an identical generic not-found state. A moderation/session
+change between the permission check and either read fails closed with a
+sign-in/denied state. Outages or malformed data display a retryable unavailable
+state, not false zero counts. True zero values remain visible with an empty
+state. Counts include **only the trainer's assigned-program activity**, never
+all of an athlete's personal workout history.
+
+All labels are localized uk/en; the page is `noindex` and server-rendered
+without prefetch of private links. Unit tests cover the transport, shape
+validation, timing/ownership, 401/403/404 and failure cases. The existing
+real browser/Nest/PostgreSQL Trainer E2E verifies navigation, own versus
+foreign clients, revocation and ended collaboration. No new API, Prisma
+migration, client-side auth store, or workout permission widening.
+
 ## Real-browser security regression
 
 The existing `Web / Integration E2E` workflow runs
