@@ -131,6 +131,59 @@ gate, **not** a statistically controlled A/B benchmark. Never interpret
 a single short sample, small synthetic dataset, or divergent hardware as
 proof of a performance gain.
 
+## Manual two-revision A/B workflow (opt-in)
+
+After the A/B harness is merged into `main`, open **Actions →
+API Performance / Manual A-B comparison → Run workflow** on `main`.
+Supply two **full 40-character commit SHAs** (`before_sha` and
+`after_sha`). GitHub runs the two checkouts sequentially on the **same
+Ubuntu 24.04 runner**, Node 24 and PostgreSQL 17 service.
+
+The workflow deliberately refuses mismatched versions of the A/B
+fixture test, Vitest configuration, Prisma schema or migrations,
+Prisma configuration, API package manifest or pnpm lockfile. This
+makes it suitable for comparing an isolated implementation change,
+not different schemas/dependencies. **Both revisions must already
+contain the same A/B fixture test introduced after PR #546.**
+Comparing a revision from before the harness was added will be rejected.
+
+Each checkout gets its own freshly created, distinct disposable local
+PostgreSQL database: `gym_perf_before_test` and
+`gym_perf_after_test`. There is **no seed library or production data
+import**. The test enables deterministic fixture IDs only when its
+database name and loopback connection match those dedicated A/B
+names. This makes the synthetic records (128 workouts, 128 programs
+and versions, 128 global exercises and two users) reproducible
+between the two databases. The test hashes its **persisted** selected
+fixture rows and reports a SHA-256 fingerprint without exposing
+account IDs or raw records. If fingerprints differ, the comparison
+fails closed.
+
+Both revisions independently run 2 warmups and 25 serialized
+GET measurements per route; the workflow extracts only the allowlisted
+`API_PERF_PROFILE` contents from test logs. The runner validates
+report schemas, routes, samples, actual fixture fingerprints and
+pinned Git SHAs, and produces a `comparison.json` artifact using
+the existing comparator. It never uploads raw test logs, SQL
+conditions, payloads, session cookies or token data. The artifact is
+retained for **7 days**.
+
+The `comparison.json` file provides HTTP p50/p95, decoded response
+bytes and Prisma query count deltas for Users, Workouts, Training
+Programs and Exercises. It does **not** include EXPLAIN: that probe
+uses a different SQL-shape experiment. A run with the **same SHA
+for before and after** is labeled `A/A pipeline smoke`; it verifies
+the measurement pipeline but does not measure a code improvement.
+
+**Limitations:** a runner is not a laboratory (warm CPU and cache
+effects, transient host load and service-level scheduling can still
+influence timing). Even with identical fixture hashes, auth/session
+internals are generated separately in each DB, and one pair of
+25-sample runs does not show statistical significance. Treat
+results as exploratory evidence; repeat runs and examine full
+SQL plans before considering indexes or caching. The workflow
+does not change, deploy, or migrate any live database.
+
 ## Issue completion
 
 Issue #313 remains open until we capture real before/after results on
