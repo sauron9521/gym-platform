@@ -3,11 +3,13 @@ import { randomUUID } from 'node:crypto';
 import type { INestApplication } from '@nestjs/common';
 import { StandardSchemaValidationPipe } from '@nestjs/common';
 import { PasswordHasher } from '@nestjs/authentication';
+import { ConfigService } from '@nestjs/config';
 import { Test } from '@nestjs/testing';
 import { ThrottlerGuard } from '@nestjs/throttler';
 import request from 'supertest';
 
 import { AppModule } from '../../../src/app.module.js';
+import type { AppEnv } from '../../../src/common/config/env.schema.js';
 import { PrismaService } from '../../../src/infra/database/index.js';
 import { BodyMeasurementStatisticsRepository } from '../../../src/modules/body-measurements/repositories/body-measurement-statistics.repository.js';
 import { useTestDatabase } from '../../utility/test-db-helper.js';
@@ -334,17 +336,24 @@ describe('Body Measurements (HTTP + PostgreSQL)', () => {
       ['2026-03-30T00:31:00.000Z', 84.0], // after the asOf snapshot cutoff
     ] as const;
 
-    await prisma.bodyMeasurement.createMany({
-      data: fixtures.map(([timestamp, weightKg]) => ({
-        userId: firstId,
-        measuredAt: new Date(timestamp),
-        weightKg,
-        notes,
-      })),
-    });
+    const config = app.get<ConfigService<AppEnv, true>>(ConfigService);
+    const databaseUrl = new URL(config.getOrThrow('DATABASE_URL'));
+    databaseUrl.searchParams.set('options', '-c timezone=Europe/Kyiv -c statement_timeout=30s');
+    const prismaWithKyivDefault = new PrismaService(
+      new ConfigService<AppEnv, true>({ DATABASE_URL: databaseUrl.toString() }),
+    );
 
     try {
-      const repository = app.get(BodyMeasurementStatisticsRepository);
+      await prismaWithKyivDefault.bodyMeasurement.createMany({
+        data: fixtures.map(([timestamp, weightKg]) => ({
+          userId: firstId,
+          measuredAt: new Date(timestamp),
+          weightKg,
+          notes,
+        })),
+      });
+
+      const repository = new BodyMeasurementStatisticsRepository(prismaWithKyivDefault);
       const result = await repository.readStatistics(firstId, 'weightKg', asOf, 7);
 
       expect(result.first?.weightKg?.toNumber()).toBe(79);
@@ -363,7 +372,15 @@ describe('Body Measurements (HTTP + PostgreSQL)', () => {
       // With a tiny test fixture PostgreSQL may prefer a sequential scan.
       // Disabling it inside this transaction checks that the existing
       // (user_id, measured_at DESC, id DESC) index supports the access path.
-      const plan = await prisma.$transaction(async (tx) => {
+      const plan = await prismaWithKyivDefault.$transaction(async (tx) => {
+        const [settings] = await tx.$queryRaw<
+          Array<{ timeZone: string; statementTimeout: string }>
+        >`
+          SELECT current_setting('TimeZone') AS "timeZone",
+            current_setting('statement_timeout') AS "statementTimeout"
+        `;
+        expect(settings).toEqual({ timeZone: 'UTC', statementTimeout: '30s' });
+
         await tx.$executeRaw`SET LOCAL enable_seqscan = off`;
         return tx.$queryRaw<Array<{ 'QUERY PLAN': string }>>`
           EXPLAIN
@@ -382,6 +399,7 @@ describe('Body Measurements (HTTP + PostgreSQL)', () => {
         ),
       ).toBe(true);
     } finally {
+      await prismaWithKyivDefault.$disconnect();
       await prisma.bodyMeasurement.deleteMany({
         where: { userId: firstId, notes },
       });
