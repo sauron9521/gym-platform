@@ -8,6 +8,10 @@
     ".": {
       "types": "./src/index.ts",
       "default": "./src/index.ts"
+    },
+    "./async": {
+      "types": "./src/async.ts",
+      "default": "./src/async.ts"
     }
   },
   "scripts": {

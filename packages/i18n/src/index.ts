@@ -17,8 +17,12 @@ export function getMessages(locale: Locale) {
   return catalogs[locale];
 }
 
+const flatCache = new Map<Locale, Readonly<Record<string, string>>>();
+
 /** FormatJS/react-intl uses dotted message IDs; next-intl uses nested objects. */
-export function getFlatMessages(locale: Locale): Record<string, string> {
+export function getFlatMessages(locale: Locale): Readonly<Record<string, string>> {
+  const cached = flatCache.get(locale);
+  if (cached) return cached;
   const result: Record<string, string> = {};
   function visit(node: Record<string, unknown>, prefix = ''): void {
     for (const [key, value] of Object.entries(node)) {
@@ -30,7 +34,9 @@ export function getFlatMessages(locale: Locale): Record<string, string> {
     }
   }
   visit(catalogs[locale]);
-  return result;
+  const frozen = Object.freeze(result);
+  flatCache.set(locale, frozen);
+  return frozen;
 }
 
 export { resolveRequestLocale } from './request-locale';

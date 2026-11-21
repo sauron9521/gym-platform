@@ -21,3 +21,5 @@ For request-locale changes also run `pnpm --filter @gym/web test` and
 `pnpm --filter @gym/admin test`.
 
 This package intentionally introduces no runtime framework dependencies. Application-specific adapters, preferences, and translated routes are separate reviewable PRs.
+
+For Next.js request boundaries, `getMessagesAsync(locale)` from `@gym/i18n/async` imports only the selected language. Expo's `getFlatMessages(locale)` is memoized and frozen per locale. Avoid sending unused namespaces to `NextIntlClientProvider` as catalogs grow.

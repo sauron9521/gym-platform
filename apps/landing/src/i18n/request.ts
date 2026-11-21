@@ -1,4 +1,5 @@
-import { defaultLocale, getMessages, isLocale } from '@gym/i18n';
+import { defaultLocale, isLocale } from '@gym/i18n';
+import { getMessagesAsync } from '@gym/i18n/async';
 import { getRequestConfig } from 'next-intl/server';
 
 export default getRequestConfig(async ({ requestLocale }) => {
@@ -7,5 +8,5 @@ export default getRequestConfig(async ({ requestLocale }) => {
     process.env.LANDING_ENABLE_I18N_ROUTES === 'true' && isLocale(requested)
       ? requested
       : defaultLocale;
-  return { locale, messages: getMessages(locale) };
+  return { locale, messages: await getMessagesAsync(locale) };
 });
