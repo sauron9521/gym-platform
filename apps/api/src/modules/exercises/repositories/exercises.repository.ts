@@ -21,7 +21,11 @@ export class ExercisesRepository {
     take,
     orderBy = [{ name: 'asc' }, { id: 'asc' }],
   }: FindManyExercisesParams) {
-    const [data, total] = await this.prisma.$transaction([
+    // Pagination queries are read-only and independent. Under PostgreSQL's
+    // default READ COMMITTED isolation, the old array transaction did not
+    // guarantee a single shared snapshot across these two statements.
+    // Parallel reads avoid an unnecessary BEGIN/COMMIT round trip.
+    const [data, total] = await Promise.all([
       this.prisma.exercise.findMany({
         where,
         skip,

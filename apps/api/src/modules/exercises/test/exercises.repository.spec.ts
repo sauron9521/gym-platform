@@ -43,8 +43,6 @@ describe('ExercisesRepository', () => {
       prisma.exercise.findMany.mockResolvedValue(exercises);
       prisma.exercise.count.mockResolvedValue(22);
 
-      prisma.$transaction.mockResolvedValue([exercises, 22]);
-
       const params = {
         where: { source: 'GLOBAL' } as Prisma.ExerciseWhereInput,
         skip: 10,
@@ -65,7 +63,7 @@ describe('ExercisesRepository', () => {
         where: params.where,
       });
 
-      expect(prisma.$transaction).toHaveBeenCalledOnce();
+      expect(prisma.$transaction).not.toHaveBeenCalled();
 
       expect(result).toEqual({
         data: exercises,
@@ -79,7 +77,8 @@ describe('ExercisesRepository', () => {
     });
 
     it('should use custom ordering when provided', async () => {
-      prisma.$transaction.mockResolvedValue([[], 0]);
+      prisma.exercise.findMany.mockResolvedValue([]);
+      prisma.exercise.count.mockResolvedValue(0);
 
       await repository.findMany({
         where: { isArchived: false },
@@ -96,7 +95,8 @@ describe('ExercisesRepository', () => {
     });
 
     it('should return empty results when no exercises exist', async () => {
-      prisma.$transaction.mockResolvedValue([[], 0]);
+      prisma.exercise.findMany.mockResolvedValue([]);
+      prisma.exercise.count.mockResolvedValue(0);
 
       const result = await repository.findMany({
         where: { source: 'GLOBAL' },
