@@ -139,6 +139,49 @@ test('known shared packages select consumers and avoid unrelated API E2E', () =>
   }
 });
 
+test('shared locale changes select API mail and all UI consumers', () => {
+  for (const locale of ['uk', 'en']) {
+    const source = classifyChangedPaths([`packages/i18n/src/messages/${locale}.json`]);
+    assert.deepEqual(source, {
+      full: false,
+      api: true,
+      web: true,
+      landing: true,
+      admin: true,
+      trainer: true,
+      mobile: true,
+      client: false,
+      deps: false,
+      workspaces: true,
+      redis: false,
+    });
+  }
+
+  const docs = classifyChangedPaths(['packages/i18n/README.md']);
+  assert.equal(docs.trainer, true);
+  assert.equal(docs.full, false);
+
+  const manifest = classifyChangedPaths(['packages/i18n/package.json']);
+  assert.equal(manifest.full, false);
+  assert.equal(manifest.deps, true);
+  assert.equal(manifest.api, true);
+  assert.equal(manifest.trainer, true);
+});
+
+test('Trainer-only changes validate the shared locale package', () => {
+  const selected = classifyChangedPaths(['apps/trainer/src/i18n/request.ts']);
+  assert.equal(selected.trainer, true);
+  assert.equal(selected.api, false);
+  assert.equal(selected.full, false);
+
+  const yaml = readFileSync(new URL('../.github/workflows/ci.yml', import.meta.url), 'utf8');
+  assert.match(
+    yaml,
+    /if \[ "\$CI_TRAINER" = true \]; then filters\+=\(--filter=@gym\/trainer\); fi/,
+  );
+  assert.match(yaml, /\|\| \[ "\$CI_TRAINER" = true \].*filters\+=\(--filter=@gym\/i18n\)/);
+});
+
 test('shared package manifests require dependency vulnerability audits', () => {
   for (const path of ['packages/ui-web/package.json', 'packages/design-tokens/package.json']) {
     const result = classifyChangedPaths([path]);

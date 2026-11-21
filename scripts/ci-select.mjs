@@ -148,6 +148,19 @@ export function classifyChangedPaths(paths, { forceFull = false } = {}) {
       continue;
     }
 
+    if (path.startsWith('packages/i18n/')) {
+      // Locale catalogs are also used by the API transactional email flows.
+      // Conservatively include API until catalogs are split into independent namespaces.
+      selected.api = true;
+      selected.web = true;
+      selected.landing = true;
+      selected.admin = true;
+      selected.trainer = true;
+      selected.mobile = true;
+      if (path === 'packages/i18n/package.json') selected.deps = true;
+      continue;
+    }
+
     if (path.startsWith('packages/design-tokens/')) {
       selected.web = true;
       selected.admin = true;
