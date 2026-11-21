@@ -1,0 +1,181 @@
+name: API Performance / Manual A-B comparison
+
+on:
+  workflow_dispatch:
+    inputs:
+      before_sha:
+        description: 'Full 40-character Git SHA: baseline revision (must include A/B fixture)'
+        type: string
+        required: true
+      after_sha:
+        description: 'Full 40-character Git SHA: candidate revision'
+        type: string
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: api-performance-ab
+  cancel-in-progress: false
+
+jobs:
+  compare:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    env:
+      BEFORE_SHA: ${{ inputs.before_sha }}
+      AFTER_SHA: ${{ inputs.after_sha }}
+      NODE_ENV: test
+      TEST_REDIS_URL: redis://127.0.0.1:6379
+      CORS_ORIGINS: http://localhost:3000
+      APP_URL: http://localhost:3000
+      JWT_ISSUER: http://localhost:3000
+      JWT_SECRET: xjYwwAdHREaWbPRsTFQikrf0jnu4enSyEfthz+evnJo
+      MAIL_FROM: Gym Test <no-reply@example.test>
+      API_PERF_AB_MODE: '1'
+      API_PERF_PROFILE_REPORT: '1'
+
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - name: Checkout trusted runner and comparison scripts from main
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Validate pinned full-SHA input before checking out revisions
+        run: |
+          node --input-type=module <<'NODE'
+          for (const name of ['BEFORE_SHA', 'AFTER_SHA']) {
+            if (!/^[a-f0-9]{40}$/i.test(process.env[name] ?? '')) {
+              throw new Error(name + ' must be a 40-character commit SHA');
+            }
+          }
+          NODE
+
+      - name: Checkout before revision (read-only)
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.before_sha }}
+          path: before
+          persist-credentials: false
+
+      - name: Checkout after revision (read-only)
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.after_sha }}
+          path: after
+          persist-credentials: false
+
+      - name: Verify commits and identical fixture/schema/dependency trees
+        run: |
+          set -euo pipefail
+          mkdir -m 700 -p "$RUNNER_TEMP/gym-perf-ab"
+          node scripts/api-performance-ab.mjs preflight \
+            before after "$BEFORE_SHA" "$AFTER_SHA" "$RUNNER_TEMP/gym-perf-ab/manifest.json"
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Set up Node.js 24
+        uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+
+      - name: Install frozen dependencies for both revisions
+        run: |
+          pnpm --dir before install --frozen-lockfile
+          pnpm --dir after install --frozen-lockfile
+
+      - name: Create separate disposable PostgreSQL 17 databases
+        run: |
+          set -euo pipefail
+          for db in gym_perf_before_test gym_perf_after_test; do
+            # Hard-coded names; no user-provided DB or remote connection possible.
+            docker run --rm --network host -e PGPASSWORD=postgres postgres:17-alpine \
+              psql -h 127.0.0.1 -U postgres -d postgres -v ON_ERROR_STOP=1 \
+              -c "CREATE DATABASE $db"
+          done
+
+      - name: Profile before revision on clean dedicated test database
+        working-directory: before
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/gym_perf_before_test?schema=public
+          TEST_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/gym_perf_before_test?schema=public
+        run: |
+          set -euo pipefail
+          pnpm --filter @gym/api db:generate
+          pnpm --filter @gym/api db:migrate:deploy
+          if pnpm --filter @gym/api exec vitest run --config ./vitest.config.e2e.ts \
+             test/e2e/infra/performance-query-count.e2e-spec.ts \
+             > "$RUNNER_TEMP/gym-perf-ab/before.log" 2>&1; then
+            echo "Before profile E2E passed on disposable PostgreSQL 17"
+          else
+            echo "::error::Before profile failed; raw test logs intentionally withheld"
+            exit 1
+          fi
+
+      - name: Extract privacy-safe before profile
+        run: |
+          node scripts/api-performance-ab.mjs extract \
+            "$RUNNER_TEMP/gym-perf-ab/before.log" "$RUNNER_TEMP/gym-perf-ab/before.json"
+
+      - name: Profile after revision on clean dedicated test database
+        working-directory: after
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/gym_perf_after_test?schema=public
+          TEST_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/gym_perf_after_test?schema=public
+        run: |
+          set -euo pipefail
+          pnpm --filter @gym/api db:generate
+          pnpm --filter @gym/api db:migrate:deploy
+          if pnpm --filter @gym/api exec vitest run --config ./vitest.config.e2e.ts \
+             test/e2e/infra/performance-query-count.e2e-spec.ts \
+             > "$RUNNER_TEMP/gym-perf-ab/after.log" 2>&1; then
+            echo "After profile E2E passed on disposable PostgreSQL 17"
+          else
+            echo "::error::After profile failed; raw test logs intentionally withheld"
+            exit 1
+          fi
+
+      - name: Extract privacy-safe after profile and compare real fixture fingerprints
+        run: |
+          node scripts/api-performance-ab.mjs extract \
+            "$RUNNER_TEMP/gym-perf-ab/after.log" "$RUNNER_TEMP/gym-perf-ab/after.json"
+          node scripts/api-performance-ab.mjs compare \
+            "$RUNNER_TEMP/gym-perf-ab/manifest.json" \
+            "$RUNNER_TEMP/gym-perf-ab/before.json" \
+            "$RUNNER_TEMP/gym-perf-ab/after.json" \
+            "$RUNNER_TEMP/gym-perf-ab/comparison.json"
+
+      - name: Upload numerical comparison only (no raw logs or identities)
+        uses: actions/upload-artifact@v7
+        with:
+          name: api-performance-ab-comparison
+          path: ${{ runner.temp }}/gym-perf-ab/comparison.json
+          if-no-files-found: error
+          retention-days: 7

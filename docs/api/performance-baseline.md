@@ -142,6 +142,13 @@ HTTP and query-count metrics from **the same request windows**, while EXPLAIN
 is an independent synthetic SELECT experiment and must not be treated as
 part of those traced HTTP requests.
 
+For two-revision experiments, use the **manual**
+[GitHub A/B workflow](performance-comparison.md#manual-two-revision-ab-workflow-opt-in).
+It rejects incompatible fixture/schema revisions, creates two isolated local
+PostgreSQL test databases on one runner, and compares hashes of actually
+persisted synthetic fixture rows. An A/A run with the same SHA verifies only
+the harness; it does not demonstrate a performance improvement.
+
 ## Remaining acceptance criteria
 
 Issue #313 remains open for actual **before/after** SQL and HTTP measurements

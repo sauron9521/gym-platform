@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { performance } from 'node:perf_hooks';
 
 import { PasswordHasher } from '@nestjs/authentication';
@@ -28,6 +28,31 @@ const POPULATION = 128;
 const BASE_DATE = Date.UTC(2026, 0, 1);
 const FIXTURE_VERSION = 'http-reads-populated-v1-128';
 const PASSWORD = 'StrongPassword123!';
+const A_B_FIXTURE_NAMESPACE = 'gym-platform-ab-fixture-v1';
+
+/**
+ * Stable synthetic IDs are allowed ONLY in two isolated, dedicated A/B databases.
+ * Normal CI E2E runs continue using random IDs so concurrent suites never collide.
+ */
+function syntheticId(label: string, deterministic: boolean): string {
+  if (!deterministic) return randomUUID();
+  const hex = createHash('sha256').update(`${A_B_FIXTURE_NAMESPACE}:${label}`).digest('hex');
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-4${hex.slice(13, 16)}-8${hex.slice(17, 20)}-${hex.slice(20, 32)}`;
+}
+
+function allowDeterministicAB(databaseUrl: string): boolean {
+  if (process.env.API_PERF_AB_MODE !== '1') return false;
+  const url = new URL(databaseUrl);
+  const databaseName = decodeURIComponent(url.pathname.slice(1));
+  if (
+    !['localhost', '127.0.0.1', '[::1]'].includes(url.hostname) ||
+    !['gym_perf_before_test', 'gym_perf_after_test'].includes(databaseName) ||
+    process.env.DATABASE_URL !== databaseUrl
+  ) {
+    throw new Error('A/B fixture mode requires a dedicated loopback PostgreSQL test database');
+  }
+  return true;
+}
 
 /** Counts only Prisma-emitted SQL query events, never captures SQL or parameters. */
 class QueryWindow {
@@ -70,12 +95,14 @@ describe('API Prisma SQL query count baseline (disposable PostgreSQL)', () => {
   const exerciseIds: string[] = [];
   let athleteCookie: string;
   let trainerCookie: string;
+  let fixtureFingerprint: string | undefined;
   const window = new QueryWindow();
 
   beforeAll(async () => {
     // The guard runs before any Prisma client is constructed or AppModule is loaded.
     useTestDatabase();
     const databaseUrl = process.env.TEST_DATABASE_URL!;
+    const deterministic = allowDeterministicAB(databaseUrl);
     // Explicitly match the query event log option in the Prisma 7 client type.
     prisma = new PrismaClient({
       adapter: new PrismaPg({ connectionString: databaseUrl }),
@@ -84,6 +111,20 @@ describe('API Prisma SQL query count baseline (disposable PostgreSQL)', () => {
     // No raw SQL, bind values, stack traces or user records are retained.
     prisma.$on('query', () => window.observe());
     await prisma.$connect();
+    if (deterministic) {
+      // Prevent overwriting/deleting deterministic IDs left by an earlier run.
+      // The A/B runner always creates fresh databases; fail closed otherwise.
+      const populations = await Promise.all([
+        prisma.user.count(),
+        prisma.workout.count(),
+        prisma.trainingProgram.count(),
+        prisma.trainingProgramVersion.count(),
+        prisma.exercise.count(),
+      ]);
+      if (populations.some((value) => value !== 0)) {
+        throw new Error('A/B profiling requires an empty, freshly migrated test database');
+      }
+    }
 
     const { AppModule } = await import('../../../src/app.module.js');
     const moduleRef = await Test.createTestingModule({
@@ -101,18 +142,32 @@ describe('API Prisma SQL query count baseline (disposable PostgreSQL)', () => {
     await app.init();
 
     const passwordHash = await app.get(PasswordHasher).hash(PASSWORD);
-    const fixtureId = randomUUID();
+    const fixtureId = deterministic ? A_B_FIXTURE_NAMESPACE : randomUUID();
     const athleteEmail = `perf-athlete-${fixtureId}@example.com`;
     const trainerEmail = `perf-trainer-${fixtureId}@example.com`;
     athleteId = (
       await prisma.user.create({
-        data: { email: athleteEmail, passwordHash, role: 'ATHLETE' },
+        data: {
+          id: syntheticId('athlete', deterministic),
+          email: athleteEmail,
+          passwordHash,
+          role: 'ATHLETE',
+          createdAt: new Date(BASE_DATE),
+          updatedAt: new Date(BASE_DATE),
+        },
         select: { id: true },
       })
     ).id;
     trainerId = (
       await prisma.user.create({
-        data: { email: trainerEmail, passwordHash, role: 'TRAINER' },
+        data: {
+          id: syntheticId('trainer', deterministic),
+          email: trainerEmail,
+          passwordHash,
+          role: 'TRAINER',
+          createdAt: new Date(BASE_DATE),
+          updatedAt: new Date(BASE_DATE),
+        },
         select: { id: true },
       })
     ).id;
@@ -120,7 +175,7 @@ describe('API Prisma SQL query count baseline (disposable PostgreSQL)', () => {
     // Deterministic synthetic shape, generated IDs to avoid collisions with parallel runs.
     // Ownership-scoped cleanup below removes even partially created fixture rows.
     const workouts = Array.from({ length: POPULATION }, (_, index) => ({
-      id: randomUUID(),
+      id: syntheticId(`workout-${index}`, deterministic),
       title: `Perf workout ${String(index + 1).padStart(3, '0')}`,
       athleteId: athleteId!,
       createdById: athleteId!,
@@ -129,14 +184,14 @@ describe('API Prisma SQL query count baseline (disposable PostgreSQL)', () => {
       updatedAt: new Date(BASE_DATE + index * 60_000),
     }));
     const programs = Array.from({ length: POPULATION }, (_, index) => ({
-      id: randomUUID(),
+      id: syntheticId(`program-${index}`, deterministic),
       trainerId: trainerId!,
       status: 'DRAFT' as const,
       createdAt: new Date(BASE_DATE + index * 60_000),
       updatedAt: new Date(BASE_DATE + index * 60_000),
     }));
     const exercises = Array.from({ length: POPULATION }, (_, index) => ({
-      id: randomUUID(),
+      id: syntheticId(`exercise-${index}`, deterministic),
       name: `Perf exercise ${String(index + 1).padStart(3, '0')}`,
       source: 'GLOBAL' as const,
       exerciseType: 'STRENGTH' as const,
@@ -151,7 +206,7 @@ describe('API Prisma SQL query count baseline (disposable PostgreSQL)', () => {
     await prisma.trainingProgram.createMany({ data: programs });
     await prisma.trainingProgramVersion.createMany({
       data: programs.map(({ id, createdAt, updatedAt }, index) => ({
-        id: randomUUID(),
+        id: syntheticId(`version-${index}`, deterministic),
         programId: id,
         version: 1,
         title: `Perf program ${String(index + 1).padStart(3, '0')}`,
@@ -167,6 +222,79 @@ describe('API Prisma SQL query count baseline (disposable PostgreSQL)', () => {
       POPULATION,
     );
     expect(await prisma.exercise.count({ where: { id: { in: exerciseIds } } })).toBe(POPULATION);
+
+    // Hash real persisted fixture rows, not just a user-supplied label.
+    // Raw rows, emails and IDs never leave the test process.
+    if (deterministic) {
+      const [users, workoutsPersisted, programsPersisted, versionsPersisted, exercisesPersisted] =
+        await Promise.all([
+          prisma.user.findMany({
+            where: { id: { in: [athleteId, trainerId] } },
+            orderBy: { id: 'asc' },
+            select: { id: true, role: true, createdAt: true, updatedAt: true },
+          }),
+          prisma.workout.findMany({
+            where: { id: { in: workoutIds } },
+            orderBy: { id: 'asc' },
+            select: {
+              id: true,
+              athleteId: true,
+              createdById: true,
+              title: true,
+              status: true,
+              createdAt: true,
+              updatedAt: true,
+            },
+          }),
+          prisma.trainingProgram.findMany({
+            where: { id: { in: programIds } },
+            orderBy: { id: 'asc' },
+            select: { id: true, trainerId: true, status: true, createdAt: true, updatedAt: true },
+          }),
+          prisma.trainingProgramVersion.findMany({
+            where: { programId: { in: programIds } },
+            orderBy: { id: 'asc' },
+            select: {
+              id: true,
+              programId: true,
+              title: true,
+              version: true,
+              status: true,
+              createdAt: true,
+              updatedAt: true,
+            },
+          }),
+          prisma.exercise.findMany({
+            where: { id: { in: exerciseIds } },
+            orderBy: { id: 'asc' },
+            select: {
+              id: true,
+              name: true,
+              source: true,
+              exerciseType: true,
+              isArchived: true,
+              createdAt: true,
+              updatedAt: true,
+            },
+          }),
+        ]);
+      expect(users).toHaveLength(2);
+      expect(workoutsPersisted).toHaveLength(POPULATION);
+      expect(programsPersisted).toHaveLength(POPULATION);
+      expect(versionsPersisted).toHaveLength(POPULATION);
+      expect(exercisesPersisted).toHaveLength(POPULATION);
+      fixtureFingerprint = createHash('sha256')
+        .update(
+          JSON.stringify({
+            users,
+            workoutsPersisted,
+            programsPersisted,
+            versionsPersisted,
+            exercisesPersisted,
+          }),
+        )
+        .digest('hex');
+    }
 
     async function login(email: string): Promise<string> {
       const response = await request(app!.getHttpServer())
@@ -217,6 +345,15 @@ describe('API Prisma SQL query count baseline (disposable PostgreSQL)', () => {
     window.begin();
     expect(window.end()).toBe(0);
     expect(() => window.end()).toThrow('No active query window');
+  });
+
+  it('derives stable, distinct, valid synthetic IDs for isolated A/B fixtures', () => {
+    const athlete = syntheticId('athlete', true);
+    const trainer = syntheticId('trainer', true);
+    expect(athlete).toBe(syntheticId('athlete', true));
+    expect(athlete).not.toBe(trainer);
+    expect(athlete).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-8[0-9a-f]{3}-[0-9a-f]{12}$/);
+    expect(syntheticId('athlete', false)).not.toBe(athlete);
   });
 
   it('profiles populated authenticated reads with matching HTTP and SQL windows', async () => {
@@ -336,6 +473,7 @@ describe('API Prisma SQL query count baseline (disposable PostgreSQL)', () => {
             schemaVersion: 1,
             fixture: {
               recipe: FIXTURE_VERSION,
+              ...(fixtureFingerprint ? { fingerprint: fixtureFingerprint } : {}),
               athleteAccounts: 1,
               trainerAccounts: 1,
               workouts: POPULATION,
