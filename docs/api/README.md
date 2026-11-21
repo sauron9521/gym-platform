@@ -30,6 +30,7 @@ Infrastructure includes `src/infra/database` (Prisma), `src/infra/health`, `src/
 ## Quality and operations
 
 - [Test and quality guide](testing.md)
+- [Read-only API performance baseline](performance-baseline.md)
 - [Local API setup](../../apps/api/README.md)
 - [Migration audit](../api-migration-audit.md) and [operational documentation index](../README.md)
 
