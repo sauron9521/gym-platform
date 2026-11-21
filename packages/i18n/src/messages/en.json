@@ -521,6 +521,27 @@
       "errorUnavailable": "The workout service is temporarily unavailable. Try again.",
       "errorSessionExpired": "Your session has expired. Sign in again.",
       "errorDefault": "Could not load your workouts. Try again."
+    },
+    "programList": {
+      "empty": "No active program assignments.",
+      "title": "My programs",
+      "description": "Active programs assigned by your trainer",
+      "loading": "Loading programs",
+      "loadFailed": "Could not load programs.",
+      "refreshFailed": "Could not refresh programs. Showing previously loaded data.",
+      "retryRefresh": "Retry refresh",
+      "open": "Open program {title}",
+      "version": "Version {version}",
+      "loadMoreFailed": "Could not load the next page of programs.",
+      "retryPage": "Retry page",
+      "showMore": "Show more programs",
+      "loadingMore": "Loading…",
+      "refresh": "Refresh programs",
+      "retryDefault": "Try again",
+      "statusActive": "Active",
+      "statusCompleted": "Completed",
+      "statusTerminated": "Terminated",
+      "statusUnknown": "Status unavailable"
     }
   },
   "landing": {
