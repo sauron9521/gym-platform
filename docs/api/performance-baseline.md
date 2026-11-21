@@ -212,6 +212,42 @@ may largely reflect missing current planner statistics rather than a
 missing index. These are not HTTP measurements or evidence of a
 production bottleneck.
 
+## Actual Prisma-generated Exercises SQL trace (test-only)
+
+The populated PostgreSQL 17 Exercises E2E suite now also observes the
+**actual Prisma query events** from direct `tx.exercise.findMany` and
+`tx.exercise.count` calls for the same eight scenarios. These use the
+production `exerciseSelect` projection (including nested muscle-group and
+equipment relations), production-style `AND` filters, stable sort, page size
+20 and OFFSET 200. Their visibility filter is a **simplified illustrative
+athlete/global scope**; this is not a full exercise authorization/HTTP test
+and does not execute `ExercisesRepository.findMany`'s array transaction.
+The original fixed SELECT EXPLAIN snapshots remain a separate experiment.
+
+The `SafePrismaQueryWindow` has explicit, non-overlapping windows and only
+counts SELECT or WITH query events observed while awaiting each Prisma
+read. Its output is confined to an allowlist of safe metadata: scenario
+key, number of SELECT statements, SHA-256 fingerprints of the **SQL
+templates** (not bind values), template byte length, count of distinct
+`$n` bind placeholders, a fixed allowlist of referenced relations,
+and individual driver-reported query durations in milliseconds, plus the
+numeric count of matched exercise records. The profiler deliberately
+**does not access `event.params`** and never prints raw SQL templates,
+conditions, UUIDs, user data or returned exercise objects. Profile fields
+are appended as `prismaReads` inside the existing CI
+`API_PERF_EXERCISE_PLANS` sanitized report, following successful
+transaction rollback checks.
+
+**Caveat:** Event duration is a driver-observed single-query measurement,
+not p95, a HTTP request time, or a PostgreSQL EXPLAIN node's execution
+time. SQL fingerprints let us detect changes to emitted statement shape;
+they are not guaranteed stable across Prisma or PostgreSQL versions.
+The direct Prisma reads do not include separate HTTP authentication,
+trainer access policy evaluation or transaction-overhead accounting.
+The fixture is uncommitted and has unrefreshed planner statistics. These
+observations identify the next SQL pattern for controlled, statistically
+interpreted A/B tests; they do **not** justify adding an index themselves.
+
 ## Compare before/after captures
 
 Use the [API performance comparison guide](performance-comparison.md) and
