@@ -4540,6 +4540,7 @@ export interface operations {
         page?: number;
         limit?: number;
         status?: 'ACTIVE' | 'COMPLETED' | 'CANCELLED' | 'TERMINATED';
+        trainerAthleteId?: string;
         view?: 'full' | 'summary';
       };
       header?: never;

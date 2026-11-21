@@ -80,6 +80,7 @@ export type TrainingProgramAssignmentListQuery = {
   page: number;
   limit: number;
   status?: TrainingProgramAssignmentStatus;
+  trainerAthleteId?: string;
   view?: 'full' | 'summary';
 };
 

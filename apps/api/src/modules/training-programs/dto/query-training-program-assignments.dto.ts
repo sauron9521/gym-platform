@@ -8,6 +8,8 @@ export const queryTrainingProgramAssignmentsSchema = z.strictObject({
   limit: z.coerce.number().int().min(1).max(100).default(20),
 
   status: trainingProgramAssignmentStatusSchema.optional(),
+  // Trainer-owned, currently ACTIVE relationship filter (SQL scoped before pagination).
+  trainerAthleteId: z.string().uuid().optional(),
   view: z.enum(['full', 'summary']).optional(),
 });
 
