@@ -25,6 +25,9 @@ on:
           - workouts
           - session-restore
           - workout-write
+          - reconcile-resume
+          - reconcile-offline-android
+          - reconcile-lost-response
 
 permissions:
   contents: read
@@ -47,6 +50,14 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v7
+
+      - name: Refuse unreviewed branch dispatch
+        shell: bash
+        run: |
+          if [[ "$GITHUB_REF" != 'refs/heads/main' ]]; then
+            echo 'Native staging smoke requires reviewed main.' >&2
+            exit 1
+          fi
 
       - name: Set up Node.js for input validation
         uses: actions/setup-node@v7
@@ -79,6 +90,7 @@ jobs:
           E2E_EMAIL: ${{ secrets.MOBILE_E2E_EMAIL }}
           E2E_PASSWORD: ${{ secrets.MOBILE_E2E_PASSWORD }}
           E2E_EXERCISE_NAME: ${{ secrets.MOBILE_E2E_EXERCISE_NAME }}
+          STAGING_RECONCILE_WORKOUT_TITLE: ${{ secrets.MOBILE_E2E_RECONCILE_WORKOUT_TITLE }}
           EXPECTED_STAGING_APP_ID: ${{ secrets.MOBILE_STAGING_ANDROID_APP_ID }}
         with:
           api-level: 34
@@ -96,6 +108,16 @@ jobs:
               fi
               if [[ "$APP_ID" != "$EXPECTED_STAGING_APP_ID" ]]; then
                 echo "Workout write smoke refused: APK package is not the approved staging package." >&2
+                exit 1
+              fi
+            fi
+            if [[ "$FLOW" == reconcile-* ]]; then
+              if [[ -z "$STAGING_RECONCILE_WORKOUT_TITLE" || -z "$EXPECTED_STAGING_APP_ID" ]]; then
+                echo "Reconciliation flows require an approved seeded staging workout and Android app ID." >&2
+                exit 1
+              fi
+              if [[ "$APP_ID" != "$EXPECTED_STAGING_APP_ID" ]]; then
+                echo "Reconciliation flow refused: APK is not the approved staging package." >&2
                 exit 1
               fi
             fi
@@ -122,10 +144,17 @@ jobs:
               workouts) FLOW_FILE=workouts-smoke.yaml ;;
               session-restore) FLOW_FILE=session-restore-smoke.yaml ;;
               workout-write) FLOW_FILE=workout-write-smoke.yaml ;;
+              reconcile-resume) FLOW_FILE=workout-reconcile-resume.yaml ;;
+              reconcile-offline-android) FLOW_FILE=workout-reconcile-offline-android.yaml ;;
+              reconcile-lost-response) FLOW_FILE=workout-reconcile-lost-response.yaml ;;
               *) echo "Unsupported Maestro flow" >&2; exit 1 ;;
             esac
+            WORKOUT_TITLE="Mobile-smoke-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+            if [[ "$FLOW" == reconcile-* ]]; then
+              WORKOUT_TITLE="$STAGING_RECONCILE_WORKOUT_TITLE"
+            fi
             maestro test -e APP_ID="$APP_ID" -e E2E_EMAIL="$E2E_EMAIL" \
               -e E2E_PASSWORD="$E2E_PASSWORD" \
               -e E2E_EXERCISE_NAME="$E2E_EXERCISE_NAME" \
-              -e E2E_WORKOUT_TITLE="Mobile-smoke-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}" \
+              -e E2E_WORKOUT_TITLE="$WORKOUT_TITLE" \
               "apps/mobile/maestro/flows/$FLOW_FILE"

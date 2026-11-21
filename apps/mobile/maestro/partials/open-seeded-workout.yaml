@@ -1,0 +1,23 @@
+# Reusable login/navigation only. The account and workout are staging-only.
+# The fixture must be a unique, disposable IN_PROGRESS workout with ONE set.
+appId: ${APP_ID}
+---
+- launchApp:
+    clearState: true
+- assertVisible: З поверненням!
+- tapOn:
+    id: sign-in-email
+- inputText: ${E2E_EMAIL}
+- tapOn:
+    id: sign-in-password
+- inputText: ${E2E_PASSWORD}
+- tapOn: Увійти
+- assertVisible: Gym Platform
+- tapOn:
+    id: mobile-tab-workouts
+- assertVisible: Мої тренування
+- extendedWaitUntil:
+    visible: ${E2E_WORKOUT_TITLE}
+    timeout: 20000
+- tapOn: ${E2E_WORKOUT_TITLE}
+- assertVisible: ${E2E_WORKOUT_TITLE}

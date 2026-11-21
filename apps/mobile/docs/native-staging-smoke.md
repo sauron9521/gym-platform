@@ -100,3 +100,120 @@ staging database. Remove its disposable test records after the run.
 A green normal CI means that code contracts and static selectors pass; it
 **does not prove** the Maestro scenario executed on an emulator. If the
 actual staging smoke fails, promotion remains **NO-GO** until reviewed.
+
+## Manual device-level workout reconciliation acceptance (#324)
+
+**This is a separate optional gate, not ordinary PR CI or an automatic release
+approval.** The platform-specific Maestro flows below target a **real approved
+staging-native build** on Android or iOS. A green Vitest/Metro build only checks
+code and flow contracts; it never means an emulator/iPhone completed a test.
+
+### Prepare isolated staging fixtures (required)
+
+- Use the reviewed `main` commit, approved Expo EAS **preview** environment
+  with an owned app identifier and **HTTPS staging-only** API origin. Confirm
+  that it does not route to production. Never add personal/production data.
+- Use a disposable staging **ATHLETE** (`MOBILE_E2E_EMAIL`,
+  `MOBILE_E2E_PASSWORD`) and seed a **unique, single-set `IN_PROGRESS` workout**
+  with a unique `E2E_WORKOUT_TITLE` and usable positive planned reps and
+  weight. The set must be `PENDING`; ensure it is visible in the athlete's
+  workout list and has **no other sets**. Reset to `PENDING` (or seed a new
+  uniquely named workout) _before each scenario_. Never reuse already-completed
+  records for the following test. Record the specific workout/set IDs in the
+  **private staging evidence**, not in public CI output.
+- For Android GitHub Actions, set `MOBILE_E2E_RECONCILE_WORKOUT_TITLE` in the
+  protected `mobile-staging` environment and select one of
+  `reconcile-resume`, `reconcile-offline-android` or `reconcile-lost-response`.
+  The workflow enforces the configured staging Android app ID, trusted
+  APK URL, independent SHA-256 and APK manifest check before installation.
+  Existing normal `workout-write` still creates its own uniquely named record.
+
+### Scenarios and expected results
+
+| Flow                                     | Platforms                                         | Expected result                                                                                                                                                           | Mutation evidence                                  |
+| ---------------------------------------- | ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------- |
+| `workout-reconcile-resume.yaml`          | Android + iOS                                     | Confirm one set, background/foreground (without killing the app), then terminate/relaunch; the completed server state persists                                            | Exactly **one** PATCH for the selected set         |
+| `workout-reconcile-offline-android.yaml` | **Android only**                                  | Enable airplane mode **before** pressing save: the preflight refuses sending; after connectivity returns and app reopens the set is still PENDING                         | **Zero** PATCH calls during the offline step       |
+| `workout-reconcile-lost-response.yaml`   | Android + iOS, **staging fault fixture required** | A server-committed PATCH has its HTTP response dropped exactly once. GET revalidation shows “Стан отримано із сервера” and “✓ Збережено” before and after resume/relaunch | Exactly **one** committed PATCH; no implicit retry |
+
+**What interrupted PATCH means here:** the `lost-response` scenario tests a
+network interruption **after the staging server has accepted and committed the
+PATCH**, so the client cannot rely on its transport result. The Android
+`offline` scenario separately tests the _definite pre-send_ failure. They
+must not be confused: disabling all networking before the request does **not**
+simulate a lost response after a successful write.
+
+The lost-response flow is **fail-closed without a real fault injector**:
+a normal successful PATCH cannot show its required unknown-result/revalidation
+message and the Maestro assertion will fail. **No test-only fault endpoint or
+switch is embedded into the mobile binary.** The staging operator must
+provide an independently controlled, one-shot fault at the network edge that
+forwards exactly the selected PATCH (for that account, workout and set) to
+staging, observes the upstream commit, and drops **only its response** before
+it reaches the device. The subsequent GET must be available and return the
+canonical state. Record backend request counts and confirm production was
+never contacted. Merely seeing the UI assertion succeed is **not enough** to
+prove exactly one PATCH; request log evidence is mandatory. Do not run this
+fixture on any shared or production gateway, or with broad wildcard matching.
+
+### Execute on Android (GitHub protected staging environment)
+
+From the reviewed `main` branch, manually start **Mobile native E2E / Maestro
+(manual)**. Give the EAS preview APK URL and independent checksum, the
+**approved staging** `app_id`, and the selected flow name. Before
+`reconcile-lost-response`, arm the staging-only fault fixture and verify the
+unique seeded PENDING set. The workflow still runs only on an **Android
+emulator**. It will **not** run automatically when a PR is opened or merged.
+
+After every run, independently inspect staging API audit records for the
+specific workout and set: assert exact PATCH count (0/1 as above), the final
+canonical status and no production access. If the fault injector was not
+armed or evidence cannot be obtained, mark the result **NO-GO** and rerun
+with a fresh fixture. Reset/remove test data afterward.
+
+### Execute on iOS (Mac + approved simulator or physical device)
+
+This repository does **not** currently define or provision a verified EAS
+iOS simulator `.app` / signed iPhone build or an iOS native GitHub Actions
+runner. The owner must first configure an **owned staging iOS bundle ID**,
+reviewed preview build profile/signing and a staging HTTPS API, then install
+the resulting approved build on the selected device. **Expo Go is not a
+substitute** for the actual staging-native build. Do not invent signing IDs.
+
+On an authorized Mac with Xcode, Maestro **2.12.1**, and the approved build
+installed, run the same cross-platform flow against the real staging bundle ID:
+
+```sh
+# Run locally on the trusted Mac only; do not paste credentials into public logs.
+maestro test \
+  -e APP_ID="$STAGING_IOS_BUNDLE_ID" \
+  -e E2E_EMAIL="$STAGING_E2E_EMAIL" \
+  -e E2E_PASSWORD="$STAGING_E2E_PASSWORD" \
+  -e E2E_WORKOUT_TITLE="$STAGING_SEEDED_WORKOUT_TITLE" \
+  apps/mobile/maestro/flows/workout-reconcile-resume.yaml
+# After re-seeding and arming the isolated commit-then-drop fixture:
+# Repeat with apps/mobile/maestro/flows/workout-reconcile-lost-response.yaml
+```
+
+These flows use `pressKey: home` followed by `launchApp: stopApp: false` for
+real background/foreground reactivation; `stopApp` followed by a cold
+`launchApp` separately checks session/server persistence. **Do not run
+`workout-reconcile-offline-android.yaml` on iOS**: Maestro's airplane-mode
+command has no effect on iOS simulators. iOS offline/unknown-result behavior
+requires a controlled staging network fault and operator evidence, not an
+unverified `simctl status_bar` cosmetic change.
+
+### Evidence and promotion
+
+For each platform and scenario record privately: build SHA/commit, EAS project
+owner, app ID, verified API origin, device/OS, run timestamp, fixture IDs,
+fault mode/start time, **server-side PATCH count**, final GET status, whether
+a native process was restarted, and Maestro pass/fail. Never publish
+credentials, full user-bearing screenshots, tokens or raw backend traces as
+public CI artifacts.
+
+**Acceptance is NO-GO** until both platform runs are actually performed,
+read-only reconciliation and exact write-count are confirmed, and failed
+runs are addressed. This PR only adds runnable flows, guarded dispatch and
+static contract tests; **Issue #324 stays open** until operator-supplied
+native evidence passes.

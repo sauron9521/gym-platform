@@ -1,0 +1,24 @@
+# ANDROID ONLY: offline preflight is a *known* unsent PATCH, not a lost response.
+# Seed ONE disposable IN_PROGRESS workout with ONE PENDING set.
+appId: ${APP_ID}
+---
+- runFlow: ../partials/open-seeded-workout.yaml
+- assertVisible: Очікує
+- setAirplaneMode: enabled
+- tapOn: Підтвердити підхід
+- assertVisible: Немає мережі. Підхід не надіслано.
+- assertVisible: Очікує
+- setAirplaneMode: disabled
+# Reopening the workout may GET-refetch but MUST NOT replay the offline PATCH.
+- pressKey: home
+- launchApp:
+    stopApp: false
+- assertVisible: Очікує
+- stopApp
+- launchApp:
+    clearState: false
+- tapOn:
+    id: mobile-tab-workouts
+- tapOn: ${E2E_WORKOUT_TITLE}
+- assertVisible: Очікує
+- assertNotVisible: ✓ Збережено

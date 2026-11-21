@@ -1,0 +1,34 @@
+# iOS + Android: FAIL-CLOSED without an EXTERNAL, APPROVED STAGING fault fixture.
+# Before running, operator must arm exactly one scoped PATCH commit-then-drop
+# response fault for the selected disposable athlete/workout/set. The subsequent
+# GET must be reachable and report the COMMITTED state. No in-app fault switch.
+# A normal PATCH 200 WILL FAIL the "Стан отримано" assertion, by design.
+appId: ${APP_ID}
+---
+- runFlow: ../partials/open-seeded-workout.yaml
+- assertVisible: Очікує
+- tapOn: Підтвердити підхід
+- extendedWaitUntil:
+    visible: Стан отримано із сервера.*
+    timeout: 20000
+- assertVisible: ✓ Збережено
+- assertNotVisible:
+    text: Підтвердити підхід
+    enabled: true
+# Native resume must not make a second write or re-expose a stale PENDING set.
+- pressKey: home
+- launchApp:
+    stopApp: false
+- assertVisible: ✓ Збережено
+- stopApp
+- launchApp:
+    clearState: false
+- tapOn:
+    id: mobile-tab-workouts
+- tapOn: ${E2E_WORKOUT_TITLE}
+- assertVisible: ✓ Збережено
+- assertNotVisible:
+    text: Підтвердити підхід
+    enabled: true
+# PASS is CONDITIONAL: operator must independently verify exactly ONE PATCH
+# in the staging backend audit log, and that no production route was contacted.

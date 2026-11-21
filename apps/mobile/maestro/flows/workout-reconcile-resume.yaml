@@ -1,0 +1,30 @@
+# iOS + Android: approved staging only. Seed ONE active workout with ONE PENDING set.
+# No fault injection; validates a confirmed write across foreground and cold restart.
+appId: ${APP_ID}
+---
+- runFlow: ../partials/open-seeded-workout.yaml
+- assertVisible: Очікує
+- assertVisible:
+    text: Підтвердити підхід
+    enabled: true
+- tapOn: Підтвердити підхід
+- extendedWaitUntil:
+    visible: ✓ Збережено
+    timeout: 20000
+# Real background -> foreground without force-restarting the app.
+- pressKey: home
+- launchApp:
+    stopApp: false
+- assertVisible: ✓ Збережено
+- assertNotVisible: Запис міг бути збережений.*
+# Then verify that the saved server result survives process restart.
+- stopApp
+- launchApp:
+    clearState: false
+- tapOn:
+    id: mobile-tab-workouts
+- tapOn: ${E2E_WORKOUT_TITLE}
+- assertVisible: ✓ Збережено
+- assertNotVisible:
+    text: Підтвердити підхід
+    enabled: true
