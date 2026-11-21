@@ -69,7 +69,25 @@ successful native smoke run**.
 
 ## Automated local EAS configuration preflight
 
-Before requesting the manual preview APK build, run `node apps/mobile/scripts/native-staging-preflight.mjs` from the repository root. This command deliberately fails until the owner provides approved Android/iOS package identifiers in `app.json`. The repository does not invent public application IDs or signing keys. The preflight also verifies that the preview artifact is an internal APK bound to EAS `preview`, with independent production versioning.
+Before requesting the manual **Android** preview APK build, run
+`node apps/mobile/scripts/native-staging-preflight.mjs --platform android`
+from the repository root. It requires an owner-approved `expo.android.package`
+but **does not require the unrelated iOS bundle ID**. For iOS-only setup use
+`--platform ios`; the default with no flag checks **both** platform IDs.
+Unsupported platform flags fail closed. The preflight also verifies the
+relevant preview profile, internal distribution, EAS `preview` environment,
+and independent production versioning; it does not invent application IDs or
+signing keys.
+
+**The Android preflight does not link your Expo project or check the EAS cloud**.
+Before building, log in to your own Expo account, link the reviewed project
+(`eas init` / approved project ID) and set `EXPO_PUBLIC_API_URL` in the EAS
+`preview` environment to the actual **HTTPS staging-only API**. The public URL
+will be embedded in the APK; do not set it to localhost or production. Review
+all generated config changes in a separate PR before using a production deploy
+key. Actual GitHub `mobile-staging` environment **required reviewer and main-only
+branch restrictions** must be created manually before running the dispatch;
+GitHub does not have these protections when the environment does not exist.
 
 Passing the configuration preflight **does not** verify a real device build, staging HTTPS, package ownership or Maestro execution. Those remain manual operator requirements.
 

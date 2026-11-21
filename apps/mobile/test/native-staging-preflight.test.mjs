@@ -48,3 +48,40 @@ test('production versioning requires remote EAS source and auto increment', () =
   assert.ok(findings.some((message) => message.includes('appVersionSource')));
   assert.ok(findings.some((message) => message.includes('Production build version')));
 });
+
+test('Android-only preflight never requires unrelated iOS bundle ID', () => {
+  const androidOnly = {
+    expo: { ...app.expo, android: { package: 'app.gymplatform.preview' } },
+  };
+  assert.deepEqual(validateNativeStagingConfig(androidOnly, eas, { platform: 'android' }), []);
+  assert.ok(
+    validateNativeStagingConfig(androidOnly, eas).some((x) => x.includes('ios.bundleIdentifier')),
+  );
+  assert.ok(
+    validateNativeStagingConfig(app, eas, { platform: 'android' }).some((x) =>
+      x.includes('android.package'),
+    ),
+  );
+});
+
+test('iOS-only preflight ignores Android package and APK-only restriction', () => {
+  const iosOnly = {
+    expo: { ...app.expo, ios: { bundleIdentifier: 'app.gymplatform.preview' } },
+  };
+  const preview = structuredClone(eas);
+  preview.build.preview.android.buildType = 'app-bundle';
+  assert.deepEqual(validateNativeStagingConfig(iosOnly, preview, { platform: 'ios' }), []);
+  assert.ok(
+    validateNativeStagingConfig(iosOnly, preview, { platform: 'android' }).some((x) =>
+      x.includes('Android preview requires an APK'),
+    ),
+  );
+});
+
+test('preflight rejects unsupported platform values rather than silently weakening checks', () => {
+  for (const platform of ['Android', 'alll', '', 'web']) {
+    assert.deepEqual(validateNativeStagingConfig(configured, eas, { platform }), [
+      'Invalid --platform. Choose android, ios, or all.',
+    ]);
+  }
+});
