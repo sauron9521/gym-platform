@@ -187,6 +187,22 @@ describe('API A/B comparison runner', () => {
       'utf8',
     );
     assert.match(workflow, /workflow_dispatch:/);
+    assert.match(workflow, /pull_request:\s*\n\s*paths:/);
+    assert.match(workflow, /'\.github\/workflows\/api-performance-ab\.yml'/);
+    assert.match(
+      workflow,
+      /github\.event\.pull_request\.head\.repo\.full_name == github\.repository/,
+    );
+    assert.match(
+      workflow,
+      /BEFORE_SHA: \$\{\{ github\.event_name == 'pull_request' && github\.event\.pull_request\.head\.sha \|\| inputs\.before_sha \}\}/,
+    );
+    assert.match(
+      workflow,
+      /AFTER_SHA: \$\{\{ github\.event_name == 'pull_request' && github\.event\.pull_request\.head\.sha \|\| inputs\.after_sha \}\}/,
+    );
+    assert.match(workflow, /ref: \$\{\{ env\.BEFORE_SHA \}\}/);
+    assert.match(workflow, /ref: \$\{\{ env\.AFTER_SHA \}\}/);
     assert.match(workflow, /contents: read/);
     assert.match(workflow, /github\.ref == 'refs\/heads\/main'/);
     assert.match(workflow, /gym_perf_before_test/);
