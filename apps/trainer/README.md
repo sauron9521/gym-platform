@@ -20,31 +20,34 @@ pnpm --filter @gym/trainer test
 pnpm --filter @gym/trainer build
 ```
 
-## Trainer Dashboard — active clients (#364)
+## Trainer Dashboard — live client list and KPIs (#364)
 
-The first dashboard slice uses the **existing** TrainerAthlete domain endpoint,
-not a parallel dashboard backend. The REST query
-`GET /trainer-athletes?scope=trainer&status=ACTIVE&limit=8&page=1` is
-backward compatible: `scope` is optional and old caller behavior remains
-unchanged. When set, Nest requires a current approved Trainer capability and
-filters by `trainerId` **before** PostgreSQL count and pagination, so an
-ATHLETE-role trainer who is also somebody else's athlete sees only their own
-active client relationships. The API returns at most 8 rows per dashboard page.
+The protected dynamic `/workspace` performs a fresh persisted Trainer capability
+check before requesting private data. It then runs two independent, uncached
+read models via the shared typed `@gym/api-client` transport:
 
-`/workspace` revalidates Trainer capability server-side, then calls the typed
-`@gym/api-client` endpoint using only a trusted fixed API origin and the
-incoming host-only session cookie. It never caches private results, follows
-redirects or renders a stale list after a non-200/malformed API response.
-The page includes true count, bounded pagination, empty/error states and
-uk/en labels. **Programs and progress remain explicitly pending** until
-backend read models are delivered under #312; no fabricated KPI values,
-parallel REST endpoints or unscoped client-side counts are used.
+- `GET /trainer-athletes?scope=trainer&status=ACTIVE&limit=8&page=N`:
+  bounded client list and pagination, where API SQL scopes active relationships
+  to the trainer **before** COUNT/LIMIT/OFFSET. Existing callers are unchanged.
+- `GET /trainer-dashboard/overview` (backend #312, merged #473): three
+  bounded PostgreSQL counts: active clients; active program assignments;
+  **completed assigned-program** workouts in the last 30 days. Progress is
+  _not_ all personal workouts, and program count is _not_ a number of templates.
 
-Trainer unit tests cover denied/untrusted responses and bounded active lists;
-API tests cover scoped permissions and DB pagination. The existing
-`trainer-web-auth.spec.ts` browser E2E now checks approved-client visibility,
-isolation from another trainer, revocation and host-only sessions with real
-Next/Nest/PostgreSQL.
+The shared SSR transport accepts only a configured trusted origin, forwards
+host-only session cookies to that origin only, rejects redirects, uses
+`no-store` and a five-second timeout. An unauthenticated/forbidden response
+from **either** read invalidates the whole private workspace even if the other
+completed successfully (handles post-capability-check revocation). A malformed,
+failed or unavailable overview displays an explicit unavailable state in each
+KPI card; it never fabricates zeros. A true empty result shows numeric `0`.
+A client list outage is isolated from an otherwise valid KPI overview.
+Messages and exact 30-day/assignment semantics are available in uk/en.
+
+Unit contracts cover missing cookie, status and malformed response, zero versus
+unavailable, unsafe origin and strict SSR transport. The real
+`trainer-web-auth.spec.ts` browser/PostgreSQL E2E verifies authorized
+0/1 aggregates, other-trainer isolation, revocation and expired sessions.
 
 ## Real-browser security regression
 
@@ -80,6 +83,6 @@ in the browser-regression trigger.
 - **No private-data authorization happens in client code.** `/workspace` rechecks live server grants and the Nest API enforces active-relationship row visibility at query time. The new `scope=trainer` list filter scopes SQL counts/pagination to collaborations where the signed-in identity is the trainer (not athlete-side relationships). No extra passwords, new JWTs, or migrations.
 - The shared `gym-locale` cookie controls uk/en with Accept-Language fallback, and `ovranto-theme` follows OS Light/Dark by default with manual override. Cookie values never confer privileges.
 - This app has `robots: noindex` until a controlled release and verified auth. No production domain or deployment is enabled here.
-- Subsequent work: #312 aggregated trainer progress/program read models, #364 richer dashboard lists, #365 focused 3-pane Program Builder, #366 assignments/feedback, #369 browser E2E/CI release gating.
+- Subsequent work: #364 detailed athlete progress/tasks and program lists, #365 focused 3-pane Program Builder, #366 assignments/feedback, #369 browser E2E/CI release gating.
 
 Architecture: [ADR-005](../../docs/architecture/adr-005-product-ownership-trainer-migration.md). Visual design: OVRANTO Premium Athletic Minimal, full Light/Dark, responsive sidebar; builder remains a separate step.

@@ -1,6 +1,4 @@
-import { createGymApiClient } from '@gym/api-client';
-
-import { getTrainerApiOrigin } from './upstream.mjs';
+import { createTrainerServerApiClient } from './trainer-server-api';
 
 const CLIENTS_PER_PAGE = 8;
 const MAX_CLIENT_PAGE = 10_000;
@@ -39,27 +37,7 @@ export async function loadTrainerClients(
   }
 
   try {
-    const origin = getTrainerApiOrigin(configuredOrigin);
-    const api = createGymApiClient({
-      baseUrl: origin,
-      credentials: 'omit',
-      headers: { cookie: cookieHeader, accept: 'application/json' },
-      fetch: async (input) => {
-        // Never follow redirects or send the caller's cookie to another origin.
-        const request = new Request(input);
-        if (new URL(request.url).origin !== origin) {
-          throw new Error('Untrusted Trainer API destination');
-        }
-        return send(
-          new Request(request, {
-            credentials: 'omit',
-            redirect: 'error',
-            cache: 'no-store',
-            signal: AbortSignal.timeout(5000),
-          }),
-        );
-      },
-    });
+    const api = createTrainerServerApiClient(cookieHeader, configuredOrigin, send);
     const response = await api.GET('/trainer-athletes', {
       params: { query: { page, limit: CLIENTS_PER_PAGE, status: 'ACTIVE', scope: 'trainer' } },
     });
