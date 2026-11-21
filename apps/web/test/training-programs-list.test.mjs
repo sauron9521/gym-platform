@@ -79,16 +79,18 @@ test('program list errors are friendly and do not expose backend content', () =>
   assert.notEqual(getProgramListError(429), getProgramListError(400));
 });
 
-test('role-specific program pages independently verify sessions', async () => {
-  for (const [path, expectedRole] of [
-    ['../src/app/(protected)/trainer/programs/page.tsx', 'TRAINER'],
-    ['../src/app/(protected)/athlete/programs/page.tsx', 'ATHLETE'],
+test('role-specific program pages independently verify persisted capabilities', async () => {
+  for (const [path, capability] of [
+    ['../src/app/(protected)/trainer/programs/page.tsx', 'trainer'],
+    ['../src/app/(protected)/athlete/programs/page.tsx', 'athlete'],
   ]) {
     const page = await readFile(new URL(path, import.meta.url), 'utf8');
-    assert.match(page, /verifyServerSession/);
+    assert.match(page, /verifyServerCapability/);
+    assert.ok(page.includes(`verifyServerCapability(cookieHeader, '${capability}')`));
     assert.match(page, /session.kind === 'unauthenticated'/);
     assert.match(page, /session.kind === 'unavailable'/);
-    assert.ok(page.includes(`session.user.role !== '${expectedRole}'`));
+    assert.match(page, /session.kind !== 'authenticated'/);
+    assert.doesNotMatch(page, /session\.user\.role/);
     assert.match(page, /robots: \{ index: false \}/);
     assert.match(page, /force-dynamic/);
   }

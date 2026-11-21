@@ -7,6 +7,11 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { AuthProvider, useAuth } from '@/features/auth/model/auth-context';
+import {
+  hasAthleteAccess,
+  hasTrainerAccess,
+  hasMobileAccess,
+} from '@/features/auth/model/account-capabilities';
 import { GluestackUIProvider } from '@/shared/ui/gluestack/gluestack-ui-provider';
 import { MobileQueryProvider } from '@/shared/api/query-provider';
 import { palette } from '@/shared/config/theme';
@@ -16,7 +21,7 @@ import { LocaleProvider } from '@/shared/i18n/locale-provider';
 import { AccountLocaleSync } from '@/features/profile/ui/account-locale-sync';
 
 function Navigation() {
-  const { account, restoring } = useAuth();
+  const { account, capabilities, restoring } = useAuth();
   return (
     <>
       <Stack
@@ -30,7 +35,7 @@ function Navigation() {
           contentStyle: { backgroundColor: palette.background },
         }}
       >
-        <Stack.Protected guard={Boolean(account)}>
+        <Stack.Protected guard={Boolean(account && hasMobileAccess(capabilities))}>
           <Stack.Screen name="(tabs)" options={{ title: 'Gym Platform' }} />
           <Stack.Screen
             name="profile/edit"
@@ -39,7 +44,7 @@ function Navigation() {
           <Stack.Screen name="exercises/index" options={{ headerShown: true, title: 'Вправи' }} />
           <Stack.Screen name="workouts/[id]" options={{ headerShown: true, title: 'Тренування' }} />
         </Stack.Protected>
-        <Stack.Protected guard={account?.role === 'ATHLETE'}>
+        <Stack.Protected guard={hasAthleteAccess(capabilities)}>
           <Stack.Screen
             name="progress/index"
             options={{ headerShown: true, title: 'Мій прогрес' }}
@@ -54,19 +59,19 @@ function Navigation() {
             options={{ headerShown: true, title: 'Нове тренування' }}
           />
         </Stack.Protected>
-        <Stack.Protected guard={account?.role === 'TRAINER'}>
+        <Stack.Protected guard={hasTrainerAccess(capabilities)}>
           <Stack.Screen
             name="trainer/athletes"
             options={{ headerShown: true, title: 'Мої підопічні' }}
           />
         </Stack.Protected>
-        <Stack.Protected guard={!account}>
+        <Stack.Protected guard={!account || !capabilities}>
           <Stack.Screen name="sign-in" />
         </Stack.Protected>
       </Stack>
       <StatusBar style="light" />
       <OfflineBanner />
-      {restoring ? (
+      {restoring || (account && !capabilities) ? (
         <View accessibilityLabel="Відновлення сесії" style={styles.loadingOverlay}>
           <ActivityIndicator color={palette.primary} size="large" />
         </View>

@@ -7,16 +7,20 @@ import {
 } from '@nestjs/common/constants';
 
 import { TrainerAthletesController } from '../../controllers/trainer-athletes.controller.js';
+import { TrainerDashboardController } from '../../controllers/trainer-dashboard.controller.js';
 import { TrainerAthletesModule } from '../../trainer-athletes.module.js';
 
 describe('TrainerAthletesModule controller registry', () => {
-  it('registers exactly the relationship controller and preserves the route prefix', () => {
+  it('registers only relationship and dashboard controllers and preserves route prefixes', () => {
     const controllers: unknown[] = Reflect.getMetadata(
       MODULE_METADATA.CONTROLLERS,
       TrainerAthletesModule,
     );
-    expect(controllers).toEqual([TrainerAthletesController]);
+    expect(controllers).toEqual([TrainerAthletesController, TrainerDashboardController]);
     expect(Reflect.getMetadata(PATH_METADATA, TrainerAthletesController)).toBe('trainer-athletes');
+    expect(Reflect.getMetadata(PATH_METADATA, TrainerDashboardController)).toBe(
+      'trainer-dashboard',
+    );
   });
 
   it.each([

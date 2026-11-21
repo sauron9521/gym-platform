@@ -33,6 +33,17 @@ export class UsersRepository {
     }
   }
 
+  /** Re-read persisted privilege state: sessions never decide capabilities. */
+  async findCapabilitySnapshot(id: string) {
+    return this.prisma.user.findUnique({
+      where: { id, deletedAt: null },
+      select: {
+        role: true,
+        trainerProfile: { select: { isActive: true } },
+      },
+    });
+  }
+
   async findMe(id: string) {
     return this.prisma.user.findUnique({
       where: { id, deletedAt: null },

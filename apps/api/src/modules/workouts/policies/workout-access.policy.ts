@@ -1,10 +1,15 @@
 import { BadRequestException, ForbiddenException } from '@nestjs/common';
 
-import type { WorkoutActor, WorkoutListQuery } from '../types/workout.types.js';
+import type { WorkoutListQuery } from '../types/workout.types.js';
 
-/** Require the athlete role before accessing personal workout operations. */
-export function assertWorkoutAthlete(actor: WorkoutActor): void {
-  if (actor.role !== 'ATHLETE') {
+type AthleteAccessCapabilities = { athlete: boolean; admin: boolean };
+
+/**
+ * Accept only a CURRENT persisted account capability snapshot, never a JWT
+ * role. Legacy TRAINER identities retain their own Athlete features.
+ */
+export function assertWorkoutAthlete(capabilities: AthleteAccessCapabilities): void {
+  if (!capabilities.athlete || capabilities.admin) {
     throw new ForbiddenException('Only athletes can manage personal workouts');
   }
 }

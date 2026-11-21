@@ -26,6 +26,21 @@ describe('UsersRepository', () => {
     repository = new UsersRepository(prisma as unknown as PrismaService);
   });
 
+  describe('findCapabilitySnapshot', () => {
+    it('queries only current non-deleted account role and trainer revocation state', async () => {
+      const state = { role: 'ATHLETE', trainerProfile: { isActive: false } };
+      prisma.user.findUnique.mockResolvedValue(state);
+      await expect(repository.findCapabilitySnapshot('actor-1')).resolves.toBe(state);
+      expect(prisma.user.findUnique).toHaveBeenCalledExactlyOnceWith({
+        where: { id: 'actor-1', deletedAt: null },
+        select: {
+          role: true,
+          trainerProfile: { select: { isActive: true } },
+        },
+      });
+    });
+  });
+
   describe('create', () => {
     it('should create a user without returning passwordHash', async () => {
       const input = {

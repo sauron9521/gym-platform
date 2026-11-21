@@ -1,5 +1,11 @@
 # Workouts module
 
+## Live athlete capability (M05 / #291)
+
+Personal workout read, creation and lifecycle operations authorize the **current database-derived** athlete capability via `UsersService.findMyCapabilities`, not the actor's cached `role`. Existing `TRAINER`-role accounts and approved `ATHLETE`-role trainers retain their own athlete workouts; revoked trainer approval removes trainer privileges **without** removing personal athlete history. An account currently promoted to `ADMIN`, or deleted, cannot use athlete workout routes even with a stale non-admin session. Existing `athleteId`-scoped queries still prevent cross-account IDOR. No API shape or Prisma migrations changed.
+
+Cross-product HTTP regression: `apps/api/test/e2e/users/users.e2e-spec.ts`. More complete security browser/mobile coverage follows in #361.
+
 **Source:** [`apps/api/src/modules/workouts/`](../../../apps/api/src/modules/workouts/)
 
 Authenticated workout creation, retrieval, editing, set updates, lifecycle transitions and creation from a training program.

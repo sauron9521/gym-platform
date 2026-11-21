@@ -79,10 +79,12 @@ test('trainer detail route verifies its own session and protects invalid IDs', a
     new URL('../src/app/(protected)/trainer/programs/[programId]/page.tsx', import.meta.url),
     'utf8',
   );
-  assert.match(page, /verifyServerSession/);
+  assert.match(page, /verifyServerCapability/);
   assert.match(page, /session.kind === 'unauthenticated'/);
   assert.match(page, /session.kind === 'unavailable'/);
-  assert.match(page, /session.user.role !== 'TRAINER'/);
+  assert.match(page, /verifyServerCapability\(cookieHeader, 'trainer'\)/);
+  assert.doesNotMatch(page, /session\.user\.role/);
+  assert.match(page, /session.kind !== 'authenticated'/);
   assert.match(page, /z.uuid\(\).safeParse\(programId\)/);
   assert.match(page, /robots: \{ index: false \}/);
   assert.match(page, /force-dynamic/);

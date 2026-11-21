@@ -473,6 +473,46 @@
         "tags": ["Sessions"]
       }
     },
+    "/users/me/capabilities": {
+      "get": {
+        "operationId": "UsersController_myCapabilities",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Current database-derived account capabilities; does not authorize admin actions.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["athlete", "trainer", "admin"],
+                  "additionalProperties": false,
+                  "properties": {
+                    "athlete": {
+                      "type": "boolean"
+                    },
+                    "trainer": {
+                      "type": "boolean"
+                    },
+                    "admin": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "accessToken": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "tags": ["Users"]
+      }
+    },
     "/users/me": {
       "get": {
         "operationId": "UsersController_me",
@@ -2280,6 +2320,15 @@
               "type": "string",
               "enum": ["PENDING", "ACTIVE", "DECLINED", "CANCELLED", "TERMINATED"]
             }
+          },
+          {
+            "name": "scope",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["trainer"]
+            }
           }
         ],
         "responses": {
@@ -3938,6 +3987,60 @@
           }
         ],
         "tags": ["Trainer & Athlete Relationships"]
+      }
+    },
+    "/trainer-dashboard/overview": {
+      "get": {
+        "operationId": "TrainerDashboardController_overview",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "asOf": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "windowStart": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "activeClients": {
+                      "type": "integer"
+                    },
+                    "activeProgramAssignments": {
+                      "type": "integer"
+                    },
+                    "completedProgramWorkouts30d": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "asOf",
+                    "windowStart",
+                    "activeClients",
+                    "activeProgramAssignments",
+                    "completedProgramWorkouts30d"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "accessToken": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "tags": ["Trainer Dashboard"]
       }
     },
     "/workouts": {

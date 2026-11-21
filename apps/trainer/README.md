@@ -20,15 +20,66 @@ pnpm --filter @gym/trainer test
 pnpm --filter @gym/trainer build
 ```
 
+## Trainer Dashboard — active clients (#364)
+
+The first dashboard slice uses the **existing** TrainerAthlete domain endpoint,
+not a parallel dashboard backend. The REST query
+`GET /trainer-athletes?scope=trainer&status=ACTIVE&limit=8&page=1` is
+backward compatible: `scope` is optional and old caller behavior remains
+unchanged. When set, Nest requires a current approved Trainer capability and
+filters by `trainerId` **before** PostgreSQL count and pagination, so an
+ATHLETE-role trainer who is also somebody else's athlete sees only their own
+active client relationships. The API returns at most 8 rows per dashboard page.
+
+`/workspace` revalidates Trainer capability server-side, then calls the typed
+`@gym/api-client` endpoint using only a trusted fixed API origin and the
+incoming host-only session cookie. It never caches private results, follows
+redirects or renders a stale list after a non-200/malformed API response.
+The page includes true count, bounded pagination, empty/error states and
+uk/en labels. **Programs and progress remain explicitly pending** until
+backend read models are delivered under #312; no fabricated KPI values,
+parallel REST endpoints or unscoped client-side counts are used.
+
+Trainer unit tests cover denied/untrusted responses and bounded active lists;
+API tests cover scoped permissions and DB pagination. The existing
+`trainer-web-auth.spec.ts` browser E2E now checks approved-client visibility,
+isolation from another trainer, revocation and host-only sessions with real
+Next/Nest/PostgreSQL.
+
+## Real-browser security regression
+
+The existing `Web / Integration E2E` workflow runs
+`apps/web/e2e/integration/trainer-web-auth.spec.ts` against real NestJS,
+PostgreSQL, and the independent Trainer Next app; it is not a mocked auth test.
+The Trainer server only starts for that spec. `127.0.0.1:3200` (Athlete Web)
+and `localhost:3202` (Trainer Web) are intentionally **different hosts**
+so host-only session cookie isolation can be asserted.
+
+The test checks unauthenticated and pending Trainer access, approval,
+revocation, ADMIN denial, rejected forged Origin, cookie flags and host isolation,
+and actual sign-out with subsequent 401. It uses **only** the disposable
+`*_test` database guarded by the existing Web integration harness; the test
+creates a reviewer fixture directly in that database and removes it afterward.
+Never run it against development or production databases.
+
+Run with the existing Playwright PostgreSQL setup using the documented Web
+integration environment; use `WEB_E2E_TRAINER=1` to start Trainer when
+running this one spec directly. CI sets that flag automatically for
+`trainer-web-auth.spec.ts` and includes changes under `apps/trainer/**`
+in the browser-regression trigger.
+
 ## Product and security boundaries
 
 - One existing `User` identity and one NestJS API. No second Trainer users/passwords/service.
 - `src/app` owns routes, `src/widgets` owns presentation shell and `src/shared` holds local utilities following FSD boundaries.
 - Use `@gym/design-tokens/ovranto.css`, `@gym/ui-web`, `@gym/i18n` and `@gym/api-client`. No copied Athlete Web component tree.
 - Root displays **only public bootstrap information**, never mock athlete data, private API responses or role-based content. Sidebar links to unimplemented features are disabled and do not imply access.
-- Server-side trusted-origin `/backend/*` rewrite is installed for future authenticated integration. **Do not treat this rewrite, the shell, or any client-side navigation as authorization.** `#363` will add Trainer sign-in, host-specific session handling, CSRF/origin checks, server route guards and tests. `#291/#309–311/#361` supply approved Trainer capabilities.
+- `/workspace` is a protected, dynamic, uncached server dashboard. It first verifies `/users/me/capabilities` (requires `trainer: true`, `admin: false`), then loads real client data **only** from the trusted Nest API with the request's host-only Cookie header. Missing/expired/revoked grants, invalid responses, redirects and network outages fail closed and never expose stale client data.
+- `/login` uses browser credentials against same-origin `/backend/auth/login` (the existing NestJS login), validates `/backend/users/me/capabilities` before entering `/workspace`, and best-effort signs out newly issued unapproved/MFA sessions. Only the API issues the host-only session cookie; the client never reads session tokens. Set API `TRAINER_APP_URL` to the exact Trainer origin (and add it to `CORS_ORIGINS`); Nest already checks CSRF Origin for cookie-auth writes.
+- The protected `/workspace` exposes **Sign out** only after server-side live capability verification. It posts to the existing Nest `POST /auth/sign-out` via `/backend` with same-origin cookies, no redirects and no cache. A 204 response or an expired session (401) returns to `/login`; 403, 429, 5xx, network errors and unexpected responses retain the current UI with a retryable error. The control disables itself during requests and ignores double-clicks. Sign-out never relies on a client-only cookie deletion or on JWT/local storage.
+- **No private-data authorization happens in client code.** `/workspace` rechecks live server grants and the Nest API enforces active-relationship row visibility at query time. The new `scope=trainer` list filter scopes SQL counts/pagination to collaborations where the signed-in identity is the trainer (not athlete-side relationships). No extra passwords, new JWTs, or migrations.
 - The shared `gym-locale` cookie controls uk/en with Accept-Language fallback, and `ovranto-theme` follows OS Light/Dark by default with manual override. Cookie values never confer privileges.
 - This app has `robots: noindex` until a controlled release and verified auth. No production domain or deployment is enabled here.
-- Subsequent work: #363 auth, #364 dashboard, #365 focused 3-pane Program Builder, #366 assignments/feedback, #369 browser E2E/CI release gating.
+- Subsequent work: #312 aggregated trainer progress/program read models, #364 richer dashboard lists, #365 focused 3-pane Program Builder, #366 assignments/feedback, #369 browser E2E/CI release gating.
 
 Architecture: [ADR-005](../../docs/architecture/adr-005-product-ownership-trainer-migration.md). Visual design: OVRANTO Premium Athletic Minimal, full Light/Dark, responsive sidebar; builder remains a separate step.

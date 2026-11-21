@@ -3,6 +3,7 @@ import { useRouter } from 'expo-router';
 import { useIntl } from 'react-intl';
 
 import { useAuth } from '@/features/auth/model/auth-context';
+import { hasTrainerAccess } from '@/features/auth/model/account-capabilities';
 import { useAccountQuery } from '@/features/profile/model/account-query';
 import { palette } from '@/shared/config/theme';
 import { AccountLocalePicker } from '@/features/profile/ui/account-locale-picker';
@@ -11,7 +12,7 @@ export function ProfileScreen() {
   const router = useRouter();
   const intl = useIntl();
   const t = (id: string) => intl.formatMessage({ id });
-  const { account, signOut } = useAuth();
+  const { account, capabilities, signOut } = useAuth();
   const { data, isFetching, isError, error, refetch } = useAccountQuery();
 
   if (!account) return null;
@@ -79,7 +80,7 @@ export function ProfileScreen() {
       >
         <Text style={styles.secondaryText}>{t('mobile.profile.edit')}</Text>
       </Pressable>
-      {account.role === 'TRAINER' ? (
+      {hasTrainerAccess(capabilities) ? (
         <Pressable
           accessibilityRole="button"
           testID="profile-trainer-athletes"

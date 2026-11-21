@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation';
 import { z } from 'zod';
 
 import { TrainerProgramDetails } from '@/features/training-programs/ui/trainer-program-details';
-import { verifyServerSession } from '@/shared/api/server-session';
+import { verifyServerCapability } from '@/shared/api/server-session';
 
 export const metadata: Metadata = {
   title: 'Деталі тренувальної програми | Gym Platform',
@@ -19,7 +19,7 @@ export default async function TrainerProgramDetailsPage({
   params: Promise<{ programId: string }>;
 }) {
   const cookieHeader = (await headers()).get('cookie') ?? '';
-  const session = await verifyServerSession(cookieHeader);
+  const session = await verifyServerCapability(cookieHeader, 'trainer');
 
   if (session.kind === 'unauthenticated') redirect('/login');
 
@@ -34,7 +34,7 @@ export default async function TrainerProgramDetailsPage({
     );
   }
 
-  if (session.kind !== 'authenticated' || session.user.role !== 'TRAINER') {
+  if (session.kind !== 'authenticated') {
     return (
       <main className="mx-auto max-w-3xl px-6 py-16">
         <h1 className="text-2xl font-semibold">Доступ заборонено</h1>

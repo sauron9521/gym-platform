@@ -5,6 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 
+import { UsersService } from '#src/modules/users/services/users.service';
 import { TrainingProgramCrudRepository } from '../repositories/training-program-crud.repository.js';
 import { TrainingProgramVersionRepository } from '../repositories/training-program-version.repository.js';
 
@@ -15,16 +16,26 @@ export class TrainingProgramAccessService {
   constructor(
     private readonly crudRepository: TrainingProgramCrudRepository,
     private readonly versionRepository: TrainingProgramVersionRepository,
+    private readonly usersService: UsersService,
   ) {}
 
-  assertTrainer(actor: TrainingProgramActor): void {
-    if (actor.role !== 'TRAINER') {
-      throw new ForbiddenException('Only trainers can manage training programs');
+  /** Check the persisted account on every operation, not an outdated session role. */
+  async assertTrainer(actor: TrainingProgramActor): Promise<void> {
+    if (!(await this.usersService.hasTrainerCapability(actor.id))) {
+      throw new ForbiddenException('Only active trainers can manage training programs');
+    }
+  }
+
+  /** Fresh persisted account check for read/list access; no session role gating. */
+  async assertAssignmentParticipant(actor: TrainingProgramActor): Promise<void> {
+    const capabilities = await this.usersService.findMyCapabilities(actor.id);
+    if (!capabilities.athlete || capabilities.admin) {
+      throw new ForbiddenException('Only active participants can access program assignments');
     }
   }
 
   async assertEditableDraft(actor: TrainingProgramActor, programId: string, versionId: string) {
-    this.assertTrainer(actor);
+    await this.assertTrainer(actor);
 
     const program = await this.crudRepository.findProgramById(programId, {
       trainerId: actor.id,

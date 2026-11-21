@@ -186,7 +186,7 @@ test('native secure storage and gated profile bootstrap are wired without web pe
   assert.ok(auth.includes("POST('/auth/token/revoke'"));
   assert.ok(auth.includes('session.getAccessToken()'));
   assert.ok(auth.includes('queryClient.clear()'));
-  assert.ok(layout.includes('restoring ?'));
+  assert.ok(layout.includes('restoring || (account && !capabilities) ?'));
   assert.ok(layout.includes('loadingOverlay'));
   assert.ok(native.includes('SecureStore.getItemAsync'));
   assert.ok(native.includes('SecureStore.setItemAsync'));

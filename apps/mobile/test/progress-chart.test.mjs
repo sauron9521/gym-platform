@@ -44,13 +44,13 @@ test('athlete-only analytics query uses typed endpoint and role guard', () => {
   );
 
   assert.match(code, /GET\('\/workout-analytics\/summary'/);
-  assert.match(code, /enabled: account\?\.role === 'ATHLETE'/);
+  assert.match(code, /enabled: hasAthleteAccess\(capabilities\)/);
   assert.match(code, /response\.response\.status === 403/);
   assert.match(code, /SessionExpiredError/);
   assert.match(code, /AccessDeniedError/);
   assert.match(code, /'workout-summary', range/);
   assert.match(layout, /name="progress\/index"/);
-  assert.match(layout, /guard=\{account\?\.role === 'ATHLETE'\}/);
-  assert.match(home, /account\?\.role === 'ATHLETE'/);
+  assert.match(layout, /guard=\{hasAthleteAccess\(capabilities\)\}/);
+  assert.match(home, /hasAthleteAccess\(capabilities\)/);
   assert.match(home, /router\.push\('\/progress'\)/);
 });

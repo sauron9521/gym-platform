@@ -14,6 +14,7 @@ import {
   trainerAthleteListResponseSchema,
 } from '#src/infra/openapi/response-contracts';
 
+import { RateLimit } from '#src/common/rate-limit/rate-limit.policies';
 import { TrainerAthletesService } from '../services/trainer-athletes.service.js';
 
 import type { TrainerAthleteActor } from '../types/trainer-athlete.types.js';
@@ -54,6 +55,7 @@ export class TrainerAthletesController {
   }
 
   @Get()
+  @RateLimit('read')
   @ApiOkResponse({ schema: trainerAthleteListResponseSchema })
   findMany(
     @CurrentUser() user: TrainerAthleteActor,
@@ -64,6 +66,7 @@ export class TrainerAthletesController {
   }
 
   @Get(':id')
+  @RateLimit('read')
   @ApiOkResponse({ schema: trainerAthletePublicResponseSchema })
   findOne(
     @Param('id', { schema: trainerAthleteIdSchema }) id: string,

@@ -1,8 +1,14 @@
+import { ConflictException } from '@nestjs/common';
+
 import { PrismaService } from '#src/infra/database/index';
 import { Prisma } from '#prisma/client';
 
 import { TrainerAthletesRepository } from '../repositories/trainer-athletes.repository.js';
-import { trainerAthleteSelect } from '../selects/trainer-athlete.select.js';
+import { fullRelationshipReadWhere } from '../policies/trainer-athlete-read.policy.js';
+import {
+  trainerAthleteHistoricalSelect,
+  trainerAthleteSelect,
+} from '../selects/trainer-athlete.select.js';
 
 describe('TrainerAthletesRepository', () => {
   let repository: TrainerAthletesRepository;
@@ -112,6 +118,164 @@ describe('TrainerAthletesRepository', () => {
     });
   });
 
+  describe('findManyForParticipant', () => {
+    it('never requeries open trainer contact fields after capability revocation', async () => {
+      prisma.$transaction.mockResolvedValue([
+        [
+          { id: 'open', trainerId: 'trainer-1', athleteId: 'athlete-1', status: 'ACTIVE' },
+          { id: 'pending', trainerId: 'trainer-1', athleteId: 'athlete-2', status: 'PENDING' },
+        ],
+        2,
+      ]);
+
+      const result = await repository.findManyForParticipant(
+        { where: { trainerId: 'trainer-1' }, skip: 0, take: 20 },
+        'trainer-1',
+        false,
+      );
+
+      expect(result.data).toHaveLength(2);
+      expect(prisma.trainerAthlete.findMany).toHaveBeenCalledTimes(1);
+    });
+
+    it('restricts the second SQL query to the current athlete side after revocation', async () => {
+      const actorId = 'dual-user';
+      const where = { OR: [{ trainerId: actorId }, { athleteId: actorId }] };
+      prisma.$transaction.mockResolvedValue([
+        [
+          { id: 'former-trainer-open', trainerId: actorId, athleteId: 'other', status: 'ACTIVE' },
+          {
+            id: 'own-athlete-history',
+            trainerId: 'trainer-2',
+            athleteId: actorId,
+            status: 'TERMINATED',
+          },
+        ],
+        2,
+      ]);
+      prisma.trainerAthlete.findMany.mockResolvedValue([
+        { id: 'own-athlete-history', athleteId: actorId, status: 'TERMINATED' },
+      ]);
+
+      await repository.findManyForParticipant({ where, skip: 0, take: 10 }, actorId, false);
+
+      expect(prisma.trainerAthlete.findMany).toHaveBeenNthCalledWith(2, {
+        where: {
+          AND: [
+            where,
+            {
+              id: { in: ['own-athlete-history'] },
+              ...fullRelationshipReadWhere(actorId, false),
+            },
+          ],
+        },
+        select: trainerAthleteSelect,
+      });
+    });
+
+    it('redacts trainer history but preserves athlete and open records', async () => {
+      const actorId = 'dual-user';
+      const where = {
+        OR: [{ trainerId: actorId }, { athleteId: actorId }],
+      } satisfies Prisma.TrainerAthleteWhereInput;
+      const restricted = [
+        {
+          id: 'trainer-history',
+          trainerId: actorId,
+          athleteId: 'athlete-1',
+          status: 'TERMINATED',
+          athlete: { id: 'athlete-1' },
+        },
+        {
+          id: 'athlete-history',
+          trainerId: 'other-trainer',
+          athleteId: actorId,
+          status: 'TERMINATED',
+          athlete: { id: actorId },
+        },
+        {
+          id: 'open-relationship',
+          trainerId: actorId,
+          athleteId: 'athlete-2',
+          status: 'ACTIVE',
+          athlete: { id: 'athlete-2' },
+        },
+      ];
+      prisma.$transaction.mockResolvedValue([restricted, 3]);
+      prisma.trainerAthlete.findMany.mockResolvedValue([
+        {
+          ...restricted[1],
+          athlete: { id: actorId, email: 'me@example.com' },
+        },
+        {
+          ...restricted[2],
+          athlete: { id: 'athlete-2', email: 'active@example.com' },
+        },
+      ]);
+
+      const result = await repository.findManyForParticipant(
+        { where, skip: 0, take: 10 },
+        actorId,
+        true,
+      );
+
+      expect(result.data[0]).toEqual(restricted[0]);
+      expect(result.data[0]?.athlete).not.toHaveProperty('email');
+      expect(result.data[1]?.athlete).toHaveProperty('email', 'me@example.com');
+      expect(result.data[2]?.athlete).toHaveProperty('email', 'active@example.com');
+      expect(result.meta).toEqual({ total: 3, skip: 0, take: 10, totalPages: 1 });
+
+      expect(prisma.trainerAthlete.findMany).toHaveBeenNthCalledWith(2, {
+        where: {
+          AND: [
+            where,
+            {
+              id: { in: ['athlete-history', 'open-relationship'] },
+              ...fullRelationshipReadWhere(actorId, true),
+            },
+          ],
+        },
+        select: expect.any(Object),
+      });
+    });
+
+    it('does not requery contact fields for only historical trainer-side records', async () => {
+      prisma.$transaction.mockResolvedValue([
+        [{ id: 'former', trainerId: 'trainer-1', athleteId: 'athlete-1', status: 'DECLINED' }],
+        1,
+      ]);
+      const result = await repository.findManyForParticipant(
+        { where: { trainerId: 'trainer-1' }, skip: 0, take: 20 },
+        'trainer-1',
+        true,
+      );
+
+      expect(result.data).toHaveLength(1);
+      expect(prisma.trainerAthlete.findMany).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('findRestrictedById', () => {
+    it('keeps only the restricted projection for open or ended relationships', async () => {
+      prisma.trainerAthlete.findFirst.mockResolvedValue({
+        id: 'active-relationship',
+        status: 'ACTIVE',
+      });
+
+      const result = await repository.findRestrictedById('active-relationship', {
+        trainerId: 'trainer-1',
+      });
+
+      expect(result).toMatchObject({ status: 'ACTIVE' });
+      expect(prisma.trainerAthlete.findFirst).toHaveBeenCalledWith({
+        where: {
+          AND: [{ id: 'active-relationship' }, { trainerId: 'trainer-1' }],
+        },
+        select: trainerAthleteHistoricalSelect,
+      });
+    });
+  });
+
   describe('findById', () => {
     it('should return a relationship by ID with conditions', async () => {
       const relationship = {
@@ -190,57 +354,129 @@ describe('TrainerAthletesRepository', () => {
     });
   });
 
-  describe('create', () => {
-    it('should create a relationship with selected fields', async () => {
-      const data = {
-        trainer: {
-          connect: { id: 'trainer-1' },
-        },
-        athlete: {
-          connect: { id: 'athlete-1' },
-        },
-        initiatedBy: {
-          connect: { id: 'trainer-1' },
-        },
-      };
+  describe('createWithCurrentCapabilities', () => {
+    const invitation = {
+      trainerId: 'trainer-1',
+      athleteId: 'athlete-1',
+      initiatedById: 'trainer-1',
+    };
 
-      const relationship = {
+    const trainer = { id: 'trainer-1', role: 'TRAINER', trainerProfile: null };
+    const athlete = { id: 'athlete-1', role: 'ATHLETE', trainerProfile: null };
+
+    const tx = {
+      $queryRaw: vi.fn(),
+      user: { findMany: vi.fn() },
+      trainerAthlete: { create: vi.fn() },
+    };
+
+    beforeEach(() => {
+      vi.resetAllMocks();
+      tx.$queryRaw.mockResolvedValueOnce([{ id: 'athlete-1' }, { id: 'trainer-1' }]);
+      tx.$queryRaw.mockResolvedValueOnce([{ id: 'profile-1' }]);
+      tx.user.findMany.mockResolvedValue([trainer, athlete]);
+      tx.trainerAthlete.create.mockResolvedValue({
         id: 'relationship-1',
-        trainerId: 'trainer-1',
-        athleteId: 'athlete-1',
+        ...invitation,
         status: 'PENDING',
-      };
-
-      prisma.trainerAthlete.create.mockResolvedValue(relationship);
-
-      const result = await repository.create(data);
-
-      expect(prisma.trainerAthlete.create).toHaveBeenCalledWith({
-        data,
-        select: trainerAthleteSelect,
       });
-
-      expect(result).toEqual(relationship);
+      prisma.$transaction.mockImplementation(async (callback) => callback(tx));
     });
 
-    it('should propagate database errors', async () => {
-      const error = new Error('Database connection failed');
+    it('locks both users and the trainer profile before inserting', async () => {
+      const result = await repository.createWithCurrentCapabilities(invitation);
 
-      prisma.trainerAthlete.create.mockRejectedValue(error);
+      expect(result).toMatchObject({ status: 'PENDING', ...invitation });
+      expect(tx.$queryRaw).toHaveBeenCalledTimes(2);
+      expect(tx.$queryRaw.mock.calls[0]?.[0].join('')).toContain('FOR UPDATE');
+      expect(tx.$queryRaw.mock.calls[0]?.[1].values).toEqual(['athlete-1', 'trainer-1']);
+      expect(tx.$queryRaw.mock.calls[1]?.[0].join('')).toContain('"trainer_profiles"');
+      expect(tx.$queryRaw.mock.calls[1]?.[0].join('')).toContain('FOR UPDATE');
+      expect(tx.$queryRaw.mock.calls[1]?.[1]).toBe('trainer-1');
+      expect(tx.user.findMany).toHaveBeenCalledWith({
+        where: { id: { in: ['athlete-1', 'trainer-1'] }, deletedAt: null },
+        select: {
+          id: true,
+          role: true,
+          trainerProfile: { select: { isActive: true } },
+        },
+      });
+      expect(tx.trainerAthlete.create).toHaveBeenCalledWith({
+        data: {
+          trainer: { connect: { id: 'trainer-1' } },
+          athlete: { connect: { id: 'athlete-1' } },
+          initiatedBy: { connect: { id: 'trainer-1' } },
+        },
+        select: trainerAthleteSelect,
+      });
+    });
 
+    it('supports an approved ATHLETE-role trainer', async () => {
+      tx.user.findMany.mockResolvedValue([
+        { ...trainer, role: 'ATHLETE', trainerProfile: { isActive: true } },
+        athlete,
+      ]);
+
+      await expect(repository.createWithCurrentCapabilities(invitation)).resolves.toMatchObject({
+        status: 'PENDING',
+      });
+    });
+
+    it('refuses to insert when an existing TrainerProfile is revoked', async () => {
+      tx.user.findMany.mockResolvedValue([
+        { ...trainer, trainerProfile: { isActive: false } },
+        athlete,
+      ]);
+
+      await expect(repository.createWithCurrentCapabilities(invitation)).rejects.toThrow(
+        ConflictException,
+      );
+      expect(tx.trainerAthlete.create).not.toHaveBeenCalled();
+    });
+
+    it('rejects the athlete becoming admin between preflight and transaction', async () => {
+      tx.user.findMany.mockResolvedValue([trainer, { ...athlete, role: 'ADMIN' }]);
+
+      await expect(repository.createWithCurrentCapabilities(invitation)).rejects.toThrow(
+        ConflictException,
+      );
+      expect(tx.trainerAthlete.create).not.toHaveBeenCalled();
+    });
+
+    it('rejects missing or soft-deleted participants', async () => {
+      tx.user.findMany.mockResolvedValue([trainer]);
+
+      await expect(repository.createWithCurrentCapabilities(invitation)).rejects.toThrow(
+        ConflictException,
+      );
+      expect(tx.trainerAthlete.create).not.toHaveBeenCalled();
+    });
+
+    it('rejects a missing account lock before querying the profile', async () => {
+      tx.$queryRaw.mockReset();
+      tx.$queryRaw.mockResolvedValueOnce([{ id: 'trainer-1' }]);
+
+      await expect(repository.createWithCurrentCapabilities(invitation)).rejects.toThrow(
+        ConflictException,
+      );
+      expect(tx.$queryRaw).toHaveBeenCalledOnce();
+      expect(tx.trainerAthlete.create).not.toHaveBeenCalled();
+    });
+
+    it('rolls back rather than bypassing the guard on a DB error', async () => {
+      const error = new Error('Database unavailable');
+      tx.$queryRaw.mockReset();
+      tx.$queryRaw.mockRejectedValueOnce(error);
+
+      await expect(repository.createWithCurrentCapabilities(invitation)).rejects.toBe(error);
+      expect(tx.trainerAthlete.create).not.toHaveBeenCalled();
+    });
+
+    it('prevents malformed requests from writing a non-participant initiator', async () => {
       await expect(
-        repository.create({
-          trainer: {
-            connect: { id: 'trainer-1' },
-          },
-          athlete: {
-            connect: { id: 'athlete-1' },
-          },
-          initiatedBy: {
-            connect: { id: 'trainer-1' },
-          },
-        }),
-      ).rejects.toBe(error);
+        repository.createWithCurrentCapabilities({ ...invitation, initiatedById: 'outsider' }),
+      ).rejects.toThrow(ConflictException);
+      expect(prisma.$transaction).not.toHaveBeenCalled();
     });
   });
 

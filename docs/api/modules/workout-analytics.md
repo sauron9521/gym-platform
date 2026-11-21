@@ -1,5 +1,11 @@
 # Workout analytics module
 
+## Live athlete capability (M05 / #291)
+
+Summary, personal records, and exercise analytics now authorize the **persisted athlete capability**, not a session's legacy `User.role`. Thus legacy TRAINER identities remain able to see their **own** workout history and analytics, while a current `ADMIN` or deleted account is denied. The analytics repository queries remain actor-id scoped. Both services use the same `UsersService.findMyCapabilities` facade; no client-supplied permission flags are trusted.
+
+Cross-product HTTP regression: `apps/api/test/e2e/users/users.e2e-spec.ts`. Remaining cross-product/browser checks are tracked by #361.
+
 **Source:** [`apps/api/src/modules/workout-analytics/`](../../../apps/api/src/modules/workout-analytics/)
 
 Authenticated summary statistics and exercise-specific history/progress views.
