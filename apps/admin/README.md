@@ -22,13 +22,30 @@ Manrope with a compact desktop sidebar, accessible mobile navigation and a
 manual System/Light/Dark preference stored in the existing `ovranto-theme` cookie.
 Ukrainian and English copy is sourced from `@gym/i18n`.
 
-Only **Overview** links to a real route. Users, Roles, Exercise catalog,
-Moderation, Audit and Settings are non-interactive placeholders until server-side
+**Overview** and **Users** link to real routes; the latter is an unavailable,
+read-only UI until the protected list API exists. Roles, Exercise catalog,
+Moderation, Audit and Settings stay non-interactive placeholders until server-side
 permissions and corresponding APIs are implemented. The only operational status
 shown is the live server-gated API readiness response; no synthetic KPIs, user
 records, privileged mutations or sensitive account fields are rendered. Unauthorized
 requests never fetch readiness or render the workspace. A successful build does not
 make this Admin console ready for production.
+
+## Admin Users directory UI (#387, follow-up to #592)
+
+The `/users` route is independently guarded by the server-side Admin session check.
+Its responsive directory UI includes accessible table headings, searchable email,
+role/status filters, deterministic sorting and pagination, all covered with isolated
+component fixtures. The navigation from Overview is active, but the actual table
+is **explicitly unavailable** and all controls are disabled in production until
+the authenticated, PII-minimized list API from #292 is implemented and reviewed.
+
+No fake account counts or fixture records are rendered in a real session, and the
+page does not fetch `GET /users`, since that endpoint does not exist yet. This
+PR does not add account mutations, status changes, privileged queries or route
+permissions beyond the current ADMIN gate. Route/component tests verify that
+non-admin requests never render account data or controls. The UI is not yet a
+production operational directory.
 
 ## Mandatory manual staging checks before deploying an operational console
 

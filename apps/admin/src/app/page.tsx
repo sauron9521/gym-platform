@@ -35,7 +35,6 @@ export default async function AdminHomePage() {
   const [readiness, cookieStore] = await Promise.all([readAdminHealth(), cookies()]);
   const theme = parseThemePreference(cookieStore.get(THEME_COOKIE_NAME)?.value);
   const planned = [
-    t('navUsers'),
     t('navRoles'),
     t('navExercises'),
     t('navModeration'),
@@ -51,6 +50,12 @@ export default async function AdminHomePage() {
         className="flex min-h-11 items-center rounded-lg border border-primary/20 bg-primary/10 px-4 text-sm font-semibold text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
       >
         {t('navOverview')}
+      </Link>
+      <Link
+        href="/users"
+        className="flex min-h-11 items-center rounded-lg px-4 text-sm font-semibold text-foreground hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+      >
+        {t('navUsers')}
       </Link>
       {planned.map((label) => (
         <span
@@ -152,6 +157,15 @@ export default async function AdminHomePage() {
                 <p className="text-sm text-muted-foreground">{t('comingSoon')}</p>
               </div>
               <ul className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+                <li>
+                  <Link
+                    href="/users"
+                    className="flex items-center justify-between gap-2 rounded-lg border border-primary/30 bg-primary/5 px-4 py-3 text-sm font-semibold text-primary hover:bg-primary/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                  >
+                    <span>{t('navUsers')}</span>
+                    <span className="text-xs">{t('navOpen')}</span>
+                  </Link>
+                </li>
                 {planned.map((label) => (
                   <li
                     key={label}
