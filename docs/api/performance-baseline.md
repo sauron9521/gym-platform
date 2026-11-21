@@ -88,13 +88,44 @@ realistic populated load fixture. The HTTP benchmark's latency sample count
 and the SQL probe's query sample count are deliberately different; **do not
 combine their percentiles into one per-request measurement**.
 
+## PostgreSQL plan captures (third slice)
+
+The dedicated `performance-explain.e2e-spec.ts` test runs **four fixed,
+read-only SQL SELECT shapes** against a disposable PostgreSQL 17 database:
+a current-user lookup, workout-summary list, trainer program list, and global
+exercise list. The test creates two synthetic accounts and 128 workout,
+128 program, and 128 exercise records inside an interactive Prisma transaction.
+It runs `EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON)`, then deliberately **rolls
+back the transaction**, including all fixture rows. It refuses any database
+whose name does not end in `_test` before opening a connection.
+
+To capture sanitized execution-plan evidence (from the repository root):
+
+```sh
+API_PERF_EXPLAIN_REPORT=1 pnpm --filter @gym/api exec vitest run --config vitest.config.e2e.ts test/e2e/infra/performance-explain.e2e-spec.ts
+```
+
+The report includes fixed route keys, plan node types, table/index identifiers,
+row estimates/actuals, execution timing, and shared buffer reads/hits. It
+**discards SQL conditions, raw SQL text, query parameters, UUIDs, email
+addresses, and returned records**; report values do not include real test
+credentials. The API E2E CI job enables this sanitized report in GitHub Actions logs.
+
+These static SELECTs approximate key database access patterns; they do **not**
+represent all joins, authorization filters, or nested Prisma queries from the
+corresponding HTTP handlers. Fixture inserts are rolled back and PostgreSQL's
+planner statistics remain sensitive to pre-existing data and ANALYZE history.
+Use an isolated test DB and capture the schema revision, PG version, hardware,
+seed configuration, and measured commit SHA beside any reported plan.
+This is exploratory, not a stable query-performance SLO.
+
 ## Remaining acceptance criteria
 
-Issue #313 remains open until fixed-size **populated PostgreSQL fixtures**,
-`EXPLAIN (ANALYZE, BUFFERS)` plans, and reproducible before/after comparisons
-are recorded. Do not enable SQL query logging on production or include bound
-PII values in reports. Do not add speculative indexes or caching based on
-these exploratory numbers alone.
+Issue #313 remains open for actual **before/after** SQL and HTTP measurements
+under identically populated, realistic test fixtures, with explain-plan reviews
+and a documented comparison before any query/index/cache optimizations.
+Do not enable SQL query logging on production or include bound PII values in
+reports. Do not add speculative indexes or caching based on exploratory numbers.
 
 The API's existing `/internal/metrics` histograms are service-wide and
 unlabeled (intentional privacy/cardinality design); they must not be
