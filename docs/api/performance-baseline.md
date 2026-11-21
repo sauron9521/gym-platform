@@ -176,6 +176,42 @@ Before modifying indexes or adding caching, reproduce on an isolated
 larger dataset with representative distributions and inspect each
 affected SQL shape under realistic query conditions.
 
+### Plan-node diagnostics and filter selectivity (next slice)
+
+The Exercises report additionally includes a **bounded, sanitized diagnosis**
+for each of the eight SQL plans, derived entirely from PostgreSQL's
+allowlisted EXPLAIN JSON nodes:
+
+- `repeatedIndexScans`: index scans with `loops > 1`, such as a nested
+  loop repeatedly fetching the same base relation; `actualRows` is reported
+  **per loop** and must not be multiplied into an unrelated plan estimate.
+- `highBufferScans`: up to four scan nodes ranked by shared
+  hit/read blocks. **Parent EXPLAIN buffer counters include child work**;
+  do not sum parent and child blocks or treat cache hits as physical reads.
+- `rowEstimateOutliers`: up to four scan/join nodes ranked by the
+  larger of `estimatedRows / actualRows` and its inverse. Nodes with zero
+  planned or actual rows are omitted from the ratio rather than generating
+  infinity; limits, sorts, and aggregates are excluded from these
+  estimates. Reported factors are observations, **not thresholds or automatic
+  index recommendations**.
+
+The numeric fixture distribution is verified separately: of 2,048 active
+global rows, 512 contain `bench` in their names (25%), 683 match the
+synthetic chest group (33.35%), and 1,024 have the synthetic equipment link
+(50%). The test does not assert a specific physical query plan, which may
+change across PostgreSQL versions, cache states and statistics.
+
+In PR #585's first isolated PostgreSQL 17 sample, the muscle-filter plans
+performed 683 repeated `exercises_pkey` index lookups, while the equipment
+page performed 1,024; the latter's join/bitmap relation was estimated at
+four rows despite observing 1,024 (256×). The new per-node diagnostics
+will surface these same categories without requiring manual traversal
+of large JSON trees. **The rows were inserted within an uncommitted
+rollback transaction without running ANALYZE**, so that estimate error
+may largely reflect missing current planner statistics rather than a
+missing index. These are not HTTP measurements or evidence of a
+production bottleneck.
+
 ## Compare before/after captures
 
 Use the [API performance comparison guide](performance-comparison.md) and

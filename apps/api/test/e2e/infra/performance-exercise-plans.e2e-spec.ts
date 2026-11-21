@@ -4,7 +4,11 @@ import { PrismaPg } from '@prisma/adapter-pg';
 import { Prisma, PrismaClient } from '#prisma/client';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
-import { sanitizeExplain, type ExplainRow } from '../../utility/safe-explain-plan.js';
+import {
+  sanitizeExplain,
+  summarizeExplainDiagnostics,
+  type ExplainRow,
+} from '../../utility/safe-explain-plan.js';
 import { useTestDatabase } from '../../utility/test-db-helper.js';
 
 const ACTIVE_GLOBAL = 2_048;
@@ -110,6 +114,7 @@ describe('Exercises multi-thousand-row SQL plans (rollback-only PostgreSQL)', ()
     const observations: Array<{
       scenario: string;
       plan: ReturnType<typeof sanitizeExplain>;
+      diagnostics: ReturnType<typeof summarizeExplainDiagnostics>;
     }> = [];
 
     const rows: Prisma.ExerciseCreateManyInput[] = [
@@ -204,6 +209,14 @@ describe('Exercises multi-thousand-row SQL plans (rollback-only PostgreSQL)', ()
               where: { equipment: { some: { equipmentId: barbell.id } } },
             }),
           ).toBe(ACTIVE_GLOBAL / 2);
+          expect(
+            await tx.exercise.count({
+              where: {
+                id: { in: globalIds },
+                name: { contains: 'bench', mode: 'insensitive' },
+              },
+            }),
+          ).toBe(ACTIVE_GLOBAL / 4);
 
           const context: QueryContext = {
             athleteId,
@@ -220,7 +233,9 @@ describe('Exercises multi-thousand-row SQL plans (rollback-only PostgreSQL)', ()
             expect(plan.root.nodeType).toBeTruthy();
             expect(plan.root.actualRows).toBeGreaterThan(0);
             expect(plan.executionMs).toBeGreaterThanOrEqual(0);
-            observations.push({ scenario: scenario.key, plan });
+            const diagnostics = summarizeExplainDiagnostics(plan);
+            expect(diagnostics.nodeCount).toBeGreaterThanOrEqual(1);
+            observations.push({ scenario: scenario.key, plan, diagnostics });
           }
 
           throw ROLLBACK;
@@ -247,6 +262,9 @@ describe('Exercises multi-thousand-row SQL plans (rollback-only PostgreSQL)', ()
               privateAthlete: PRIVATE_ATHLETE,
               primaryMuscleLinks: ACTIVE_GLOBAL,
               equipmentLinks: ACTIVE_GLOBAL / 2,
+              benchNameMatches: ACTIVE_GLOBAL / 4,
+              muscleGroupMatches: Math.ceil(ACTIVE_GLOBAL / 3),
+              equipmentMatches: ACTIVE_GLOBAL / 2,
             },
             methodology: 'representative fixed SELECT shapes; rollback-only test fixture',
             plans: observations,

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { sanitizeExplain } from '../../utility/safe-explain-plan.js';
+import { sanitizeExplain, summarizeExplainDiagnostics } from '../../utility/safe-explain-plan.js';
 
 describe('Allowlisted PostgreSQL EXPLAIN metadata', () => {
   it('retains numeric estimates, node shape and vetted relation/index labels only', () => {
@@ -71,6 +71,109 @@ describe('Allowlisted PostgreSQL EXPLAIN metadata', () => {
         },
       ]),
     ).toThrow('Unexpected SQL plan child');
+  });
+
+  it('pinpoints repeat index lookups, hot scan buffers and underestimated joins', () => {
+    const secret = 'private-account@example.com';
+    const summary = sanitizeExplain([
+      {
+        'QUERY PLAN': [
+          {
+            Plan: {
+              'Node Type': 'Nested Loop',
+              'Plan Rows': 4,
+              'Actual Rows': 1024,
+              'Actual Loops': 1,
+              'Shared Hit Blocks': 3106,
+              Filter: secret,
+              Plans: [
+                {
+                  'Node Type': 'Bitmap Heap Scan',
+                  'Relation Name': 'exercise_equipments',
+                  'Plan Rows': 4,
+                  'Actual Rows': 1024,
+                  'Actual Loops': 1,
+                  'Shared Hit Blocks': 32,
+                  Plans: [
+                    {
+                      'Node Type': 'Bitmap Index Scan',
+                      'Index Name': 'exercise_equipments_equipment_id_exercise_id_idx',
+                      'Plan Rows': 4,
+                      'Actual Rows': 1024,
+                      'Actual Loops': 1,
+                      'Shared Hit Blocks': 17,
+                    },
+                  ],
+                },
+                {
+                  'Node Type': 'Index Scan',
+                  'Relation Name': 'exercises',
+                  'Index Name': 'exercises_pkey',
+                  'Plan Rows': 1,
+                  'Actual Rows': 1,
+                  'Actual Loops': 1024,
+                  'Shared Hit Blocks': 3072,
+                  'Index Cond': secret,
+                },
+              ],
+            },
+          },
+        ],
+      },
+    ]);
+    const diag = summarizeExplainDiagnostics(summary);
+    expect(diag.nodeCount).toBe(4);
+    expect(diag.scanNodeCount).toBe(3);
+    expect(diag.repeatedIndexScans).toMatchObject([
+      { index: 'exercises_pkey', loops: 1024, actualRows: 1, depth: 1 },
+    ]);
+    expect(diag.highBufferScans.slice(0, 2)).toMatchObject([
+      { index: 'exercises_pkey', sharedHitBlocks: 3072 },
+      { relation: 'exercise_equipments', sharedHitBlocks: 32 },
+    ]);
+    expect(diag.rowEstimateOutliers[0]).toMatchObject({
+      nodeType: 'Nested Loop',
+      planRows: 4,
+      actualRows: 1024,
+      estimateFactor: 256,
+    });
+    expect(JSON.stringify(diag)).not.toContain(secret);
+    // Buffer totals on parent nodes include child activity: NEVER sum 3106 + 3072.
+    expect(diag).not.toHaveProperty('totalBufferBlocks');
+  });
+
+  it('excludes zeros from ratio claims and redacts unexpected PostgreSQL node labels', () => {
+    const summary = sanitizeExplain([
+      {
+        'QUERY PLAN': [
+          {
+            Plan: {
+              'Node Type': 'private-account@example.com',
+              'Plan Rows': 10,
+              'Actual Rows': 0,
+              'Actual Loops': 1,
+              'Shared Hit Blocks': 0,
+              Plans: [
+                {
+                  'Node Type': 'Seq Scan',
+                  'Plan Rows': 0,
+                  'Actual Rows': 8,
+                  'Actual Loops': 1,
+                },
+              ],
+            },
+          },
+        ],
+      },
+    ]);
+    expect(summary.root.nodeType).toBe('Unknown');
+    const diag = summarizeExplainDiagnostics(summary);
+    expect(diag.nodeCount).toBe(2);
+    expect(diag.scanNodeCount).toBe(1);
+    expect(diag.highBufferScans).toEqual([]);
+    expect(diag.repeatedIndexScans).toEqual([]);
+    expect(diag.rowEstimateOutliers).toEqual([]);
+    expect(JSON.stringify(diag)).not.toContain('private-account@example.com');
   });
 
   it('ignores non-finite and negative metrics and invalid object labels', () => {
