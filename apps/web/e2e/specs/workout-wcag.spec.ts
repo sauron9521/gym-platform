@@ -5,9 +5,9 @@ import { expectNoAxeWcagViolations } from '../support/axe-wcag';
 const workoutId = '00000000-0000-4000-8000-000000000321';
 const firstSetId = '00000000-0000-4000-8000-000000000322';
 
-async function signIn(page: Page) {
+async function signIn(page: Page, email = 'wcag@example.test') {
   await page.goto('/login');
-  await page.getByLabel('Електронна пошта').fill('wcag@example.test');
+  await page.getByLabel('Електронна пошта').fill(email);
   await page.getByLabel('Пароль').fill('TestPassword123!');
   await page.getByRole('button', { name: 'Увійти' }).click();
   await expect(page).toHaveURL(/\/dashboard$/);
@@ -139,7 +139,9 @@ for (const locale of ['uk', 'en'] as const) {
     test(`${locale}/${theme} dashboard accessibility`, async ({ page }) => {
       const width = locale === 'en' ? 1280 : 390;
       await page.setViewportSize({ width, height: 812 });
-      await signIn(page);
+      // Each locale/theme case gets a fresh persisted preference; previous tests
+      // cannot mutate its account locale and trigger false PATCH expectations.
+      await signIn(page, `wcag-${locale}-${theme}@example.test`);
       const header = page.getByTestId('athlete-shell-header');
       await header.getByRole('combobox').first().selectOption(theme);
       const currentLocale = await page.locator('html').getAttribute('lang');
