@@ -273,8 +273,13 @@ Each repository call gets its own non-overlapping Prisma query-event window.
 In addition to the existing safe SELECT fingerprints, table allowlist,
 placeholder counts and timings, the new **opt-in transaction counter**
 records _counts only_ of exact `BEGIN`, `COMMIT` and `ROLLBACK`
-control events, without recording or printing SQL or bound data. Its output
-is under `API_PERF_EXERCISE_REPOSITORY` in the PostgreSQL 17 API E2E
+control events, without recording or printing SQL or bound data. **Only
+observed query events are counted:** Prisma 7 / its PostgreSQL driver can
+emit `COMMIT` while not emitting a matching `BEGIN` in the query event
+stream. A zero BEGIN counter must **not** be interpreted as proof the
+repository did not open a transaction; the repository code still uses
+`$transaction([findMany, count])`. Its output is under
+`API_PERF_EXERCISE_REPOSITORY` in the PostgreSQL 17 API E2E
 GitHub Actions logs, alongside the existing `API_PERF_EXERCISE_PLANS`.
 
 The elapsed per-operation time includes the repository call itself,
