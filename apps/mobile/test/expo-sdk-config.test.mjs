@@ -10,8 +10,8 @@ test('Expo SDK 58 config does not use the removed Android edge-to-edge switch', 
   assert.equal(Object.hasOwn(app.android ?? {}, 'edgeToEdgeEnabled'), false);
 });
 
-test('removing deprecated Android config preserves native and web app contracts', () => {
-  assert.equal(app.newArchEnabled, true);
+test('Expo SDK 58 rejects removed new-architecture switch and preserves native and web contracts', () => {
+  assert.equal(Object.hasOwn(app, 'newArchEnabled'), false);
   assert.equal(app.ios.supportsTablet, true);
   assert.equal(app.web.bundler, 'metro');
   assert.equal(app.web.output, 'static');
