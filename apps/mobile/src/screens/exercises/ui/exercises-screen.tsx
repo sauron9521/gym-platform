@@ -1,10 +1,29 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useIntl } from 'react-intl';
 import { FlatList, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { useExerciseFilters, useExercisesQuery } from '@/features/exercises/model/exercises-query';
 import { palette } from '@/shared/config/theme';
 
 export function ExercisesScreen() {
+  const intl = useIntl();
+  const t = (key: string) => intl.formatMessage({ id: `mobile.exerciseCatalog.${key}` });
+  const exerciseTypeKey = (type: string) => {
+    switch (type) {
+      case 'STRENGTH':
+        return 'exerciseTypeStrength';
+      case 'CARDIO':
+        return 'exerciseTypeCardio';
+      case 'MOBILITY':
+        return 'exerciseTypeMobility';
+      case 'PLYOMETRIC':
+        return 'exerciseTypePlyometric';
+      case 'OTHER':
+        return 'exerciseTypeOther';
+      default:
+        return 'exerciseTypeUnknown';
+    }
+  };
   const [search, setSearch] = useState('');
   const [muscleGroup, setMuscleGroup] = useState<string | undefined>();
   const [equipment, setEquipment] = useState<string | undefined>();
@@ -45,31 +64,31 @@ export function ExercisesScreen() {
       bounces={false}
       ListHeaderComponent={
         <View style={styles.header}>
-          <Text style={styles.title}>Каталог вправ</Text>
+          <Text style={styles.title}>{t('title')}</Text>
           <Pressable
             testID="exercises-refresh"
             accessibilityRole="button"
-            accessibilityLabel="Оновити каталог вправ"
+            accessibilityLabel={t('refreshAria')}
             accessibilityState={{ disabled: query.isFetching }}
             disabled={query.isFetching}
             onPress={() => void query.refetch()}
             style={styles.moreButton}
           >
             <Text style={styles.retryText}>
-              {query.isFetching ? 'Оновлення…' : 'Оновити каталог'}
+              {query.isFetching ? t('refreshing') : t('refresh')}
             </Text>
           </Pressable>
           <TextInput
             testID="exercise-search"
-            accessibilityLabel="Пошук вправ"
-            placeholder="Назва вправи"
+            accessibilityLabel={t('search')}
+            placeholder={t('searchPlaceholder')}
             value={search}
             onChangeText={setSearch}
             maxLength={100}
             placeholderTextColor={palette.muted}
             style={styles.input}
           />
-          <Text style={styles.subtitle}>Група м’язів</Text>
+          <Text style={styles.subtitle}>{t('muscle')}</Text>
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -82,7 +101,7 @@ export function ExercisesScreen() {
               onPress={() => setMuscleGroup(undefined)}
               style={[styles.chip, muscleGroup === undefined && styles.selected]}
             >
-              <Text style={styles.chipText}>Усі</Text>
+              <Text style={styles.chipText}>{t('allMuscles')}</Text>
             </Pressable>
             {filters.muscleGroups.data?.map((group) => (
               <Pressable
@@ -97,7 +116,7 @@ export function ExercisesScreen() {
               </Pressable>
             ))}
           </ScrollView>
-          <Text style={styles.subtitle}>Обладнання</Text>
+          <Text style={styles.subtitle}>{t('equipment')}</Text>
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -110,7 +129,7 @@ export function ExercisesScreen() {
               onPress={() => setEquipment(undefined)}
               style={[styles.chip, equipment === undefined && styles.selected]}
             >
-              <Text style={styles.chipText}>Усе</Text>
+              <Text style={styles.chipText}>{t('allEquipment')}</Text>
             </Pressable>
             {filters.equipment.data?.map((item) => (
               <Pressable
@@ -128,55 +147,61 @@ export function ExercisesScreen() {
           {filters.muscleGroups.isError ? (
             <View style={styles.errorGroup}>
               <Text accessibilityRole="alert" style={styles.error}>
-                {filters.muscleGroups.error.message}
+                {t('muscleError')}
               </Text>
               <Pressable
                 accessibilityRole="button"
+                disabled={filters.muscleGroups.isFetching}
+                accessibilityState={{ disabled: filters.muscleGroups.isFetching }}
                 onPress={() => void filters.muscleGroups.refetch()}
               >
-                <Text style={styles.retryText}>Повторити групи м’язів</Text>
+                <Text style={styles.retryText}>{t('retryMuscles')}</Text>
               </Pressable>
             </View>
           ) : null}
           {filters.equipment.isError ? (
             <View style={styles.errorGroup}>
               <Text accessibilityRole="alert" style={styles.error}>
-                {filters.equipment.error.message}
+                {t('equipmentError')}
               </Text>
               <Pressable
                 accessibilityRole="button"
+                disabled={filters.equipment.isFetching}
+                accessibilityState={{ disabled: filters.equipment.isFetching }}
                 onPress={() => void filters.equipment.refetch()}
               >
-                <Text style={styles.retryText}>Повторити обладнання</Text>
+                <Text style={styles.retryText}>{t('retryEquipment')}</Text>
               </Pressable>
             </View>
           ) : null}
           {query.isError ? (
             <View style={styles.errorGroup}>
               <Text accessibilityRole="alert" style={styles.error}>
-                {query.error.message}
+                {t('catalogError')}
               </Text>
               <Pressable
                 testID="exercises-retry"
                 accessibilityRole="button"
+                disabled={query.isFetching}
+                accessibilityState={{ disabled: query.isFetching }}
                 onPress={() => void query.refetch()}
               >
-                <Text style={styles.retryText}>Повторити завантаження вправ</Text>
+                <Text style={styles.retryText}>{t('retry')}</Text>
               </Pressable>
             </View>
           ) : null}
-          {query.isPending ? <Text style={styles.subtitle}>Завантажуємо каталог…</Text> : null}
+          {query.isPending ? <Text style={styles.subtitle}>{t('loading')}</Text> : null}
         </View>
       }
       ListEmptyComponent={
         !query.isPending && !query.isError ? (
-          <Text style={styles.subtitle}>За такими фільтрами вправ немає.</Text>
+          <Text style={styles.subtitle}>{t('empty')}</Text>
         ) : undefined
       }
       renderItem={({ item }) => (
         <View style={styles.card}>
           <Text style={styles.heading}>{item.name}</Text>
-          <Text style={styles.subtitle}>{item.exerciseType}</Text>
+          <Text style={styles.subtitle}>{t(exerciseTypeKey(item.exerciseType))}</Text>
           {item.description ? <Text style={styles.subtitle}>{item.description}</Text> : null}
           <Text style={styles.subtitle}>
             {item.muscleGroups.map((group) => group.muscleGroup.name).join(', ')}
@@ -186,18 +211,19 @@ export function ExercisesScreen() {
       ListFooterComponent={
         <View style={styles.footer}>
           {query.isFetchingNextPage ? (
-            <Text style={styles.subtitle}>Завантажуємо наступні вправи…</Text>
+            <Text style={styles.subtitle}>{t('nextLoading')}</Text>
           ) : null}
           {query.hasNextPage && !query.isFetchingNextPage ? (
             <Pressable
               testID="exercises-load-more"
               accessibilityRole="button"
               disabled={query.isFetching}
+              accessibilityState={{ disabled: query.isFetching }}
               onPress={() => void query.fetchNextPage()}
               style={styles.moreButton}
             >
               <Text style={styles.retryText}>
-                {query.isFetchNextPageError ? 'Помилка сторінки. Спробувати ще' : 'Показати ще'}
+                {query.isFetchNextPageError ? t('nextError') : t('loadMore')}
               </Text>
             </Pressable>
           ) : null}
