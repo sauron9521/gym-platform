@@ -5,7 +5,7 @@ export type ExerciseTaxonomyItem =
 
 export type ExerciseTaxonomyState =
   | { kind: 'loading' }
-  | { kind: 'error'; message: string }
+  | { kind: 'error'; message: string; status?: number }
   | {
       kind: 'ready';
       muscleGroups: ExerciseTaxonomyItem[];

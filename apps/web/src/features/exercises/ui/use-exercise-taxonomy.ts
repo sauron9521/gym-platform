@@ -36,6 +36,7 @@ export function useExerciseTaxonomy() {
         query.error instanceof ExerciseTaxonomyRequestError
           ? query.error.message
           : getTaxonomyErrorMessage(),
+      status: query.error instanceof ExerciseTaxonomyRequestError ? query.error.status : undefined,
     };
   } else {
     state = {

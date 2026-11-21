@@ -2,9 +2,12 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { test } from 'vitest';
 
+import { getMessages } from '@gym/i18n';
+
 import {
   EXERCISE_TYPES,
   getExerciseDetailsErrorMessage,
+  getExerciseErrorKey,
   getExerciseErrorMessage,
   getExercisePageCount,
   getExerciseSourceLabel,
@@ -39,6 +42,18 @@ test('exercise errors avoid exposing backend bodies and preserve access distinct
   assert.notEqual(getExerciseErrorMessage(429), getExerciseErrorMessage(400));
   assert.equal(getExerciseDetailsErrorMessage(403), getExerciseDetailsErrorMessage(404));
   assert.notEqual(getExerciseDetailsErrorMessage(429), getExerciseDetailsErrorMessage(404));
+  for (const [status, key] of [
+    [400, 'errorBadRequest'],
+    [403, 'errorForbidden'],
+    [429, 'errorRateLimited'],
+    [503, 'errorDefault'],
+    [undefined, 'errorDefault'],
+  ]) {
+    assert.equal(getExerciseErrorKey(status), key);
+    for (const locale of ['en', 'uk']) {
+      assert.ok(getMessages(locale).web.exerciseCatalog[key]);
+    }
+  }
 });
 
 test('catalog and detail routes independently guard the user session', async () => {
@@ -135,4 +150,52 @@ test('protected navigation links to exercise catalog through the responsive shel
   assert.match(layout, /href: '\/exercises', label: t\('exercises'\)/);
   assert.match(shell, /href=\{link\.href\}/);
   assert.match(shell, /aria-current=\{active \? 'page' : undefined\}/);
+});
+
+test('exercise catalog translation keys cover filters, source badges and server states for uk/en', async () => {
+  const ui = await readFile(
+    new URL('../src/features/exercises/ui/exercise-catalog.tsx', import.meta.url),
+    'utf8',
+  );
+  const page = await readFile(
+    new URL('../src/app/(protected)/exercises/page.tsx', import.meta.url),
+    'utf8',
+  );
+  for (const locale of ['en', 'uk']) {
+    const t = getMessages(locale).web.exerciseCatalog;
+    for (const key of [
+      'typeAll',
+      'typeStrengthPlural',
+      'typeCardio',
+      'typeMobility',
+      'typePlyometric',
+      'typeOtherPlural',
+      'typeStrength',
+      'typeOther',
+      'sourceGlobal',
+      'sourceAthlete',
+      'sourceTrainer',
+      'errorForbidden',
+      'errorBadRequest',
+      'errorRateLimited',
+      'errorDefault',
+      'taxonomyError',
+      'taxonomyRateLimited',
+      'forbiddenTitle',
+      'unavailableTitle',
+      'pages',
+      'back',
+      'next',
+    ])
+      assert.ok(t[key], `missing ${locale}.${key}`);
+  }
+  assert.match(ui, /useTranslations\('web\.exerciseCatalog'\)/);
+  assert.match(ui, /exerciseTypeFilterKeys\[option.value\]/);
+  assert.match(ui, /exerciseTypeKeys\[exercise.exerciseType\]/);
+  assert.match(ui, /exerciseSourceKeys\[exercise.source\]/);
+  assert.match(ui, /\{exercise.name\}/);
+  assert.match(ui, /\{exercise.description\}/);
+  assert.match(ui, /getExerciseErrorKey/);
+  assert.match(page, /getTranslations\('web\.exerciseCatalog'\)/);
+  assert.match(page, /robots: \{ index: false \}/);
 });

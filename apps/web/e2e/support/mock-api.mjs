@@ -44,6 +44,13 @@ const accounts = {
     displayName: 'WCAG QA',
     preferredLocale: null,
   },
+  'catalog-i18n@example.test': {
+    id: '00000000-0000-4000-8000-000000000007',
+    email: 'catalog-i18n@example.test',
+    role: 'ATHLETE',
+    displayName: 'Catalog Locale QA',
+    preferredLocale: null,
+  },
   'trainer@example.test': {
     id: '00000000-0000-4000-8000-000000000002',
     email: 'trainer@example.test',
