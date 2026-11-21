@@ -292,6 +292,22 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/admin/users': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['AdminUsersController_list'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/health/live': {
     parameters: {
       query?: never;
@@ -1690,6 +1706,51 @@ export interface operations {
           [name: string]: unknown;
         };
         content?: never;
+      };
+    };
+  };
+  AdminUsersController_list: {
+    parameters: {
+      query?: {
+        page?: number;
+        limit?: number;
+        search?: string;
+        role?: 'ATHLETE' | 'TRAINER' | 'ADMIN';
+        status?: 'ACTIVE';
+        createdFrom?: string;
+        createdTo?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            data: {
+              /** Format: uuid */
+              id: string;
+              email: string;
+              /** @enum {string} */
+              role: 'ATHLETE' | 'TRAINER' | 'ADMIN';
+              /** @enum {string} */
+              status: 'ACTIVE';
+              /** Format: date-time */
+              createdAt: string;
+            }[];
+            meta: {
+              total: number;
+              skip: number;
+              take: number;
+              totalPages: number;
+            };
+          };
+        };
       };
     };
   };
