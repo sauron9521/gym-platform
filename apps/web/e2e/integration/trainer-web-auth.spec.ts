@@ -244,7 +244,7 @@ test('Trainer browser requires live approval, protects Origin/cookies, and revok
     await expect(pageTwo.getByRole('listitem')).toHaveCount(1);
     await expect(pageTwo.getByText('Completed', { exact: true })).toBeVisible();
     await expect(page.getByText(foreignProgramTitle)).toHaveCount(0);
-    await page.getByRole('link', { name: 'Back' }).click();
+    await page.getByRole('link', { name: 'Back', exact: true }).click();
     await expect(page).toHaveURL(
       `${trainerOrigin}/workspace/clients/${dashboardRelationId}?assignmentsPage=1`,
     );
