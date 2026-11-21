@@ -29,6 +29,8 @@ test('Trainer browser requires live approval, protects Origin/cookies, and revok
   const ownVersionId = randomUUID();
   const foreignProgramId = randomUUID();
   const foreignVersionId = randomUUID();
+  const ownDraftVersionId = randomUUID();
+  const ownDraftVersionTitle = `Unpublished trainer version ${randomUUID()}`;
   const ownAssignmentIds = Array.from({ length: 9 }, () => randomUUID());
   const foreignAssignmentId = randomUUID();
   const ownProgramTitle = `Trainer dashboard own ${randomUUID()}`;
@@ -42,6 +44,8 @@ test('Trainer browser requires live approval, protects Origin/cookies, and revok
   await expect(page.getByRole('heading', { name: 'Sign-in required' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Sign out' })).toHaveCount(0);
   await page.goto(`${trainerOrigin}/workspace/clients/${dashboardRelationId}`);
+  await expect(page.getByRole('heading', { name: 'Sign-in required' })).toBeVisible();
+  await page.goto(`${trainerOrigin}/workspace/clients/${dashboardRelationId}/select-program`);
   await expect(page.getByRole('heading', { name: 'Sign-in required' })).toBeVisible();
 
   // Browser registration reuses the existing Nest identity. The disposable DB
@@ -91,6 +95,8 @@ test('Trainer browser requires live approval, protects Origin/cookies, and revok
     await expect(page.getByRole('heading', { name: 'Trainer dashboard' })).toBeVisible();
     await expect(page.getByText('No active clients yet.')).toBeVisible();
     await page.goto(`${trainerOrigin}/workspace/clients/${dashboardRelationId}`);
+    await expect(page.getByRole('heading', { name: 'Client not found' })).toBeVisible();
+    await page.goto(`${trainerOrigin}/workspace/clients/${dashboardRelationId}/select-program`);
     await expect(page.getByRole('heading', { name: 'Client not found' })).toBeVisible();
     await page.goto(`${trainerOrigin}/workspace`);
     await expect(page.getByRole('heading', { name: 'Recent programs' })).toBeVisible();
@@ -179,6 +185,12 @@ test('Trainer browser requires live approval, protects Origin/cookies, and revok
     await expect(
       page.getByText('No programs have been assigned to this client yet.'),
     ).toBeVisible();
+    // A current trainer with an ACTIVE client still cannot choose DRAFT programs.
+    await page.getByRole('link', { name: 'Choose program' }).click();
+    await expect(page.getByRole('heading', { name: 'Choose a client program' })).toBeVisible();
+    await expect(page.getByText('You have no published programs yet.')).toBeVisible();
+    await expect(page.getByText(foreignProgramTitle)).toHaveCount(0);
+    await page.goto(`${trainerOrigin}/workspace/clients/${dashboardRelationId}`);
     await page.goto(`${trainerOrigin}/workspace/clients/${otherRelationId}`);
     await expect(page.getByRole('heading', { name: 'Client not found' })).toBeVisible();
     await expect(page.getByText(dashboardAthleteEmail)).toHaveCount(0);
@@ -198,7 +210,59 @@ test('Trainer browser requires live approval, protects Origin/cookies, and revok
         'UPDATE "training_program_versions" SET "status" = $1, "published_at" = NOW(), "updated_at" = NOW() WHERE "id" IN ($2, $3)',
         ['PUBLISHED', ownVersionId, foreignVersionId],
       );
+      // The newest version may be a DRAFT even when a program is PUBLISHED.
+      // Its title is a preview only; only version 1 can actually be selected.
+      await db.query(
+        'INSERT INTO "training_program_versions" ("id", "program_id", "version", "title", "description", "status", "updated_at") VALUES ($1, $2, 2, $3, NULL, $4, NOW())',
+        [ownDraftVersionId, ownProgramId, ownDraftVersionTitle, 'DRAFT'],
+      );
+    });
 
+    const choicePath = `${trainerOrigin}/workspace/clients/${dashboardRelationId}/select-program`;
+    await page.goto(`${trainerOrigin}/workspace/clients/${dashboardRelationId}`);
+    await page.getByRole('link', { name: 'Choose program' }).click({ timeout: 10_000 });
+    await expect(page).toHaveURL(choicePath);
+    await expect(page.getByRole('heading', { name: 'Choose a client program' })).toBeVisible();
+    await expect(
+      page.getByText(
+        'This only selects a program and version. Nothing has been assigned to the client.',
+      ),
+    ).toBeVisible();
+    await expect(
+      page.getByRole('list', { name: 'Published programs' }).getByRole('listitem'),
+    ).toHaveCount(1);
+    await expect(page.getByText(ownDraftVersionTitle)).toBeVisible();
+    await expect(page.getByText(foreignProgramTitle)).toHaveCount(0);
+    await page.getByRole('link', { name: 'View versions' }).click({ timeout: 10_000 });
+    const selectableVersions = page.getByRole('list', { name: 'Published versions' });
+    await expect(selectableVersions.getByRole('listitem')).toHaveCount(1);
+    await expect(selectableVersions.getByText(ownProgramTitle)).toBeVisible();
+    await expect(selectableVersions.getByText(ownDraftVersionTitle)).toHaveCount(0);
+    await page.getByRole('link', { name: 'Select version' }).click({ timeout: 10_000 });
+    await expect(page.getByRole('status')).toContainText('Selected version:');
+    await expect(page.getByRole('status')).toContainText(ownProgramTitle);
+    await expect(page.getByRole('status')).toContainText('No assignment has been created.');
+    await expect(page.getByText(foreignProgramTitle)).toHaveCount(0);
+
+    // A crafted foreign program ID must never cause cross-trainer version reads.
+    await page.goto(`${choicePath}?page=1&programId=${foreignProgramId}`);
+    await expect(page.getByText('This program is unavailable on the current page.')).toBeVisible();
+    await expect(page.getByText(foreignProgramTitle)).toHaveCount(0);
+    await page.goto(`${choicePath}?page=invalid`);
+    await expect(
+      page.getByRole('list', { name: 'Published programs' }).getByRole('listitem'),
+    ).toHaveCount(1);
+
+    // GET-only picker must not create an assignment.
+    await withDisposableDatabase(async (db) => {
+      const count = await db.query(
+        'SELECT COUNT(*)::int AS count FROM "training_program_assignments" WHERE "trainer_athlete_id" = $1',
+        [dashboardRelationId],
+      );
+      expect(count.rows[0]?.count).toBe(0);
+    });
+
+    await withDisposableDatabase(async (db) => {
       const insertSql =
         'INSERT INTO "training_program_assignments" ("id", "version_id", "trainer_athlete_id", "athlete_id", "assigned_by_id", "status", "assigned_at", "updated_at") ' +
         "VALUES ($1, $2, $3, $4, $5, $6, NOW() - ($7::int * INTERVAL '1 minute'), NOW())";
@@ -303,6 +367,9 @@ test('Trainer browser requires live approval, protects Origin/cookies, and revok
     await page.goto(`${trainerOrigin}/workspace/clients/${dashboardRelationId}`);
     await expect(page.getByRole('heading', { name: 'Trainer access not approved' })).toBeVisible();
     await expect(page.getByText(dashboardAthleteEmail)).toHaveCount(0);
+    await page.goto(`${trainerOrigin}/workspace/clients/${dashboardRelationId}/select-program`);
+    await expect(page.getByRole('heading', { name: 'Trainer access not approved' })).toBeVisible();
+    await expect(page.getByText(ownProgramTitle)).toHaveCount(0);
 
     // Restore approval, then verify that current ADMIN elevation denies Trainer
     // even though the old browser session and TrainerProfile are unchanged.
@@ -338,6 +405,9 @@ test('Trainer browser requires live approval, protects Origin/cookies, and revok
     await page.goto(`${trainerOrigin}/workspace/clients/${dashboardRelationId}`);
     await expect(page.getByRole('heading', { name: 'Client not found' })).toBeVisible();
     await expect(page.getByText(dashboardAthleteEmail)).toHaveCount(0);
+    await page.goto(`${trainerOrigin}/workspace/clients/${dashboardRelationId}/select-program`);
+    await expect(page.getByRole('heading', { name: 'Client not found' })).toBeVisible();
+    await expect(page.getByText(ownProgramTitle)).toHaveCount(0);
     await page.goto(`${trainerOrigin}/workspace`);
     await expect(page.getByRole('button', { name: 'Sign out' })).toBeVisible();
 
@@ -370,8 +440,9 @@ test('Trainer browser requires live approval, protects Origin/cookies, and revok
         'DELETE FROM "training_program_assignments" WHERE "trainer_athlete_id" IN ($1, $2)',
         [dashboardRelationId, otherRelationId],
       );
-      await db.query('DELETE FROM "training_program_versions" WHERE "id" IN ($1, $2)', [
+      await db.query('DELETE FROM "training_program_versions" WHERE "id" IN ($1, $2, $3)', [
         ownVersionId,
+        ownDraftVersionId,
         foreignVersionId,
       ]);
       await db.query('DELETE FROM "training_programs" WHERE "id" IN ($1, $2)', [

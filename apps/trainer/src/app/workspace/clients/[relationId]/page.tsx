@@ -162,6 +162,13 @@ export default async function TrainerClientProgressPage({
             {t.clientAssignmentsHeading}
           </h2>
           <p className="text-sm text-muted-foreground">{t.clientAssignmentsDescription}</p>
+          <Link
+            href={`/workspace/clients/${encodeURIComponent(relationId)}/select-program`}
+            prefetch={false}
+            className="mt-3 inline-flex min-h-11 items-center rounded-lg border border-border px-4 text-sm font-semibold text-primary hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+          >
+            {t.programChoiceEntryLink}
+          </Link>
         </div>
 
         {assignments.kind !== 'ready' ? (

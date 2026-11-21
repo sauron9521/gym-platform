@@ -130,6 +130,40 @@ _before_ pagination; no client-side filter of participant-wide history.
   real-browser/PostgreSQL Trainer integration adds 9 owned + 1 foreign
   assignment fixtures, tests pages 1/2 and deletion after the suite.
 
+## Trainer read-only published program/version chooser (#366)
+
+The client progress page links to the protected dynamic
+`/workspace/clients/[relationId]/select-program` **GET-only** route.
+It first verifies a current persisted Trainer grant and loads the client's
+ACTIVE owner-scoped progress + matching relation/contact using existing
+read models. Only then does it list up to **8 owned PUBLISHED programs per page**
+from the existing typed `GET /training-programs?status=PUBLISHED` API.
+A selected program must exist on **that exact paginated owner-scoped page**
+before the server may call existing `GET /training-programs/:id/versions`.
+
+- Only **PUBLISHED** versions are displayed as choices. Latest-title
+  previews on a published program may themselves be a DRAFT; the UI labels
+  this explicitly and _never_ offers a draft version. Archived/draft programs
+  and foreign trainer programs cannot become selectable.
+- SSR query params `page`, `programId` and `versionId` are validated.
+  Bad page numbers normalize to 1; invalid/foreign program IDs do not trigger
+  an arbitrary `:id/versions` request. A selected version must match one of
+  the validated published rows, never just a user-supplied UUID.
+- The existing trusted host-only cookie transport uses `no-store`, rejects
+  redirects and bounds each request to five seconds. Any 401/403 **during
+  either follow-up read hides all earlier client data**; 5xx, malformed data,
+  missing or archived programs show safe unavailable/not-found states.
+  The version list is capped at 40 rows and malformed/cross-program data
+  never enters the UI. Real owned program pagination is server-side.
+- There are **no writes, assignment creation, client-side session state or
+  automatic confirmation**. A selected version is only reflected in a
+  server-rendered confirmation that explicitly says nothing has been saved.
+  The actual create assignment action and conflict/retry semantics are
+  a separate follow-up PR.
+- uk/en responsive noindex route, unit transport/auth/selection tests and
+  real Trainer Next/Nest/PostgreSQL browser verification cover client eligibility,
+  published/draft/foreign boundaries, selection and no mutations.
+
 ## Real-browser security regression
 
 The existing `Web / Integration E2E` workflow runs
