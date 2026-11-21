@@ -484,7 +484,36 @@
     "themeLight": "Light",
     "themeDark": "Dark",
     "plannedModulesTitle": "Planned modules",
-    "unavailableFeatures": "Exercise, category, and account management are not available yet."
+    "unavailableFeatures": "Exercise, category, and account management are not available yet.",
+    "navOpen": "Open",
+    "users": {
+      "title": "Users",
+      "intro": "Account directory with search and filters. Records will appear after the protected Admin API is connected.",
+      "back": "Back to overview",
+      "search": "Search by email",
+      "allRoles": "All roles",
+      "allStatuses": "All statuses",
+      "email": "Email",
+      "role": "Role",
+      "status": "Status",
+      "joined": "Registration date",
+      "athlete": "Athlete",
+      "trainer": "Trainer",
+      "admin": "Administrator",
+      "active": "Active",
+      "suspended": "Suspended",
+      "sortEmail": "Sort by email",
+      "sortJoined": "Sort by registration date",
+      "unavailableTitle": "User directory unavailable",
+      "unavailableDescription": "The protected Admin user-list API is not connected yet. Search and filters are disabled; no account records are fetched.",
+      "emptyTitle": "No users match",
+      "emptyDescription": "Try changing your search or filters.",
+      "page": "Page",
+      "of": "of",
+      "previous": "Previous",
+      "next": "Next",
+      "rows": "records"
+    }
   },
   "mobile": {
     "tabs": {

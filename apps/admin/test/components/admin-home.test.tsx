@@ -18,16 +18,13 @@ vi.mock('@/shared/api/admin-health', () => ({ readAdminHealth: healthMock }));
 // Test the server component in happy-dom without replacing production next-intl behavior.
 vi.mock('next-intl/server', async () => {
   const { getMessages } = await import('@gym/i18n');
-  const messages = getMessages('uk').admin;
   return {
-    getTranslations: async () => (key: keyof typeof messages) =>
+    getTranslations: async () => (key: keyof ReturnType<typeof getMessages>['admin']) =>
       getMessages(localeState.current).admin[key],
   };
 });
 
 import AdminHomePage, { dynamic } from '../../src/app/page';
-
-type AccessState = 'unauthenticated' | 'forbidden' | 'unavailable';
 
 beforeEach(() => {
   vi.resetAllMocks();
@@ -83,7 +80,7 @@ describe('AdminHomePage server-side access control', () => {
     expect(screen.getAllByRole('navigation')).toHaveLength(2);
     expect(screen.getAllByText('Користувачі').length).toBeGreaterThan(0);
     expect(container.querySelectorAll('a[href="/"]')).toHaveLength(2);
-    expect(container.querySelectorAll('a[href="/users"]')).toHaveLength(0);
+    expect(container.querySelectorAll('a[href="/users"]')).toHaveLength(3);
     expect(container.querySelectorAll('[aria-disabled="true"]').length).toBeGreaterThan(0);
   });
 
