@@ -14,22 +14,22 @@ Gym Platform is a Turborepo with one NestJS API, PostgreSQL/Prisma, Redis, Athle
 
 ## Approved product decisions
 
-| Area | Decision |
-| --- | --- |
-| Core | One durable per-recipient In-App Inbox shared across permitted Web, Mobile, Trainer and Admin contexts |
-| Channels | In-App, Mobile Push, Mobile Local Reminders and transactional Email; Web Push deferred |
-| Categories | Trainer relationship, training program, workout, account/security; protected Admin/Owner context additionally |
-| Workout reminders | User selects exactly one lead: **15, 60 or 1440 minutes**, local scheduling only after opt-in and native permission |
-| Quiet hours | Default **22:00–08:00 in the user's IANA timezone**, editable/disableable; Inbox persists immediately |
-| Live refresh | MVP TanStack Query with 30–60-second **foreground/visible-only** unread polling, plus refetch on focus/resume and mutations |
-| Live refresh later | Evidence-gated SSE for Web/Trainer/Admin that emits **change hints only**; client then GETs from API |
-| Marketing | Separate explicit opt-in **later**, never inferred from transactional consent or a device token |
-| Admin | Scoped inbox by **current server permissions**, not client flags, past role or notification payload |
-| Delivery | Best-effort push/email; never claim exactly-once physical delivery or mutate the source workflow based on delivery state |
+| Area               | Decision                                                                                                                    |
+| ------------------ | --------------------------------------------------------------------------------------------------------------------------- |
+| Core               | One durable per-recipient In-App Inbox shared across permitted Web, Mobile, Trainer and Admin contexts                      |
+| Channels           | In-App, Mobile Push, Mobile Local Reminders and transactional Email; Web Push deferred                                      |
+| Categories         | Trainer relationship, training program, workout, account/security; protected Admin/Owner context additionally               |
+| Workout reminders  | User selects exactly one lead: **15, 60 or 1440 minutes**, local scheduling only after opt-in and native permission         |
+| Quiet hours        | Default **22:00–08:00 in the user's IANA timezone**, editable/disableable; Inbox persists immediately                       |
+| Live refresh       | MVP TanStack Query with 30–60-second **foreground/visible-only** unread polling, plus refetch on focus/resume and mutations |
+| Live refresh later | Evidence-gated SSE for Web/Trainer/Admin that emits **change hints only**; client then GETs from API                        |
+| Marketing          | Separate explicit opt-in **later**, never inferred from transactional consent or a device token                             |
+| Admin              | Scoped inbox by **current server permissions**, not client flags, past role or notification payload                         |
+| Delivery           | Best-effort push/email; never claim exactly-once physical delivery or mutate the source workflow based on delivery state    |
 
 ## Decision and boundaries
 
-Use a **modular NestJS monolith**, not a Notifications microservice and not an additional user identity database. Source modules commit business state and a versioned **OutboxEvent** within the *same* PostgreSQL transaction. A dispatcher claims outbox events, resolves recipients based on current domain ownership/authorization, creates immutable logical Inbox records idempotently, then schedules channel-specific deliveries against preferences, quiet hours, and device registrations.
+Use a **modular NestJS monolith**, not a Notifications microservice and not an additional user identity database. Source modules commit business state and a versioned **OutboxEvent** within the _same_ PostgreSQL transaction. A dispatcher claims outbox events, resolves recipients based on current domain ownership/authorization, creates immutable logical Inbox records idempotently, then schedules channel-specific deliveries against preferences, quiet hours, and device registrations.
 
 A notification is a **read/navigation artifact**. It is not the source of truth for a trainer relationship, program, workout status, refund, approval, pricing change, role grant or incident. Clicking or marking one read never executes an approval or other privileged mutation. Permission to open the resource is evaluated again at the destination.
 
@@ -37,14 +37,14 @@ A notification is a **read/navigation artifact**. It is not the source of truth 
 
 ### Planned data model (future additive Prisma migration, not present today)
 
-| Entity | Ownership and principal fields | Key invariant |
-| --- | --- | --- |
-| `Notification` | `id`, `recipientId`, `eventId`, `scope` (USER/ADMIN), `type`, `category`, `resourceType`/`resourceId`, `templateKey`/safe parameters, `createdAt`, `readAt`, `expiresAt` | unique (`eventId`, `recipientId`, `scope`), indexed recipient/scope/date cursor |
-| `NotificationSettings` | `userId`, quiet hours enabled/start/end, reminder lead selection | one per user; timezone resolves from the existing canonical Profile setting |
-| `NotificationPreference` | `userId`, `category`, `channel`, `enabled`, consent timestamp | unique (user, category, channel); transactional/security exceptions documented separately |
-| `PushDevice` | `id`, `userId`, installation identity, encrypted/secured Expo token, platform, revoked/lastSeen | tokens never logged or returned broadly; revoke on logout/account switch |
-| `NotificationDelivery` | notification/event identity, channel, optional device, state/attempt/retry timestamps and redacted error | idempotency key per notification + channel + destination |
-| `OutboxEvent` | UUID ID, unique business event key, schema version, safe payload, available/lease/attempt/dead-letter state | same transaction as source business write; replay-safe |
+| Entity                   | Ownership and principal fields                                                                                                                                           | Key invariant                                                                             |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------- |
+| `Notification`           | `id`, `recipientId`, `eventId`, `scope` (USER/ADMIN), `type`, `category`, `resourceType`/`resourceId`, `templateKey`/safe parameters, `createdAt`, `readAt`, `expiresAt` | unique (`eventId`, `recipientId`, `scope`), indexed recipient/scope/date cursor           |
+| `NotificationSettings`   | `userId`, quiet hours enabled/start/end, reminder lead selection                                                                                                         | one per user; timezone resolves from the existing canonical Profile setting               |
+| `NotificationPreference` | `userId`, `category`, `channel`, `enabled`, consent timestamp                                                                                                            | unique (user, category, channel); transactional/security exceptions documented separately |
+| `PushDevice`             | `id`, `userId`, installation identity, encrypted/secured Expo token, platform, revoked/lastSeen                                                                          | tokens never logged or returned broadly; revoke on logout/account switch                  |
+| `NotificationDelivery`   | notification/event identity, channel, optional device, state/attempt/retry timestamps and redacted error                                                                 | idempotency key per notification + channel + destination                                  |
+| `OutboxEvent`            | UUID ID, unique business event key, schema version, safe payload, available/lease/attempt/dead-letter state                                                              | same transaction as source business write; replay-safe                                    |
 
 Candidate API surface (review and generate actual OpenAPI in [#567](https://github.com/sauron9521/gym-platform/issues/567)): `GET /notifications`, `GET /notifications/unread-count`, `GET /notifications/:id`, `PATCH /notifications/:id/read`, `POST /notifications/read-all`, `GET/PATCH /users/me/notification-settings`, `POST/DELETE /notifications/devices`. Privileged Admin read endpoints require their own authorization boundary. Notification details and deep-link targets are server-scoped, not arbitrary user-supplied URLs.
 
