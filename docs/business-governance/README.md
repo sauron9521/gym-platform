@@ -28,7 +28,7 @@ A single business with these **functional responsibilities**, which can be combi
 - Only **Super Admin** may approve, activate, schedule, change or stop a live subscription price or promotional offer. Admin and authorized Marketing can create drafts/submit requests.
 - An unapproved request cannot activate at its requested start time. Approvals bind to an immutable revision; editing requires resubmission. See [#539](https://github.com/sauron9521/gym-platform/issues/539) and [#542](https://github.com/sauron9521/gym-platform/issues/542).
 - Temporary customer credits, refunds, unlimited grants and staff privilege changes require explicit authority, reason, audit and an appropriate review path; initial conservative default: Super Admin approves financial exceptions and indefinite access.
-- **Delegation limits remain undecided.** Proposed examples like a 7-day support credit or currency-denominated refund cap are NOT approved until recorded separately in [#553](https://github.com/sauron9521/gym-platform/issues/553).
+- **Delegation limits remain undecided.** Proposed examples like a 7-day support credit or currency-denominated refund cap are NOT approved until recorded separately in the [Delegation and Escalation Matrix](delegation-and-escalation.md) and signed off in [#553](https://github.com/sauron9521/gym-platform/issues/553).
 - Requests, approvals, execution and provider reconciliation are distinct events. Delivery of an inbox alert does not approve a request.
 - No direct editing of provider-verified payment history or retroactive modification of agreed price versions.
 - Backend denies operations without verified role/scope; UI only reflects backend-authoritative authorization. Sensitive operations require re-auth/step-up and audit.
@@ -71,4 +71,4 @@ Source-of-truth KPI formulas live in [operating-kpis.md](operating-kpis.md) and 
 
 One narrow PR at a time from current `main`; document paths/acceptance/tests on Issues, enforce backend permission checks, run unit/integration/E2E and real Postgres where sensitive state changes, review CI, **owner manually merges**. An approved policy is not a completed feature. Close an issue only with traceable evidence.
 
-Read: [Roles and Permissions](roles-permissions.md) · [Approval policy](approval-policy.md) · [Reporting KPIs](operating-kpis.md).
+Read: [Roles and Permissions](roles-permissions.md) · [Approval policy](approval-policy.md) · [Delegation and Escalation Matrix](delegation-and-escalation.md) · [Reporting KPIs](operating-kpis.md).
