@@ -21,10 +21,14 @@ export function WorkoutSetRow({
   workoutId,
   set,
   editable,
+  reconciling = false,
+  canonicalSnapshotAt,
 }: {
   workoutId: string;
   set: WorkoutSet;
   editable: boolean;
+  reconciling?: boolean;
+  canonicalSnapshotAt?: number;
 }) {
   const mutation = useWorkoutSetMutation(workoutId);
   const submitLock = useRef(false);
@@ -34,10 +38,15 @@ export function WorkoutSetRow({
   // Once a newer server snapshot arrives, use it instead of the local acknowledgment.
   const [confirmedResult, setConfirmedResult] = useState<{
     previousUpdatedAt: string;
+    snapshotAt?: number;
     set: WorkoutSet;
   } | null>(null);
+  // Read-only canonical GET snapshots supersede a local PATCH acknowledgment,
+  // including a server PENDING reply with the same set updatedAt timestamp.
   const visibleSet =
-    confirmedResult?.set.id === set.id && confirmedResult.previousUpdatedAt === set.updatedAt
+    confirmedResult?.set.id === set.id &&
+    confirmedResult.previousUpdatedAt === set.updatedAt &&
+    confirmedResult.snapshotAt === canonicalSnapshotAt
       ? confirmedResult.set
       : set;
   const isSaved = visibleSet.status !== 'PENDING';
@@ -83,7 +92,15 @@ export function WorkoutSetRow({
 
   const saveCompleted = () => {
     // A synchronous lock prevents two presses before isPending rerenders the row.
-    if (submitLock.current || mutation.isPending || !editable || !isEditing || limited) return;
+    if (
+      submitLock.current ||
+      mutation.isPending ||
+      !editable ||
+      !isEditing ||
+      limited ||
+      reconciling
+    )
+      return;
     submitLock.current = true;
     void handleSubmit(
       async (values) => {
@@ -92,7 +109,11 @@ export function WorkoutSetRow({
             setId: set.id,
             body: workoutSetPayload(values),
           });
-          setConfirmedResult({ previousUpdatedAt: set.updatedAt, set: updated });
+          setConfirmedResult({
+            previousUpdatedAt: set.updatedAt,
+            snapshotAt: canonicalSnapshotAt,
+            set: updated,
+          });
           setEditing(false);
         } catch (error) {
           captureRateLimit(error);
@@ -110,12 +131,24 @@ export function WorkoutSetRow({
   };
 
   const skipSet = () => {
-    if (submitLock.current || mutation.isPending || !editable || !isEditing || limited) return;
+    if (
+      submitLock.current ||
+      mutation.isPending ||
+      !editable ||
+      !isEditing ||
+      limited ||
+      reconciling
+    )
+      return;
     submitLock.current = true;
     void mutation
       .mutateAsync({ setId: set.id, body: { status: 'SKIPPED' } })
       .then((updated) => {
-        setConfirmedResult({ previousUpdatedAt: set.updatedAt, set: updated });
+        setConfirmedResult({
+          previousUpdatedAt: set.updatedAt,
+          snapshotAt: canonicalSnapshotAt,
+          set: updated,
+        });
         setEditing(false);
       })
       .catch((error: unknown) => {
@@ -129,7 +162,7 @@ export function WorkoutSetRow({
       });
   };
 
-  const savingDisabled = !editable || mutation.isPending || isSubmitting || limited;
+  const savingDisabled = !editable || mutation.isPending || isSubmitting || limited || reconciling;
   return (
     <View style={styles.container}>
       <View style={styles.headingRow}>
@@ -215,6 +248,7 @@ export function WorkoutSetRow({
               testID={`set-complete-${set.id}`}
               accessibilityRole="button"
               disabled={savingDisabled}
+              accessibilityState={{ disabled: savingDisabled }}
               style={styles.button}
               onPress={saveCompleted}
             >
@@ -226,6 +260,7 @@ export function WorkoutSetRow({
               testID={`set-skip-${set.id}`}
               accessibilityRole="button"
               disabled={savingDisabled}
+              accessibilityState={{ disabled: savingDisabled }}
               style={styles.secondary}
               onPress={skipSet}
             >

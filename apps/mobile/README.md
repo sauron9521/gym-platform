@@ -185,6 +185,28 @@ Future features should use feature-owned query hooks and query keys; do not
 persist private query data in AsyncStorage or localStorage. Automatic token
 refresh and offline detection will be handled separately.
 
+### Workout set reconciliation on resume (#324)
+
+The workout-details query is account- and workout-scoped. Returning to its
+Expo Router screen triggers an **active read-only GET**, even if the cached
+snapshot is younger than the default 30-second stale window. On Android/iOS,
+`AppState` foreground and network-reconnect events also revalidate this query
+unconditionally; background/offline/inactive-account focus does not issue a
+private request. Other workouts are not invalidated.
+
+During canonical refresh, the native details screen announces that the set
+state is being checked and blocks set edits and workout completion until the
+server response arrives. A failed refresh cannot silently advertise stale
+confirmed data. A newer server snapshot also supersedes a locally acknowledged
+PATCH response, including when the server reports the previous PENDING state.
+Successful PATCH responses cancel overlapping GETs before updating the local
+cache; an account check prevents reinstating private cache after sign-out.
+
+**No PATCH is automatically retried or replayed** on screen focus, app resume,
+or network reconnection. A lost write response must be reconciled with GET;
+any subsequent write still requires explicit user action. This is _not_ an
+offline write queue or a device-level E2E acceptance claim.
+
 ## Windows + pnpm Expo Router entry
 
 The mobile package uses its own `apps/mobile/index.js` entry file, which imports
