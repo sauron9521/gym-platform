@@ -244,5 +244,5 @@ test('transient profile failure exposes a safe retry without replaying one-time 
   assert.ok(retry, 'Verification callback exists');
   assert.ok(retry.includes('getVerificationApi()'));
   assert.ok(!retry.includes('getApi()'), 'Verification must not rotate tokens');
-  assert.match(screen, /Відновити сесію/);
+  assert.ok(screen.includes("t('recover')"), 'Session recovery action retains its localized label');
 });

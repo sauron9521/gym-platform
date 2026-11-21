@@ -478,6 +478,21 @@
       "loadMore": "Load more",
       "loadingMore": "Loading…",
       "retryLoadMore": "Failed to load. Retry"
+    },
+    "signIn": {
+      "welcome": "Welcome back!",
+      "description": "Sign in to view your profile.",
+      "email": "Email address",
+      "password": "Password",
+      "passwordPlaceholder": "Enter password",
+      "signIn": "Sign in",
+      "retryLabel": "Retry session verification",
+      "recover": "Restore session",
+      "note": "On iOS and Android, your session is stored securely. Browser sign-in is temporary.",
+      "failed": "Could not sign in. Try again.",
+      "invalidEmail": "Enter a valid email address.",
+      "invalidPassword": "Enter your password.",
+      "signingIn": "Signing in…"
     }
   },
   "landing": {

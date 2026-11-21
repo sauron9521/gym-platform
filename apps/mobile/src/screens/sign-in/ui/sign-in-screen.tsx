@@ -1,4 +1,5 @@
 import { useCallback, useRef } from 'react';
+import { useIntl } from 'react-intl';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Controller, useForm } from 'react-hook-form';
 import {
@@ -18,6 +19,11 @@ import { useAuth } from '@/features/auth/model/auth-context';
 import { palette } from '@/shared/config/theme';
 
 export function SignInScreen() {
+  const intl = useIntl();
+  const t = useCallback(
+    (key: string) => intl.formatMessage({ id: `mobile.signIn.${key}` }),
+    [intl],
+  );
   const { signIn, recoveryAvailable, retryVerification } = useAuth();
   const submitLock = useRef(false);
   const {
@@ -47,13 +53,13 @@ export function SignInScreen() {
       } catch {
         setError('root.server', {
           type: 'server',
-          message: 'Не вдалося увійти. Спробуйте ще раз.',
+          message: t('failed'),
         });
       } finally {
         submitLock.current = false;
       }
     },
-    [clearErrors, setError, signIn],
+    [clearErrors, setError, signIn, t],
   );
 
   const submit = () => void handleSubmit(onValidSubmit)();
@@ -64,17 +70,17 @@ export function SignInScreen() {
       style={styles.container}
     >
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <Text style={styles.eyebrow}>GYM PLATFORM</Text>
-        <Text style={styles.heading}>З поверненням!</Text>
-        <Text style={styles.description}>Увійдіть, щоб переглянути свій профіль.</Text>
+        <Text style={styles.eyebrow}>OVRANTO</Text>
+        <Text style={styles.heading}>{t('welcome')}</Text>
+        <Text style={styles.description}>{t('description')}</Text>
         <View style={styles.form}>
-          <Text style={styles.label}>Електронна пошта</Text>
+          <Text style={styles.label}>{t('email')}</Text>
           <Controller
             control={control}
             name="email"
             render={({ field: { onBlur, onChange, value } }) => (
               <TextInput
-                accessibilityLabel="Електронна пошта"
+                accessibilityLabel={t('email')}
                 testID="sign-in-email"
                 autoCapitalize="none"
                 autoComplete="email"
@@ -95,16 +101,16 @@ export function SignInScreen() {
           />
           {errors.email?.message ? (
             <Text accessibilityRole="alert" style={styles.error}>
-              {errors.email.message}
+              {t('invalidEmail')}
             </Text>
           ) : null}
-          <Text style={styles.label}>Пароль</Text>
+          <Text style={styles.label}>{t('password')}</Text>
           <Controller
             control={control}
             name="password"
             render={({ field: { onBlur, onChange, value } }) => (
               <TextInput
-                accessibilityLabel="Пароль"
+                accessibilityLabel={t('password')}
                 testID="sign-in-password"
                 autoCapitalize="none"
                 autoComplete="current-password"
@@ -117,14 +123,14 @@ export function SignInScreen() {
                   clearErrors('root.server');
                 }}
                 onSubmitEditing={() => void submit()}
-                placeholder="Введіть пароль"
+                placeholder={t('passwordPlaceholder')}
                 style={[styles.input, errors.password && styles.inputError]}
               />
             )}
           />
           {errors.password?.message ? (
             <Text accessibilityRole="alert" style={styles.error}>
-              {errors.password.message}
+              {t('invalidPassword')}
             </Text>
           ) : null}
           {errors.root?.server?.message ? (
@@ -139,16 +145,16 @@ export function SignInScreen() {
             style={[styles.button, isSubmitting && styles.disabled]}
           >
             {isSubmitting ? (
-              <ActivityIndicator color={palette.surface} />
+              <ActivityIndicator accessibilityLabel={t('signingIn')} color={palette.surface} />
             ) : (
-              <Text style={styles.buttonText}>Увійти</Text>
+              <Text style={styles.buttonText}>{t('signIn')}</Text>
             )}
           </Pressable>
         </View>
         {recoveryAvailable ? (
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Повторити перевірку сесії"
+            accessibilityLabel={t('retryLabel')}
             disabled={isSubmitting}
             style={[styles.button, isSubmitting && styles.disabled]}
             onPress={() => {
@@ -166,12 +172,10 @@ export function SignInScreen() {
                 });
             }}
           >
-            <Text style={styles.buttonText}>Відновити сесію</Text>
+            <Text style={styles.buttonText}>{t('recover')}</Text>
           </Pressable>
         ) : null}
-        <Text style={styles.note}>
-          На iOS та Android сесія зберігається захищено. У браузері вхід тимчасовий.
-        </Text>
+        <Text style={styles.note}>{t('note')}</Text>
       </ScrollView>
     </KeyboardAvoidingView>
   );
