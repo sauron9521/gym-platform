@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import { canCompleteWorkout, workoutSetProgress } from '@gym/domain';
 import {
   ActivityIndicator,
   Alert,
@@ -78,6 +79,9 @@ export function WorkoutDetailsScreen({ id }: { id: string }) {
   const cancellation = useCancelWorkout(id);
   const writeLock = useRef(false);
   const workout = details.data;
+  const allSets = workout?.exercises.flatMap((exercise) => exercise.sets) ?? [];
+  const progress = workoutSetProgress(allSets);
+  const completionAllowed = canCompleteWorkout(allSets);
   const busy = transition.isPending || titleUpdate.isPending || cancellation.isPending;
   const cancellable = workout?.status === 'PLANNED' || workout?.status === 'IN_PROGRESS';
   const releaseLock = () => { writeLock.current = false; };
@@ -166,7 +170,19 @@ export function WorkoutDetailsScreen({ id }: { id: string }) {
               ))}
             </View>
           ))}
-          {workout.status === 'IN_PROGRESS' ? <RestTimer key={id} /> : null}
+          {workout.status === 'IN_PROGRESS' ? (
+            <>
+              <Text accessibilityRole="summary" style={styles.muted}>
+                Підходи: {progress.completed} виконано, {progress.skipped} пропущено, {progress.pending} очікують
+              </Text>
+              {!completionAllowed ? (
+                <Text style={styles.muted}>
+                  Для завершення потрібен хоча б один виконаний підхід і жодного незавершеного.
+                </Text>
+              ) : null}
+              <RestTimer key={id} />
+            </>
+          ) : null}
           {workout.status === 'PLANNED' || workout.status === 'IN_PROGRESS' ? (
             <Pressable
               accessibilityRole="button"
@@ -190,11 +206,12 @@ export function WorkoutDetailsScreen({ id }: { id: string }) {
               accessibilityRole="button"
               testID="workout-status-action"
               style={styles.button}
-              disabled={busy}
-              accessibilityState={{ disabled: busy }}
+              disabled={busy || (nextAction === 'complete' && !completionAllowed)}
+              accessibilityState={{ disabled: busy || (nextAction === 'complete' && !completionAllowed) }}
               onPress={() => {
-                if (writeLock.current || busy) return;
-                transition.mutate(nextAction);
+                if (writeLock.current || busy || (nextAction === 'complete' && !completionAllowed)) return;
+                writeLock.current = true;
+                transition.mutate(nextAction, { onSettled: releaseLock });
               }}
             >
               <Text style={styles.buttonText}>
