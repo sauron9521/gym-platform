@@ -2,9 +2,12 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { test } from 'vitest';
 
+import { getMessages } from '@gym/i18n';
+
 import {
   formatWorkoutDate,
   getWorkoutListErrorMessage,
+  getWorkoutListErrorKey,
   getWorkoutPageCount,
   getWorkoutStatusLabel,
   WORKOUT_FILTERS,
@@ -25,6 +28,9 @@ test('date and pagination helpers handle missing and invalid data', () => {
   assert.equal(formatWorkoutDate(null), 'Не заплановано');
   assert.equal(formatWorkoutDate('invalid-date'), 'Дата недоступна');
   assert.match(formatWorkoutDate('2026-11-14T08:00:00Z'), /2026/);
+  assert.equal(formatWorkoutDate(null, 'en'), 'Not scheduled');
+  assert.equal(formatWorkoutDate('invalid-date', 'en'), 'Date unavailable');
+  assert.match(formatWorkoutDate('2026-11-14T08:00:00Z', 'en'), /Nov/);
   assert.equal(getWorkoutPageCount(0), 1);
   assert.equal(getWorkoutPageCount(-1), 1);
   assert.equal(getWorkoutPageCount(4), 4);
@@ -36,6 +42,17 @@ test('workout fetch errors do not expose backend response bodies', () => {
   assert.match(getWorkoutListErrorMessage(429), /Забагато/);
   assert.match(getWorkoutListErrorMessage(500), /Спробуйте/);
   assert.equal(getWorkoutListErrorMessage(), getWorkoutListErrorMessage(502));
+  for (const [status, key] of [
+    [400, 'errorBadRequest'],
+    [403, 'errorForbidden'],
+    [429, 'errorRateLimited'],
+    [503, 'errorDefault'],
+  ]) {
+    assert.equal(getWorkoutListErrorKey(status), key);
+    for (const locale of ['en', 'uk']) {
+      assert.ok(getMessages(locale).web.workoutList[key]);
+    }
+  }
 });
 
 test('workouts route has independent server guard and typed summary API request', async () => {
@@ -61,6 +78,45 @@ test('workouts route has independent server guard and typed summary API request'
   assert.match(ui, /query.error.status === 401/);
   assert.match(ui, /router.replace\('\/login'\)/);
   assert.match(ui, /queryClient.clear\(\)/);
-  assert.match(ui, /<nav aria-label="Сторінки тренувань"/);
+  assert.ok(
+    ui.includes("aria-label={t('pages')}"),
+    'Workouts pagination retains its localized navigation label',
+  );
   assert.doesNotMatch(ui, /localStorage|sessionStorage|document.cookie|dangerouslySetInnerHTML/);
+});
+
+test('workout listing resolves all labels for uk/en without translating user-generated titles', async () => {
+  const source = await readFile(
+    new URL('../src/features/workouts/ui/workouts-list.tsx', import.meta.url),
+    'utf8',
+  );
+  const page = await readFile(
+    new URL('../src/app/(protected)/workouts/page.tsx', import.meta.url),
+    'utf8',
+  );
+  for (const locale of ['uk', 'en']) {
+    const messages = getMessages(locale).web.workoutList;
+    for (const key of [
+      'filterAll',
+      'filterPlanned',
+      'filterInProgress',
+      'filterCompleted',
+      'filterCancelled',
+      'statusPlanned',
+      'statusInProgress',
+      'statusCompleted',
+      'statusCancelled',
+      'errorDefault',
+      'errorRateLimited',
+      'forbiddenTitle',
+      'unavailableTitle',
+    ])
+      assert.ok(messages[key], `missing ${locale}.${key}`);
+  }
+  assert.match(source, /useTranslations\('web\.workoutList'\)/);
+  assert.match(source, /statusTranslationKeys\[workout.status\]/);
+  assert.match(source, /\{workout.title\}/);
+  assert.match(source, /getWorkoutListErrorKey/);
+  assert.match(page, /getTranslations\('web\.workoutList'\)/);
+  assert.match(page, /robots: \{ index: false \}/);
 });

@@ -34,11 +34,27 @@ export function getWorkoutListErrorMessage(status?: number): string {
   return 'Не вдалося завантажити тренування. Спробуйте ще раз.';
 }
 
-export function formatWorkoutDate(value: string | null): string {
-  if (!value) return 'Не заплановано';
+/** Safe status-based localization: errors never show upstream response text. */
+export function getWorkoutListErrorKey(
+  status?: number,
+): 'errorForbidden' | 'errorBadRequest' | 'errorRateLimited' | 'errorDefault' {
+  switch (status) {
+    case 400:
+      return 'errorBadRequest';
+    case 403:
+      return 'errorForbidden';
+    case 429:
+      return 'errorRateLimited';
+    default:
+      return 'errorDefault';
+  }
+}
+
+export function formatWorkoutDate(value: string | null, locale: 'uk' | 'en' = 'uk'): string {
+  if (!value) return locale === 'en' ? 'Not scheduled' : 'Не заплановано';
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return 'Дата недоступна';
-  return new Intl.DateTimeFormat('uk-UA', {
+  if (Number.isNaN(date.getTime())) return locale === 'en' ? 'Date unavailable' : 'Дата недоступна';
+  return new Intl.DateTimeFormat(locale === 'en' ? 'en-US' : 'uk-UA', {
     day: 'numeric',
     month: 'short',
     year: 'numeric',
