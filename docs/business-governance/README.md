@@ -10,16 +10,16 @@ This folder specifies **how the SaaS business is operated**. It is not an implem
 
 A single business with these **functional responsibilities**, which can be combined by one staff member while the company is small:
 
-| Function | Accountability | Critical limit |
-| --- | --- | --- |
-| Owner / Super Admin | Final business decisions, financial exceptions, price and campaign publication, staff privileges | Requires privileged session, step-up and audit |
-| Administrator / Operations | Daily customer/trainer/operations work, proposals, escalations | Cannot publish pricing/marketing changes |
-| Marketing | Campaign drafts and performance reports | Can propose, cannot approve/publish |
-| Finance | Settlement checks, accounting handoff, refund analysis | No unsupported direct ledger edit or autonomous refund without approved policy |
-| Support | Cases, assistance, escalation, proposed compensation | No permanent Pro or payment execution by default |
-| Moderator / Trust & Safety | Trainer/content reviews, complaints and appeals | No general access to financial/customer secrets |
-| Analyst | Aggregated reporting, business performance | Read-only, scoped; no default individual PII access |
-| Technical Operator | Health, incidents, infrastructure recovery | Infrastructure access does not confer billing authority |
+| Function                   | Accountability                                                                                   | Critical limit                                                                 |
+| -------------------------- | ------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------ |
+| Owner / Super Admin        | Final business decisions, financial exceptions, price and campaign publication, staff privileges | Requires privileged session, step-up and audit                                 |
+| Administrator / Operations | Daily customer/trainer/operations work, proposals, escalations                                   | Cannot publish pricing/marketing changes                                       |
+| Marketing                  | Campaign drafts and performance reports                                                          | Can propose, cannot approve/publish                                            |
+| Finance                    | Settlement checks, accounting handoff, refund analysis                                           | No unsupported direct ledger edit or autonomous refund without approved policy |
+| Support                    | Cases, assistance, escalation, proposed compensation                                             | No permanent Pro or payment execution by default                               |
+| Moderator / Trust & Safety | Trainer/content reviews, complaints and appeals                                                  | No general access to financial/customer secrets                                |
+| Analyst                    | Aggregated reporting, business performance                                                       | Read-only, scoped; no default individual PII access                            |
+| Technical Operator         | Health, incidents, infrastructure recovery                                                       | Infrastructure access does not confer billing authority                        |
 
 **User identity remains unified.** Athlete, Trainer and staff capabilities coexist; no second auth silo or automatic elevation through `User.role`. These are business responsibilities, not claims that the roles already exist in the schema.
 
@@ -36,25 +36,25 @@ A single business with these **functional responsibilities**, which can be combi
 
 ## 3. Ownership of systems
 
-| Business domain | Canonical implementation |
-| --- | --- |
-| Auth, capabilities, privileged sessions and audit | E1 [#281](https://github.com/sauron9521/gym-platform/issues/281), E2 [#282](https://github.com/sauron9521/gym-platform/issues/282) |
-| Monetization, payments, price changes and paid-campaign approvals | E21 [#496](https://github.com/sauron9521/gym-platform/issues/496) |
-| Admin visual and interaction design | [#387](https://github.com/sauron9521/gym-platform/issues/387) |
-| Business policy, team rights, support processes and operating decision queue | E22 [#550](https://github.com/sauron9521/gym-platform/issues/550) |
+| Business domain                                                              | Canonical implementation                                                                                                           |
+| ---------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| Auth, capabilities, privileged sessions and audit                            | E1 [#281](https://github.com/sauron9521/gym-platform/issues/281), E2 [#282](https://github.com/sauron9521/gym-platform/issues/282) |
+| Monetization, payments, price changes and paid-campaign approvals            | E21 [#496](https://github.com/sauron9521/gym-platform/issues/496)                                                                  |
+| Admin visual and interaction design                                          | [#387](https://github.com/sauron9521/gym-platform/issues/387)                                                                      |
+| Business policy, team rights, support processes and operating decision queue | E22 [#550](https://github.com/sauron9521/gym-platform/issues/550)                                                                  |
 
 Avoid duplicate financial payment, approval, notification or customer-identity engines.
 
 ## 4. Governance roadmap
 
-| Phase | Outcome | Primary issues | Launch gate |
-| --- | --- | --- | --- |
-| **G0 — Policy & decisions** | Approved charter, RACI, approval rules, KPI ownership | #551, #553 | Owner signs off unresolved decision list |
-| **G1 — Trusted staff access** | Scoped memberships and audited staff rights | #552; existing #288–290, #294–295, #539 | RBAC negative tests, step-up and verified revoke |
-| **G2 — Operational workflows** | Support cases, Finance procedures, Trust/appeals | #554–556; #511, #529, #311 | Case/financial actions require correct approvers |
-| **G3 — Unified business console** | Role-scoped workspaces, approval/decision inbox | #557–558; #387, #543, #544, #533–534 | Real data, safe navigation and end-to-end tests |
-| **G4 — Dry runs & launch readiness** | Staff exit, refunds, rejected promos, incident exercises | #559–560; #498, #512 | Real owner GO/NO-GO, not CI alone |
-| **G5 — Scale (deferred)** | Marketplace, teams and advanced reporting | #521–526, #535, policy review | Only after recurring operational demand |
+| Phase                                | Outcome                                                  | Primary issues                          | Launch gate                                      |
+| ------------------------------------ | -------------------------------------------------------- | --------------------------------------- | ------------------------------------------------ |
+| **G0 — Policy & decisions**          | Approved charter, RACI, approval rules, KPI ownership    | #551, #553                              | Owner signs off unresolved decision list         |
+| **G1 — Trusted staff access**        | Scoped memberships and audited staff rights              | #552; existing #288–290, #294–295, #539 | RBAC negative tests, step-up and verified revoke |
+| **G2 — Operational workflows**       | Support cases, Finance procedures, Trust/appeals         | #554–556; #511, #529, #311              | Case/financial actions require correct approvers |
+| **G3 — Unified business console**    | Role-scoped workspaces, approval/decision inbox          | #557–558; #387, #543, #544, #533–534    | Real data, safe navigation and end-to-end tests  |
+| **G4 — Dry runs & launch readiness** | Staff exit, refunds, rejected promos, incident exercises | #559–560; #498, #512                    | Real owner GO/NO-GO, not CI alone                |
+| **G5 — Scale (deferred)**            | Marketplace, teams and advanced reporting                | #521–526, #535, policy review           | Only after recurring operational demand          |
 
 G0 and early G1 can progress before payments; future production financial features remain behind legal/merchant approval. Cross-cutting E22 intentionally does **not** hijack M01–M07 or optional M08 milestones.
 
