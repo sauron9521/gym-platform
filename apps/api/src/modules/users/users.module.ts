@@ -1,5 +1,8 @@
 import { Module } from '@nestjs/common';
 import { UsersController } from './controllers/users.controller.js';
+import { AdminUsersController } from './controllers/admin-users.controller.js';
+import { AdminUsersReadGuard } from './controllers/admin-users-read.guard.js';
+import { AdminAuditModule } from '#src/common/audit/admin-audit.module';
 import { UsersRepository } from './repositories/users.repository.js';
 import { UsersService } from './services/users.service.js';
 import { AvatarDiskStorage } from './avatar/avatar-disk.storage.js';
@@ -9,7 +12,9 @@ import { AvatarOrphanCleanupService } from './avatar/avatar-orphan-cleanup.servi
 import { AvatarPublicController } from './controllers/avatar-public.controller.js';
 
 @Module({
+  imports: [AdminAuditModule],
   providers: [
+    AdminUsersReadGuard,
     UsersRepository,
     UsersService,
     AvatarService,
@@ -17,7 +22,7 @@ import { AvatarPublicController } from './controllers/avatar-public.controller.j
     AvatarImageProcessor,
     AvatarOrphanCleanupService,
   ],
-  controllers: [UsersController, AvatarPublicController],
+  controllers: [UsersController, AvatarPublicController, AdminUsersController],
   exports: [UsersRepository, UsersService],
 })
 export class UsersModule {}

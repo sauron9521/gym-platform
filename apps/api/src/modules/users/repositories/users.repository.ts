@@ -1,10 +1,12 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import type { AdminUsersQuery } from '../dto/admin-users-query.dto.js';
 import { Prisma } from '#prisma/client';
 import { PrismaService } from '#src/infra/database/index';
 
 import {
   profileAvatarOwnerSelect,
   userAvatarKeySelect,
+  adminUserListSelect,
   userEmailVerificationSelect,
   userSelect,
   userSelectWithCredentials,
@@ -14,6 +16,44 @@ import {
 @Injectable()
 export class UsersRepository {
   constructor(private readonly prisma: PrismaService) {}
+
+  /** Super-admin-only read projection. No credentials, profile or deletion metadata. */
+  async listForAdmin(query: AdminUsersQuery) {
+    const where: Prisma.UserWhereInput = {
+      deletedAt: null,
+      ...(query.role ? { role: query.role } : {}),
+      ...(query.search ? { email: { contains: query.search, mode: 'insensitive' } } : {}),
+      ...(query.createdFrom || query.createdTo
+        ? {
+            createdAt: {
+              ...(query.createdFrom ? { gte: new Date(query.createdFrom) } : {}),
+              ...(query.createdTo ? { lte: new Date(query.createdTo) } : {}),
+            },
+          }
+        : {}),
+    };
+    const skip = (query.page - 1) * query.limit;
+    const [data, total] = await this.prisma.$transaction([
+      this.prisma.user.findMany({
+        where,
+        skip,
+        take: query.limit,
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+        select: adminUserListSelect,
+      }),
+      this.prisma.user.count({ where }),
+    ]);
+
+    return {
+      data: data.map((user) => ({ ...user, status: 'ACTIVE' as const })),
+      meta: {
+        total,
+        skip,
+        take: query.limit,
+        totalPages: Math.ceil(total / query.limit),
+      },
+    };
+  }
 
   async create(email: string, passwordHash: string) {
     try {

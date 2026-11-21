@@ -29,6 +29,14 @@ export const userWithProfileSelect = {
   },
 } satisfies Prisma.UserSelect;
 
+/** Minimum fields needed for a privileged Admin directory; unrelated PII is excluded. */
+export const adminUserListSelect = {
+  id: true,
+  email: true,
+  role: true,
+  createdAt: true,
+} satisfies Prisma.UserSelect;
+
 /** Internal only: never return passwordHash in public API responses. */
 export const userSelectWithCredentials = {
   ...userSelect,

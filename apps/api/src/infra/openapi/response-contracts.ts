@@ -203,6 +203,17 @@ export const workoutResponseSchema = objectSchema({
 });
 export const workoutListResponseSchema = paginatedSchema(workoutResponseSchema);
 
+/** Operator-only directory. Account suspension is not yet modelled; list returns ACTIVE only. */
+export const adminUserListResponseSchema = paginatedSchema(
+  objectSchema({
+    id: uuidSchema,
+    email: stringSchema,
+    role: enumSchema(['ATHLETE', 'TRAINER', 'ADMIN']),
+    status: enumSchema(['ACTIVE']),
+    createdAt: dateTimeSchema,
+  }),
+);
+
 /** Explicit summary list response: no nested exercises, sets, or notes. */
 export const workoutSummaryResponseSchema = objectSchema({
   id: uuidSchema,

@@ -1,0 +1,69 @@
+import { ForbiddenException } from '@nestjs/common';
+import type { ExecutionContext } from '@nestjs/common';
+import { GUARDS_METADATA, PATH_METADATA } from '@nestjs/common/constants';
+import { describe, expect, it, vi } from 'vitest';
+
+import { AdminUsersController } from '../../controllers/admin-users.controller.js';
+import { AdminUsersReadGuard } from '../../controllers/admin-users-read.guard.js';
+
+const operatorId = 'f09d7567-626e-45d8-99f1-829ce4204fbd';
+const otherId = 'd09c7567-626e-45d8-99f1-829ce4204fbd';
+
+function context(role: 'ATHLETE' | 'TRAINER' | 'ADMIN' | undefined, id: string): ExecutionContext {
+  return {
+    switchToHttp: () => ({ getRequest: () => ({ user: role ? { role, id } : undefined }) }),
+  } as unknown as ExecutionContext;
+}
+
+describe('AdminUsersController security contract', () => {
+  it('uses a post-auth scoped permission gate on the dedicated endpoint', () => {
+    expect(Reflect.getMetadata(PATH_METADATA, AdminUsersController)).toBe('admin/users');
+    const handler = Object.getOwnPropertyDescriptor(AdminUsersController.prototype, 'list')?.value;
+    const guards: unknown[] = Reflect.getMetadata(GUARDS_METADATA, handler);
+    expect(guards).toContain(AdminUsersReadGuard);
+  });
+
+  it('does not grant list access without an explicit operator allowlist and persisted ADMIN', () => {
+    const configured = new AdminUsersReadGuard({ get: () => operatorId } as never);
+    const defaultDenied = new AdminUsersReadGuard({ get: () => undefined } as never);
+
+    expect(() => defaultDenied.canActivate(context('ADMIN', operatorId))).toThrow(
+      ForbiddenException,
+    );
+    expect(configured.canActivate(context('ADMIN', operatorId))).toBe(true);
+    for (const [role, id] of [
+      ['ADMIN', otherId],
+      ['ATHLETE', operatorId],
+      ['TRAINER', operatorId],
+      [undefined, operatorId],
+    ] as const) {
+      expect(() => configured.canActivate(context(role, id))).toThrow(ForbiddenException);
+    }
+  });
+
+  it('records only an authenticated operator audit event after a successful directory read', async () => {
+    const result = { data: [], meta: { total: 0, skip: 0, take: 20, totalPages: 0 } };
+    const users = { listForAdmin: vi.fn().mockResolvedValue(result) };
+    const audit = { record: vi.fn() };
+    const controller = new AdminUsersController(users as never, audit as never);
+    const query = { page: 1, limit: 20 };
+    const request = {} as never;
+
+    await expect(controller.list(query, { id: operatorId }, request)).resolves.toEqual(result);
+    expect(users.listForAdmin).toHaveBeenCalledWith(query);
+    expect(audit.record).toHaveBeenCalledExactlyOnceWith(
+      { actorId: operatorId, permission: 'admin.accounts.read', outcome: 'allowed' },
+      request,
+    );
+  });
+
+  it('does not record success if persistence fails', async () => {
+    const users = { listForAdmin: vi.fn().mockRejectedValue(new Error('DB unavailable')) };
+    const audit = { record: vi.fn() };
+    const controller = new AdminUsersController(users as never, audit as never);
+    await expect(
+      controller.list({ page: 1, limit: 20 }, { id: operatorId }, {} as never),
+    ).rejects.toThrow('DB unavailable');
+    expect(audit.record).not.toHaveBeenCalled();
+  });
+});

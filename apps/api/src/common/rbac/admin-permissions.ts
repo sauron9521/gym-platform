@@ -9,6 +9,7 @@ export const ADMIN_PERMISSIONS = [
   'admin.metrics.read',
   'admin.exercises.manage',
   'admin.categories.manage',
+  'admin.accounts.read',
   'admin.accounts.manage',
   'admin.roles.assign',
   'admin.audit.read',
