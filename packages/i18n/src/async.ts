@@ -1,4 +1,4 @@
-import type { Locale } from './index';
+import type { Locale } from './locales';
 
 /** Import only one catalog in server request boundaries (no eager cross-locale import). */
 export async function getMessagesAsync(locale: Locale) {

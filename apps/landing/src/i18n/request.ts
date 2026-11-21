@@ -1,4 +1,4 @@
-import { defaultLocale, isLocale } from '@gym/i18n';
+import { defaultLocale, isLocale } from '@gym/i18n/locales';
 import { getMessagesAsync } from '@gym/i18n/async';
 import { getRequestConfig } from 'next-intl/server';
 
