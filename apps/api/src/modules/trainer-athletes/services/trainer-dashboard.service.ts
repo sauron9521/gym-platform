@@ -1,4 +1,4 @@
-import { ForbiddenException, Injectable } from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 
 import { UsersService } from '#src/modules/users/services/users.service';
 import { TrainerDashboardRepository } from '../repositories/trainer-dashboard.repository.js';
@@ -29,5 +29,20 @@ export class TrainerDashboardService {
       windowStart: from,
       ...counts,
     };
+  }
+
+  /** Athlete-level progress belongs only to a live, owner-scoped collaboration. */
+  async clientProgress(actor: TrainerAthleteActor, relationId: string, now: Date = new Date()) {
+    const grants = await this.users.findMyCapabilities(actor.id);
+    if (!grants.trainer || grants.admin) {
+      throw new ForbiddenException('Current trainer approval is required');
+    }
+
+    const from = new Date(now.getTime() - THIRTY_DAYS_MS);
+    const counts = await this.dashboard.countClientProgress(actor.id, relationId, from, now);
+    // Identical not-found for missing, foreign, ended or otherwise ineligible clients.
+    if (!counts) throw new NotFoundException('Active trainer client not found');
+
+    return { asOf: now, windowStart: from, ...counts };
   }
 }

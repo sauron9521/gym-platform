@@ -62,3 +62,52 @@ describe('Trainer dashboard overview capability boundary', () => {
     expect(repo.countOverview).not.toHaveBeenCalled();
   });
 });
+
+describe('Trainer individual-client progress permission boundary', () => {
+  const users = { findMyCapabilities: vi.fn() };
+  const repo = { countClientProgress: vi.fn() };
+  const service = new TrainerDashboardService(
+    users as unknown as UsersService,
+    repo as unknown as TrainerDashboardRepository,
+  );
+
+  it('reads only the live trainer-owned relationship and a bounded 30-day window', async () => {
+    users.findMyCapabilities.mockResolvedValueOnce({ athlete: true, trainer: true, admin: false });
+    repo.countClientProgress.mockResolvedValueOnce({
+      activeProgramAssignments: 1,
+      completedProgramWorkouts30d: 3,
+    });
+    const result = await service.clientProgress(actor, 'relation1', now);
+    expect(repo.countClientProgress).toHaveBeenCalledWith(
+      actor.id,
+      'relation1',
+      new Date('2026-10-21T14:30:00.000Z'),
+      now,
+    );
+    expect(result).toEqual({
+      asOf: now,
+      windowStart: new Date('2026-10-21T14:30:00.000Z'),
+      activeProgramAssignments: 1,
+      completedProgramWorkouts30d: 3,
+    });
+  });
+
+  it.each([
+    { athlete: true, trainer: false, admin: false },
+    { athlete: false, trainer: false, admin: true },
+    { athlete: true, trainer: true, admin: true },
+  ])('rejects unauthorized client progress without issuing any SQL read', async (grants) => {
+    users.findMyCapabilities.mockResolvedValueOnce(grants);
+    repo.countClientProgress.mockClear();
+    await expect(service.clientProgress(actor, 'relation1', now)).rejects.toThrow(
+      ForbiddenException,
+    );
+    expect(repo.countClientProgress).not.toHaveBeenCalled();
+  });
+
+  it('returns the same 404 for all ineligible relation IDs', async () => {
+    users.findMyCapabilities.mockResolvedValueOnce({ athlete: true, trainer: true, admin: false });
+    repo.countClientProgress.mockResolvedValueOnce(null);
+    await expect(service.clientProgress(actor, 'foreign', now)).rejects.toThrow(NotFoundException);
+  });
+});

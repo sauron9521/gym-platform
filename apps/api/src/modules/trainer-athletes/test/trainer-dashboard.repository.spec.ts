@@ -63,3 +63,75 @@ describe('Trainer dashboard bounded SQL aggregates', () => {
     });
   });
 });
+
+describe('Trainer dashboard individual client SQL scope', () => {
+  it('executes one bounded relationship lookup and two owner-scoped counts', async () => {
+    const trainerAthlete = { findFirst: vi.fn().mockResolvedValue({ id: 'r1' }) };
+    const trainingProgramAssignment = { count: vi.fn().mockResolvedValue(2) };
+    const workout = { count: vi.fn().mockResolvedValue(4) };
+    const $transaction = vi.fn(async (reads: Promise<unknown>[]) => Promise.all(reads));
+    const db = { trainerAthlete, trainingProgramAssignment, workout, $transaction };
+    const repo = new TrainerDashboardRepository(db as unknown as PrismaService);
+    const from = new Date('2026-10-22T12:00:00Z');
+    const now = new Date('2026-11-21T12:00:00Z');
+    expect(await repo.countClientProgress('trainer1', 'r1', from, now)).toEqual({
+      activeProgramAssignments: 2,
+      completedProgramWorkouts30d: 4,
+    });
+    expect($transaction).toHaveBeenCalledOnce();
+    expect($transaction.mock.calls[0]?.[0]).toHaveLength(3);
+    const relation = {
+      id: 'r1',
+      trainerId: 'trainer1',
+      status: 'ACTIVE',
+      trainer: {
+        is: {
+          deletedAt: null,
+          role: { not: 'ADMIN' },
+          OR: [
+            { trainerProfile: { is: { isActive: true } } },
+            { role: 'TRAINER', trainerProfile: { is: null } },
+          ],
+        },
+      },
+      athlete: { is: { deletedAt: null, role: { not: 'ADMIN' } } },
+    };
+    expect(trainerAthlete.findFirst).toHaveBeenCalledWith({
+      where: relation,
+      select: { id: true },
+    });
+    expect(trainingProgramAssignment.count).toHaveBeenCalledWith({
+      where: {
+        status: 'ACTIVE',
+        trainerAthlete: { is: relation },
+        version: { is: { program: { is: { trainerId: 'trainer1' } } } },
+      },
+    });
+    expect(workout.count).toHaveBeenCalledWith({
+      where: {
+        status: 'COMPLETED',
+        completedAt: { gte: from, lt: now },
+        programAssignment: {
+          is: {
+            status: { in: ['ACTIVE', 'COMPLETED'] },
+            trainerAthlete: { is: relation },
+            version: { is: { program: { is: { trainerId: 'trainer1' } } } },
+          },
+        },
+      },
+    });
+  });
+
+  it('does not disclose counts for missing or ended relationships', async () => {
+    const db = {
+      trainerAthlete: { findFirst: vi.fn().mockResolvedValue(null) },
+      trainingProgramAssignment: { count: vi.fn().mockResolvedValue(9) },
+      workout: { count: vi.fn().mockResolvedValue(16) },
+      $transaction: async (reads: Promise<unknown>[]) => Promise.all(reads),
+    };
+    const repo = new TrainerDashboardRepository(db as unknown as PrismaService);
+    expect(
+      await repo.countClientProgress('trainer1', 'foreign', new Date(0), new Date()),
+    ).toBeNull();
+  });
+});
