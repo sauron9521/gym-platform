@@ -133,6 +133,49 @@ Use an isolated test DB and capture the schema revision, PG version, hardware,
 seed configuration, and measured commit SHA beside any reported plan.
 This is exploratory, not a stable query-performance SLO.
 
+## Multi-thousand-row Exercises plan inspection (Issue #313)
+
+The dedicated `performance-exercise-plans.e2e-spec.ts` uses a **different,
+larger synthetic fixture** from the four-route HTTP and 128-row EXPLAIN tests:
+2,048 active global exercises, 256 archived global exercises, 512 privately
+owned athlete exercises, 2,048 exercise-to-muscle-group relations and 1,024
+equipment relations. Rows have a mix of bench/squat names; the data includes
+a single synthetic athlete and two synthetic muscle groups.
+
+It captures eight **fixed, reviewed, read-only SELECT shapes** corresponding
+to the exercise repository's global page/count, case-insensitive name
+search page/count, muscle-group page/count, equipment-filtered page, and
+athlete-visible page. It uses realistic pagination (`LIMIT 20`, one page
+at `OFFSET 200`), presence/absence of archived entries, ownership scopes
+and relation selectivity. It does **not** capture the raw nested Prisma SQL
+projection or full HTTP authorization behavior and therefore is not a
+precise route trace.
+
+The suite requires `TEST_DATABASE_URL` with a `_test` database suffix.
+All fixtures are created within a single PostgreSQL transaction, and the
+test **always rolls back**, then asserts the synthetic exercise IDs and
+athlete user are absent. PostgreSQL EXPLAIN runs against that uncommitted
+population, without any database-wide `ANALYZE` or production
+statistics modifications. The planner may still use stale existing
+statistics; the snapshots are exploratory, not index design criteria.
+
+To print allowlisted PostgreSQL plan metadata, with no raw SQL, bind
+parameters, user identities, names or returned payloads:
+
+```sh
+API_PERF_EXERCISE_PLANS_REPORT=1 pnpm --filter @gym/api exec vitest run --config vitest.config.e2e.ts test/e2e/infra/performance-exercise-plans.e2e-spec.ts
+```
+
+The API PostgreSQL 17 CI E2E job enables this flag and emits
+`API_PERF_EXERCISE_PLANS` in its test logs. Inspect plan node types,
+estimated versus actual row counts, execution time and shared buffer
+hits/reads together with the **pinned commit SHA**, PostgreSQL version,
+fixture size and CI run ID. Do not mix these results with the existing
+128-row EXPLAIN suite or interpret them as p95 HTTP benchmarks.
+Before modifying indexes or adding caching, reproduce on an isolated
+larger dataset with representative distributions and inspect each
+affected SQL shape under realistic query conditions.
+
 ## Compare before/after captures
 
 Use the [API performance comparison guide](performance-comparison.md) and

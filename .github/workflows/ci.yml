@@ -903,6 +903,8 @@ jobs:
         env:
           # Only the test-only EXPLAIN probe reads this opt-in; output is allowlisted numeric plan metadata.
           API_PERF_EXPLAIN_REPORT: '1'
+          # Larger Exercise-specific SELECT/count/filter EXPLAIN shapes; no raw SQL or identities.
+          API_PERF_EXERCISE_PLANS_REPORT: '1'
           # The fixture-based E2E suite emits only numeric HTTP/Prisma summaries.
           API_PERF_PROFILE_REPORT: '1'
         run: pnpm --filter @gym/api exec vitest run --config ./vitest.config.e2e.ts --shard=${{ matrix.shard }}/2
