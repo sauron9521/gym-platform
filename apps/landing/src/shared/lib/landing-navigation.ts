@@ -1,0 +1,24 @@
+import { defaultLocale, getMessages, type Locale } from '@gym/i18n';
+import { applicationNavigation, mainNavigation } from '@/shared/config/navigation';
+
+/** Stable public route paths, localized labels only. Prefix routes in I18N-19. */
+export function getLandingNavigation(locale: Locale = defaultLocale) {
+  const nav = getMessages(locale).navigation;
+  const shell = getMessages(locale).landing.shell;
+  const labels: Record<(typeof mainNavigation)[number]['href'], string> = {
+    '/features': nav.features,
+    '/for-athletes': nav.athletes,
+    '/for-trainers': nav.trainers,
+    '/about': nav.about,
+  };
+  const appLabels: Record<(typeof applicationNavigation)[number]['href'], string> = {
+    '/apps/web': shell.webApp,
+    '/apps/mobile': shell.mobileApp,
+  };
+  return {
+    main: mainNavigation.map(({ href }) => ({ href, label: labels[href] })),
+    applications: applicationNavigation.map(({ href }) => ({ href, label: appLabels[href] })),
+    nav,
+    shell,
+  };
+}

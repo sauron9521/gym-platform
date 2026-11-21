@@ -641,6 +641,19 @@
       "ctaDescription": "Discover the platform's products and follow their development.",
       "ctaPrimary": "Explore products",
       "ctaSecondary": "About the project"
+    },
+    "shell": {
+      "homeAria": "home page",
+      "mainNav": "Main navigation",
+      "mobileNav": "Mobile navigation",
+      "menu": "Menu",
+      "summary": "One ecosystem for athletes and trainers. The platform is growing.",
+      "sectionsNav": "Site sections",
+      "platform": "Platform",
+      "applications": "Applications",
+      "webApp": "Web application",
+      "mobileApp": "Mobile application",
+      "inDevelopment": "In development"
     }
   }
 }

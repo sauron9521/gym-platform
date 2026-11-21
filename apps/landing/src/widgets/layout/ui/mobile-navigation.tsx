@@ -3,9 +3,11 @@
 import { useRef } from 'react';
 import Link from 'next/link';
 
-import { mainNavigation } from '@/shared/config/navigation';
+import { defaultLocale, type Locale } from '@gym/i18n';
+import { getLandingNavigation } from '@/shared/lib/landing-navigation';
 
-export function MobileNavigation() {
+export function MobileNavigation({ locale = defaultLocale }: { locale?: Locale } = {}) {
+  const { main, nav, shell } = getLandingNavigation(locale);
   const details = useRef<HTMLDetailsElement>(null);
   const summary = useRef<HTMLElement>(null);
 
@@ -34,13 +36,13 @@ export function MobileNavigation() {
         <span aria-hidden="true" className="text-lg leading-none">
           ☰
         </span>
-        Меню
+        {shell.menu}
       </summary>
       <nav
-        aria-label="Мобільна навігація"
+        aria-label={shell.mobileNav}
         className="absolute top-full right-0 mt-3 flex w-60 flex-col gap-1 rounded-xl border border-border bg-card p-2 shadow-xl"
       >
-        {mainNavigation.map(({ label, href }) => (
+        {main.map(({ label, href }) => (
           <Link
             key={href}
             href={href}
@@ -55,7 +57,7 @@ export function MobileNavigation() {
           onClick={closeMenu}
           className="rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground focus-visible:outline-2 focus-visible:outline-primary"
         >
-          Застосунки
+          {nav.apps}
         </Link>
       </nav>
     </details>
