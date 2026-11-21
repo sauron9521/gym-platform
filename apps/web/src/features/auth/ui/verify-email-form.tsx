@@ -1,15 +1,17 @@
 'use client';
 
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
 
 import { webApi } from '@/shared/api/client';
 import { Button } from '@/shared/ui/button';
-import { getVerificationErrorMessage } from '../lib/email-verification-flow';
+import { getVerificationErrorKey } from '../lib/email-verification-flow';
 
 type VerificationState = 'ready' | 'verifying' | 'verified' | 'error';
 
 export function VerifyEmailForm({ token }: { token: string | null }) {
+  const t = useTranslations('web.verification');
   const [state, setState] = useState<VerificationState>('ready');
   const [error, setError] = useState<string | null>(null);
 
@@ -32,13 +34,13 @@ export function VerifyEmailForm({ token }: { token: string | null }) {
         body: { token },
       });
       if (response.status !== 200) {
-        setError(getVerificationErrorMessage(response.status));
+        setError(t(getVerificationErrorKey(response.status)));
         setState('error');
         return;
       }
       setState('verified');
     } catch {
-      setError('Немає з’єднання з API. Спробуйте пізніше.');
+      setError(t('network'));
       setState('error');
     }
   }
@@ -47,10 +49,10 @@ export function VerifyEmailForm({ token }: { token: string | null }) {
     return (
       <div className="mt-6 space-y-4">
         <p role="alert" className="text-sm text-destructive">
-          У посиланні відсутній коректний токен підтвердження.
+          {t('missing')}
         </p>
         <Button asChild variant="outline">
-          <Link href="/verify-email/resend">Отримати новий лист</Link>
+          <Link href="/verify-email/resend">{t('newEmail')}</Link>
         </Button>
       </div>
     );
@@ -60,10 +62,10 @@ export function VerifyEmailForm({ token }: { token: string | null }) {
     return (
       <div className="mt-6 space-y-5">
         <p role="status" className="text-sm leading-6">
-          Електронну адресу підтверджено. Тепер можете перейти до кабінету.
+          {t('success')}
         </p>
         <Button asChild className="w-full">
-          <Link href="/dashboard">До кабінету</Link>
+          <Link href="/dashboard">{t('dashboard')}</Link>
         </Button>
       </div>
     );
@@ -71,10 +73,7 @@ export function VerifyEmailForm({ token }: { token: string | null }) {
 
   return (
     <div className="mt-6 space-y-5">
-      <p className="text-sm text-muted-foreground">
-        Натисніть кнопку, щоб підтвердити електронну адресу. Посилання можна використати лише один
-        раз.
-      </p>
+      <p className="text-sm text-muted-foreground">{t('instructions')}</p>
       {error && (
         <p role="alert" className="text-sm text-destructive">
           {error}
@@ -86,12 +85,12 @@ export function VerifyEmailForm({ token }: { token: string | null }) {
         onClick={handleVerify}
         disabled={state === 'verifying'}
       >
-        {state === 'verifying' ? 'Підтверджуємо…' : 'Підтвердити email'}
+        {state === 'verifying' ? t('verifying') : t('verify')}
       </Button>
       <p className="text-sm text-muted-foreground">
-        Посилання недійсне?{' '}
+        {t('invalid')}{' '}
         <Link href="/verify-email/resend" className="font-medium text-foreground hover:underline">
-          Надіслати нове
+          {t('sendNew')}
         </Link>
       </p>
     </div>

@@ -2,9 +2,11 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { test } from 'vitest';
 
+import { getMessages } from '@gym/i18n';
+
 import {
-  getResendErrorMessage,
-  getVerificationErrorMessage,
+  getResendErrorKey,
+  getVerificationErrorKey,
   getVerificationToken,
 } from '../src/features/auth/lib/email-verification-flow.ts';
 
@@ -16,19 +18,34 @@ test('verification tokens must be non-empty strings of bounded length', () => {
   assert.equal(getVerificationToken('a'.repeat(2048)), 'a'.repeat(2048));
 });
 
-test('verification rejects expired, reused, malformed links and throttling', () => {
-  assert.match(getVerificationErrorMessage(400), /недійсне/);
-  assert.match(getVerificationErrorMessage(403), /безпеки/);
-  assert.match(getVerificationErrorMessage(429), /Забагато/);
-  assert.match(getVerificationErrorMessage(503), /Спробуйте/);
+test('verification localizes status-only errors for both supported languages', () => {
+  for (const [status, key] of [
+    [400, 'invalidToken'],
+    [403, 'forbidden'],
+    [429, 'rateLimited'],
+    [503, 'verificationFailed'],
+  ]) {
+    assert.equal(getVerificationErrorKey(status), key);
+    for (const locale of ['uk', 'en']) {
+      assert.ok(getMessages(locale).web.verification[key]);
+    }
+  }
 });
 
-test('resend requires an authenticated account and handles all API statuses', () => {
-  assert.match(getResendErrorMessage(401), /Увійдіть/);
-  assert.match(getResendErrorMessage(403), /безпеки/);
-  assert.match(getResendErrorMessage(409), /вже підтверджена/);
-  assert.match(getResendErrorMessage(429), /Забагато/);
-  assert.match(getResendErrorMessage(503), /тимчасово недоступний/);
+test('resend handles auth, already-verified, rate-limit and mail failures', () => {
+  for (const [status, key] of [
+    [401, 'signInRequired'],
+    [403, 'forbidden'],
+    [409, 'alreadyVerified'],
+    [429, 'resendRateLimited'],
+    [503, 'mailUnavailable'],
+    [500, 'resendFailed'],
+  ]) {
+    assert.equal(getResendErrorKey(status), key);
+    for (const locale of ['uk', 'en']) {
+      assert.ok(getMessages(locale).web.verification[key]);
+    }
+  }
 });
 
 test('verification only consumes email token after explicit user action', async () => {
@@ -47,6 +64,7 @@ test('verification only consumes email token after explicit user action', async 
   assert.match(page, /searchParams: Promise/);
   assert.match(page, /getVerificationToken\(rawToken\)/);
   assert.match(page, /referrer: 'no-referrer'/);
+  assert.match(page, /getTranslations\('web\.verification'\)/);
   assert.match(page, /robots: \{ index: false, follow: false \}/);
   assert.match(component, /window\.history\.replaceState/);
   assert.match(component, /onClick=\{handleVerify\}/);
@@ -86,7 +104,10 @@ test('resend uses only authenticated cookie session and never asks for arbitrary
   assert.match(component, /state === 'submitted'/);
   assert.match(component, /href="\/login"/);
   assert.match(app, /robots: \{ index: false, follow: false \}/);
+  assert.match(app, /getTranslations\('web\.verification'\)/);
   assert.match(contract, /'\/auth\/email\/verification': \{/);
   assert.match(contract, /EmailVerificationController_resend:/);
   assert.doesNotMatch(component, /name="email"|body:.*email|localStorage|sessionStorage/);
+  assert.match(component, /getResendErrorKey\(response\.status\)/);
+  assert.doesNotMatch(component, /response\.data\.message/);
 });
