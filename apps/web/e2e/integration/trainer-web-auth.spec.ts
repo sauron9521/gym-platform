@@ -236,7 +236,7 @@ test('Trainer browser requires live approval, protects Origin/cookies, and revok
     await expect(ownAssignedList.getByText(ownProgramTitle)).toHaveCount(8);
     await expect(page.getByText(foreignProgramTitle)).toHaveCount(0);
 
-    await page.getByRole('link', { name: 'Next' }).click();
+    await page.getByRole('link', { name: 'Next', exact: true }).click({ timeout: 10_000 });
     await expect(page).toHaveURL(
       `${trainerOrigin}/workspace/clients/${dashboardRelationId}?assignmentsPage=2`,
     );
@@ -244,7 +244,7 @@ test('Trainer browser requires live approval, protects Origin/cookies, and revok
     await expect(pageTwo.getByRole('listitem')).toHaveCount(1);
     await expect(pageTwo.getByText('Completed', { exact: true })).toBeVisible();
     await expect(page.getByText(foreignProgramTitle)).toHaveCount(0);
-    await page.getByRole('link', { name: 'Back', exact: true }).click();
+    await page.getByRole('link', { name: 'Previous', exact: true }).click({ timeout: 10_000 });
     await expect(page).toHaveURL(
       `${trainerOrigin}/workspace/clients/${dashboardRelationId}?assignmentsPage=1`,
     );
