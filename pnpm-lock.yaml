@@ -475,6 +475,9 @@ importers:
       '@gym/design-tokens':
         specifier: workspace:*
         version: link:../../packages/design-tokens
+      '@gym/domain':
+        specifier: workspace:*
+        version: link:../../packages/domain
       '@gym/i18n':
         specifier: workspace:*
         version: link:../../packages/i18n

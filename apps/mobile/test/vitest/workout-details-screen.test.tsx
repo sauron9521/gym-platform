@@ -13,6 +13,9 @@ vi.mock('@/features/workouts/model/workout-details-query', () => ({
   useWorkoutDetailsQuery: vi.fn(),
   useWorkoutTransition: vi.fn(),
 }));
+vi.mock('@/screens/workouts/ui/workout-set-row', () => ({
+  WorkoutSetRow: () => null,
+}));
 vi.mock('@/features/workouts/model/workout-edit', () => ({
   useCancelWorkout: vi.fn(),
   useUpdateWorkoutTitle: vi.fn(),
@@ -22,14 +25,26 @@ const mutate = vi.fn();
 const mutateTitle = vi.fn();
 const mutateCancel = vi.fn();
 
-function prepareWorkout(status: 'PLANNED' | 'IN_PROGRESS' | 'COMPLETED') {
+function prepareWorkout(
+  status: 'PLANNED' | 'IN_PROGRESS' | 'COMPLETED',
+  setStatus: 'PENDING' | 'COMPLETED' | 'SKIPPED' = 'COMPLETED',
+) {
   vi.mocked(useWorkoutDetailsQuery).mockReturnValue({
     data: {
       id: 'workout-123',
       title: 'Тренування A',
       status,
       notes: null,
-      exercises: [],
+      exercises:
+        status === 'IN_PROGRESS'
+          ? [
+              {
+                id: 'exercise-1',
+                exerciseNameSnapshot: 'Bench press',
+                sets: [{ id: 'set-1', status: setStatus }],
+              },
+            ]
+          : [],
     },
     isPending: false,
     isError: false,
@@ -68,7 +83,44 @@ describe('WorkoutDetailsScreen (real React Native renderer)', () => {
 
     await fireEvent.press(view.getByTestId('workout-status-action'));
     expect(mutate).toHaveBeenCalledOnce();
-    expect(mutate).toHaveBeenCalledWith('start');
+    expect(mutate).toHaveBeenCalledWith(
+      'start',
+      expect.objectContaining({ onSettled: expect.any(Function) }),
+    );
+  });
+
+  it('disables premature completion while sets remain pending or only skipped', async () => {
+    prepareWorkout('IN_PROGRESS', 'PENDING');
+    const view = await render(<WorkoutDetailsScreen id="workout-123" />);
+    const action = view.getByTestId('workout-status-action');
+    expect(action.props.accessibilityState.disabled).toBe(true);
+    await fireEvent.press(action);
+    expect(mutate).not.toHaveBeenCalled();
+    expect(view.getByText(/Для завершення потрібен/)).toBeTruthy();
+  });
+
+  it('keeps completion disabled when all sets are skipped', async () => {
+    prepareWorkout('IN_PROGRESS', 'SKIPPED');
+    const view = await render(<WorkoutDetailsScreen id="workout-123" />);
+    expect(view.getByText(/0 виконано, 1 пропущено, 0 очікують/)).toBeTruthy();
+    const action = view.getByTestId('workout-status-action');
+    expect(action.props.accessibilityState.disabled).toBe(true);
+    await fireEvent.press(action);
+    expect(mutate).not.toHaveBeenCalled();
+  });
+
+  it('ignores rapid duplicate completion presses before mutation settles', async () => {
+    prepareWorkout('IN_PROGRESS', 'COMPLETED');
+    const view = await render(<WorkoutDetailsScreen id="workout-123" />);
+    expect(view.getByText(/1 виконано, 0 пропущено, 0 очікують/)).toBeTruthy();
+    const action = view.getByTestId('workout-status-action');
+    await fireEvent.press(action);
+    await fireEvent.press(action);
+    expect(mutate).toHaveBeenCalledOnce();
+    expect(mutate).toHaveBeenCalledWith(
+      'complete',
+      expect.objectContaining({ onSettled: expect.any(Function) }),
+    );
   });
 
   it('completes an active workout and hides actions for completed workouts', async () => {
@@ -77,7 +129,10 @@ describe('WorkoutDetailsScreen (real React Native renderer)', () => {
 
     expect(view.getByText('Завершити тренування')).toBeTruthy();
     await fireEvent.press(view.getByTestId('workout-status-action'));
-    expect(mutate).toHaveBeenCalledWith('complete');
+    expect(mutate).toHaveBeenCalledWith(
+      'complete',
+      expect.objectContaining({ onSettled: expect.any(Function) }),
+    );
 
     prepareWorkout('COMPLETED');
     await view.rerender(<WorkoutDetailsScreen id="workout-123" />);

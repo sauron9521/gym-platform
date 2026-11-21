@@ -24,6 +24,7 @@
     "@gluestack-ui/utils": "^5.0.6",
     "@gym/api-client": "workspace:*",
     "@gym/design-tokens": "workspace:*",
+    "@gym/domain": "workspace:*",
     "@gym/i18n": "workspace:*",
     "@hookform/resolvers": "7.0.6",
     "@legendapp/motion": "^2.5.3",
