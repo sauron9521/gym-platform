@@ -11,6 +11,10 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
   constructor(@Inject(ConfigService) private readonly config: AppConfigService) {
     const adapter = new PrismaPg({
       connectionString: config.getOrThrow('DATABASE_URL'),
+      onConnect: async (client) => {
+        // Prisma sends timestamps without offsets. PostgreSQL must interpret them as UTC.
+        await client.query("SET TIME ZONE 'UTC'");
+      },
     });
     super({ adapter });
   }
