@@ -7,7 +7,7 @@ import { compareApiPerformance } from './api-performance-compare.mjs';
 
 const SHA = /^[0-9a-f]{40}$/i;
 const FINGERPRINT = /^[0-9a-f]{64}$/i;
-const FIXTURE_RECIPE = 'http-reads-populated-v1-128';
+const FIXTURE_RECIPE = 'http-reads-populated-v2-128-relations';
 const COMPATIBILITY_PATHS = Object.freeze([
   'apps/api/test/e2e/infra/performance-query-count.e2e-spec.ts',
   'apps/api/vitest.config.e2e.ts',
@@ -202,6 +202,10 @@ export function sanitizeProfile(profile) {
     trainingPrograms: 128,
     trainingProgramVersions: 128,
     exercises: 128,
+    muscleGroups: 2,
+    equipmentTypes: 2,
+    exerciseMuscleLinks: 160,
+    exerciseEquipmentLinks: 96,
   })) {
     requireValid(fixture[field] === count, 'Unexpected fixture population');
   }
@@ -216,6 +220,10 @@ export function sanitizeProfile(profile) {
       trainingPrograms: 128,
       trainingProgramVersions: 128,
       exercises: 128,
+      muscleGroups: 2,
+      equipmentTypes: 2,
+      exerciseMuscleLinks: 160,
+      exerciseEquipmentLinks: 96,
     },
     http: sanitizeHttp(profile.http),
     sql: sanitizeSql(profile.sql),
