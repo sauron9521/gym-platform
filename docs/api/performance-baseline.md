@@ -119,6 +119,14 @@ Use an isolated test DB and capture the schema revision, PG version, hardware,
 seed configuration, and measured commit SHA beside any reported plan.
 This is exploratory, not a stable query-performance SLO.
 
+## Compare before/after captures
+
+Use the [API performance comparison guide](performance-comparison.md) and
+`pnpm perf:api:compare` to validate independent before/after capture bundles
+before interpreting latency, Prisma query counts or SQL plans. Different
+HTTP, query-count and EXPLAIN fixture populations are compared **only within
+their own source**, not combined into a single traced request.
+
 ## Remaining acceptance criteria
 
 Issue #313 remains open for actual **before/after** SQL and HTTP measurements
