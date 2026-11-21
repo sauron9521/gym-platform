@@ -191,11 +191,16 @@ describe('API A/B comparison runner', () => {
     assert.match(workflow, /'\.github\/workflows\/api-performance-ab\.yml'/);
     assert.match(
       workflow,
-      /github\.event\.pull_request\.head\.repo\.full_name == github\.repository/,
+      /'apps\/api\/src\/modules\/exercises\/repositories\/exercises\.repository\.ts'/,
     );
     assert.match(
       workflow,
-      /BEFORE_SHA: \$\{\{ github\.event_name == 'pull_request' && github\.event\.pull_request\.head\.sha \|\| inputs\.before_sha \}\}/,
+      /github\.event\.pull_request\.head\.repo\.full_name == github\.repository/,
+    );
+    assert.match(workflow, /startsWith\(github\.head_ref, 'perf\/'\)/);
+    assert.match(
+      workflow,
+      /BEFORE_SHA: \$\{\{ github\.event_name == 'pull_request' && startsWith\(github\.head_ref, 'perf\/'\) && github\.event\.pull_request\.base\.sha \|\| github\.event_name == 'pull_request' && github\.event\.pull_request\.head\.sha \|\| inputs\.before_sha \}\}/,
     );
     assert.match(
       workflow,
@@ -213,6 +218,25 @@ describe('API A/B comparison runner', () => {
     assert.match(workflow, /api-performance-ab\.mjs compare/);
     assert.match(workflow, /comparison\.json/);
     assert.doesNotMatch(workflow, /db:seed|db:migrate:reset|production\.env|secrets\.DATABASE_URL/);
+  });
+
+  it('limits automatic benchmark PR runs to the reviewed file allowlist', () => {
+    const workflow = readFileSync(
+      fileURLToPath(new URL('../.github/workflows/api-performance-ab.yml', import.meta.url)),
+      'utf8',
+    );
+    const trigger = workflow.match(
+      /pull_request:\s*\n\s*paths:\s*\n([\s\S]*?)\n  workflow_dispatch:/,
+    );
+    assert.ok(trigger, 'A/B workflow must declare a narrow PR path filter');
+    const paths = [...trigger[1].matchAll(/^\s+- '([^']+)'$/gm)].map((match) => match[1]);
+    assert.deepEqual(paths, [
+      '.github/workflows/api-performance-ab.yml',
+      'scripts/api-performance-ab.mjs',
+      'scripts/api-performance-ab.test.mjs',
+      'apps/api/test/e2e/infra/performance-query-count.e2e-spec.ts',
+      'apps/api/src/modules/exercises/repositories/exercises.repository.ts',
+    ]);
   });
 
   it('the CLI writes clean files and withholds malformed log and file paths on failures', () => {
