@@ -4,9 +4,9 @@ This directory is the **canonical home for owner-approved product strategy decis
 
 ## Approved strategic decisions
 
-| Topic | Decision | Version | Owner decision | Document |
-| --- | --- | --- | --- | --- |
-| **S01 — Product Strategy & Positioning** | **APPROVED** | **v1.0** | 2026-11-22 | [S01 Trainer-first Product Strategy](s01-product-strategy-v1.md) |
+| Topic                                    | Decision     | Version  | Owner decision | Document                                                         |
+| ---------------------------------------- | ------------ | -------- | -------------- | ---------------------------------------------------------------- |
+| **S01 — Product Strategy & Positioning** | **APPROVED** | **v1.0** | 2026-11-22     | [S01 Trainer-first Product Strategy](s01-product-strategy-v1.md) |
 
 **S02 Customer Experience & Retention is NOT_STARTED.** No other strategic topics are approved by creating this directory.
 
