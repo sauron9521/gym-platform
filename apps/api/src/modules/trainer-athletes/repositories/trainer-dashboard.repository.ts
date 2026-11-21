@@ -59,4 +59,57 @@ export class TrainerDashboardRepository {
 
     return { activeClients, activeProgramAssignments, completedProgramWorkouts30d };
   }
+  /**
+   * Read a single active relationship and its two metrics in one transaction.
+   * Scoped guards are REPEATED in SQL counts to survive a concurrent revocation.
+   * Never load unbounded client workouts or disclose athlete identifiers.
+   */
+  async countClientProgress(trainerId: string, relationId: string, from: Date, asOf: Date) {
+    const relation: Prisma.TrainerAthleteWhereInput = {
+      id: relationId,
+      trainerId,
+      status: 'ACTIVE',
+      trainer: {
+        is: {
+          deletedAt: null,
+          role: { not: 'ADMIN' },
+          OR: [
+            { trainerProfile: { is: { isActive: true } } },
+            { role: 'TRAINER', trainerProfile: { is: null } },
+          ],
+        },
+      },
+      athlete: { is: { deletedAt: null, role: { not: 'ADMIN' } } },
+    };
+    const [activeRelationship, activeProgramAssignments, completedProgramWorkouts30d] =
+      await this.prisma.$transaction([
+        this.prisma.trainerAthlete.findFirst({
+          where: relation,
+          select: { id: true },
+        }),
+        this.prisma.trainingProgramAssignment.count({
+          where: {
+            status: 'ACTIVE',
+            trainerAthlete: { is: relation },
+            version: { is: { program: { is: { trainerId } } } },
+          },
+        }),
+        this.prisma.workout.count({
+          where: {
+            status: 'COMPLETED',
+            completedAt: { gte: from, lt: asOf },
+            programAssignment: {
+              is: {
+                status: { in: ['ACTIVE', 'COMPLETED'] },
+                trainerAthlete: { is: relation },
+                version: { is: { program: { is: { trainerId } } } },
+              },
+            },
+          },
+        }),
+      ]);
+
+    if (!activeRelationship) return null;
+    return { activeProgramAssignments, completedProgramWorkouts30d };
+  }
 }

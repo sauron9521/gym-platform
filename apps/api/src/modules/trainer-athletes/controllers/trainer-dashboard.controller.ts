@@ -1,4 +1,4 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Param } from '@nestjs/common';
 import { Authenticate, CurrentUser } from '@nestjs/authentication';
 import { ApiBearerAuth, ApiCookieAuth, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 
@@ -7,11 +7,19 @@ import { dateTimeSchema, integerSchema, objectSchema } from '#src/infra/openapi/
 
 import { TrainerDashboardService } from '../services/trainer-dashboard.service.js';
 import type { TrainerAthleteActor } from '../types/trainer-athlete.types.js';
+import { trainerAthleteIdSchema } from '../dto/trainer-athlete.schemas.js';
 
 const trainerDashboardOverviewResponse = objectSchema({
   asOf: dateTimeSchema,
   windowStart: dateTimeSchema,
   activeClients: integerSchema,
+  activeProgramAssignments: integerSchema,
+  completedProgramWorkouts30d: integerSchema,
+});
+
+const trainerClientProgressResponse = objectSchema({
+  asOf: dateTimeSchema,
+  windowStart: dateTimeSchema,
   activeProgramAssignments: integerSchema,
   completedProgramWorkouts30d: integerSchema,
 });
@@ -29,5 +37,15 @@ export class TrainerDashboardController {
   @ApiOkResponse({ schema: trainerDashboardOverviewResponse })
   overview(@CurrentUser() user: TrainerAthleteActor) {
     return this.dashboard.overview(user);
+  }
+
+  @Get('clients/:relationId/progress')
+  @RateLimit('read')
+  @ApiOkResponse({ schema: trainerClientProgressResponse })
+  clientProgress(
+    @CurrentUser() user: TrainerAthleteActor,
+    @Param('relationId', { schema: trainerAthleteIdSchema }) relationId: string,
+  ) {
+    return this.dashboard.clientProgress(user, relationId);
   }
 }

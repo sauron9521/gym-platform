@@ -41,5 +41,34 @@ for client rows.
   401/403, and a capability revocation with a still-present session.
 - OpenAPI and `@gym/api-client` generated contract change in the same PR.
 
-This PR delivers the **API only**. Rendering summary tiles in `apps/trainer`
-belongs to a follow-on, separately reviewable slice of #364.
+## Individual active-client progress read model (#364)
+
+`GET /trainer-dashboard/clients/:relationId/progress` accepts a **TrainerAthlete
+relationship ID** (validated UUID), not an arbitrary athlete ID. It returns only
+`asOf`, `windowStart` (30 days), `activeProgramAssignments`, and
+`completedProgramWorkouts30d`, using the same definitions as `overview`
+restricted to exactly that active, trainer-owned relationship.
+
+- Existing authenticated sessions only; **current** trainer grant required.
+  Anonymous is 401; ATHLETE-only, ADMIN or revoked trainers are 403.
+- **404** equally for nonexistent, another trainer's, terminated, pending, or
+  otherwise disallowed relationships. No contact fields, emails, athlete IDs,
+  unassigned/personal workouts or workout notes are returned.
+- The repository executes **exactly three fixed PostgreSQL reads in one
+  transaction**: scoped relationship existence plus two DB-side counts.
+  Each count independently repeats trainer, currently approved account,
+  active relationship, owned program, assignment and time-window conditions.
+  No list-then-filter / N+1. A revocation during the request cannot expose
+  previously authorized counts for other athletes.
+- Unit, controller and actual PostgreSQL HTTP E2E verify same-tenant counts,
+  foreign/ended 404, denied/expired 401–403, and no foreign athlete data.
+
+This is a **backend-only** slice; the next small PR may connect a protected
+Trainer Web client details page using this generated typed contract, with no
+new auth mechanisms or personal workout access changes.
+
+## Historical overview
+
+The initial #312 PR delivered API-only `overview`; Trainer Web KPI tiles
+were subsequently integrated under #364. No additional User identity or
+parallel training domain was introduced.

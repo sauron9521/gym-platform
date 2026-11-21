@@ -4043,6 +4043,67 @@
         "tags": ["Trainer Dashboard"]
       }
     },
+    "/trainer-dashboard/clients/{relationId}/progress": {
+      "get": {
+        "operationId": "TrainerDashboardController_clientProgress",
+        "parameters": [
+          {
+            "name": "relationId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "asOf": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "windowStart": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "activeProgramAssignments": {
+                      "type": "integer"
+                    },
+                    "completedProgramWorkouts30d": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "asOf",
+                    "windowStart",
+                    "activeProgramAssignments",
+                    "completedProgramWorkouts30d"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "accessToken": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "tags": ["Trainer Dashboard"]
+      }
+    },
     "/workouts": {
       "post": {
         "operationId": "WorkoutsController_create",

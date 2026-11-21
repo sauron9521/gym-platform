@@ -269,6 +269,31 @@ describe('TrainerAthletes (HTTP + PostgreSQL)', () => {
       expect(Date.parse(me.body.asOf) - Date.parse(me.body.windowStart)).toBe(30 * 86_400_000);
       expect(JSON.stringify(me.body)).not.toContain(athleteTwo.email);
 
+      const mine = await request(app!.getHttpServer())
+        .get(`/trainer-dashboard/clients/${relationId}/progress`)
+        .set('Cookie', trainerOneCookie);
+      expect(mine.status).toBe(200);
+      expect(mine.body).toMatchObject({
+        activeProgramAssignments: 1,
+        completedProgramWorkouts30d: 1,
+      });
+      expect(Date.parse(mine.body.asOf) - Date.parse(mine.body.windowStart)).toBe(30 * 86_400_000);
+      expect(JSON.stringify(mine.body)).not.toContain(athleteOne.email);
+      expect(JSON.stringify(mine.body)).not.toContain(athleteTwo.email);
+
+      const foreignClient = await request(app!.getHttpServer())
+        .get(`/trainer-dashboard/clients/${foreignRelationId}/progress`)
+        .set('Cookie', trainerOneCookie);
+      expect(foreignClient.status).toBe(404);
+      const nonexistentClient = await request(app!.getHttpServer())
+        .get(`/trainer-dashboard/clients/${randomUUID()}/progress`)
+        .set('Cookie', trainerOneCookie);
+      expect(nonexistentClient.status).toBe(404);
+      const otherTrainerDenied = await request(app!.getHttpServer())
+        .get(`/trainer-dashboard/clients/${relationId}/progress`)
+        .set('Cookie', trainerTwoCookie);
+      expect(otherTrainerDenied.status).toBe(404);
+
       const other = await request(app!.getHttpServer())
         .get('/trainer-dashboard/overview')
         .set('Cookie', trainerTwoCookie);
@@ -283,10 +308,22 @@ describe('TrainerAthletes (HTTP + PostgreSQL)', () => {
         .get('/trainer-dashboard/overview')
         .set('Cookie', athleteOneCookie);
       expect(denied.status).toBe(403);
+      const athleteProgressDenied = await request(app!.getHttpServer())
+        .get(`/trainer-dashboard/clients/${relationId}/progress`)
+        .set('Cookie', athleteOneCookie);
+      expect(athleteProgressDenied.status).toBe(403);
       const unauthenticated = await request(app!.getHttpServer()).get(
         '/trainer-dashboard/overview',
       );
       expect(unauthenticated.status).toBe(401);
+      const anonymousClient = await request(app!.getHttpServer()).get(
+        `/trainer-dashboard/clients/${relationId}/progress`,
+      );
+      expect(anonymousClient.status).toBe(401);
+      const invalidRelation = await request(app!.getHttpServer())
+        .get('/trainer-dashboard/clients/not-a-uuid/progress')
+        .set('Cookie', trainerOneCookie);
+      expect(invalidRelation.status).toBe(400);
 
       // Existing browser cookie must not confer Trainer rights after role
       // change in the database; the API checks current grants on each read.
@@ -298,6 +335,25 @@ describe('TrainerAthletes (HTTP + PostgreSQL)', () => {
         .get('/trainer-dashboard/overview')
         .set('Cookie', trainerOneCookie);
       expect(revoked.status).toBe(403);
+      const revokedClient = await request(app!.getHttpServer())
+        .get(`/trainer-dashboard/clients/${relationId}/progress`)
+        .set('Cookie', trainerOneCookie);
+      expect(revokedClient.status).toBe(403);
+
+      // After restoring trainer eligibility, an ended collaboration must
+      // still return indistinguishable 404, never its previous counts.
+      await prisma.user.update({
+        where: { id: trainerOne.id },
+        data: { role: 'TRAINER' },
+      });
+      await prisma.trainerAthlete.update({
+        where: { id: relationId },
+        data: { status: 'TERMINATED' },
+      });
+      const endedClient = await request(app!.getHttpServer())
+        .get(`/trainer-dashboard/clients/${relationId}/progress`)
+        .set('Cookie', trainerOneCookie);
+      expect(endedClient.status).toBe(404);
     } finally {
       await prisma.user.update({
         where: { id: trainerOne.id },
