@@ -26,6 +26,7 @@
     "api:contract:check": "pnpm api:contract:generate && git diff --exit-code -- apps/api/openapi/openapi.json packages/api-client/src/generated/schema.d.ts",
     "perf:api:baseline": "node scripts/api-performance-baseline.mjs",
     "perf:api:compare": "node scripts/api-performance-compare.mjs",
+    "perf:api:repeats": "node scripts/api-performance-repeats.mjs",
     "test:tooling": "vitest run --config vitest.config.mts"
   },
   "devDependencies": {
