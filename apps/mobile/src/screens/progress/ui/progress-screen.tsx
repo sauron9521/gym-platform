@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useRouter } from 'expo-router';
+import { useIntl } from 'react-intl';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { ExercisePicker } from '@/features/exercises/ui/exercise-picker';
@@ -13,6 +14,17 @@ import { palette } from '@/shared/config/theme';
 const periods: ProgressRange[] = ['7d', '30d', '90d'];
 
 export function ProgressScreen() {
+  const intl = useIntl();
+  const t = (key: string, values?: Record<string, string | number>) =>
+    intl.formatMessage({ id: `mobile.progressView.${key}` }, values);
+  const dateLocale = intl.locale === 'en' ? 'en-US' : 'uk-UA';
+  const displayDay = (day: string) =>
+    new Intl.DateTimeFormat(dateLocale, {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+      timeZone: 'UTC',
+    }).format(new Date(`${day}T00:00:00Z`));
   const router = useRouter();
   const [selectedExerciseId, setSelectedExerciseId] = useState('');
   const [range, setRange] = useState<ProgressRange>('30d');
@@ -22,18 +34,18 @@ export function ProgressScreen() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content} bounces={false}>
-      <Text style={styles.title}>Мій прогрес</Text>
+      <Text style={styles.title}>{t('title')}</Text>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel="Оновити прогрес"
+        accessibilityLabel={t('refreshAria')}
         testID="progress-refresh"
         disabled={query.isFetching}
         onPress={() => void query.refetch()}
         style={styles.retryButton}
       >
-        <Text style={styles.text}>{query.isFetching ? 'Оновлюємо…' : 'Оновити статистику'}</Text>
+        <Text style={styles.text}>{query.isFetching ? t('refreshing') : t('refresh')}</Text>
       </Pressable>
-      <Text style={styles.heading}>Статистика за вправою</Text>
+      <Text style={styles.heading}>{t('exerciseStats')}</Text>
       <ExercisePicker
         selectedId={selectedExerciseId}
         onSelect={(id) => {
@@ -47,6 +59,7 @@ export function ProgressScreen() {
             key={period}
             testID={`progress-range-${period}`}
             accessibilityRole="button"
+            accessibilityLabel={t(`range${period}`)}
             accessibilityState={{ selected: range === period }}
             onPress={() => setRange(period)}
             style={[styles.chip, period === range && styles.selected]}
@@ -55,11 +68,11 @@ export function ProgressScreen() {
           </Pressable>
         ))}
       </View>
-      {query.isPending ? <ActivityIndicator accessibilityLabel="Завантаження статистики" /> : null}
+      {query.isPending ? <ActivityIndicator accessibilityLabel={t('loading')} /> : null}
       {query.isError ? (
         <View style={styles.errorGroup}>
           <Text accessibilityRole="alert" style={styles.error}>
-            {query.error.message}
+            {t('error')}
           </Text>
           <Pressable
             accessibilityRole="button"
@@ -68,7 +81,7 @@ export function ProgressScreen() {
             style={styles.retryButton}
             disabled={query.isFetching}
           >
-            <Text style={styles.text}>Повторити завантаження</Text>
+            <Text style={styles.text}>{t('retry')}</Text>
           </Pressable>
         </View>
       ) : null}
@@ -77,29 +90,32 @@ export function ProgressScreen() {
           <View style={styles.tiles}>
             <View style={styles.tile}>
               <Text style={styles.metric}>{stats.workoutCount}</Text>
-              <Text style={styles.subtitle}>Тренувань</Text>
+              <Text style={styles.subtitle}>{t('workouts')}</Text>
             </View>
             <View style={styles.tile}>
               <Text style={styles.metric}>{stats.activeDays}</Text>
-              <Text style={styles.subtitle}>Активних днів</Text>
+              <Text style={styles.subtitle}>{t('activeDays')}</Text>
             </View>
             <View style={styles.tile}>
               <Text style={styles.metric}>{stats.completedSets}</Text>
-              <Text style={styles.subtitle}>Підходів</Text>
+              <Text style={styles.subtitle}>{t('sets')}</Text>
             </View>
             <View style={styles.tile}>
               <Text style={styles.metric}>{Math.round(stats.strengthVolumeKg)}</Text>
-              <Text style={styles.subtitle}>Об’єм, кг</Text>
+              <Text style={styles.subtitle}>{t('volume')}</Text>
             </View>
           </View>
-          <Text style={styles.heading}>Тренувальний об’єм за днями</Text>
+          <Text style={styles.heading}>{t('chart')}</Text>
           {stats.daily.some((day) => day.strengthVolumeKg > 0) ? (
             <View style={styles.chart}>
               {stats.daily.map((day, index) => (
                 <View
                   key={day.date}
                   accessible
-                  accessibilityLabel={`${day.date}: ${Math.round(day.strengthVolumeKg)} кг`}
+                  accessibilityLabel={t('bar', {
+                    date: displayDay(day.date),
+                    volume: Math.round(day.strengthVolumeKg),
+                  })}
                   style={styles.barCell}
                 >
                   <View style={[styles.bar, { height: `${heights[index] ?? 0}%` }]} />
@@ -108,13 +124,11 @@ export function ProgressScreen() {
             </View>
           ) : (
             <Text style={styles.subtitle}>
-              {stats.daily.length === 0
-                ? 'Даних за цей період ще немає.'
-                : 'За цей період немає записаного силового об’єму.'}
+              {stats.daily.length === 0 ? t('noData') : t('noVolume')}
             </Text>
           )}
           <Text style={styles.subtitle}>
-            Дані з Gym API, станом на {new Date(stats.asOf).toLocaleDateString('uk-UA')}
+            {t('updated', { date: new Date(stats.asOf).toLocaleDateString(dateLocale) })}
           </Text>
         </>
       ) : null}
