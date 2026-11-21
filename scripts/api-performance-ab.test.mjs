@@ -16,6 +16,7 @@ import {
 const SHA_A = 'a'.repeat(40);
 const SHA_B = 'b'.repeat(40);
 const FINGERPRINT = 'f'.repeat(64);
+const RESPONSE_SHA = 'd'.repeat(64);
 const ROUTES = [
   ['users-me', '/users/me'],
   ['workouts-summary', '/workouts?view=summary&limit=20'],
@@ -57,6 +58,7 @@ function profile(fingerprint = FINGERPRINT, latency = 12) {
         samples: 25,
         latencyMs: stats(latency),
         decodedResponseBytes: stats(1024),
+        ...(route === 'exercises' ? { responseSha256: RESPONSE_SHA } : {}),
       })),
     },
     sql: {
@@ -97,6 +99,7 @@ describe('API A/B comparison runner', () => {
     );
     assert.equal(compared.mode, 'A/B exploratory comparison');
     assert.equal(compared.fixtureFingerprint, FINGERPRINT);
+    assert.deepEqual(compared.responseEquivalence, { exercises: 'identical-serialized-json' });
   });
 
   it('distinguishes a same-revision A/A smoke run from a real code-change comparison', () => {
@@ -120,6 +123,39 @@ describe('API A/B comparison runner', () => {
     const badManifest = manifest();
     badManifest.dbSchemaKey = 'not-a-hash';
     assert.throws(() => compareAB(badManifest, profile(), profile()), /pinned A\/B manifest/);
+  });
+
+  it('rejects unequal Exercises bodies even if decoded byte lengths and metrics match', () => {
+    const after = profile();
+    after.http.results[3].responseSha256 = 'e'.repeat(64);
+    assert.deepEqual(
+      after.http.results[3].decodedResponseBytes,
+      profile().http.results[3].decodedResponseBytes,
+    );
+    assert.throws(
+      () => compareAB(manifest(), profile(), after),
+      /Exercises HTTP response fingerprints differ/,
+    );
+  });
+
+  it('requires a valid Exercises digest, rejects spurious route digests and strips raw bodies', () => {
+    const missing = profile();
+    delete missing.http.results[3].responseSha256;
+    assert.throws(() => sanitizeProfile(missing), /Missing Exercises HTTP response fingerprint/);
+
+    const invalid = profile();
+    invalid.http.results[3].responseSha256 = 'invalid';
+    assert.throws(() => sanitizeProfile(invalid), /Missing Exercises HTTP response fingerprint/);
+
+    const otherRoute = profile();
+    otherRoute.http.results[0].responseSha256 = 'a'.repeat(64);
+    assert.throws(() => sanitizeProfile(otherRoute), /Unexpected HTTP response fingerprint/);
+
+    const secret = profile();
+    secret.http.results[3].responseBody = { email: 'do-not-leak@example.test' };
+    const sanitized = sanitizeProfile(secret);
+    assert.equal(sanitized.http.results[3].responseSha256, RESPONSE_SHA);
+    assert.doesNotMatch(JSON.stringify(sanitized), /do-not-leak|responseBody|email/i);
   });
 
   it('rejects missing, duplicated, unknown, unapproved HTTP routes and nonnumeric metrics', () => {

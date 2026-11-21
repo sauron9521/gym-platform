@@ -136,6 +136,14 @@ function sanitizeHttp(report) {
     results: report.results.map((value) => {
       record(value, 'HTTP route');
       requireValid(value.method === 'GET' && value.samples === 25, 'Invalid HTTP route samples');
+      if (value.route === 'exercises') {
+        requireValid(
+          typeof value.responseSha256 === 'string' && FINGERPRINT.test(value.responseSha256),
+          'Missing Exercises HTTP response fingerprint',
+        );
+      } else {
+        requireValid(value.responseSha256 === undefined, 'Unexpected HTTP response fingerprint');
+      }
       return {
         route: value.route,
         path: value.path,
@@ -143,6 +151,7 @@ function sanitizeHttp(report) {
         samples: 25,
         latencyMs: percentileValues(value.latencyMs, 'HTTP latency'),
         decodedResponseBytes: percentileValues(value.decodedResponseBytes, 'HTTP response bytes'),
+        ...(value.route === 'exercises' ? { responseSha256: value.responseSha256 } : {}),
       };
     }),
   };
@@ -283,6 +292,12 @@ export function compareAB(manifestInput, beforeInput, afterInput) {
     'Persisted fixture fingerprints differ: refusing invalid A/B comparison',
   );
   requireValid(before.fixture.recipe === after.fixture.recipe, 'A/B fixture recipes differ');
+  const beforeExercises = before.http.results.find((route) => route.route === 'exercises');
+  const afterExercises = after.http.results.find((route) => route.route === 'exercises');
+  requireValid(
+    beforeExercises?.responseSha256 === afterExercises?.responseSha256,
+    'Exercises HTTP response fingerprints differ: refusing unsafe A/B comparison',
+  );
 
   const bundle = (commit, report) => ({
     schemaVersion: 1,
@@ -313,6 +328,7 @@ export function compareAB(manifestInput, beforeInput, afterInput) {
         ? 'A/A pipeline smoke (no code change)'
         : 'A/B exploratory comparison',
     fixtureFingerprint: before.fixture.fingerprint,
+    responseEquivalence: { exercises: 'identical-serialized-json' },
     ...comparison,
   };
 }
