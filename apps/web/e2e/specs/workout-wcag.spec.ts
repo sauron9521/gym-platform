@@ -7,7 +7,7 @@ const firstSetId = '00000000-0000-4000-8000-000000000322';
 
 async function signIn(page: Page) {
   await page.goto('/login');
-  await page.getByLabel('Електронна пошта').fill('athlete@example.test');
+  await page.getByLabel('Електронна пошта').fill('wcag@example.test');
   await page.getByLabel('Пароль').fill('TestPassword123!');
   await page.getByRole('button', { name: 'Увійти' }).click();
   await expect(page).toHaveURL(/\/dashboard$/);
@@ -142,7 +142,21 @@ for (const locale of ['uk', 'en'] as const) {
       await signIn(page);
       const header = page.getByTestId('athlete-shell-header');
       await header.getByRole('combobox').first().selectOption(theme);
+      const currentLocale = await page.locator('html').getAttribute('lang');
+      // The account locale is persisted asynchronously; reloading before PATCH completes
+      // can restore the previous preference and make accessibility tests order-dependent.
+      const saved =
+        currentLocale === locale
+          ? null
+          : page.waitForResponse(
+              (response) =>
+                response.url().includes('/backend/users/me/preferences') &&
+                response.request().method() === 'PATCH' &&
+                response.status() === 200,
+            );
       await header.getByRole('combobox').nth(1).selectOption(locale);
+      if (saved) await saved;
+      await expect(page.locator('html')).toHaveAttribute('lang', locale);
       await page.reload();
       await expect(page.locator('html')).toHaveAttribute('lang', locale);
       await expect(page.locator('html')).toHaveClass(new RegExp(theme));
