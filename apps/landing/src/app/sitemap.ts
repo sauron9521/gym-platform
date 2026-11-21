@@ -1,5 +1,6 @@
 import type { MetadataRoute } from 'next';
 import { publicRoutes } from '../shared/config/navigation';
+import { isEnglishPageReady } from '../i18n/published-pages';
 import { getSiteOrigin, isIndexingEnabled } from '../shared/lib/seo';
 
 /** Only publish language alternates when both variants actually exist. */
@@ -24,8 +25,17 @@ export default function sitemap(): MetadataRoute.Sitemap {
     },
     ...publicRoutes
       .filter((path) => path !== '/')
-      .map((path) => ({
-        url: new URL('/uk' + path, origin).toString(),
-      })),
+      .flatMap((path) => {
+        const ukrainianUrl = new URL('/uk' + path, origin).toString();
+        if (!isEnglishPageReady(path)) {
+          return [{ url: ukrainianUrl }];
+        }
+        const englishUrl = new URL('/en' + path, origin).toString();
+        const languages = { uk: ukrainianUrl, en: englishUrl };
+        return [
+          { url: ukrainianUrl, alternates: { languages } },
+          { url: englishUrl, alternates: { languages } },
+        ];
+      }),
   ];
 }
