@@ -34,21 +34,21 @@ When a domain transition is atomic under an existing repository transaction, add
 
 Legend: `I` = durable In-App; `P` = opt-in Mobile Push; `E` = optional transactional email subject to settings; `L` = Mobile Local Reminder scheduled on device, not a generic server fanout. All external channels are disabled if consent/device eligibility is absent; sensitive account-recovery messages continue through existing auth flow.
 
-| Event type | Domain source | Recipient resolver | Category / scope | MVP vs later |
-| --- | --- | --- | --- | --- |
-| `trainer.invitation.created` | TrainerAthlete | Invited participant (not actor) | TRAINER / USER | I; P optional later |
-| `trainer.invitation.accepted` | TrainerAthlete | Initiating participant | TRAINER / USER | I; P later |
-| `trainer.invitation.declined` / `cancelled` | TrainerAthlete | Initiating/other eligible participant if policy allows | TRAINER / USER | I |
-| `trainer.relationship.terminated` | TrainerAthlete | Other participant(s) with safe redacted status | TRAINER / USER | I; P later |
-| `program.assigned` | TrainingProgramAssignment | Assigned athlete | PROGRAM / USER | I; P later |
-| `program.assignment.cancelled` / `terminated` | TrainingProgramAssignment | Affected athlete | PROGRAM / USER | I |
-| `workout.reminder.due` | Schedule/Workout | Workout athlete with PLANNED future schedule | WORKOUT / USER | **L** from mobile schedule; server-side reminders only if explicitly designed with per-device dedupe |
-| `account.security.changed` | Auth/User | Affected account holder | ACCOUNT / USER | I; urgent security E policy |
-| `trainer.application.reviewed` | Trainer onboarding | Applicant (only after review committed) | ACCOUNT / USER | I; optional E |
-| `admin.trainer.review.required` | Trainer onboarding | Current permitted moderators/operators | ADMIN / ADMIN | I; optional E later |
-| `admin.billing.approval.requested` | Billing [#542](https://github.com/sauron9521/gym-platform/issues/542) | Current authorized Super Admin(s), filtered on read/delivery | ADMIN / ADMIN | I via [#543](https://github.com/sauron9521/gym-platform/issues/543) |
-| `admin.billing.approval.resolved` | Billing | Proposal owner, subject to current access | ADMIN / ADMIN | I via #543 |
-| Marketing/news | Future campaign module | Only explicit, revocable marketing opt-in | MARKETING / USER | **Deferred; no producer now** |
+| Event type                                    | Domain source                                                         | Recipient resolver                                           | Category / scope | MVP vs later                                                                                         |
+| --------------------------------------------- | --------------------------------------------------------------------- | ------------------------------------------------------------ | ---------------- | ---------------------------------------------------------------------------------------------------- |
+| `trainer.invitation.created`                  | TrainerAthlete                                                        | Invited participant (not actor)                              | TRAINER / USER   | I; P optional later                                                                                  |
+| `trainer.invitation.accepted`                 | TrainerAthlete                                                        | Initiating participant                                       | TRAINER / USER   | I; P later                                                                                           |
+| `trainer.invitation.declined` / `cancelled`   | TrainerAthlete                                                        | Initiating/other eligible participant if policy allows       | TRAINER / USER   | I                                                                                                    |
+| `trainer.relationship.terminated`             | TrainerAthlete                                                        | Other participant(s) with safe redacted status               | TRAINER / USER   | I; P later                                                                                           |
+| `program.assigned`                            | TrainingProgramAssignment                                             | Assigned athlete                                             | PROGRAM / USER   | I; P later                                                                                           |
+| `program.assignment.cancelled` / `terminated` | TrainingProgramAssignment                                             | Affected athlete                                             | PROGRAM / USER   | I                                                                                                    |
+| `workout.reminder.due`                        | Schedule/Workout                                                      | Workout athlete with PLANNED future schedule                 | WORKOUT / USER   | **L** from mobile schedule; server-side reminders only if explicitly designed with per-device dedupe |
+| `account.security.changed`                    | Auth/User                                                             | Affected account holder                                      | ACCOUNT / USER   | I; urgent security E policy                                                                          |
+| `trainer.application.reviewed`                | Trainer onboarding                                                    | Applicant (only after review committed)                      | ACCOUNT / USER   | I; optional E                                                                                        |
+| `admin.trainer.review.required`               | Trainer onboarding                                                    | Current permitted moderators/operators                       | ADMIN / ADMIN    | I; optional E later                                                                                  |
+| `admin.billing.approval.requested`            | Billing [#542](https://github.com/sauron9521/gym-platform/issues/542) | Current authorized Super Admin(s), filtered on read/delivery | ADMIN / ADMIN    | I via [#543](https://github.com/sauron9521/gym-platform/issues/543)                                  |
+| `admin.billing.approval.resolved`             | Billing                                                               | Proposal owner, subject to current access                    | ADMIN / ADMIN    | I via #543                                                                                           |
+| Marketing/news                                | Future campaign module                                                | Only explicit, revocable marketing opt-in                    | MARKETING / USER | **Deferred; no producer now**                                                                        |
 
 These are logical types. E11 [#342](https://github.com/sauron9521/gym-platform/issues/342) owns Mobile local scheduling; [#343](https://github.com/sauron9521/gym-platform/issues/343) owns Expo delivery implementation and device token lifecycle. Some future notification types may not require an Inbox row (e.g. purely local repeated reminders); this must be explicit in the event registry to avoid Inbox spam.
 
@@ -71,11 +71,11 @@ These are logical types. E11 [#342](https://github.com/sauron9521/gym-platform/i
 
 ## Producer-specific tests / handoff
 
-| Owning issue | Required checks |
-| --- | --- |
-| [#570](https://github.com/sauron9521/gym-platform/issues/570) | invite by either party, duplicate request, accept/decline, relationship revoked while outbox pending, rollback, denied foreign recipient |
-| [#571](https://github.com/sauron9521/gym-platform/issues/571) | assignment committed/rejected, duplicate idempotency, cancellation, wrong athlete, revoked trainer, no full workout leak |
-| [#572](https://github.com/sauron9521/gym-platform/issues/572) | verify existing auth mail not duplicated, correct account owner, moderator eligibility and role revocation, missing permission denial |
+| Owning issue                                                  | Required checks                                                                                                                                     |
+| ------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [#570](https://github.com/sauron9521/gym-platform/issues/570) | invite by either party, duplicate request, accept/decline, relationship revoked while outbox pending, rollback, denied foreign recipient            |
+| [#571](https://github.com/sauron9521/gym-platform/issues/571) | assignment committed/rejected, duplicate idempotency, cancellation, wrong athlete, revoked trainer, no full workout leak                            |
+| [#572](https://github.com/sauron9521/gym-platform/issues/572) | verify existing auth mail not duplicated, correct account owner, moderator eligibility and role revocation, missing permission denial               |
 | [#543](https://github.com/sauron9521/gym-platform/issues/543) | submitted proposal/revision only, privileged recipients, proposer outcome, revoked role and provider mismatch, approval never implied by read/click |
 
 The first implementation PR must decide exact Zod discriminated-union schema and stable IDs; **this ADR does not add code or make the events available**.
