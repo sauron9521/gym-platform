@@ -28,6 +28,14 @@ const accounts = {
     displayName: 'Локаль помилка',
     preferredLocale: null,
   },
+  // Keep locale-testing state separate from the shared athlete used by WCAG/auth E2E.
+  'workouts-i18n@example.test': {
+    id: '00000000-0000-4000-8000-000000000005',
+    email: 'workouts-i18n@example.test',
+    role: 'ATHLETE',
+    displayName: 'Workouts Locale QA',
+    preferredLocale: null,
+  },
   'trainer@example.test': {
     id: '00000000-0000-4000-8000-000000000002',
     email: 'trainer@example.test',
