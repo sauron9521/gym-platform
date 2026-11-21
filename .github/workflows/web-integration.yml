@@ -1,4 +1,4 @@
-name: Web integration
+name: Web / Integration E2E
 
 on:
   pull_request:
@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
-      run: ${{ steps.select.outputs.full == 'true' || steps.select.outputs.api == 'true' || steps.select.outputs.web == 'true' || steps.select.outputs.client == 'true' }}
+      run: ${{ steps.select.outputs.full == 'true' || steps.select.outputs.api == 'true' || steps.select.outputs.web == 'true' || steps.select.outputs.trainer == 'true' || steps.select.outputs.client == 'true' }}
     steps:
       - name: Checkout complete history for safe PR diff
         uses: actions/checkout@v7
@@ -35,15 +35,18 @@ jobs:
         run: node scripts/ci-select.mjs --github-output "$GITHUB_OUTPUT"
 
   browser-api-suite:
-    name: Web / Real API and PostgreSQL suite (${{ matrix.shard }}/4)
+    name: Web / Integration E2E (PostgreSQL 17, shard ${{ matrix.shard }}/4)
     needs: changes
     if: needs.changes.outputs.run == 'true'
     strategy:
       fail-fast: false
       matrix:
         shard: [1, 2, 3, 4]
-    # Each matrix job runs on its own VM with a disposable PostgreSQL container.
-    runs-on: ubuntu-latest
+    # Each shard gets its own isolated runner, Playwright image and disposable PostgreSQL service.
+    # The versioned image contains Chromium and its system dependencies; no APT installation per shard.
+    runs-on: ubuntu-24.04
+    container:
+      image: mcr.microsoft.com/playwright:v1.65.1-noble@sha256:1507cbfc550a63a6b7396791ca4f00df17beb56342d2447b3f106c306f525579
     timeout-minutes: 15
     services:
       postgres:
@@ -52,7 +55,6 @@ jobs:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: gym_browser_test
-        ports: ['5432:5432']
         options: >-
           --health-cmd "pg_isready -U postgres -d gym_browser_test"
           --health-interval 5s --health-timeout 5s --health-retries 10
@@ -60,10 +62,11 @@ jobs:
       WEB_E2E_SHARD_INDEX: ${{ matrix.shard }}
       WEB_E2E_SHARD_COUNT: '4'
       NODE_ENV: test
-      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/gym_browser_test
-      TEST_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/gym_browser_test
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/gym_browser_test
+      TEST_DATABASE_URL: postgresql://postgres:postgres@postgres:5432/gym_browser_test
       APP_URL: http://127.0.0.1:3200
-      CORS_ORIGINS: http://127.0.0.1:3200
+      CORS_ORIGINS: http://127.0.0.1:3200,http://localhost:3202
+      TRAINER_APP_URL: http://localhost:3202
       JWT_ISSUER: http://127.0.0.1:3200
       JWT_SECRET: browser-integration-test-only-secret-123456
     steps:
@@ -82,19 +85,14 @@ jobs:
             const value = process.env.TEST_DATABASE_URL;
             if (!value || value !== process.env.DATABASE_URL) throw new Error("Test database URLs must match");
             const url = new URL(value);
-            if (url.hostname !== "127.0.0.1" || !decodeURIComponent(url.pathname).endsWith("_test")) throw new Error("Disposable loopback database required");
+            if (url.hostname !== "postgres" || url.port !== "5432" || url.username !== "postgres" || decodeURIComponent(url.pathname) !== "/gym_browser_test") throw new Error("Disposable CI PostgreSQL service required");
           '
       - run: pnpm --filter @gym/api db:generate
       - run: pnpm --filter @gym/api db:migrate:deploy
       # The browser creates workouts from the actual seeded public exercise catalogue.
       - run: pnpm --filter @gym/api db:seed
       - run: pnpm --filter @gym/api build
-      - name: Restore Playwright Chromium browser cache
-        uses: actions/cache@v6
-        with:
-          path: ~/.cache/ms-playwright
-          key: ${{ runner.os }}-playwright-chromium-1.65.0
-      - run: pnpm --filter @gym/web exec playwright install --with-deps chromium
+      # Official Playwright image already provides Chromium and runtime libraries.
       - run: pnpm --filter @gym/web test:e2e:integration
       - name: Retain failure traces
         if: failure()

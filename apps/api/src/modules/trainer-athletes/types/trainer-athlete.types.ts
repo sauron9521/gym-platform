@@ -17,6 +17,7 @@ export type TrainerAthleteListQuery = {
   page: number;
   limit: number;
   status?: TrainerAthleteStatus;
+  scope?: 'trainer';
 };
 
 export type TerminateTrainerAthleteInput = {

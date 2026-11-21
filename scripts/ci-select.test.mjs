@@ -26,6 +26,7 @@ test('Web-only change skips API E2E, Docker and Mobile', () => {
     web: true,
     landing: false,
     admin: false,
+    trainer: false,
     mobile: false,
     client: false,
     deps: false,
@@ -41,6 +42,7 @@ test('Landing-only changes check landing without requiring API or Web browser su
     web: false,
     landing: true,
     admin: false,
+    trainer: false,
     mobile: false,
     client: false,
     deps: false,
@@ -61,6 +63,17 @@ test('Admin-only changes select Admin without unrelated API E2E', () => {
   assert.equal(selected.web, false);
   assert.equal(selected.full, false);
   assert.equal(classifyChangedPaths(['apps/admin/package.json']).deps, true);
+});
+
+test('Trainer-only changes select only Trainer, while its manifest opts into security audit', () => {
+  const selected = classifyChangedPaths(['apps/trainer/src/app/page.tsx']);
+  assert.equal(selected.trainer, true);
+  assert.equal(selected.full, false);
+  assert.equal(selected.api, false);
+  assert.equal(selected.web, false);
+  assert.equal(selected.admin, false);
+  assert.equal(selected.mobile, false);
+  assert.equal(classifyChangedPaths(['apps/trainer/package.json']).deps, true);
 });
 
 test('Mobile-only change skips API E2E and Web', () => {
@@ -116,6 +129,7 @@ test('known shared packages select consumers and avoid unrelated API E2E', () =>
       web: true,
       landing: true,
       admin: true,
+      trainer: true,
       mobile,
       client: false,
       deps: false,
@@ -126,23 +140,46 @@ test('known shared packages select consumers and avoid unrelated API E2E', () =>
 });
 
 test('shared locale changes select API mail and all UI consumers', () => {
-  const source = classifyChangedPaths(['packages/i18n/src/messages/en.json']);
-  assert.deepEqual(source, {
-    full: false,
-    api: true,
-    web: true,
-    landing: true,
-    admin: true,
-    mobile: true,
-    client: false,
-    deps: false,
-    workspaces: true,
-    redis: false,
-  });
+  for (const locale of ['uk', 'en']) {
+    const source = classifyChangedPaths([`packages/i18n/src/messages/${locale}.json`]);
+    assert.deepEqual(source, {
+      full: false,
+      api: true,
+      web: true,
+      landing: true,
+      admin: true,
+      trainer: true,
+      mobile: true,
+      client: false,
+      deps: false,
+      workspaces: true,
+      redis: false,
+    });
+  }
+
+  const docs = classifyChangedPaths(['packages/i18n/README.md']);
+  assert.equal(docs.trainer, true);
+  assert.equal(docs.full, false);
+
   const manifest = classifyChangedPaths(['packages/i18n/package.json']);
   assert.equal(manifest.full, false);
   assert.equal(manifest.deps, true);
   assert.equal(manifest.api, true);
+  assert.equal(manifest.trainer, true);
+});
+
+test('Trainer-only changes validate the shared locale package', () => {
+  const selected = classifyChangedPaths(['apps/trainer/src/i18n/request.ts']);
+  assert.equal(selected.trainer, true);
+  assert.equal(selected.api, false);
+  assert.equal(selected.full, false);
+
+  const yaml = readFileSync(new URL('../.github/workflows/ci.yml', import.meta.url), 'utf8');
+  assert.match(
+    yaml,
+    /if \[ "\$CI_TRAINER" = true \]; then filters\+=\(--filter=@gym\/trainer\); fi/,
+  );
+  assert.match(yaml, /\|\| \[ "\$CI_TRAINER" = true \].*filters\+=\(--filter=@gym\/i18n\)/);
 });
 
 test('shared package manifests require dependency vulnerability audits', () => {
@@ -219,6 +256,7 @@ test('application handbooks and nested infrastructure Markdown skip expensive PR
     'apps/api/README.md',
     'apps/api/test/README.md',
     'apps/web/README.md',
+    'apps/trainer/README.md',
     'apps/landing/README.md',
     'apps/mobile/README.md',
     'packages/api-client/README.md',
@@ -233,6 +271,7 @@ test('application handbooks and nested infrastructure Markdown skip expensive PR
     web: false,
     landing: false,
     admin: false,
+    trainer: false,
     mobile: false,
     client: false,
     deps: false,
@@ -453,7 +492,7 @@ test('real API browser suite preserves the required gate and fails closed', () =
     new URL('../.github/workflows/web-integration.yml', import.meta.url),
     'utf8',
   );
-  assert.match(yaml, /name: Web \/ Real API and PostgreSQL suite/);
+  assert.match(yaml, /name: Web \/ Integration E2E/);
   assert.match(yaml, /name: Web \/ Real API and PostgreSQL\n/);
   const suite = yaml.split('  browser-api-suite:\n')[1]?.split('\n  browser-api:\n')[0];
   assert.ok(suite, 'Web integration matrix suite must exist');

@@ -8,7 +8,8 @@ import {
 
 import { Prisma } from '#prisma/client';
 
-import { UsersRepository } from '#src/modules/users/repositories/users.repository';
+import { UsersService } from '#src/modules/users/services/users.service';
+import { fullRelationshipReadWhere } from '../policies/trainer-athlete-read.policy.js';
 import { TrainerAthletesRepository } from '../repositories/trainer-athletes.repository.js';
 import { TrainerAthleteTerminationService } from './trainer-athlete-termination.service.js';
 
@@ -25,42 +26,39 @@ import type {
 export class TrainerAthletesService {
   constructor(
     private readonly trainerAthletesRepository: TrainerAthletesRepository,
-    private readonly usersRepository: UsersRepository,
     private readonly terminationService: TrainerAthleteTerminationService,
+    private readonly usersService: UsersService,
   ) {}
 
   // CREATE REQUEST
   async create(actor: TrainerAthleteActor, input: CreateTrainerAthleteInput) {
-    this.assertParticipantRole(actor);
-
     if (actor.id === input.userId) {
       throw new BadRequestException('You cannot create a relationship with yourself');
     }
 
-    const target = await this.usersRepository.findUserById(input.userId);
+    // Read both current DB capabilities: a JWT role or a public client flag
+    // must never grant trainer privileges after approval is revoked.
+    const actorCapabilities = await this.usersService.findMyCapabilities(actor.id);
+    if (!actorCapabilities.athlete || actorCapabilities.admin) {
+      throw new ForbiddenException('Only athletes and active trainers can invite participants');
+    }
+    const targetCapabilities = await this.usersService.findMyCapabilities(input.userId);
 
-    if (!target) {
-      throw new NotFoundException('User not found');
+    const trainerInvitesAthlete = actorCapabilities.trainer && targetCapabilities.athlete;
+    const athleteInvitesTrainer = actorCapabilities.athlete && targetCapabilities.trainer;
+
+    // This endpoint only carries userId, not the intended relationship roles.
+    // When both people have Trainer capability, avoid silently reversing the
+    // invitation or granting an unintended trainer-to-athlete relationship.
+    if (trainerInvitesAthlete && athleteInvitesTrainer) {
+      throw new BadRequestException('Invitation roles are ambiguous');
+    }
+    if (!trainerInvitesAthlete && !athleteInvitesTrainer) {
+      throw new BadRequestException('An athlete and an active trainer are required');
     }
 
-    let trainerId: string;
-    let athleteId: string;
-
-    if (actor.role === 'TRAINER') {
-      if (target.role !== 'ATHLETE') {
-        throw new BadRequestException('A trainer can only invite an athlete');
-      }
-
-      trainerId = actor.id;
-      athleteId = target.id;
-    } else {
-      if (target.role !== 'TRAINER') {
-        throw new BadRequestException('An athlete can only invite a trainer');
-      }
-
-      trainerId = target.id;
-      athleteId = actor.id;
-    }
+    const trainerId = trainerInvitesAthlete ? actor.id : input.userId;
+    const athleteId = trainerInvitesAthlete ? input.userId : actor.id;
 
     const existing = await this.trainerAthletesRepository.findOpenByPair(trainerId, athleteId);
 
@@ -68,20 +66,14 @@ export class TrainerAthletesService {
       throw new ConflictException('An active or pending relationship already exists');
     }
 
-    const data = {
-      trainer: {
-        connect: { id: trainerId },
-      },
-      athlete: {
-        connect: { id: athleteId },
-      },
-      initiatedBy: {
-        connect: { id: actor.id },
-      },
-    } satisfies Prisma.TrainerAthleteCreateInput;
-
     try {
-      return await this.trainerAthletesRepository.create(data);
+      // Preflight checks above provide clear API errors, but must not be
+      // authoritative: moderation can revoke a TrainerProfile before INSERT.
+      return await this.trainerAthletesRepository.createWithCurrentCapabilities({
+        trainerId,
+        athleteId,
+        initiatedById: actor.id,
+      });
     } catch (error) {
       if (this.isPrismaError(error, 'P2002')) {
         throw new ConflictException('An active or pending relationship already exists');
@@ -93,11 +85,20 @@ export class TrainerAthletesService {
 
   // FIND MANY
   async findMany(actor: TrainerAthleteActor, query: TrainerAthleteListQuery) {
-    this.assertParticipantRole(actor);
+    const capabilities = await this.assertCurrentParticipant(actor);
     this.validatePagination(query);
 
+    // Trainer-only read mode is required for accurate dashboard pagination.
+    // A person can simultaneously be an athlete under another trainer, so
+    // pagination must be scoped in PostgreSQL, never filtered after the fact.
+    if (query.scope === 'trainer' && !capabilities.trainer) {
+      throw new ForbiddenException('Current trainer approval is required');
+    }
+
     const where: Prisma.TrainerAthleteWhereInput = {
-      OR: [{ trainerId: actor.id }, { athleteId: actor.id }],
+      ...(query.scope === 'trainer'
+        ? { trainerId: actor.id }
+        : { OR: [{ trainerId: actor.id }, { athleteId: actor.id }] }),
       ...(query.status ? { status: query.status } : {}),
     };
 
@@ -107,54 +108,40 @@ export class TrainerAthletesService {
       take: query.limit,
     };
 
-    if (actor.role === 'TRAINER') {
-      return this.trainerAthletesRepository.findManyForTrainer(params);
-    }
-
-    return this.trainerAthletesRepository.findMany(params);
+    // Redact ended trainer-side relationships based on relationship ownership,
+    // regardless of a user's legacy TRAINER/ATHLETE session role.
+    return this.trainerAthletesRepository.findManyForParticipant(
+      params,
+      actor.id,
+      capabilities.trainer,
+    );
   }
 
   // FIND ONE
-
   async findOne(id: string, actor: TrainerAthleteActor) {
-    this.assertParticipantRole(actor);
+    const capabilities = await this.assertCurrentParticipant(actor);
 
-    const accessWhere: Prisma.TrainerAthleteWhereInput = {
-      OR: [{ trainerId: actor.id }, { athleteId: actor.id }],
-    };
+    const fullRelationship = await this.trainerAthletesRepository.findById(
+      id,
+      fullRelationshipReadWhere(actor.id, capabilities.trainer),
+    );
 
-    if (actor.role === 'TRAINER') {
-      const openRelationship = await this.trainerAthletesRepository.findById(id, {
-        AND: [
-          accessWhere,
-          {
-            status: {
-              in: ['ACTIVE', 'PENDING'],
-            },
-          },
-        ],
-      });
-
-      if (openRelationship) {
-        return openRelationship;
-      }
-
-      const historical = await this.trainerAthletesRepository.findHistoricalById(id, accessWhere);
-
-      if (!historical) {
-        throw new NotFoundException('Relationship not found');
-      }
-
-      return historical;
+    if (fullRelationship) {
+      return fullRelationship;
     }
 
-    const relationship = await this.trainerAthletesRepository.findById(id, accessWhere);
+    // A revoked trainer must still be able to view the minimal relationship
+    // state needed to decline, cancel, or terminate it, without contact fields.
+    // This applies to PENDING / ACTIVE as well as historical relationships.
+    const restricted = await this.trainerAthletesRepository.findRestrictedById(id, {
+      trainerId: actor.id,
+    });
 
-    if (!relationship) {
+    if (!restricted) {
       throw new NotFoundException('Relationship not found');
     }
 
-    return relationship;
+    return restricted;
   }
 
   // ACCEPT REQUEST
@@ -163,11 +150,27 @@ export class TrainerAthletesService {
 
     this.assertRecipient(relationship, actor);
     this.assertStatus(relationship.status, 'PENDING');
+    await this.assertCanAccept(actor, relationship);
 
     return this.updateWithConflictHandling(
       {
         id,
         status: 'PENDING',
+        // Fail closed if moderation revokes TrainerProfile between the
+        // capability lookup and the conditional PostgreSQL update.
+        trainer: {
+          is: {
+            deletedAt: null,
+            role: { not: 'ADMIN' },
+            OR: [
+              { trainerProfile: { is: { isActive: true } } },
+              { role: 'TRAINER', trainerProfile: { is: null } },
+            ],
+          },
+        },
+        athlete: {
+          is: { deletedAt: null, role: { not: 'ADMIN' } },
+        },
       },
       {
         status: 'ACTIVE',
@@ -182,6 +185,7 @@ export class TrainerAthletesService {
 
     this.assertRecipient(relationship, actor);
     this.assertStatus(relationship.status, 'PENDING');
+    await this.assertCurrentParticipant(actor);
 
     return this.updateWithConflictHandling(
       {
@@ -192,7 +196,7 @@ export class TrainerAthletesService {
         status: 'DECLINED',
         respondedAt: new Date(),
       },
-      actor.role === 'TRAINER',
+      relationship.trainerId === actor.id,
     );
   }
 
@@ -205,6 +209,7 @@ export class TrainerAthletesService {
     }
 
     this.assertStatus(relationship.status, 'PENDING');
+    await this.assertCurrentParticipant(actor);
 
     return this.updateWithConflictHandling(
       {
@@ -219,7 +224,7 @@ export class TrainerAthletesService {
         },
         endReason: input.reason ?? null,
       },
-      actor.role === 'TRAINER',
+      relationship.trainerId === actor.id,
     );
   }
 
@@ -228,12 +233,14 @@ export class TrainerAthletesService {
     const relationship = await this.findOne(id, actor);
 
     this.assertStatus(relationship.status, 'ACTIVE');
+    // A revoked trainer must still be able to end a collaboration safely.
+    await this.assertCurrentParticipant(actor);
 
     const terminated = await this.terminationService.terminateWithExerciseCopies({
       id,
       actorId: actor.id,
       reason: input.reason,
-      redactForTrainer: actor.role === 'TRAINER',
+      redactForTrainer: relationship.trainerId === actor.id,
     });
 
     if (!terminated) {
@@ -245,38 +252,47 @@ export class TrainerAthletesService {
 
   // EXERCISE ACCESS CONTEXT
   async getExerciseAccessContext(actor: TrainerAthleteActor): Promise<ExerciseAccessContext> {
-    if (actor.role === 'ATHLETE') {
-      const activeTrainerIds = await this.trainerAthletesRepository.findActiveTrainerIdsForAthlete(
-        actor.id,
-      );
+    // Trust the current persisted account, never the role captured in a session.
+    // An approved trainer can also be an athlete; a revoked trainer cannot read
+    // athlete-owned exercises through previously active trainer relationships.
+    const capabilities = await this.usersService.findMyCapabilities(actor.id);
 
-      return {
-        activeTrainerIds,
-        activeAthleteIds: [],
-      };
-    }
+    const activeTrainerIds = capabilities.athlete
+      ? await this.trainerAthletesRepository.findActiveTrainerIdsForAthlete(actor.id)
+      : [];
+    const activeAthleteIds = capabilities.trainer
+      ? await this.trainerAthletesRepository.findActiveAthleteIdsForTrainer(actor.id)
+      : [];
 
-    if (actor.role === 'TRAINER') {
-      const activeAthleteIds = await this.trainerAthletesRepository.findActiveAthleteIdsForTrainer(
-        actor.id,
-      );
-
-      return {
-        activeTrainerIds: [],
-        activeAthleteIds,
-      };
-    }
-
-    return {
-      activeTrainerIds: [],
-      activeAthleteIds: [],
-    };
+    return { activeTrainerIds, activeAthleteIds };
   }
 
   // HELPERS
-  private assertParticipantRole(actor: TrainerAthleteActor): void {
-    if (actor.role !== 'ATHLETE' && actor.role !== 'TRAINER') {
-      throw new ForbiddenException('Only trainers and athletes can manage relationships');
+  private async assertCurrentParticipant(actor: TrainerAthleteActor) {
+    const capabilities = await this.usersService.findMyCapabilities(actor.id);
+    if (!capabilities.athlete || capabilities.admin) {
+      throw new ForbiddenException('Only active participants can manage relationships');
+    }
+
+    return capabilities;
+  }
+
+  private async assertCanAccept(
+    actor: TrainerAthleteActor,
+    relationship: { trainerId: string; athleteId: string },
+  ) {
+    const current = await this.assertCurrentParticipant(actor);
+    const trainer =
+      relationship.trainerId === actor.id
+        ? current
+        : await this.usersService.findMyCapabilities(relationship.trainerId);
+    const athlete =
+      relationship.athleteId === actor.id
+        ? current
+        : await this.usersService.findMyCapabilities(relationship.athleteId);
+
+    if (!trainer.trainer || !athlete.athlete) {
+      throw new ConflictException('Relationship participants are no longer eligible');
     }
   }
 

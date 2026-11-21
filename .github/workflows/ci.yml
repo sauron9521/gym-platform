@@ -28,6 +28,7 @@ jobs:
       web: ${{ steps.select.outputs.web }}
       landing: ${{ steps.select.outputs.landing }}
       admin: ${{ steps.select.outputs.admin }}
+      trainer: ${{ steps.select.outputs.trainer }}
       mobile: ${{ steps.select.outputs.mobile }}
       client: ${{ steps.select.outputs.client }}
       deps: ${{ steps.select.outputs.deps }}
@@ -128,10 +129,17 @@ jobs:
         run: node apps/mobile/scripts/smoke-ios-dev.mjs
 
   web-browser-e2e:
-    name: Web Browser E2E / Chromium
+    name: Web / Browser E2E (Chromium, fixture API, shard ${{ matrix.shard }}/2)
     needs: changes
     if: needs.changes.outputs.web == 'true'
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2]
+    # Reuse the version-matched image validated by Web integration E2E.
+    runs-on: ubuntu-24.04
+    container:
+      image: mcr.microsoft.com/playwright:v1.65.1-noble@sha256:1507cbfc550a63a6b7396791ca4f00df17beb56342d2447b3f106c306f525579
     timeout-minutes: 20
     env:
       GYM_API_INTERNAL_URL: http://127.0.0.1:3001
@@ -159,17 +167,10 @@ jobs:
           pnpm --filter @gym/web lint
           pnpm --filter @gym/web typecheck
 
-      - name: Restore Playwright Chromium browser cache
-        uses: actions/cache@v6
-        with:
-          path: ~/.cache/ms-playwright
-          key: ${{ runner.os }}-playwright-chromium-1.65.0
-
-      - name: Install Chromium and system dependencies
-        run: pnpm --filter @gym/web exec playwright install --with-deps chromium
+      # The official pinned container already includes Chromium and OS libraries.
 
       - name: Browser tests against a loopback fixture HTTP API
-        run: pnpm --filter @gym/web test:e2e
+        run: pnpm --filter @gym/web exec playwright test --shard=${{ matrix.shard }}/2
         env:
           CI: 'true'
 
@@ -177,7 +178,7 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v7
         with:
-          name: web-playwright-failures
+          name: web-playwright-failures-${{ matrix.shard }}
           path: |
             apps/web/test-results/
             apps/web/playwright-report/
@@ -185,10 +186,12 @@ jobs:
           retention-days: 7
 
   landing-browser-e2e:
-    name: Landing Browser E2E / Chromium
+    name: Landing / Browser E2E (Chromium)
     needs: changes
     if: needs.changes.outputs.landing == 'true'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    container:
+      image: mcr.microsoft.com/playwright:v1.65.1-noble@sha256:1507cbfc550a63a6b7396791ca4f00df17beb56342d2447b3f106c306f525579
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
@@ -198,7 +201,7 @@ jobs:
           node-version: '24'
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm --filter @gym/landing exec playwright install --with-deps chromium
+      # Browser and OS dependencies are supplied by the pinned container.
       - name: Browser checks against the real public Next.js app
         run: pnpm --filter @gym/landing test:e2e
         env:
@@ -237,16 +240,40 @@ jobs:
 
       # Dependency downloads already use the pnpm store cache above.
       # Persist only build/tool caches, never node_modules, secrets or tests.
+      # Try the current dependency graph first, then a safe incremental cache
+      # across manifest, lockfile and Turborepo config changes.
+      # Turbo hashes and Next.js internally validate cached build inputs.
       - name: Restore Turborepo and Next.js incremental build caches
+        id: incremental-build-cache
         uses: actions/cache@v6
         with:
           path: |
             .turbo/cache
             apps/web/.next/cache
             apps/landing/.next/cache
+            apps/admin/.next/cache
+            apps/trainer/.next/cache
           key: ${{ runner.os }}-node24-build-${{ hashFiles('pnpm-lock.yaml', 'turbo.json', 'apps/**/package.json', 'packages/**/package.json') }}-${{ github.sha }}
           restore-keys: |
             ${{ runner.os }}-node24-build-${{ hashFiles('pnpm-lock.yaml', 'turbo.json', 'apps/**/package.json', 'packages/**/package.json') }}-
+            ${{ runner.os }}-node24-build-
+
+      - name: Report incremental build cache restore
+        env:
+          CACHE_HIT: ${{ steps.incremental-build-cache.outputs.cache-hit }}
+        run: |
+          case "$CACHE_HIT" in
+            true) echo "Exact incremental build cache hit" ;;
+            false) echo "Restored a prior incremental build cache" ;;
+            *) echo "No compatible incremental build cache found" ;;
+          esac
+          for dir in .turbo/cache \
+            apps/web/.next/cache \
+            apps/landing/.next/cache \
+            apps/admin/.next/cache \
+            apps/trainer/.next/cache; do
+            if [ -d "$dir" ]; then du -sh "$dir"; fi
+          done
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -280,6 +307,9 @@ jobs:
       - name: Check formatting
         run: pnpm format:check
 
+      - name: Verify shared i18n catalogs and ICU contracts
+        run: pnpm --filter @gym/i18n test
+
       # Only Redis-related pull requests exercise the extra Docker image upgrade.
       - name: Rehearse isolated Redis 7 to Redis 8 AOF and backup recovery
         if: github.event_name == 'pull_request' && needs.changes.outputs.redis == 'true'
@@ -291,7 +321,7 @@ jobs:
           pnpm lint
           pnpm typecheck
           # API unit tests with coverage are enforced by the protected E2E gate.
-          pnpm exec turbo run test --filter=@gym/web --filter=@gym/mobile --filter=@gym/api-client --filter=@gym/landing --filter=@gym/admin
+          pnpm exec turbo run test --filter=@gym/web --filter=@gym/mobile --filter=@gym/api-client --filter=@gym/landing --filter=@gym/admin --filter=@gym/trainer
           pnpm build
 
       - name: Lint, typecheck, test and build affected workspaces
@@ -301,6 +331,7 @@ jobs:
           CI_WEB: ${{ needs.changes.outputs.web }}
           CI_LANDING: ${{ needs.changes.outputs.landing }}
           CI_ADMIN: ${{ needs.changes.outputs.admin }}
+          CI_TRAINER: ${{ needs.changes.outputs.trainer }}
           CI_MOBILE: ${{ needs.changes.outputs.mobile }}
           CI_CLIENT: ${{ needs.changes.outputs.client }}
         run: |
@@ -312,10 +343,11 @@ jobs:
           if [ "$CI_WEB" = true ]; then filters+=(--filter=@gym/ui-web); fi
           if [ "$CI_LANDING" = true ]; then filters+=(--filter=@gym/landing); fi
           if [ "$CI_ADMIN" = true ]; then filters+=(--filter=@gym/admin); fi
+          if [ "$CI_TRAINER" = true ]; then filters+=(--filter=@gym/trainer); fi
           if [ "$CI_MOBILE" = true ]; then filters+=(--filter=@gym/mobile); fi
           if [ "$CI_CLIENT" = true ]; then filters+=(--filter=@gym/api-client); fi
           # Verify the shared locale package whenever one of its consumers is selected.
-          if [ "$CI_WEB" = true ] || [ "$CI_LANDING" = true ] || [ "$CI_ADMIN" = true ] || [ "$CI_MOBILE" = true ]; then filters+=(--filter=@gym/i18n); fi
+          if [ "$CI_WEB" = true ] || [ "$CI_LANDING" = true ] || [ "$CI_ADMIN" = true ] || [ "$CI_TRAINER" = true ] || [ "$CI_MOBILE" = true ]; then filters+=(--filter=@gym/i18n); fi
           test "${#filters[@]}" -gt 0
           pnpm exec turbo run lint "${filters[@]}"
           pnpm exec turbo run typecheck "${filters[@]}"
@@ -326,6 +358,7 @@ jobs:
           if [ "$CI_CLIENT" = true ]; then test_filters+=(--filter=@gym/api-client); fi
           if [ "$CI_LANDING" = true ]; then test_filters+=(--filter=@gym/landing); fi
           if [ "$CI_ADMIN" = true ]; then test_filters+=(--filter=@gym/admin); fi
+          if [ "$CI_TRAINER" = true ]; then test_filters+=(--filter=@gym/trainer); fi
           if [ "${#test_filters[@]}" -gt 0 ]; then
             pnpm exec turbo run test "${test_filters[@]}"
           fi
@@ -342,12 +375,18 @@ jobs:
       - dependency-security
       - mobile-ios-dev-windows
       - landing-browser-e2e
+      - api-operations
+      - api-staging-contracts
+      - api-readiness
+      - api-migration
+      - api-observability
+      - api-docker
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5
 
     steps:
-      - name: Fail closed if change classification, tooling, Windows, browser or dependency audit fails
+      - name: Fail closed if required quality, browser, security or API job fails
         env:
           QUALITY_WORKSPACES_RESULT: ${{ needs.quality-workspaces.result }}
           TOOLING_CONTRACTS_RESULT: ${{ needs.tooling-contracts.result }}
@@ -362,6 +401,13 @@ jobs:
           LANDING_REQUIRED: ${{ needs.changes.outputs.landing }}
           LANDING_E2E_RESULT: ${{ needs.landing-browser-e2e.result }}
           MOBILE_IOS_DEV_RESULT: ${{ needs.mobile-ios-dev-windows.result }}
+          API_REQUIRED: ${{ needs.changes.outputs.api }}
+          API_OPERATIONS_RESULT: ${{ needs.api-operations.result }}
+          API_STAGING_CONTRACTS_RESULT: ${{ needs.api-staging-contracts.result }}
+          API_READINESS_RESULT: ${{ needs.api-readiness.result }}
+          API_MIGRATION_RESULT: ${{ needs.api-migration.result }}
+          API_OBSERVABILITY_RESULT: ${{ needs.api-observability.result }}
+          API_DOCKER_RESULT: ${{ needs.api-docker.result }}
         run: |
           set -euo pipefail
           test "$CHANGE_DETECTION_RESULT" = success
@@ -396,6 +442,23 @@ jobs:
           else
             test "$MOBILE_REQUIRED" = false
             test "$MOBILE_IOS_DEV_RESULT" = skipped
+          fi
+          # API E2E and coverage remain enforced by the separate required API E2E gate.
+          if [ "$API_REQUIRED" = true ]; then
+            test "$API_OPERATIONS_RESULT" = success
+            test "$API_STAGING_CONTRACTS_RESULT" = success
+            test "$API_READINESS_RESULT" = success
+            test "$API_MIGRATION_RESULT" = success
+            test "$API_OBSERVABILITY_RESULT" = success
+            test "$API_DOCKER_RESULT" = success
+          else
+            test "$API_REQUIRED" = false
+            test "$API_OPERATIONS_RESULT" = skipped
+            test "$API_STAGING_CONTRACTS_RESULT" = skipped
+            test "$API_READINESS_RESULT" = skipped
+            test "$API_MIGRATION_RESULT" = skipped
+            test "$API_OBSERVABILITY_RESULT" = skipped
+            test "$API_DOCKER_RESULT" = skipped
           fi
 
   api-coverage:
@@ -718,10 +781,16 @@ jobs:
             node --version
           '
           docker run --rm --entrypoint sh gym-platform-api:migrate-ci -ec '
-            test -x ../../node_modules/.bin/prisma
-            test -d prisma/migrations
+            test -x node_modules/.bin/prisma
+            test -f prisma7.config.ts
+            test -f prisma/migrations/migration_lock.toml
+            test -d prisma/schemas
             test "$(id -u)" -ne 0
+            node_modules/.bin/prisma --version
           '
+          echo "Docker image size (bytes):"
+          docker image inspect gym-platform-api:runtime-ci gym-platform-api:migrate-ci \
+            --format '{{.RepoTags}} {{.Size}}'
 
   api-e2e-suite:
     name: API e2e suite / PostgreSQL 17

@@ -83,15 +83,17 @@ test('contact selection respects trainer history redaction and athlete viewpoint
   assert.deepEqual(searchTrainerAthletesOnPage([redacted], 'athlete', 'TRAINER'), []);
 });
 
-test('athlete page has an independent authenticated session and role guard', async () => {
+test('athlete page has an independent live-capability guard', async () => {
   const page = await readFile(
     new URL('../src/app/(protected)/athlete/trainers/page.tsx', import.meta.url),
     'utf8',
   );
-  assert.match(page, /verifyServerSession/);
+  assert.match(page, /verifyServerCapability/);
   assert.match(page, /session.kind === 'unauthenticated'/);
   assert.match(page, /session.kind === 'unavailable'/);
-  assert.match(page, /session.user.role !== 'ATHLETE'/);
+  assert.match(page, /verifyServerCapability\(cookieHeader, 'athlete'\)/);
+  assert.doesNotMatch(page, /session\.user\.role/);
+  assert.match(page, /session.kind !== 'authenticated'/);
   assert.match(page, /actorRole="ATHLETE"/);
   assert.match(page, /robots: \{ index: false \}/);
 });

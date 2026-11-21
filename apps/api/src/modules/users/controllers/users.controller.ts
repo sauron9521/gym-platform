@@ -19,7 +19,7 @@ import {
   ApiOkResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { Throttle } from '@nestjs/throttler';
+import { RateLimit } from '#src/common/rate-limit/rate-limit.policies';
 import { AvatarService } from '../avatar/avatar.service.js';
 import type { AvatarUploadFile } from '../avatar/avatar-validation.js';
 import { MAX_AVATAR_SIZE } from '../avatar/avatar-validation.js';
@@ -45,10 +45,29 @@ export class UsersController {
     private readonly avatarService: AvatarService,
   ) {}
 
+  @Get('me/capabilities')
+  @RateLimit('read')
+  @ApiOkResponse({
+    description: 'Current database-derived account capabilities; does not authorize admin actions.',
+    schema: {
+      type: 'object',
+      required: ['athlete', 'trainer', 'admin'],
+      additionalProperties: false,
+      properties: {
+        athlete: { type: 'boolean' },
+        trainer: { type: 'boolean' },
+        admin: { type: 'boolean' },
+      },
+    },
+  })
+  myCapabilities(@CurrentUser() user: UserActor) {
+    return this.usersService.findMyCapabilities(user.id);
+  }
+
   @Get('me')
   // Server route guards and browser profile reads share this endpoint. Normal
   // navigation must not exhaust the stricter default mutation budget.
-  @Throttle({ default: { limit: 60, ttl: 60_000 } })
+  @RateLimit('read')
   @ApiOkResponse({
     description: 'Authenticated account and nullable profile. Never includes credentials.',
     schema: {
@@ -161,7 +180,7 @@ export class UsersController {
     },
   })
   @HttpCode(HttpStatus.OK)
-  @Throttle({ default: { limit: 5, ttl: 60_000 } })
+  @RateLimit('avatar')
   @UseInterceptors(
     FileInterceptor('file', {
       limits: {
@@ -178,7 +197,7 @@ export class UsersController {
 
   @Delete('me/avatar')
   @HttpCode(HttpStatus.OK)
-  @Throttle({ default: { limit: 5, ttl: 60_000 } })
+  @RateLimit('avatar')
   deleteAvatar(@CurrentUser() user: UserActor) {
     return this.avatarService.delete(user.id);
   }

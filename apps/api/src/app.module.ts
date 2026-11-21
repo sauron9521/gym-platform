@@ -18,6 +18,7 @@ import { HttpMetricsRegistry } from '#src/common/http-metrics/http-metrics.regis
 import { HttpMetricsController } from '#src/common/http-metrics/http-metrics.controller';
 import { DistributedThrottlerStorage } from '#src/common/rate-limit/distributed-throttler.storage';
 import { RateLimitStorageModule } from '#src/common/rate-limit/rate-limit-storage.module';
+import { RATE_LIMIT_POLICIES } from '#src/common/rate-limit/rate-limit.policies';
 import { AuthNoStoreMiddleware } from '#src/modules/auth/middleware/auth-no-store.middleware';
 import { PrivateApiNoStoreMiddleware } from '#src/common/http/private-api-no-store.middleware';
 import type { AppConfigService } from '#src/common/config/app-config.types';
@@ -30,6 +31,7 @@ import { AuthModule } from '#src/modules/auth/auth.module';
 import { BodyMeasurementsModule } from '#src/modules/body-measurements/body-measurements.module';
 import { ExercisesModule } from '#src/modules/exercises/exercises.module';
 import { TrainerAthletesModule } from '#src/modules/trainer-athletes/trainer-athletes.module';
+import { TrainerOnboardingModule } from '#src/modules/trainer-onboarding/trainer-onboarding.module';
 import { TrainingProgramsModule } from '#src/modules/training-programs/training-programs.module';
 import { UsersModule } from '#src/modules/users/users.module';
 import { WorkoutsModule } from '#src/modules/workouts/workouts.module';
@@ -53,6 +55,7 @@ import { WorkoutAnalyticsModule } from '#src/modules/workout-analytics/workout-a
           trustedOrigins: getSessionTrustedOrigins(
             config.getOrThrow('APP_URL'),
             config.get('ADMIN_APP_URL'),
+            config.get('TRAINER_APP_URL'),
           ),
         },
         emailVerification: {
@@ -86,7 +89,7 @@ import { WorkoutAnalyticsModule } from '#src/modules/workout-analytics/workout-a
       imports: [RateLimitStorageModule],
       inject: [DistributedThrottlerStorage],
       useFactory: (storage: DistributedThrottlerStorage) => ({
-        throttlers: [{ ttl: 60_000, limit: 10 }],
+        throttlers: [{ ...RATE_LIMIT_POLICIES.global }],
         storage,
       }),
     }),
@@ -97,6 +100,7 @@ import { WorkoutAnalyticsModule } from '#src/modules/workout-analytics/workout-a
     WorkoutAnalyticsModule,
     BodyMeasurementsModule,
     TrainerAthletesModule,
+    TrainerOnboardingModule,
     TrainingProgramsModule,
   ],
   controllers: [HttpMetricsController],

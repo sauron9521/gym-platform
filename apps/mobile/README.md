@@ -54,6 +54,36 @@ No additional Metro monorepo overrides are needed with modern Expo SDKs.
 
 Implement training programs and workout sessions in small PRs.
 
+## Live account capabilities (Mobile + Trainer)
+
+Expo uses the **same account identity** as Athlete Web and Trainer Web, but
+authenticates natively with short-lived Bearer access tokens plus a rotating
+refresh token in SecureStore. The legacy `account.role` is display metadata,
+**not** an authorization grant.
+
+- Before unlocking private native navigation on sign-in, session restore and
+  manual recovery, verify both `GET /users/me` and
+  `GET /users/me/capabilities` against the Nest API. Accept only strict
+  `{ athlete: boolean, trainer: boolean, admin: boolean }` payloads.
+- A verified `ATHLETE` with approved TrainerProfile retains **both** athlete
+  workouts/progress and trainer-athletes access; a revoked profile loses trainer
+  navigation/queries without losing athlete access. ADMIN does not inherit
+  either consumer product.
+- On background/inactive, hide capability-gated navigation and clear private
+  query caches; re-fetch live grants on foreground. A failed verification
+  cannot reuse a stale grant or reopen a privileged screen.
+- Revocation, resource ownership and IDOR checks are **always** enforced by
+  NestJS; these Expo UI guards are defense-in-depth, not an API security policy.
+- Real API regression: `apps/web/e2e/integration/mobile-token-capabilities.spec.ts`
+  uses the **actual Expo bearer client and MobileTokenSession** with an
+  in-memory SecureStore stand-in against disposable Nest/PostgreSQL and compares
+  grants with the Web cookie identity. It checks approval/revocation, ADMIN,
+  refresh rotation, independent browser logout and token revocation.
+- **Not an emulator/device verification:** this integration spec cannot exercise
+  actual iOS Keychain / Android Keystore, app lifecycle UI, or physical device
+  transport. Manual/staging Maestro checks continue to cover those native
+  behaviors. Never run the PostgreSQL integration spec against production DB.
+
 ## Native authentication and refresh-token rotation
 
 - On iOS/Android, only the opaque **refresh token** persists in Expo SecureStore

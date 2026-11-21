@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 
 import { ExercisesModule } from '#src/modules/exercises/exercises.module';
 import { TrainerAthletesModule } from '#src/modules/trainer-athletes/trainer-athletes.module';
+import { UsersModule } from '#src/modules/users/users.module';
 
 import { WorkoutsRepository } from './repositories/workouts.repository.js';
 import { WorkoutCreationRepository } from './repositories/workout-creation.repository.js';
@@ -11,7 +12,7 @@ import { WorkoutsService } from './services/workouts.service.js';
 import { WorkoutsController } from './controllers/workouts.controller.js';
 
 @Module({
-  imports: [ExercisesModule, TrainerAthletesModule],
+  imports: [ExercisesModule, TrainerAthletesModule, UsersModule],
   providers: [
     WorkoutCreationRepository,
     WorkoutLifecycleRepository,

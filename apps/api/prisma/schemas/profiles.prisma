@@ -22,3 +22,72 @@ model Profile {
 
   @@map("profiles")
 }
+
+/**
+ * M05/#309: A TrainerProfile is an additive facet of the existing User.
+ * Its presence does NOT imply Trainer capability: inactive by default,
+ * only an authorized moderator may activate it after approval (#311).
+ */
+model TrainerProfile {
+  id String @id @default(uuid(4))
+
+  userId String @unique @map("user_id")
+  bio String? @db.VarChar(1000)
+
+  isActive Boolean @default(false) @map("is_active")
+  approvedAt DateTime? @map("approved_at") @db.Timestamptz(3)
+  approvedById String? @map("approved_by_id")
+  revokedAt DateTime? @map("revoked_at") @db.Timestamptz(3)
+  revokedById String? @map("revoked_by_id")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Restrict)
+  approvedBy User? @relation("TrainerProfileApprover", fields: [approvedById], references: [id], onDelete: Restrict)
+  revokedBy User? @relation("TrainerProfileRevoker", fields: [revokedById], references: [id], onDelete: Restrict)
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@index([approvedById])
+  @@index([revokedById])
+  @@map("trainer_profiles")
+}
+
+enum TrainerApplicationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  REVOKED
+}
+
+/**
+ * Append-only decision history: another application may be submitted after
+ * rejection/revocation, but no more than one PENDING application per user.
+ * This model is not itself an authorization grant.
+ */
+model TrainerApplication {
+  id String @id @default(uuid(4))
+  userId String @map("user_id")
+  status TrainerApplicationStatus @default(PENDING)
+
+  applicantNote String? @map("applicant_note") @db.VarChar(1000)
+  reviewerId String? @map("reviewer_id")
+  reviewReason String? @map("review_reason") @db.VarChar(500)
+  reviewedAt DateTime? @map("reviewed_at") @db.Timestamptz(3)
+  revokedAt DateTime? @map("revoked_at") @db.Timestamptz(3)
+  revokedById String? @map("revoked_by_id")
+  revokeReason String? @map("revoke_reason") @db.VarChar(500)
+
+  applicant User @relation("TrainerApplicationApplicant", fields: [userId], references: [id], onDelete: Restrict)
+  reviewer User? @relation("TrainerApplicationReviewer", fields: [reviewerId], references: [id], onDelete: Restrict)
+  revokedBy User? @relation("TrainerApplicationRevoker", fields: [revokedById], references: [id], onDelete: Restrict)
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@unique([userId], where: raw("status = 'PENDING'"), map: "trainer_applications_one_pending_per_user_key")
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([status, createdAt(sort: Desc)])
+  @@index([reviewerId])
+  @@index([revokedById])
+  @@map("trainer_applications")
+}

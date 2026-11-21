@@ -3,6 +3,7 @@ import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 
 import { useAuth } from '@/features/auth/model/auth-context';
+import { hasAthleteAccess } from '@/features/auth/model/account-capabilities';
 import {
   workoutStatusLabel,
   type WorkoutState,
@@ -20,7 +21,7 @@ const filters: { title: string; value: WorkoutFilter }[] = [
 
 export function WorkoutsScreen() {
   const router = useRouter();
-  const { account } = useAuth();
+  const { capabilities } = useAuth();
   const [filter, setFilter] = useState<WorkoutFilter>(undefined);
   const {
     data,
@@ -28,7 +29,6 @@ export function WorkoutsScreen() {
     isError,
     error,
     isFetching,
-    isRefetching,
     hasNextPage,
     isFetchingNextPage,
     isFetchNextPageError,
@@ -61,8 +61,7 @@ export function WorkoutsScreen() {
       contentContainerStyle={styles.content}
       data={workouts}
       keyExtractor={(workout) => workout.id}
-      refreshing={isRefetching && !isFetchingNextPage}
-      onRefresh={() => void refetch()}
+      bounces={false}
       onEndReached={() => {
         // Prevent failed-page retry loops and overlapping refresh/page fetches.
         if (hasNextPage && !isFetching && !isFetchNextPageError) void fetchNextPage();
@@ -72,7 +71,7 @@ export function WorkoutsScreen() {
         <View style={styles.heading}>
           <Text style={styles.title}>Мої тренування</Text>
           <Text style={styles.subtitle}>Історія та заплановані тренування</Text>
-          {account?.role === 'ATHLETE' ? (
+          {hasAthleteAccess(capabilities) ? (
             <Pressable
               testID="workouts-create"
               accessibilityRole="button"

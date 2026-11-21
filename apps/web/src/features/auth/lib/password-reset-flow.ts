@@ -1,8 +1,24 @@
 /** Client-only hints; NestJS remains authoritative for validation and recovery. */
-export function validatePasswordResetInput(password: string, confirmation: string): string | null {
-  if (password.length < 8) return 'Новий пароль має містити щонайменше 8 символів.';
-  if (!/\S/.test(password)) return 'Пароль не може складатися лише з пробілів.';
-  if (password !== confirmation) return 'Паролі не збігаються.';
+type PasswordResetValidationMessages = {
+  tooShort: string;
+  whitespaceOnly: string;
+  mismatch: string;
+};
+
+const defaultValidationMessages: PasswordResetValidationMessages = {
+  tooShort: 'Новий пароль має містити щонайменше 8 символів.',
+  whitespaceOnly: 'Пароль не може складатися лише з пробілів.',
+  mismatch: 'Паролі не збігаються.',
+};
+
+export function validatePasswordResetInput(
+  password: string,
+  confirmation: string,
+  messages: PasswordResetValidationMessages = defaultValidationMessages,
+): string | null {
+  if (password.length < 8) return messages.tooShort;
+  if (!/\S/.test(password)) return messages.whitespaceOnly;
+  if (password !== confirmation) return messages.mismatch;
   return null;
 }
 
@@ -35,5 +51,32 @@ export function getResetPasswordErrorMessage(status: number): string {
       return 'Забагато спроб. Спробуйте трохи пізніше.';
     default:
       return 'Не вдалося змінити пароль. Спробуйте пізніше.';
+  }
+}
+
+/** Localized messages are selected by safe HTTP status, not response bodies. */
+export function getForgotPasswordErrorKey(status: number) {
+  switch (status) {
+    case 400:
+      return 'forgotBadInput' as const;
+    case 403:
+      return 'forgotSecurity' as const;
+    case 429:
+      return 'forgotRateLimited' as const;
+    default:
+      return 'forgotUnknown' as const;
+  }
+}
+
+export function getResetPasswordErrorKey(status: number) {
+  switch (status) {
+    case 400:
+      return 'resetBadInput' as const;
+    case 403:
+      return 'resetSecurity' as const;
+    case 429:
+      return 'resetRateLimited' as const;
+    default:
+      return 'resetUnknown' as const;
   }
 }

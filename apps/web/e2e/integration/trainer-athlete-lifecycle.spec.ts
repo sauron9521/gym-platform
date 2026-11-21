@@ -26,11 +26,11 @@ test('real API: trainer invitation, acceptance, termination and privacy', async 
     await login(athletePage, athlete.email, 'ATHLETE');
     await login(trainerPage, trainer.email, 'TRAINER');
 
-    // Each role must be denied the other's protected dashboard.
+    // A regular athlete cannot enter Trainer routes. The separate capability
+    // route regression covers a legacy TRAINER's own Athlete workspace without
+    // repeating extra authenticated reads during this relationship lifecycle.
     await athletePage.goto('/trainer/athletes');
     await expect(athletePage.getByRole('heading', { name: 'Доступ заборонено' })).toBeVisible();
-    await trainerPage.goto('/athlete/trainers');
-    await expect(trainerPage.getByRole('heading', { name: 'Доступ заборонено' })).toBeVisible();
 
     // Trainer invites the athlete through the real Web form.
     await trainerPage.goto('/trainer/athletes');

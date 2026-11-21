@@ -76,7 +76,7 @@ test('creation errors are status-derived without exposing API response content',
   assert.equal(error(), error(500));
 });
 
-test('new program page protects trainer role and creation calls the same-origin API', async () => {
+test('new program page protects trainer capability and creation calls the same-origin API', async () => {
   const page = await readFile(
     new URL('../src/app/(protected)/trainer/programs/new/page.tsx', import.meta.url),
     'utf8',
@@ -95,8 +95,10 @@ test('new program page protects trainer role and creation calls the same-origin 
     'utf8',
   );
 
-  assert.match(page, /verifyServerSession/);
-  assert.match(page, /session.user.role !== 'TRAINER'/);
+  assert.match(page, /verifyServerCapability/);
+  assert.match(page, /verifyServerCapability\(cookieHeader, 'trainer'\)/);
+  assert.doesNotMatch(page, /session\.user\.role/);
+  assert.match(page, /session.kind !== 'authenticated'/);
   assert.match(page, /session.kind === 'unauthenticated'/);
   assert.match(page, /session.kind === 'unavailable'/);
   assert.match(page, /robots: \{ index: false \}/);

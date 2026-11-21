@@ -256,16 +256,42 @@ describe('Workout Analytics (HTTP + PostgreSQL)', () => {
     }
   }, 20_000);
 
-  it('requires authentication and athlete role', async () => {
+  it('requires auth and scopes legacy trainer analytics to their own history', async () => {
     await request(app.getHttpServer()).get('/workout-analytics/summary').expect(401);
-    await request(app.getHttpServer())
+    const trainerSummary = await request(app.getHttpServer())
       .get('/workout-analytics/summary')
       .set('Cookie', trainerCookie)
-      .expect(403);
-    await request(app.getHttpServer())
+      .expect(200);
+    expect(trainerSummary.body).toMatchObject({ workoutCount: 0, daily: [] });
+    const foreignExercise = await request(app.getHttpServer())
       .get(`/workout-analytics/exercises/${benchId}`)
       .set('Cookie', trainerCookie)
-      .expect(403);
+      .expect(200);
+    expect(foreignExercise.body).toMatchObject({ workoutCount: 0, name: null });
+  });
+
+  it('returns verified per-exercise lifetime best counts without leaking other users', async () => {
+    await request(app.getHttpServer()).get('/workout-analytics/personal-records').expect(401);
+    const trainerRecords = await request(app.getHttpServer())
+      .get('/workout-analytics/personal-records')
+      .set('Cookie', trainerCookie)
+      .expect(200);
+    expect(trainerRecords.body).toMatchObject({ exerciseCount: 0 });
+
+    const owner = await request(app.getHttpServer())
+      .get('/workout-analytics/personal-records')
+      .set('Cookie', athleteCookie)
+      .expect(200);
+    // One bench press best despite four completed weights. Cardio, skipped,
+    // cancelled, planned and another athlete's exercise are excluded.
+    expect(owner.body).toMatchObject({ exerciseCount: 1, asOf: expect.any(String) });
+    expect(owner.body).not.toHaveProperty('athleteId');
+
+    const other = await request(app.getHttpServer())
+      .get('/workout-analytics/personal-records')
+      .set('Cookie', otherCookie)
+      .expect(200);
+    expect(other.body).toMatchObject({ exerciseCount: 1 });
   });
 
   it('summarizes only completed athlete workouts and actual strength volume', async () => {

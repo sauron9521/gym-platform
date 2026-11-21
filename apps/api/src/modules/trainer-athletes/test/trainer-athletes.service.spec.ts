@@ -7,8 +7,9 @@ import {
 
 import { Prisma } from '#prisma/client';
 
-import { UsersRepository } from '#src/modules/users/repositories/users.repository';
+import { UsersService } from '#src/modules/users/services/users.service';
 import { TrainerAthletesRepository } from '../repositories/trainer-athletes.repository.js';
+import { fullRelationshipReadWhere } from '../policies/trainer-athlete-read.policy.js';
 import { TrainerAthletesService } from '../services/trainer-athletes.service.js';
 import { TrainerAthleteTerminationService } from '../services/trainer-athlete-termination.service.js';
 
@@ -18,23 +19,23 @@ describe('TrainerAthletesService', () => {
   let service: TrainerAthletesService;
 
   const repository = {
-    create: vi.fn(),
+    createWithCurrentCapabilities: vi.fn(),
     findMany: vi.fn(),
-    findManyForTrainer: vi.fn(),
+    findManyForParticipant: vi.fn(),
     findById: vi.fn(),
-    findHistoricalById: vi.fn(),
+    findRestrictedById: vi.fn(),
     findOpenByPair: vi.fn(),
     update: vi.fn(),
     findActiveTrainerIdsForAthlete: vi.fn(),
     findActiveAthleteIdsForTrainer: vi.fn(),
   };
 
-  const usersRepository = {
-    findUserById: vi.fn(),
-  };
-
   const terminationService = {
     terminateWithExerciseCopies: vi.fn(),
+  };
+
+  const usersService = {
+    findMyCapabilities: vi.fn(),
   };
 
   const trainer: TrainerAthleteActor = {
@@ -52,18 +53,6 @@ describe('TrainerAthletesService', () => {
     role: 'ADMIN',
   };
 
-  const trainerUser = {
-    id: trainer.id,
-    email: 'trainer@example.com',
-    role: 'TRAINER',
-  };
-
-  const athleteUser = {
-    id: athlete.id,
-    email: 'athlete@example.com',
-    role: 'ATHLETE',
-  };
-
   const pendingRelationship = {
     id: 'relationship-1',
     trainerId: trainer.id,
@@ -79,19 +68,151 @@ describe('TrainerAthletesService', () => {
 
   beforeEach(() => {
     vi.resetAllMocks();
+    usersService.findMyCapabilities.mockImplementation(async (id: string) => ({
+      athlete: id !== admin.id,
+      trainer: id.startsWith('trainer-'),
+      admin: id === admin.id,
+    }));
+    repository.findActiveTrainerIdsForAthlete.mockResolvedValue([]);
 
     service = new TrainerAthletesService(
       repository as unknown as TrainerAthletesRepository,
-      usersRepository as unknown as UsersRepository,
       terminationService as unknown as TrainerAthleteTerminationService,
+      usersService as unknown as UsersService,
     );
   });
 
   describe('create', () => {
-    it('should allow a trainer to invite an athlete', async () => {
-      usersRepository.findUserById.mockResolvedValue(athleteUser);
+    it('rejects if trainer approval is revoked after the initial capability lookup', async () => {
       repository.findOpenByPair.mockResolvedValue(null);
-      repository.create.mockResolvedValue(pendingRelationship);
+      repository.createWithCurrentCapabilities.mockRejectedValue(
+        new ConflictException('Relationship participants are no longer eligible'),
+      );
+
+      await expect(service.create(trainer, { userId: athlete.id })).rejects.toThrow(
+        ConflictException,
+      );
+
+      expect(usersService.findMyCapabilities).toHaveBeenCalledTimes(2);
+      expect(repository.createWithCurrentCapabilities).toHaveBeenCalledExactlyOnceWith({
+        trainerId: trainer.id,
+        athleteId: athlete.id,
+        initiatedById: trainer.id,
+      });
+    });
+
+    it('rejects if the target athlete loses eligibility during the invitation transaction', async () => {
+      repository.findOpenByPair.mockResolvedValue(null);
+      repository.createWithCurrentCapabilities.mockRejectedValue(
+        new ConflictException('Relationship participants are no longer eligible'),
+      );
+
+      await expect(service.create(trainer, { userId: athlete.id })).rejects.toThrow(
+        ConflictException,
+      );
+      expect(repository.createWithCurrentCapabilities).toHaveBeenCalledOnce();
+    });
+
+    it('approved ATHLETE can invite an athlete without changing session role', async () => {
+      usersService.findMyCapabilities.mockImplementation(async (id: string) => ({
+        athlete: true,
+        trainer: id === athlete.id,
+        admin: false,
+      }));
+      repository.findOpenByPair.mockResolvedValue(null);
+      repository.createWithCurrentCapabilities.mockResolvedValue({
+        ...pendingRelationship,
+        trainerId: athlete.id,
+        athleteId: 'athlete-2',
+        initiatedById: athlete.id,
+      });
+
+      const result = await service.create(athlete, { userId: 'athlete-2' });
+
+      expect(result).toMatchObject({ trainerId: athlete.id, athleteId: 'athlete-2' });
+      expect(repository.findOpenByPair).toHaveBeenCalledExactlyOnceWith(athlete.id, 'athlete-2');
+    });
+
+    it('allows a regular athlete to invite a newly approved ATHLETE-role trainer', async () => {
+      usersService.findMyCapabilities.mockImplementation(async (id: string) => ({
+        athlete: true,
+        trainer: id === 'approved-1',
+        admin: false,
+      }));
+      repository.findOpenByPair.mockResolvedValue(null);
+      repository.createWithCurrentCapabilities.mockResolvedValue(pendingRelationship);
+
+      await service.create(athlete, { userId: 'approved-1' });
+
+      expect(repository.findOpenByPair).toHaveBeenCalledExactlyOnceWith('approved-1', athlete.id);
+    });
+
+    it('rejects a revoked TRAINER session trying to invite an athlete', async () => {
+      usersService.findMyCapabilities.mockImplementation(async () => ({
+        athlete: true,
+        trainer: false,
+        admin: false,
+      }));
+
+      await expect(service.create(trainer, { userId: athlete.id })).rejects.toThrow(
+        BadRequestException,
+      );
+      expect(repository.findOpenByPair).not.toHaveBeenCalled();
+      expect(repository.createWithCurrentCapabilities).not.toHaveBeenCalled();
+    });
+
+    it('rejects an athlete inviting a trainer whose capability was revoked', async () => {
+      usersService.findMyCapabilities.mockImplementation(async () => ({
+        athlete: true,
+        trainer: false,
+        admin: false,
+      }));
+
+      await expect(service.create(athlete, { userId: trainer.id })).rejects.toThrow(
+        BadRequestException,
+      );
+      expect(repository.createWithCurrentCapabilities).not.toHaveBeenCalled();
+    });
+
+    it('rejects ambiguous dual-trainer invitations', async () => {
+      usersService.findMyCapabilities.mockResolvedValue({
+        athlete: true,
+        trainer: true,
+        admin: false,
+      });
+
+      await expect(service.create(trainer, { userId: 'another-trainer' })).rejects.toThrow(
+        BadRequestException,
+      );
+      expect(repository.findOpenByPair).not.toHaveBeenCalled();
+    });
+
+    it('does not permit a new invitation after an account capability lookup fails', async () => {
+      usersService.findMyCapabilities.mockRejectedValue(new Error('Database unavailable'));
+
+      await expect(service.create(trainer, { userId: athlete.id })).rejects.toThrow(
+        'Database unavailable',
+      );
+      expect(repository.findOpenByPair).not.toHaveBeenCalled();
+      expect(repository.createWithCurrentCapabilities).not.toHaveBeenCalled();
+    });
+
+    it('does not permit an athlete to invite an admin target', async () => {
+      usersService.findMyCapabilities.mockImplementation(async (id: string) => ({
+        athlete: id !== admin.id,
+        trainer: false,
+        admin: id === admin.id,
+      }));
+
+      await expect(service.create(athlete, { userId: admin.id })).rejects.toThrow(
+        BadRequestException,
+      );
+      expect(repository.createWithCurrentCapabilities).not.toHaveBeenCalled();
+    });
+
+    it('should allow a trainer to invite an athlete', async () => {
+      repository.findOpenByPair.mockResolvedValue(null);
+      repository.createWithCurrentCapabilities.mockResolvedValue(pendingRelationship);
 
       const result = await service.create(trainer, {
         userId: athlete.id,
@@ -101,23 +222,16 @@ describe('TrainerAthletesService', () => {
 
       expect(repository.findOpenByPair).toHaveBeenCalledWith(trainer.id, athlete.id);
 
-      expect(repository.create).toHaveBeenCalledWith({
-        trainer: {
-          connect: { id: trainer.id },
-        },
-        athlete: {
-          connect: { id: athlete.id },
-        },
-        initiatedBy: {
-          connect: { id: trainer.id },
-        },
+      expect(repository.createWithCurrentCapabilities).toHaveBeenCalledWith({
+        trainerId: trainer.id,
+        athleteId: athlete.id,
+        initiatedById: trainer.id,
       });
     });
 
     it('should allow an athlete to invite a trainer', async () => {
-      usersRepository.findUserById.mockResolvedValue(trainerUser);
       repository.findOpenByPair.mockResolvedValue(null);
-      repository.create.mockResolvedValue({
+      repository.createWithCurrentCapabilities.mockResolvedValue({
         ...pendingRelationship,
         initiatedById: athlete.id,
       });
@@ -126,16 +240,10 @@ describe('TrainerAthletesService', () => {
         userId: trainer.id,
       });
 
-      expect(repository.create).toHaveBeenCalledWith({
-        trainer: {
-          connect: { id: trainer.id },
-        },
-        athlete: {
-          connect: { id: athlete.id },
-        },
-        initiatedBy: {
-          connect: { id: athlete.id },
-        },
+      expect(repository.createWithCurrentCapabilities).toHaveBeenCalledWith({
+        trainerId: trainer.id,
+        athleteId: athlete.id,
+        initiatedById: athlete.id,
       });
     });
 
@@ -144,39 +252,37 @@ describe('TrainerAthletesService', () => {
         BadRequestException,
       );
 
-      expect(usersRepository.findUserById).not.toHaveBeenCalled();
-      expect(repository.create).not.toHaveBeenCalled();
+      expect(usersService.findMyCapabilities).not.toHaveBeenCalled();
+      expect(repository.createWithCurrentCapabilities).not.toHaveBeenCalled();
     });
 
     it('should reject a missing target user', async () => {
-      usersRepository.findUserById.mockResolvedValue(null);
+      usersService.findMyCapabilities
+        .mockResolvedValueOnce({ athlete: true, trainer: true, admin: false })
+        .mockRejectedValueOnce(new NotFoundException('User not found'));
 
       await expect(service.create(trainer, { userId: athlete.id })).rejects.toThrow(
         NotFoundException,
       );
 
-      expect(repository.create).not.toHaveBeenCalled();
+      expect(repository.createWithCurrentCapabilities).not.toHaveBeenCalled();
     });
 
     it('should reject a trainer inviting another trainer', async () => {
-      usersRepository.findUserById.mockResolvedValue(trainerUser);
-
       await expect(service.create(trainer, { userId: trainer.id + '-2' })).rejects.toThrow(
         BadRequestException,
       );
 
       expect(repository.findOpenByPair).not.toHaveBeenCalled();
-      expect(repository.create).not.toHaveBeenCalled();
+      expect(repository.createWithCurrentCapabilities).not.toHaveBeenCalled();
     });
 
     it('should reject an athlete inviting another athlete', async () => {
-      usersRepository.findUserById.mockResolvedValue(athleteUser);
-
       await expect(service.create(athlete, { userId: athlete.id + '-2' })).rejects.toThrow(
         BadRequestException,
       );
 
-      expect(repository.create).not.toHaveBeenCalled();
+      expect(repository.createWithCurrentCapabilities).not.toHaveBeenCalled();
     });
 
     it('should reject users with unsupported roles', async () => {
@@ -184,11 +290,10 @@ describe('TrainerAthletesService', () => {
         ForbiddenException,
       );
 
-      expect(usersRepository.findUserById).not.toHaveBeenCalled();
+      expect(usersService.findMyCapabilities).toHaveBeenCalledExactlyOnceWith(admin.id);
     });
 
     it('should reject an existing pending or active relationship', async () => {
-      usersRepository.findUserById.mockResolvedValue(athleteUser);
       repository.findOpenByPair.mockResolvedValue({
         id: 'relationship-existing',
         status: 'ACTIVE',
@@ -198,14 +303,13 @@ describe('TrainerAthletesService', () => {
         ConflictException,
       );
 
-      expect(repository.create).not.toHaveBeenCalled();
+      expect(repository.createWithCurrentCapabilities).not.toHaveBeenCalled();
     });
 
     it('should handle a concurrent duplicate request', async () => {
-      usersRepository.findUserById.mockResolvedValue(athleteUser);
       repository.findOpenByPair.mockResolvedValue(null);
 
-      repository.create.mockRejectedValue(
+      repository.createWithCurrentCapabilities.mockRejectedValue(
         new Prisma.PrismaClientKnownRequestError('Unique constraint failed', {
           code: 'P2002',
           clientVersion: '7.10.1',
@@ -219,6 +323,103 @@ describe('TrainerAthletesService', () => {
   });
 
   describe('findMany', () => {
+    it('allows an approved ATHLETE-role trainer to list active collaborations', async () => {
+      const approvedTrainer: TrainerAthleteActor = { id: trainer.id, role: 'ATHLETE' };
+      repository.findManyForParticipant.mockResolvedValue({
+        data: [activeRelationship],
+        meta: { total: 1, skip: 0, take: 20, totalPages: 1 },
+      });
+
+      await service.findMany(approvedTrainer, { page: 1, limit: 20 });
+
+      expect(repository.findManyForParticipant).toHaveBeenCalledWith(
+        expect.objectContaining({ where: expect.any(Object) }),
+        trainer.id,
+        true,
+      );
+    });
+
+    it('scopes Trainer dashboard pagination in PostgreSQL before counting', async () => {
+      const response = {
+        data: [activeRelationship],
+        meta: { total: 1, skip: 8, take: 8, totalPages: 2 },
+      };
+      repository.findManyForParticipant.mockResolvedValue(response);
+      const result = await service.findMany(trainer, {
+        page: 2,
+        limit: 8,
+        status: 'ACTIVE',
+        scope: 'trainer',
+      });
+
+      expect(result).toEqual(response);
+      expect(repository.findManyForParticipant).toHaveBeenCalledWith(
+        {
+          where: { trainerId: trainer.id, status: 'ACTIVE' },
+          skip: 8,
+          take: 8,
+        },
+        trainer.id,
+        true,
+      );
+    });
+
+    it('rejects trainer-scoped reads for athletes and revoked trainers before querying', async () => {
+      for (const actor of [athlete, trainer]) {
+        usersService.findMyCapabilities.mockResolvedValueOnce({
+          athlete: true,
+          trainer: false,
+          admin: false,
+        });
+        await expect(
+          service.findMany(actor, { page: 1, limit: 8, scope: 'trainer' }),
+        ).rejects.toThrow(ForbiddenException);
+      }
+      expect(repository.findManyForParticipant).not.toHaveBeenCalled();
+    });
+
+    it('keeps only redacted trainer-side reads after TrainerProfile revocation', async () => {
+      usersService.findMyCapabilities.mockResolvedValue({
+        athlete: true,
+        trainer: false,
+        admin: false,
+      });
+      repository.findManyForParticipant.mockResolvedValue({
+        data: [],
+        meta: { total: 0, skip: 0, take: 20, totalPages: 0 },
+      });
+
+      await service.findMany(trainer, { page: 1, limit: 20 });
+
+      expect(repository.findManyForParticipant).toHaveBeenCalledWith(
+        expect.any(Object),
+        trainer.id,
+        false,
+      );
+    });
+
+    it('rejects reading relationships with an obsolete ATHLETE session after admin promotion', async () => {
+      usersService.findMyCapabilities.mockResolvedValue({
+        athlete: false,
+        trainer: false,
+        admin: true,
+      });
+
+      await expect(service.findMany(athlete, { page: 1, limit: 20 })).rejects.toThrow(
+        ForbiddenException,
+      );
+      expect(repository.findManyForParticipant).not.toHaveBeenCalled();
+    });
+
+    it('fails closed when the current account is deleted or unavailable', async () => {
+      usersService.findMyCapabilities.mockRejectedValue(new NotFoundException('User not found'));
+
+      await expect(service.findMany(athlete, { page: 1, limit: 20 })).rejects.toThrow(
+        NotFoundException,
+      );
+      expect(repository.findManyForParticipant).not.toHaveBeenCalled();
+    });
+
     it('should return relationships for the current trainer', async () => {
       const response = {
         data: [pendingRelationship],
@@ -230,7 +431,7 @@ describe('TrainerAthletesService', () => {
         },
       };
 
-      repository.findManyForTrainer.mockResolvedValue(response);
+      repository.findManyForParticipant.mockResolvedValue(response);
 
       const result = await service.findMany(trainer, {
         page: 1,
@@ -240,14 +441,18 @@ describe('TrainerAthletesService', () => {
 
       expect(result).toEqual(response);
 
-      expect(repository.findManyForTrainer).toHaveBeenCalledWith({
-        where: {
-          OR: [{ trainerId: trainer.id }, { athleteId: trainer.id }],
-          status: 'PENDING',
+      expect(repository.findManyForParticipant).toHaveBeenCalledWith(
+        {
+          where: {
+            OR: [{ trainerId: trainer.id }, { athleteId: trainer.id }],
+            status: 'PENDING',
+          },
+          skip: 0,
+          take: 20,
         },
-        skip: 0,
-        take: 20,
-      });
+        trainer.id,
+        true,
+      );
     });
 
     it('should reject invalid pagination', async () => {
@@ -258,11 +463,98 @@ describe('TrainerAthletesService', () => {
         }),
       ).rejects.toThrow(BadRequestException);
 
-      expect(repository.findMany).not.toHaveBeenCalled();
+      expect(repository.findManyForParticipant).not.toHaveBeenCalled();
     });
   });
 
   describe('findOne', () => {
+    it('returns redacted details for a revoked trainer with an ACTIVE relationship', async () => {
+      usersService.findMyCapabilities.mockResolvedValue({
+        athlete: true,
+        trainer: false,
+        admin: false,
+      });
+      const redacted = {
+        id: activeRelationship.id,
+        trainerId: trainer.id,
+        athleteId: athlete.id,
+        status: 'ACTIVE',
+        athlete: { id: athlete.id, role: 'ATHLETE' },
+      };
+      repository.findById.mockResolvedValue(null);
+      repository.findRestrictedById.mockResolvedValue(redacted);
+
+      const result = await service.findOne(activeRelationship.id, trainer);
+
+      expect(result).toEqual(redacted);
+      expect(repository.findById).toHaveBeenCalledWith(
+        activeRelationship.id,
+        fullRelationshipReadWhere(trainer.id, false),
+      );
+      expect(repository.findRestrictedById).toHaveBeenCalledWith(activeRelationship.id, {
+        trainerId: trainer.id,
+      });
+    });
+
+    it('allows cleanup reads for revoked trainers with PENDING relationships', async () => {
+      usersService.findMyCapabilities.mockResolvedValue({
+        athlete: true,
+        trainer: false,
+        admin: false,
+      });
+      repository.findById.mockResolvedValue(null);
+      repository.findRestrictedById.mockResolvedValue(pendingRelationship);
+
+      await expect(service.findOne(pendingRelationship.id, trainer)).resolves.toMatchObject({
+        status: 'PENDING',
+      });
+    });
+
+    it('rejects detail reads for newly promoted admins even with an old TRAINER session', async () => {
+      usersService.findMyCapabilities.mockResolvedValue({
+        athlete: false,
+        trainer: false,
+        admin: true,
+      });
+
+      await expect(service.findOne(activeRelationship.id, trainer)).rejects.toThrow(
+        ForbiddenException,
+      );
+      expect(repository.findById).not.toHaveBeenCalled();
+      expect(repository.findRestrictedById).not.toHaveBeenCalled();
+    });
+
+    it('allows currently eligible participants even if their session had an ADMIN role', async () => {
+      const oldAdminSession: TrainerAthleteActor = { id: athlete.id, role: 'ADMIN' };
+      repository.findById.mockResolvedValue(pendingRelationship);
+
+      await expect(service.findOne(pendingRelationship.id, oldAdminSession)).resolves.toEqual(
+        pendingRelationship,
+      );
+      expect(repository.findById).toHaveBeenCalledWith(
+        pendingRelationship.id,
+        fullRelationshipReadWhere(athlete.id, false),
+      );
+    });
+
+    it('redacts former trainer history even when the session role is ATHLETE', async () => {
+      const approvedTrainer: TrainerAthleteActor = { id: trainer.id, role: 'ATHLETE' };
+      const restricted = {
+        id: 'relationship-1',
+        trainerId: trainer.id,
+        athleteId: athlete.id,
+        status: 'TERMINATED',
+        athlete: { id: athlete.id, role: 'ATHLETE' },
+      };
+      repository.findById.mockResolvedValue(null);
+      repository.findRestrictedById.mockResolvedValue(restricted);
+
+      await expect(service.findOne(restricted.id, approvedTrainer)).resolves.toEqual(restricted);
+      expect(repository.findRestrictedById).toHaveBeenCalledWith(restricted.id, {
+        trainerId: trainer.id,
+      });
+    });
+
     it('should return a relationship for its participant', async () => {
       repository.findById.mockResolvedValue(pendingRelationship);
 
@@ -270,20 +562,12 @@ describe('TrainerAthletesService', () => {
 
       expect(result).toEqual(pendingRelationship);
 
-      expect(repository.findById).toHaveBeenCalledWith(pendingRelationship.id, {
-        AND: [
-          {
-            OR: [{ trainerId: trainer.id }, { athleteId: trainer.id }],
-          },
-          {
-            status: {
-              in: ['ACTIVE', 'PENDING'],
-            },
-          },
-        ],
-      });
+      expect(repository.findById).toHaveBeenCalledWith(
+        pendingRelationship.id,
+        fullRelationshipReadWhere(trainer.id, true),
+      );
 
-      expect(repository.findHistoricalById).not.toHaveBeenCalled();
+      expect(repository.findRestrictedById).not.toHaveBeenCalled();
     });
 
     it('should hide relationships from unrelated users', async () => {
@@ -320,28 +604,20 @@ describe('TrainerAthletesService', () => {
       repository.findById.mockResolvedValue(null);
 
       // The repository returns a safe historical projection.
-      repository.findHistoricalById.mockResolvedValue(historicalRelationship);
+      repository.findRestrictedById.mockResolvedValue(historicalRelationship);
 
       const result = await service.findOne(historicalRelationship.id, trainer);
 
       expect(result).toEqual(historicalRelationship);
 
-      expect(repository.findHistoricalById).toHaveBeenCalledWith(historicalRelationship.id, {
-        OR: [{ trainerId: trainer.id }, { athleteId: trainer.id }],
+      expect(repository.findRestrictedById).toHaveBeenCalledWith(historicalRelationship.id, {
+        trainerId: trainer.id,
       });
 
-      expect(repository.findById).toHaveBeenCalledWith(historicalRelationship.id, {
-        AND: [
-          {
-            OR: [{ trainerId: trainer.id }, { athleteId: trainer.id }],
-          },
-          {
-            status: {
-              in: ['ACTIVE', 'PENDING'],
-            },
-          },
-        ],
-      });
+      expect(repository.findById).toHaveBeenCalledWith(
+        historicalRelationship.id,
+        fullRelationshipReadWhere(trainer.id, true),
+      );
     });
 
     it('should preserve full historical relationship access for the athlete', async () => {
@@ -366,16 +642,86 @@ describe('TrainerAthletesService', () => {
 
       expect(result).toEqual(historicalRelationship);
 
-      expect(repository.findById).toHaveBeenCalledWith(historicalRelationship.id, {
-        OR: [{ trainerId: athlete.id }, { athleteId: athlete.id }],
-      });
+      expect(repository.findById).toHaveBeenCalledWith(
+        historicalRelationship.id,
+        fullRelationshipReadWhere(athlete.id, false),
+      );
 
       // The athlete must not use the restricted trainer path.
-      expect(repository.findHistoricalById).not.toHaveBeenCalled();
+      expect(repository.findRestrictedById).not.toHaveBeenCalled();
     });
   });
 
   describe('accept', () => {
+    it('rejects accepting when the trainer capability has been revoked', async () => {
+      repository.findById.mockResolvedValue(pendingRelationship);
+      usersService.findMyCapabilities.mockImplementation(async () => ({
+        athlete: true,
+        trainer: false,
+        admin: false,
+      }));
+
+      await expect(service.accept(pendingRelationship.id, athlete)).rejects.toThrow(
+        ConflictException,
+      );
+      expect(repository.update).not.toHaveBeenCalled();
+    });
+
+    it('allows an approved ATHLETE-role trainer to accept an athlete invitation', async () => {
+      repository.findById.mockResolvedValue({
+        ...pendingRelationship,
+        initiatedById: athlete.id,
+      });
+      repository.update.mockResolvedValue(activeRelationship);
+      const approvedTrainer: TrainerAthleteActor = { id: trainer.id, role: 'ATHLETE' };
+
+      await expect(service.accept(pendingRelationship.id, approvedTrainer)).resolves.toEqual(
+        activeRelationship,
+      );
+      expect(repository.update).toHaveBeenCalledOnce();
+    });
+
+    it('rejects activation after an actor is promoted to admin', async () => {
+      repository.findById.mockResolvedValue(pendingRelationship);
+      usersService.findMyCapabilities.mockImplementation(async (id: string) => ({
+        athlete: id !== athlete.id ? true : false,
+        trainer: false,
+        admin: id === athlete.id,
+      }));
+
+      await expect(service.accept(pendingRelationship.id, athlete)).rejects.toThrow(
+        ForbiddenException,
+      );
+      expect(repository.update).not.toHaveBeenCalled();
+    });
+
+    it('rejects acceptance when the athlete account is not eligible', async () => {
+      repository.findById.mockResolvedValue({
+        ...pendingRelationship,
+        initiatedById: athlete.id,
+      });
+      usersService.findMyCapabilities.mockImplementation(async (id: string) => ({
+        athlete: id !== athlete.id,
+        trainer: id === trainer.id,
+        admin: false,
+      }));
+
+      await expect(service.accept(pendingRelationship.id, trainer)).rejects.toThrow(
+        ConflictException,
+      );
+      expect(repository.update).not.toHaveBeenCalled();
+    });
+
+    it('does not activate a pending relationship when capability lookup fails', async () => {
+      repository.findById.mockResolvedValue(pendingRelationship);
+      usersService.findMyCapabilities.mockRejectedValue(new Error('Database unavailable'));
+
+      await expect(service.accept(pendingRelationship.id, athlete)).rejects.toThrow(
+        'Database unavailable',
+      );
+      expect(repository.update).not.toHaveBeenCalled();
+    });
+
     it('should allow the recipient to accept a request', async () => {
       repository.findById.mockResolvedValue(pendingRelationship);
       repository.update.mockResolvedValue(activeRelationship);
@@ -385,10 +731,21 @@ describe('TrainerAthletesService', () => {
       expect(result).toEqual(activeRelationship);
 
       expect(repository.update).toHaveBeenCalledWith(
-        {
+        expect.objectContaining({
           id: pendingRelationship.id,
           status: 'PENDING',
-        },
+          trainer: {
+            is: {
+              deletedAt: null,
+              role: { not: 'ADMIN' },
+              OR: [
+                { trainerProfile: { is: { isActive: true } } },
+                { role: 'TRAINER', trainerProfile: { is: null } },
+              ],
+            },
+          },
+          athlete: { is: { deletedAt: null, role: { not: 'ADMIN' } } },
+        }),
         expect.objectContaining({
           status: 'ACTIVE',
           respondedAt: expect.any(Date),
@@ -419,6 +776,37 @@ describe('TrainerAthletesService', () => {
   });
 
   describe('decline', () => {
+    it('still allows the revoked trainer recipient to decline a pending request', async () => {
+      repository.findById.mockResolvedValue({
+        ...pendingRelationship,
+        initiatedById: athlete.id,
+      });
+      usersService.findMyCapabilities.mockImplementation(async () => ({
+        athlete: true,
+        trainer: false,
+        admin: false,
+      }));
+      repository.update.mockResolvedValue({ ...pendingRelationship, status: 'DECLINED' });
+
+      await service.decline(pendingRelationship.id, trainer);
+
+      expect(repository.update).toHaveBeenCalledOnce();
+    });
+
+    it('denies a stale session when the participant becomes admin', async () => {
+      repository.findById.mockResolvedValue(pendingRelationship);
+      usersService.findMyCapabilities.mockResolvedValue({
+        athlete: false,
+        trainer: false,
+        admin: true,
+      });
+
+      await expect(service.decline(pendingRelationship.id, athlete)).rejects.toThrow(
+        ForbiddenException,
+      );
+      expect(repository.update).not.toHaveBeenCalled();
+    });
+
     it('should allow the recipient to decline a request', async () => {
       repository.findById.mockResolvedValue(pendingRelationship);
 
@@ -444,6 +832,23 @@ describe('TrainerAthletesService', () => {
       );
     });
 
+    it('redacts decline responses for approved ATHLETE-role trainers', async () => {
+      const approvedTrainer: TrainerAthleteActor = { id: trainer.id, role: 'ATHLETE' };
+      repository.findById.mockResolvedValue({
+        ...pendingRelationship,
+        initiatedById: athlete.id,
+      });
+      repository.update.mockResolvedValue({ ...pendingRelationship, status: 'DECLINED' });
+
+      await service.decline(pendingRelationship.id, approvedTrainer);
+
+      expect(repository.update).toHaveBeenCalledWith(
+        { id: pendingRelationship.id, status: 'PENDING' },
+        expect.objectContaining({ status: 'DECLINED' }),
+        true,
+      );
+    });
+
     it('should reject decline by the initiator', async () => {
       repository.findById.mockResolvedValue(pendingRelationship);
 
@@ -456,6 +861,20 @@ describe('TrainerAthletesService', () => {
   });
 
   describe('cancel', () => {
+    it('allows revoked trainer initiator to cancel instead of being stuck pending', async () => {
+      repository.findById.mockResolvedValue(pendingRelationship);
+      usersService.findMyCapabilities.mockResolvedValue({
+        athlete: true,
+        trainer: false,
+        admin: false,
+      });
+      repository.update.mockResolvedValue({ ...pendingRelationship, status: 'CANCELLED' });
+
+      await service.cancel(pendingRelationship.id, trainer);
+
+      expect(repository.update).toHaveBeenCalledOnce();
+    });
+
     it('should allow the initiator to cancel a pending request', async () => {
       repository.findById.mockResolvedValue(pendingRelationship);
 
@@ -487,6 +906,20 @@ describe('TrainerAthletesService', () => {
       );
     });
 
+    it('redacts cancellation responses for approved ATHLETE-role trainers', async () => {
+      const approvedTrainer: TrainerAthleteActor = { id: trainer.id, role: 'ATHLETE' };
+      repository.findById.mockResolvedValue(pendingRelationship);
+      repository.update.mockResolvedValue({ ...pendingRelationship, status: 'CANCELLED' });
+
+      await service.cancel(pendingRelationship.id, approvedTrainer, {});
+
+      expect(repository.update).toHaveBeenCalledWith(
+        { id: pendingRelationship.id, status: 'PENDING' },
+        expect.objectContaining({ status: 'CANCELLED' }),
+        true,
+      );
+    });
+
     it('should reject cancellation by the recipient', async () => {
       repository.findById.mockResolvedValue(pendingRelationship);
 
@@ -499,6 +932,37 @@ describe('TrainerAthletesService', () => {
   });
 
   describe('terminate', () => {
+    it('allows a revoked trainer to terminate an active relationship', async () => {
+      repository.findById.mockResolvedValue(activeRelationship);
+      usersService.findMyCapabilities.mockResolvedValue({
+        athlete: true,
+        trainer: false,
+        admin: false,
+      });
+      terminationService.terminateWithExerciseCopies.mockResolvedValue({
+        ...activeRelationship,
+        status: 'TERMINATED',
+      });
+
+      await service.terminate(activeRelationship.id, trainer, {});
+
+      expect(terminationService.terminateWithExerciseCopies).toHaveBeenCalledOnce();
+    });
+
+    it('denies termination when the current account is admin', async () => {
+      repository.findById.mockResolvedValue(activeRelationship);
+      usersService.findMyCapabilities.mockResolvedValue({
+        athlete: false,
+        trainer: false,
+        admin: true,
+      });
+
+      await expect(service.terminate(activeRelationship.id, trainer, {})).rejects.toThrow(
+        ForbiddenException,
+      );
+      expect(terminationService.terminateWithExerciseCopies).not.toHaveBeenCalled();
+    });
+
     it('should allow a trainer to terminate an active relationship', async () => {
       repository.findById.mockResolvedValue({
         id: 'relationship-1',
@@ -555,6 +1019,24 @@ describe('TrainerAthletesService', () => {
       });
     });
 
+    it('redacts terminated relationship responses for approved ATHLETE-role trainers', async () => {
+      const approvedTrainer: TrainerAthleteActor = { id: trainer.id, role: 'ATHLETE' };
+      repository.findById.mockResolvedValue(activeRelationship);
+      terminationService.terminateWithExerciseCopies.mockResolvedValue({
+        ...activeRelationship,
+        status: 'TERMINATED',
+      });
+
+      await service.terminate(activeRelationship.id, approvedTrainer, {});
+
+      expect(terminationService.terminateWithExerciseCopies).toHaveBeenCalledWith({
+        id: activeRelationship.id,
+        actorId: trainer.id,
+        reason: undefined,
+        redactForTrainer: true,
+      });
+    });
+
     it('should reject terminating a pending relationship', async () => {
       repository.findById.mockResolvedValue(pendingRelationship);
 
@@ -568,6 +1050,51 @@ describe('TrainerAthletesService', () => {
   });
 
   describe('getExerciseAccessContext', () => {
+    it('allows an approved ATHLETE to exercise both athlete and trainer access', async () => {
+      usersService.findMyCapabilities.mockResolvedValue({
+        athlete: true,
+        trainer: true,
+        admin: false,
+      });
+      repository.findActiveTrainerIdsForAthlete.mockResolvedValue(['own-trainer']);
+      repository.findActiveAthleteIdsForTrainer.mockResolvedValue(['own-athlete']);
+
+      const result = await service.getExerciseAccessContext(athlete);
+
+      expect(result).toEqual({
+        activeTrainerIds: ['own-trainer'],
+        activeAthleteIds: ['own-athlete'],
+      });
+      expect(usersService.findMyCapabilities).toHaveBeenCalledExactlyOnceWith(athlete.id);
+    });
+
+    it('revokes trainer-side access even with a stale TRAINER session role', async () => {
+      usersService.findMyCapabilities.mockResolvedValue({
+        athlete: true,
+        trainer: false,
+        admin: false,
+      });
+      repository.findActiveTrainerIdsForAthlete.mockResolvedValue(['own-trainer']);
+
+      const result = await service.getExerciseAccessContext(trainer);
+
+      expect(result).toEqual({
+        activeTrainerIds: ['own-trainer'],
+        activeAthleteIds: [],
+      });
+      expect(repository.findActiveAthleteIdsForTrainer).not.toHaveBeenCalled();
+    });
+
+    it('refuses to query relationships when account capability lookup fails', async () => {
+      usersService.findMyCapabilities.mockRejectedValue(new Error('Database unavailable'));
+
+      await expect(service.getExerciseAccessContext(trainer)).rejects.toThrow(
+        'Database unavailable',
+      );
+      expect(repository.findActiveTrainerIdsForAthlete).not.toHaveBeenCalled();
+      expect(repository.findActiveAthleteIdsForTrainer).not.toHaveBeenCalled();
+    });
+
     it('should return active trainer IDs for an athlete', async () => {
       repository.findActiveTrainerIdsForAthlete.mockResolvedValue(['trainer-1', 'trainer-2']);
 

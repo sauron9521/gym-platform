@@ -3,10 +3,11 @@ import { Text } from 'react-native';
 import { useIntl } from 'react-intl';
 
 import { useAuth } from '@/features/auth/model/auth-context';
+import { hasAthleteAccess } from '@/features/auth/model/account-capabilities';
 import { palette } from '@/shared/config/theme';
 
 export default function TabsLayout() {
-  const { account } = useAuth();
+  const { capabilities } = useAuth();
   const intl = useIntl();
   const t = (id: string) => intl.formatMessage({ id });
   return (
@@ -41,7 +42,7 @@ export default function TabsLayout() {
         options={{
           title: t('mobile.tabs.programs'),
           headerTitle: t('mobile.tabs.myPrograms'),
-          href: account?.role === 'ATHLETE' ? undefined : null,
+          href: hasAthleteAccess(capabilities) ? undefined : null,
           tabBarIcon: () => <Text accessible={false}>📅</Text>,
         }}
       />

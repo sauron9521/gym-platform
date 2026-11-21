@@ -1,5 +1,7 @@
 import { Injectable } from '@nestjs/common';
 
+import { UsersService } from '#src/modules/users/services/users.service';
+
 import { assertWorkoutAthlete } from '#src/modules/workouts/policies/workout-access.policy';
 import type { WorkoutActor } from '#src/modules/workouts/types/workout.types';
 
@@ -15,10 +17,13 @@ const round2 = (value: number): number => Number(value.toFixed(2));
 
 @Injectable()
 export class WorkoutAnalyticsService {
-  constructor(private readonly repository: WorkoutAnalyticsRepository) {}
+  constructor(
+    private readonly repository: WorkoutAnalyticsRepository,
+    private readonly usersService: UsersService,
+  ) {}
 
   async summary(actor: WorkoutActor, query: WorkoutAnalyticsQuery) {
-    assertWorkoutAthlete(actor);
+    assertWorkoutAthlete(await this.usersService.findMyCapabilities(actor.id));
     const asOf = new Date();
     const from = workoutAnalyticsWindow(asOf, workoutAnalyticsRangeDays[query.range]);
     const rows = await this.repository.readSummary(actor.id, from, asOf);
@@ -41,8 +46,16 @@ export class WorkoutAnalyticsService {
     };
   }
 
+  /** Count one verified external-load best per distinct exercise over completed history. */
+  async personalRecords(actor: WorkoutActor) {
+    assertWorkoutAthlete(await this.usersService.findMyCapabilities(actor.id));
+    const asOf = new Date();
+    const rows = await this.repository.readPersonalRecords(actor.id, asOf);
+    return { asOf, exerciseCount: rows[0]?.exerciseCount ?? 0 };
+  }
+
   async exercise(actor: WorkoutActor, exerciseId: string, query: WorkoutAnalyticsQuery) {
-    assertWorkoutAthlete(actor);
+    assertWorkoutAthlete(await this.usersService.findMyCapabilities(actor.id));
     const asOf = new Date();
     const from = workoutAnalyticsWindow(asOf, workoutAnalyticsRangeDays[query.range]);
     const result = await this.repository.readExercise(actor.id, exerciseId, from, asOf);

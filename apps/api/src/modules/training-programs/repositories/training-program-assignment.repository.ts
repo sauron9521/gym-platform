@@ -1,6 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '#src/infra/database/index';
 import { Prisma } from '#prisma/client';
+import { deriveAccountCapabilities } from '#src/modules/users/policies/account-capabilities.policy';
+import { assignmentFullReadWhere } from '../policies/training-program-assignment-read.policy.js';
 import {
   trainingProgramAssignmentSelect,
   trainingProgramAssignmentDetailsSelect,
@@ -53,13 +55,16 @@ export class TrainingProgramAssignmentRepository {
     };
   }
 
-  async findManyAssignmentsForTrainer({
-    where,
-    skip,
-    take,
-    orderBy = [{ assignedAt: 'desc' }, { id: 'desc' }],
-    view = 'full',
-  }: FindManyTrainingProgramAssignmentsParams) {
+  async findManyAssignmentsForParticipant(
+    {
+      where,
+      skip,
+      take,
+      orderBy = [{ assignedAt: 'desc' }, { id: 'desc' }],
+      view = 'full',
+    }: FindManyTrainingProgramAssignmentsParams,
+    actorId: string,
+  ) {
     // 1. Load a paginated list without sensitive fields.
     const [historicalAssignments, total] = await this.prisma.$transaction([
       this.prisma.trainingProgramAssignment.findMany({
@@ -75,26 +80,24 @@ export class TrainingProgramAssignmentRepository {
       }),
     ]);
 
-    // 2. Find assignments whose relationship is still active.
-    const activeIds = historicalAssignments
-      .filter((assignment) => assignment.trainerAthlete.status === 'ACTIVE')
+    // 2. Recheck every page row at query time: own athlete history
+    // stays full, but trainers only see contacts with live approval AND an
+    // active relationship. Revoked trainer rows remain redacted.
+    const ids = historicalAssignments
+      .filter(
+        (assignment) =>
+          assignment.athleteId === actorId || assignment.trainerAthlete.status === 'ACTIVE',
+      )
       .map((assignment) => assignment.id);
-
-    // 3. Load full details in a single additional query.
-    // Recheck the relationship state in the database.
-    const activeAssignments =
-      activeIds.length > 0
+    const fullAssignments =
+      ids.length > 0
         ? await this.prisma.trainingProgramAssignment.findMany({
             where: {
               AND: [
                 where,
                 {
-                  id: { in: activeIds },
-                  trainerAthlete: {
-                    is: {
-                      status: 'ACTIVE',
-                    },
-                  },
+                  id: { in: ids },
+                  ...assignmentFullReadWhere(actorId),
                 },
               ],
             },
@@ -105,11 +108,11 @@ export class TrainingProgramAssignmentRepository {
           })
         : [];
 
-    const activeById = new Map(activeAssignments.map((assignment) => [assignment.id, assignment]));
+    const fullById = new Map(fullAssignments.map((assignment) => [assignment.id, assignment]));
 
     // 4. Preserve the original page order.
     const data = historicalAssignments.map(
-      (assignment) => activeById.get(assignment.id) ?? assignment,
+      (assignment) => fullById.get(assignment.id) ?? assignment,
     );
 
     return {
@@ -147,24 +150,12 @@ export class TrainingProgramAssignmentRepository {
     });
   }
 
-  async findHistoricalAssignmentDetailsById(
+  async findRestrictedAssignmentById(
     id: string,
     where: Prisma.TrainingProgramAssignmentWhereInput,
   ) {
     return this.prisma.trainingProgramAssignment.findFirst({
-      where: {
-        AND: [
-          { id },
-          where,
-          {
-            trainerAthlete: {
-              is: {
-                status: { not: 'ACTIVE' },
-              },
-            },
-          },
-        ],
-      },
+      where: { AND: [{ id }, where] },
       select: trainingProgramAssignmentHistoricalSelect,
     });
   }
@@ -308,6 +299,48 @@ export class TrainingProgramAssignmentRepository {
         return null;
       }
 
+      // The service's initial capability read is not authoritative. Moderation
+      // can revoke approval before the program/relationship locks above.
+      // Lock users in deterministic order, then the trainer's existing
+      // TrainerProfile, and re-read persisted eligibility before INSERT.
+      // FOR UPDATE on users also blocks FK-backed creation of a missing
+      // TrainerProfile until this transaction commits.
+      const participantIds = [input.trainerId, input.athleteId].sort();
+      const lockedParticipants = await tx.$queryRaw<Array<{ id: string }>>`
+        SELECT "id"
+        FROM "users"
+        WHERE "id" IN (${Prisma.join(participantIds)})
+        ORDER BY "id"
+        FOR UPDATE
+      `;
+      if (lockedParticipants.length !== 2) return null;
+
+      await tx.$queryRaw`
+        SELECT "id"
+        FROM "trainer_profiles"
+        WHERE "user_id" = ${input.trainerId}
+        FOR UPDATE
+      `;
+
+      const participants = await tx.user.findMany({
+        where: { id: { in: participantIds }, deletedAt: null },
+        select: {
+          id: true,
+          role: true,
+          trainerProfile: { select: { isActive: true } },
+        },
+      });
+      const trainer = participants.find((user) => user.id === input.trainerId);
+      const athlete = participants.find((user) => user.id === input.athleteId);
+      if (
+        !trainer ||
+        !athlete ||
+        !deriveAccountCapabilities(trainer).trainer ||
+        !deriveAccountCapabilities(athlete).athlete
+      ) {
+        return null;
+      }
+
       // Build the references from checked identifiers; callers cannot
       // validate one version and insert an assignment for another.
       return tx.trainingProgramAssignment.create({
@@ -322,21 +355,109 @@ export class TrainingProgramAssignmentRepository {
     });
   }
 
+  /**
+   * A cancellation is a trainer-side mutation. Serialize with relationship
+   * termination and trainer moderation; repeat every permission under DB locks
+   * before updating the assignment, rather than trusting the prior GET.
+   */
+  async cancelAssignmentIfTrainerEligible(input: {
+    assignmentId: string;
+    trainerId: string;
+    endedAt: Date;
+    reason: string | null;
+  }) {
+    return this.prisma.$transaction(async (tx) => {
+      const current = await tx.trainingProgramAssignment.findUnique({
+        where: { id: input.assignmentId },
+        select: { trainerAthleteId: true },
+      });
+      if (!current) return null;
+
+      // Termination also locks the relationship before touching assignments.
+      const relationships = await tx.$queryRaw<Array<{ id: string }>>`
+        SELECT "id"
+        FROM "trainer_athletes"
+        WHERE "id" = ${current.trainerAthleteId}
+          AND "trainer_id" = ${input.trainerId}
+          AND "status" = 'ACTIVE'
+        FOR UPDATE
+      `;
+      if (relationships.length !== 1) return null;
+
+      const assignments = await tx.$queryRaw<Array<{ id: string }>>`
+        SELECT assignment."id"
+        FROM "training_program_assignments" AS assignment
+        JOIN "training_program_versions" AS version ON version."id" = assignment."version_id"
+        JOIN "training_programs" AS program ON program."id" = version."program_id"
+        WHERE assignment."id" = ${input.assignmentId}
+          AND assignment."trainer_athlete_id" = ${current.trainerAthleteId}
+          AND assignment."assigned_by_id" = ${input.trainerId}
+          AND program."trainer_id" = ${input.trainerId}
+          AND assignment."status" = 'ACTIVE'
+        FOR UPDATE OF assignment
+      `;
+      if (assignments.length !== 1) return null;
+
+      const users = await tx.$queryRaw<Array<{ id: string }>>`
+        SELECT "id"
+        FROM "users"
+        WHERE "id" = ${input.trainerId} AND "deleted_at" IS NULL
+        FOR UPDATE
+      `;
+      if (users.length !== 1) return null;
+
+      await tx.$queryRaw`
+        SELECT "id"
+        FROM "trainer_profiles"
+        WHERE "user_id" = ${input.trainerId}
+        FOR UPDATE
+      `;
+
+      const trainer = await tx.user.findUnique({
+        where: { id: input.trainerId },
+        select: {
+          id: true,
+          role: true,
+          deletedAt: true,
+          trainerProfile: { select: { isActive: true } },
+        },
+      });
+      if (!trainer || trainer.deletedAt || !deriveAccountCapabilities(trainer).trainer) {
+        return null;
+      }
+
+      return tx.trainingProgramAssignment.update({
+        where: { id: input.assignmentId, status: 'ACTIVE' },
+        data: {
+          status: 'CANCELLED',
+          endedAt: input.endedAt,
+          endedBy: { connect: { id: input.trainerId } },
+          endReason: input.reason,
+        },
+        select: trainingProgramAssignmentSelect,
+      });
+    });
+  }
+
   async completeAssignmentIfNoUnfinishedWorkouts(input: {
     assignmentId: string;
     athleteId: string;
     completedAt: Date;
   }) {
     return this.prisma.$transaction(async (tx) => {
+      // Lock the assignment and the actual athlete account together.
+      // An admin promotion/deletion cannot race completion after this check.
       const assignments = await tx.$queryRaw<Array<{ id: string }>>`
-      SELECT "id"
-      FROM "training_program_assignments"
-      WHERE
-        "id" = ${input.assignmentId}
-        AND "athlete_id" = ${input.athleteId}
-        AND "status" = 'ACTIVE'
-      FOR UPDATE
-    `;
+        SELECT assignment."id"
+        FROM "training_program_assignments" AS assignment
+        JOIN "users" AS athlete ON athlete."id" = assignment."athlete_id"
+        WHERE assignment."id" = ${input.assignmentId}
+          AND assignment."athlete_id" = ${input.athleteId}
+          AND assignment."status" = 'ACTIVE'
+          AND athlete."deleted_at" IS NULL
+          AND athlete."role" <> 'ADMIN'
+        FOR UPDATE OF assignment, athlete
+      `;
 
       if (assignments.length !== 1) {
         return { status: 'NOT_ACTIVE' as const };

@@ -6,6 +6,7 @@ import type { TrainingProgramActor } from '../types/training-program.types.js';
 describe('TrainingProgramAccessService', () => {
   const programs = { findProgramById: vi.fn() };
   const versions = { findVersionForEditing: vi.fn() };
+  const users = { hasTrainerCapability: vi.fn(), findMyCapabilities: vi.fn() };
 
   const trainer: TrainingProgramActor = { id: 'trainer-1', role: 'TRAINER' };
   const athlete: TrainingProgramActor = { id: 'athlete-1', role: 'ATHLETE' };
@@ -29,7 +30,13 @@ describe('TrainingProgramAccessService', () => {
 
   beforeEach(() => {
     vi.resetAllMocks();
-    service = new TrainingProgramAccessService(programs as never, versions as never);
+    service = new TrainingProgramAccessService(
+      programs as never,
+      versions as never,
+      users as never,
+    );
+    users.hasTrainerCapability.mockImplementation(async (id: string) => id.startsWith('trainer-'));
+    users.findMyCapabilities.mockResolvedValue({ athlete: true, trainer: false, admin: false });
     programs.findProgramById.mockResolvedValue({
       id: 'program-1',
       trainerId: trainer.id,
@@ -38,9 +45,63 @@ describe('TrainingProgramAccessService', () => {
     versions.findVersionForEditing.mockResolvedValue(draft());
   });
 
-  it('only permits trainers to manage training programs', () => {
-    expect(() => service.assertTrainer(trainer)).not.toThrow();
-    expect(() => service.assertTrainer(athlete)).toThrow(ForbiddenException);
+  it('authorizes a current participant based on persisted capabilities, not the session role', async () => {
+    await expect(service.assertAssignmentParticipant(athlete)).resolves.toBeUndefined();
+    await expect(
+      service.assertAssignmentParticipant({ id: athlete.id, role: 'ADMIN' }),
+    ).resolves.toBeUndefined();
+    expect(users.findMyCapabilities).toHaveBeenCalledWith(athlete.id);
+  });
+
+  it('rejects a promoted or deleted participant despite an outdated session role', async () => {
+    users.findMyCapabilities.mockResolvedValue({
+      athlete: false,
+      trainer: false,
+      admin: true,
+    });
+    await expect(service.assertAssignmentParticipant(trainer)).rejects.toThrow(ForbiddenException);
+
+    users.findMyCapabilities.mockRejectedValue(new NotFoundException('User not found'));
+    await expect(service.assertAssignmentParticipant(athlete)).rejects.toThrow(NotFoundException);
+  });
+
+  it('reads the current database capability rather than trusting the actor role', async () => {
+    await expect(service.assertTrainer(trainer)).resolves.toBeUndefined();
+    await expect(service.assertTrainer(athlete)).rejects.toThrow(ForbiddenException);
+    expect(users.hasTrainerCapability).toHaveBeenNthCalledWith(1, trainer.id);
+    expect(users.hasTrainerCapability).toHaveBeenNthCalledWith(2, athlete.id);
+  });
+
+  it('allows a newly approved trainer while retaining ATHLETE as the legacy role', async () => {
+    users.hasTrainerCapability.mockResolvedValue(true);
+    await expect(service.assertTrainer(athlete)).resolves.toBeUndefined();
+    const result = await service.assertEditableDraft(athlete, 'program-1', 'version-1');
+    expect(result).toEqual(draft());
+    expect(programs.findProgramById).toHaveBeenCalledExactlyOnceWith('program-1', {
+      trainerId: athlete.id,
+    });
+  });
+
+  it('denies an inactive or deleted trainer before a program lookup', async () => {
+    users.hasTrainerCapability.mockResolvedValue(false);
+    await expect(service.assertEditableDraft(trainer, 'program-1', 'version-1')).rejects.toThrow(
+      ForbiddenException,
+    );
+    expect(programs.findProgramById).not.toHaveBeenCalled();
+    expect(versions.findVersionForEditing).not.toHaveBeenCalled();
+  });
+
+  it('does not trust a forged TRAINER role when the database says ATHLETE', async () => {
+    users.hasTrainerCapability.mockResolvedValue(false);
+    await expect(service.assertTrainer(trainer)).rejects.toThrow(ForbiddenException);
+  });
+
+  it('fails closed on a database lookup error', async () => {
+    users.hasTrainerCapability.mockRejectedValue(new Error('Database unavailable'));
+    await expect(service.assertEditableDraft(trainer, 'program-1', 'version-1')).rejects.toThrow(
+      'Database unavailable',
+    );
+    expect(programs.findProgramById).not.toHaveBeenCalled();
   });
 
   it('rejects non-trainers before any database lookup', async () => {

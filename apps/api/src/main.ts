@@ -46,6 +46,7 @@ async function bootstrap() {
       config.getOrThrow('APP_URL'),
       corsOrigins,
       config.get('ADMIN_APP_URL'),
+      config.get('TRAINER_APP_URL'),
     ),
   });
 

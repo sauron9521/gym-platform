@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { Prisma } from '#prisma/client';
 import { ExercisesService } from '#src/modules/exercises/services/exercises.service';
+import { UsersService } from '#src/modules/users/services/users.service';
 import { WorkoutsRepository } from '../repositories/workouts.repository.js';
 import {
   assertWorkoutAthlete,
@@ -30,11 +31,12 @@ export class WorkoutsService {
     private readonly workoutsRepository: WorkoutsRepository,
     private readonly exercisesService: ExercisesService,
     private readonly trainerAthletesService: TrainerAthletesService,
+    private readonly usersService: UsersService,
   ) {}
 
   // CREATE
   async create(actor: WorkoutActor, input: CreateWorkoutInput, idempotencyKey?: string) {
-    assertWorkoutAthlete(actor);
+    assertWorkoutAthlete(await this.usersService.findMyCapabilities(actor.id));
     const idempotency = workoutIdempotency(idempotencyKey, 'manual', input);
 
     return this.createIdempotently(actor.id, idempotency, async () => {
@@ -134,7 +136,7 @@ export class WorkoutsService {
     input: CreateWorkoutFromProgramInput,
     idempotencyKey?: string,
   ) {
-    assertWorkoutAthlete(actor);
+    assertWorkoutAthlete(await this.usersService.findMyCapabilities(actor.id));
     const idempotency = workoutIdempotency(idempotencyKey, 'from-program', input);
 
     return this.createIdempotently(actor.id, idempotency, async () => {
@@ -156,11 +158,20 @@ export class WorkoutsService {
 
   // FIND MANY
   async findMany(actor: WorkoutActor, query: WorkoutListQuery) {
-    assertWorkoutAthlete(actor);
+    assertWorkoutAthlete(await this.usersService.findMyCapabilities(actor.id));
     validateWorkoutPagination(query);
 
     if (query.scheduledFrom && query.scheduledTo && query.scheduledFrom > query.scheduledTo) {
       throw new BadRequestException('scheduledFrom must not be later than scheduledTo');
+    }
+
+    // Date ordering is opt-in; default creation-time ordering is unchanged.
+    if (query.sort === 'scheduledAtAsc' && (query.status !== 'PLANNED' || !query.scheduledFrom)) {
+      throw new BadRequestException('scheduledAtAsc requires status=PLANNED and scheduledFrom');
+    }
+
+    if (query.sort === 'completedAtDesc' && query.status !== 'COMPLETED') {
+      throw new BadRequestException('completedAtDesc requires status=COMPLETED');
     }
 
     const where: Prisma.WorkoutWhereInput = {
@@ -182,6 +193,21 @@ export class WorkoutsService {
       where,
       skip: (query.page - 1) * query.limit,
       take: query.limit,
+      ...(query.sort === 'scheduledAtAsc'
+        ? {
+            orderBy: [
+              { scheduledAt: 'asc' as const },
+              { id: 'asc' as const },
+            ] satisfies Prisma.WorkoutOrderByWithRelationInput[],
+          }
+        : query.sort === 'completedAtDesc'
+          ? {
+              orderBy: [
+                { completedAt: { sort: 'desc' as const, nulls: 'last' as const } },
+                { id: 'desc' as const },
+              ] satisfies Prisma.WorkoutOrderByWithRelationInput[],
+            }
+          : {}),
     };
 
     return query.view === 'summary'
@@ -191,7 +217,7 @@ export class WorkoutsService {
 
   // FIND ONE
   async findOne(id: string, actor: WorkoutActor) {
-    assertWorkoutAthlete(actor);
+    assertWorkoutAthlete(await this.usersService.findMyCapabilities(actor.id));
 
     const workout = await this.workoutsRepository.findById(id, {
       athleteId: actor.id,

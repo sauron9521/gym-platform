@@ -10,15 +10,15 @@ test('trainer-only list uses account-scoped active read, safe errors and restric
   const profile = read('../src/screens/profile/ui/profile-screen.tsx');
 
   expect(model).toContain("api.GET('/trainer-athletes'");
-  expect(model).toContain("enabled: account?.role === 'TRAINER'");
+  expect(model).toContain('enabled: hasTrainerAccess(capabilities)');
   expect(model).toContain("status: 'ACTIVE'");
   expect(model).toContain('shouldRetryMobileRead');
   expect(model).toContain('isSessionExpired');
   expect(model).toContain('account?.id');
   expect(screen).not.toContain('item.athlete.email');
   expect(screen).toContain('isFetchNextPageError');
-  expect(layout).toContain("guard={account?.role === 'TRAINER'}");
-  expect(profile).toContain("account.role === 'TRAINER'");
+  expect(layout).toContain('guard={hasTrainerAccess(capabilities)}');
+  expect(profile).toContain('hasTrainerAccess(capabilities)');
 });
 
 test('trainer screen translations have matching English and Ukrainian keys', () => {

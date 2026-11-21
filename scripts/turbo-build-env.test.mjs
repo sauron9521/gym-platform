@@ -34,4 +34,10 @@ test('public build inputs do not include credentials or disable test execution',
   }
   assert.equal(turbo.tasks.test.cache, false);
   assert.ok(turbo.tasks.build.outputs.includes('.next/**'));
+  assert.ok(turbo.tasks.build.outputs.includes('!.next/cache/**'));
+  assert.ok(turbo.tasks.build.outputs.includes('!.next/dev/**'));
+  assert.ok(turbo.tasks.build.outputs.includes('dist/**'));
+  assert.ok(turbo.tasks.build.outputs.includes('build/**'));
+  assert.ok(turbo.tasks.build.outputs.includes('.cache/expo-ios/**'));
+  assert.deepEqual(turbo.tasks.build.dependsOn, ['^build']);
 });

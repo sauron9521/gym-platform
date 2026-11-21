@@ -30,6 +30,44 @@ describe('exercise access policy', () => {
         { source: 'GLOBAL' },
         { source: 'ATHLETE_CUSTOM', createdById: athlete.id },
         {
+          source: 'ATHLETE_CUSTOM',
+          visibility: 'SELECTED_TRAINERS',
+          createdById: { in: ['athlete-1'] },
+          trainerAccesses: { some: { trainerId: athlete.id, revokedAt: null } },
+          createdBy: {
+            is: {
+              athleteRelationships: {
+                some: { trainerId: athlete.id, status: 'ACTIVE' },
+              },
+            },
+          },
+        },
+        {
+          source: 'TRAINER_CUSTOM',
+          createdById: { in: ['trainer-1'] },
+          createdBy: {
+            is: {
+              trainerRelationships: {
+                some: { athleteId: athlete.id, status: 'ACTIVE' },
+              },
+            },
+          },
+        },
+      ],
+    });
+  });
+
+  it('never grants trainer-side access to an ATHLETE without live capability', () => {
+    const athleteOnly: ExerciseAccessContext = {
+      activeTrainerIds: ['trainer-1'],
+      activeAthleteIds: [],
+    };
+    const where = buildExerciseVisibilityWhere(athlete, athleteOnly);
+    expect(where).toEqual({
+      OR: [
+        { source: 'GLOBAL' },
+        { source: 'ATHLETE_CUSTOM', createdById: athlete.id },
+        {
           source: 'TRAINER_CUSTOM',
           createdById: { in: ['trainer-1'] },
           createdBy: {

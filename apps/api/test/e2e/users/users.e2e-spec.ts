@@ -18,13 +18,16 @@ describe('Users /me (HTTP + PostgreSQL)', () => {
   let prisma: PrismaService;
   let athleteId: string;
   let otherId: string;
+  let reviewerId: string;
   let athleteCookie: string;
   let otherCookie: string;
+  let adminCookie: string;
 
   const password = 'StrongPassword123!';
   const suffix = randomUUID();
   const athleteEmail = `user-profile-athlete-${suffix}@example.com`;
   const otherEmail = `user-profile-other-${suffix}@example.com`;
+  const adminEmail = `user-profile-admin-${suffix}@example.com`;
 
   function sessionCookie(header: string | string[] | undefined): string {
     const cookies = Array.isArray(header) ? header : header ? [header] : [];
@@ -79,16 +82,23 @@ describe('Users /me (HTTP + PostgreSQL)', () => {
       select: { id: true },
     });
     otherId = other.id;
+    const admin = await prisma.user.create({
+      data: { email: adminEmail, passwordHash: hash, role: 'ADMIN' },
+      select: { id: true },
+    });
+    reviewerId = admin.id;
 
     athleteCookie = await login(athleteEmail);
     otherCookie = await login(otherEmail);
+    adminCookie = await login(adminEmail);
   }, 30_000);
 
   afterAll(async () => {
     try {
       if (prisma) {
-        const userIds = [athleteId, otherId].filter(Boolean);
+        const userIds = [athleteId, otherId, reviewerId].filter(Boolean);
         if (userIds.length) {
+          await prisma.trainerProfile.deleteMany({ where: { userId: { in: userIds } } });
           await prisma.profile.deleteMany({
             where: { userId: { in: userIds } },
           });
@@ -106,6 +116,210 @@ describe('Users /me (HTTP + PostgreSQL)', () => {
     expect(get.status).toBe(401);
     expect(patch.status).toBe(401);
   });
+
+  it('reads fresh grants from the current actor, not a stale session role', async () => {
+    const anonymous = await request(app.getHttpServer()).get('/users/me/capabilities');
+    expect(anonymous.status).toBe(401);
+
+    const own = () =>
+      request(app.getHttpServer()).get('/users/me/capabilities').set('Cookie', athleteCookie);
+
+    const initial = await own();
+    expect(initial.status).toBe(200);
+    expect(initial.headers['cache-control']).toBe('no-store');
+    expect(initial.body).toEqual({ athlete: true, trainer: false, admin: false });
+
+    const legacy = await request(app.getHttpServer())
+      .get('/users/me/capabilities')
+      .set('Cookie', otherCookie);
+    expect(legacy.status).toBe(200);
+    expect(legacy.body).toEqual({ athlete: true, trainer: true, admin: false });
+
+    const admin = await request(app.getHttpServer())
+      .get('/users/me/capabilities')
+      .set('Cookie', adminCookie);
+    expect(admin.status).toBe(200);
+    expect(admin.body).toEqual({ athlete: false, trainer: false, admin: true });
+
+    await prisma.trainerProfile.create({
+      data: { userId: athleteId, isActive: true, approvedAt: new Date(), approvedById: reviewerId },
+    });
+    try {
+      const approved = await own();
+      expect(approved.status).toBe(200);
+      expect(approved.body).toEqual({ athlete: true, trainer: true, admin: false });
+      expect(approved.body).not.toHaveProperty('role');
+      expect(approved.body).not.toHaveProperty('trainerProfile');
+
+      await prisma.trainerProfile.update({
+        where: { userId: athleteId },
+        data: { isActive: false, revokedAt: new Date(), revokedById: reviewerId },
+      });
+      const revoked = await own();
+      expect(revoked.status).toBe(200);
+      expect(revoked.body).toEqual({ athlete: true, trainer: false, admin: false });
+    } finally {
+      await prisma.trainerProfile.deleteMany({ where: { userId: athleteId } });
+    }
+  });
+
+  it('enforces live trainer access on training-program reads after approval and revocation', async () => {
+    const list = (cookie: string) =>
+      request(app.getHttpServer())
+        .get('/training-programs')
+        .query({ page: 1, limit: 10 })
+        .set('Cookie', cookie);
+
+    expect((await request(app.getHttpServer()).get('/training-programs')).status).toBe(401);
+    expect((await list(athleteCookie)).status).toBe(403);
+    expect((await list(adminCookie)).status).toBe(403);
+    expect((await list(otherCookie)).status).toBe(200);
+
+    await prisma.trainerProfile.create({
+      data: { userId: athleteId, isActive: true, approvedAt: new Date(), approvedById: reviewerId },
+    });
+    try {
+      const approved = await list(athleteCookie);
+      expect(approved.status).toBe(200);
+
+      await prisma.trainerProfile.update({
+        where: { userId: athleteId },
+        data: { isActive: false, revokedAt: new Date(), revokedById: reviewerId },
+      });
+      expect((await list(athleteCookie)).status).toBe(403);
+
+      // Explicit revocation overrides the legacy TRAINER role without invalidating the session.
+      await prisma.trainerProfile.create({
+        data: {
+          userId: otherId,
+          isActive: false,
+          revokedAt: new Date(),
+          revokedById: reviewerId,
+        },
+      });
+      expect((await list(otherCookie)).status).toBe(403);
+    } finally {
+      await prisma.trainerProfile.deleteMany({
+        where: { userId: { in: [athleteId, otherId] } },
+      });
+    }
+  });
+
+  it('keeps Athlete workouts and analytics across legacy TRAINER, approval and revocation without IDOR', async () => {
+    const ownerWorkout = await prisma.workout.create({
+      data: {
+        title: 'Cross-product owner workout',
+        athlete: { connect: { id: athleteId } },
+        createdBy: { connect: { id: athleteId } },
+      },
+      select: { id: true },
+    });
+    const foreignWorkout = await prisma.workout.create({
+      data: {
+        title: 'Cross-product foreign workout',
+        athlete: { connect: { id: otherId } },
+        createdBy: { connect: { id: otherId } },
+      },
+      select: { id: true },
+    });
+    const http = app.getHttpServer();
+
+    const me = () => request(http).get('/users/me').set('Cookie', athleteCookie);
+    const grants = () => request(http).get('/users/me/capabilities').set('Cookie', athleteCookie);
+    const workouts = () =>
+      request(http).get('/workouts').query({ page: 1, limit: 20 }).set('Cookie', athleteCookie);
+    const analytics = () =>
+      request(http)
+        .get('/workout-analytics/summary')
+        .query({ range: '7d' })
+        .set('Cookie', athleteCookie);
+    const trainerPrograms = () =>
+      request(http)
+        .get('/training-programs')
+        .query({ page: 1, limit: 20 })
+        .set('Cookie', athleteCookie);
+
+    try {
+      const initial = await me();
+      expect(initial.status).toBe(200);
+      expect(initial.body).toMatchObject({ id: athleteId, role: 'ATHLETE' });
+      expect(initial.body).not.toHaveProperty('passwordHash');
+
+      const selfGrant = await request(http)
+        .patch('/users/me')
+        .set('Cookie', athleteCookie)
+        .send({ role: 'TRAINER' });
+      expect(selfGrant.status).toBe(400);
+
+      const own = await workouts();
+      expect(own.status).toBe(200);
+      expect(own.body.data).toEqual(
+        expect.arrayContaining([expect.objectContaining({ id: ownerWorkout.id })]),
+      );
+      expect(own.body.data).not.toEqual(
+        expect.arrayContaining([expect.objectContaining({ id: foreignWorkout.id })]),
+      );
+      const foreign = await request(http)
+        .get(`/workouts/${foreignWorkout.id}`)
+        .set('Cookie', athleteCookie);
+      expect(foreign.status).toBe(404);
+      expect((await analytics()).status).toBe(200);
+      expect((await trainerPrograms()).status).toBe(403);
+
+      // An already-issued ATHLETE session must survive a legacy TRAINER role
+      // migration and still permit the account to read only its own workouts.
+      await prisma.user.update({ where: { id: athleteId }, data: { role: 'TRAINER' } });
+      expect((await me()).body).toMatchObject({ id: athleteId, role: 'TRAINER' });
+      expect((await grants()).body).toEqual({ athlete: true, trainer: true, admin: false });
+      expect((await workouts()).status).toBe(200);
+      expect((await analytics()).status).toBe(200);
+      expect((await trainerPrograms()).status).toBe(200);
+      expect(
+        (await request(http).get(`/workouts/${foreignWorkout.id}`).set('Cookie', athleteCookie))
+          .status,
+      ).toBe(404);
+
+      // The same session next sees two capabilities with a persisted ATHLETE
+      // role (onboarding approval does not rewrite the legacy role).
+      await prisma.user.update({ where: { id: athleteId }, data: { role: 'ATHLETE' } });
+      await prisma.trainerProfile.create({
+        data: {
+          userId: athleteId,
+          isActive: true,
+          approvedAt: new Date(),
+          approvedById: reviewerId,
+        },
+      });
+      expect((await me()).body).toMatchObject({ id: athleteId, role: 'ATHLETE' });
+      expect((await grants()).body).toEqual({ athlete: true, trainer: true, admin: false });
+      expect((await workouts()).status).toBe(200);
+      expect((await analytics()).status).toBe(200);
+      expect((await trainerPrograms()).status).toBe(200);
+
+      await prisma.trainerProfile.update({
+        where: { userId: athleteId },
+        data: { isActive: false, revokedAt: new Date(), revokedById: reviewerId },
+      });
+      expect((await grants()).body).toEqual({ athlete: true, trainer: false, admin: false });
+      expect((await workouts()).status).toBe(200);
+      expect((await analytics()).status).toBe(200);
+      expect((await trainerPrograms()).status).toBe(403);
+
+      // An admin promotion must take effect immediately even when the session
+      // still carries its old ATHLETE identity.
+      await prisma.user.update({ where: { id: athleteId }, data: { role: 'ADMIN' } });
+      expect((await grants()).body).toEqual({ athlete: false, trainer: false, admin: true });
+      expect((await workouts()).status).toBe(403);
+      expect((await analytics()).status).toBe(403);
+      expect((await trainerPrograms()).status).toBe(403);
+    } finally {
+      await prisma.workout.deleteMany({
+        where: { id: { in: [ownerWorkout.id, foreignWorkout.id] } },
+      });
+      await prisma.trainerProfile.deleteMany({ where: { userId: athleteId } });
+      await prisma.user.update({ where: { id: athleteId }, data: { role: 'ATHLETE' } });
+    }
+  }, 35_000);
 
   it('returns current account with null profile and no secrets', async () => {
     const response = await request(app.getHttpServer())

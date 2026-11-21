@@ -13,6 +13,7 @@ function allScopes() {
     web: true,
     landing: true,
     admin: true,
+    trainer: true,
     mobile: true,
     client: true,
     deps: true,
@@ -32,6 +33,7 @@ export function classifyChangedPaths(paths, { forceFull = false } = {}) {
     web: false,
     landing: false,
     admin: false,
+    trainer: false,
     mobile: false,
     client: false,
     deps: false,
@@ -69,6 +71,7 @@ export function classifyChangedPaths(paths, { forceFull = false } = {}) {
         'apps/api/README.md',
         'apps/api/test/README.md',
         'apps/web/README.md',
+        'apps/trainer/README.md',
         'apps/landing/README.md',
         'apps/mobile/README.md',
         'packages/api-client/README.md',
@@ -110,6 +113,12 @@ export function classifyChangedPaths(paths, { forceFull = false } = {}) {
       continue;
     }
 
+    if (path.startsWith('apps/trainer/')) {
+      selected.trainer = true;
+      if (path === 'apps/trainer/package.json') selected.deps = true;
+      continue;
+    }
+
     if (path.startsWith('apps/mobile/')) {
       selected.mobile = true;
       if (path === 'apps/mobile/package.json') selected.deps = true;
@@ -121,6 +130,7 @@ export function classifyChangedPaths(paths, { forceFull = false } = {}) {
       selected.client = true;
       selected.web = true;
       selected.admin = true;
+      selected.trainer = true;
       selected.mobile = true;
       if (path === 'packages/api-client/package.json') selected.deps = true;
       continue;
@@ -132,6 +142,7 @@ export function classifyChangedPaths(paths, { forceFull = false } = {}) {
     if (path.startsWith('packages/ui-web/')) {
       selected.web = true;
       selected.admin = true;
+      selected.trainer = true;
       selected.landing = true;
       if (path === 'packages/ui-web/package.json') selected.deps = true;
       continue;
@@ -144,6 +155,7 @@ export function classifyChangedPaths(paths, { forceFull = false } = {}) {
       selected.web = true;
       selected.landing = true;
       selected.admin = true;
+      selected.trainer = true;
       selected.mobile = true;
       if (path === 'packages/i18n/package.json') selected.deps = true;
       continue;
@@ -152,6 +164,7 @@ export function classifyChangedPaths(paths, { forceFull = false } = {}) {
     if (path.startsWith('packages/design-tokens/')) {
       selected.web = true;
       selected.admin = true;
+      selected.trainer = true;
       selected.landing = true;
       // Conservative until native design-token consumption is ruled out.
       selected.mobile = true;
@@ -167,6 +180,7 @@ export function classifyChangedPaths(paths, { forceFull = false } = {}) {
       selected.web = true;
       selected.landing = true;
       selected.admin = true;
+      selected.trainer = true;
       continue;
     }
 
@@ -179,6 +193,7 @@ export function classifyChangedPaths(paths, { forceFull = false } = {}) {
     selected.web ||
     selected.landing ||
     selected.admin ||
+    selected.trainer ||
     selected.mobile ||
     selected.client;
   return selected;

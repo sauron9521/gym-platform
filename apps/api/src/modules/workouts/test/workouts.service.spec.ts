@@ -8,6 +8,7 @@ import {
 import { Prisma } from '#prisma/client';
 
 import { ExercisesService } from '#src/modules/exercises/services/exercises.service';
+import { UsersService } from '#src/modules/users/services/users.service';
 import { WorkoutsRepository } from '../repositories/workouts.repository.js';
 import { WorkoutsService } from '../services/workouts.service.js';
 import { workoutIdempotency } from '../utils/workout-idempotency.js';
@@ -48,6 +49,8 @@ describe('WorkoutsService', () => {
     id: 'trainer-1',
     role: 'TRAINER',
   };
+  const staleAdmin: WorkoutActor = { id: 'admin-1', role: 'ATHLETE' };
+  const usersService = { findMyCapabilities: vi.fn() };
 
   const availableExercise = {
     id: 'exercise-1',
@@ -127,12 +130,47 @@ describe('WorkoutsService', () => {
     exercisesService.findAvailableForWorkout.mockResolvedValue([availableExercise]);
 
     trainerAthletesService.getExerciseAccessContext.mockResolvedValue(exerciseAccess);
+    usersService.findMyCapabilities.mockImplementation(async (id: string) => ({
+      athlete: id !== staleAdmin.id,
+      trainer: id === trainer.id,
+      admin: id === staleAdmin.id,
+    }));
 
     service = new WorkoutsService(
       repository as unknown as WorkoutsRepository,
       exercisesService as unknown as ExercisesService,
       trainerAthletesService as unknown as TrainerAthletesService,
+      usersService as unknown as UsersService,
     );
+  });
+
+  it('preserves personal workout list scope for a legacy TRAINER identity', async () => {
+    repository.findMany.mockResolvedValue({ data: [], meta: { total: 0 } });
+
+    await service.findMany(trainer, { page: 1, limit: 20 });
+
+    expect(usersService.findMyCapabilities).toHaveBeenCalledWith(trainer.id);
+    expect(repository.findMany).toHaveBeenCalledWith({
+      where: { athleteId: trainer.id },
+      skip: 0,
+      take: 20,
+    });
+  });
+
+  it('denies a promoted admin reusing an old TRAINER session', async () => {
+    const oldSession: WorkoutActor = { id: staleAdmin.id, role: 'TRAINER' };
+    await expect(service.findMany(oldSession, { page: 1, limit: 20 })).rejects.toThrow(
+      ForbiddenException,
+    );
+    expect(repository.findMany).not.toHaveBeenCalled();
+  });
+
+  it('fails closed if the persisted account is deleted or unavailable', async () => {
+    usersService.findMyCapabilities.mockRejectedValue(new NotFoundException('User not found'));
+    await expect(service.findMany(athlete, { page: 1, limit: 20 })).rejects.toThrow(
+      NotFoundException,
+    );
+    expect(repository.findMany).not.toHaveBeenCalled();
   });
 
   it('should use active trainer access when creating a workout', async () => {
@@ -188,9 +226,10 @@ describe('WorkoutsService', () => {
       });
     });
 
-    it('should reject non-athletes', async () => {
-      await expect(service.createFromProgram(trainer, input)).rejects.toThrow(ForbiddenException);
-
+    it('rejects admin-promoted accounts even with stale ATHLETE sessions', async () => {
+      await expect(service.createFromProgram(staleAdmin, input)).rejects.toThrow(
+        ForbiddenException,
+      );
       expect(repository.createFromProgram).not.toHaveBeenCalled();
     });
 
@@ -262,9 +301,8 @@ describe('WorkoutsService', () => {
       );
     });
 
-    it('should reject non-athletes', async () => {
-      await expect(service.create(trainer, createInput)).rejects.toThrow(ForbiddenException);
-
+    it('rejects admin-promoted accounts even with stale ATHLETE sessions', async () => {
+      await expect(service.create(staleAdmin, createInput)).rejects.toThrow(ForbiddenException);
       expect(repository.create).not.toHaveBeenCalled();
     });
 
@@ -389,6 +427,92 @@ describe('WorkoutsService', () => {
       });
     });
 
+    it('orders only upcoming PLANNED summaries by scheduled date, preserving ownership and page size', async () => {
+      const from = new Date('2035-04-01T00:00:00.000Z');
+      repository.findManySummary.mockResolvedValue({
+        data: [],
+        meta: { total: 0, skip: 0, take: 1, totalPages: 0 },
+      });
+
+      await service.findMany(athlete, {
+        page: 1,
+        limit: 1,
+        status: 'PLANNED',
+        view: 'summary',
+        scheduledFrom: from,
+        sort: 'scheduledAtAsc',
+      });
+
+      expect(repository.findManySummary).toHaveBeenCalledWith({
+        where: {
+          athleteId: athlete.id,
+          status: 'PLANNED',
+          scheduledAt: { gte: from },
+        },
+        skip: 0,
+        take: 1,
+        orderBy: [{ scheduledAt: 'asc' }, { id: 'asc' }],
+      });
+      expect(repository.findMany).not.toHaveBeenCalled();
+    });
+
+    it('sorts completed summaries by finish time with stable pagination', async () => {
+      repository.findManySummary.mockResolvedValue({
+        data: [],
+        meta: { total: 0, skip: 0, take: 3, totalPages: 0 },
+      });
+
+      await service.findMany(athlete, {
+        page: 1,
+        limit: 3,
+        status: 'COMPLETED',
+        view: 'summary',
+        sort: 'completedAtDesc',
+      });
+
+      expect(repository.findManySummary).toHaveBeenCalledWith({
+        where: { athleteId: athlete.id, status: 'COMPLETED' },
+        skip: 0,
+        take: 3,
+        orderBy: [{ completedAt: { sort: 'desc', nulls: 'last' } }, { id: 'desc' }],
+      });
+      expect(repository.findMany).not.toHaveBeenCalled();
+    });
+
+    it('rejects completion-date sorting unless status=COMPLETED', async () => {
+      for (const status of [undefined, 'PLANNED', 'IN_PROGRESS', 'CANCELLED'] as const) {
+        await expect(
+          service.findMany(athlete, {
+            page: 1,
+            limit: 3,
+            ...(status ? { status } : {}),
+            sort: 'completedAtDesc',
+          }),
+        ).rejects.toThrow(BadRequestException);
+      }
+      expect(repository.findMany).not.toHaveBeenCalled();
+      expect(repository.findManySummary).not.toHaveBeenCalled();
+    });
+
+    it('rejects scheduled sorting without a planned status and lower date bound', async () => {
+      const from = new Date('2035-04-01T00:00:00.000Z');
+      for (const query of [
+        { page: 1, limit: 1, sort: 'scheduledAtAsc' as const, status: 'PLANNED' as const },
+        { page: 1, limit: 1, sort: 'scheduledAtAsc' as const, scheduledFrom: from },
+        {
+          page: 1,
+          limit: 1,
+          sort: 'scheduledAtAsc' as const,
+          status: 'COMPLETED' as const,
+          scheduledFrom: from,
+        },
+      ]) {
+        await expect(service.findMany(athlete, query)).rejects.toThrow(BadRequestException);
+      }
+      expect(repository.findMany).not.toHaveBeenCalled();
+      expect(repository.findManySummary).not.toHaveBeenCalled();
+    });
+
     it('should reject invalid pagination', async () => {
       await expect(
         service.findMany(athlete, {
@@ -433,9 +557,8 @@ describe('WorkoutsService', () => {
       await expect(service.findOne('workout-1', athlete)).rejects.toThrow(NotFoundException);
     });
 
-    it('should reject non-athletes', async () => {
-      await expect(service.findOne('workout-1', trainer)).rejects.toThrow(ForbiddenException);
-
+    it('rejects current admins without querying private workout rows', async () => {
+      await expect(service.findOne('workout-1', staleAdmin)).rejects.toThrow(ForbiddenException);
       expect(repository.findById).not.toHaveBeenCalled();
     });
   });

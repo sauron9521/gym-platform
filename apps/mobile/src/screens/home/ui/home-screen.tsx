@@ -1,17 +1,10 @@
 import { useCallback, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
-import {
-  Platform,
-  Pressable,
-  RefreshControl,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { useAuth } from '@/features/auth/model/auth-context';
+import { hasAthleteAccess } from '@/features/auth/model/account-capabilities';
 import { useAccountQuery } from '@/features/profile/model/account-query';
 import { useProgramAssignments } from '@/features/programs/model/program-assignments-query';
 import { useWorkoutSummary } from '@/features/progress/model/workout-summary-query';
@@ -104,11 +97,11 @@ function AthleteDashboard() {
 
 export function HomeScreen() {
   const router = useRouter();
-  const { account } = useAuth();
+  const { account, capabilities } = useAuth();
   const { data: accountData } = useAccountQuery();
   const queryClient = useQueryClient();
   const [refreshing, setRefreshing] = useState(false);
-  const isAthlete = account?.role === 'ATHLETE';
+  const isAthlete = hasAthleteAccess(capabilities);
   const profile = accountData?.profile ?? account?.profile;
   const displayName = profile?.displayName?.trim() || profile?.firstName?.trim();
 
@@ -124,7 +117,7 @@ export function HomeScreen() {
           type: 'active',
         }),
       ];
-      if (account.role === 'ATHLETE') {
+      if (hasAthleteAccess(capabilities)) {
         requests.push(
           queryClient.refetchQueries({
             queryKey: [...accountQueryKeys.workouts(account.id), 'ALL'],
@@ -147,23 +140,14 @@ export function HomeScreen() {
     } finally {
       setRefreshing(false);
     }
-  }, [account, queryClient, refreshing]);
+  }, [account, capabilities, queryClient, refreshing]);
 
   return (
     <ScrollView
       style={styles.container}
       contentContainerStyle={styles.content}
       accessibilityLabel="Головна Gym Platform"
-      refreshControl={
-        Platform.OS === 'web' ? undefined : (
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={() => void onRefresh()}
-            tintColor={palette.primary}
-            colors={[palette.primary]}
-          />
-        )
-      }
+      bounces={false}
     >
       <Text style={styles.eyebrow}>GYM PLATFORM</Text>
       <Text style={styles.title}>
@@ -174,6 +158,18 @@ export function HomeScreen() {
           ? 'Ваші тренування та прогрес в одному місці.'
           : 'Відкрийте доступні розділи платформи.'}
       </Text>
+
+      <Pressable
+        testID="home-refresh"
+        accessibilityRole="button"
+        accessibilityLabel="Оновити головну"
+        accessibilityState={{ disabled: refreshing }}
+        disabled={refreshing}
+        onPress={() => void onRefresh()}
+        style={styles.refreshButton}
+      >
+        <Text style={styles.actionText}>{refreshing ? 'Оновлюємо…' : 'Оновити дані'}</Text>
+      </Pressable>
 
       <Text style={styles.heading}>Швидкі дії</Text>
       {isAthlete ? (
@@ -259,6 +255,15 @@ const styles = StyleSheet.create({
     minHeight: 50,
   },
   actionText: { color: palette.text, fontWeight: '600' },
+  refreshButton: {
+    borderWidth: 1,
+    borderColor: palette.border,
+    borderRadius: 12,
+    padding: 12,
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   primary: {
     backgroundColor: palette.primary,
     borderRadius: 12,

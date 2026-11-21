@@ -1,27 +1,19 @@
-import {
-  ActivityIndicator,
-  Platform,
-  Pressable,
-  RefreshControl,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useIntl } from 'react-intl';
 
 import { useAuth } from '@/features/auth/model/auth-context';
+import { hasTrainerAccess } from '@/features/auth/model/account-capabilities';
 import { useAccountQuery } from '@/features/profile/model/account-query';
 import { palette } from '@/shared/config/theme';
-import { LocalePicker } from '@/shared/i18n/locale-picker';
+import { AccountLocalePicker } from '@/features/profile/ui/account-locale-picker';
 
 export function ProfileScreen() {
   const router = useRouter();
   const intl = useIntl();
   const t = (id: string) => intl.formatMessage({ id });
-  const { account, signOut } = useAuth();
-  const { data, isFetching, isRefetching, isError, error, refetch } = useAccountQuery();
+  const { account, capabilities, signOut } = useAuth();
+  const { data, isFetching, isError, error, refetch } = useAccountQuery();
 
   if (!account) return null;
 
@@ -34,23 +26,10 @@ export function ProfileScreen() {
     t('mobile.profile.myProfile');
 
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.content}
-      refreshControl={
-        Platform.OS === 'web' ? undefined : (
-          <RefreshControl
-            refreshing={isRefetching}
-            onRefresh={() => void refetch()}
-            tintColor={palette.primary}
-            colors={[palette.primary]}
-          />
-        )
-      }
-    >
+    <ScrollView style={styles.container} contentContainerStyle={styles.content} bounces={false}>
       <Text style={styles.heading}>{name}</Text>
       <Text style={styles.subheading}>{t('mobile.profile.apiData')}</Text>
-      <LocalePicker />
+      <AccountLocalePicker />
       <View style={styles.card}>
         <Text style={styles.label}>{t('mobile.profile.email')}</Text>
         <Text style={styles.value}>{currentAccount.email}</Text>
@@ -81,7 +60,9 @@ export function ProfileScreen() {
         </Text>
       ) : null}
       <Pressable
+        testID="profile-refresh"
         accessibilityRole="button"
+        accessibilityState={{ disabled: isFetching }}
         disabled={isFetching}
         onPress={() => void refetch()}
         style={styles.button}
@@ -99,7 +80,7 @@ export function ProfileScreen() {
       >
         <Text style={styles.secondaryText}>{t('mobile.profile.edit')}</Text>
       </Pressable>
-      {account.role === 'TRAINER' ? (
+      {hasTrainerAccess(capabilities) ? (
         <Pressable
           accessibilityRole="button"
           testID="profile-trainer-athletes"

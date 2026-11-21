@@ -2488,12 +2488,12 @@ describe('Workouts (HTTP + PostgreSQL)', () => {
 
       expect(unrelatedResponse.status).toBe(404);
 
-      // Former trainer cannot access an athlete-only endpoint.
+      // Former trainers retain personal Athlete access but cannot read others' workouts.
       const trainerResponse = await request(app!.getHttpServer())
         .get(`/workouts/${workoutId}`)
         .set('Cookie', trainerCookie);
 
-      expect(trainerResponse.status).toBe(403);
+      expect(trainerResponse.status).toBe(404);
 
       // 10. Historical workout remains in the athlete's list.
       const listResponse = await request(app!.getHttpServer())
@@ -3335,6 +3335,144 @@ describe('Workouts (HTTP + PostgreSQL)', () => {
       const ids = response.body.data.map((workout: { id: string }) => workout.id);
 
       expect(ids).toContain(createdWorkoutId);
+    });
+
+    it('returns completed workouts by completion time with ownership isolation', async () => {
+      const records: string[] = [];
+      const prefix = `Completed sorting ${randomUUID()}`;
+      const make = async (label: string, completedAt: string | null, createdAt: string) => {
+        const record = await prisma.workout.create({
+          data: {
+            athleteId: ownerId,
+            createdById: ownerId,
+            title: `${prefix}: ${label}`,
+            status: 'COMPLETED',
+            completedAt: completedAt ? new Date(completedAt) : null,
+            createdAt: new Date(createdAt),
+          },
+          select: { id: true },
+        });
+        records.push(record.id);
+        return record.id;
+      };
+
+      try {
+        const oldest = await make(
+          'older completion',
+          '2035-03-01T10:00:00Z',
+          '2035-03-09T00:00:00Z',
+        );
+        const newest = await make(
+          'newest completion',
+          '2035-03-03T10:00:00Z',
+          '2035-03-01T00:00:00Z',
+        );
+        const middle = await make(
+          'middle completion',
+          '2035-03-02T10:00:00Z',
+          '2035-03-08T00:00:00Z',
+        );
+        const missing = await make('missing timestamp', null, '2036-03-01T00:00:00Z');
+
+        const response = await request(app!.getHttpServer())
+          .get('/workouts')
+          .set('Cookie', ownerCookie)
+          .query({ view: 'summary', status: 'COMPLETED', sort: 'completedAtDesc', limit: 3 });
+
+        expect(response.status).toBe(200);
+        expect(response.body.data.map((row: { id: string }) => row.id)).toEqual([
+          newest,
+          middle,
+          oldest,
+        ]);
+        expect(response.body.data).not.toContainEqual(expect.objectContaining({ id: missing }));
+        expect(response.body.data[0]).toHaveProperty('exerciseCount', 0);
+
+        const originalOrder = await request(app!.getHttpServer())
+          .get('/workouts')
+          .set('Cookie', ownerCookie)
+          .query({ view: 'summary', status: 'COMPLETED', limit: 1 });
+        expect(originalOrder.status).toBe(200);
+        expect(originalOrder.body.data[0].id).toBe(missing);
+
+        const other = await request(app!.getHttpServer())
+          .get('/workouts')
+          .set('Cookie', otherAthleteCookie)
+          .query({ view: 'summary', status: 'COMPLETED', sort: 'completedAtDesc', limit: 3 });
+        expect(other.status).toBe(200);
+        expect(other.body.data).not.toContainEqual(expect.objectContaining({ id: newest }));
+
+        for (const invalid of [
+          { sort: 'completedAtDesc' },
+          { sort: 'completedAtDesc', status: 'PLANNED' },
+        ]) {
+          const rejected = await request(app!.getHttpServer())
+            .get('/workouts')
+            .set('Cookie', ownerCookie)
+            .query(invalid);
+          expect(rejected.status).toBe(400);
+        }
+      } finally {
+        await prisma.workout.deleteMany({ where: { id: { in: records } } });
+      }
+    });
+
+    it('returns the nearest future scheduled workout despite a later created record', async () => {
+      const later = await createWorkout('Date sorted: later');
+      const nearer = await createWorkout('Date sorted: nearer');
+
+      for (const [id, scheduledAt] of [
+        [later.id, '2035-04-03T09:00:00.000Z'],
+        [nearer.id, '2035-04-02T09:00:00.000Z'],
+      ]) {
+        const updated = await request(app!.getHttpServer())
+          .patch(`/workouts/${id}`)
+          .set('Cookie', ownerCookie)
+          .send({ scheduledAt });
+        expect(updated.status).toBe(200);
+      }
+
+      const filter = {
+        status: 'PLANNED',
+        view: 'summary',
+        sort: 'scheduledAtAsc',
+        scheduledFrom: '2035-04-01T00:00:00.000Z',
+        scheduledTo: '2035-04-04T00:00:00.000Z',
+        limit: 1,
+      };
+
+      const result = await request(app!.getHttpServer())
+        .get('/workouts')
+        .set('Cookie', ownerCookie)
+        .query(filter);
+
+      expect(result.status).toBe(200);
+      expect(result.body.data).toHaveLength(1);
+      expect(result.body.data[0]).toMatchObject({
+        id: nearer.id,
+        title: 'Date sorted: nearer',
+        status: 'PLANNED',
+        scheduledAt: '2035-04-02T09:00:00.000Z',
+      });
+      expect(result.body.meta.total).toBe(2);
+
+      const other = await request(app!.getHttpServer())
+        .get('/workouts')
+        .set('Cookie', otherAthleteCookie)
+        .query(filter);
+      expect(other.status).toBe(200);
+      expect(other.body.data).toEqual([]);
+
+      for (const invalid of [
+        { ...filter, status: 'COMPLETED' },
+        { status: 'PLANNED', view: 'summary', sort: 'scheduledAtAsc' },
+      ]) {
+        const response = await request(app!.getHttpServer())
+          .get('/workouts')
+          .set('Cookie', ownerCookie)
+          .query(invalid);
+        expect(response.status).toBe(400);
+      }
     });
 
     it('should not expose another athlete workouts', async () => {

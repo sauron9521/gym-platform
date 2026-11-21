@@ -1,6 +1,7 @@
 import { onlineManager, useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { useAuth } from '@/features/auth/model/auth-context';
+import { hasAthleteAccess } from '@/features/auth/model/account-capabilities';
 import { workoutTitleError } from '@/features/workouts/lib/workout-edit-policy';
 import type { WorkoutDetails } from '@/features/workouts/model/workout-details-query';
 import { isSessionExpired, MobileSessionExpiredError } from '@/shared/api/api-error-policy';
@@ -11,11 +12,11 @@ import { accountQueryKeys } from '@/shared/api/query-client';
  * before updating the cache, so older GET responses do not restore stale data.
  */
 function useWorkoutWriteContext(workoutId: string) {
-  const { account, getApi, signOut } = useAuth();
+  const { account, capabilities, getApi, signOut } = useAuth();
   const queryClient = useQueryClient();
 
   const apiForWrite = () => {
-    if (!account || account.role !== 'ATHLETE') {
+    if (!account || !hasAthleteAccess(capabilities)) {
       throw new Error('Змінювати тренування може лише спортсмен.');
     }
     if (!onlineManager.isOnline()) {

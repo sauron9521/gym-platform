@@ -10,10 +10,22 @@ const keyIdParts = [
 ];
 const avatarPath = new RegExp(`^/avatars/${keyIdParts.join('-')}[.](png|jpg|webp)$`);
 
+export type AvatarValidationKey = 'empty' | 'tooLarge' | 'unsupported';
+
+export function getAvatarValidationKey(
+  file: Pick<File, 'size' | 'type'>,
+): AvatarValidationKey | null {
+  if (file.size === 0) return 'empty';
+  if (file.size > MAX_AVATAR_BYTES) return 'tooLarge';
+  if (!acceptedTypes.has(file.type)) return 'unsupported';
+  return null;
+}
+
 export function validateAvatarFile(file: Pick<File, 'size' | 'type'>): string | null {
-  if (file.size === 0) return 'Оберіть непорожній файл.';
-  if (file.size > MAX_AVATAR_BYTES) return 'Максимальний розмір фотографії — 2 МіБ.';
-  if (!acceptedTypes.has(file.type)) return 'Дозволено лише PNG, JPEG або WebP.';
+  const key = getAvatarValidationKey(file);
+  if (key === 'empty') return 'Оберіть непорожній файл.';
+  if (key === 'tooLarge') return 'Максимальний розмір фотографії — 2 МіБ.';
+  if (key === 'unsupported') return 'Дозволено лише PNG, JPEG або WebP.';
   return null;
 }
 
@@ -44,4 +56,16 @@ export function avatarErrorMessage(status: number): string {
   if (status === 403) return 'Недостатньо прав для цієї дії.';
   if (status === 429) return 'Забагато спроб. Спробуйте пізніше.';
   return 'Не вдалося змінити аватар. Спробуйте пізніше.';
+}
+
+/** Safe categories for localized avatar request errors. */
+export function getAvatarErrorKey(
+  status?: number,
+): 'fileInvalid' | 'signedOut' | 'forbidden' | 'rateLimited' | 'requestFailed' | 'network' {
+  if (status === undefined) return 'network';
+  if (status === 400 || status === 413 || status === 422) return 'fileInvalid';
+  if (status === 401) return 'signedOut';
+  if (status === 403) return 'forbidden';
+  if (status === 429) return 'rateLimited';
+  return 'requestFailed';
 }
