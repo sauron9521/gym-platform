@@ -1,14 +1,16 @@
-name: API Performance / A-A smoke and manual A-B comparison
+name: API Performance / PR A-A or A-B and manual comparison
 
 on:
-  # Run the complete A/A pipeline only when its implementation changes.
-  # Do not run a performance benchmark on ordinary application PRs.
+  # A/A harness smoke or perf/* base-to-head A/B, only for allowlisted changes.
+  # Do not run an expensive benchmark on ordinary application PRs.
   pull_request:
     paths:
       - '.github/workflows/api-performance-ab.yml'
       - 'scripts/api-performance-ab.mjs'
       - 'scripts/api-performance-ab.test.mjs'
       - 'apps/api/test/e2e/infra/performance-query-count.e2e-spec.ts'
+      # Narrow opt-in PR A/B for a single performance hotspot only.
+      - 'apps/api/src/modules/exercises/repositories/exercises.repository.ts'
   workflow_dispatch:
     inputs:
       before_sha:
@@ -37,8 +39,9 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 40
     env:
-      # PR: run A/A with the same immutable PR head commit. Manual: honor both input SHAs.
-      BEFORE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || inputs.before_sha }}
+      # perf/* branch: real PR base-vs-head A/B; other relevant PRs: A/A smoke.
+      # Both modes require the exact pinned revisions and matching fixture/schema/lockfile.
+      BEFORE_SHA: ${{ github.event_name == 'pull_request' && startsWith(github.head_ref, 'perf/') && github.event.pull_request.base.sha || github.event_name == 'pull_request' && github.event.pull_request.head.sha || inputs.before_sha }}
       AFTER_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || inputs.after_sha }}
       NODE_ENV: test
       TEST_REDIS_URL: redis://127.0.0.1:6379
