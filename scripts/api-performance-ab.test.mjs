@@ -220,6 +220,25 @@ describe('API A/B comparison runner', () => {
     assert.doesNotMatch(workflow, /db:seed|db:migrate:reset|production\.env|secrets\.DATABASE_URL/);
   });
 
+  it('limits automatic benchmark PR runs to the reviewed file allowlist', () => {
+    const workflow = readFileSync(
+      fileURLToPath(new URL('../.github/workflows/api-performance-ab.yml', import.meta.url)),
+      'utf8',
+    );
+    const trigger = workflow.match(
+      /pull_request:\s*\n\s*paths:\s*\n([\s\S]*?)\n  workflow_dispatch:/,
+    );
+    assert.ok(trigger, 'A/B workflow must declare a narrow PR path filter');
+    const paths = [...trigger[1].matchAll(/^\s+- '([^']+)'$/gm)].map((match) => match[1]);
+    assert.deepEqual(paths, [
+      '.github/workflows/api-performance-ab.yml',
+      'scripts/api-performance-ab.mjs',
+      'scripts/api-performance-ab.test.mjs',
+      'apps/api/test/e2e/infra/performance-query-count.e2e-spec.ts',
+      'apps/api/src/modules/exercises/repositories/exercises.repository.ts',
+    ]);
+  });
+
   it('the CLI writes clean files and withholds malformed log and file paths on failures', () => {
     const directory = mkdtempSync(join(tmpdir(), 'api-perf-ab-'));
     const file = fileURLToPath(new URL('./api-performance-ab.mjs', import.meta.url));
