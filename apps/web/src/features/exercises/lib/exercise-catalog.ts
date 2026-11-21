@@ -48,6 +48,16 @@ export function getExerciseErrorMessage(status?: number): string {
   return 'Не вдалося завантажити каталог вправ. Спробуйте ще раз.';
 }
 
+/** Only HTTP status codes select translated errors; upstream messages are untrusted. */
+export function getExerciseErrorKey(
+  status?: number,
+): 'errorBadRequest' | 'errorForbidden' | 'errorRateLimited' | 'errorDefault' {
+  if (status === 400) return 'errorBadRequest';
+  if (status === 403) return 'errorForbidden';
+  if (status === 429) return 'errorRateLimited';
+  return 'errorDefault';
+}
+
 export function getExerciseDetailsErrorMessage(status?: number): string {
   if (status === 400) return 'Некоректний ідентифікатор вправи.';
   if (status === 403 || status === 404) return 'Вправу не знайдено або немає доступу.';

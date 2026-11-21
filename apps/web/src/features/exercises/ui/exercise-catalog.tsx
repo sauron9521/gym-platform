@@ -4,26 +4,50 @@ import { useEffect, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 
 import { exerciseListQueryOptions, ExerciseListRequestError } from '../api/exercise-list-query';
 import { Button } from '@/shared/ui/button';
 import {
   EXERCISE_TYPES,
-  getExerciseErrorMessage,
-  getExerciseSourceLabel,
-  getExerciseTypeLabel,
+  getExerciseErrorKey,
   type ExerciseListItem,
+  type ExerciseType,
   type ExerciseTypeFilter,
 } from '../lib/exercise-catalog';
 
 import { useExerciseTaxonomy } from './use-exercise-taxonomy';
 
+const exerciseTypeFilterKeys = {
+  ALL: 'typeAll',
+  STRENGTH: 'typeStrengthPlural',
+  CARDIO: 'typeCardio',
+  MOBILITY: 'typeMobility',
+  PLYOMETRIC: 'typePlyometric',
+  OTHER: 'typeOtherPlural',
+} as const satisfies Record<ExerciseTypeFilter, string>;
+
+const exerciseTypeKeys = {
+  STRENGTH: 'typeStrength',
+  CARDIO: 'typeCardio',
+  MOBILITY: 'typeMobility',
+  PLYOMETRIC: 'typePlyometric',
+  OTHER: 'typeOther',
+} as const satisfies Record<ExerciseType, string>;
+
+const exerciseSourceKeys = {
+  GLOBAL: 'sourceGlobal',
+  ATHLETE_CUSTOM: 'sourceAthlete',
+  TRAINER_CUSTOM: 'sourceTrainer',
+} as const satisfies Record<ExerciseListItem['source'], string>;
+
 type CatalogState =
   | { kind: 'loading' }
-  | { kind: 'error'; message: string }
+  | { kind: 'error'; key: ReturnType<typeof getExerciseErrorKey> }
   | { kind: 'ready'; exercises: ExerciseListItem[]; total: number; pages: number };
 
 export function ExerciseCatalog({ role }: { role: 'ATHLETE' | 'TRAINER' | 'ADMIN' }) {
+  const t = useTranslations('web.exerciseCatalog');
   const router = useRouter();
   const queryClient = useQueryClient();
   const redirecting = useRef(false);
@@ -81,10 +105,9 @@ export function ExerciseCatalog({ role }: { role: 'ATHLETE' | 'TRAINER' | 'ADMIN
       : query.isError
         ? {
             kind: 'error',
-            message:
-              query.error instanceof ExerciseListRequestError
-                ? query.error.message
-                : getExerciseErrorMessage(),
+            key: getExerciseErrorKey(
+              query.error instanceof ExerciseListRequestError ? query.error.status : undefined,
+            ),
           }
         : {
             kind: 'ready',
@@ -99,40 +122,40 @@ export function ExerciseCatalog({ role }: { role: 'ATHLETE' | 'TRAINER' | 'ADMIN
   return (
     <main className="mx-auto max-w-5xl space-y-7 px-6 py-12">
       <header className="space-y-2">
-        <p className="text-sm font-medium text-muted-foreground">Бібліотека вправ</p>
-        <h1 className="text-3xl font-semibold tracking-tight">Каталог вправ</h1>
-        <p className="text-sm text-muted-foreground">
-          Переглядайте доступні вправи, їхні м’язові групи, обладнання та техніку виконання.
-        </p>
+        <p className="text-sm font-medium text-muted-foreground">{t('library')}</p>
+        <h1 className="text-3xl font-semibold tracking-tight">{t('title')}</h1>
+        <p className="text-sm text-muted-foreground">{t('description')}</p>
       </header>
 
       {role !== 'ADMIN' && (
         <div>
           <Button asChild>
-            <Link href="/exercises/new">Створити власну вправу</Link>
+            <Link href="/exercises/new">{t('new')}</Link>
           </Button>
         </div>
       )}
 
       {taxonomy.kind === 'loading' && (
         <p role="status" className="text-sm text-muted-foreground">
-          Завантажуємо довідники фільтрів…
+          {t('loadingFilters')}
         </p>
       )}
       {taxonomy.kind === 'error' && (
         <div role="alert" className="flex flex-wrap items-center gap-3">
-          <p className="text-sm text-destructive">{taxonomy.message}</p>
+          <p className="text-sm text-destructive">
+            {t(taxonomy.status === 429 ? 'taxonomyRateLimited' : 'taxonomyError')}
+          </p>
           <Button type="button" variant="outline" onClick={retryTaxonomy}>
-            Повторити
+            {t('retry')}
           </Button>
         </div>
       )}
 
-      <section className="space-y-4 rounded-xl border bg-card p-5" aria-label="Фільтри вправ">
+      <section className="space-y-4 rounded-xl border bg-card p-5" aria-label={t('filters')}>
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
             <label htmlFor="exercise-search" className="block text-sm font-medium">
-              Пошук за назвою
+              {t('search')}
             </label>
             <input
               id="exercise-search"
@@ -145,7 +168,7 @@ export function ExerciseCatalog({ role }: { role: 'ATHLETE' | 'TRAINER' | 'ADMIN
           </div>
           <div className="space-y-2">
             <label htmlFor="exercise-type" className="block text-sm font-medium">
-              Тип вправи
+              {t('type')}
             </label>
             <select
               id="exercise-type"
@@ -157,14 +180,14 @@ export function ExerciseCatalog({ role }: { role: 'ATHLETE' | 'TRAINER' | 'ADMIN
             >
               {EXERCISE_TYPES.map((option) => (
                 <option key={option.value} value={option.value}>
-                  {option.label}
+                  {t(exerciseTypeFilterKeys[option.value])}
                 </option>
               ))}
             </select>
           </div>
           <div className="space-y-2">
             <label htmlFor="exercise-muscle" className="block text-sm font-medium">
-              Група м’язів
+              {t('muscle')}
             </label>
             <select
               id="exercise-muscle"
@@ -173,7 +196,7 @@ export function ExerciseCatalog({ role }: { role: 'ATHLETE' | 'TRAINER' | 'ADMIN
               onChange={(event) => resetAndFilter(() => setMuscleGroup(event.target.value))}
               className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
             >
-              <option value="">Усі групи</option>
+              <option value="">{t('allMuscles')}</option>
               {taxonomy.kind === 'ready' &&
                 taxonomy.muscleGroups.map((item) => (
                   <option key={item.id} value={item.slug}>
@@ -184,7 +207,7 @@ export function ExerciseCatalog({ role }: { role: 'ATHLETE' | 'TRAINER' | 'ADMIN
           </div>
           <div className="space-y-2">
             <label htmlFor="exercise-equipment" className="block text-sm font-medium">
-              Обладнання
+              {t('equipment')}
             </label>
             <select
               id="exercise-equipment"
@@ -193,7 +216,7 @@ export function ExerciseCatalog({ role }: { role: 'ATHLETE' | 'TRAINER' | 'ADMIN
               onChange={(event) => resetAndFilter(() => setEquipment(event.target.value))}
               className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
             >
-              <option value="">Усе обладнання</option>
+              <option value="">{t('allEquipment')}</option>
               {taxonomy.kind === 'ready' &&
                 taxonomy.equipment.map((item) => (
                   <option key={item.id} value={item.slug}>
@@ -216,11 +239,11 @@ export function ExerciseCatalog({ role }: { role: 'ATHLETE' | 'TRAINER' | 'ADMIN
               })
             }
           >
-            Очистити фільтри
+            {t('clear')}
           </Button>
           {state.kind === 'ready' && (
             <p role="status" className="text-sm text-muted-foreground">
-              Знайдено: {state.total}
+              {t('found', { count: state.total })}
             </p>
           )}
         </div>
@@ -228,37 +251,35 @@ export function ExerciseCatalog({ role }: { role: 'ATHLETE' | 'TRAINER' | 'ADMIN
 
       {state.kind === 'loading' && (
         <p role="status" className="rounded-xl border bg-card p-6 text-muted-foreground">
-          Завантажуємо вправи…
+          {t('loading')}
         </p>
       )}
 
       {state.kind === 'error' && (
         <div role="alert" className="space-y-3 rounded-xl border bg-card p-6">
-          <p className="text-sm text-destructive">{state.message}</p>
+          <p className="text-sm text-destructive">{t(state.key)}</p>
           <Button type="button" variant="outline" onClick={retry}>
-            Спробувати ще раз
+            {t('retryAgain')}
           </Button>
         </div>
       )}
 
       {state.kind === 'ready' && state.exercises.length === 0 && (
         <section className="rounded-xl border bg-card p-6">
-          <h2 className="font-semibold">Вправ не знайдено</h2>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Змініть параметри пошуку або очистьте фільтри.
-          </p>
+          <h2 className="font-semibold">{t('empty')}</h2>
+          <p className="mt-2 text-sm text-muted-foreground">{t('emptyHint')}</p>
         </section>
       )}
 
       {state.kind === 'ready' && state.exercises.length > 0 && (
-        <section aria-label="Список вправ" className="grid gap-4 sm:grid-cols-2">
+        <section aria-label={t('list')} className="grid gap-4 sm:grid-cols-2">
           {state.exercises.map((exercise) => (
             <article key={exercise.id} className="space-y-3 rounded-xl border bg-card p-5">
               <div className="space-y-1">
                 <h2 className="font-semibold">{exercise.name}</h2>
                 <p className="text-xs text-muted-foreground">
-                  {getExerciseTypeLabel(exercise.exerciseType)} ·{' '}
-                  {getExerciseSourceLabel(exercise.source)}
+                  {t(exerciseTypeKeys[exercise.exerciseType])} ·{' '}
+                  {t(exerciseSourceKeys[exercise.source])}
                 </p>
               </div>
               {exercise.description && (
@@ -266,7 +287,7 @@ export function ExerciseCatalog({ role }: { role: 'ATHLETE' | 'TRAINER' | 'ADMIN
               )}
               {exercise.muscleGroups.length > 0 && (
                 <p className="text-sm">
-                  <span className="font-medium">М’язи: </span>
+                  <span className="font-medium">{t('muscles')}</span>
                   {exercise.muscleGroups.map((item) => item.muscleGroup.name).join(', ')}
                 </p>
               )}
@@ -274,7 +295,7 @@ export function ExerciseCatalog({ role }: { role: 'ATHLETE' | 'TRAINER' | 'ADMIN
                 href={`/exercises/${exercise.id}`}
                 className="inline-block text-sm font-medium underline-offset-4 hover:underline"
               >
-                Переглянути вправу
+                {t('details')}
               </Link>
             </article>
           ))}
@@ -282,17 +303,17 @@ export function ExerciseCatalog({ role }: { role: 'ATHLETE' | 'TRAINER' | 'ADMIN
       )}
 
       {state.kind === 'ready' && state.pages > 1 && (
-        <nav aria-label="Сторінки вправ" className="flex items-center justify-between gap-4">
+        <nav aria-label={t('pages')} className="flex items-center justify-between gap-4">
           <Button
             type="button"
             variant="outline"
             disabled={page <= 1}
             onClick={() => changePage(page - 1)}
           >
-            Назад
+            {t('back')}
           </Button>
           <span className="text-sm text-muted-foreground">
-            Сторінка {page} із {state.pages}
+            {t('page', { page, total: state.pages })}
           </span>
           <Button
             type="button"
@@ -300,7 +321,7 @@ export function ExerciseCatalog({ role }: { role: 'ATHLETE' | 'TRAINER' | 'ADMIN
             disabled={page >= state.pages}
             onClick={() => changePage(page + 1)}
           >
-            Далі
+            {t('next')}
           </Button>
         </nav>
       )}
