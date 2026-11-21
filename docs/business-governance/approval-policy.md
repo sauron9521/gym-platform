@@ -48,4 +48,4 @@ No one may approve their own Marketing submission using a lower-privilege role. 
 
 ## 6. Pending quantitative decisions
 
-Record each as an ADR decision before implementation: (a) maximum Support temporary credit, (b) refund execution authorization thresholds and currency equivalence, (c) dual approval above material financial impact, (d) SLA for requests and support, (e) appeal response window, (f) emergency incident authority, (g) campaign budget caps.
+Record each as an ADR decision before implementation: (a) maximum Support temporary credit, (b) refund execution authorization thresholds and currency equivalence, (c) dual approval above material financial impact, (d) SLA for requests and support, (e) appeal response window, (f) emergency incident authority, (g) campaign budget caps. The detailed [Delegation and Escalation Matrix](delegation-and-escalation.md) separates baseline approved authority from **unapproved** candidate limits, documents 20 expected allow/deny scenarios and identifies implementation owners. This policy does not grant runtime permissions.
