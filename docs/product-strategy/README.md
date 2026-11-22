@@ -4,10 +4,10 @@ This directory is the **canonical home for owner-approved product strategy decis
 
 ## Approved strategic decisions
 
-| Topic                                    | Decision     | Version  | Owner decision | Document                                                         |
-| ---------------------------------------- | ------------ | -------- | -------------- | ---------------------------------------------------------------- |
-| **S01 — Product Strategy & Positioning** | **APPROVED** | **v1.0** | 2026-11-22     | [S01 Trainer-first Product Strategy](s01-product-strategy-v1.md) |
-| **S02 — Customer Experience & Retention** | **APPROVED** | **v1.0** | 2026-11-22 | [S02 Customer Experience & Retention](s02-customer-experience-v1.md) |
+| Topic                                     | Decision     | Version  | Owner decision | Document                                                             |
+| ----------------------------------------- | ------------ | -------- | -------------- | -------------------------------------------------------------------- |
+| **S01 — Product Strategy & Positioning**  | **APPROVED** | **v1.0** | 2026-11-22     | [S01 Trainer-first Product Strategy](s01-product-strategy-v1.md)     |
+| **S02 — Customer Experience & Retention** | **APPROVED** | **v1.0** | 2026-11-22     | [S02 Customer Experience & Retention](s02-customer-experience-v1.md) |
 
 **S01 and S02 are owner-approved strategic decisions. S03–S12 are NOT_STARTED / NOT APPROVED.** Publishing this document is not an implementation or Beta acceptance claim.
 
