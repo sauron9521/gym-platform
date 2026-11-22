@@ -1,4 +1,5 @@
 import { getMessages, type Locale } from '@gym/i18n';
+import Image from 'next/image';
 
 import { TrackedLink } from '@/shared/ui/tracked-link';
 
@@ -8,6 +9,8 @@ export function ProductDiscovery({ locale }: { locale: Locale }) {
   const products = [
     {
       name: 'OVRANTO Athlete',
+      previewSrc: '/product-previews/athlete-workouts.webp',
+      previewAlt: t.productAthletePreviewAlt,
       audience: t.productAthleteAudience,
       description: t.productAthleteDescription,
       highlights: [
@@ -20,6 +23,8 @@ export function ProductDiscovery({ locale }: { locale: Locale }) {
     },
     {
       name: 'OVRANTO Coach',
+      previewSrc: '/product-previews/coach-workspace.webp',
+      previewAlt: t.productCoachPreviewAlt,
       audience: t.productCoachAudience,
       description: t.productCoachDescription,
       highlights: [
@@ -61,6 +66,20 @@ export function ProductDiscovery({ locale }: { locale: Locale }) {
             <p className="mt-5 max-w-lg text-base leading-7 text-muted-foreground">
               {product.description}
             </p>
+            <figure className="mt-8 overflow-hidden rounded-2xl border border-border/80 bg-secondary/30">
+              <Image
+                src={product.previewSrc}
+                alt={product.previewAlt}
+                width={1200}
+                height={700}
+                sizes="(min-width: 1024px) 46vw, (min-width: 640px) 85vw, 100vw"
+                loading="lazy"
+                className="block h-auto w-full"
+              />
+              <figcaption className="border-t border-border/70 px-4 py-3 text-xs leading-5 text-muted-foreground">
+                {t.productPreviewDisclaimer}
+              </figcaption>
+            </figure>
             <ul className="mt-8 space-y-3" aria-label={t.productHighlightsLabel}>
               {product.highlights.map((highlight) => (
                 <li

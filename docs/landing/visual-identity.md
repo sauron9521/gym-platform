@@ -38,6 +38,31 @@ rather than generic `@gym/ui-web`. The final `/apps` catalogue CTA remains
 available below the workflow section. No new imagery or unsupported feature
 claims were introduced; add genuine approved screenshots in a separate slice.
 
+## Product preview asset provenance (#388)
+
+The two marketing images are **actual Chrome renders of the current Next.js UI**,
+not generated illustrations, production account data or a claim that a product
+is available for public sign-up:
+
+| Static WebP                                     | Source page                 | Data source                                                                                                           |
+| ----------------------------------------------- | --------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `public/product-previews/athlete-workouts.webp` | `apps/web` `/workouts`      | The loopback-only `apps/web/e2e/support/mock-api.mjs` test account and its two synthetic workouts                     |
+| `public/product-previews/coach-workspace.webp`  | `apps/trainer` `/workspace` | A local-only read API fixture with a synthetic Trainer capability, an empty client/program list, and zero test counts |
+
+Both captures were produced from the verified client source at `cb8a1af` on
+2026-11-22 in Chrome, 1200×700, Light theme, with the Next.js dev overlay
+hidden. Images were converted to optimized, locally hosted WebP without
+replacing the underlying real app UI. No user or production records, tokens,
+contact details, customer metrics or third-party photography are included.
+
+**The visible workouts and Coach zero counts are test fixtures**, not results
+from real people. An adjacent UK/EN caption says so for each preview. The
+images have descriptive localized alt text, declared dimensions for stable
+layout and lazy loading to protect the hero's LCP. A future refresh must verify
+the current UI, image authenticity/privacy, live feature truthfulness, contrast,
+mobile layout, and relevant licenses/permissions before replacing these files.
+Screenshots are not evidence of Coach deployment or domain readiness (#393).
+
 ## Public theme preference
 
 The marketing header offers one accessible System / Light / Dark selector across
