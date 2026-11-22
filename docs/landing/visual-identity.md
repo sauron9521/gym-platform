@@ -23,6 +23,21 @@ independently hard-coding brand colors or light/dark surfaces.
 - All visual charts and counts on the homepage are **concept art**, clearly labeled
   and never passed off as real performance data.
 
+## Athlete / Coach discovery (Issue #388)
+
+The homepage product-discovery section has exactly two **descriptive** OVRANTO
+surfaces: Athlete and Coach. These are marketing cards, not real app screenshots,
+analytics, testimonials or launch announcements. Both are visibly labeled
+"In development" (localized UK/EN) with a public-access disclaimer. The links
+lead only to existing local `/for-athletes` and `/for-trainers` overview pages;
+links to `app.ovranto.com` and `coach.ovranto.com` remain gated by the verified
+host, TLS and product deployment requirements in #393.
+
+The product-specific layout lives in `apps/landing/src/widgets/home/ui/`
+rather than generic `@gym/ui-web`. The final `/apps` catalogue CTA remains
+available below the workflow section. No new imagery or unsupported feature
+claims were introduced; add genuine approved screenshots in a separate slice.
+
 ## Public theme preference
 
 The marketing header offers one accessible System / Light / Dark selector across

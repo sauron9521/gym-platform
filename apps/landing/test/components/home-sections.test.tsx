@@ -49,6 +49,11 @@ test('English homepage uses translated headings, CTAs, cards, milestones and ARI
   expect(screen.getByRole('heading', { name: 'Choose exercises' })).toBeTruthy();
   expect(screen.getByRole('heading', { name: 'Build a plan' })).toBeTruthy();
   expect(screen.getByRole('heading', { name: 'Track results' })).toBeTruthy();
-  expect(screen.getAllByRole('article')).toHaveLength(3);
+  expect(screen.getAllByRole('article')).toHaveLength(2);
+  expect(screen.getByRole('heading', { name: 'OVRANTO Athlete' })).toBeTruthy();
+  expect(screen.getByRole('heading', { name: 'OVRANTO Coach' })).toBeTruthy();
+  expect(screen.getAllByText('In development')).toHaveLength(2);
+  expect(screen.getByText('Assign plans to athletes')).toBeTruthy();
+  expect(screen.getAllByText(/Public access has not been announced/)).toHaveLength(2);
   expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
 });
