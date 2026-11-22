@@ -3,6 +3,7 @@ import { UsersController } from './controllers/users.controller.js';
 import { AdminUsersController } from './controllers/admin-users.controller.js';
 import { AdminUsersReadGuard } from './controllers/admin-users-read.guard.js';
 import { AdminAuditModule } from '#src/common/audit/admin-audit.module';
+import { AdminSessionPurposeGuard } from '#src/common/auth/admin-session-purpose.guard';
 import { UsersRepository } from './repositories/users.repository.js';
 import { UsersService } from './services/users.service.js';
 import { AdminAccountStatusService } from './services/admin-account-status.service.js';
@@ -16,6 +17,7 @@ import { AvatarPublicController } from './controllers/avatar-public.controller.j
   imports: [AdminAuditModule],
   providers: [
     AdminUsersReadGuard,
+    AdminSessionPurposeGuard,
     UsersRepository,
     UsersService,
     AdminAccountStatusService,

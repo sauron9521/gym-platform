@@ -25,7 +25,7 @@ export default function AdminSignInPage() {
     setError('');
 
     try {
-      const signedIn = await api.POST('/auth/login', {
+      const signedIn = await api.POST('/auth/admin-login', {
         body: { email: email.trim(), password },
       });
 
@@ -41,7 +41,7 @@ export default function AdminSignInPage() {
         return;
       }
 
-      const verified = await api.GET('/users/me');
+      const verified = await api.GET('/auth/admin-session');
       if (verified.response.status !== 200 || verified.data?.role !== 'ADMIN') {
         await api.POST('/auth/sign-out').catch(() => undefined);
         setError(admin('forbidden'));

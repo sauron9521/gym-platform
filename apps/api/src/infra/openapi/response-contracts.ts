@@ -85,6 +85,12 @@ export const sessionSignInResponseSchema = objectSchema({
   mfaRequired: booleanSchema,
 });
 
+/** Minimal live admin-purpose session identity, not an ordinary /users/me result. */
+export const adminSessionResponseSchema = objectSchema({
+  id: uuidSchema,
+  role: enumSchema(['ADMIN']),
+});
+
 /** Native credentials and refresh both return this short-lived token pair. */
 export const tokenPairResponseSchema = objectSchema({
   accessToken: stringSchema,

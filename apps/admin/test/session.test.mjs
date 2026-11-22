@@ -48,7 +48,7 @@ test('admin verification only forwards the cookie to an uncached fixed endpoint'
 
   const session = await readAdminSession('sid=private', endpoint, send);
   assert.deepEqual(session, { kind: 'admin', id: 'admin-id' });
-  assert.equal(requestedUrl, endpoint + '/users/me');
+  assert.equal(requestedUrl, endpoint + '/auth/admin-session');
   assert.equal(requestOptions.headers.cookie, 'sid=private');
   assert.equal(requestOptions.cache, 'no-store');
   assert.equal(requestOptions.redirect, 'error');

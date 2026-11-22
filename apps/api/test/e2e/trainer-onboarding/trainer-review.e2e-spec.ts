@@ -43,7 +43,9 @@ describe('Operator trainer review (HTTP + PostgreSQL)', () => {
     });
     users.push(user.id);
 
-    const login = await request(app.getHttpServer()).post('/auth/login').send({ email, password });
+    const login = await request(app.getHttpServer())
+      .post(role === 'ADMIN' ? '/auth/admin-login' : '/auth/login')
+      .send({ email, password });
     expect(login.status).toBe(200);
     const setCookies = login.headers['set-cookie'];
     const values = Array.isArray(setCookies) ? setCookies : setCookies ? [setCookies] : [];
@@ -120,6 +122,35 @@ describe('Operator trainer review (HTTP + PostgreSQL)', () => {
     });
     expect(anon.status).toBe(401);
     expect(anon.headers['cache-control']).toContain('no-store');
+  });
+
+  it('does not review applications with an ordinary ADMIN login session', async () => {
+    const operator = await prisma.user.findUniqueOrThrow({
+      where: { id: operatorId },
+      select: { email: true },
+    });
+    const ordinary = await request(app.getHttpServer())
+      .post('/auth/login')
+      .send({ email: operator.email, password });
+    expect(ordinary.status).toBe(200);
+    const setCookies = ordinary.headers['set-cookie'];
+    const raw = Array.isArray(setCookies) ? setCookies : setCookies ? [setCookies] : [];
+    const cookie = raw
+      .map((v) => v.split(';', 1)[0] ?? '')
+      .find((v) => v.startsWith('__Host-sid='));
+    expect(cookie).toBeTruthy();
+
+    const queue = await request(app.getHttpServer())
+      .get('/admin/trainer-applications')
+      .set('Cookie', cookie!);
+    expect(queue.status).toBe(403);
+    const denied = await request(app.getHttpServer())
+      .post(url(pendingId, 'approve'))
+      .set('Cookie', cookie!)
+      .send({ reason: 'Valid credentials but wrong session purpose' });
+    expect(denied.status).toBe(403);
+    const state = await prisma.trainerApplication.findUniqueOrThrow({ where: { id: pendingId } });
+    expect(state.status).toBe('PENDING');
   });
 
   it('rejects bearer-only access to operator queue and decisions before any DB mutation', async () => {

@@ -11,6 +11,7 @@ import { AuthNoStoreInterceptor } from '../interceptors/auth-no-store.intercepto
 import { EmailVerificationService, Public, SignInService } from '@nestjs/authentication';
 import { RateLimit } from '#src/common/rate-limit/rate-limit.policies';
 import { ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
+import { ADMIN_SESSION_PURPOSE } from '#src/common/auth/admin-session-purpose.guard';
 import {
   registrationResponseSchema,
   sessionSignInResponseSchema,
@@ -56,6 +57,27 @@ export class AuthController {
     }
 
     return { ...user, verificationEmailStatus };
+  }
+
+  /**
+   * Explicitly issue an admin-purpose cookie only after fresh password proof.
+   * The session is still subject to MFA enrollment and CSRF origin checks.
+   * Use a generic failure for unknown credentials and non-admin users.
+   */
+  @RateLimit('auth')
+  @Post('admin-login')
+  @HttpCode(200)
+  @ApiOkResponse({ schema: sessionSignInResponseSchema })
+  async adminSignIn(@Body({ schema: signInSchema }) body: SignInInput) {
+    const user = await this.credentialsService.verify(body.email, body.password);
+    if (!user || user.role !== 'ADMIN') {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+    const { session } = await this.signInService.signIn(user.id, {
+      method: 'password',
+      metadata: { purpose: ADMIN_SESSION_PURPOSE },
+    });
+    return { mfaRequired: session.mfa === 'pending' };
   }
 
   @RateLimit('auth')

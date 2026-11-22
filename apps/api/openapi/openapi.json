@@ -100,6 +100,57 @@
         "tags": ["Authentication"]
       }
     },
+    "/auth/admin-login": {
+      "post": {
+        "operationId": "AuthController_adminSignIn",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+                  },
+                  "password": {
+                    "type": "string",
+                    "minLength": 1,
+                    "pattern": "\\S",
+                    "writeOnly": true
+                  }
+                },
+                "required": ["email", "password"],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "mfaRequired": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": ["mfaRequired"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "tags": ["Authentication"]
+      }
+    },
     "/auth/login": {
       "post": {
         "operationId": "AuthController_signIn",
@@ -414,6 +465,42 @@
           }
         },
         "tags": ["Tokens"]
+      }
+    },
+    "/auth/admin-session": {
+      "get": {
+        "operationId": "SessionsController_adminSession",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "role": {
+                      "type": "string",
+                      "enum": ["ADMIN"]
+                    }
+                  },
+                  "required": ["id", "role"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "tags": ["Sessions"]
       }
     },
     "/auth/sessions": {

@@ -35,7 +35,7 @@ describe('Admin sign-in with same-origin cookie session', () => {
     vi.resetAllMocks();
   });
 
-  it('verifies role via GET /users/me before opening the Admin page', async () => {
+  it('verifies admin-purpose cookie via GET /auth/admin-session before opening the Admin page', async () => {
     post.mockResolvedValue({ response: { status: 200 }, data: { mfaRequired: false } });
     get.mockResolvedValue({ response: { status: 200 }, data: { role: 'ADMIN' } });
     render(<AdminSignInPage />);
@@ -43,10 +43,10 @@ describe('Admin sign-in with same-origin cookie session', () => {
     submit();
     await waitFor(() => expect(router.replace).toHaveBeenCalledExactlyOnceWith('/'));
     expect(router.refresh).toHaveBeenCalledOnce();
-    expect(post).toHaveBeenCalledWith('/auth/login', {
+    expect(post).toHaveBeenCalledWith('/auth/admin-login', {
       body: { email: 'admin@example.test', password: 'password-example' },
     });
-    expect(get).toHaveBeenCalledWith('/users/me');
+    expect(get).toHaveBeenCalledWith('/auth/admin-session');
   });
 
   it('denies non-ADMIN role and tries to discard the new session', async () => {
