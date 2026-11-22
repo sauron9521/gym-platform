@@ -4,6 +4,9 @@ This is a **manually dispatched external-staging-only** Playwright browser workf
 It does not run on pushes, pull requests, schedules, or deployments and does not
 authorize production use. No hosted staging credentials are shipped in code.
 The workflow does not provision staging, create accounts or run migrations.
+**First run the anonymous preflight-only scope; it requires NO operator credentials.**
+Only credentialed scopes (quick, idle-expiry, revoke-all) can read the
+Environment email/password secrets, in the browser test step alone.
 
 ## One-time GitHub setup before first run
 
@@ -21,7 +24,7 @@ Environment **variables**:
 | ADMIN_PRODUCTION_ORIGIN     | https://admin.example.com (distinct canonical production origin, never staging)                   |
 | ADMIN_STAGING_ACCOUNT_SCOPE | DEDICATED_STAGING_ONLY (required confirmation)                                                    |
 
-Environment **secrets**:
+Environment **secrets** (only needed for credentialed scopes, not preflight-only):
 
 | Name                   | Value                                                             |
 | ---------------------- | ----------------------------------------------------------------- |
@@ -47,7 +50,12 @@ After this PR is merged, open Actions -> **Admin staging HTTPS and session
 smoke (manual)** -> Run workflow. Select the main branch, then set:
 
 - confirm_staging = RUN_DEDICATED_STAGING (default NO_STAGING_RUN).
-- scope = quick (default): sign in, inspect browser cookie attributes and
+- scope = preflight-only (default): read-only GET checks for sign-in HTML,
+  backend liveness, backend readiness and unauthenticated Admin session (401).
+  All requests disable cookies, caching and redirects, and enforce HTTPS
+  host allowlisting. This scope **never loads staging credentials or installs
+  application dependencies**.
+- scope = quick: sign in, inspect browser cookie attributes and
   Set-Cookie through the actual HTTPS proxy, check active session, reject
   foreign Origin/Referer, sign out, and prove cookie/session removal.
 - scope = idle-expiry: sign in, then perform NO session requests for 16
@@ -59,6 +67,11 @@ smoke (manual)** -> Run workflow. Select the main branch, then set:
   operator has. You MUST additionally set confirm_revoke to
   I_APPROVE_STAGING_REVOKE (otherwise the job will not execute).
 
+Every credentialed scope first passes the same anonymous HTTPS/Next/proxy
+preflight, then installs test dependencies, and only then injects the
+Environment email/password into the browser test step. Earlier checkout,
+setup, preflight and install steps never receive these secrets.
+
 The tests never print raw session cookies or passwords and disable traces,
 screenshots and videos. The workflow does not upload browser artifacts.
 Record the workflow URL, source SHA, chosen scope, pass/fail outcome and
@@ -67,6 +80,10 @@ Do not paste credentials, tokens or browser storage into issues or logs.
 
 ## Verification gaps
 
+- A passing preflight-only scope demonstrates public HTTPS reachability,
+  Next sign-in HTML, unauthenticated reverse-proxied health endpoints and
+  fail-closed Admin session. It cannot prove credentials, Admin cookies,
+  session expiry or real staging authorization.
 - A passing quick scope validates deployed HTTPS, same-origin Next proxy,
   cookie attributes and login/logout only for that specific staging
   deployment, not for production routing.
