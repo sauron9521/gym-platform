@@ -4,7 +4,7 @@ This index groups developer-facing API documentation and operational runbooks. P
 
 ## Product strategy and business decisions
 
-- [Owner-approved product strategy index](product-strategy/README.md) — S01 v1.0 Trainer-first strategy, Beta retention, MVP boundaries; S02 not started
+- [Owner-approved product strategy index](product-strategy/README.md) — S01 v1.0 Trainer-first positioning and S02 v1.0 customer experience, onboarding, retention and MVP boundaries
 - [Business governance](business-governance/README.md) — staff roles, approvals and operating policies
 
 ## Application development
