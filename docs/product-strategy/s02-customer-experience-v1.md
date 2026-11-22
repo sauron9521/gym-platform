@@ -40,6 +40,7 @@ Non-negotiable, inherited S01: Trainer-first, UA then international, UA+EN, phon
 ## 4. Trainer daily experience
 
 **Trainer Dashboard** prioritizes:
+
 - clients and quick access to client detail;
 - actionable coach tasks, including completed sessions awaiting review;
 - programs, drafts, assignment state, templates;
@@ -74,6 +75,7 @@ Non-negotiable, inherited S01: Trainer-first, UA then international, UA+EN, phon
 ### Saved/sync states
 
 Owner selected:
+
 1. **Saved locally, waiting for sync**;
 2. **Syncing**;
 3. **Saved and confirmed by server**;
@@ -86,11 +88,13 @@ Owner selected:
 ## 7. Retention policy and notifications
 
 **Three core reasons to return:**
+
 1. Visible actual training history and progress.
 2. Regular execution of the coach's program (or own chosen workout path).
 3. Workout calendar and next scheduled session.
 
 **Затверджені S02 події для користувацького досвіду з дотриманням Notifications #563 permission/channel policy:**
+
 - coach assigned a new program;
 - coach changed/replaced an assignment;
 - coach added workout-level feedback;
@@ -116,12 +120,14 @@ Owner selected:
 ## 9. Metrics and success
 
 **Locked S01 primary criteria (unchanged):**
+
 - **Trainer W4 Retention ≥50%**, among eligible activated trainers, days 22–28 after first real program assignment;
 - **Athlete W4 Retention ≥50%**, among eligible activated athletes, days 22–28 after first actual completed session.
 
 Use **separate numerators/denominators**, include only eligible 28-day cohorts, identify small sample limitations (Beta 5–10 coaches), and do not infer retention from app opens.
 
 **S02 supporting measures (without hardcoded numerical thresholds):**
+
 - trainer onboarding and assignment activation;
 - athlete first session activation;
 - time/steps to first useful action;
@@ -135,19 +141,19 @@ The detailed event taxonomy, consent/analytics data processing, report ownership
 
 ## 10. MVP / Post-MVP acceptance boundaries
 
-| Product area | MVP/Beta | After MVP |
-| --- | --- | --- |
-| Trainer onboarding | short wizard/context help, private drafts while pending, full capability after approval | advanced onboarding personalization |
-| Program creation | blank/template, Draft→Preview→Publish→Assign, desktop and phone | advanced builder conveniences |
-| Athlete invitation | secure link + QR of same invitation | bulk invitations and richer methods |
-| Trainer overview | clients and actual work, responsive fast actions | advanced customizable dashboards |
-| Coach feedback | **one text comment on completed workout** | exercise/set comments, recommendations, adjustment flags, reactions |
-| Athlete workouts | compact actual sets, planned hint, completion, resume, offline/save/failure/conflict UX | expanded workout presentation |
-| Progress | basic strength and regularity | premium detailed analytics |
-| Inactivity status | customizable private trainer thresholds; no athlete win-back notifications | optional richer scheduling/filter controls |
-| Notifications | core event notification requirements on existing #563 architecture, opt-in nonessential delivery | **weekly progress summary & scheduled workout reminder UX**, other nurture |
-| Help | contextual help, FAQ, report bug, email and contact form | knowledge base expansion |
-| Beta evaluation | interviews, feedback form, activation/reliability/W4 evidence | broader quantitative experiments |
+| Product area       | MVP/Beta                                                                                         | After MVP                                                                  |
+| ------------------ | ------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------- |
+| Trainer onboarding | short wizard/context help, private drafts while pending, full capability after approval          | advanced onboarding personalization                                        |
+| Program creation   | blank/template, Draft→Preview→Publish→Assign, desktop and phone                                  | advanced builder conveniences                                              |
+| Athlete invitation | secure link + QR of same invitation                                                              | bulk invitations and richer methods                                        |
+| Trainer overview   | clients and actual work, responsive fast actions                                                 | advanced customizable dashboards                                           |
+| Coach feedback     | **one text comment on completed workout**                                                        | exercise/set comments, recommendations, adjustment flags, reactions        |
+| Athlete workouts   | compact actual sets, planned hint, completion, resume, offline/save/failure/conflict UX          | expanded workout presentation                                              |
+| Progress           | basic strength and regularity                                                                    | premium detailed analytics                                                 |
+| Inactivity status  | customizable private trainer thresholds; no athlete win-back notifications                       | optional richer scheduling/filter controls                                 |
+| Notifications      | core event notification requirements on existing #563 architecture, opt-in nonessential delivery | **weekly progress summary & scheduled workout reminder UX**, other nurture |
+| Help               | contextual help, FAQ, report bug, email and contact form                                         | knowledge base expansion                                                   |
+| Beta evaluation    | interviews, feedback form, activation/reliability/W4 evidence                                    | broader quantitative experiments                                           |
 
 **Non-negotiable regardless of MVP phasing:** S01 data integrity, security access controls, beta zero payment, and real native device evidence. The strategy is **not evidence that any item is implemented**.
 
@@ -168,6 +174,7 @@ The detailed event taxonomy, consent/analytics data processing, report ownership
 ## 12. Decisions deliberately outside S02 signoff
 
 The following do **not** block approval of the strategic UX direction:
+
 - Exact trainer inactivity default threshold value, per-client overrides and business interpretation of holidays/missed sessions.
 - Invite token expiry numeric duration, one-time/multi-use detail and revocation mechanics — security/API specification.
 - Specific pending-draft persistence schema and permission policy — security-reviewed engineering contract.
