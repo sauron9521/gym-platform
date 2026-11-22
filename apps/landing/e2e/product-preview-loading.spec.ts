@@ -1,20 +1,22 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Locator } from '@playwright/test';
 
 const variants = [
-  ['athlete-workouts.webp', 'athlete-workouts-dark.webp'],
-  ['coach-workspace.webp', 'coach-workspace-dark.webp'],
+  { light: 'athlete-workouts.webp', dark: 'athlete-workouts-dark.webp' },
+  { light: 'coach-workspace.webp', dark: 'coach-workspace-dark.webp' },
 ] as const;
 
+async function imageHasLoaded(image: Locator) {
+  return image.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0);
+}
+
 for (const width of [320, 1280]) {
-  test(`only the selected product preview theme downloads at ${width}px`, async ({ page }) => {
+  test(`product previews fetch only selected images at ${width}px`, async ({ page }) => {
     const requested = new Set<string>();
     page.on('request', (request) => {
       const url = decodeURIComponent(request.url());
-      if (!url.includes('/product-previews/')) return;
-      for (const pair of variants) {
-        for (const filename of pair) {
-          if (url.includes('/product-previews/' + filename)) requested.add(filename);
-        }
+      for (const variant of variants) {
+        if (url.includes('/product-previews/' + variant.light)) requested.add(variant.light);
+        if (url.includes('/product-previews/' + variant.dark)) requested.add(variant.dark);
       }
     });
 
@@ -22,48 +24,44 @@ for (const width of [320, 1280]) {
     await page.emulateMedia({ colorScheme: 'light' });
     await page.goto('/');
 
-    const products = page
-      .getByRole('region', { name: 'Платформа для твоїх цілей' })
-      .getByRole('article');
-    await expect(products).toHaveCount(2);
+    const region = page.getByRole('region', { name: 'Платформа для твоїх цілей' });
+    const cards = region.getByRole('article');
+    await expect(cards).toHaveCount(2);
 
-    for (const [index, [light, dark]] of variants.entries()) {
-      const card = products.nth(index);
-      const active = card.locator('img.landing-product-preview--light');
-      await active.scrollIntoViewIfNeeded();
-      await expect(active).toBeVisible();
-      await expect
-        .poll(() =>
-          active.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0),
-        )
-        .toBe(true);
+    for (const [index, variant] of variants.entries()) {
+      const card = cards.nth(index);
+      const image = card.locator('img.landing-product-preview--light');
+      await image.scrollIntoViewIfNeeded();
+      await expect(image).toBeVisible();
+      await expect.poll(() => imageHasLoaded(image)).toBe(true);
       await expect(card.locator('img.landing-product-preview--dark')).toBeHidden();
-      await expect(active).toHaveAttribute('loading', 'lazy');
-      await expect(active).toHaveAttribute('fetchpriority', index === 0 ? 'high' : 'auto');
-      expect(requested.has(light)).toBe(true);
-      expect(requested.has(dark)).toBe(false);
+      await expect(image).toHaveAttribute('loading', 'lazy');
+      const priority = index === 0 ? 'high' : 'auto';
+      await expect(image).toHaveAttribute('fetchpriority', priority);
+      expect(requested.has(variant.light)).toBe(true);
+      expect(requested.has(variant.dark)).toBe(false);
     }
     expect(requested.size).toBe(2);
-    const preloads = await page.locator('link[rel="preload"][as="image"]').evaluateAll((links) =>
-      links.map((link) => link.getAttribute('href') ?? link.getAttribute('imagesrcset') ?? ''),
-    );
-    expect(preloads.some((url) => url.includes('product-previews'))).toBe(false);
+
+    const preloads = await page.locator('link[rel="preload"][as="image"]').all();
+    for (const link of preloads) {
+      const href = (await link.getAttribute('href')) ?? '';
+      const srcset = (await link.getAttribute('imagesrcset')) ?? '';
+      expect(decodeURIComponent(href + srcset)).not.toContain('/product-previews/');
+    }
 
     await page.getByRole('combobox', { name: 'Тема інтерфейсу' }).selectOption('dark');
-    for (const [index, [, dark]] of variants.entries()) {
-      const active = products.nth(index).locator('img.landing-product-preview--dark');
-      await active.scrollIntoViewIfNeeded();
-      await expect(active).toBeVisible();
-      await expect
-        .poll(() =>
-          active.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0),
-        )
-        .toBe(true);
-      expect(requested.has(dark)).toBe(true);
+    for (const [index, variant] of variants.entries()) {
+      const image = cards.nth(index).locator('img.landing-product-preview--dark');
+      await image.scrollIntoViewIfNeeded();
+      await expect(image).toBeVisible();
+      await expect.poll(() => imageHasLoaded(image)).toBe(true);
+      expect(requested.has(variant.dark)).toBe(true);
     }
     expect(requested.size).toBe(4);
-    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(
-      true,
-    );
+    const noOverflow = await page.evaluate(() => {
+      return document.documentElement.scrollWidth <= innerWidth + 1;
+    });
+    expect(noOverflow).toBe(true);
   });
 }
