@@ -193,7 +193,28 @@ jobs:
     container:
       # Reuse the version-pinned image used for existing browser tests.
       image: mcr.microsoft.com/playwright:v1.65.1-noble@sha256:1507cbfc550a63a6b7396791ca4f00df17beb56342d2447b3f106c306f525579
-    timeout-minutes: 15
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: gym_admin_browser_test
+        options: >-
+          --health-cmd "pg_isready -U postgres -d gym_admin_browser_test"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      NODE_ENV: test
+      CI: 'true'
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/gym_admin_browser_test
+      TEST_DATABASE_URL: postgresql://postgres:postgres@postgres:5432/gym_admin_browser_test
+      APP_URL: http://localhost:3320
+      ADMIN_APP_URL: http://localhost:3320
+      CORS_ORIGINS: http://localhost:3320
+      JWT_ISSUER: http://localhost:3320
+      JWT_SECRET: admin-browser-test-only-secret-987654321
+      MAIL_FROM: no-reply@example.test
     steps:
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6
@@ -206,12 +227,29 @@ jobs:
         run: pnpm --filter @gym/admin test:e2e
         env:
           CI: 'true'
+      - name: Guard disposable browser database before any migration
+        run: |
+          node --input-type=module -e '
+            const value = process.env.TEST_DATABASE_URL;
+            if (!value || value !== process.env.DATABASE_URL || process.env.NODE_ENV !== "test") throw new Error("Unexpected Admin browser test database");
+            const url = new URL(value);
+            if (url.hostname !== "postgres" || url.port !== "5432" || url.pathname !== "/gym_admin_browser_test") throw new Error("Disposable PostgreSQL service required");
+          '
+      - run: pnpm --filter @gym/api db:generate
+      - run: pnpm --filter @gym/api db:migrate:deploy
+      - name: Seed disposable Admin operator without touching hosted data
+        run: pnpm --filter @gym/api exec tsx test/support/seed-admin-browser.ts
+      - run: pnpm --filter @gym/api build
+      - name: Real NestJS PostgreSQL and Admin Next browser E2E
+        run: pnpm --filter @gym/admin test:e2e:real-api
       - name: Retain Admin browser traces on failure
         if: failure()
         uses: actions/upload-artifact@v7
         with:
           name: admin-cookie-browser-traces
-          path: apps/admin/test-results/browser/
+          path: |
+            apps/admin/test-results/browser/
+            apps/admin/test-results/real-api/
           if-no-files-found: ignore
           retention-days: 7
 
