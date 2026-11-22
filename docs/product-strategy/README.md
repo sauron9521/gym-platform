@@ -10,7 +10,7 @@ This directory is the **canonical home for owner-approved product strategy decis
 | **S02 — Customer Experience & Retention** | **APPROVED** | **v1.0** | 2026-11-22     | [S02 Customer Experience & Retention](s02-customer-experience-v1.md) |
 | **S03 — Privacy & Data Ownership**        | **APPROVED** | **v1.0** | 2026-11-22     | [S03 Privacy & Data Ownership](s03-privacy-data-ownership-v1.md)     |
 | **S04 — Legal & Compliance**              | **APPROVED** | **v1.0** | 2026-11-22     | [S04 Legal & Compliance](s04-legal-compliance-v1.md)                 |
-| **S05 — Security & Trust**             | **APPROVED** | **v1.0** | 2026-11-22     | [S05 Security & Trust](s05-security-trust-v1.md)                     |
+| **S05 — Security & Trust**                | **APPROVED** | **v1.0** | 2026-11-22     | [S05 Security & Trust](s05-security-trust-v1.md)                     |
 
 **S01–S05 are owner-approved strategic decisions; S06–S12 are NOT_STARTED / NOT APPROVED. S05 owner approval is recorded in this PR, pending the owner's manual merge into `main`.** Publishing this document is not an implementation or Beta acceptance claim.
 
