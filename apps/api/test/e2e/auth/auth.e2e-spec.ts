@@ -3,6 +3,7 @@ import { Test, type TestingModule } from '@nestjs/testing';
 import type { INestApplication } from '@nestjs/common';
 import { StandardSchemaValidationPipe } from '@nestjs/common';
 import { EmailVerificationService, SignInService } from '@nestjs/authentication';
+import { ConfigService } from '@nestjs/config';
 import request from 'supertest';
 import { AuthController } from '../../../src/modules/auth/controllers/index.js';
 import { CredentialsService } from '../../../src/modules/auth/services/index.js';
@@ -29,6 +30,12 @@ describe('AuthController (HTTP)', () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       controllers: [AuthController],
       providers: [
+        {
+          provide: ConfigService,
+          useValue: {
+            get: (key: string) => (key === 'APP_URL' ? 'http://localhost:3000' : undefined),
+          },
+        },
         {
           provide: CredentialsService,
           useValue: credentialsService,
