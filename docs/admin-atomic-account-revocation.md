@@ -14,12 +14,11 @@ rejected before target lookup; stale transitions conflict; idempotent retries
 require the same authorization. No application role or client status is
 trusted without a fresh database read.
 
-SUSPEND updates the persisted status and authentication revocation fence,
-deletes all cookie sessions, marks refresh families revoked, and marks
-refresh tokens revoked in **one PostgreSQL interactive transaction**. A
-failure rolls back every write. On REACTIVATE the service advances the
-authentication revocation fence again so a previously minted JWT cannot
-become valid again.
+Both SUSPEND and REACTIVATE update the persisted status and authentication
+revocation fence, delete all cookie sessions, mark refresh families revoked,
+and mark refresh tokens revoked in **one PostgreSQL interactive transaction**.
+A failure rolls back every write. In particular, a legacy/manual
+SUSPENDED row cannot resurrect lingering credentials when reactivated.
 
 Both session insertion and refresh-token insertion acquire a PostgreSQL
 FOR UPDATE lock on the same users row **inside their insert transactions**.

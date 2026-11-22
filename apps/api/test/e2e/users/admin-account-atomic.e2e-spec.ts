@@ -201,6 +201,49 @@ describe('internal atomic account status + revocation (real PostgreSQL)', () => 
     expect(user.authInvalidatedAt).toBeNull();
   });
 
+  it('never revives lingering cookie/refresh credentials when reactivating a legacy suspended account', async () => {
+    const target = await seed('ATHLETE');
+    const login = await request(app.getHttpServer())
+      .post('/auth/login')
+      .send({ email: target.email, password });
+    expect(login.status).toBe(200);
+    const raw = login.headers['set-cookie'];
+    const cookies = Array.isArray(raw) ? raw : raw ? [raw] : [];
+    const cookie = cookies
+      .map((c) => c.split(';', 1)[0] ?? '')
+      .find((c) => c.startsWith('__Host-sid='))!;
+    expect(cookie).toBeTruthy();
+    const pair = await request(app.getHttpServer())
+      .post('/auth/token')
+      .send({ email: target.email, password });
+    expect(pair.status).toBe(200);
+
+    // Simulate a historical/externally set state without prior token cleanup.
+    await prisma.user.update({ where: { id: target.id }, data: { status: 'SUSPENDED' } });
+    expect(await prisma.session.count({ where: { userId: target.id } })).toBeGreaterThan(0);
+    expect(
+      await prisma.refreshToken.count({ where: { userId: target.id, revoked: false } }),
+    ).toBeGreaterThan(0);
+
+    await expect(
+      statusService.transition(operatorId, target.id, 'REACTIVATE', 'SUSPENDED'),
+    ).resolves.toEqual({ kind: 'changed', status: 'ACTIVE' });
+
+    expect(await prisma.session.count({ where: { userId: target.id } })).toBe(0);
+    expect(await prisma.refreshToken.count({ where: { userId: target.id, revoked: false } })).toBe(
+      0,
+    );
+    expect(
+      await prisma.refreshTokenFamily.count({ where: { userId: target.id, revokedAt: null } }),
+    ).toBe(0);
+    await assertDeniedAfterRevocation(
+      target.id,
+      cookie,
+      pair.body.accessToken,
+      pair.body.refreshToken,
+    );
+  }, 20_000);
+
   it('serializes a session insert racing against suspension using one user-row lock', async () => {
     const target = await seed('ATHLETE');
     const now = new Date();

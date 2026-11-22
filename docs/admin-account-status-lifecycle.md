@@ -60,10 +60,10 @@ server-side mutation service. **Neither executes or exposes a mutation.**
 2. **Internal atomic command/revocation boundary implemented.** The
    PostgreSQL transaction locks both actor and target records, rechecks
    privileges and target state, and applies the policy. On suspension,
-   it changes status, advances the JWT revocation fence, deletes sessions,
-   revokes refresh families and marks refresh tokens revoked atomically.
-   Re-activation advances the JWT fence again to avoid resurrecting any old
-   access tokens. All session/refresh writes lock the same user row before
+   it changes status and advances the JWT revocation fence; on both SUSPEND
+   and REACTIVATE it deletes sessions, revokes refresh families and marks
+   refresh tokens revoked atomically. Reactivation cannot resurrect old
+   access tokens or leftover credentials from legacy suspended accounts. All session/refresh writes lock the same user row before
    inserting. Real PostgreSQL E2E exercises successful revocation, old JWT
    invalidation after reactivation, idempotency, conflicts, operator lockout,
    and credential-insert races. See the separate

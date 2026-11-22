@@ -94,19 +94,18 @@ export class AdminAccountStatusService {
           });
           if (updated.count !== 1) throw new ConflictException('Account status changed');
 
-          if (decision.to === 'SUSPENDED') {
-            // All writes commit together. Credential writers MUST lock the
-            // same users row before creating sessions/refresh tokens.
-            await tx.session.deleteMany({ where: { userId: targetId } });
-            await tx.refreshTokenFamily.updateMany({
-              where: { userId: targetId },
-              data: { revokedAt: fence },
-            });
-            await tx.refreshToken.updateMany({
-              where: { userId: targetId },
-              data: { revoked: true },
-            });
-          }
+          // Revoke on BOTH transitions: a manually SUSPENDED account with
+          // lingering credentials must not regain them on reactivation.
+          // Writers first lock the same user row inside their transactions.
+          await tx.session.deleteMany({ where: { userId: targetId } });
+          await tx.refreshTokenFamily.updateMany({
+            where: { userId: targetId },
+            data: { revokedAt: fence },
+          });
+          await tx.refreshToken.updateMany({
+            where: { userId: targetId },
+            data: { revoked: true },
+          });
           return { kind: 'changed', status: decision.to };
         },
         { maxWait: 5_000, timeout: 10_000 },
