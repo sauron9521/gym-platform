@@ -20,8 +20,11 @@ test('homepage explains the process and labels design previews honestly', () => 
   expect(screen.getByText('Макет')).toBeTruthy();
   expect(screen.getByText(/Рання стадія розробки/)).toBeTruthy();
   expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
-  expect(screen.getByRole('link', { name: 'Переглянути продукти' }).getAttribute('href')).toBe(
-    '/apps',
+  expect(screen.getByRole('link', { name: 'Для атлетів' }).getAttribute('href')).toBe(
+    '/for-athletes',
+  );
+  expect(screen.getByRole('link', { name: 'Для тренерів' }).getAttribute('href')).toBe(
+    '/for-trainers',
   );
 });
 
@@ -33,8 +36,11 @@ test('English homepage uses translated headings, CTAs, cards, milestones and ARI
   expect(screen.getByRole('img', { name: /Illustration of a workout plan/ })).toBeTruthy();
   expect(screen.getByText('Concept')).toBeTruthy();
   expect(screen.getByText(/actively being developed/)).toBeTruthy();
-  expect(screen.getByRole('link', { name: 'Explore applications' }).getAttribute('href')).toBe(
-    '/apps',
+  expect(screen.getByRole('link', { name: 'For athletes' }).getAttribute('href')).toBe(
+    '/for-athletes',
+  );
+  expect(screen.getByRole('link', { name: 'For coaches' }).getAttribute('href')).toBe(
+    '/for-trainers',
   );
   expect(screen.getByRole('link', { name: 'Explore products' }).getAttribute('href')).toBe('/apps');
   expect(screen.getByRole('link', { name: 'About the project' }).getAttribute('href')).toBe(

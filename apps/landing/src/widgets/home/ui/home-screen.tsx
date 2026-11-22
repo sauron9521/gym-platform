@@ -57,7 +57,7 @@ export function HomeScreen({ locale = defaultLocale }: { locale?: Locale } = {})
             </p>
             <div className="mt-10 flex flex-wrap gap-3">
               <Button asChild size="touch" className="rounded-xl px-6 font-bold">
-                <Link href="/features">{t.learnMore}</Link>
+                <Link href="/for-athletes">{t.heroAthleteAction}</Link>
               </Button>
               <Button
                 asChild
@@ -65,7 +65,7 @@ export function HomeScreen({ locale = defaultLocale }: { locale?: Locale } = {})
                 variant="outline"
                 className="rounded-xl border-border bg-card px-6 font-bold shadow-sm"
               >
-                <Link href="/apps">{t.browseApps}</Link>
+                <Link href="/for-trainers">{t.heroTrainerAction}</Link>
               </Button>
             </div>
             <p className="mt-7 max-w-md border-l-[3px] border-[var(--brand-terracotta)] pl-4 text-sm leading-6 text-muted-foreground">
