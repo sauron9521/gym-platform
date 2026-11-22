@@ -48,8 +48,11 @@ has no suspension lifecycle. Counts come from backend `meta.total`, not fixtures
 `force-dynamic`, uncached upstream fetch and no-store response headers protect
 against shared HTML caching. The response is checked against an exact PII-minimal
 schema before rendering. 401/403/invalid/unavailable all fail closed with
-**zero** account rows and disabled controls. This slice adds no user mutations,
-role assignment, durable audit or details view. Production operational rollout
+**zero** account rows and disabled controls. The directory links to a separate read-only `/users/[id]` account detail
+route. That page uses a second server-only, explicitly allowlisted API read
+with a validated UUID, seven-field response whitelist, no-store headers,
+localization, and 401/403/404 error states. No account mutation,
+role assignment or durable audit history is enabled. Production operational rollout
 still needs independent staging/security checks.
 
 ## Mandatory manual staging checks before deploying an operational console

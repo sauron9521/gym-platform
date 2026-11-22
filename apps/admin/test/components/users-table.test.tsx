@@ -32,6 +32,7 @@ const copy: DirectoryCopy = {
   apply: 'Apply filters',
   clear: 'Clear filters',
   newestFirst: 'Newest first',
+  viewDetails: 'View details',
 };
 
 const filters = { page: 2, search: 'email', role: 'TRAINER' as const };
@@ -58,6 +59,9 @@ describe('Admin UsersTable with server-driven data', () => {
       <UsersTable result={ready} filters={filters} locale="en" copy={copy} />,
     );
     expect(screen.getByText('coach@email.test')).toBeTruthy();
+    expect(
+      screen.getByRole('link', { name: 'View details: coach@email.test' }).getAttribute('href'),
+    ).toBe('/users/f09d7567-626e-45d8-99f1-829ce4204fbd');
     expect(screen.getByText('21 records')).toBeTruthy();
     expect(screen.getByText('Page 2 of 2')).toBeTruthy();
     expect(container.querySelectorAll('tbody tr')).toHaveLength(1);

@@ -521,7 +521,28 @@
       "expiredDescription": "Sign in again to view the directory.",
       "apply": "Apply filters",
       "clear": "Clear filters",
-      "newestFirst": "Sorted by newest registration first"
+      "newestFirst": "Sorted by newest registration first",
+      "viewDetails": "View account",
+      "detail": {
+        "title": "User details",
+        "description": "Verified account fields only, without editing controls.",
+        "back": "Back to users",
+        "accountDetails": "Account information",
+        "id": "Account ID",
+        "emailVerified": "Email verification",
+        "verified": "Verified",
+        "notVerified": "Not verified",
+        "updated": "Last updated",
+        "readOnly": "Read-only. Changing roles and statuses is not available yet.",
+        "forbiddenTitle": "Insufficient permissions",
+        "forbiddenDescription": "Only an authorized Super Admin can read account details.",
+        "notFoundTitle": "Account not found",
+        "notFoundDescription": "The account is missing, deleted or the identifier is invalid.",
+        "expiredTitle": "Session expired",
+        "expiredDescription": "Sign in again to view account details.",
+        "unavailableTitle": "Details unavailable",
+        "unavailableDescription": "The account could not be verified. Try again later."
+      }
     }
   },
   "mobile": {

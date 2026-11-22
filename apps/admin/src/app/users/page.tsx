@@ -87,6 +87,7 @@ export default async function AdminUsersPage({
     apply: t('apply'),
     clear: t('clear'),
     newestFirst: t('newestFirst'),
+    viewDetails: t('viewDetails'),
   };
 
   return (

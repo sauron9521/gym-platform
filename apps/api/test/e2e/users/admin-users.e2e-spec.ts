@@ -169,6 +169,77 @@ describe('GET /admin/users (HTTP + PostgreSQL)', () => {
     }
   });
 
+  it('keeps a privileged account detail read minimal and rejects missing or deleted accounts', async () => {
+    const target = await prisma.user.findFirstOrThrow({
+      where: { email: { contains: `admin-list-trainer-${suffix}` } },
+      select: { id: true },
+    });
+    const response = await request(app.getHttpServer())
+      .get(`/admin/users/${target.id}`)
+      .set('Cookie', cookies.operator!);
+
+    expect(response.status).toBe(200);
+    expect(response.headers['cache-control']).toContain('no-store');
+    expect(Object.keys(response.body).sort()).toEqual([
+      'createdAt',
+      'email',
+      'emailVerified',
+      'id',
+      'role',
+      'status',
+      'updatedAt',
+    ]);
+    expect(response.body).toMatchObject({
+      id: target.id,
+      role: 'TRAINER',
+      status: 'ACTIVE',
+      emailVerified: true,
+    });
+    for (const key of ['passwordHash', 'profile', 'preferredLocale', 'deletedAt', 'sessions']) {
+      expect(response.body).not.toHaveProperty(key);
+    }
+
+    const absent = await request(app.getHttpServer())
+      .get(`/admin/users/${randomUUID()}`)
+      .set('Cookie', cookies.operator!);
+    expect(absent.status).toBe(404);
+    expect(absent.headers['cache-control']).toContain('no-store');
+
+    const deleted = await prisma.user.findFirstOrThrow({
+      where: { email: { contains: `admin-list-deleted-${suffix}` } },
+      select: { id: true },
+    });
+    const deletedResponse = await request(app.getHttpServer())
+      .get(`/admin/users/${deleted.id}`)
+      .set('Cookie', cookies.operator!);
+    expect(deletedResponse.status).toBe(404);
+
+    const malformed = await request(app.getHttpServer())
+      .get('/admin/users/not-a-uuid')
+      .set('Cookie', cookies.operator!);
+    expect(malformed.status).toBe(400);
+  });
+
+  it('rejects anonymous and non-operator detail requests before disclosing existence', async () => {
+    const target = await prisma.user.findFirstOrThrow({
+      where: { email: { contains: `admin-list-athlete-${suffix}` } },
+      select: { id: true },
+    });
+
+    const anonymous = await request(app.getHttpServer()).get(`/admin/users/${target.id}`);
+    expect(anonymous.status).toBe(401);
+    for (const key of ['plain-admin', 'athlete', 'trainer']) {
+      for (const id of [target.id, randomUUID()]) {
+        const denied = await request(app.getHttpServer())
+          .get(`/admin/users/${id}`)
+          .set('Cookie', cookies[key]!);
+        expect(denied.status).toBe(403);
+        expect(JSON.stringify(denied.body)).not.toContain(`admin-list-athlete-${suffix}`);
+        expect(denied.headers['cache-control']).toContain('no-store');
+      }
+    }
+  });
+
   it('revokes privileged read on the very next request if the persisted ADMIN role changes', async () => {
     await prisma.user.update({ where: { id: operatorId }, data: { role: 'ATHLETE' } });
     try {
