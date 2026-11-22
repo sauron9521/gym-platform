@@ -14,6 +14,9 @@ export default defineConfig({
   outputDir: './test-results',
   use: {
     ...devices['Desktop Chrome'],
+    launchOptions: process.env.LANDING_E2E_CHROME_PATH
+      ? { executablePath: process.env.LANDING_E2E_CHROME_PATH }
+      : undefined,
     baseURL: origin,
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',

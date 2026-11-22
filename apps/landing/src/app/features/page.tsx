@@ -50,13 +50,13 @@ export default function FeaturesPage({ locale = defaultLocale }: { locale?: Loca
     <main id="main-content" className="flex-1">
       <MarketingSection>
         <Container>
-          <p className="text-sm font-bold tracking-widest text-primary uppercase">{t.eyebrow}</p>
-          <h1 className="mt-6 max-w-3xl text-4xl font-bold tracking-tight text-balance sm:text-6xl">
+          <p className="text-xs font-bold tracking-[0.18em] text-primary uppercase">{t.eyebrow}</p>
+          <h1 className="mt-6 max-w-3xl text-4xl font-extrabold tracking-[-0.05em] text-balance sm:text-6xl">
             {t.heading}
           </h1>
           <p className="mt-6 max-w-2xl text-lg leading-8 text-muted-foreground">{t.description}</p>
           <Link
-            className="mt-8 inline-flex font-semibold text-primary hover:underline"
+            className="mt-8 inline-flex min-h-11 items-center font-bold text-primary underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"
             href="/apps"
           >
             {t.browseApps}

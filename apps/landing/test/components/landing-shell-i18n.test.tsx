@@ -45,7 +45,7 @@ describe('Landing shared shell i18n', () => {
     (locale) => {
       const { main, nav, shell } = getLandingNavigation(locale);
       render(<SiteHeader locale={locale} />);
-      const home = screen.getByRole('link', { name: 'Gym Platform — ' + shell.homeAria });
+      const home = screen.getByRole('link', { name: 'OVRANTO — ' + shell.homeAria });
       expect(home.getAttribute('href')).toBe('/');
       const desktop = screen.getByRole('navigation', { name: shell.mainNav });
       const mobile = screen.getByRole('navigation', { name: shell.mobileNav });

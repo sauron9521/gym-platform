@@ -25,8 +25,8 @@ export default function AthletesPage() {
     <main id="main-content" className="flex-1">
       <MarketingSection>
         <Container>
-          <p className="text-sm font-bold tracking-widest text-primary uppercase">Спортсменам</p>
-          <h1 className="mt-6 max-w-4xl text-4xl font-bold tracking-tight text-balance sm:text-6xl">
+          <p className="text-xs font-bold tracking-[0.18em] text-primary uppercase">Спортсменам</p>
+          <h1 className="mt-6 max-w-4xl text-4xl font-extrabold tracking-[-0.05em] text-balance sm:text-6xl">
             Твоє тренування — під твоїм контролем
           </h1>
           <p className="mt-6 max-w-2xl text-lg leading-8 text-muted-foreground">
@@ -35,7 +35,7 @@ export default function AthletesPage() {
           </p>
           <Link
             href="/features"
-            className="mt-8 inline-flex font-semibold text-primary underline-offset-4 hover:underline"
+            className="mt-8 inline-flex min-h-11 items-center font-bold text-primary underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"
           >
             Переглянути можливості
           </Link>
@@ -51,9 +51,12 @@ export default function AthletesPage() {
           />
           <div className="mt-10 grid gap-5 md:grid-cols-3">
             {steps.map((step) => (
-              <div key={step.number} className="rounded-2xl border border-border bg-card p-7">
+              <div
+                key={step.number}
+                className="rounded-[1.6rem] border border-border bg-card p-7 shadow-sm shadow-foreground/5"
+              >
                 <span className="text-sm font-bold text-primary">{step.number}</span>
-                <h3 className="mt-5 text-xl font-semibold">{step.title}</h3>
+                <h3 className="mt-5 text-xl font-bold tracking-tight">{step.title}</h3>
                 <p className="mt-3 leading-7 text-muted-foreground">{step.text}</p>
               </div>
             ))}

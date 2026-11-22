@@ -31,12 +31,12 @@ export default function ApplicationsPage() {
     <main id="main-content" className="flex-1">
       <MarketingSection aria-labelledby="app-title">
         <Container>
-          <p className="text-sm font-bold tracking-widest text-primary uppercase">
+          <p className="text-xs font-bold tracking-[0.18em] text-primary uppercase">
             Застосунки Gym Platform
           </p>
           <h1
             id="app-title"
-            className="mt-6 max-w-4xl text-4xl font-bold tracking-tight sm:text-6xl"
+            className="mt-6 max-w-4xl text-4xl font-extrabold tracking-[-0.05em] sm:text-6xl"
           >
             Одне тренувальне середовище — Web і Mobile
           </h1>
@@ -46,11 +46,14 @@ export default function ApplicationsPage() {
           </p>
           <div className="mt-12 grid gap-5 md:grid-cols-2">
             {applications.map((app) => (
-              <article key={app.href} className="rounded-2xl border border-border bg-card p-8">
+              <article
+                key={app.href}
+                className="rounded-[1.6rem] border border-border bg-card p-8 shadow-sm shadow-foreground/5"
+              >
                 <p className="text-xs font-semibold tracking-wider text-primary uppercase">
                   {app.status}
                 </p>
-                <h2 className="mt-6 text-2xl font-bold">{app.title}</h2>
+                <h2 className="mt-6 text-2xl font-extrabold tracking-tight">{app.title}</h2>
                 <p className="mt-4 leading-7 text-muted-foreground">{app.description}</p>
                 <Link
                   href={app.href}
