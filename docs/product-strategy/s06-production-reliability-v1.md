@@ -54,11 +54,11 @@ Capacity: baseline → оптимізація → вертикальне мас�
 
 ## 4. Environment Architecture
 
-| Середовище | Призначення | Обмеження |
-| --- | --- | --- |
-| Development | Розробка й локальні тести | Development secrets, test data |
-| Staging | Реалістична перевірка релізу | Ізольовані БД/credentials, staging-only fault injection |
-| Production | Реальні користувачі | Protected secrets, release approvals, monitoring, backups |
+| Середовище  | Призначення                  | Обмеження                                                 |
+| ----------- | ---------------------------- | --------------------------------------------------------- |
+| Development | Розробка й локальні тести    | Development secrets, test data                            |
+| Staging     | Реалістична перевірка релізу | Ізольовані БД/credentials, staging-only fault injection   |
+| Production  | Реальні користувачі          | Protected secrets, release approvals, monitoring, backups |
 
 Staging має бути близьким до production за runtime, PostgreSQL/Prisma compatibility, TLS, storage, workers та deployment contracts. Використовувати синтетичні чи належно знеособлені дані; реальні персональні дані не копіюються за замовчуванням.
 
@@ -122,10 +122,10 @@ RPO охоплює:
 
 ## 10. Recovery Objectives
 
-| Метрика | Закрита Beta | Платний production |
-| --- | --- | --- |
+| Метрика | Закрита Beta   | Платний production   |
+| ------- | -------------- | -------------------- |
 | **RPO** | **≤ 1 година** | **Ціль ≤ 15 хвилин** |
-| **RTO** | **≤ 4 години** | **Ціль ≤ 2 години** |
+| **RTO** | **≤ 4 години** | **Ціль ≤ 2 години**  |
 
 Це **внутрішні цілі**, не вже доведені service guarantees або публічний SLA.
 
@@ -162,11 +162,11 @@ Restore виконується в ізольованому середовищі 
 
 ## 14. Observability & Telemetry
 
-| Сфера | Базові сигнали |
-| --- | --- |
-| API | Availability, p95, 5xx, 429, critical write failures, request correlation |
-| PostgreSQL | Connections, slow queries, disk, migrations, backup freshness/restore |
-| Mobile | Crashes, errors, offline/sync/conflict failures |
+| Сфера                | Базові сигнали                                                                         |
+| -------------------- | -------------------------------------------------------------------------------------- |
+| API                  | Availability, p95, 5xx, 429, critical write failures, request correlation              |
+| PostgreSQL           | Connections, slow queries, disk, migrations, backup freshness/restore                  |
+| Mobile               | Crashes, errors, offline/sync/conflict failures                                        |
 | Workers/integrations | Queue lag, retries, dead-letter, email/push delivery, якщо компоненти використовуються |
 
 Не створювати фіктивні production метрики для ще не реалізованих компонентів. Дотримуватись S03/S04/S05 redaction, retention, мінімізації PII та розмежування доступу. Наявні opt-in observability scripts не означають налаштоване й перевірене production alert delivery.
@@ -231,19 +231,19 @@ Unit/component/Metro/Maestro YAML самі по собі **не є real-device e
 
 Використовувати єдиний **versioned evidence manifest** із посиланнями на:
 
-| Категорія | Evidence |
-| --- | --- |
-| Release identity | Release ID, source SHA, runtime/migration immutable digests |
-| CI | Workflow run IDs, attempts, conclusions, test results |
-| Staging | Environment, deployed version, smoke evidence |
-| Database | Migration compatibility та two-release rollback rehearsal |
-| Recovery | Backup source, isolated restore, виміряні RPO/RTO |
-| Mobile | Android/iOS builds, device/OS, native failure matrix |
-| SLI | Метод availability, rolling 30-day observations, data freshness |
-| Security | S05 independently evidenced GO/NO-GO |
-| Legal | S04 L1 independently evidenced GO/NO-GO |
-| Operations | Alert delivery, incident/runbooks, solo-operator fallback |
-| Owner | Особистий GO/NO-GO, timestamp, release/scope, expiry/evidence context |
+| Категорія        | Evidence                                                              |
+| ---------------- | --------------------------------------------------------------------- |
+| Release identity | Release ID, source SHA, runtime/migration immutable digests           |
+| CI               | Workflow run IDs, attempts, conclusions, test results                 |
+| Staging          | Environment, deployed version, smoke evidence                         |
+| Database         | Migration compatibility та two-release rollback rehearsal             |
+| Recovery         | Backup source, isolated restore, виміряні RPO/RTO                     |
+| Mobile           | Android/iOS builds, device/OS, native failure matrix                  |
+| SLI              | Метод availability, rolling 30-day observations, data freshness       |
+| Security         | S05 independently evidenced GO/NO-GO                                  |
+| Legal            | S04 L1 independently evidenced GO/NO-GO                               |
+| Operations       | Alert delivery, incident/runbooks, solo-operator fallback             |
+| Owner            | Особистий GO/NO-GO, timestamp, release/scope, expiry/evidence context |
 
 Жодних секретів, access tokens, приватних workouts чи зайвих персональних даних у manifest. Невідомий/застарілий/відсутній **обов'язковий** evidence означає **NO-GO**. Автоматичне збирання manifest **не надає owner GO**.
 
@@ -269,18 +269,18 @@ Unit/component/Metro/Maestro YAML самі по собі **не є real-device e
 
 ## 24. Priorities — Beta, Paid Production, Later
 
-| Напрям | Beta P0 | Paid production | Later |
-| --- | --- | --- | --- |
-| Hosting | VPS/managed DB за перевіреним RPO/RTO | Додаткова recovery capacity | Advanced HA |
-| Environments | Dev/Staging/Production | Більша automation/parity | Додаткові середовища |
-| Releases | Signed artifacts, owner GO, smoke, rollback | Строгіший rollout | Progressive delivery |
-| PostgreSQL | Forward migrations + compatibility | Розширені rehearsals | Complex migrations |
-| Recovery | RPO ≤1 год, RTO ≤4 год | RPO ≤15 хв, RTO ≤2 год | Multi-region DR |
-| Availability | 99,5% rolling 30 days | 99,9% rolling 30 days | Вищі SLO за потребою |
-| Monitoring | Critical API/DB/Mobile/worker signals | Повніші SLI та error budgets | Mature SRE |
-| Mobile | Real-device/offline proof | Controlled OTA/native rollout | Broad device matrix |
-| Operations | Solo owner, runbooks, alerts | Посилені safeguards | Команда/on-call |
-| Gates | Reliability + Security + Legal L1 | Відповідні L2/L3 | Enterprise controls |
+| Напрям       | Beta P0                                     | Paid production               | Later                |
+| ------------ | ------------------------------------------- | ----------------------------- | -------------------- |
+| Hosting      | VPS/managed DB за перевіреним RPO/RTO       | Додаткова recovery capacity   | Advanced HA          |
+| Environments | Dev/Staging/Production                      | Більша automation/parity      | Додаткові середовища |
+| Releases     | Signed artifacts, owner GO, smoke, rollback | Строгіший rollout             | Progressive delivery |
+| PostgreSQL   | Forward migrations + compatibility          | Розширені rehearsals          | Complex migrations   |
+| Recovery     | RPO ≤1 год, RTO ≤4 год                      | RPO ≤15 хв, RTO ≤2 год        | Multi-region DR      |
+| Availability | 99,5% rolling 30 days                       | 99,9% rolling 30 days         | Вищі SLO за потребою |
+| Monitoring   | Critical API/DB/Mobile/worker signals       | Повніші SLI та error budgets  | Mature SRE           |
+| Mobile       | Real-device/offline proof                   | Controlled OTA/native rollout | Broad device matrix  |
+| Operations   | Solo owner, runbooks, alerts                | Посилені safeguards           | Команда/on-call      |
+| Gates        | Reliability + Security + Legal L1           | Відповідні L2/L3              | Enterprise controls  |
 
 P0 — **умова до Beta**, а не доказ готовності в `main`.
 
@@ -298,17 +298,17 @@ P0 — **умова до Beta**, а не доказ готовності в `mai
 
 Стратегія **не створює паралельний Reliability Epic**. Наявні task/epic owners:
 
-| Напрям | Наявні Issues |
-| --- | --- |
-| Mobile session | #318, #324–328 |
-| Offline sync | #322, #344–347 |
-| Native builds/QA | #323, #348–349 |
-| Mobile diagnostics | #350 |
-| Staging/restore | #351 |
-| Reliability Gate | #352 |
-| API observability | #316 |
-| Business operations | #550, #560 |
-| Roadmaps | #353, #588 |
+| Напрям              | Наявні Issues  |
+| ------------------- | -------------- |
+| Mobile session      | #318, #324–328 |
+| Offline sync        | #322, #344–347 |
+| Native builds/QA    | #323, #348–349 |
+| Mobile diagnostics  | #350           |
+| Staging/restore     | #351           |
+| Reliability Gate    | #352           |
+| API observability   | #316           |
+| Business operations | #550, #560     |
+| Roadmaps            | #353, #588     |
 
 **Owner decision on sequencing:** завершити S01–S12 стратегічні рішення перед **масовим аудитом, refactoring/reprioritization, закриттям/перенесенням реалізаційних Issues чи створенням нових**. Під час роботи над стратегією збирати тільки non-mutating crosswalk, зафіксовані ризики/залежності та можливі gaps.
 
@@ -320,20 +320,20 @@ P0 — **умова до Beta**, а не доказ готовності в `mai
 
 ## 27. Risks, Alternatives & Trade-offs
 
-| Ризик | Попередня severity | Контроль |
-| --- | --- | --- |
-| Втрата/дублювання workout records | Critical | Revisions, idempotency, reconciliation, native evidence |
-| Несумісна Prisma migration | Critical | Expand/contract, two-release rehearsal |
-| Backup не відновлюється | Critical | Off-host backup + реальний restore |
-| Неконсистентний PostgreSQL/media/outbox recovery | Critical | Reconciliation і integrity checks |
-| Власник недоступний під час P0 | High | Fail-safe automation, provider support, runbook; залишковий ризик |
-| Недосяжні RPO/RTO | High | Measured restore й cost review |
-| Хибне SLO через health-only metrics | High | Independent synthetic user-journey probes |
-| Пропущені alerts | High | Two independent channels, delivery tests |
-| Небезпечний runtime rollback | High | Compatibility proof, stop/forward fix |
-| Несумісний OTA/runtimeVersion | High | Runtime binding, QA, rollout |
-| Надлишкова інфраструктурна складність | Medium | Capacity baseline, vertical-first |
-| Green CI прийнятий за launch GO | Critical | Independent manifest і owner approval |
+| Ризик                                            | Попередня severity | Контроль                                                          |
+| ------------------------------------------------ | ------------------ | ----------------------------------------------------------------- |
+| Втрата/дублювання workout records                | Critical           | Revisions, idempotency, reconciliation, native evidence           |
+| Несумісна Prisma migration                       | Critical           | Expand/contract, two-release rehearsal                            |
+| Backup не відновлюється                          | Critical           | Off-host backup + реальний restore                                |
+| Неконсистентний PostgreSQL/media/outbox recovery | Critical           | Reconciliation і integrity checks                                 |
+| Власник недоступний під час P0                   | High               | Fail-safe automation, provider support, runbook; залишковий ризик |
+| Недосяжні RPO/RTO                                | High               | Measured restore й cost review                                    |
+| Хибне SLO через health-only metrics              | High               | Independent synthetic user-journey probes                         |
+| Пропущені alerts                                 | High               | Two independent channels, delivery tests                          |
+| Небезпечний runtime rollback                     | High               | Compatibility proof, stop/forward fix                             |
+| Несумісний OTA/runtimeVersion                    | High               | Runtime binding, QA, rollout                                      |
+| Надлишкова інфраструктурна складність            | Medium             | Capacity baseline, vertical-first                                 |
+| Green CI прийнятий за launch GO                  | Critical           | Independent manifest і owner approval                             |
 
 **Відхилені альтернативи:** Kubernetes/multi-region до Beta без потреби; automatic production deploy after merge; автоматичний DB rollback; same-server backup як єдиний recovery; VPS uptime як єдина availability метрика; публічний rollout без gates; auto-retry ambiguous PATCH; обов'язкова друга людина для production approvals.
 
