@@ -1,0 +1,29 @@
+// #293 — durable, append-only history of actual account-status transitions.
+// Deliberately store actor/target UUIDs without FKs: audit must survive deletion
+// of the underlying account. Access and retention are separate security work.
+enum AdminAccountStatusAuditAction {
+  SUSPEND
+  REACTIVATE
+}
+
+enum AdminAccountStatusReason {
+  SECURITY
+  POLICY
+  USER_REQUEST
+  ERROR_CORRECTION
+}
+
+model AdminAccountStatusAudit {
+  id String @id @default(uuid(4))
+  actorId String @map("actor_id")
+  targetId String @map("target_id")
+  action AdminAccountStatusAuditAction
+  fromStatus AccountStatus @map("from_status")
+  toStatus AccountStatus @map("to_status")
+  reasonCode AdminAccountStatusReason @map("reason_code")
+  occurredAt DateTime @default(now()) @map("occurred_at") @db.Timestamptz(3)
+
+  @@index([targetId, occurredAt(sort: Desc)])
+  @@index([actorId, occurredAt(sort: Desc)])
+  @@map("admin_account_status_audit")
+}

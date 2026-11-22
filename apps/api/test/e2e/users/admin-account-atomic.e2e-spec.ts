@@ -128,7 +128,13 @@ describe('internal atomic account status + revocation (real PostgreSQL)', () => 
     expect(accessToken).toBeTruthy();
     expect(refreshToken).toBeTruthy();
 
-    const changed = await statusService.transition(operatorId, target.id, 'SUSPEND', 'ACTIVE');
+    const changed = await statusService.transition(
+      operatorId,
+      target.id,
+      'SUSPEND',
+      'ACTIVE',
+      'SECURITY',
+    );
     expect(changed).toEqual({ kind: 'changed', status: 'SUSPENDED' });
     expect(await prisma.session.count({ where: { userId: target.id } })).toBe(0);
     expect(
@@ -145,7 +151,7 @@ describe('internal atomic account status + revocation (real PostgreSQL)', () => 
 
     // Repeat requests remain authorized and harmless.
     await expect(
-      statusService.transition(operatorId, target.id, 'SUSPEND', 'ACTIVE'),
+      statusService.transition(operatorId, target.id, 'SUSPEND', 'ACTIVE', 'SECURITY'),
     ).resolves.toEqual({ kind: 'unchanged', status: 'SUSPENDED' });
     const beforeReactivation = await prisma.user.findUniqueOrThrow({
       where: { id: target.id },
@@ -153,7 +159,7 @@ describe('internal atomic account status + revocation (real PostgreSQL)', () => 
     });
 
     await expect(
-      statusService.transition(operatorId, target.id, 'REACTIVATE', 'SUSPENDED'),
+      statusService.transition(operatorId, target.id, 'REACTIVATE', 'SUSPENDED', 'SECURITY'),
     ).resolves.toEqual({ kind: 'changed', status: 'ACTIVE' });
     const afterReactivation = await prisma.user.findUniqueOrThrow({
       where: { id: target.id },
@@ -163,6 +169,37 @@ describe('internal atomic account status + revocation (real PostgreSQL)', () => 
       beforeReactivation.authInvalidatedAt!.getTime(),
     );
     await assertDeniedAfterRevocation(target.id, sessionCookie, accessToken, refreshToken);
+
+    const events = await prisma.adminAccountStatusAudit.findMany({
+      where: { targetId: target.id },
+      orderBy: { occurredAt: 'asc' },
+    });
+    expect(events).toHaveLength(2);
+    expect(
+      events.map(({ action, actorId, fromStatus, toStatus, reasonCode }) => ({
+        action,
+        actorId,
+        fromStatus,
+        toStatus,
+        reasonCode,
+      })),
+    ).toEqual([
+      {
+        action: 'SUSPEND',
+        actorId: operatorId,
+        fromStatus: 'ACTIVE',
+        toStatus: 'SUSPENDED',
+        reasonCode: 'SECURITY',
+      },
+      {
+        action: 'REACTIVATE',
+        actorId: operatorId,
+        fromStatus: 'SUSPENDED',
+        toStatus: 'ACTIVE',
+        reasonCode: 'SECURITY',
+      },
+    ]);
+    expect(events[0]?.occurredAt).toBeInstanceOf(Date);
 
     // JWT iat is whole seconds. A newly minted access token one second after
     // reactivation must work; the old one must remain invalid forever.
@@ -181,24 +218,25 @@ describe('internal atomic account status + revocation (real PostgreSQL)', () => 
   it('rejects non-operators, self/backup lockout and stale commands without mutations', async () => {
     const target = await seed('TRAINER');
     await expect(
-      statusService.transition(plainAdminId, target.id, 'SUSPEND', 'ACTIVE'),
+      statusService.transition(plainAdminId, target.id, 'SUSPEND', 'ACTIVE', 'SECURITY'),
     ).rejects.toThrow('Insufficient administrative permissions');
     await expect(
-      statusService.transition(operatorId, operatorId, 'SUSPEND', 'ACTIVE'),
+      statusService.transition(operatorId, operatorId, 'SUSPEND', 'ACTIVE', 'SECURITY'),
     ).rejects.toThrow('Suspending an operator or self is not allowed');
     await expect(
-      statusService.transition(operatorId, backupOperatorId, 'SUSPEND', 'ACTIVE'),
+      statusService.transition(operatorId, backupOperatorId, 'SUSPEND', 'ACTIVE', 'SECURITY'),
     ).rejects.toThrow('Suspending an operator or self is not allowed');
     await expect(
-      statusService.transition(operatorId, randomUUID(), 'SUSPEND', 'ACTIVE'),
+      statusService.transition(operatorId, randomUUID(), 'SUSPEND', 'ACTIVE', 'SECURITY'),
     ).rejects.toThrow('Account not found');
     await prisma.user.update({ where: { id: target.id }, data: { status: 'SUSPENDED' } });
     await expect(
-      statusService.transition(operatorId, target.id, 'REACTIVATE', 'ACTIVE'),
+      statusService.transition(operatorId, target.id, 'REACTIVATE', 'ACTIVE', 'SECURITY'),
     ).rejects.toThrow('Account status changed; refresh before retrying');
     const user = await prisma.user.findUniqueOrThrow({ where: { id: target.id } });
     expect(user.status).toBe('SUSPENDED');
     expect(user.authInvalidatedAt).toBeNull();
+    expect(await prisma.adminAccountStatusAudit.count({ where: { targetId: target.id } })).toBe(0);
   });
 
   it('never revives lingering cookie/refresh credentials when reactivating a legacy suspended account', async () => {
@@ -226,7 +264,7 @@ describe('internal atomic account status + revocation (real PostgreSQL)', () => 
     ).toBeGreaterThan(0);
 
     await expect(
-      statusService.transition(operatorId, target.id, 'REACTIVATE', 'SUSPENDED'),
+      statusService.transition(operatorId, target.id, 'REACTIVATE', 'SUSPENDED', 'SECURITY'),
     ).resolves.toEqual({ kind: 'changed', status: 'ACTIVE' });
 
     expect(await prisma.session.count({ where: { userId: target.id } })).toBe(0);
@@ -244,6 +282,55 @@ describe('internal atomic account status + revocation (real PostgreSQL)', () => 
     );
   }, 20_000);
 
+  it('prevents modification and removal of committed audit rows', async () => {
+    const target = await seed('ATHLETE');
+    await statusService.transition(operatorId, target.id, 'SUSPEND', 'ACTIVE', 'POLICY');
+    const event = await prisma.adminAccountStatusAudit.findFirstOrThrow({
+      where: { targetId: target.id },
+    });
+    await expect(
+      prisma.$executeRaw`UPDATE "admin_account_status_audit" SET "reason_code" = 'SECURITY' WHERE "id" = ${event.id}`,
+    ).rejects.toThrow();
+    await expect(
+      prisma.$executeRaw`DELETE FROM "admin_account_status_audit" WHERE "id" = ${event.id}`,
+    ).rejects.toThrow();
+    expect(await prisma.adminAccountStatusAudit.count({ where: { targetId: target.id } })).toBe(1);
+  });
+
+  it('rolls back account updates and credential revocation if audit insert fails', async () => {
+    const target = await seed('ATHLETE');
+    const login = await request(app.getHttpServer())
+      .post('/auth/login')
+      .send({ email: target.email, password });
+    expect(login.status).toBe(200);
+    expect(await prisma.session.count({ where: { userId: target.id } })).toBeGreaterThan(0);
+
+    // The test-only rejection is scoped to this UUID to avoid other E2E workers.
+    const triggerName = 'test_audit_reject_' + target.id.replaceAll('-', '_');
+    await prisma.$executeRawUnsafe(`CREATE FUNCTION "${triggerName}"() RETURNS trigger LANGUAGE plpgsql AS $$
+      BEGIN IF NEW.target_id = '${target.id}' THEN RAISE EXCEPTION 'injected audit failure'; END IF;
+      RETURN NEW; END; $$`);
+    try {
+      await prisma.$executeRawUnsafe(`CREATE TRIGGER "${triggerName}" BEFORE INSERT ON "admin_account_status_audit"
+        FOR EACH ROW EXECUTE FUNCTION "${triggerName}"()`);
+      await expect(
+        statusService.transition(operatorId, target.id, 'SUSPEND', 'ACTIVE', 'SECURITY'),
+      ).rejects.toThrow();
+      const account = await prisma.user.findUniqueOrThrow({ where: { id: target.id } });
+      expect(account.status).toBe('ACTIVE');
+      expect(account.authInvalidatedAt).toBeNull();
+      expect(await prisma.session.count({ where: { userId: target.id } })).toBeGreaterThan(0);
+      expect(await prisma.adminAccountStatusAudit.count({ where: { targetId: target.id } })).toBe(
+        0,
+      );
+    } finally {
+      await prisma.$executeRawUnsafe(
+        `DROP TRIGGER IF EXISTS "${triggerName}" ON "admin_account_status_audit"`,
+      );
+      await prisma.$executeRawUnsafe(`DROP FUNCTION IF EXISTS "${triggerName}"()`);
+    }
+  }, 20_000);
+
   it('serializes a session insert racing against suspension using one user-row lock', async () => {
     const target = await seed('ATHLETE');
     const now = new Date();
@@ -255,7 +342,7 @@ describe('internal atomic account status + revocation (real PostgreSQL)', () => 
       lastActiveAt: now,
     };
     const [suspend, insert] = await Promise.allSettled([
-      statusService.transition(operatorId, target.id, 'SUSPEND', 'ACTIVE'),
+      statusService.transition(operatorId, target.id, 'SUSPEND', 'ACTIVE', 'SECURITY'),
       sessionStore.createSession(record),
     ]);
     expect(suspend.status).toBe('fulfilled');
@@ -280,7 +367,7 @@ describe('internal atomic account status + revocation (real PostgreSQL)', () => 
       claims: { amr: ['pwd'] },
     };
     const [suspend, insert] = await Promise.allSettled([
-      statusService.transition(operatorId, target.id, 'SUSPEND', 'ACTIVE'),
+      statusService.transition(operatorId, target.id, 'SUSPEND', 'ACTIVE', 'SECURITY'),
       tokenStore.saveRefreshToken(token),
     ]);
     expect(suspend.status).toBe('fulfilled');

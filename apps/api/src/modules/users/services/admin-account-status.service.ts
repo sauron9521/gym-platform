@@ -15,6 +15,10 @@ import {
   decideLockedAccountStatusTransition,
   type AccountStatusAction,
 } from '../policies/admin-account-status.policy.js';
+import {
+  adminAccountStatusReasonSchema,
+  type AdminAccountStatusReasonCode,
+} from '../policies/admin-account-audit-reason.policy.js';
 
 type LockedUserRow = {
   id: string;
@@ -43,12 +47,14 @@ export class AdminAccountStatusService {
     targetId: string,
     action: AccountStatusAction,
     expectedStatus: AccountStatus,
+    reason: AdminAccountStatusReasonCode,
   ): Promise<AdminAccountStatusResult> {
     const operators = parseOperatorSuperAdminIds(this.config.get('SUPERADMIN_USER_IDS'));
     // Check operator allowlist before looking up the target (no user enumeration).
     if (!hasAdminPermission('ADMIN', 'admin.accounts.manage', actorId, operators)) {
       throw new ForbiddenException('Insufficient administrative permissions');
     }
+    const reasonCode = adminAccountStatusReasonSchema.parse(reason);
 
     try {
       return await this.prisma.$transaction(
@@ -105,6 +111,18 @@ export class AdminAccountStatusService {
           await tx.refreshToken.updateMany({
             where: { userId: targetId },
             data: { revoked: true },
+          });
+          // The audit insert is mandatory and part of this transaction: a
+          // failure rolls back BOTH the account change and revocations.
+          await tx.adminAccountStatusAudit.create({
+            data: {
+              actorId,
+              targetId,
+              action,
+              fromStatus: decision.from,
+              toStatus: decision.to,
+              reasonCode,
+            },
           });
           return { kind: 'changed', status: decision.to };
         },
