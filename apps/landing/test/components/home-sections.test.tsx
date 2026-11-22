@@ -56,8 +56,12 @@ test('English homepage uses translated headings, CTAs, cards, milestones and ARI
   expect(screen.getByRole('heading', { name: 'Build a plan' })).toBeTruthy();
   expect(screen.getByRole('heading', { name: 'Track results' })).toBeTruthy();
   expect(screen.getAllByRole('article')).toHaveLength(2);
-  const athletePreview = screen.getByRole('img', { name: /actual OVRANTO Athlete interface/ });
-  const coachPreview = screen.getByRole('img', { name: /actual OVRANTO Coach interface/ });
+  const athletePreviews = screen.getAllByRole('img', { name: /actual OVRANTO Athlete interface/ });
+  const coachPreviews = screen.getAllByRole('img', { name: /actual OVRANTO Coach interface/ });
+  expect(athletePreviews).toHaveLength(2);
+  expect(coachPreviews).toHaveLength(2);
+  const [athletePreview, athleteDarkPreview] = athletePreviews;
+  const [coachPreview, coachDarkPreview] = coachPreviews;
   expect(decodeURIComponent(athletePreview.getAttribute('src') ?? '')).toContain(
     '/product-previews/athlete-workouts.webp',
   );
@@ -66,6 +70,10 @@ test('English homepage uses translated headings, CTAs, cards, milestones and ARI
   );
   expect(athletePreview.getAttribute('loading')).toBe('lazy');
   expect(coachPreview.getAttribute('loading')).toBe('lazy');
+  expect(athleteDarkPreview.getAttribute('src')).toContain('athlete-workouts-dark.webp');
+  expect(coachDarkPreview.getAttribute('src')).toContain('coach-workspace-dark.webp');
+  expect(athleteDarkPreview.getAttribute('loading')).toBe('lazy');
+  expect(coachDarkPreview.getAttribute('loading')).toBe('lazy');
   expect(screen.getAllByText(/records and metrics are synthetic/)).toHaveLength(2);
   expect(screen.getByRole('heading', { name: 'OVRANTO Athlete' })).toBeTruthy();
   expect(screen.getByRole('heading', { name: 'OVRANTO Coach' })).toBeTruthy();

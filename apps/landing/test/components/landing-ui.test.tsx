@@ -113,7 +113,10 @@ describe('Landing home screen', () => {
       expect(within(cards[index]).getByText('У розробці')).toBeTruthy();
       expect(within(cards[index]).getByText(/Публічний доступ ще не оголошено/)).toBeTruthy();
       expect(within(cards[index]).getAllByRole('listitem')).toHaveLength(3);
-      expect(within(cards[index]).getByRole('img').getAttribute('alt')).toMatch(/тестов/);
+      const imageVariants = within(cards[index]).getAllByRole('img');
+      expect(imageVariants).toHaveLength(2);
+      expect(imageVariants[0].getAttribute('alt')).toMatch(/тестов/);
+      expect(imageVariants[1].getAttribute('alt')).toBe(imageVariants[0].getAttribute('alt'));
       expect(within(cards[index]).getByText(/не реальна статистика користувачів/)).toBeTruthy();
       expect(within(cards[index]).getByRole('link', { name: label }).getAttribute('href')).toBe(
         href,

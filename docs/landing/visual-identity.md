@@ -63,6 +63,23 @@ the current UI, image authenticity/privacy, live feature truthfulness, contrast,
 mobile layout, and relevant licenses/permissions before replacing these files.
 Screenshots are not evidence of Coach deployment or domain readiness (#393).
 
+### Theme-matched image variants
+
+Dark alternatives, also direct Chrome UI captures, were added from `main`
+`e687ab3` on 2026-11-22: `athlete-workouts-dark.webp` and
+`coach-workspace-dark.webp`. The same loopback-only synthetic records / empty
+Coach account, 1200×700 viewport and DevTools-free capture procedure were
+used. The HTML root was explicitly checked as `.dark` with
+`--background: #111918` on **both real applications** before capture.
+
+Each figure retains the same localized alt text and synthetic-data caption.
+Landing CSS shows exactly one of its Light/Dark `next/image` elements using
+the canonical root class preference, falling back to the OS scheme only under
+System; explicit `.light` overrides a dark OS and vice versa. No JavaScript
+theme watcher or separate tracking is used. Validate visible variant, image
+load, descriptive alt text, no horizontal overflow and persistence across
+manual theme switches, OS changes and navigation in Chromium at 320/1280px.
+
 ## Public theme preference
 
 The marketing header offers one accessible System / Light / Dark selector across
