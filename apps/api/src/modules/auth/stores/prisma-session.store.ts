@@ -106,6 +106,26 @@ export class PrismaSessionStore implements SessionStore {
     });
   }
 
+  /**
+   * Revoke this user's admin-purpose sessions without revoking their ordinary
+   * sessions or refresh tokens. Lock the same user row as createSession so
+   * session issuance cannot slip between the scoped deletion and its commit.
+   * A rotation that began earlier loses the old-token delete and discards its
+   * new token; a new sign-in after this call is a separate authentication.
+   */
+  async revokeAdminSessionsForUser(userId: string): Promise<number> {
+    return this.prisma.$transaction(async (tx) => {
+      await lockActiveCredentialOwner(tx, userId);
+      const revoked = await tx.session.deleteMany({
+        where: {
+          userId,
+          metadata: { path: ['purpose'], equals: 'admin' },
+        },
+      });
+      return revoked.count;
+    });
+  }
+
   async deleteUserSessions(userId: string): Promise<void> {
     await this.prisma.session.deleteMany({
       where: { userId },

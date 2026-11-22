@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { NotFoundException, UnauthorizedException } from '@nestjs/common';
 import type { SessionRecord, SessionService, SignInService } from '@nestjs/authentication';
 import { SessionsController } from '../../controllers/sessions.controller.js';
+import type { PrismaSessionStore } from '../../stores/prisma-session.store.js';
 
 describe('SessionsController', () => {
   const makeController = () => {
@@ -13,16 +14,41 @@ describe('SessionsController', () => {
       signOut: vi.fn(),
       signOutEverywhere: vi.fn(),
     };
+    const prismaSessionStore = { revokeAdminSessionsForUser: vi.fn() };
     const controller = new SessionsController(
       sessionService as unknown as SessionService,
       signInService as unknown as SignInService,
+      prismaSessionStore as unknown as PrismaSessionStore,
     );
-    return { controller, sessionService, signInService };
+    return { controller, sessionService, signInService, prismaSessionStore };
   };
 
   it('returns only minimal principal details after an admin-purpose guard', () => {
     const { controller } = makeController();
     expect(controller.adminSession('operator-id')).toEqual({ id: 'operator-id', role: 'ADMIN' });
+  });
+
+  it('revokes only the current principal’s admin sessions and clears the cookie', async () => {
+    const { controller, prismaSessionStore, signInService, sessionService } = makeController();
+    prismaSessionStore.revokeAdminSessionsForUser.mockResolvedValue(2);
+    signInService.signOut.mockResolvedValue(false); // Session is already revoked.
+    await expect(controller.revokeAdminSessions('operator-id')).resolves.toBeUndefined();
+    expect(prismaSessionStore.revokeAdminSessionsForUser).toHaveBeenCalledExactlyOnceWith(
+      'operator-id',
+    );
+    expect(signInService.signOut).toHaveBeenCalledOnce();
+    expect(sessionService.revoke).not.toHaveBeenCalled();
+  });
+
+  it('never reports success or clears the cookie before admin revocation succeeds', async () => {
+    const { controller, prismaSessionStore, signInService } = makeController();
+    prismaSessionStore.revokeAdminSessionsForUser.mockRejectedValueOnce(
+      new Error('Admin revocation storage unavailable'),
+    );
+    await expect(controller.revokeAdminSessions('operator-id')).rejects.toThrow(
+      'Admin revocation storage unavailable',
+    );
+    expect(signInService.signOut).not.toHaveBeenCalled();
   });
 
   it('lists only safe session fields and marks the current session', async () => {

@@ -523,4 +523,114 @@ describe('GET /admin/users (HTTP + PostgreSQL)', () => {
       await prisma.user.update({ where: { id: operatorId }, data: { role: 'ADMIN' } });
     }
   });
+
+  it('requires a live admin-purpose cookie to revoke admin sessions, never JWT or regular login', async () => {
+    const regular = await loginOperator('/auth/login');
+    const operator = await prisma.user.findUniqueOrThrow({
+      where: { id: operatorId },
+      select: { email: true },
+    });
+    const issued = await request(app.getHttpServer())
+      .post('/auth/token')
+      .send({ email: operator.email, password });
+    expect(issued.status).toBe(200);
+
+    const revoke = () => request(app.getHttpServer()).post('/auth/admin-sessions/revoke-all');
+    expect((await revoke()).status).toBe(401);
+    expect((await revoke().set('Authorization', 'Bearer ' + issued.body.accessToken)).status).toBe(
+      401,
+    );
+    expect((await revoke().set('Cookie', regular.cookie)).status).toBe(403);
+    expect((await revoke().set('Cookie', cookies.athlete!)).status).toBe(403);
+
+    const crossOrigin = await revoke()
+      .set('Cookie', cookies.operator!)
+      .set('Origin', 'https://attacker.invalid');
+    expect([401, 403]).toContain(crossOrigin.status);
+    expect(
+      (
+        await request(app.getHttpServer())
+          .get('/auth/admin-session')
+          .set('Cookie', cookies.operator!)
+      ).status,
+    ).toBe(200);
+    expect(
+      (
+        await request(app.getHttpServer())
+          .get('/users/me')
+          .set('Authorization', 'Bearer ' + issued.body.accessToken)
+      ).status,
+    ).toBe(200);
+  });
+
+  it('revokes only caller admin sessions across devices, clears cookie and preserves all ordinary sessions', async () => {
+    const actor = await seedAccount('revoke-actor', 'ADMIN');
+    const first = cookies['revoke-actor']!;
+    const auth = (path: '/auth/login' | '/auth/admin-login') =>
+      request(app.getHttpServer()).post(path).send({ email: actor.email, password });
+    const secondResponse = await auth('/auth/admin-login');
+    const thirdResponse = await auth('/auth/admin-login');
+    const regularResponse = await auth('/auth/login');
+
+    const extractCookie = (result: typeof secondResponse) => {
+      const raw = result.headers['set-cookie'];
+      const all = Array.isArray(raw) ? raw : raw ? [raw] : [];
+      return all
+        .map((item) => item.split(';', 1)[0] ?? '')
+        .find((item) => item.startsWith('__Host-sid='))!;
+    };
+    expect(secondResponse.status).toBe(200);
+    expect(thirdResponse.status).toBe(200);
+    expect(regularResponse.status).toBe(200);
+
+    const second = extractCookie(secondResponse);
+    const third = extractCookie(thirdResponse);
+    const regular = extractCookie(regularResponse);
+    const adminCount = await prisma.session.count({
+      where: { userId: actor.id, metadata: { path: ['purpose'], equals: 'admin' } },
+    });
+    expect(adminCount).toBe(3);
+    const revoked = await request(app.getHttpServer())
+      .post('/auth/admin-sessions/revoke-all')
+      .set('Cookie', second);
+    expect(revoked.status).toBe(204);
+    expect(revoked.headers['cache-control']).toContain('no-store');
+    const setCookie = revoked.headers['set-cookie'];
+    const cleared = Array.isArray(setCookie) ? setCookie : setCookie ? [setCookie] : [];
+    expect(
+      cleared.some((item) => item.startsWith('__Host-sid=;') && item.includes('Max-Age=0')),
+    ).toBe(true);
+
+    for (const cookie of [first, second, third]) {
+      expect(
+        (await request(app.getHttpServer()).get('/auth/admin-session').set('Cookie', cookie))
+          .status,
+      ).toBe(401);
+      expect(
+        (
+          await request(app.getHttpServer())
+            .post('/auth/admin-sessions/revoke-all')
+            .set('Cookie', cookie)
+        ).status,
+      ).toBe(401);
+    }
+    expect(
+      await prisma.session.count({
+        where: { userId: actor.id, metadata: { path: ['purpose'], equals: 'admin' } },
+      }),
+    ).toBe(0);
+    expect(
+      (await request(app.getHttpServer()).get('/users/me').set('Cookie', regular)).status,
+    ).toBe(200);
+    expect(
+      (
+        await request(app.getHttpServer())
+          .get('/auth/admin-session')
+          .set('Cookie', cookies.operator!)
+      ).status,
+    ).toBe(200);
+    expect(
+      (await request(app.getHttpServer()).get('/users/me').set('Cookie', cookies.athlete!)).status,
+    ).toBe(200);
+  });
 });

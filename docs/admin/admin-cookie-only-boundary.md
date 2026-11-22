@@ -38,9 +38,21 @@ timestamps **before** the shared session service updates activity. The same
 server-side rule applies to older admin-purpose cookies. Normal Athlete/Trainer
 sessions retain the shared 7-day/1-day limits.
 
-**Still NO-GO:** The admin-purpose session shares the ordinary cookie name,
-session table and revocation infrastructure; this is not full isolation.
-Finish #289 with independent revocation and origin/lifecycle checks. Complete #290 for
+**Scoped Admin revocation:** `POST /auth/admin-sessions/revoke-all` requires a
+live admin-purpose cookie (never a bearer JWT or an ordinary ADMIN session).
+It atomically deletes **only the caller's** `metadata.purpose = "admin"`
+sessions using a PostgreSQL user-row lock consistent with session issuance,
+and clears the caller's cookie. Ordinary sessions, other users' Admin sessions
+and refresh-token families are preserved. The endpoint is idempotent for
+multiple live admin browsers, but a revoked browser cannot call it again:
+subsequent requests return 401. It is intentionally different from the
+existing `/auth/sign-out-everywhere`, which revokes every session and refresh
+token family for the user.
+
+**Still NO-GO:** The admin-purpose session shares the ordinary cookie name
+and session table, even though expiry and purpose-scoped revocation now differ.
+Finish #289 with origin/lifecycle hardening, including cross-origin session
+boundaries and admin UX. There is not yet a separate Admin cookie realm. Complete #290 for
 recent proof of password/MFA, step-up expiry and safe recovery before enabling
 account suspension/reactivation or role/price privilege changes. The current
 trainer-review write endpoints already exist but remain without step-up, which

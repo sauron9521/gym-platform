@@ -249,6 +249,30 @@ describe('PrismaSessionStore', () => {
     expect(prisma.session.deleteMany).not.toHaveBeenCalled();
   });
 
+  it('revokes only admin-purpose sessions with an account-row lock and preserves regular sessions', async () => {
+    prisma.session.deleteMany.mockResolvedValueOnce({ count: 3 });
+    await expect(store.revokeAdminSessionsForUser(session.userId)).resolves.toBe(3);
+    expect(prisma.$transaction).toHaveBeenCalledOnce();
+    expect(prisma.$queryRaw).toHaveBeenCalledOnce();
+    const [sql, id] = prisma.$queryRaw.mock.calls[0] as [TemplateStringsArray, string];
+    expect(sql.join('?')).toContain('FOR UPDATE');
+    expect(id).toBe(session.userId);
+    expect(prisma.session.deleteMany).toHaveBeenCalledExactlyOnceWith({
+      where: {
+        userId: session.userId,
+        metadata: { path: ['purpose'], equals: 'admin' },
+      },
+    });
+  });
+
+  it('fails closed if the revocation DB transaction fails', async () => {
+    prisma.session.deleteMany.mockRejectedValueOnce(new Error('DB write failed'));
+    await expect(store.revokeAdminSessionsForUser(session.userId)).rejects.toThrow(
+      'DB write failed',
+    );
+    expect(prisma.$transaction).toHaveBeenCalledOnce();
+  });
+
   it('deletes all sessions for the requested user', async () => {
     await store.deleteUserSessions(session.userId);
 

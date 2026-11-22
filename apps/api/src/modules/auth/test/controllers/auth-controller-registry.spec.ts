@@ -44,6 +44,13 @@ describe('AuthModule controller registry', () => {
     [TokensController, 'refresh', RequestMethod.POST, 'refresh', 200],
     [TokensController, 'revoke', RequestMethod.POST, 'revoke', 204],
     [SessionsController, 'adminSession', RequestMethod.GET, 'admin-session', undefined],
+    [
+      SessionsController,
+      'revokeAdminSessions',
+      RequestMethod.POST,
+      'admin-sessions/revoke-all',
+      204,
+    ],
     [SessionsController, 'list', RequestMethod.GET, 'sessions', undefined],
     [SessionsController, 'revoke', RequestMethod.DELETE, 'sessions/:id', 204],
     [SessionsController, 'signOut', RequestMethod.POST, 'sign-out', 204],
@@ -85,7 +92,7 @@ describe('AuthModule controller registry', () => {
     }
   });
 
-  it('registers exactly fifteen unique HTTP verb/path pairs', () => {
+  it('registers exactly sixteen unique HTTP verb/path pairs', () => {
     const routes = controllers.flatMap((controller) => {
       const prefix = Reflect.getMetadata(PATH_METADATA, controller) as string;
       return Object.getOwnPropertyNames(controller.prototype)
@@ -102,7 +109,7 @@ describe('AuthModule controller registry', () => {
         });
     });
 
-    expect(routes).toHaveLength(15);
+    expect(routes).toHaveLength(16);
     expect(new Set(routes).size).toBe(routes.length);
   });
 });
