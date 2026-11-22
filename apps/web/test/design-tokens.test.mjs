@@ -9,10 +9,11 @@ const landingCss = readFileSync(
 );
 const webPackage = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
 
-test('Web opts into OVRANTO while Landing retains its legacy theme', () => {
-  assert.match(webCss, /@import '@gym\/design-tokens\/ovranto.css';/);
-  assert.doesNotMatch(webCss, /@import '@gym\/design-tokens\/dark.css';/);
-  assert.match(landingCss, /@import '@gym\/design-tokens\/dark.css';/);
+test('Web and Landing share the approved OVRANTO design tokens', () => {
+  for (const css of [webCss, landingCss]) {
+    assert.match(css, /@import '@gym\/design-tokens\/ovranto.css';/);
+    assert.doesNotMatch(css, /@import '@gym\/design-tokens\/dark.css';/);
+    assert.doesNotMatch(css, /--(?:background|primary|card):\s*oklch\(/);
+  }
   assert.equal(webPackage.dependencies['@gym/design-tokens'], 'workspace:*');
-  assert.doesNotMatch(webCss, /--(?:background|primary|card):\s*oklch\(/);
 });
