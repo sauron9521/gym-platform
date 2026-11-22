@@ -4,8 +4,10 @@ import { Manrope } from 'next/font/google';
 import type { ReactNode } from 'react';
 import { NextIntlClientProvider } from 'next-intl';
 import { getLocale, getMessages } from 'next-intl/server';
+import { cookies } from 'next/headers';
 
 import { getSiteOrigin, isIndexingEnabled, siteDescription } from '@/shared/lib/seo';
+import { parseThemePreference, THEME_COOKIE_NAME } from '@/shared/lib/theme-preference';
 import { SiteFooter } from '@/widgets/layout/ui/site-footer';
 import { SiteHeader } from '@/widgets/layout/ui/site-header';
 
@@ -49,11 +51,16 @@ export const metadata: Metadata = {
 };
 
 export default async function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
-  const [locale, messages] = await Promise.all([getLocale(), getMessages()]);
+  const [locale, messages, cookieStore] = await Promise.all([
+    getLocale(),
+    getMessages(),
+    cookies(),
+  ]);
+  const initialTheme = parseThemePreference(cookieStore.get(THEME_COOKIE_NAME)?.value);
   const siteLocale: Locale = locale === 'en' ? 'en' : defaultLocale;
   const skipToContent = getSharedMessages(siteLocale).landing.shell.skipToContent;
   return (
-    <html lang={locale}>
+    <html lang={locale} className={initialTheme === 'system' ? undefined : initialTheme}>
       <body className={`${manrope.variable} flex min-h-screen flex-col font-sans`}>
         <a
           href="#main-content"
@@ -76,7 +83,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
           />
         ) : null}
         <NextIntlClientProvider locale={locale} messages={messages}>
-          <SiteHeader locale={siteLocale} />
+          <SiteHeader locale={siteLocale} initialTheme={initialTheme} />
           {children}
           <SiteFooter locale={siteLocale} />
         </NextIntlClientProvider>

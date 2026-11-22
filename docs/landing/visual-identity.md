@@ -23,6 +23,23 @@ independently hard-coding brand colors or light/dark surfaces.
 - All visual charts and counts on the homepage are **concept art**, clearly labeled
   and never passed off as real performance data.
 
+## Public theme preference
+
+The marketing header offers one accessible System / Light / Dark selector across
+desktop and mobile. It defaults to System and responds automatically to OS theme
+changes through the canonical OVRANTO CSS media query (no JavaScript listener).
+Manual overrides set or remove the root .light / .dark class immediately.
+
+Landing reads the host-only, SameSite=Lax ovranto-theme cookie in its **server
+root layout** and emits the initial HTML class. Manual themes therefore render
+before hydration, without a theme flash or mismatch. The 12-month preference
+uses the same cookie contract as Web but is scoped to its own host; Landing
+never writes Domain= or accesses Athlete/Admin session cookies. Local HTTP
+omits Secure; deployed HTTPS adds it. Unknown values return to System.
+
+Verify system OS changes, initial server response class, cookie persistence
+across navigation/reload, UA/EN accessible names, and 320px mobile navigation.
+
 ## Accessibility and constraints
 
 Keep a single h1 on each route and a named main landmark. Logo SVG must be decorative
