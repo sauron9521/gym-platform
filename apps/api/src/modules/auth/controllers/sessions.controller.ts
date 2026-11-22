@@ -21,8 +21,9 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { AuthNoStoreInterceptor } from '../interceptors/auth-no-store.interceptor.js';
-import { ApiCookieAuth, ApiOkResponse } from '@nestjs/swagger';
+import { ApiCookieAuth, ApiNoContentResponse, ApiOkResponse } from '@nestjs/swagger';
 import { AdminSessionPurposeGuard } from '#src/common/auth/admin-session-purpose.guard';
+import { PrismaSessionStore } from '../stores/prisma-session.store.js';
 import { adminSessionResponseSchema } from '#src/infra/openapi/response-contracts';
 
 @UseInterceptors(AuthNoStoreInterceptor)
@@ -31,6 +32,7 @@ export class SessionsController {
   constructor(
     private readonly sessionService: SessionService,
     private readonly signInService: SignInService,
+    private readonly prismaSessionStore: PrismaSessionStore,
   ) {}
 
   /** Only a live, explicitly elevated cookie can prove Admin Web access. */
@@ -41,6 +43,24 @@ export class SessionsController {
   @ApiOkResponse({ schema: adminSessionResponseSchema })
   adminSession(@CurrentUser('id') userId: string) {
     return { id: userId, role: 'ADMIN' as const };
+  }
+
+  /**
+   * Revoke only this principal's admin-purpose sessions across all browsers.
+   * The endpoint MUST authenticate via an admin-purpose cookie, not JWT or an
+   * ordinary ADMIN login. No refresh token or regular session is revoked.
+   */
+  @Post('admin-sessions/revoke-all')
+  @HttpCode(204)
+  @Authenticate({ providers: [SessionCookieProvider] })
+  @UseGuards(AdminSessionPurposeGuard)
+  @ApiCookieAuth('sessionCookie')
+  @ApiNoContentResponse()
+  async revokeAdminSessions(@CurrentUser('id') userId: string): Promise<void> {
+    await this.prismaSessionStore.revokeAdminSessionsForUser(userId);
+    // Already revoked: signOut() still clears this browser's cookie, even
+    // when it returns false for an absent server session.
+    await this.signInService.signOut();
   }
 
   @Get('sessions')

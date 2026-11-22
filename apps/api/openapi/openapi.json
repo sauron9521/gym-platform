@@ -503,6 +503,23 @@
         "tags": ["Sessions"]
       }
     },
+    "/auth/admin-sessions/revoke-all": {
+      "post": {
+        "operationId": "SessionsController_revokeAdminSessions",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "tags": ["Sessions"]
+      }
+    },
     "/auth/sessions": {
       "get": {
         "operationId": "SessionsController_list",
