@@ -1,6 +1,6 @@
 import { validateStagingOrigin } from './staging-live-smoke.mjs';
 
-const validScopes = new Set(['quick', 'idle-expiry', 'revoke-all']);
+const validScopes = new Set(['preflight-only', 'quick', 'idle-expiry', 'revoke-all']);
 
 /**
  * Validate the protected GitHub admin-staging environment BEFORE the browser
@@ -44,7 +44,7 @@ export function validateAdminStagingTarget({
     throw new Error('Refusing to run staging browser smoke against production');
   }
   if (!validScopes.has(scope)) {
-    throw new Error('Explicit quick, idle-expiry or revoke-all scope is required');
+    throw new Error('Explicit preflight-only, quick, idle-expiry or revoke-all scope is required');
   }
   if (accountScope !== 'DEDICATED_STAGING_ONLY') {
     throw new Error('Require an explicitly dedicated staging-only Admin operator');

@@ -12,11 +12,12 @@ on:
           - NO_STAGING_RUN
           - RUN_DEDICATED_STAGING
       scope:
-        description: 'Quick login/logout, 16-minute idle expiry, or scoped revoke-all'
+        description: 'Read-only preflight, login/logout, idle expiry, or scoped revoke-all'
         required: true
         type: choice
-        default: quick
+        default: preflight-only
         options:
+          - preflight-only
           - quick
           - idle-expiry
           - revoke-all
@@ -56,8 +57,6 @@ jobs:
       ADMIN_STAGING_ALLOWED_HOST: ${{ vars.ADMIN_STAGING_ALLOWED_HOST }}
       ADMIN_PRODUCTION_ORIGIN: ${{ vars.ADMIN_PRODUCTION_ORIGIN }}
       ADMIN_STAGING_ACCOUNT_SCOPE: ${{ vars.ADMIN_STAGING_ACCOUNT_SCOPE }}
-      ADMIN_STAGING_EMAIL: ${{ secrets.ADMIN_STAGING_EMAIL }}
-      ADMIN_STAGING_PASSWORD: ${{ secrets.ADMIN_STAGING_PASSWORD }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -68,14 +67,22 @@ jobs:
           node-version: '24'
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
-      - run: pnpm install --frozen-lockfile
+      - name: Anonymous HTTPS, Next and reverse-proxy readiness (no credentials)
+        run: node scripts/admin-staging-preflight.mjs
+      - name: Install test dependencies only for credentialed scopes
+        if: inputs.scope != 'preflight-only'
+        run: pnpm install --frozen-lockfile
       - name: Browser checks on protected HTTPS staging (never on production)
+        if: inputs.scope != 'preflight-only'
+        env:
+          ADMIN_STAGING_EMAIL: ${{ secrets.ADMIN_STAGING_EMAIL }}
+          ADMIN_STAGING_PASSWORD: ${{ secrets.ADMIN_STAGING_PASSWORD }}
         run: pnpm --filter @gym/admin test:e2e:staging
       # No traces, screenshots, browser storage state, cookies or response
       # bodies are uploaded: all can contain privileged session credentials.
       - name: Record status only, never secrets or session identifiers
         if: success()
         run: |
-          echo 'Admin external staging browser session check succeeded.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Admin external staging selected smoke scope succeeded.' >> "$GITHUB_STEP_SUMMARY"
           echo 'The selected scenario was ${{ inputs.scope }}.' >> "$GITHUB_STEP_SUMMARY"
           echo 'This is NOT production approval. Absolute 8h TTL still requires separate verification.' >> "$GITHUB_STEP_SUMMARY"

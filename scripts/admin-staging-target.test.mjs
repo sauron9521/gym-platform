@@ -17,7 +17,7 @@ test('manual Admin staging smoke accepts an exact HTTPS staging allowlist', () =
     origin: approved.origin,
     scope: 'quick',
   });
-  for (const scope of ['idle-expiry', 'revoke-all']) {
+  for (const scope of ['preflight-only', 'idle-expiry', 'revoke-all']) {
     assert.equal(validateAdminStagingTarget({ ...approved, scope }).scope, scope);
   }
 });
@@ -69,4 +69,17 @@ test('staging workflow is manual, main-gated, protected and requires destructive
   assert.match(yaml, /secrets\.ADMIN_STAGING_PASSWORD/);
   assert.match(yaml, /test:e2e:staging/);
   assert.doesNotMatch(yaml, /actions\/upload-artifact/);
+  assert.match(yaml, /default: preflight-only/);
+  assert.match(yaml, /node scripts\/admin-staging-preflight\.mjs/);
+  assert.match(yaml, /if: inputs\.scope != 'preflight-only'/);
+  const jobEnv = yaml.split('    env:\n')[1]?.split('    steps:\n')[0] ?? '';
+  assert.doesNotMatch(jobEnv, /secrets\./);
+  assert.ok(
+    yaml.indexOf('node scripts/admin-staging-preflight.mjs') <
+      yaml.indexOf('pnpm install --frozen-lockfile'),
+  );
+  assert.ok(
+    yaml.indexOf('node scripts/admin-staging-preflight.mjs') <
+      yaml.indexOf('secrets.ADMIN_STAGING_EMAIL'),
+  );
 });
