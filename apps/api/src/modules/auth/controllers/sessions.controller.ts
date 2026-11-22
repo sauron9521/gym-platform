@@ -2,7 +2,6 @@ import {
   CurrentSession,
   CurrentUser,
   Authenticate,
-  SessionCookieProvider,
   Public,
   SessionService,
   SignInService,
@@ -19,11 +18,17 @@ import {
   Post,
   UnauthorizedException,
   UseInterceptors,
+  Req,
+  Res,
 } from '@nestjs/common';
 import { AuthNoStoreInterceptor } from '../interceptors/auth-no-store.interceptor.js';
 import { ApiCookieAuth, ApiNoContentResponse, ApiOkResponse } from '@nestjs/swagger';
 import { AdminSessionPurposeGuard } from '#src/common/auth/admin-session-purpose.guard';
 import { AdminOriginGuard } from '#src/common/auth/admin-origin.guard';
+import { AdminCookieRoute } from '#src/common/auth/admin-cookie-route';
+import { AdminSessionCookieProvider } from '#src/common/auth/admin-session-cookie.provider';
+import { AdminCookieAuthService } from '../services/admin-cookie-auth.service.js';
+import type { Request, Response } from 'express';
 import { PrismaSessionStore } from '../stores/prisma-session.store.js';
 import { adminSessionResponseSchema } from '#src/infra/openapi/response-contracts';
 
@@ -34,13 +39,15 @@ export class SessionsController {
     private readonly sessionService: SessionService,
     private readonly signInService: SignInService,
     private readonly prismaSessionStore: PrismaSessionStore,
+    private readonly adminCookies: AdminCookieAuthService,
   ) {}
 
   /** Only a live, explicitly elevated cookie can prove Admin Web access. */
   @Get('admin-session')
-  @Authenticate({ providers: [SessionCookieProvider] })
+  @AdminCookieRoute()
+  @Authenticate({ providers: [AdminSessionCookieProvider] })
   @UseGuards(AdminOriginGuard, AdminSessionPurposeGuard)
-  @ApiCookieAuth('sessionCookie')
+  @ApiCookieAuth('adminSessionCookie')
   @ApiOkResponse({ schema: adminSessionResponseSchema })
   adminSession(@CurrentUser('id') userId: string) {
     return { id: userId, role: 'ADMIN' as const };
@@ -53,15 +60,35 @@ export class SessionsController {
    */
   @Post('admin-sessions/revoke-all')
   @HttpCode(204)
-  @Authenticate({ providers: [SessionCookieProvider] })
+  @AdminCookieRoute()
+  @Authenticate({ providers: [AdminSessionCookieProvider] })
   @UseGuards(AdminOriginGuard, AdminSessionPurposeGuard)
-  @ApiCookieAuth('sessionCookie')
+  @ApiCookieAuth('adminSessionCookie')
   @ApiNoContentResponse()
-  async revokeAdminSessions(@CurrentUser('id') userId: string): Promise<void> {
+  async revokeAdminSessions(
+    @CurrentUser('id') userId: string,
+    @Req() request: Request,
+    @Res({ passthrough: true }) response: Response,
+  ): Promise<void> {
     await this.prismaSessionStore.revokeAdminSessionsForUser(userId);
     // Already revoked: signOut() still clears this browser's cookie, even
     // when it returns false for an absent server session.
-    await this.signInService.signOut();
+    await this.adminCookies.signOut(request, response);
+  }
+
+  /** Public to let a pending MFA admin session be cleared safely. */
+  @Public()
+  @Post('admin-sign-out')
+  @HttpCode(204)
+  @UseGuards(AdminOriginGuard)
+  @ApiNoContentResponse()
+  async adminSignOut(
+    @Req() request: Request,
+    @Res({ passthrough: true }) response: Response,
+  ): Promise<void> {
+    if (!(await this.adminCookies.signOut(request, response))) {
+      throw new UnauthorizedException();
+    }
   }
 
   @Get('sessions')

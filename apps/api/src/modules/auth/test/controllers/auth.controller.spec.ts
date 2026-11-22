@@ -4,6 +4,7 @@ import { ConfigService } from '@nestjs/config';
 import { Logger, UnauthorizedException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AuthController } from '../../controllers/auth.controller.js';
+import { AdminCookieAuthService } from '../../services/admin-cookie-auth.service.js';
 import { CredentialsService } from '../../services/index.js';
 
 describe('AuthController', () => {
@@ -14,9 +15,10 @@ describe('AuthController', () => {
     verify: vi.fn(),
   };
 
-  const signInService = {
-    signIn: vi.fn(),
-  };
+  const signInService = { signIn: vi.fn() };
+  const adminCookieAuth = { signIn: vi.fn() };
+  const adminRequest = { headers: {}, method: 'POST' } as never;
+  const adminResponse = { append: vi.fn() } as never;
 
   const emailVerificationService = {
     send: vi.fn(),
@@ -28,6 +30,7 @@ describe('AuthController', () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [AuthController],
       providers: [
+        { provide: AdminCookieAuthService, useValue: adminCookieAuth },
         {
           provide: ConfigService,
           useValue: {
@@ -129,12 +132,16 @@ describe('AuthController', () => {
         email: input.email,
         role: 'ADMIN',
       });
-      signInService.signIn.mockResolvedValue({ session: { mfa: 'pending' } });
-      await expect(controller.adminSignIn(input)).resolves.toEqual({ mfaRequired: true });
-      expect(signInService.signIn).toHaveBeenCalledExactlyOnceWith('operator-id', {
-        method: 'password',
-        metadata: { purpose: 'admin' },
+      adminCookieAuth.signIn.mockResolvedValue({ session: { mfa: 'pending' } });
+      await expect(controller.adminSignIn(input, adminRequest, adminResponse)).resolves.toEqual({
+        mfaRequired: true,
       });
+      expect(adminCookieAuth.signIn).toHaveBeenCalledExactlyOnceWith(
+        'operator-id',
+        adminRequest,
+        adminResponse,
+      );
+      expect(signInService.signIn).not.toHaveBeenCalled();
     });
 
     it('refuses unknown credentials and non-admin roles identically without issuing a session', async () => {
@@ -144,8 +151,11 @@ describe('AuthController', () => {
         { id: 'trainer', role: 'TRAINER' },
       ]) {
         credentialsService.verify.mockResolvedValueOnce(principal);
-        await expect(controller.adminSignIn(input)).rejects.toThrow(UnauthorizedException);
+        await expect(controller.adminSignIn(input, adminRequest, adminResponse)).rejects.toThrow(
+          UnauthorizedException,
+        );
       }
+      expect(adminCookieAuth.signIn).not.toHaveBeenCalled();
       expect(signInService.signIn).not.toHaveBeenCalled();
     });
   });

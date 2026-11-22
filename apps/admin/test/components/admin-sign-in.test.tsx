@@ -56,7 +56,7 @@ describe('Admin sign-in with same-origin cookie session', () => {
 
     submit();
     await waitFor(() => expect(screen.getByRole('alert').textContent).toBe('admin.forbidden'));
-    expect(post).toHaveBeenCalledWith('/auth/sign-out');
+    expect(post).toHaveBeenCalledWith('/auth/admin-sign-out');
     expect(router.replace).not.toHaveBeenCalled();
   });
 
@@ -67,7 +67,7 @@ describe('Admin sign-in with same-origin cookie session', () => {
     submit();
     await waitFor(() => expect(screen.getByRole('alert').textContent).toBe('admin.mfaRequired'));
     expect(get).not.toHaveBeenCalled();
-    expect(post).toHaveBeenCalledWith('/auth/sign-out');
+    expect(post).toHaveBeenCalledWith('/auth/admin-sign-out');
     expect(router.replace).not.toHaveBeenCalled();
   });
 

@@ -497,7 +497,7 @@
         },
         "security": [
           {
-            "sessionCookie": []
+            "adminSessionCookie": []
           }
         ],
         "tags": ["Sessions"]
@@ -514,9 +514,21 @@
         },
         "security": [
           {
-            "sessionCookie": []
+            "adminSessionCookie": []
           }
         ],
+        "tags": ["Sessions"]
+      }
+    },
+    "/auth/admin-sign-out": {
+      "post": {
+        "operationId": "SessionsController_adminSignOut",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
         "tags": ["Sessions"]
       }
     },
@@ -1156,7 +1168,7 @@
         },
         "security": [
           {
-            "sessionCookie": []
+            "adminSessionCookie": []
           }
         ],
         "tags": ["Admin users"]
@@ -1232,7 +1244,7 @@
         },
         "security": [
           {
-            "sessionCookie": []
+            "adminSessionCookie": []
           }
         ],
         "tags": ["Admin users"]
@@ -8484,7 +8496,7 @@
         },
         "security": [
           {
-            "sessionCookie": []
+            "adminSessionCookie": []
           }
         ],
         "tags": ["Trainer moderation"]
@@ -8607,7 +8619,7 @@
         },
         "security": [
           {
-            "sessionCookie": []
+            "adminSessionCookie": []
           }
         ],
         "tags": ["Trainer moderation"]
@@ -8730,7 +8742,7 @@
         },
         "security": [
           {
-            "sessionCookie": []
+            "adminSessionCookie": []
           }
         ],
         "tags": ["Trainer moderation"]
@@ -8853,7 +8865,7 @@
         },
         "security": [
           {
-            "sessionCookie": []
+            "adminSessionCookie": []
           }
         ],
         "tags": ["Trainer moderation"]
@@ -16617,6 +16629,11 @@
         "type": "apiKey",
         "in": "cookie",
         "name": "__Host-sid"
+      },
+      "adminSessionCookie": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "__Host-admin-sid"
       }
     },
     "schemas": {}

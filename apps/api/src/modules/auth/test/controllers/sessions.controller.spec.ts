@@ -3,6 +3,7 @@ import { NotFoundException, UnauthorizedException } from '@nestjs/common';
 import type { SessionRecord, SessionService, SignInService } from '@nestjs/authentication';
 import { SessionsController } from '../../controllers/sessions.controller.js';
 import type { PrismaSessionStore } from '../../stores/prisma-session.store.js';
+import type { AdminCookieAuthService } from '../../services/admin-cookie-auth.service.js';
 
 describe('SessionsController', () => {
   const makeController = () => {
@@ -15,12 +16,24 @@ describe('SessionsController', () => {
       signOutEverywhere: vi.fn(),
     };
     const prismaSessionStore = { revokeAdminSessionsForUser: vi.fn() };
+    const adminCookies = { signOut: vi.fn() };
+    const request = { headers: {}, method: 'POST' } as never;
+    const response = { append: vi.fn() } as never;
     const controller = new SessionsController(
       sessionService as unknown as SessionService,
       signInService as unknown as SignInService,
       prismaSessionStore as unknown as PrismaSessionStore,
+      adminCookies as unknown as AdminCookieAuthService,
     );
-    return { controller, sessionService, signInService, prismaSessionStore };
+    return {
+      controller,
+      sessionService,
+      signInService,
+      prismaSessionStore,
+      adminCookies,
+      request,
+      response,
+    };
   };
 
   it('returns only minimal principal details after an admin-purpose guard', () => {
@@ -29,25 +42,46 @@ describe('SessionsController', () => {
   });
 
   it('revokes only the current principal’s admin sessions and clears the cookie', async () => {
-    const { controller, prismaSessionStore, signInService, sessionService } = makeController();
+    const {
+      controller,
+      prismaSessionStore,
+      signInService,
+      adminCookies,
+      request,
+      response,
+      sessionService,
+    } = makeController();
     prismaSessionStore.revokeAdminSessionsForUser.mockResolvedValue(2);
-    signInService.signOut.mockResolvedValue(false); // Session is already revoked.
-    await expect(controller.revokeAdminSessions('operator-id')).resolves.toBeUndefined();
+    adminCookies.signOut.mockResolvedValue(false); // Session is already revoked.
+    await expect(
+      controller.revokeAdminSessions('operator-id', request, response),
+    ).resolves.toBeUndefined();
     expect(prismaSessionStore.revokeAdminSessionsForUser).toHaveBeenCalledExactlyOnceWith(
       'operator-id',
     );
-    expect(signInService.signOut).toHaveBeenCalledOnce();
+    expect(adminCookies.signOut).toHaveBeenCalledExactlyOnceWith(request, response);
+    expect(signInService.signOut).not.toHaveBeenCalled();
     expect(sessionService.revoke).not.toHaveBeenCalled();
   });
 
   it('never reports success or clears the cookie before admin revocation succeeds', async () => {
-    const { controller, prismaSessionStore, signInService } = makeController();
+    const { controller, prismaSessionStore, signInService, adminCookies, request, response } =
+      makeController();
     prismaSessionStore.revokeAdminSessionsForUser.mockRejectedValueOnce(
       new Error('Admin revocation storage unavailable'),
     );
-    await expect(controller.revokeAdminSessions('operator-id')).rejects.toThrow(
+    await expect(controller.revokeAdminSessions('operator-id', request, response)).rejects.toThrow(
       'Admin revocation storage unavailable',
     );
+    expect(signInService.signOut).not.toHaveBeenCalled();
+    expect(adminCookies.signOut).not.toHaveBeenCalled();
+  });
+
+  it('admin-sign-out only clears the scoped Admin cookie and denies no-session callers', async () => {
+    const { controller, adminCookies, request, response, signInService } = makeController();
+    adminCookies.signOut.mockResolvedValueOnce(true).mockResolvedValueOnce(false);
+    await expect(controller.adminSignOut(request, response)).resolves.toBeUndefined();
+    await expect(controller.adminSignOut(request, response)).rejects.toThrow(UnauthorizedException);
     expect(signInService.signOut).not.toHaveBeenCalled();
   });
 

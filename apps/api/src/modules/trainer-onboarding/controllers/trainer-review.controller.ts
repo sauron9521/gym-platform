@@ -1,4 +1,4 @@
-import { Authenticate, CurrentUser, SessionCookieProvider } from '@nestjs/authentication';
+import { Authenticate, CurrentUser } from '@nestjs/authentication';
 import {
   Body,
   Controller,
@@ -14,6 +14,8 @@ import { ApiCookieAuth, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { RateLimit } from '#src/common/rate-limit/rate-limit.policies';
 import { AdminSessionPurposeGuard } from '#src/common/auth/admin-session-purpose.guard';
 import { AdminOriginGuard } from '#src/common/auth/admin-origin.guard';
+import { AdminCookieRoute } from '#src/common/auth/admin-cookie-route';
+import { AdminSessionCookieProvider } from '#src/common/auth/admin-session-cookie.provider';
 import {
   arraySchema,
   trainerApplicationAdminResponseSchema,
@@ -27,11 +29,12 @@ import {
 import { TrainerReviewService, type Reviewer } from '../services/trainer-review.service.js';
 
 @ApiTags('Trainer moderation')
-@ApiCookieAuth('sessionCookie')
+@ApiCookieAuth('adminSessionCookie')
 @Controller('admin/trainer-applications')
 // Privileged moderation must authenticate a live browser session, never JWT alone.
 // Only explicit admin-purpose sessions may perform privileged moderation.
-@Authenticate({ providers: [SessionCookieProvider] })
+@AdminCookieRoute()
+@Authenticate({ providers: [AdminSessionCookieProvider] })
 @UseGuards(AdminOriginGuard, AdminSessionPurposeGuard)
 export class TrainerReviewController {
   constructor(private readonly service: TrainerReviewService) {}
