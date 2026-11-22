@@ -8,6 +8,7 @@ import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import { AuthController } from '../../../src/modules/auth/controllers/auth.controller.js';
+import { AdminCookieAuthService } from '../../../src/modules/auth/services/admin-cookie-auth.service.js';
 import { EmailVerificationController } from '../../../src/modules/auth/controllers/email-verification.controller.js';
 import { TokensController } from '../../../src/modules/auth/controllers/tokens.controller.js';
 import { CredentialsService } from '../../../src/modules/auth/services/credentials.service.js';
@@ -44,6 +45,7 @@ describe('Auth endpoint throttling (HTTP)', () => {
       ],
       controllers: [AuthController, EmailVerificationController, TokensController],
       providers: [
+        { provide: AdminCookieAuthService, useValue: { signIn: vi.fn() } },
         { provide: CredentialsService, useValue: credentials },
         { provide: SignInService, useValue: signIn },
         { provide: EmailVerificationService, useValue: verification },
