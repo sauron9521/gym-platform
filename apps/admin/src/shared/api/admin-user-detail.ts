@@ -26,7 +26,7 @@ function parseDetail(raw: unknown, id: string): AdminUserDetail | null {
     value.email.length > 320 ||
     !value.email.includes('@') ||
     (value.role !== 'ATHLETE' && value.role !== 'TRAINER' && value.role !== 'ADMIN') ||
-    value.status !== 'ACTIVE' ||
+    (value.status !== 'ACTIVE' && value.status !== 'SUSPENDED') ||
     typeof value.emailVerified !== 'boolean' ||
     typeof value.createdAt !== 'string' ||
     !Number.isFinite(Date.parse(value.createdAt)) ||
@@ -39,7 +39,7 @@ function parseDetail(raw: unknown, id: string): AdminUserDetail | null {
     id,
     email: value.email,
     role: value.role,
-    status: 'ACTIVE',
+    status: value.status as 'ACTIVE' | 'SUSPENDED',
     emailVerified: value.emailVerified,
     createdAt: value.createdAt,
     updatedAt: value.updatedAt,

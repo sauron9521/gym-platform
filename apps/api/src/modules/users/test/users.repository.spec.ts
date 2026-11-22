@@ -32,7 +32,7 @@ describe('UsersRepository', () => {
       prisma.user.findUnique.mockResolvedValue(state);
       await expect(repository.findCapabilitySnapshot('actor-1')).resolves.toBe(state);
       expect(prisma.user.findUnique).toHaveBeenCalledExactlyOnceWith({
-        where: { id: 'actor-1', deletedAt: null },
+        where: { id: 'actor-1', deletedAt: null, status: 'ACTIVE' },
         select: {
           role: true,
           trainerProfile: { select: { isActive: true } },
@@ -124,7 +124,7 @@ describe('UsersRepository', () => {
       prisma.user.findUnique.mockResolvedValueOnce({ preferredLocale: 'en' });
       await expect(repository.getPreferredMailLocale('  User@Example.COM ')).resolves.toBe('en');
       expect(prisma.user.findUnique).toHaveBeenCalledWith({
-        where: { email: 'user@example.com', deletedAt: null },
+        where: { email: 'user@example.com', deletedAt: null, status: 'ACTIVE' },
         select: { preferredLocale: true },
       });
 
@@ -233,7 +233,7 @@ describe('UsersRepository', () => {
       expect(result).toBe(true);
 
       expect(prisma.user.update).toHaveBeenCalledWith({
-        where: { id: 'user-1' },
+        where: { id: 'user-1', deletedAt: null, status: 'ACTIVE' },
         data: { emailVerified: true },
         select: {
           id: true,
@@ -268,7 +268,7 @@ describe('UsersRepository', () => {
       const result = await repository.findUserById('user-1');
 
       expect(prisma.user.findUnique).toHaveBeenCalledWith({
-        where: { id: 'user-1', deletedAt: null },
+        where: { id: 'user-1', deletedAt: null, status: 'ACTIVE' },
         select: userSelect,
       });
       expect(result).toEqual(user);
@@ -295,7 +295,7 @@ describe('UsersRepository', () => {
       const result = await repository.findCredentials(user.email);
 
       expect(prisma.user.findUnique).toHaveBeenCalledWith({
-        where: { email: user.email, deletedAt: null },
+        where: { email: user.email, deletedAt: null, status: 'ACTIVE' },
         select: userSelectWithCredentials,
       });
 
@@ -326,6 +326,7 @@ describe('UsersRepository', () => {
         where: {
           email: 'user@example.com',
           deletedAt: null,
+          status: 'ACTIVE',
         },
         select: userSelectWithCredentials,
       });
@@ -341,7 +342,7 @@ describe('UsersRepository', () => {
       await repository.updatePassHash('user-1', 'new-hash');
 
       expect(prisma.user.update).toHaveBeenCalledWith({
-        where: { id: 'user-1' },
+        where: { id: 'user-1', deletedAt: null, status: 'ACTIVE' },
         data: { passwordHash: 'new-hash' },
         select: userSelect,
       });
@@ -359,7 +360,7 @@ describe('UsersRepository', () => {
       const result = await repository.findMe('user-1');
 
       expect(prisma.user.findUnique).toHaveBeenCalledWith({
-        where: { id: 'user-1', deletedAt: null },
+        where: { id: 'user-1', deletedAt: null, status: 'ACTIVE' },
         select: userWithProfileSelect,
       });
       expect(result).toEqual(user);
@@ -386,7 +387,7 @@ describe('UsersRepository', () => {
       const result = await repository.upsertMyProfile('user-1', data);
 
       expect(prisma.user.update).toHaveBeenCalledWith({
-        where: { id: 'user-1', deletedAt: null },
+        where: { id: 'user-1', deletedAt: null, status: 'ACTIVE' },
         data: {
           profile: {
             upsert: { create: data, update: data },

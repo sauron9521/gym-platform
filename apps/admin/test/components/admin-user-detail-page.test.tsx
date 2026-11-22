@@ -105,6 +105,13 @@ describe('Admin account details read-only page', () => {
     expect(container.textContent).not.toContain('sid=private');
   });
 
+  test('shows persisted suspended status for authorized read-only operator', async () => {
+    sessionMock.mockResolvedValue({ kind: 'admin', id: 'operator' });
+    detailMock.mockResolvedValue({ kind: 'ready', user: { ...record, status: 'SUSPENDED' } });
+    render(await makePage());
+    expect(screen.getByText('Призупинений')).toBeTruthy();
+  });
+
   test('renders English translations on detail route', async () => {
     locale.value = 'en';
     sessionMock.mockResolvedValue({ kind: 'admin', id: 'operator' });

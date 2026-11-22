@@ -203,23 +203,23 @@ export const workoutResponseSchema = objectSchema({
 });
 export const workoutListResponseSchema = paginatedSchema(workoutResponseSchema);
 
-/** Operator-only directory. Account suspension is not yet modelled; list returns ACTIVE only. */
+/** Operator-only directory; shows persisted status without exposing credentials. */
 export const adminUserListResponseSchema = paginatedSchema(
   objectSchema({
     id: uuidSchema,
     email: stringSchema,
     role: enumSchema(['ATHLETE', 'TRAINER', 'ADMIN']),
-    status: enumSchema(['ACTIVE']),
+    status: enumSchema(['ACTIVE', 'SUSPENDED']),
     createdAt: dateTimeSchema,
   }),
 );
 
-/** Read-only operator detail, matching adminUserDetailSelect with derived ACTIVE status. */
+/** Read-only operator detail, matching the persisted adminUserDetailSelect. */
 export const adminUserDetailResponseSchema = objectSchema({
   id: uuidSchema,
   email: stringSchema,
   role: enumSchema(['ATHLETE', 'TRAINER', 'ADMIN']),
-  status: enumSchema(['ACTIVE']),
+  status: enumSchema(['ACTIVE', 'SUSPENDED']),
   createdAt: dateTimeSchema,
   emailVerified: booleanSchema,
   updatedAt: dateTimeSchema,

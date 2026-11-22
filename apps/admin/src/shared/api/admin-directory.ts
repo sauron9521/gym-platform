@@ -10,7 +10,7 @@ export type DirectoryRow = {
   id: string;
   email: string;
   role: Role;
-  status: 'ACTIVE';
+  status: 'ACTIVE' | 'SUSPENDED';
   createdAt: string;
 };
 export type DirectoryMeta = {
@@ -110,7 +110,7 @@ function parseDirectoryResponse(payload: unknown, filters: DirectoryFilters): Di
       !user.email.includes('@') ||
       user.email.length > 320 ||
       !roles.some((role) => role === user.role) ||
-      user.status !== 'ACTIVE' ||
+      (user.status !== 'ACTIVE' && user.status !== 'SUSPENDED') ||
       typeof user.createdAt !== 'string' ||
       !Number.isFinite(Date.parse(user.createdAt))
     ) {
@@ -120,7 +120,7 @@ function parseDirectoryResponse(payload: unknown, filters: DirectoryFilters): Di
       id: user.id,
       email: user.email,
       role: user.role as Role,
-      status: 'ACTIVE',
+      status: user.status as 'ACTIVE' | 'SUSPENDED',
       createdAt: user.createdAt,
     });
   }

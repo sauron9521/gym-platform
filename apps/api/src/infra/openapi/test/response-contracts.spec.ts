@@ -69,7 +69,7 @@ function assertMatchesSelect(schema: ResponseSchema, select: Record<string, unkn
 
 describe('OpenAPI response projections vs Prisma selects', () => {
   it('matches the privileged account detail select without extra fields', () => {
-    const expected = Object.keys(adminUserDetailSelect).sort().concat('status').sort();
+    const expected = Object.keys(adminUserDetailSelect).sort();
     expect(Object.keys(adminUserDetailResponseSchema.properties ?? {}).sort()).toEqual(expected);
     expect(adminUserDetailResponseSchema.properties).not.toHaveProperty('passwordHash');
     expect(adminUserDetailResponseSchema.properties).not.toHaveProperty('deletedAt');

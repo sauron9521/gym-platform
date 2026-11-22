@@ -44,14 +44,15 @@ Email search (2–100 chars), role filter and 20-row pagination are implemented 
 standard GET forms/links and **server-side API queries**, not filtering a single
 page client-side. The API's fixed newest-first order is shown explicitly; no
 unsupported email sorting or `SUSPENDED` filter is offered, because the API
-has no suspension lifecycle. Counts come from backend `meta.total`, not fixtures.
+has a persisted read-only status but no suspension/re-activation operation yet. Counts come from backend `meta.total`, not fixtures.
 `force-dynamic`, uncached upstream fetch and no-store response headers protect
 against shared HTML caching. The response is checked against an exact PII-minimal
 schema before rendering. 401/403/invalid/unavailable all fail closed with
 **zero** account rows and disabled controls. The directory links to a separate read-only `/users/[id]` account detail
 route. That page uses a second server-only, explicitly allowlisted API read
 with a validated UUID, seven-field response whitelist, no-store headers,
-localization, and 401/403/404 error states. No account mutation,
+localization, and 401/403/404 error states. Both `ACTIVE` and `SUSPENDED` statuses are read from persisted API
+state (never inferred in the UI). No account mutation,
 role assignment or durable audit history is enabled. Production operational rollout
 still needs independent staging/security checks.
 

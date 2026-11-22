@@ -962,7 +962,7 @@
             "in": "query",
             "schema": {
               "type": "string",
-              "enum": ["ACTIVE"]
+              "enum": ["ACTIVE", "SUSPENDED"]
             }
           },
           {
@@ -1012,7 +1012,7 @@
                           },
                           "status": {
                             "type": "string",
-                            "enum": ["ACTIVE"]
+                            "enum": ["ACTIVE", "SUSPENDED"]
                           },
                           "createdAt": {
                             "type": "string",
@@ -1097,7 +1097,7 @@
                     },
                     "status": {
                       "type": "string",
-                      "enum": ["ACTIVE"]
+                      "enum": ["ACTIVE", "SUSPENDED"]
                     },
                     "createdAt": {
                       "type": "string",

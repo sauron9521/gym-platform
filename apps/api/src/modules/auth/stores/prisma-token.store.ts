@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import {
   AuthenticationStorage,
   type EmailTokenPurpose,
@@ -32,7 +32,7 @@ export class PrismaTokenStore implements RefreshTokenStore, EmailTokenStore {
 
   async getRefreshToken(id: string): Promise<RefreshTokenRecord | undefined> {
     const row = await this.prisma.refreshToken.findUnique({
-      where: { id, user: { deletedAt: null } },
+      where: { id, user: { deletedAt: null, status: 'ACTIVE' } },
       select: authRefreshTokenSelect,
     });
 
@@ -41,6 +41,13 @@ export class PrismaTokenStore implements RefreshTokenStore, EmailTokenStore {
 
   async saveRefreshToken(record: RefreshTokenRecord): Promise<void> {
     await this.prisma.$transaction(async (tx) => {
+      // Fail closed on an already-suspended owner before inserting a refresh
+      // family/token. A future suspend command must serialize these writes.
+      const account = await tx.user.findUnique({
+        where: { id: record.userId, deletedAt: null, status: 'ACTIVE' },
+        select: { id: true },
+      });
+      if (!account) throw new UnauthorizedException('Account unavailable');
       // Ensure the family exists before acquiring a row lock. A preceding
       // upsert with update: {} may be a plain read and does NOT serialize
       // concurrent revocations.
@@ -87,7 +94,7 @@ export class PrismaTokenStore implements RefreshTokenStore, EmailTokenStore {
   async markRefreshTokenUsed(id: string, at: Date): Promise<boolean> {
     // One conditional writing a read followed by update is unsafe under races.
     const result = await this.prisma.refreshToken.updateMany({
-      where: { id, usedAt: null, user: { deletedAt: null } },
+      where: { id, usedAt: null, user: { deletedAt: null, status: 'ACTIVE' } },
       data: { usedAt: at },
     });
 

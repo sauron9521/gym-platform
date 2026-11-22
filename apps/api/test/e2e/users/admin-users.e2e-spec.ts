@@ -79,6 +79,8 @@ describe('GET /admin/users (HTTP + PostgreSQL)', () => {
     await seedAccount('plain-admin', 'ADMIN');
     await seedAccount('athlete', 'ATHLETE');
     await seedAccount('trainer', 'TRAINER');
+    const suspended = await seedAccount('suspended', 'ATHLETE');
+    await prisma.user.update({ where: { id: suspended.id }, data: { status: 'SUSPENDED' } });
     await seedAccount('deleted', 'ATHLETE', new Date());
   }, 30_000);
 
@@ -115,15 +117,15 @@ describe('GET /admin/users (HTTP + PostgreSQL)', () => {
     expect(first.status).toBe(200);
     expect(first.headers['cache-control']).toContain('no-store');
     expect(first.body.meta).toMatchObject({
-      total: 4,
+      total: 5,
       skip: 0,
       take: 2,
-      totalPages: 2,
+      totalPages: 3,
     });
     expect(first.body.data).toHaveLength(2);
     for (const record of first.body.data as Record<string, unknown>[]) {
       expect(Object.keys(record).sort()).toEqual(['createdAt', 'email', 'id', 'role', 'status']);
-      expect(record.status).toBe('ACTIVE');
+      expect(['ACTIVE', 'SUSPENDED']).toContain(record.status);
       expect(JSON.stringify(record)).not.toContain('passwordHash');
       expect(JSON.stringify(record)).not.toContain('deletedAt');
       expect(JSON.stringify(record)).not.toContain('preferredLocale');
@@ -155,10 +157,32 @@ describe('GET /admin/users (HTTP + PostgreSQL)', () => {
     expect(future.body.meta.total).toBe(0);
   });
 
-  it('rejects unknown parameters, unmodelled suspension and invalid dates', async () => {
+  it('reads persisted suspended status via privileged list/detail without exposing credentials', async () => {
+    const listResponse = await list(cookies.operator!, {
+      search: 'admin-list-',
+      status: 'SUSPENDED',
+    });
+    expect(listResponse.status).toBe(200);
+    expect(listResponse.body.data).toHaveLength(1);
+    const record = listResponse.body.data[0];
+    expect(record.status).toBe('SUSPENDED');
+    expect(record.email).toContain('admin-list-suspended-');
+    expect(Object.keys(record).sort()).toEqual(['createdAt', 'email', 'id', 'role', 'status']);
+
+    const detail = await request(app.getHttpServer())
+      .get(`/admin/users/${record.id}`)
+      .set('Cookie', cookies.operator!);
+    expect(detail.status).toBe(200);
+    expect(detail.body.status).toBe('SUSPENDED');
+    expect(JSON.stringify(detail.body)).not.toContain('passwordHash');
+    expect(JSON.stringify(detail.body)).not.toContain('deletedAt');
+    expect(detail.headers['cache-control']).toContain('no-store');
+  });
+
+  it('rejects unknown parameters and invalid dates', async () => {
     const invalidQueries: Record<string, string>[] = [
       { limit: '51' },
-      { status: 'SUSPENDED' },
+      { status: 'UNKNOWN' },
       { page: '0' },
       { deletedAt: 'not-null' },
       { createdFrom: '2100-01-01T00:00:00Z', createdTo: '2020-01-01T00:00:00Z' },

@@ -89,6 +89,14 @@ test('cannot read details without explicit API permission or after account disap
   );
 });
 
+test('supports persisted suspended user detail read without account mutation', async () => {
+  const suspended = { ...account, status: 'SUSPENDED' };
+  assert.deepEqual(await readAdminUserDetail('sid=private', id, origin, reply(200, suspended)), {
+    kind: 'ready',
+    user: suspended,
+  });
+});
+
 test('never render extra PII, mismatched ID or malformed API data', async () => {
   const invalid = [
     { ...account, passwordHash: 'secret' },
@@ -97,7 +105,7 @@ test('never render extra PII, mismatched ID or malformed API data', async () => 
     { ...account, id: 'd09c7567-626e-45d8-99f1-829ce4204fbd' },
     { ...account, email: null },
     { ...account, role: 'SUPERADMIN' },
-    { ...account, status: 'SUSPENDED' },
+    { ...account, status: 'BANNED' },
     { ...account, emailVerified: 'yes' },
     { ...account, createdAt: 'not-date' },
     { ...account, updatedAt: 100 },

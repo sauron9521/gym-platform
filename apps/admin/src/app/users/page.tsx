@@ -69,6 +69,7 @@ export default async function AdminUsersPage({
     trainer: t('trainer'),
     admin: t('admin'),
     active: t('active'),
+    suspended: t('suspended'),
     unavailableTitle: t('unavailableTitle'),
     unavailableDescription: t('unavailableDescription'),
     forbiddenTitle: t('forbiddenTitle'),

@@ -1732,7 +1732,7 @@ export interface operations {
         limit?: number;
         search?: string;
         role?: 'ATHLETE' | 'TRAINER' | 'ADMIN';
-        status?: 'ACTIVE';
+        status?: 'ACTIVE' | 'SUSPENDED';
         createdFrom?: string;
         createdTo?: string;
       };
@@ -1755,7 +1755,7 @@ export interface operations {
               /** @enum {string} */
               role: 'ATHLETE' | 'TRAINER' | 'ADMIN';
               /** @enum {string} */
-              status: 'ACTIVE';
+              status: 'ACTIVE' | 'SUSPENDED';
               /** Format: date-time */
               createdAt: string;
             }[];
@@ -1793,7 +1793,7 @@ export interface operations {
             /** @enum {string} */
             role: 'ATHLETE' | 'TRAINER' | 'ADMIN';
             /** @enum {string} */
-            status: 'ACTIVE';
+            status: 'ACTIVE' | 'SUSPENDED';
             /** Format: date-time */
             createdAt: string;
             emailVerified: boolean;

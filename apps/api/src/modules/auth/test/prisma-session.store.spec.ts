@@ -6,6 +6,7 @@ import { authSessionSelect } from '../selects/auth-session.select.js';
 
 describe('PrismaSessionStore', () => {
   const prisma = {
+    user: { findUnique: vi.fn() },
     session: {
       findUnique: vi.fn(),
       create: vi.fn(),
@@ -35,6 +36,7 @@ describe('PrismaSessionStore', () => {
   beforeEach(() => {
     vi.clearAllMocks();
 
+    prisma.user.findUnique.mockResolvedValue({ id: session.userId });
     prisma.session.findUnique.mockResolvedValue(null);
     prisma.session.create.mockResolvedValue(session);
     prisma.session.updateMany.mockResolvedValue({ count: 1 });
@@ -59,7 +61,7 @@ describe('PrismaSessionStore', () => {
 
     await expect(store.getSession(session.id)).resolves.toBeUndefined();
     expect(prisma.session.findUnique).toHaveBeenCalledWith({
-      where: { id: session.id, user: { deletedAt: null } },
+      where: { id: session.id, user: { deletedAt: null, status: 'ACTIVE' } },
       select: authSessionSelect,
     });
   });
@@ -91,6 +93,10 @@ describe('PrismaSessionStore', () => {
       extra: { user: { id: session.userId } },
     });
 
+    expect(prisma.user.findUnique).toHaveBeenCalledWith({
+      where: { id: session.userId, deletedAt: null, status: 'ACTIVE' },
+      select: { id: true },
+    });
     expect(prisma.session.create).toHaveBeenCalledWith({
       data: {
         id: session.id,
@@ -104,6 +110,12 @@ describe('PrismaSessionStore', () => {
     });
   });
 
+  it('never creates a session for a suspended or missing account', async () => {
+    prisma.user.findUnique.mockResolvedValueOnce(null);
+    await expect(store.createSession(session)).rejects.toThrow('Account unavailable');
+    expect(prisma.session.create).not.toHaveBeenCalled();
+  });
+
   it('touches only when the new timestamp is later', async () => {
     const lastActiveAt = new Date('2026-10-01T11:00:00.000Z');
 
@@ -112,7 +124,7 @@ describe('PrismaSessionStore', () => {
     expect(prisma.session.updateMany).toHaveBeenCalledWith({
       where: {
         id: session.id,
-        user: { deletedAt: null },
+        user: { deletedAt: null, status: 'ACTIVE' },
         lastActiveAt: { lt: lastActiveAt },
       },
       data: { lastActiveAt },
@@ -137,7 +149,7 @@ describe('PrismaSessionStore', () => {
     const result = await store.listUserSessions(session.userId);
 
     expect(prisma.session.findMany).toHaveBeenCalledWith({
-      where: { userId: session.userId, user: { deletedAt: null } },
+      where: { userId: session.userId, user: { deletedAt: null, status: 'ACTIVE' } },
       orderBy: { createdAt: 'desc' },
       select: authSessionSelect,
     });
@@ -189,7 +201,7 @@ describe('PrismaSessionStore', () => {
 
       await expect(store.getSession(session.id)).rejects.toBe(failure);
       expect(prisma.session.findUnique).toHaveBeenCalledExactlyOnceWith({
-        where: { id: session.id, user: { deletedAt: null } },
+        where: { id: session.id, user: { deletedAt: null, status: 'ACTIVE' } },
         select: authSessionSelect,
       });
     });
@@ -199,7 +211,7 @@ describe('PrismaSessionStore', () => {
 
       await expect(store.listUserSessions('deleted-user')).resolves.toEqual([]);
       expect(prisma.session.findMany).toHaveBeenCalledExactlyOnceWith({
-        where: { userId: 'deleted-user', user: { deletedAt: null } },
+        where: { userId: 'deleted-user', user: { deletedAt: null, status: 'ACTIVE' } },
         orderBy: { createdAt: 'desc' },
         select: authSessionSelect,
       });
@@ -222,7 +234,7 @@ describe('PrismaSessionStore', () => {
       expect(prisma.session.updateMany).toHaveBeenCalledExactlyOnceWith({
         where: {
           id: session.id,
-          user: { deletedAt: null },
+          user: { deletedAt: null, status: 'ACTIVE' },
           lastActiveAt: { lt: earlier },
         },
         data: { lastActiveAt: earlier },
