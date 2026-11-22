@@ -20,6 +20,11 @@ describe('SessionsController', () => {
     return { controller, sessionService, signInService };
   };
 
+  it('returns only minimal principal details after an admin-purpose guard', () => {
+    const { controller } = makeController();
+    expect(controller.adminSession('operator-id')).toEqual({ id: 'operator-id', role: 'ADMIN' });
+  });
+
   it('lists only safe session fields and marks the current session', async () => {
     const { controller, sessionService } = makeController();
     const current = {

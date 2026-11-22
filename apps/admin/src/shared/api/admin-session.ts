@@ -5,8 +5,8 @@ export type AdminSession =
   | { kind: 'unavailable' };
 
 /**
- * Verify the caller with NestJS on every request, then enforce an ADMIN
- * role server-side. This is not a public client-side feature flag.
+ * Verify a live admin-purpose cookie with NestJS on every request.
+ * Ordinary login cookies cannot open the Admin Web workspace. This is not a public client-side feature flag.
  */
 export async function readAdminSession(
   cookieHeader: string,
@@ -30,7 +30,7 @@ export async function readAdminSession(
       return { kind: 'unavailable' };
     }
 
-    const response = await send(url.origin + '/users/me', {
+    const response = await send(url.origin + '/auth/admin-session', {
       headers: { cookie: cookieHeader, accept: 'application/json' },
       cache: 'no-store',
       redirect: 'error',

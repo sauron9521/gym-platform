@@ -35,6 +35,7 @@ describe('AuthModule controller registry', () => {
   it.each([
     [AuthController, 'signUp', RequestMethod.POST, 'register', undefined],
     [AuthController, 'signIn', RequestMethod.POST, 'login', 200],
+    [AuthController, 'adminSignIn', RequestMethod.POST, 'admin-login', 200],
     [PasswordResetController, 'forgot', RequestMethod.POST, 'forgot', 202],
     [PasswordResetController, 'reset', RequestMethod.POST, 'reset', 200],
     [EmailVerificationController, 'verifyEmail', RequestMethod.POST, 'verify', 200],
@@ -42,6 +43,7 @@ describe('AuthModule controller registry', () => {
     [TokensController, 'issue', RequestMethod.POST, '/', 200],
     [TokensController, 'refresh', RequestMethod.POST, 'refresh', 200],
     [TokensController, 'revoke', RequestMethod.POST, 'revoke', 204],
+    [SessionsController, 'adminSession', RequestMethod.GET, 'admin-session', undefined],
     [SessionsController, 'list', RequestMethod.GET, 'sessions', undefined],
     [SessionsController, 'revoke', RequestMethod.DELETE, 'sessions/:id', 204],
     [SessionsController, 'signOut', RequestMethod.POST, 'sign-out', 204],
@@ -59,6 +61,7 @@ describe('AuthModule controller registry', () => {
   it.each([
     [AuthController, 'signUp', 3],
     [AuthController, 'signIn', 3],
+    [AuthController, 'adminSignIn', 3],
     [PasswordResetController, 'forgot', 3],
     [PasswordResetController, 'reset', 3],
     [EmailVerificationController, 'verifyEmail', 8],
@@ -82,7 +85,7 @@ describe('AuthModule controller registry', () => {
     }
   });
 
-  it('registers exactly thirteen unique HTTP verb/path pairs', () => {
+  it('registers exactly fifteen unique HTTP verb/path pairs', () => {
     const routes = controllers.flatMap((controller) => {
       const prefix = Reflect.getMetadata(PATH_METADATA, controller) as string;
       return Object.getOwnPropertyNames(controller.prototype)
@@ -99,7 +102,7 @@ describe('AuthModule controller registry', () => {
         });
     });
 
-    expect(routes).toHaveLength(13);
+    expect(routes).toHaveLength(15);
     expect(new Set(routes).size).toBe(routes.length);
   });
 });

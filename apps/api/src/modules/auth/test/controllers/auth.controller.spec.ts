@@ -113,6 +113,36 @@ describe('AuthController', () => {
     });
   });
 
+  describe('adminSignIn', () => {
+    const input = { email: 'admin@example.test', password: 'StrongPassword123!' };
+
+    it('marks only an authenticated ADMIN session and preserves the MFA challenge', async () => {
+      credentialsService.verify.mockResolvedValue({
+        id: 'operator-id',
+        email: input.email,
+        role: 'ADMIN',
+      });
+      signInService.signIn.mockResolvedValue({ session: { mfa: 'pending' } });
+      await expect(controller.adminSignIn(input)).resolves.toEqual({ mfaRequired: true });
+      expect(signInService.signIn).toHaveBeenCalledExactlyOnceWith('operator-id', {
+        method: 'password',
+        metadata: { purpose: 'admin' },
+      });
+    });
+
+    it('refuses unknown credentials and non-admin roles identically without issuing a session', async () => {
+      for (const principal of [
+        null,
+        { id: 'athlete', role: 'ATHLETE' },
+        { id: 'trainer', role: 'TRAINER' },
+      ]) {
+        credentialsService.verify.mockResolvedValueOnce(principal);
+        await expect(controller.adminSignIn(input)).rejects.toThrow(UnauthorizedException);
+      }
+      expect(signInService.signIn).not.toHaveBeenCalled();
+    });
+  });
+
   describe('signIn', () => {
     it('should return mfaRequired when credentials are valid', async () => {
       const user = {

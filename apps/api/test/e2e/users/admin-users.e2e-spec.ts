@@ -45,7 +45,7 @@ describe('GET /admin/users (HTTP + PostgreSQL)', () => {
     ids.push(account.id);
     if (!deletedAt) {
       const signIn = await request(app.getHttpServer())
-        .post('/auth/login')
+        .post(role === 'ADMIN' ? '/auth/admin-login' : '/auth/login')
         .send({ email, password });
       expect(signIn.status).toBe(200);
       const raw = signIn.headers['set-cookie'];
@@ -109,6 +109,87 @@ describe('GET /admin/users (HTTP + PostgreSQL)', () => {
       expect(JSON.stringify(response.body)).not.toContain(`admin-list-athlete-${suffix}`);
       expect(response.headers['cache-control']).toContain('no-store');
     }
+  });
+
+  it('refuses ordinary login cookies for privileged Admin routes and supports explicit admin-purpose login', async () => {
+    const operator = await prisma.user.findUniqueOrThrow({
+      where: { id: operatorId },
+      select: { email: true },
+    });
+    const ordinary = await request(app.getHttpServer())
+      .post('/auth/login')
+      .send({ email: operator.email, password });
+    expect(ordinary.status).toBe(200);
+    const normalCookies = ordinary.headers['set-cookie'];
+    const normal = (
+      Array.isArray(normalCookies) ? normalCookies : normalCookies ? [normalCookies] : []
+    )
+      .map((value) => value.split(';', 1)[0] ?? '')
+      .find((value) => value.startsWith('__Host-sid='));
+    expect(normal).toBeTruthy();
+
+    const oldSession = await request(app.getHttpServer())
+      .get('/auth/admin-session')
+      .set('Cookie', normal!);
+    expect(oldSession.status).toBe(403);
+    expect(oldSession.headers['cache-control']).toContain('no-store');
+    expect((await list(normal!)).status).toBe(403);
+
+    const liveSession = await request(app.getHttpServer())
+      .get('/auth/admin-session')
+      .set('Cookie', cookies.operator!);
+    expect(liveSession.status).toBe(200);
+    expect(liveSession.body).toEqual({ id: operatorId, role: 'ADMIN' });
+    expect(liveSession.headers['cache-control']).toContain('no-store');
+
+    const active = await prisma.session.findMany({
+      where: { userId: operatorId },
+      select: { metadata: true },
+    });
+    expect(
+      active.some((row) => {
+        const metadata = row.metadata;
+        return (
+          typeof metadata === 'object' &&
+          metadata !== null &&
+          !Array.isArray(metadata) &&
+          metadata['purpose'] === 'admin'
+        );
+      }),
+    ).toBe(true);
+  });
+
+  it('denies non-admin credentials and does not issue an elevated cookie', async () => {
+    const athlete = await prisma.user.findFirstOrThrow({
+      where: { email: { contains: 'admin-list-athlete-' + suffix } },
+      select: { email: true },
+    });
+    for (const pair of [
+      { email: athlete.email, password },
+      { email: 'unknown@example.test', password },
+      { email: athlete.email, password: 'invalid-password' },
+    ]) {
+      const result = await request(app.getHttpServer()).post('/auth/admin-login').send(pair);
+      expect(result.status).toBe(401);
+      expect(result.headers['cache-control']).toContain('no-store');
+      expect(JSON.stringify(result.body)).not.toContain(pair.email);
+      expect(result.headers['set-cookie']).toBeUndefined();
+    }
+  });
+
+  it('refuses admin-purpose verification with only an operator bearer JWT', async () => {
+    const operator = await prisma.user.findUniqueOrThrow({
+      where: { id: operatorId },
+      select: { email: true },
+    });
+    const issued = await request(app.getHttpServer())
+      .post('/auth/token')
+      .send({ email: operator.email, password });
+    expect(issued.status).toBe(200);
+    const result = await request(app.getHttpServer())
+      .get('/auth/admin-session')
+      .set('Authorization', 'Bearer ' + issued.body.accessToken);
+    expect(result.status).toBe(401);
   });
 
   it('rejects valid operator bearer JWT on privileged reads but preserves ordinary API token access', async () => {
@@ -177,7 +258,7 @@ describe('GET /admin/users (HTTP + PostgreSQL)', () => {
       select: { email: true },
     });
     const loggedIn = await request(app.getHttpServer())
-      .post('/auth/login')
+      .post('/auth/admin-login')
       .send({ email: operator.email, password });
     expect(loggedIn.status).toBe(200);
     const raw = loggedIn.headers['set-cookie'];

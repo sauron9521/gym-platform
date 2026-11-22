@@ -1,6 +1,8 @@
 import {
   CurrentSession,
   CurrentUser,
+  Authenticate,
+  SessionCookieProvider,
   Public,
   SessionService,
   SignInService,
@@ -11,6 +13,7 @@ import {
   Delete,
   Get,
   HttpCode,
+  UseGuards,
   NotFoundException,
   Param,
   Post,
@@ -18,6 +21,9 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { AuthNoStoreInterceptor } from '../interceptors/auth-no-store.interceptor.js';
+import { ApiCookieAuth, ApiOkResponse } from '@nestjs/swagger';
+import { AdminSessionPurposeGuard } from '#src/common/auth/admin-session-purpose.guard';
+import { adminSessionResponseSchema } from '#src/infra/openapi/response-contracts';
 
 @UseInterceptors(AuthNoStoreInterceptor)
 @Controller('auth')
@@ -26,6 +32,16 @@ export class SessionsController {
     private readonly sessionService: SessionService,
     private readonly signInService: SignInService,
   ) {}
+
+  /** Only a live, explicitly elevated cookie can prove Admin Web access. */
+  @Get('admin-session')
+  @Authenticate({ providers: [SessionCookieProvider] })
+  @UseGuards(AdminSessionPurposeGuard)
+  @ApiCookieAuth('sessionCookie')
+  @ApiOkResponse({ schema: adminSessionResponseSchema })
+  adminSession(@CurrentUser('id') userId: string) {
+    return { id: userId, role: 'ADMIN' as const };
+  }
 
   @Get('sessions')
   async list(
