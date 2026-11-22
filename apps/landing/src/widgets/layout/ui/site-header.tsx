@@ -21,7 +21,7 @@ export function SiteHeader({
           className="inline-flex shrink-0 items-center rounded-md focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"
           aria-label={`OVRANTO — ${shell.homeAria}`}
         >
-          <BrandLogo className="max-[370px]:gap-0 max-[370px]:[&>span]:hidden" />
+          <BrandLogo className="max-[440px]:gap-0 max-[440px]:[&>span]:hidden" />
         </Link>
 
         <nav aria-label={shell.mainNav} className="hidden items-center gap-7 lg:flex">

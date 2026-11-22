@@ -97,18 +97,21 @@ test('invalid cookie falls back to OS theme with no stale explicit class', async
   });
 });
 
-test('control remains usable at 320px beside home link and mobile menu', async ({ page }) => {
-  await page.setViewportSize({ width: 320, height: 740 });
-  await page.goto('/');
-  await expect(page.getByRole('link', { name: 'OVRANTO — головна сторінка' })).toBeVisible();
-  const theme = page.getByRole('combobox', { name: 'Тема інтерфейсу' });
-  await expect(theme).toBeVisible();
-  await theme.selectOption('dark');
-  expect((await palette(page)).background).toBe('#111918');
-  await expect(page.locator('header details > summary')).toBeVisible();
-  expect(
-    await page.evaluate(
-      () => document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1,
-    ),
-  ).toBe(true);
-});
+for (const width of [320, 390]) {
+  test('control and compact wordmark remain usable at ' + width + 'px', async ({ page }) => {
+    await page.setViewportSize({ width, height: 740 });
+    await page.goto('/');
+    await expect(page.getByRole('link', { name: 'OVRANTO — головна сторінка' })).toBeVisible();
+    const theme = page.getByRole('combobox', { name: 'Тема інтерфейсу' });
+    await expect(theme).toBeVisible();
+    await theme.selectOption('dark');
+    expect((await palette(page)).background).toBe('#111918');
+    await expect(page.locator('header details > summary')).toBeVisible();
+    await expect(page.locator('header [data-slot=brand-logo] > span')).toBeHidden();
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1,
+      ),
+    ).toBe(true);
+  });
+}

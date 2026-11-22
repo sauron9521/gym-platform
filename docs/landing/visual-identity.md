@@ -38,7 +38,9 @@ never writes Domain= or accesses Athlete/Admin session cookies. Local HTTP
 omits Secure; deployed HTTPS adds it. Unknown values return to System.
 
 Verify system OS changes, initial server response class, cookie persistence
-across navigation/reload, UA/EN accessible names, and 320px mobile navigation.
+across navigation/reload, UA/EN accessible names, and 320/390px mobile navigation. Below 440px the
+shared vector mark remains visible with an accessible OVRANTO home-link name
+while the decorative wordmark text is visually hidden to prevent overflow.
 
 ## Accessibility and constraints
 
