@@ -12,7 +12,8 @@
     "test": "pnpm test:contracts && pnpm test:components",
     "test:contracts": "vitest run --config vitest.config.mts",
     "test:components": "vitest run --config vitest.components.config.mts",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "test:e2e:real-api": "playwright test --config playwright.real-api.config.ts"
   },
   "dependencies": {
     "@gym/api-client": "workspace:*",

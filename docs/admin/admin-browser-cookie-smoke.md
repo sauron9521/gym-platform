@@ -47,3 +47,36 @@ Before closing #289, deploy the approved build and record evidence of:
 Capture anonymized HTTP statuses, browser cookie attributes (never tokens),
 deployment version and CI links. Do **not** claim staging is complete or
 close #289 solely because this fixture browser suite passed.
+
+## Disposable real API and PostgreSQL browser smoke
+
+The second suite uses real NestJS and Prisma/PostgreSQL alongside the real
+Next Admin UI and Chromium, not a fixture API. It runs as part of the existing
+required Admin Chromium CI job after Prisma migrations, safe operator seeding
+and an API build. Its one two-browser flow deliberately stays within the
+production authorization rate limit of three login attempts per minute from
+one IP address.
+
+The seeding script at apps/api/test/support/seed-admin-browser.ts refuses all
+non-test environments, mismatched DB URLs, non-local/non-CI Postgres hosts,
+and databases other than gym_admin_browser_test. It never contacts a deployed
+database and uses the actual PasswordHasher (scrypt) from the auth library.
+
+For local verification, provision your OWN disposable PostgreSQL instance
+called gym_admin_browser_test, export matching DATABASE_URL and
+TEST_DATABASE_URL for that database and set NODE_ENV=test. Then:
+
+    pnpm --filter @gym/api db:generate
+    pnpm --filter @gym/api db:migrate:deploy
+    pnpm --filter @gym/api exec tsx test/support/seed-admin-browser.ts
+    pnpm --filter @gym/api build
+    ADMIN_E2E_CHROME_PATH=/usr/bin/google-chrome pnpm --filter @gym/admin test:e2e:real-api
+
+The Playwright config starts real API port 3321 and Next Admin port 3320.
+Tests cover the protected Admin directory, cookie flags/host isolation,
+the ordinary login session surviving an Admin logout, foreign
+Origin/Referer denial and revocation across two real browser contexts.
+
+Passing does NOT prove externally hosted staging, TLS termination or actual
+idle/absolute TTL under wall-clock expiry. The manual staging checklist above
+remains outstanding before issue #289 can close.
