@@ -1052,9 +1052,6 @@
         },
         "security": [
           {
-            "accessToken": []
-          },
-          {
             "sessionCookie": []
           }
         ],
@@ -1130,9 +1127,6 @@
           }
         },
         "security": [
-          {
-            "accessToken": []
-          },
           {
             "sessionCookie": []
           }
@@ -8387,9 +8381,6 @@
         "security": [
           {
             "sessionCookie": []
-          },
-          {
-            "accessToken": []
           }
         ],
         "tags": ["Trainer moderation"]
@@ -8513,9 +8504,6 @@
         "security": [
           {
             "sessionCookie": []
-          },
-          {
-            "accessToken": []
           }
         ],
         "tags": ["Trainer moderation"]
@@ -8639,9 +8627,6 @@
         "security": [
           {
             "sessionCookie": []
-          },
-          {
-            "accessToken": []
           }
         ],
         "tags": ["Trainer moderation"]
@@ -8765,9 +8750,6 @@
         "security": [
           {
             "sessionCookie": []
-          },
-          {
-            "accessToken": []
           }
         ],
         "tags": ["Trainer moderation"]

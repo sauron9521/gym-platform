@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 
 import { TrainerApplicationsController } from '../../controllers/trainer-applications.controller.js';
 import { TrainerReviewController } from '../../controllers/trainer-review.controller.js';
+import { SessionAuth } from '#src/modules/auth/providers/session-auth.provider';
 import { TrainerOnboardingModule } from '../../trainer-onboarding.module.js';
 
 describe('TrainerOnboardingModule controller registry', () => {
@@ -37,6 +38,10 @@ describe('Trainer review admin route registry', () => {
     expect(
       Reflect.getMetadata('required_admin_permissions', TrainerReviewController),
     ).toBeUndefined();
+    expect(Reflect.getMetadata('authentication:route', TrainerReviewController)).toMatchObject({
+      public: false,
+      providers: [SessionAuth],
+    });
   });
 
   it.each([
