@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 
 import { PasswordHasher } from '@nestjs/authentication';
 import type { INestApplication } from '@nestjs/common';
@@ -98,6 +98,81 @@ describe('GET /admin/users (HTTP + PostgreSQL)', () => {
 
   const list = (cookie: string, query: Record<string, string> = {}) =>
     request(app.getHttpServer()).get('/admin/users').query(query).set('Cookie', cookie);
+
+  async function loginOperator(path: '/auth/login' | '/auth/admin-login') {
+    const operator = await prisma.user.findUniqueOrThrow({
+      where: { id: operatorId },
+      select: { email: true },
+    });
+    const signed = await request(app.getHttpServer()).post(path).send({
+      email: operator.email,
+      password,
+    });
+    expect(signed.status).toBe(200);
+    const raw = signed.headers['set-cookie'];
+    const headers = Array.isArray(raw) ? raw : raw ? [raw] : [];
+    const cookieHeader = headers.find((value) => value.startsWith('__Host-sid='));
+    expect(cookieHeader).toBeTruthy();
+    const cookie = cookieHeader!.split(';', 1)[0]!;
+    const id = createHash('sha256').update(cookie.split('=', 2)[1]!).digest('base64url');
+    const row = await prisma.session.findUniqueOrThrow({ where: { id } });
+    return { cookie, cookieHeader: cookieHeader!, id, row };
+  }
+
+  it('persists an 8h absolute Admin expiry and issues the same bounded cookie lifetime', async () => {
+    const { cookie, cookieHeader, row } = await loginOperator('/auth/admin-login');
+    expect(row.expiresAt.getTime() - row.createdAt.getTime()).toBe(8 * 60 * 60 * 1000);
+    const age = Number(cookieHeader.match(/Max-Age=(\d+)/)?.[1]);
+    expect(age).toBeGreaterThanOrEqual(8 * 60 * 60 - 2);
+    expect(age).toBeLessThanOrEqual(8 * 60 * 60);
+    const alive = await request(app.getHttpServer())
+      .get('/auth/admin-session')
+      .set('Cookie', cookie);
+    expect(alive.status).toBe(200);
+  });
+
+  it('denies an Admin cookie idle for 15 minutes before activity can refresh it', async () => {
+    const { id, cookie } = await loginOperator('/auth/admin-login');
+    const expiredActivity = new Date(Date.now() - 16 * 60 * 1000);
+    await prisma.session.update({ where: { id }, data: { lastActiveAt: expiredActivity } });
+    const denied = await request(app.getHttpServer())
+      .get('/auth/admin-session')
+      .set('Cookie', cookie);
+    expect(denied.status).toBe(401);
+    const guarded = await list(cookie);
+    expect(guarded.status).toBe(401);
+    const unchanged = await prisma.session.findUniqueOrThrow({ where: { id } });
+    expect(unchanged.lastActiveAt).toEqual(expiredActivity);
+  });
+
+  it('rejects a legacy Admin-purpose row beyond 8h even when its persisted expiresAt is later', async () => {
+    const { cookie, id } = await loginOperator('/auth/admin-login');
+    await prisma.session.update({
+      where: { id },
+      data: {
+        createdAt: new Date(Date.now() - 9 * 60 * 60 * 1000),
+        lastActiveAt: new Date(),
+        expiresAt: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000),
+      },
+    });
+    const denied = await request(app.getHttpServer())
+      .get('/auth/admin-session')
+      .set('Cookie', cookie);
+    expect(denied.status).toBe(401);
+  });
+
+  it('preserves ordinary 7d/1d cookies and ordinary profile access after 16m idle', async () => {
+    const { cookie, id, row } = await loginOperator('/auth/login');
+    expect(row.expiresAt.getTime() - row.createdAt.getTime()).toBe(7 * 24 * 60 * 60 * 1000);
+    await prisma.session.update({
+      where: { id },
+      data: { lastActiveAt: new Date(Date.now() - 16 * 60 * 1000) },
+    });
+    const profile = await request(app.getHttpServer()).get('/users/me').set('Cookie', cookie);
+    expect(profile.status).toBe(200);
+    expect(profile.body.id).toBe(operatorId);
+    expect((await list(cookie)).status).toBe(403);
+  });
 
   it('rejects anonymous 401 and all non-operator roles 403 without leaking records', async () => {
     const anonymous = await request(app.getHttpServer()).get('/admin/users');

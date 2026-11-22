@@ -7,6 +7,10 @@ import {
 import { Prisma } from '#prisma/client';
 import { authSessionSelect } from '../selects/auth-session.select.js';
 import { toSessionRecord } from '../mappers/auth-session.mapper.js';
+import {
+  capAdminSessionExpiry,
+  isAdminSessionExpired,
+} from '#src/common/auth/admin-session-lifetime.policy';
 import { PrismaService } from '#src/infra/database/index';
 import { lockActiveCredentialOwner } from './lock-active-credential-owner.js';
 
@@ -26,10 +30,13 @@ export class PrismaSessionStore implements SessionStore {
       select: authSessionSelect,
     });
 
-    return session ? toSessionRecord(session) : undefined;
+    const record = session ? toSessionRecord(session) : undefined;
+    if (!record || isAdminSessionExpired(record, Date.now())) return undefined;
+    return record;
   }
 
   async createSession(record: SessionRecord): Promise<void> {
+    capAdminSessionExpiry(record);
     const data: Prisma.SessionUncheckedCreateInput = {
       id: record.id,
       userId: record.userId,

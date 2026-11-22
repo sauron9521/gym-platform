@@ -31,10 +31,16 @@ a currently persisted ADMIN role, and issues a session containing a server-only
 using cookie-only authentication and replies with only `id` and `role`. The
 Admin Web checks this endpoint for every protected page request.
 
-**Still NO-GO:** The admin-purpose session still uses the shared cookie name,
-session table and default expiry/revocation infrastructure; do not claim
-complete isolation. Finish #289 with admin-specific idle/absolute expiry,
-separate revocation, origin and lifecycle checks. Complete #290 for
+**Admin session expiry:** Admin-purpose sessions have an **8-hour absolute**
+expiry (stored in PostgreSQL and issued as the cookie Max-Age) and a
+**15-minute idle timeout**. The store validates both limits against persisted
+timestamps **before** the shared session service updates activity. The same
+server-side rule applies to older admin-purpose cookies. Normal Athlete/Trainer
+sessions retain the shared 7-day/1-day limits.
+
+**Still NO-GO:** The admin-purpose session shares the ordinary cookie name,
+session table and revocation infrastructure; this is not full isolation.
+Finish #289 with independent revocation and origin/lifecycle checks. Complete #290 for
 recent proof of password/MFA, step-up expiry and safe recovery before enabling
 account suspension/reactivation or role/price privilege changes. The current
 trainer-review write endpoints already exist but remain without step-up, which
