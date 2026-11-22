@@ -523,8 +523,15 @@ test('dependency-security job is an enforced prerequisite of the protected Quali
   assert.ok(audit, 'Dependency security job must exist');
   assert.match(
     quality,
-    /needs:\n\s+- changes\n\s+- quality-workspaces\n\s+- tooling-contracts\n\s+- prepush-windows\n\s+- web-browser-e2e\n\s+- dependency-security\n\s+- mobile-ios-dev-windows/,
+    /needs:\n\s+- changes\n\s+- quality-workspaces\n\s+- tooling-contracts\n\s+- prepush-windows\n\s+- web-browser-e2e\n\s+- admin-browser-e2e\n\s+- dependency-security\n\s+- mobile-ios-dev-windows/,
   );
+  const admin = yaml.split('  admin-browser-e2e:\n')[1]?.split('\n  landing-browser-e2e:\n')[0];
+  assert.ok(admin, 'Admin Chromium job must exist');
+  assert.match(admin, /if: needs\.changes\.outputs\.admin == 'true'/);
+  assert.match(admin, /pnpm --filter @gym\/admin test:e2e/);
+  assert.match(admin, /mcr\.microsoft\.com\/playwright:v1\.65\.1/);
+  assert.match(quality, /test "\$ADMIN_E2E_RESULT" = success/);
+  assert.match(quality, /test "\$ADMIN_E2E_RESULT" = skipped/);
   assert.match(quality, /if: always\(\)/);
   const tooling = yaml.split('  tooling-contracts:\n')[1]?.split('\n  prepush-windows:\n')[0];
   assert.ok(tooling, 'Root Vitest contract job must exist');

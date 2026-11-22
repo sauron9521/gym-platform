@@ -19,6 +19,9 @@ test('required Quality gate waits for every API operational job without changing
   assert.match(quality, /name: Quality \/ Node 24/);
   assert.match(quality, /if: always\(\)/);
   assert.match(quality, /API_REQUIRED: \$\{\{ needs\.changes\.outputs\.api \}\}/);
+  assert.ok(quality.includes('      - admin-browser-e2e\n'));
+  assert.ok(quality.includes('ADMIN_REQUIRED: ' + '$' + '{{ needs.changes.outputs.admin }}'));
+  assert.ok(quality.includes('ADMIN_E2E_RESULT: ' + '$' + '{{ needs.admin-browser-e2e.result }}'));
   for (const [job, status] of apiJobs) {
     assert.ok(quality.includes('      - ' + job + '\n'), job + ' must be a job dependency');
     assert.ok(
@@ -48,6 +51,8 @@ test('required Quality gate fails closed for API errors and checks expected skip
     WINDOWS_RESULT: 'skipped',
     WEB_REQUIRED: 'false',
     WEB_E2E_RESULT: 'skipped',
+    ADMIN_REQUIRED: 'false',
+    ADMIN_E2E_RESULT: 'skipped',
     DEPS_REQUIRED: 'false',
     SECURITY_RESULT: 'skipped',
     LANDING_REQUIRED: 'false',
@@ -67,6 +72,23 @@ test('required Quality gate fails closed for API errors and checks expected skip
   };
 
   assert.equal(exitStatus(), 0, 'passing API jobs should allow merge');
+  assert.equal(
+    exitStatus({ ADMIN_REQUIRED: 'true', ADMIN_E2E_RESULT: 'success' }),
+    0,
+    'successful Admin Chromium job must allow merge',
+  );
+  for (const invalid of ['failure', 'cancelled', 'skipped', '']) {
+    assert.notEqual(
+      exitStatus({ ADMIN_REQUIRED: 'true', ADMIN_E2E_RESULT: invalid }),
+      0,
+      'Admin browser gate must fail closed for ' + invalid,
+    );
+  }
+  assert.notEqual(
+    exitStatus({ ADMIN_REQUIRED: 'false', ADMIN_E2E_RESULT: 'success' }),
+    0,
+    'unneeded Admin browser job must be skipped',
+  );
   for (const [, status] of apiJobs) {
     for (const invalid of ['failure', 'cancelled', 'skipped', '']) {
       assert.notEqual(exitStatus({ [status]: invalid }), 0, status + '=' + invalid);
