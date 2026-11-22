@@ -5,6 +5,7 @@ import { AdminUsersReadGuard } from './controllers/admin-users-read.guard.js';
 import { AdminAuditModule } from '#src/common/audit/admin-audit.module';
 import { UsersRepository } from './repositories/users.repository.js';
 import { UsersService } from './services/users.service.js';
+import { AdminAccountStatusService } from './services/admin-account-status.service.js';
 import { AvatarDiskStorage } from './avatar/avatar-disk.storage.js';
 import { AvatarService } from './avatar/avatar.service.js';
 import { AvatarImageProcessor } from './avatar/avatar-image.processor.js';
@@ -17,6 +18,7 @@ import { AvatarPublicController } from './controllers/avatar-public.controller.j
     AdminUsersReadGuard,
     UsersRepository,
     UsersService,
+    AdminAccountStatusService,
     AvatarService,
     AvatarDiskStorage,
     AvatarImageProcessor,

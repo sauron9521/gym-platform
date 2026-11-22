@@ -1,11 +1,12 @@
 # Admin account suspension — gated rollout plan (#293)
 
-**Status: policy + persisted account state + authentication read gates only.**
-The foundation policy (#598) remains pure. This slice adds an additive
-`AccountStatus` migration, current-state auth checks and real read-only
-admin status display, but **no suspend/reactivate endpoint or write UI**.
-Production account suspension must remain disabled until the transactional
-revocation gates below are met.
+**Status: policy, persisted state, auth gates, and an internal atomic
+revocation primitive.** The foundation policy (#598) remains pure, while
+status gates and read-only operator status display were added in #600.
+The next slice adds transactionally locked state changes, credential
+revocation, and JWT invalidation fencing. **No suspend/reactivate HTTP
+endpoint or write UI is enabled.** Durable audit and staging security gates
+still prevent public or production use.
 
 ## Current system and threat model
 
@@ -20,8 +21,9 @@ revocation gates below are met.
   are denied for suspended accounts. Read-only Admin list/detail shows
   persisted status, including `SUSPENDED`.
 - A status-only database write would **not** revoke existing sessions,
-  refresh tokens or issued JWTs. Therefore do not expose a suspend button,
-  route or privileged admin mutation yet.
+  refresh tokens or issued JWTs. The internal transition now revokes all
+  three credential types in one transaction, but it is **not** HTTP
+  accessible until the durable audit and browser security gates are met.
 - `SUPERADMIN_USER_IDS` is an operator bootstrap allowlist, not a database
   role table. The actual authorization also requires the current persisted
   `ADMIN` role. It must never be taken from a client-supplied role claim.
@@ -55,16 +57,17 @@ server-side mutation service. **Neither executes or exposes a mutation.**
    E2E verifying old cookie/JWT/refresh and fresh logins are denied. These
    checks prevent ordinary use while suspended, but are **not** a substitute
    for atomic revocation before enabling the future mutation command.
-2. **Atomic command/revocation boundary.** In a PostgreSQL transaction,
-   serialize account status changes and _all concurrent session / refresh
-   token creation_ on a common user-row lock. Recheck the current actor's
-   persisted role and allowlist and the target's persisted status under the
-   lock. Call the policy with that locked snapshot. On suspension atomically
-   change the status, delete all sessions, revoke refresh-token families
-   **and** refresh-token rows, and prevent new tokens being written after
-   revocation. A racing login/refresh must not escape the boundary. Retries,
-   401/403/404/409 errors and cross-node concurrency require HTTP + real
-   PostgreSQL E2E, including an attempted operator lockout.
+2. **Internal atomic command/revocation boundary implemented.** The
+   PostgreSQL transaction locks both actor and target records, rechecks
+   privileges and target state, and applies the policy. On suspension,
+   it changes status and advances the JWT revocation fence; on both SUSPEND
+   and REACTIVATE it deletes sessions, revokes refresh families and marks
+   refresh tokens revoked atomically. Reactivation cannot resurrect old
+   access tokens or leftover credentials from legacy suspended accounts. All session/refresh writes lock the same user row before
+   inserting. Real PostgreSQL E2E exercises successful revocation, old JWT
+   invalidation after reactivation, idempotency, conflicts, operator lockout,
+   and credential-insert races. See the separate
+   docs/admin-atomic-account-revocation.md. No HTTP command exists yet.
 3. **Audit and operational recovery.** The existing `AdminAuditLogger` is
    logging-only and **not durable evidence**. Agree a durable append-only
    audit strategy, operator attribution and safe reason handling before
@@ -76,16 +79,17 @@ server-side mutation service. **Neither executes or exposes a mutation.**
    no-store responses, real host-only cookies, HTTPS, CSRF and staging
    device/browser behavior. No state-changing links or GET mutations.
 
-## Acceptance for this foundation PR
+## Rollout acceptance and outstanding gates
 
 - Pure policy denies unauthorized / self / any operator suspension, and
   distinguishes successful changes, idempotent no-ops and stale conflicts.
 - Strict command schema rejects unknown keys, invalid IDs, whitespace-only
   reasons, excessive reasons and control characters.
-- CI verifies unit/type/lint/architecture gates. The subsequent schema/auth
-  slice adds an additive Prisma migration and updates read-only OpenAPI
-  account statuses; **no mutation endpoint, privileged action or permanent
-  revocation is enabled**.
+- CI verifies unit/type/lint/architecture gates and real PostgreSQL tests.
+  The internal transaction now revokes credentials permanently and advances
+  the JWT fence, **but no state-changing route or Admin UI exists yet**.
+  Required next: durable audit in the same transaction and staging HTTP/
+  browser security validation before enabling public administrative writes.
 
 This PR **does not close #293**. Each remaining gate is a separate, small,
 reviewed PR. The repository owner merges manually after CI is green.

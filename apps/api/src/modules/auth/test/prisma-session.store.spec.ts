@@ -15,6 +15,8 @@ describe('PrismaSessionStore', () => {
       findMany: vi.fn(),
     },
     $executeRaw: vi.fn(),
+    $queryRaw: vi.fn(),
+    $transaction: vi.fn(),
   };
 
   const storage = {
@@ -36,7 +38,10 @@ describe('PrismaSessionStore', () => {
   beforeEach(() => {
     vi.clearAllMocks();
 
-    prisma.user.findUnique.mockResolvedValue({ id: session.userId });
+    prisma.$transaction.mockImplementation(
+      async (callback: (tx: typeof prisma) => Promise<unknown>) => callback(prisma),
+    );
+    prisma.$queryRaw.mockResolvedValue([{ id: session.userId }]);
     prisma.session.findUnique.mockResolvedValue(null);
     prisma.session.create.mockResolvedValue(session);
     prisma.session.updateMany.mockResolvedValue({ count: 1 });
@@ -93,10 +98,12 @@ describe('PrismaSessionStore', () => {
       extra: { user: { id: session.userId } },
     });
 
-    expect(prisma.user.findUnique).toHaveBeenCalledWith({
-      where: { id: session.userId, deletedAt: null, status: 'ACTIVE' },
-      select: { id: true },
-    });
+    expect(prisma.$transaction).toHaveBeenCalledOnce();
+    expect(prisma.$queryRaw).toHaveBeenCalledOnce();
+    const [sql, id] = prisma.$queryRaw.mock.calls[0] as [TemplateStringsArray, string];
+    expect(sql.join('?')).toContain('FOR UPDATE');
+    expect(sql.join('?')).toContain('"status" = \'ACTIVE\'');
+    expect(id).toBe(session.userId);
     expect(prisma.session.create).toHaveBeenCalledWith({
       data: {
         id: session.id,
@@ -111,7 +118,7 @@ describe('PrismaSessionStore', () => {
   });
 
   it('never creates a session for a suspended or missing account', async () => {
-    prisma.user.findUnique.mockResolvedValueOnce(null);
+    prisma.$queryRaw.mockResolvedValueOnce([]);
     await expect(store.createSession(session)).rejects.toThrow('Account unavailable');
     expect(prisma.session.create).not.toHaveBeenCalled();
   });

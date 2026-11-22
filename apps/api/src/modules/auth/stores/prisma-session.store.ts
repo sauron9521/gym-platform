@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import {
   AuthenticationStorage,
   type SessionRecord,
@@ -8,6 +8,7 @@ import { Prisma } from '#prisma/client';
 import { authSessionSelect } from '../selects/auth-session.select.js';
 import { toSessionRecord } from '../mappers/auth-session.mapper.js';
 import { PrismaService } from '#src/infra/database/index';
+import { lockActiveCredentialOwner } from './lock-active-credential-owner.js';
 
 @Injectable()
 export class PrismaSessionStore implements SessionStore {
@@ -41,14 +42,10 @@ export class PrismaSessionStore implements SessionStore {
         : {}),
     };
 
-    // Prevent issuance to an account that is already suspended. The future
-    // suspend command must serialize this check and insert with its user lock.
-    const account = await this.prisma.user.findUnique({
-      where: { id: record.userId, deletedAt: null, status: 'ACTIVE' },
-      select: { id: true },
+    await this.prisma.$transaction(async (tx) => {
+      await lockActiveCredentialOwner(tx, record.userId);
+      await tx.session.create({ data });
     });
-    if (!account) throw new UnauthorizedException('Account unavailable');
-    await this.prisma.session.create({ data });
   }
 
   async touchSession(id: string, lastActiveAt: Date): Promise<void> {
