@@ -33,7 +33,9 @@ for (const width of [320, 1280]) {
       await active.scrollIntoViewIfNeeded();
       await expect(active).toBeVisible();
       await expect
-        .poll(() => active.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0))
+        .poll(() =>
+          active.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0),
+        )
         .toBe(true);
       await expect(card.locator('img.landing-product-preview--dark')).toBeHidden();
       await expect(active).toHaveAttribute('loading', 'lazy');
@@ -53,7 +55,9 @@ for (const width of [320, 1280]) {
       await active.scrollIntoViewIfNeeded();
       await expect(active).toBeVisible();
       await expect
-        .poll(() => active.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0))
+        .poll(() =>
+          active.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0),
+        )
         .toBe(true);
       expect(requested.has(dark)).toBe(true);
     }
