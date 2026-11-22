@@ -188,7 +188,7 @@ jobs:
   admin-browser-e2e:
     name: Admin / Browser Cookie & Proxy E2E (Chromium)
     needs: changes
-    if: ${{ needs.changes.outputs.admin }} == 'true'
+    if: needs.changes.outputs.admin == 'true'
     runs-on: ubuntu-24.04
     container:
       # Reuse the version-pinned image used for existing browser tests.
