@@ -36,27 +36,27 @@
 
 **Три відокремлені юридичні події (уточнення C5):**
 
-| Подія | Зміст і доказ |
-| --- | --- |
-| Acceptance Terms | явна дія; версія Terms, суб'єкт і час |
-| Delivery/notice Privacy | факт належного надання актуального Privacy Notice; не автоматична загальна згода |
-| Optional purpose-based grant/consent | конкретна мета/обсяг, правова підстава, статус, відкликання й аудиторський слід |
+| Подія                                | Зміст і доказ                                                                    |
+| ------------------------------------ | -------------------------------------------------------------------------------- |
+| Acceptance Terms                     | явна дія; версія Terms, суб'єкт і час                                            |
+| Delivery/notice Privacy              | факт належного надання актуального Privacy Notice; не автоматична загальна згода |
+| Optional purpose-based grant/consent | конкретна мета/обсяг, правова підстава, статус, відкликання й аудиторський слід  |
 
 **Legal document registry — вимоги на майбутнє:** ID/версія/мова/ефективна дата/оператор/канал публікації/історія змін, пов'язані записи прийняття, контроль суттєвих змін та належна ретенція evidence. Сам S04 не означає вже створеної бази даних чи юридичних текстів.
 
 ## 4. Матриця правових ролей і даних
 
-| Операція | Що має бути встановлено до запуску |
-| --- | --- |
-| Створення й підтримка акаунта | хто визначає мету та засоби обробки, які дані обов'язкові |
-| Запрошення й TrainerAthlete | контрактні цілі, право тренера бачити призначені тренування, статус і відкликання |
-| Історія фактичних тренувань | S03 owner-controlled доступ, права суб'єкта й допустиме зберігання |
-| Приватні матеріали тренера | IP/ліцензійна модель й окремі дозволи |
-| Feedback та модерація | відповідальні за зміст, доступ, скарги й audit |
-| Support / privacy rights | хто може ідентифікувати заявника й обробляти запит, контроль доступів |
-| Аналітика / повідомлення | визначена мета, мінімізація, належна правова підстава, retention |
-| Постачальники хостингу/пошти/push/логів | ролі, договори, data flows, країни обробки й умови передачі |
-| Майбутні платежі | merchant/MoR, провайдер, договір, гроші, чеки, refunds, податки |
+| Операція                                | Що має бути встановлено до запуску                                                |
+| --------------------------------------- | --------------------------------------------------------------------------------- |
+| Створення й підтримка акаунта           | хто визначає мету та засоби обробки, які дані обов'язкові                         |
+| Запрошення й TrainerAthlete             | контрактні цілі, право тренера бачити призначені тренування, статус і відкликання |
+| Історія фактичних тренувань             | S03 owner-controlled доступ, права суб'єкта й допустиме зберігання                |
+| Приватні матеріали тренера              | IP/ліцензійна модель й окремі дозволи                                             |
+| Feedback та модерація                   | відповідальні за зміст, доступ, скарги й audit                                    |
+| Support / privacy rights                | хто може ідентифікувати заявника й обробляти запит, контроль доступів             |
+| Аналітика / повідомлення                | визначена мета, мінімізація, належна правова підстава, retention                  |
+| Постачальники хостингу/пошти/push/логів | ролі, договори, data flows, країни обробки й умови передачі                       |
+| Майбутні платежі                        | merchant/MoR, провайдер, договір, гроші, чеки, refunds, податки                   |
 
 **Уточнення:** якщо незалежний тренер використовує спортсменові дані також у власних цілях, його правова роль може відрізнятися від ролі при обробці всередині OVRANTO; потрібна фактична юридична оцінка. S03 server-side access controls не послаблювати жодною формою договору.
 
@@ -163,48 +163,48 @@ Support не отримує адміністративного права чит
 
 ## 14. Правові й технічні ризики
 
-| Ризик | Рівень | Правило захисту / evidence |
-| --- | --- | --- |
-| Невизначений/недопустимий оператор; ФОП не перевірено | CRITICAL | eligibility memo юриста; підтверджений operator/договірні повноваження |
-| Фактичні відносини суперечать моделі незалежних тренерів | HIGH | Trainer Terms, реальний процес і counsel review |
-| Недійсний UA/EN переклад, немає Terms acceptance | HIGH | verified legal copies, version & acceptance evidence |
-| Універсальна згода замість правових підстав за метою | HIGH | окремі notice/Terms/purpose-based records, consent revocation |
-| Тренер не надав достатньої ліцензії на історичний план | HIGH | ліцензійна умова й IP/rights evidence |
-| Blanket waiver приховує відповідальність OVRANTO, небезпечний контент | HIGH | legal safety/consumer review, moderation + complaint process |
-| Неправильний КВЕД/податок/РРО/ПРРО/receipt або MoR | CRITICAL | independent per-flow legal/accounting proof #498 |
-| Підписки, renewals чи refunds не відповідають споживчим правам | HIGH | contract+provider+support test #512 |
-| Цифровий checkout у Mobile порушує Apple/Google | CRITICAL | SKU/market ADR #499, native/store evidence |
-| Beta з неповнолітніми без погоджених процедур | HIGH | adult-only temporary gate, privacy-safe age review |
-| Порушення S03 прав експорту/видалення/приватних тренувань | CRITICAL | verified privacy workflow, ACL/security/native QA |
-| Неперевірені vendor/subprocessors/transfers | HIGH | register, legal basis/DPA/transfer assessment |
-| Marketplace payout запускається під SaaS Terms | CRITICAL | future funds-flow/seller legal gate #521 |
-| Затверджені docs або CI помилково вважають release GO | CRITICAL | independent L1/L2/L3 evidence, signed owner GO |
+| Ризик                                                                 | Рівень   | Правило захисту / evidence                                             |
+| --------------------------------------------------------------------- | -------- | ---------------------------------------------------------------------- |
+| Невизначений/недопустимий оператор; ФОП не перевірено                 | CRITICAL | eligibility memo юриста; підтверджений operator/договірні повноваження |
+| Фактичні відносини суперечать моделі незалежних тренерів              | HIGH     | Trainer Terms, реальний процес і counsel review                        |
+| Недійсний UA/EN переклад, немає Terms acceptance                      | HIGH     | verified legal copies, version & acceptance evidence                   |
+| Універсальна згода замість правових підстав за метою                  | HIGH     | окремі notice/Terms/purpose-based records, consent revocation          |
+| Тренер не надав достатньої ліцензії на історичний план                | HIGH     | ліцензійна умова й IP/rights evidence                                  |
+| Blanket waiver приховує відповідальність OVRANTO, небезпечний контент | HIGH     | legal safety/consumer review, moderation + complaint process           |
+| Неправильний КВЕД/податок/РРО/ПРРО/receipt або MoR                    | CRITICAL | independent per-flow legal/accounting proof #498                       |
+| Підписки, renewals чи refunds не відповідають споживчим правам        | HIGH     | contract+provider+support test #512                                    |
+| Цифровий checkout у Mobile порушує Apple/Google                       | CRITICAL | SKU/market ADR #499, native/store evidence                             |
+| Beta з неповнолітніми без погоджених процедур                         | HIGH     | adult-only temporary gate, privacy-safe age review                     |
+| Порушення S03 прав експорту/видалення/приватних тренувань             | CRITICAL | verified privacy workflow, ACL/security/native QA                      |
+| Неперевірені vendor/subprocessors/transfers                           | HIGH     | register, legal basis/DPA/transfer assessment                          |
+| Marketplace payout запускається під SaaS Terms                        | CRITICAL | future funds-flow/seller legal gate #521                               |
+| Затверджені docs або CI помилково вважають release GO                 | CRITICAL | independent L1/L2/L3 evidence, signed owner GO                         |
 
 **Жоден з ризиків не визнаний усунутим самим затвердженням S04.** Юридичні й бухгалтерські висновки/виправлення мають виконуватися після аналізу реальних договорів, джерел даних і платіжних потоків.
 
 ## 15. Compatibility check: S01–S03 (APPROVED + RECORDED)
 
-| Затверджене рішення | Сумісність із S04 |
-| --- | --- |
-| **S01**: Trainer-first, Ukraine-first, 5–10 trainers + athletes/4 weeks free Beta; no cards/paywall/subscription; post-Beta one paid Trainer and one Athlete Pro, coached Athlete Free; workout JSON+copyable text; separate Trainer/Athlete W4 | **Збережено.** L1 не вмикає продажі; L2/L3 не змінюють тарифи без #497; аналітика W4 не потребує raw workout details |
-| **S02**: protected invite/QR, pending trainer private drafts without privilege, responsive Trainer Web, workout-level text feedback MVP, honest offline sync, support/FAQ | **Збережено.** Terms і content safety підтримують onboarding, права тренера, coach feedback й підтримку; немає нової ранньої Trainer capability |
+| Затверджене рішення                                                                                                                                                                                                                                                                | Сумісність із S04                                                                                                                                                  |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **S01**: Trainer-first, Ukraine-first, 5–10 trainers + athletes/4 weeks free Beta; no cards/paywall/subscription; post-Beta one paid Trainer and one Athlete Pro, coached Athlete Free; workout JSON+copyable text; separate Trainer/Athlete W4                                    | **Збережено.** L1 не вмикає продажі; L2/L3 не змінюють тарифи без #497; аналітика W4 не потребує raw workout details                                               |
+| **S02**: protected invite/QR, pending trainer private drafts without privilege, responsive Trainer Web, workout-level text feedback MVP, honest offline sync, support/FAQ                                                                                                          | **Збережено.** Terms і content safety підтримують onboarding, права тренера, coach feedback й підтримку; немає нової ранньої Trainer capability                    |
 | **S03**: Athlete controls workout facts, explicit revocable shares, termination ends coach access, own JSON+CSV history, historical assigned programme read-only, self-service deletion/status, retention/anti-resurrection, no medical data MVP, adult-only Beta legal dependency | **Збережено.** S04 забезпечує юридичні підстави, ліцензії, vendor agreements та запити користувачів, не дозволяючи розширити Trainer access/AI sharing через Terms |
 
 **Висновок:** жоден із 35 рішень S04 не вимагає змінювати затверджені S01/S02/S03. Не підміняти власність на тренерські шаблони правами спортсмена на свої фактичні персональні дані.
 
 ## 16. MVP/Beta vs paid/later acceptance
 
-| Сфера | До безкоштовної Beta (L1) | До платного Web (L2) | До платного Mobile (L3) / пізніше |
-| --- | --- | --- | --- |
-| Оператор | ідентифікація, eligibility, contact, legal opinion | merchant/MoR та provider contracts | store entity & region compliance |
-| Документи | UA+EN Terms, Privacy, Trainer, Content/Safety, support | price/renewal/cancel/refund/receipt | store-specific disclosures and flows |
-| Consent | Terms/Notice/grants separate | commercial consent & notices | store privacy and checkout UX |
-| Athlete rights | privacy and legal request handling incl. deletion/status | збереження прав при підписці | account deletion and store obligations |
-| Coach IP | working licence + historical read-only grant | розширені комерційні умови за потреби | цифрові продажі за майбутнім рішенням |
-| Data vendors | lawful processing/agreements/transfer review | payment provider included | Apple/Google/provider policy and regions |
-| Age | тимчасово лише повнолітні, legal review | окрема вікова політика за застосовним законом | регіональні/магазинні додаткові вимоги |
-| Payment | **ні** | **тільки після L2 GO** | **тільки після L3 GO** |
-| Later | — | міжнародні продажі після review | Marketplace, Clubs, AI/Health та інші окремі gates |
+| Сфера          | До безкоштовної Beta (L1)                                | До платного Web (L2)                          | До платного Mobile (L3) / пізніше                  |
+| -------------- | -------------------------------------------------------- | --------------------------------------------- | -------------------------------------------------- |
+| Оператор       | ідентифікація, eligibility, contact, legal opinion       | merchant/MoR та provider contracts            | store entity & region compliance                   |
+| Документи      | UA+EN Terms, Privacy, Trainer, Content/Safety, support   | price/renewal/cancel/refund/receipt           | store-specific disclosures and flows               |
+| Consent        | Terms/Notice/grants separate                             | commercial consent & notices                  | store privacy and checkout UX                      |
+| Athlete rights | privacy and legal request handling incl. deletion/status | збереження прав при підписці                  | account deletion and store obligations             |
+| Coach IP       | working licence + historical read-only grant             | розширені комерційні умови за потреби         | цифрові продажі за майбутнім рішенням              |
+| Data vendors   | lawful processing/agreements/transfer review             | payment provider included                     | Apple/Google/provider policy and regions           |
+| Age            | тимчасово лише повнолітні, legal review                  | окрема вікова політика за застосовним законом | регіональні/магазинні додаткові вимоги             |
+| Payment        | **ні**                                                   | **тільки після L2 GO**                        | **тільки після L3 GO**                             |
+| Later          | —                                                        | міжнародні продажі після review               | Marketplace, Clubs, AI/Health та інші окремі gates |
 
 ## 17. GitHub Roadmap / implementation ownership without duplicates
 
