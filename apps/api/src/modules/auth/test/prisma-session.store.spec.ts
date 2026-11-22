@@ -92,6 +92,62 @@ describe('PrismaSessionStore', () => {
     expect(result).not.toHaveProperty('extra');
   });
 
+  it('caps the admin session expiry in the same object used to issue the browser cookie', async () => {
+    const admin = {
+      ...session,
+      expiresAt: new Date(session.expiresAt),
+      metadata: { purpose: 'admin' },
+    };
+    await store.createSession(admin);
+    const cap = new Date(session.createdAt.getTime() + 8 * 60 * 60 * 1000);
+    expect(admin.expiresAt).toEqual(cap);
+    expect(prisma.session.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ expiresAt: cap, metadata: { purpose: 'admin' } }),
+    });
+  });
+
+  it('does not modify the expiry of a regular or short-lived pending-MFA session', async () => {
+    const normal = { ...session };
+    await store.createSession(normal);
+    expect(normal.expiresAt).toEqual(session.expiresAt);
+
+    const pending = {
+      ...session,
+      metadata: { purpose: 'admin' },
+      expiresAt: new Date(session.createdAt.getTime() + 10 * 60 * 1000),
+    };
+    await store.createSession(pending);
+    expect(pending.expiresAt).toEqual(new Date(session.createdAt.getTime() + 10 * 60 * 1000));
+  });
+
+  it('rejects an idle admin session at the storage boundary before session-service touch', async () => {
+    const idleAdmin = {
+      ...session,
+      metadata: { purpose: 'admin' },
+      lastActiveAt: new Date(Date.now() - 16 * 60 * 1000),
+      createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
+      expiresAt: new Date(Date.now() + 6 * 60 * 60 * 1000),
+    };
+    prisma.session.findUnique.mockResolvedValueOnce(idleAdmin);
+    await expect(store.getSession(idleAdmin.id)).resolves.toBeUndefined();
+    expect(prisma.session.updateMany).not.toHaveBeenCalled();
+
+    prisma.session.findUnique.mockResolvedValueOnce({ ...idleAdmin, metadata: { device: 'app' } });
+    expect(await store.getSession(idleAdmin.id)).toMatchObject({ id: idleAdmin.id });
+  });
+
+  it('rejects pre-policy admin session records past 8 hours, even if PostgreSQL expiry is 7 days', async () => {
+    const legacyAdmin = {
+      ...session,
+      metadata: { purpose: 'admin' },
+      createdAt: new Date(Date.now() - 9 * 60 * 60 * 1000),
+      lastActiveAt: new Date(Date.now()),
+      expiresAt: new Date(Date.now() + 6 * 24 * 60 * 60 * 1000),
+    };
+    prisma.session.findUnique.mockResolvedValueOnce(legacyAdmin);
+    await expect(store.getSession(legacyAdmin.id)).resolves.toBeUndefined();
+  });
+
   it('creates a session without persisting extra', async () => {
     await store.createSession({
       ...session,
