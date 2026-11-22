@@ -59,3 +59,19 @@ trainer-review write endpoints already exist but remain without step-up, which
 must be addressed as part of the future sensitive-mutation hardening.
 
 No Prisma migration or separate cookie realm is introduced in this slice.
+
+### Admin-only Origin boundary (#289)
+
+The explicit Admin login, live Admin session check, scoped Admin revocation,
+privileged Admin users reads and trainer moderation operations now require an
+exact **Admin browser origin** when the request provides `Origin`: the
+validated `ADMIN_APP_URL` from API configuration. Where Admin has not yet been
+separately deployed, the existing `APP_URL` is the single-web fallback.
+A cross-site/same-site browser request without `Origin` is rejected using
+`Sec-Fetch-Site`; a provided `Referer` must also match the expected origin.
+Contradictory `Origin` and `Referer` are rejected. Originless server-to-server requests remain supported for Next.js SSR.
+This narrows browser-origin trust on Admin routes without affecting ordinary
+Web/Mobile auth, CORS or session origin configuration. Set `ADMIN_APP_URL` to
+the exact public Admin Web origin on deployments with a separate Admin site.
+This is defense in depth, not a substitute for the library's CSRF checks,
+MFA/step-up, or a dedicated Admin cookie realm.

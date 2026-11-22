@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { EmailVerificationService, SignInService } from '@nestjs/authentication';
+import { ConfigService } from '@nestjs/config';
 import { Logger, UnauthorizedException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AuthController } from '../../controllers/auth.controller.js';
@@ -27,6 +28,12 @@ describe('AuthController', () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [AuthController],
       providers: [
+        {
+          provide: ConfigService,
+          useValue: {
+            get: (key: string) => (key === 'APP_URL' ? 'http://localhost:3000' : undefined),
+          },
+        },
         {
           provide: CredentialsService,
           useValue: credentialsService,

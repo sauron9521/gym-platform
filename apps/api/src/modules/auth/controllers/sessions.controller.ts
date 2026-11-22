@@ -23,6 +23,7 @@ import {
 import { AuthNoStoreInterceptor } from '../interceptors/auth-no-store.interceptor.js';
 import { ApiCookieAuth, ApiNoContentResponse, ApiOkResponse } from '@nestjs/swagger';
 import { AdminSessionPurposeGuard } from '#src/common/auth/admin-session-purpose.guard';
+import { AdminOriginGuard } from '#src/common/auth/admin-origin.guard';
 import { PrismaSessionStore } from '../stores/prisma-session.store.js';
 import { adminSessionResponseSchema } from '#src/infra/openapi/response-contracts';
 
@@ -38,7 +39,7 @@ export class SessionsController {
   /** Only a live, explicitly elevated cookie can prove Admin Web access. */
   @Get('admin-session')
   @Authenticate({ providers: [SessionCookieProvider] })
-  @UseGuards(AdminSessionPurposeGuard)
+  @UseGuards(AdminOriginGuard, AdminSessionPurposeGuard)
   @ApiCookieAuth('sessionCookie')
   @ApiOkResponse({ schema: adminSessionResponseSchema })
   adminSession(@CurrentUser('id') userId: string) {
@@ -53,7 +54,7 @@ export class SessionsController {
   @Post('admin-sessions/revoke-all')
   @HttpCode(204)
   @Authenticate({ providers: [SessionCookieProvider] })
-  @UseGuards(AdminSessionPurposeGuard)
+  @UseGuards(AdminOriginGuard, AdminSessionPurposeGuard)
   @ApiCookieAuth('sessionCookie')
   @ApiNoContentResponse()
   async revokeAdminSessions(@CurrentUser('id') userId: string): Promise<void> {

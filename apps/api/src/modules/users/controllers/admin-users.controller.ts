@@ -6,6 +6,7 @@ import { z } from 'zod';
 
 import { AdminAuditLogger } from '#src/common/audit/admin-audit.logger';
 import { AdminSessionPurposeGuard } from '#src/common/auth/admin-session-purpose.guard';
+import { AdminOriginGuard } from '#src/common/auth/admin-origin.guard';
 import { RateLimit } from '#src/common/rate-limit/rate-limit.policies';
 import { AdminUsersReadGuard } from './admin-users-read.guard.js';
 import {
@@ -24,7 +25,7 @@ type Actor = { id: string };
 // Restrict privileged reads to live server-side cookies, not bearer JWTs.
 // Only explicit admin-purpose sessions may read privileged directory data.
 @Authenticate({ providers: [SessionCookieProvider] })
-@UseGuards(AdminSessionPurposeGuard)
+@UseGuards(AdminOriginGuard, AdminSessionPurposeGuard)
 export class AdminUsersController {
   constructor(
     private readonly users: UsersRepository,
