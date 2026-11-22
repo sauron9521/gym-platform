@@ -73,3 +73,33 @@
     );
   background-size: 26px 26px;
 }
+
+/* One real UI capture is exposed for each active theme. Respect explicit
+   manual overrides over the OS preference, mirroring @gym/design-tokens. */
+.landing-product-preview--light {
+  display: block;
+}
+
+.landing-product-preview--dark {
+  display: none;
+}
+
+:root.dark .landing-product-preview--light,
+:root[data-theme='dark'] .landing-product-preview--light {
+  display: none;
+}
+
+:root.dark .landing-product-preview--dark,
+:root[data-theme='dark'] .landing-product-preview--dark {
+  display: block;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not(.light):not(.dark):not([data-theme]) .landing-product-preview--light {
+    display: none;
+  }
+
+  :root:not(.light):not(.dark):not([data-theme]) .landing-product-preview--dark {
+    display: block;
+  }
+}

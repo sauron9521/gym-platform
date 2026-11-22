@@ -10,6 +10,7 @@ export function ProductDiscovery({ locale }: { locale: Locale }) {
     {
       name: 'OVRANTO Athlete',
       previewSrc: '/product-previews/athlete-workouts.webp',
+      darkPreviewSrc: '/product-previews/athlete-workouts-dark.webp',
       previewAlt: t.productAthletePreviewAlt,
       audience: t.productAthleteAudience,
       description: t.productAthleteDescription,
@@ -24,6 +25,7 @@ export function ProductDiscovery({ locale }: { locale: Locale }) {
     {
       name: 'OVRANTO Coach',
       previewSrc: '/product-previews/coach-workspace.webp',
+      darkPreviewSrc: '/product-previews/coach-workspace-dark.webp',
       previewAlt: t.productCoachPreviewAlt,
       audience: t.productCoachAudience,
       description: t.productCoachDescription,
@@ -74,7 +76,16 @@ export function ProductDiscovery({ locale }: { locale: Locale }) {
                 height={700}
                 sizes="(min-width: 1024px) 46vw, (min-width: 640px) 85vw, 100vw"
                 loading="lazy"
-                className="block h-auto w-full"
+                className="landing-product-preview--light h-auto w-full"
+              />
+              <Image
+                src={product.darkPreviewSrc}
+                alt={product.previewAlt}
+                width={1200}
+                height={700}
+                sizes="(min-width: 1024px) 46vw, (min-width: 640px) 85vw, 100vw"
+                loading="lazy"
+                className="landing-product-preview--dark h-auto w-full"
               />
               <figcaption className="border-t border-border/70 px-4 py-3 text-xs leading-5 text-muted-foreground">
                 {t.productPreviewDisclaimer}

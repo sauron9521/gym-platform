@@ -38,7 +38,7 @@ for (const width of [320, 1280]) {
         href,
       );
       await expect(products.nth(index).getByText(/Публічний доступ ще не оголошено/)).toBeVisible();
-      const screenshot = products.nth(index).getByRole('img');
+      const screenshot = products.nth(index).locator('img.landing-product-preview--light');
       await screenshot.scrollIntoViewIfNeeded();
       await expect(screenshot).toBeVisible();
       await expect(
