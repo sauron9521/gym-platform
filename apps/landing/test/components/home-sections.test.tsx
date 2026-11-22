@@ -1,8 +1,14 @@
-import type { ReactNode } from 'react';
+import { createElement, type ReactNode } from 'react';
 import { afterEach, expect, test, vi } from 'vitest';
 import { cleanup, render, screen } from '@testing-library/react';
 
 import { HomeScreen } from '../../src/widgets/home/ui/home-screen';
+
+// Server-side next/image is mocked as an ordinary image in component tests only.
+vi.mock('next/image', () => ({
+  default: (props: { src: string; alt: string; width: number; height: number; loading?: string }) =>
+    createElement('img', props),
+}));
 
 vi.mock('next/link', () => ({
   default: ({ href, children }: { href: string; children: ReactNode }) => (
@@ -50,6 +56,17 @@ test('English homepage uses translated headings, CTAs, cards, milestones and ARI
   expect(screen.getByRole('heading', { name: 'Build a plan' })).toBeTruthy();
   expect(screen.getByRole('heading', { name: 'Track results' })).toBeTruthy();
   expect(screen.getAllByRole('article')).toHaveLength(2);
+  const athletePreview = screen.getByRole('img', { name: /actual OVRANTO Athlete interface/ });
+  const coachPreview = screen.getByRole('img', { name: /actual OVRANTO Coach interface/ });
+  expect(decodeURIComponent(athletePreview.getAttribute('src') ?? '')).toContain(
+    '/product-previews/athlete-workouts.webp',
+  );
+  expect(decodeURIComponent(coachPreview.getAttribute('src') ?? '')).toContain(
+    '/product-previews/coach-workspace.webp',
+  );
+  expect(athletePreview.getAttribute('loading')).toBe('lazy');
+  expect(coachPreview.getAttribute('loading')).toBe('lazy');
+  expect(screen.getAllByText(/records and metrics are synthetic/)).toHaveLength(2);
   expect(screen.getByRole('heading', { name: 'OVRANTO Athlete' })).toBeTruthy();
   expect(screen.getByRole('heading', { name: 'OVRANTO Coach' })).toBeTruthy();
   expect(screen.getAllByText('In development')).toHaveLength(2);

@@ -1,4 +1,4 @@
-import type { AnchorHTMLAttributes, ReactNode } from 'react';
+import { createElement, type AnchorHTMLAttributes, type ReactNode } from 'react';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 
@@ -9,6 +9,12 @@ import { SiteFooter } from '../../src/widgets/layout/ui/site-footer';
 import { SiteHeader } from '../../src/widgets/layout/ui/site-header';
 
 // Link destinations are tested as anchors; Next's client router is not needed.
+// Server-side next/image is mocked as an ordinary image in component tests only.
+vi.mock('next/image', () => ({
+  default: (props: { src: string; alt: string; width: number; height: number; loading?: string }) =>
+    createElement('img', props),
+}));
+
 vi.mock('next/link', () => ({
   default: function LinkStub({
     href,
@@ -107,6 +113,8 @@ describe('Landing home screen', () => {
       expect(within(cards[index]).getByText('У розробці')).toBeTruthy();
       expect(within(cards[index]).getByText(/Публічний доступ ще не оголошено/)).toBeTruthy();
       expect(within(cards[index]).getAllByRole('listitem')).toHaveLength(3);
+      expect(within(cards[index]).getByRole('img').getAttribute('alt')).toMatch(/тестов/);
+      expect(within(cards[index]).getByText(/не реальна статистика користувачів/)).toBeTruthy();
       expect(within(cards[index]).getByRole('link', { name: label }).getAttribute('href')).toBe(
         href,
       );

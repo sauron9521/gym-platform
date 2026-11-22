@@ -38,6 +38,15 @@ for (const width of [320, 1280]) {
         href,
       );
       await expect(products.nth(index).getByText(/Публічний доступ ще не оголошено/)).toBeVisible();
+      const screenshot = products.nth(index).getByRole('img');
+      await screenshot.scrollIntoViewIfNeeded();
+      await expect(screenshot).toBeVisible();
+      await expect(
+        products.nth(index).getByText(/не реальна статистика користувачів/),
+      ).toBeVisible();
+      await expect
+        .poll(() => screenshot.evaluate((image: HTMLImageElement) => image.naturalWidth))
+        .toBeGreaterThan(0);
     }
 
     const documentWidth = await page.evaluate(() => document.documentElement.scrollWidth);
