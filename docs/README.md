@@ -4,7 +4,7 @@ This index groups developer-facing API documentation and operational runbooks. P
 
 ## Product strategy and business decisions
 
-- [Owner-approved product strategy index](product-strategy/README.md) — S01 v1.0 Trainer-first positioning, S02 v1.0 customer experience, S03 v1.0 privacy/data ownership, and S04 v1.0 legal/compliance gates, independent-trainer terms, operator and store policies
+- [Owner-approved product strategy index](product-strategy/README.md) — S01 v1.0 Trainer-first positioning, S02 v1.0 customer experience, S03 v1.0 privacy/data ownership, S04 v1.0 legal/compliance gates, and S05 v1.0 approved security/trust policy (pending manual docs PR merge)
 - [Business governance](business-governance/README.md) — staff roles, approvals and operating policies
 
 ## Application development
