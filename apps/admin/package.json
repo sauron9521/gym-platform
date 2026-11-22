@@ -13,7 +13,8 @@
     "test:contracts": "vitest run --config vitest.config.mts",
     "test:components": "vitest run --config vitest.components.config.mts",
     "test:e2e": "playwright test",
-    "test:e2e:real-api": "playwright test --config playwright.real-api.config.ts"
+    "test:e2e:real-api": "playwright test --config playwright.real-api.config.ts",
+    "test:e2e:staging": "playwright test --config playwright.staging.config.mjs"
   },
   "dependencies": {
     "@gym/api-client": "workspace:*",
