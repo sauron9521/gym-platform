@@ -1,5 +1,6 @@
 import { getMessages as getSharedMessages, defaultLocale, type Locale } from '@gym/i18n';
 import type { Metadata } from 'next';
+import { Manrope } from 'next/font/google';
 import type { ReactNode } from 'react';
 import { NextIntlClientProvider } from 'next-intl';
 import { getLocale, getMessages } from 'next-intl/server';
@@ -9,6 +10,13 @@ import { SiteFooter } from '@/widgets/layout/ui/site-footer';
 import { SiteHeader } from '@/widgets/layout/ui/site-header';
 
 import './globals.css';
+
+/** OVRANTO brand type: optimized/self-hosted by Next for UA and EN glyphs. */
+const manrope = Manrope({
+  subsets: ['latin', 'cyrillic', 'cyrillic-ext'],
+  display: 'swap',
+  variable: '--font-manrope',
+});
 
 const origin = getSiteOrigin();
 
@@ -46,7 +54,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   const skipToContent = getSharedMessages(siteLocale).landing.shell.skipToContent;
   return (
     <html lang={locale}>
-      <body className="flex min-h-screen flex-col">
+      <body className={`${manrope.variable} flex min-h-screen flex-col font-sans`}>
         <a
           href="#main-content"
           className="sr-only rounded-md bg-primary px-4 py-2 font-medium text-primary-foreground focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[100]"

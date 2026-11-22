@@ -50,16 +50,21 @@ test('English browser preferences do not expose unfinished English routes or SEO
   expect(englishRoute.status()).toBe(404);
 });
 
-test('Dark Performance brand mark stays decorative and favicon SVG is served', async ({ page }) => {
+test('OVRANTO brand logo and favicon retain official teal and terracotta strokes', async ({
+  page,
+}) => {
   await page.goto('/');
 
-  const homeLink = page.getByRole('link', { name: 'Gym Platform — головна сторінка' });
+  const homeLink = page.getByRole('link', { name: 'OVRANTO — головна сторінка' });
   await expect(homeLink).toBeVisible();
   await expect(homeLink.locator('svg')).toHaveAttribute('aria-hidden', 'true');
-  await expect(homeLink).toContainText('Gym Platform');
+  await expect(homeLink).toContainText('OVRANTO');
 
   const favicon = await page.request.get('/icon.svg');
   expect(favicon.ok()).toBe(true);
   expect(favicon.headers()['content-type']).toContain('image/svg+xml');
   expect(await favicon.text()).toContain('viewBox="0 0 64 64"');
+  expect(await favicon.text()).toContain('#075C55');
+  expect(await favicon.text()).toContain('#C76537');
+  expect(await favicon.text()).not.toContain('#c8ef5a');
 });

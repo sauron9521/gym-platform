@@ -10,8 +10,8 @@ export function MarketingSection({ className, tone = 'default', ...props }: Mark
   return (
     <section
       className={cn(
-        'py-20 sm:py-24',
-        tone === 'subtle' && 'border-y border-border/70 bg-card/30',
+        'py-20 sm:py-28',
+        tone === 'subtle' && 'border-y border-border/60 bg-secondary/40',
         className,
       )}
       {...props}

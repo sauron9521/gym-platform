@@ -41,7 +41,7 @@ describe('Landing marketing primitives', () => {
 
     const section = screen.getByRole('region', { name: 'Секція' });
     expect(section.tagName).toBe('SECTION');
-    expect(section.className).toContain('bg-card/30');
+    expect(section.className).toContain('bg-secondary/40');
   });
 
   test('heading keeps a semantic h2 and works with section labelling', () => {

@@ -30,8 +30,8 @@ export default function TrainersPage() {
     <main id="main-content" className="flex-1">
       <MarketingSection>
         <Container>
-          <p className="text-sm font-bold tracking-widest text-primary uppercase">Тренерам</p>
-          <h1 className="mt-6 max-w-4xl text-4xl font-bold tracking-tight text-balance sm:text-6xl">
+          <p className="text-xs font-bold tracking-[0.18em] text-primary uppercase">Тренерам</p>
+          <h1 className="mt-6 max-w-4xl text-4xl font-extrabold tracking-[-0.05em] text-balance sm:text-6xl">
             Більше уваги спортсменам, менше хаосу з програмами
           </h1>
           <p className="mt-6 max-w-2xl text-lg leading-8 text-muted-foreground">
@@ -56,9 +56,15 @@ export default function TrainersPage() {
           />
           <div className="mt-10 grid gap-5 md:grid-cols-3">
             {trainerBenefits.map((benefit) => (
-              <div key={benefit.title} className="rounded-2xl border border-border bg-card p-7">
-                <div aria-hidden="true" className="mb-7 h-1 w-12 rounded-full bg-primary" />
-                <h3 className="text-xl font-semibold">{benefit.title}</h3>
+              <div
+                key={benefit.title}
+                className="rounded-[1.6rem] border border-border bg-card p-7 shadow-sm shadow-foreground/5"
+              >
+                <div
+                  aria-hidden="true"
+                  className="mb-7 h-1.5 w-12 rounded-full bg-[var(--brand-terracotta)]"
+                />
+                <h3 className="text-xl font-bold tracking-tight">{benefit.title}</h3>
                 <p className="mt-4 leading-7 text-muted-foreground">{benefit.detail}</p>
               </div>
             ))}

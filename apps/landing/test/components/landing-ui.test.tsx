@@ -41,7 +41,7 @@ describe('Landing site header', () => {
   test('provides a named home link and the complete desktop navigation', () => {
     render(<SiteHeader />);
 
-    const home = screen.getByRole('link', { name: 'Gym Platform — головна сторінка' });
+    const home = screen.getByRole('link', { name: 'OVRANTO — головна сторінка' });
     expect(home.getAttribute('href')).toBe('/');
 
     const nav = screen.getByRole('navigation', { name: 'Основна навігація' });
@@ -133,7 +133,7 @@ describe('Landing footer and secondary page', () => {
   test('footer includes a home link and the current year', () => {
     render(<SiteFooter />);
 
-    expect(screen.getByRole('link', { name: 'Gym Platform' }).getAttribute('href')).toBe('/');
+    expect(screen.getByRole('link', { name: 'OVRANTO' }).getAttribute('href')).toBe('/');
     expect(screen.getByText(new RegExp(String(new Date().getFullYear())))).toBeTruthy();
   });
 

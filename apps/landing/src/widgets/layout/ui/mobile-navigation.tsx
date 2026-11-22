@@ -31,7 +31,7 @@ export function MobileNavigation({ locale = defaultLocale }: { locale?: Locale }
     >
       <summary
         ref={summary}
-        className="flex cursor-pointer list-none items-center gap-2 rounded-md border border-border px-3 py-2 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary [&::-webkit-details-marker]:hidden"
+        className="flex min-h-11 cursor-pointer list-none items-center gap-2 rounded-xl border border-border bg-card px-3 py-2 text-sm font-semibold text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary [&::-webkit-details-marker]:hidden"
       >
         <span aria-hidden="true" className="text-lg leading-none">
           ☰
@@ -40,14 +40,14 @@ export function MobileNavigation({ locale = defaultLocale }: { locale?: Locale }
       </summary>
       <nav
         aria-label={shell.mobileNav}
-        className="absolute top-full right-0 mt-3 flex w-60 flex-col gap-1 rounded-xl border border-border bg-card p-2 shadow-xl"
+        className="absolute top-full right-0 mt-3 flex w-[min(17rem,calc(100vw-2rem))] flex-col gap-1 rounded-2xl border border-border bg-card p-2 shadow-xl shadow-foreground/10"
       >
         {main.map(({ label, href }) => (
           <Link
             key={href}
             href={href}
             onClick={closeMenu}
-            className="rounded-md px-3 py-2 text-sm font-medium hover:bg-accent focus-visible:outline-2 focus-visible:outline-primary"
+            className="rounded-xl px-3 py-3 text-sm font-medium hover:bg-secondary focus-visible:outline-2 focus-visible:outline-primary"
           >
             {label}
           </Link>
@@ -55,7 +55,7 @@ export function MobileNavigation({ locale = defaultLocale }: { locale?: Locale }
         <Link
           href="/apps"
           onClick={closeMenu}
-          className="rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground focus-visible:outline-2 focus-visible:outline-primary"
+          className="rounded-xl bg-primary px-3 py-3 text-sm font-semibold text-primary-foreground focus-visible:outline-2 focus-visible:outline-primary"
         >
           {nav.apps}
         </Link>

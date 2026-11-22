@@ -29,15 +29,15 @@ export function ApplicationDetail({
     <main id="main-content" className="flex-1">
       <MarketingSection>
         <Container>
-          <p className="text-sm font-bold tracking-widest text-primary uppercase">{eyebrow}</p>
-          <h1 className="mt-6 max-w-4xl text-4xl font-bold tracking-tight text-balance sm:text-6xl">
+          <p className="text-xs font-bold tracking-[0.18em] text-primary uppercase">{eyebrow}</p>
+          <h1 className="mt-6 max-w-4xl text-4xl font-extrabold tracking-[-0.05em] text-balance sm:text-6xl">
             {title}
           </h1>
           <p className="mt-6 max-w-2xl text-lg leading-8 text-muted-foreground">{description}</p>
-          <p className="mt-7 inline-flex rounded-full border border-primary/30 px-4 py-2 text-sm text-primary">
+          <p className="mt-7 inline-flex rounded-full border border-primary/20 bg-primary/10 px-4 py-2 text-sm font-semibold text-primary">
             Статус: у розробці
           </p>
-          <div className="mt-10 rounded-2xl border border-border bg-card p-6">
+          <div className="landing-preview-grid mt-10 rounded-[1.6rem] border border-border bg-card/85 p-8 shadow-sm shadow-foreground/5">
             <p className="text-xs tracking-widest text-muted-foreground uppercase">
               Презентація функціоналу
             </p>
@@ -63,7 +63,10 @@ export function ApplicationDetail({
           />
           <ul className="mt-8 grid gap-4 md:grid-cols-2">
             {highlights.map((feature) => (
-              <li key={feature.title} className="rounded-xl border border-border bg-card p-6">
+              <li
+                key={feature.title}
+                className="rounded-[1.5rem] border border-border bg-card p-7 shadow-sm shadow-foreground/5"
+              >
                 <h3 className="text-lg font-semibold">{feature.title}</h3>
                 <p className="mt-3 text-sm leading-6 text-muted-foreground">
                   {feature.description}

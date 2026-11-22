@@ -1,15 +1,52 @@
-# Gym Platform Landing — Dark Performance
+# OVRANTO Landing — Premium Athletic Minimal
 
-## Brand
+## Source of truth
 
-- The mark is a minimalist dumbbell in a rounded square, authored as SVG.
-- Use the shared semantic colors from `@gym/design-tokens`, not scattered hex values.
-- The site icon lives in `apps/landing/src/app/icon.svg`; the UI mark is `shared/ui/brand-mark.tsx`.
-- Keep the wordmark as selectable text. Do not use generated or hosted font files.
-- Maintain accessible contrast, visible focus indicators and sufficient clear space.
+Landing uses the approved OVRANTO design system and **exactly the same semantic CSS palette** as
+Web/Admin: @gym/design-tokens/ovranto.css. The legacy Dark Performance stylesheet must not
+be imported in Landing. Tailwind v4 utilities map to the CSS semantic variables, rather than
+independently hard-coding brand colors or light/dark surfaces.
 
-## Type scale
+- Light (default): warm ivory background, charcoal text, Deep Teal primary and Terracotta accent.
+- Dark: the same semantic variables honor operating-system dark preference and
+  explicit .dark / data-theme=dark overrides. Semantic primary, foreground,
+  card, secondary, border and muted variables carry the contrast.
+- Logo: shared BrandLogo from @gym/ui-web, using the approved **fixed** teal and
+  terracotta SVG strokes and live selectable OVRANTO wordmark; don't fork the SVG
+  artwork into Landing-specific React components.
+- Favicon: compact two-stroke brand mark in apps/landing/src/app/icon.svg, matching
+  approved geometry/colors without the old placeholder dumbbell.
+- Type: **Manrope** via Next.js next/font/google (Latin/Cyrillic/Cyrillic-ext),
+  served from the app at runtime. It falls back to system fonts; no hosted font stylesheets.
+- Layout: shared responsive container and marketing primitives, clear hierarchies,
+  soft semantic surfaces, rounded cards and a high-contrast primary CTA.
+- All visual charts and counts on the homepage are **concept art**, clearly labeled
+  and never passed off as real performance data.
 
-- Hero: `text-5xl sm:text-7xl`; heading: `text-3xl sm:text-4xl`; body: `text-base`/`text-lg`.
-- Prefer system fallbacks to avoid Google Fonts build dependencies.
-- Respect reduced-motion preferences. Marketing animations must never block navigation.
+## Accessibility and constraints
+
+Keep a single h1 on each route and a named main landmark. Logo SVG must be decorative
+inside a properly named home link. Preserve real links, locale strings, dynamic navigation,
+analytics events, SEO metadata, SSR and 320px layout with no horizontal overflow.
+Use visible focus-visible styles and 44px touch targets for CTAs/menu. Respect
+prefers-reduced-motion, and don't introduce autoplay or fake availability claims.
+Keep existing product names/routes/metadata until a separate approved product naming
+or SEO migration. The OVRANTO visual wordmark is the brand identity, but those are
+not silently renamed by this visual-only PR.
+
+## QA
+
+- pnpm --filter @gym/landing test
+- pnpm --filter @gym/landing typecheck
+- pnpm --filter @gym/landing lint
+- pnpm --filter @gym/landing build
+- pnpm --filter @gym/landing test:e2e
+
+On Linux development machines with system Chrome but no downloaded Playwright
+Chromium, set LANDING_E2E_CHROME_PATH=/usr/bin/google-chrome before the E2E
+command. CI still uses the default pinned Playwright browser.
+
+Check light and dark OS themes, mobile and desktop, all public routes, UA/EN
+component labels, accessibility semantics, navigation links and planned-features
+disclaimers. Next.js needs access to Google Fonts **at build time** to self-host
+Manrope; release runners should confirm the generated font assets are present.
