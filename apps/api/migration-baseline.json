@@ -29,6 +29,7 @@
     "prisma/migrations/migration_lock.toml": "044d57cdb0d5b5bff3475112359a4ee70439bf78"
   },
   "schema_files": [
+    "admin-account-audit.prisma",
     "auth-token.prisma",
     "body-measurements.prisma",
     "exercises.prisma",
