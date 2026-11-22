@@ -10,17 +10,21 @@ const uuid = 'f09d7567-626e-45d8-99f1-829ce4204fbd';
 describe('future Admin account-status command contract (not yet routed)', () => {
   it('accepts only a valid account UUID and strict, trimmed status command', () => {
     expect(adminAccountStatusTargetSchema.parse(uuid)).toBe(uuid);
-    expect(adminAccountStatusCommandSchema.parse({
-      expectedStatus: 'ACTIVE',
-      reason: '  Repeated abusive activity  ',
-    })).toEqual({
+    expect(
+      adminAccountStatusCommandSchema.parse({
+        expectedStatus: 'ACTIVE',
+        reason: '  Repeated abusive activity  ',
+      }),
+    ).toEqual({
       expectedStatus: 'ACTIVE',
       reason: 'Repeated abusive activity',
     });
-    expect(adminAccountStatusCommandSchema.parse({
-      expectedStatus: 'SUSPENDED',
-      reason: 'Відновлення після перевірки',
-    })).toEqual({
+    expect(
+      adminAccountStatusCommandSchema.parse({
+        expectedStatus: 'SUSPENDED',
+        reason: 'Відновлення після перевірки',
+      }),
+    ).toEqual({
       expectedStatus: 'SUSPENDED',
       reason: 'Відновлення після перевірки',
     });

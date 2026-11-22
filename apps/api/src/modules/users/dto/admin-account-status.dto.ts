@@ -15,7 +15,14 @@ export const adminAccountStatusCommandSchema = z.strictObject({
     .trim()
     .min(8)
     .max(500)
-    .regex(/^[^\u0000-\u001f\u007f]*$/u, 'Reason must not contain control characters'),
+    .refine(
+      (reason) =>
+        Array.from(reason).every((character) => {
+          const code = character.charCodeAt(0);
+          return code >= 32 && (code < 127 || code > 159);
+        }),
+      'Reason must not contain control characters',
+    ),
 });
 
 export type AdminAccountStatusCommand = z.infer<typeof adminAccountStatusCommandSchema>;

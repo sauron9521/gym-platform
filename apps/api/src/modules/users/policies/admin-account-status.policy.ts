@@ -50,7 +50,10 @@ export function decideLockedAccountStatusTransition(
     // Conservative bootstrap: *every* configured operator is protected, not
     // just the currently last one. This makes last-operator lockout impossible
     // until durable role/grant tracking is implemented.
-    if (actor.id.toLowerCase() === target.id.toLowerCase() || operatorIds.has(target.id.toLowerCase())) {
+    if (
+      actor.id.toLowerCase() === target.id.toLowerCase() ||
+      operatorIds.has(target.id.toLowerCase())
+    ) {
       throw new ForbiddenException('Suspending an operator or self is not allowed');
     }
   }

@@ -27,7 +27,7 @@ until the later security gates below have passed.
 server-side mutation service. **Neither executes or exposes a mutation.**
 
 - Explicit `admin.accounts.manage` authorization is checked before any
-  transition *or no-op*; an ordinary `ADMIN` cannot use it.
+  transition _or no-op_; an ordinary `ADMIN` cannot use it.
 - `SUSPEND` refuses the caller's own account and **every allowlisted operator
   UUID**, not merely the last one. This conservative policy prevents last
   Super Admin lockout without relying on a racy count in the current
@@ -43,7 +43,7 @@ server-side mutation service. **Neither executes or exposes a mutation.**
 
 ## Required implementation slices before suspend/reactivate can be enabled
 
-1. **Persist state and close *every* authentication path.** Add an
+1. **Persist state and close _every_ authentication path.** Add an
    `AccountStatus` enum and default-`ACTIVE` migration, update operator
    read projections, and reject suspended principals in cookie sessions,
    JWT validation, password login, refresh rotation, token issuance,
@@ -51,8 +51,8 @@ server-side mutation service. **Neither executes or exposes a mutation.**
    JWT cannot be used once suspended. Audit all paths in `apps/api` before
    claiming completeness; changing only `findUserById` is insufficient.
 2. **Atomic command/revocation boundary.** In a PostgreSQL transaction,
-   serialize account status changes and *all concurrent session / refresh
-   token creation* on a common user-row lock. Recheck the current actor's
+   serialize account status changes and _all concurrent session / refresh
+   token creation_ on a common user-row lock. Recheck the current actor's
    persisted role and allowlist and the target's persisted status under the
    lock. Call the policy with that locked snapshot. On suspension atomically
    change the status, delete all sessions, revoke refresh-token families
