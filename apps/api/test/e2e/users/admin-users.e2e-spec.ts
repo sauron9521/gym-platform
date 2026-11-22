@@ -3,7 +3,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import { PasswordHasher } from '@nestjs/authentication';
 import type { INestApplication } from '@nestjs/common';
 import { StandardSchemaValidationPipe } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { Test } from '@nestjs/testing';
 import { ThrottlerGuard } from '@nestjs/throttler';
 import request from 'supertest';
@@ -118,6 +118,68 @@ describe('GET /admin/users (HTTP + PostgreSQL)', () => {
     const row = await prisma.session.findUniqueOrThrow({ where: { id } });
     return { cookie, cookieHeader: cookieHeader!, id, row };
   }
+
+  it('enforces Admin-only request origin on login, session inspection and admin directory', async () => {
+    const config = app.get(ConfigService);
+    const expected = new URL(
+      config.get<string>('ADMIN_APP_URL') ?? config.getOrThrow<string>('APP_URL'),
+    ).origin;
+    const untrusted = 'https://untrusted-admin-origin.invalid';
+    const operator = await prisma.user.findUniqueOrThrow({
+      where: { id: operatorId },
+      select: { email: true },
+    });
+
+    const login = (origin: string) =>
+      request(app.getHttpServer())
+        .post('/auth/admin-login')
+        .set('Origin', origin)
+        .send({ email: operator.email, password });
+
+    expect((await login(untrusted)).status).toBe(403);
+    expect((await login(expected)).status).toBe(200);
+    // Ordinary user login is intentionally outside the Admin-origin policy.
+    expect(
+      (
+        await request(app.getHttpServer())
+          .post('/auth/login')
+          .set('Origin', expected)
+          .send({ email: operator.email, password })
+      ).status,
+    ).toBe(200);
+
+    const check = () =>
+      request(app.getHttpServer()).get('/auth/admin-session').set('Cookie', cookies.operator!);
+    expect((await check()).status).toBe(200); // Next SSR is originless.
+    expect((await check().set('Origin', expected)).status).toBe(200);
+    expect((await check().set('Origin', untrusted)).status).toBe(403);
+    expect((await check().set('Origin', 'null')).status).toBe(403);
+    expect((await check().set('Sec-Fetch-Site', 'cross-site')).status).toBe(403);
+    expect((await check().set('Referer', untrusted + '/x')).status).toBe(403);
+    expect((await check().set('Referer', expected + '/users')).status).toBe(200);
+
+    expect(
+      (
+        await request(app.getHttpServer())
+          .get('/admin/users')
+          .set('Cookie', cookies.operator!)
+          .set('Origin', untrusted)
+      ).status,
+    ).toBe(403);
+    const existing = await prisma.session.count({
+      where: { userId: operatorId, metadata: { path: ['purpose'], equals: 'admin' } },
+    });
+    const deniedRevocation = await request(app.getHttpServer())
+      .post('/auth/admin-sessions/revoke-all')
+      .set('Cookie', cookies.operator!)
+      .set('Origin', untrusted);
+    expect([401, 403]).toContain(deniedRevocation.status);
+    expect(
+      await prisma.session.count({
+        where: { userId: operatorId, metadata: { path: ['purpose'], equals: 'admin' } },
+      }),
+    ).toBe(existing);
+  });
 
   it('persists an 8h absolute Admin expiry and issues the same bounded cookie lifetime', async () => {
     const { cookie, cookieHeader, row } = await loginOperator('/auth/admin-login');

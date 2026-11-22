@@ -183,6 +183,26 @@ describe('Operator trainer review (HTTP + PostgreSQL)', () => {
     expect(persisted.reviewerId).toBeNull();
   });
 
+  it('rejects foreign Admin Origin before moderation changes anything', async () => {
+    const cookie = asUser('operator');
+    const origin = 'https://untrusted-admin-origin.invalid';
+    const queue = await request(app.getHttpServer())
+      .get('/admin/trainer-applications')
+      .set('Origin', origin)
+      .set('Cookie', cookie);
+    expect(queue.status).toBe(403);
+
+    const decision = await request(app.getHttpServer())
+      .post(url(pendingId, 'approve'))
+      .set('Origin', origin)
+      .set('Cookie', cookie)
+      .send({ reason: 'Unexpected foreign origin' });
+    expect([401, 403]).toContain(decision.status);
+    expect(
+      (await prisma.trainerApplication.findUniqueOrThrow({ where: { id: pendingId } })).status,
+    ).toBe('PENDING');
+  });
+
   it('limits elevated pending queue to applications, with no cross-account access', async () => {
     const response = await request(app.getHttpServer())
       .get('/admin/trainer-applications')

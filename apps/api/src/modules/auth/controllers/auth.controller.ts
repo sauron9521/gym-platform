@@ -5,6 +5,7 @@ import {
   Logger,
   Post,
   UnauthorizedException,
+  UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
 import { AuthNoStoreInterceptor } from '../interceptors/auth-no-store.interceptor.js';
@@ -12,6 +13,7 @@ import { EmailVerificationService, Public, SignInService } from '@nestjs/authent
 import { RateLimit } from '#src/common/rate-limit/rate-limit.policies';
 import { ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { ADMIN_SESSION_PURPOSE } from '#src/common/auth/admin-session-purpose.guard';
+import { AdminOriginGuard } from '#src/common/auth/admin-origin.guard';
 import {
   registrationResponseSchema,
   sessionSignInResponseSchema,
@@ -66,6 +68,7 @@ export class AuthController {
    */
   @RateLimit('auth')
   @Post('admin-login')
+  @UseGuards(AdminOriginGuard)
   @HttpCode(200)
   @ApiOkResponse({ schema: sessionSignInResponseSchema })
   async adminSignIn(@Body({ schema: signInSchema }) body: SignInInput) {
