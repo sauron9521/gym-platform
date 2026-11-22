@@ -94,16 +94,19 @@ describe('Landing home screen', () => {
     );
   });
 
-  test('audience cards link to athlete, trainer and application routes', () => {
+  test('product discovery cards link to athlete and coach overviews without launch promises', () => {
     render(<HomeScreen />);
 
     const cards = screen.getAllByRole('article');
-    expect(cards).toHaveLength(3);
-    for (const [index, label, href] of [
-      [0, 'Можливості спортсмена', '/for-athletes'],
-      [1, 'Можливості тренера', '/for-trainers'],
-      [2, 'Усі застосунки', '/apps'],
+    expect(cards).toHaveLength(2);
+    for (const [index, name, label, href] of [
+      [0, 'OVRANTO Athlete', 'Можливості спортсмена', '/for-athletes'],
+      [1, 'OVRANTO Coach', 'Можливості тренера', '/for-trainers'],
     ] as const) {
+      expect(within(cards[index]).getByRole('heading', { name })).toBeTruthy();
+      expect(within(cards[index]).getByText('У розробці')).toBeTruthy();
+      expect(within(cards[index]).getByText(/Публічний доступ ще не оголошено/)).toBeTruthy();
+      expect(within(cards[index]).getAllByRole('listitem')).toHaveLength(3);
       expect(within(cards[index]).getByRole('link', { name: label }).getAttribute('href')).toBe(
         href,
       );

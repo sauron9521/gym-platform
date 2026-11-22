@@ -2,36 +2,11 @@ import Link from 'next/link';
 import { defaultLocale, getMessages, type Locale } from '@gym/i18n';
 
 import { Button } from '@/shared/ui/button';
-import {
-  CallToAction,
-  Container,
-  FeatureCard,
-  MarketingSection,
-  SectionHeading,
-} from '@/shared/ui/marketing';
+import { CallToAction, Container, MarketingSection, SectionHeading } from '@/shared/ui/marketing';
+import { ProductDiscovery } from './product-discovery';
 
 export function HomeScreen({ locale = defaultLocale }: { locale?: Locale } = {}) {
   const t = getMessages(locale).landing.home;
-  const audiences = [
-    {
-      title: t.audienceAthletesTitle,
-      description: t.audienceAthletesDescription,
-      href: '/for-athletes',
-      action: t.audienceAthletesAction,
-    },
-    {
-      title: t.audienceTrainersTitle,
-      description: t.audienceTrainersDescription,
-      href: '/for-trainers',
-      action: t.audienceTrainersAction,
-    },
-    {
-      title: t.audienceAppsTitle,
-      description: t.audienceAppsDescription,
-      href: '/apps',
-      action: t.audienceAppsAction,
-    },
-  ] as const;
   const milestones = [
     { number: '01', title: t.milestoneOneTitle, detail: t.milestoneOneDetail },
     { number: '02', title: t.milestoneTwoTitle, detail: t.milestoneTwoDetail },
@@ -145,17 +120,7 @@ export function HomeScreen({ locale = defaultLocale }: { locale?: Locale } = {})
             title={t.audiencesTitle}
             description={t.audiencesDescription}
           />
-          <div className="mt-12 grid gap-5 md:grid-cols-3">
-            {audiences.map(({ title, description, href, action }) => (
-              <FeatureCard
-                key={href}
-                title={title}
-                description={description}
-                href={href}
-                linkLabel={action}
-              />
-            ))}
-          </div>
+          <ProductDiscovery locale={locale} />
         </Container>
       </MarketingSection>
 
