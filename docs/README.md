@@ -4,8 +4,9 @@ This index groups developer-facing API documentation and operational runbooks. P
 
 ## Product strategy and business decisions
 
-- [Owner-approved product strategy index](product-strategy/README.md) — S01–S11 APPROVED + RECORDED; S12 v1.0 B2B, Clubs & Marketplace OWNER APPROVED (docs PR pending manual merge); no implementation/backlog audit authorized
+- [Owner-approved product strategy index](product-strategy/README.md) — **S01–S12 APPROVED + RECORDED** in `main`; strategy publication is not implementation, Beta, paid, health, AI or Marketplace GO
 - [Business governance](business-governance/README.md) — staff roles, approvals and operating policies
+- [Post-S12 implementation baseline audit](post-s12-implementation-audit.md) — evidence-based snapshot, Beta blockers, milestone assignment and proposed small-PR delivery order; **OWNER REVIEW**, not Beta/production GO
 
 ## Application development
 
