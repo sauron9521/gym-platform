@@ -1,6 +1,6 @@
-import { Authenticate, CurrentUser } from '@nestjs/authentication';
+import { Authenticate, CurrentUser, SessionCookieProvider } from '@nestjs/authentication';
 import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post } from '@nestjs/common';
-import { ApiBearerAuth, ApiCookieAuth, ApiOkResponse, ApiTags } from '@nestjs/swagger';
+import { ApiCookieAuth, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 
 import { RateLimit } from '#src/common/rate-limit/rate-limit.policies';
 import {
@@ -16,10 +16,11 @@ import {
 import { TrainerReviewService, type Reviewer } from '../services/trainer-review.service.js';
 
 @ApiTags('Trainer moderation')
-@ApiBearerAuth('accessToken')
 @ApiCookieAuth('sessionCookie')
 @Controller('admin/trainer-applications')
-@Authenticate()
+// Privileged moderation must authenticate a live browser session, never JWT alone.
+// Dedicated admin-purpose sessions and step-up remain separate security work.
+@Authenticate({ providers: [SessionCookieProvider] })
 export class TrainerReviewController {
   constructor(private readonly service: TrainerReviewService) {}
 

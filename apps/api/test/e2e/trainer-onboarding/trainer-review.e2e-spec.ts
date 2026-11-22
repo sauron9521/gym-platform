@@ -122,6 +122,36 @@ describe('Operator trainer review (HTTP + PostgreSQL)', () => {
     expect(anon.headers['cache-control']).toContain('no-store');
   });
 
+  it('rejects bearer-only access to operator queue and decisions before any DB mutation', async () => {
+    const operator = await prisma.user.findUniqueOrThrow({
+      where: { id: operatorId },
+      select: { email: true },
+    });
+    const issued = await request(app.getHttpServer())
+      .post('/auth/token')
+      .send({ email: operator.email, password });
+    expect(issued.status).toBe(200);
+    const authorization = 'Bearer ' + issued.body.accessToken;
+
+    const queue = await request(app.getHttpServer())
+      .get('/admin/trainer-applications')
+      .set('Authorization', authorization);
+    const approval = await request(app.getHttpServer())
+      .post(url(pendingId, 'approve'))
+      .set('Authorization', authorization)
+      .send({ reason: 'Verified qualifications and paperwork' });
+
+    for (const response of [queue, approval]) {
+      expect(response.status).toBe(401);
+      expect(response.headers['cache-control']).toContain('no-store');
+    }
+    const persisted = await prisma.trainerApplication.findUniqueOrThrow({
+      where: { id: pendingId },
+    });
+    expect(persisted.status).toBe('PENDING');
+    expect(persisted.reviewerId).toBeNull();
+  });
+
   it('limits elevated pending queue to applications, with no cross-account access', async () => {
     const response = await request(app.getHttpServer())
       .get('/admin/trainer-applications')

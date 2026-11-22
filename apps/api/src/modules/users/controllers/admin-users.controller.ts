@@ -1,12 +1,6 @@
-import { Authenticate, CurrentUser } from '@nestjs/authentication';
+import { Authenticate, CurrentUser, SessionCookieProvider } from '@nestjs/authentication';
 import { Controller, Get, NotFoundException, Param, Query, Req, UseGuards } from '@nestjs/common';
-import {
-  ApiBearerAuth,
-  ApiCookieAuth,
-  ApiNotFoundResponse,
-  ApiOkResponse,
-  ApiTags,
-} from '@nestjs/swagger';
+import { ApiCookieAuth, ApiNotFoundResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import type { Request } from 'express';
 import { z } from 'zod';
 
@@ -25,9 +19,10 @@ type Actor = { id: string };
 
 @ApiTags('Admin users')
 @ApiCookieAuth('sessionCookie')
-@ApiBearerAuth('accessToken')
 @Controller('admin/users')
-@Authenticate()
+// Restrict privileged reads to live server-side cookies, not bearer JWTs.
+// Dedicated admin-purpose sessions and step-up remain #289/#290 follow-ups.
+@Authenticate({ providers: [SessionCookieProvider] })
 export class AdminUsersController {
   constructor(
     private readonly users: UsersRepository,

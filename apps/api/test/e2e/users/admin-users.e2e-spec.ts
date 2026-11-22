@@ -111,6 +111,99 @@ describe('GET /admin/users (HTTP + PostgreSQL)', () => {
     }
   });
 
+  it('rejects valid operator bearer JWT on privileged reads but preserves ordinary API token access', async () => {
+    const operator = await prisma.user.findUniqueOrThrow({
+      where: { id: operatorId },
+      select: { email: true },
+    });
+    const issued = await request(app.getHttpServer())
+      .post('/auth/token')
+      .send({ email: operator.email, password });
+    expect(issued.status).toBe(200);
+    const token = issued.body.accessToken as string;
+    expect(token).toBeTruthy();
+
+    const normal = await request(app.getHttpServer())
+      .get('/users/me')
+      .set('Authorization', 'Bearer ' + token);
+    expect(normal.status).toBe(200);
+    expect(normal.body.id).toBe(operatorId);
+
+    for (const path of ['/admin/users', '/admin/users/' + operatorId]) {
+      const denied = await request(app.getHttpServer())
+        .get(path)
+        .set('Authorization', 'Bearer ' + token);
+      expect(denied.status).toBe(401);
+      expect(denied.headers['cache-control']).toContain('no-store');
+      expect(JSON.stringify(denied.body)).not.toContain(operator.email);
+    }
+  });
+
+  it('binds privileged authorization to the cookie identity, not a conflicting bearer token', async () => {
+    const operator = await prisma.user.findUniqueOrThrow({
+      where: { id: operatorId },
+      select: { email: true },
+    });
+    const athlete = await prisma.user.findFirstOrThrow({
+      where: { email: { contains: 'admin-list-athlete-' + suffix } },
+      select: { email: true },
+    });
+    async function issue(email: string) {
+      const result = await request(app.getHttpServer())
+        .post('/auth/token')
+        .send({ email, password });
+      expect(result.status).toBe(200);
+      return result.body.accessToken as string;
+    }
+    const operatorJwt = await issue(operator.email);
+    const athleteJwt = await issue(athlete.email);
+
+    const cannotEscalate = await request(app.getHttpServer())
+      .get('/admin/users')
+      .set('Cookie', cookies.athlete!)
+      .set('Authorization', 'Bearer ' + operatorJwt);
+    expect(cannotEscalate.status).toBe(403);
+
+    const cookieWins = await request(app.getHttpServer())
+      .get('/admin/users')
+      .set('Cookie', cookies.operator!)
+      .set('Authorization', 'Bearer ' + athleteJwt);
+    expect(cookieWins.status).toBe(200);
+  });
+
+  it('rejects a signed-out session even alongside an otherwise valid operator bearer token', async () => {
+    const operator = await prisma.user.findUniqueOrThrow({
+      where: { id: operatorId },
+      select: { email: true },
+    });
+    const loggedIn = await request(app.getHttpServer())
+      .post('/auth/login')
+      .send({ email: operator.email, password });
+    expect(loggedIn.status).toBe(200);
+    const raw = loggedIn.headers['set-cookie'];
+    const headers = Array.isArray(raw) ? raw : raw ? [raw] : [];
+    const cookie = headers
+      .map((value) => value.split(';', 1)[0] ?? '')
+      .find((value) => value.startsWith('__Host-sid='));
+    expect(cookie).toBeTruthy();
+
+    const issued = await request(app.getHttpServer())
+      .post('/auth/token')
+      .send({ email: operator.email, password });
+    expect(issued.status).toBe(200);
+    const signedOut = await request(app.getHttpServer())
+      .post('/auth/sign-out')
+      .set('Cookie', cookie!);
+    expect(signedOut.status).toBe(204);
+
+    const denied = await request(app.getHttpServer())
+      .get('/admin/users')
+      .set('Cookie', cookie!)
+      .set('Authorization', 'Bearer ' + issued.body.accessToken);
+    expect(denied.status).toBe(401);
+    expect(denied.headers['cache-control']).toContain('no-store');
+  });
+
   it('returns a bounded, minimal privileged list with stable pagination and filters', async () => {
     const url = { search: `admin-list-`, limit: '2', page: '1' };
     const first = await list(cookies.operator!, url);

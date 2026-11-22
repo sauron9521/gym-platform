@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { AdminUsersController } from '../../controllers/admin-users.controller.js';
 import { AdminUsersReadGuard } from '../../controllers/admin-users-read.guard.js';
+import { SessionCookieProvider } from '@nestjs/authentication';
 
 const operatorId = 'f09d7567-626e-45d8-99f1-829ce4204fbd';
 const otherId = 'd09c7567-626e-45d8-99f1-829ce4204fbd';
@@ -18,6 +19,10 @@ function context(role: 'ATHLETE' | 'TRAINER' | 'ADMIN' | undefined, id: string):
 describe('AdminUsersController security contract', () => {
   it('uses a post-auth scoped permission gate on the dedicated endpoint', () => {
     expect(Reflect.getMetadata(PATH_METADATA, AdminUsersController)).toBe('admin/users');
+    expect(Reflect.getMetadata('authentication:route', AdminUsersController)).toMatchObject({
+      public: false,
+      providers: [SessionCookieProvider],
+    });
     const handler = Object.getOwnPropertyDescriptor(AdminUsersController.prototype, 'list')?.value;
     const guards: unknown[] = Reflect.getMetadata(GUARDS_METADATA, handler);
     expect(guards).toContain(AdminUsersReadGuard);
