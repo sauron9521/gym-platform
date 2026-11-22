@@ -1,186 +1,153 @@
 # OVRANTO — S02 Customer Experience & Retention v1.0
 
-**Статус рішення: APPROVED — затверджено власником 2026-11-22 без змін.**  
-**Дата:** 2026-11-22.  
-**Власник рішення:** засновник OVRANTO.  
-**Підстава:** 26 відповідей S02 + 7 явних уточнень; власник прямо затвердив фінальну редакцію S02 v1.0 **без змін**. **S01 Product Strategy v1.0 APPROVED + RECORDED** залишається незмінною.  
-**Стратегічна карта:** [#588](https://github.com/sauron9521/gym-platform/issues/588) · **Технічний roadmap:** [#353](https://github.com/sauron9521/gym-platform/issues/353). **Документація набуде чинності в `main` лише після ручного merge документаційного PR власником.**
+**Статус: APPROVED — затверджено власником 2026-11-22 без змін.**  
+**Напрям:** S02 · **Версія:** 1.0 · **Власник рішення:** засновник OVRANTO.  
+**Підстава:** 26 відповідей на опитування, сім узгоджених уточнень та окреме підтвердження фінальної редакції.  
+**Стратегічна карта:** [#588](https://github.com/sauron9521/gym-platform/issues/588) · **Технічний roadmap:** [#353](https://github.com/sauron9521/gym-platform/issues/353).  
+**Залежність:** [S01 v1.0](s01-product-strategy-v1.md) — APPROVED + RECORDED, без змін.
 
-> **Межа затвердження:** цей документ не відкриває доступу до Trainer API до схвалення заявки, не гарантує фактичну готовність мобільних збірок, не дозволяє зберігати персональні дані без прав/згоди та не запускає нові підписки або платні функції. Затверджена архітектура Notifications #563 залишається чинною: відкладання конкретних користувацьких нагадувань не є скасуванням спільного Inbox/Outbox, налаштувань і каналів доставки.
+> **Межа рішення:** затвердження S02 означає погодження UX-стратегії, а не завершення реалізації, дозвіл на оплати, запуск Beta або прийняття Android/iOS device QA. Код змінюється окремими PR з ручним merge власника. **S03 — NOT_STARTED.**
 
-## 1. UX product thesis
+## 1. Продуктові принципи
 
-**OVRANTO should get a coach from sign-up to an assigned program, and an athlete from opening a workout to a trustworthy saved result, in as few steps as practical.** Retention derives from real training progress, successful program execution, an ongoing coach–athlete relationship, and timely contextual feedback — **not** compulsive app opens, win-back pushes, social gamification, or artificial daily streaks.
+OVRANTO має забезпечити короткий шлях від першого входу до реальної користі. Для тренера це **створена й призначена програма**, для спортсмена — **завершене тренування з надійно збереженими фактичними результатами**.
 
-Non-negotiable, inherited S01: Trainer-first, UA then international, UA+EN, phone-responsive full Trainer Web and Athlete Mobile, free closed Beta, no subscriptions/charges during Beta, separately measured **Trainer W4 ≥50% AND Athlete W4 ≥50%**, authentic actual sets and durable offline safety, no Athlete Pro paywall for trainer-assigned workouts or basic coach feedback. Approved Design System v2 and 4-tab Athlete Mobile IA remain unchanged.
+Принципи: мінімум зайвих дій; контекстні підказки замість великих вступних інструкцій; зрозуміле підтвердження успіху; безпечне відновлення після перерви; видима історія й прогрес; жодних нав'язливих механізмів повернення. Зберігати затверджену дизайн-систему OVRANTO та локалізації українською й англійською.
 
-## 2. Trainer onboarding and first value
+## 2. Onboarding тренера
 
-1. New coach gets a **short onboarding** with contextual guidance, not a long compulsory form.
-2. First proposed action: **Create your first program**. Offer **blank program OR reusable starter template**, not a mandated template path.
-3. During TrainerApplication **PENDING**, owner approves **only an isolated private draft capability**. This **must not imply TRAINER permission**, access to real athlete lists/data, publishing, assigning, inviting clients or elevated API methods. Implementation can propose a user-owned draft permission with server enforcement or genuinely local draft; exact mechanism requires a security/contract review before code.
-4. After verified approval: explicit **Draft → Preview → Publish → Assign** flow; draft saving never auto-publishes, and publishing never auto-assigns. Preserve versioning, unsaved-change/leave guard and confirmation of privileged changes.
-5. Trainer invites an athlete through a **shareable secure link** or a **QR code encoding the exact same invitation URL**. No parallel QR credentials, direct role grant or unauthenticated client-data disclosure.
-6. First value for coach: **a real assigned program** (matching S01 activation), followed by reading actual results and providing feedback. Counting account creation alone is not activation.
+- Короткий вступ із контекстними підказками.
+- **Перша дія — створення програми**: з нуля або на основі готового шаблону.
+- Поки заявка тренера очікує модерації, дозволено **лише приватні чернетки**, але **не** доступ до реальних клієнтів, призначення програм чи інші Trainer-only операції.
+- Приватні чернетки повинні мати безпечну модель власності й авторизації **без передчасної видачі Trainer capability**. Точну реалізацію (локальне чи ізольоване серверне зберігання) визначити після security review.
+- Після схвалення тренер може публікувати й призначати програму спортсмену.
 
-### Secure invitation UX
+Не дублювати поточну TrainerApplication модель і завершені role/capability завдання #291, #309–311.
 
-- The link/token is **time-limited, revocable and validated server-side**, bound to the initiating authorized coach/allowed relationship and correct recipient account on acceptance; no enumeration, replay-triggered duplicate relationships or PII leakage in URL preview.
-- Expired/used/revoked link has a helpful actionable screen (request a new invitation); accept/sign-in/register should preserve safe navigation context.
-- Exact default expiry length, one-time/multi-use behavior and email verification gate are **implementation/security-policy questions**, not invented S02 approval details.
+## 3. Запрошення спортсменів
 
-## 3. Two Athlete onboarding paths
+Тренер запрошує спортсмена **захищеним посиланням** або **QR-кодом, що містить те саме посилання**. Не створювати паралельну QR-систему доступу.
 
-**Coached athlete:** open invitation link/QR → see inviting coach name and safe summary → sign up/sign in → accept relationship/see assigned program → start workout → log **actual** results → complete and understand local/server save → view progress/coach feedback.
+Запрошення повинно мати обмежений строк дії, можливість відкликання й серверну перевірку прав; повторне використання не повинно створювати дублікати тренерсько-спортивних зв'язків або розкривати приватні дані.
 
-**Independent athlete:** sign up/sign in → **immediately create/start their own workout** → log actual sets → complete → view history/strength progress. No trainer, detailed fitness questionnaire, paid subscription or compulsory predefined workout plan needed for first value.
+Спортсмен бачить інформацію про тренера, проходить реєстрацію/вхід, приймає запрошення й переходить до призначеної програми. Деталі строків і токенів — окрема технічна специфікація.
 
-**Athlete Mobile IA** keeps existing approved four tabs: Головна / Тренування / Прогрес / Профіль, with accessible native navigation and Light/Dark.
+## 4. Onboarding спортсмена
 
-## 4. Trainer daily experience
+**Із тренером:** запрошення → тренер → коротка реєстрація/вхід → призначена програма → перше тренування → збережений результат.
 
-**Trainer Dashboard** prioritizes:
+**Самостійно:** реєстрація/вхід → створити або одразу почати власне тренування → записати фактичні результати → переглянути історію.
 
-- clients and quick access to client detail;
-- actionable coach tasks, including completed sessions awaiting review;
-- programs, drafts, assignment state, templates;
-- 3–4 real data-backed overview measures with drilldown, not fake/vanity KPIs.
+Не вимагати довгих анкет, обов'язкового тренера або Athlete Pro для першого тренування. Базове виконання призначень тренера й feedback залишаються безкоштовними згідно із S01.
 
-**Priority phone fast-actions** explicitly selected by owner: (a) view clients/profiles; (b) assign an existing program quickly; (c) review athlete completed sessions; (d) leave workout feedback; (e) invite clients; (f) view client progress/stats.
+## 5. Щоденна робота тренера
 
-**Clarification approved by owner:** full **program create/edit remains functional at phone width**, in addition to the six optimized fast actions; desktop may have a richer three-pane editor with safe responsive collapse. This preserves S01, #386 and #365. Mobile cannot be a read-only trainer portal.
+Trainer Dashboard фокусується на **клієнтах і робочих завданнях**: профілях, програмах, чернетках, шаблонах, призначеннях, тренуваннях для перегляду, feedback та підтвердженому прогресі. Не показувати вигадані KPI.
 
-**Inactive athletes:** allow **coach-configurable thresholds in days/weeks**, with neutral private status/filter. Avoid penalizing a planned lighter week, a workout frequency below daily, an athlete without a schedule or an athlete with valid unavailable data. **No automatically generated athlete re-engagement message** from the inactivity rule. Exact default threshold and whether per-trainer or per-client overrides exist remain a later UX/settings specification, without blocking this directional S02 strategy.
+**Trainer Web зі смартфона:** усі основні можливості, включно з **повноцінним створенням та редагуванням програм**, залишаються доступними. Найвищий пріоритет швидкої мобільної взаємодії: перегляд клієнтів/профілів, призначення готової програми, перегляд завершених сесій, коментарі, запрошення та статистика. Складний конструктор може бути зручнішим на desktop, але не стає недоступним на телефоні.
 
-## 5. Coach feedback — deliberately simplified MVP
+## 6. Створення та призначення програм
 
-Фінальне рішення власника **звужує MVP** до одного обов'язкового формату, а решту переносить на час після MVP:
+**Draft → Preview → Publish → Assign** — чотири окремі керовані кроки.
 
-**MVP/Beta:** a **plain text comment attached to a completed workout as a whole**, authored by an authorized active coach and readable by the relevant athlete under Athlete Free. This is structured workout feedback, not an unrestricted messenger. Preserve ownership, relationship scoping, auditability and later privacy policy.
+Збереження чернетки не публікує програму; публікація не призначає її спортсмену автоматично. Потрібні індикатор незбережених змін, захист від втрати введення, контроль версій, підтвердження важливих дій і серверні перевірки прав. Не створювати альтернативну систему Training Programs (#320, #365, #386).
 
-**AFTER MVP**, if validated by real demand: (1) comments on individual exercises/sets; (2) separate next-workout recommendations; (3) flag asking for a program adjustment; (4) quick reaction/rating. Do **not** interpret a comment as an automatic program mutation/publish/assign.
+## 7. Зворотний зв'язок тренера
 
-## 6. Athlete workout UX
+**MVP/Beta:** **один текстовий коментар до завершеного тренування загалом**. Його створює авторизований тренер, а відповідний спортсмен бачить без Athlete Pro. Коментар не є чатом і **не змінює програму автоматично**.
 
-**Home:** emphasize **next assigned workout** or **quick start for self-guided** athletes, not a chart-heavy home.
+**Після MVP:** коментарі до вправ або сетів, рекомендації щодо наступного тренування, позначки необхідності корекції програми та швидкі реакції/оцінки. Пріоритет визначається попитом. Використовувати існуючий feedback-напрям #339/#366, без дублювання.
 
-**Active workout:** use the owner-approved compact per-set row (number, **actual** weight, **actual** repetitions, state/confirmation) with accessible touch targets, truthful async feedback and a repeat-tap lock.
+## 8. Athlete Mobile — активне тренування
 
-**Plan vs fact:** planned weights/repetitions are merely hints. Only explicitly recorded/confirmed **actual completed sets** populate workout results, history and export. Never present an unconfirmed default as completed work.
+Головний екран віддає пріоритет **наступному призначеному тренуванню** або **швидкому старту власного**. Залишається погоджена навігація з чотирьох вкладок: **Головна / Тренування / Прогрес / Профіль**.
 
-**Completion:** a concise but informative view of exercises, actual sets/repetitions/weight, basic progress and **truthful save status**. No fabricated metrics; allow return to history.
+Запис фактичних результатів — **компактний рядок № підходу / фактична вага / фактичні повторення / стан виконання**. Планові значення — лише підказка. Непідтверджений або невиконаний сет не може вважатися фактично завершеним.
 
-**Resume:** when reopening a partially completed session show a prominent **Continue workout** action, restoring safely persisted actual state and context. Do not silently restart, discard draft or replay ambiguous writes.
+Після завершення: короткий детальний підсумок фактичних вправ, сетів, повторень, ваг, базового прогресу та **правдивого статусу збереження**.
 
-### Saved/sync states
+## 9. Офлайн-робота та відновлення
 
-Owner selected:
+Користувач бачить п'ять станів:
 
-1. **Saved locally, waiting for sync**;
-2. **Syncing**;
-3. **Saved and confirmed by server**;
-4. **Revision conflict requiring user action**.
+1. **Збережено локально, очікує синхронізації**.
+2. **Синхронізація триває**.
+3. **Підтверджено збереження на сервері**.
+4. **Конфлікт версій — потрібна дія користувача**.
+5. **Помилка збереження/синхронізації — потрібне безпечне відновлення**.
 
-**Additional clarification approved by owner:** also show **Save/sync failed — action required** with a safe non-destructive recovery path. An offline/local pending icon must never look like a server-confirmed tick. Unknown PATCH outcomes require authoritative read-only reconciliation, not a blind retry; preserve draft on app restart/account changes without leaking to another account.
+Локально збережений результат **не** можна позначати серверним підтвердженням. Після повторного входу пропонується **«Продовжити тренування»** з фактично збереженими даними. Невизначений результат PATCH не спричиняє автоматичного повторного запису; потрібне read-only узгодження з канонічним станом сервера, без тихого перезапису чи дублювання.
 
-**Basic progress for Athlete Free:** recent training history, consistency/regularity and progress in actual working weights. Premium deeper analytics remain for a future product/billing decision, without removing S01's basic-history rights.
+До Beta потрібні фактичні iOS/Android device-level перевірки. Зелене CI не доводить native-ready стан (#318, #322, #324).
 
-## 7. Retention policy and notifications
+## 10. Прогрес спортсмена
 
-**Three core reasons to return:**
+Athlete Free показує останні тренування, регулярність, історію і прогрес **фактичних робочих ваг**. Розширена аналітика може бути складовою майбутнього Athlete Pro, але не позбавляє безкоштовного користувача вже гарантованої базової функціональності.
 
-1. Visible actual training history and progress.
-2. Regular execution of the coach's program (or own chosen workout path).
-3. Workout calendar and next scheduled session.
+## 11. Неактивні спортсмени
 
-**Затверджені S02 події для користувацького досвіду з дотриманням Notifications #563 permission/channel policy:**
+Тренер може налаштувати поріг неактивності **в днях або тижнях**. Показувати нейтральний статус у тренерському просторі, враховувати розклад і регулярні дні відпочинку.
 
-- coach assigned a new program;
-- coach changed/replaced an assignment;
-- coach added workout-level feedback;
-- athlete completed a session (for the authorized coach);
-- invitation/coach-athlete relationship status changed;
-- actionable sync problem (user who can resolve it);
-- optional weekly progress summary **post-MVP only**.
+**Автоматичні повідомлення спортсмену для повернення після тривалої перерви не надсилаються.** Значення за замовчуванням, можливість порогів на рівні окремого клієнта та облік графіка — подальші UX/технічні параметри.
 
-**Затверджене уточнення:** **тижневі підсумки та користувацькі нагадування про заплановане тренування відкладаються на час ПІСЛЯ MVP**. Earlier owner-selected event types (new assignment, changes, completed workouts, relationship and actionable sync state, coach feedback) remain in MVP scope where practical/authorized. Do not delete or invalidate the **already approved Notifications #563 architectural foundation**, which specifies Inbox, Push, Local Reminders, Email, preferences, quiet hours and consent; instead treat optional workout reminders / weekly digest as **post-MVP user-facing behaviors** and avoid forced activation during Beta. Existing architecture does not mean these behaviors are live.
+## 12. Retention і сповіщення
 
-**No automatic inactivity win-back:** do not send 'you have not trained' / unsolicited reactivation campaigns after breaks. Coach's private inactivity status is not a marketing trigger.
+Три основні чинники повернення до платформи: **історія та наочний прогрес**, **регулярне виконання тренерської програми**, **календар і наступні тренування**.
 
-**Consent and frequency:** nonessential retention messages are **opt-in**, adjustable, suppressible and subject to approved per-channel/quiet-hours policy. Critical security/account messages remain governed by separate security policy. Notification event recipients and record visibility remain server-authorized.
+**Основний MVP:** потрібні події про нове/змінене призначення, коментар тренера, завершене тренування спортсмена для авторизованого тренера, статус запрошення/зв'язку та проблему синхронізації, яка потребує уваги. Реалізувати через вже погоджену [Notifications #563](https://github.com/sauron9521/gym-platform/issues/563), а не нову систему.
 
-## 8. Support and closed-Beta research
+**Після MVP:** щотижневі автоматизовані підсумки прогресу й **нагадування про заплановані тренування** як користувацькі функції.
 
-**MVP support UX:** contextual hints on complex actions; short FAQ; **Report a problem** from the current screen; accessible **support email** and **support request form**. Avoid leaking account tokens, raw private athlete data or secrets in automatically attached diagnostics; consent and data minimization apply.
+Це **не скасовує** раніше погодженої технічної архітектури Notifications: Inbox/Outbox, канали, consent, quiet hours, налаштування й можливість Local Reminders залишаються чинними. Однак необов'язкові нагадування не активуються примусово під час Beta.
 
-**Beta qualitative method:** interviews with actual coaches/athletes + a simple feedback/problem report form. No compulsory weekly questionnaire.
+Необов'язкові retention-повідомлення — **opt-in**, з налаштуванням частоти та можливістю вимкнути. Критичні security-повідомлення регулюються окремо. **Жодних автоматичних win-back повідомлень через неактивність.**
 
-**No extra fee/plan** in Beta; any post-Beta monetization requires separate explicit voluntary user action under S01.
+## 13. Допомога користувачам
 
-## 9. Metrics and success
+MVP: контекстні підказки, короткі FAQ/інструкції, **«Повідомити про помилку»** на поточному екрані, email підтримки та форма звернення.
 
-**Locked S01 primary criteria (unchanged):**
+Не передавати автоматично токени, паролі чи зайві персональні дані. Звернення до підтримки не є тренерським workout-feedback (#554 проти #339).
 
-- **Trainer W4 Retention ≥50%**, among eligible activated trainers, days 22–28 after first real program assignment;
-- **Athlete W4 Retention ≥50%**, among eligible activated athletes, days 22–28 after first actual completed session.
+## 14. Збір відгуків під час Beta
 
-Use **separate numerators/denominators**, include only eligible 28-day cohorts, identify small sample limitations (Beta 5–10 coaches), and do not infer retention from app opens.
+**Особисті інтерв'ю з тренерами й спортсменами та проста форма зворотного зв'язку/помилок.** Жодних обов'язкових щотижневих анкет. Beta повністю безкоштовна відповідно до S01.
 
-**S02 supporting measures (without hardcoded numerical thresholds):**
+## 15. Метрики
 
-- trainer onboarding and assignment activation;
-- athlete first session activation;
-- time/steps to first useful action;
-- secure invite accepted → actual first workout;
-- assignment → first actual workout;
-- started → confirmed completed session;
-- workout draft recovery, local/server sync success/failure/conflict and data-loss incidents;
-- coarse funnel dropoffs and qualitative causes from interviews.
+Головні KPI S01 **не змінюються**:
 
-The detailed event taxonomy, consent/analytics data processing, report ownership and experiments are **S03/S07**, not a new tracking warehouse under S02. E21 billing churn #535 is separate.
+| Показник | Мінімальна ціль |
+| --- | ---: |
+| **Trainer W4 Retention** | **≥50%** |
+| **Athlete W4 Retention** | **≥50%** |
 
-## 10. MVP / Post-MVP acceptance boundaries
+Обидва показники оцінюються **окремо** серед активованих користувачів із повним періодом спостереження (дні 22–28 після активації). Тренер активований після першого реального призначення, спортсмен — після першого фактично завершеного тренування.
 
-| Product area       | MVP/Beta                                                                                         | After MVP                                                                  |
-| ------------------ | ------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------- |
-| Trainer onboarding | short wizard/context help, private drafts while pending, full capability after approval          | advanced onboarding personalization                                        |
-| Program creation   | blank/template, Draft→Preview→Publish→Assign, desktop and phone                                  | advanced builder conveniences                                              |
-| Athlete invitation | secure link + QR of same invitation                                                              | bulk invitations and richer methods                                        |
-| Trainer overview   | clients and actual work, responsive fast actions                                                 | advanced customizable dashboards                                           |
-| Coach feedback     | **one text comment on completed workout**                                                        | exercise/set comments, recommendations, adjustment flags, reactions        |
-| Athlete workouts   | compact actual sets, planned hint, completion, resume, offline/save/failure/conflict UX          | expanded workout presentation                                              |
-| Progress           | basic strength and regularity                                                                    | premium detailed analytics                                                 |
-| Inactivity status  | customizable private trainer thresholds; no athlete win-back notifications                       | optional richer scheduling/filter controls                                 |
-| Notifications      | core event notification requirements on existing #563 architecture, opt-in nonessential delivery | **weekly progress summary & scheduled workout reminder UX**, other nurture |
-| Help               | contextual help, FAQ, report bug, email and contact form                                         | knowledge base expansion                                                   |
-| Beta evaluation    | interviews, feedback form, activation/reliability/W4 evidence                                    | broader quantitative experiments                                           |
+Додаткові показники: активація, час до першої користі, конверсія запрошень, призначення → виконання, розпочаті → завершені тренування, надійність збереження та відновлення. Додаткові числові пороги не встановлено. Політику збору даних/згоди визначають S03 і S07.
 
-**Non-negotiable regardless of MVP phasing:** S01 data integrity, security access controls, beta zero payment, and real native device evidence. The strategy is **not evidence that any item is implemented**.
+## 16. Межі MVP та подальших етапів
 
-## 11. Risk register and existing delivery owners
+**MVP/Beta:** короткий onboarding; приватні безпечні чернетки до схвалення; створення з нуля/шаблону; захищені link/QR-запрошення; сценарії тренера й самостійного спортсмена; Trainer Dashboard; повний основний Trainer Web на телефоні; Draft → Preview → Publish → Assign; компактні фактичні сети; завершення/відновлення; достовірні offline/sync/error стани; базовий прогрес; **один загальний текстовий коментар до завершеного тренування**; контекстна допомога, FAQ, баг-репорт, email/форма; Beta-інтерв'ю та вимірювання.
 
-- **Pending Trainer draft privilege leakage:** explicit user-owned isolated draft policy, no Trainer capabilities until approval — #286/#291/#309–311/#355, design in #386.
-- **Program builder vs small screen:** S01 mandates create/edit on phone; 3-pane desktop editor must responsively collapse without capability loss — #386/#365.
-- **False save success, unsafe retries or lost sets:** honest state; actual-device validation; read-only reconciliation after ambiguous PATCH — #385/#318/#324/#322/#344–349.
-- **Invitation QR token or role abuse:** secure expiring/revocable URL and server-bound coach/athlete permissions, no duplicate relationship model — #286 plus existing auth API.
-- **Scope creep of feedback:** only workout-level text in MVP, avoid new chat domain — #339/#366.
-- **Inactivity stigma/misclassification:** opt-in coach-configured days/weeks and schedule context; no automatic athlete reactivation — #321 and Trainer UX.
-- **Conflict with Notifications architecture:** product sequencing only, not a rewrite of technical #563/#565/#566/#571/#321; ensure no duplicate delivery subsystem or unintended push.
-- **Privacy or noisy telemetry:** role-scoped metrics with minimized data, S03/S07 governance — #352/#554, billing analytics #535 separate.
-- **Design parity:** preserve approved Design System v2, athlete four tabs, mobile set row, both themes, accessible feedback patterns — #381/#382/#383/#385/#386/#389.
+**Після MVP:** коментарі до окремих вправ/сетів, рекомендації й прапорці корекції, реакції, тижневі підсумки та нагадування про заплановані тренування. Додаткові можливості S01 (AI, повноцінний чат, Marketplace, native Trainer Mobile тощо) також залишаються відкладеними.
 
-**Do not create duplicate technical epics/Issues/PRs until S02 is owner approved** and main/open PR status rechecked for each actual gap.
+## 17. Зв'язок із поточним GitHub backlog
 
-## 12. Decisions deliberately outside S02 signoff
+Не дублювати чинні задачі:
 
-The following do **not** block approval of the strategic UX direction:
+- UX і Design System — [#381](https://github.com/sauron9521/gym-platform/issues/381), #382–389.
+- Trainer onboarding, capability і Web — [#286](https://github.com/sauron9521/gym-platform/issues/286), #291, #309–311, #355, #364–366.
+- Program Builder/feedback — [#320](https://github.com/sauron9521/gym-platform/issues/320), [#339](https://github.com/sauron9521/gym-platform/issues/339).
+- Workout reliability — [#318](https://github.com/sauron9521/gym-platform/issues/318), [#322](https://github.com/sauron9521/gym-platform/issues/322), [#324](https://github.com/sauron9521/gym-platform/issues/324), #344–347.
+- Notifications і Calendar — [#563](https://github.com/sauron9521/gym-platform/issues/563), #321.
+- Beta readiness — [#352](https://github.com/sauron9521/gym-platform/issues/352).
+- Support Operations — [#554](https://github.com/sauron9521/gym-platform/issues/554).
+- Технічний roadmap — [#353](https://github.com/sauron9521/gym-platform/issues/353).
 
-- Exact trainer inactivity default threshold value, per-client overrides and business interpretation of holidays/missed sessions.
-- Invite token expiry numeric duration, one-time/multi-use detail and revocation mechanics — security/API specification.
-- Specific pending-draft persistence schema and permission policy — security-reviewed engineering contract.
-- Detailed copy, per-view mockups, interaction timings and native UI QA cases — design implementation.
-- Future coach reaction formats, exact weekly summary cadence, reminder delivery scheduling — **post-MVP** decisions.
-- Exact activation event instrumentation/retention/consent schema — S03/S07.
-- Any new commercial tariff, AI, marketplace, native Trainer Mobile or data ownership decision — excluded by S01.
+Затвердження продуктової стратегії не є доказом виконання жодної технічної задачі. Відсутні реалізаційні дрібні частини спочатку шукати в чинному backlog і відкритих PR.
 
-**Change control:** S02 v1.0 **APPROVED** рішенням власника від 2026-11-22. Це схвалення UX-стратегії, а не підтвердження реалізації, native QA, готовності Beta чи розгортання production. Кожна майбутня зміна потребує окремого перегляду й версіонування. Документ публікується через один docs-only PR, який власник зливає самостійно. **S03 NOT_STARTED**, до окремої команди не починати.
+## 18. Контроль змін і наступний крок
+
+**S02 v1.0 — APPROVED** рішенням власника від **2026-11-22**, після повних відповідей на опитування та семи уточнень. Канонічна документація потрапляє в `main` лише після **ручного злиття PR власником**. Будь-яка зміна політики S02 в майбутньому — окремий версійний перегляд із явним затвердженням.
+
+**S01 APPROVED + RECORDED. S03 NOT_STARTED.** Не починати S03 без окремої команди власника.
