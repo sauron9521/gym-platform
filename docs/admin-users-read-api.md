@@ -14,10 +14,9 @@ trainers, athletes, and anonymous clients. Never infer entitlement from a
 browser-side flag, display role, or URL. This is a temporary operator bootstrap,
 not granular staff-role authorization.
 
-The endpoint is **not yet connected** to `apps/admin/users`: that UI must
-keep its unavailable state until a separately reviewed server authorization and
-pagination integration slice. The endpoint is not an invitation to call it from
-an ordinary ADMIN session or expose its response in a browser cache.
+The endpoint is consumed by the protected `apps/admin` server-rendered
+`/users` page after session verification, with the API independently enforcing
+the allowlist. No privileged account data is fetched in the browser.
 
 ### Query string
 
@@ -27,7 +26,7 @@ an ordinary ADMIN session or expose its response in a browser cache.
 | `limit`       | integer 1–50                                                  | 20      |
 | `search`      | 2–100 characters; case-insensitive substring of account email | none    |
 | `role`        | `ATHLETE`, `TRAINER`, `ADMIN`                                 | all     |
-| `status`      | `ACTIVE` only                                                 | ACTIVE  |
+| `status`      | `ACTIVE`, `SUSPENDED`                                         | all     |
 | `createdFrom` | ISO 8601 date-time with explicit offset                       | none    |
 | `createdTo`   | ISO 8601 date-time with explicit offset                       | none    |
 
@@ -58,15 +57,18 @@ offset-based pages, so this is not a transactionally frozen snapshot.
 
 These values are purely illustrative, **not** live account information.
 
-Only `id`, `email`, `role`, `createdAt`, and derived `status` leave
+Only `id`, `email`, `role`, `createdAt`, and persisted `status` leave
 the server. Prisma `select` explicitly excludes credentials, soft-delete
 metadata, tokens, session records, preferences, profile, medical and workout
 details. Soft-deleted users are excluded at query time.
 
-**Status caveat:** current `User` schema has `deletedAt`, but no
-suspension lifecycle. `ACTIVE` is the only status emitted for non-deleted
-users. Do not conflate soft deletion with suspension or silently expose a
-`SUSPENDED` option until #293 implements real suspension semantics.
+**Status caveat:** `AccountStatus` is persisted as `ACTIVE | SUSPENDED`,
+with an additive migration defaulting all existing users to `ACTIVE`.
+The API permits filtering by status and displays suspended accounts only to
+allowlisted operators. This is still **read-only**: no administrative
+suspension/reactivation command exists. Soft deletion remains separate.
+Authentication denies suspended users immediately, but only a future atomic
+status+session+refresh revocation transaction will make reactivation safe.
 
 `401` for missing/expired authentication, `403` for no explicit operator
 permission, `400` for invalid query, and `5xx` on unavailable persistence.
@@ -81,7 +83,7 @@ valid requests.
 ## Read-only account details — `GET /admin/users/:userId`
 
 For an existing non-deleted user, returns exactly seven keys: `id`, `email`,
-`role`, `status` (derived `ACTIVE`), `createdAt`, `emailVerified`, and
+`role`, persisted `status`, `createdAt`, `emailVerified`, and
 `updatedAt`. Date fields are serialized as ISO 8601 strings. No profile,
 biometrics, tokens, credentials, preferences, session data or soft-deletion
 metadata is selected. Neither a separate staff role nor new database state is
@@ -111,7 +113,7 @@ audit must verify cookie boundaries and actual operator access.
   403, operator success, limit/page ordering, role/search/date filters, absent
   soft-deleted accounts and secrets, invalid 400, immediate permission revoke.
 - Verify CI `API e2e / PostgreSQL 17`, `Quality`, and production build.
-- **Keep #292 open** until actual account status lifecycle and final staging
+- **Keep #292 open** until the final status commands and staging
   permissions/cookie security tests are verified. Directory and details
-  read-only slices are implemented but do not authorize any mutations. Never merge without
-  owner review; production Admin remains NO-GO pending staging evidence.
+  read-only slices do not authorize mutations. Never merge without owner
+  review; production Admin remains NO-GO pending staging evidence.

@@ -1,18 +1,24 @@
 # Admin account suspension — gated rollout plan (#293)
 
-**Status: policy and DTO contract only. Not an enabled API feature.** This
-initial slice introduces no new route, database migration, UI action or
-authentication behavior. Production account suspension must remain disabled
-until the later security gates below have passed.
+**Status: policy + persisted account state + authentication read gates only.**
+The foundation policy (#598) remains pure. This slice adds an additive
+`AccountStatus` migration, current-state auth checks and real read-only
+admin status display, but **no suspend/reactivate endpoint or write UI**.
+Production account suspension must remain disabled until the transactional
+revocation gates below are met.
 
 ## Current system and threat model
 
-- `User` has `deletedAt`, but no persisted `ACTIVE / SUSPENDED` status.
-  Soft deletion is not suspension and must remain separate.
+- `User.status` is now `AccountStatus` (`ACTIVE` by default or `SUSPENDED`);
+  historical users migrate safely to `ACTIVE`. Soft deletion remains separate.
 - Cookie sessions are stored in `sessions`; native credentials use JWT
   bearer access tokens, refresh-token families and refresh tokens.
-- Session/JWT authentication validates a user through `findUserById`, but
-  current repository and credential-token lookups check only `deletedAt`.
+- Session/JWT authentication validates a user through `findUserById`;
+  the repository and credential-token stores now independently require
+  persisted `ACTIVE` and non-deleted state on every read. Login, JWT,
+  cookie sessions, refresh reads/mark-used and credential creation gates
+  are denied for suspended accounts. Read-only Admin list/detail shows
+  persisted status, including `SUSPENDED`.
 - A status-only database write would **not** revoke existing sessions,
   refresh tokens or issued JWTs. Therefore do not expose a suspend button,
   route or privileged admin mutation yet.
@@ -43,13 +49,12 @@ server-side mutation service. **Neither executes or exposes a mutation.**
 
 ## Required implementation slices before suspend/reactivate can be enabled
 
-1. **Persist state and close _every_ authentication path.** Add an
-   `AccountStatus` enum and default-`ACTIVE` migration, update operator
-   read projections, and reject suspended principals in cookie sessions,
-   JWT validation, password login, refresh rotation, token issuance,
-   capability checks and any background auth paths. Test that an existing
-   JWT cannot be used once suspended. Audit all paths in `apps/api` before
-   claiming completeness; changing only `findUserById` is insufficient.
+1. **Completed in this slice: persisted state and authentication reads.**
+   `AccountStatus` enum, default-`ACTIVE` migration, real operator read
+   projections, cookie/JWT/credential/refresh gates, and direct PostgreSQL
+   E2E verifying old cookie/JWT/refresh and fresh logins are denied. These
+   checks prevent ordinary use while suspended, but are **not** a substitute
+   for atomic revocation before enabling the future mutation command.
 2. **Atomic command/revocation boundary.** In a PostgreSQL transaction,
    serialize account status changes and _all concurrent session / refresh
    token creation_ on a common user-row lock. Recheck the current actor's
@@ -77,8 +82,10 @@ server-side mutation service. **Neither executes or exposes a mutation.**
   distinguishes successful changes, idempotent no-ops and stale conflicts.
 - Strict command schema rejects unknown keys, invalid IDs, whitespace-only
   reasons, excessive reasons and control characters.
-- CI verifies unit/type/lint/architecture gates, with no Prisma migration,
-  OpenAPI change, new endpoint or production behavior.
+- CI verifies unit/type/lint/architecture gates. The subsequent schema/auth
+  slice adds an additive Prisma migration and updates read-only OpenAPI
+  account statuses; **no mutation endpoint, privileged action or permanent
+  revocation is enabled**.
 
 This PR **does not close #293**. Each remaining gate is a separate, small,
 reviewed PR. The repository owner merges manually after CI is green.

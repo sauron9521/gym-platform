@@ -16,6 +16,7 @@ describe('UsersRepository.listForAdmin', () => {
         email: 'user@example.test',
         role: 'ATHLETE',
         createdAt: new Date('2026-11-21T10:00:00Z'),
+        status: 'ACTIVE',
       },
     ]);
     prisma.user.count.mockResolvedValue(51);
@@ -34,6 +35,7 @@ describe('UsersRepository.listForAdmin', () => {
     const where = {
       deletedAt: null,
       role: 'ATHLETE',
+      status: 'ACTIVE',
       email: { contains: 'user', mode: 'insensitive' },
       createdAt: {
         gte: new Date('2026-01-01T00:00:00Z'),
@@ -66,6 +68,7 @@ describe('UsersRepository.listForAdmin', () => {
       emailVerified: true,
       createdAt: new Date('2026-11-01T00:00:00Z'),
       updatedAt: new Date('2026-11-21T00:00:00Z'),
+      status: 'SUSPENDED',
     };
     const prisma = { user: { findUnique: vi.fn().mockResolvedValue(account) } };
     const repo = new UsersRepository(prisma as unknown as PrismaService);
@@ -74,7 +77,7 @@ describe('UsersRepository.listForAdmin', () => {
       where: { id: account.id, deletedAt: null },
       select: adminUserDetailSelect,
     });
-    expect(found).toEqual({ ...account, status: 'ACTIVE' });
+    expect(found).toEqual(account);
     expect(Object.keys(found!).sort()).toEqual([
       'createdAt',
       'email',

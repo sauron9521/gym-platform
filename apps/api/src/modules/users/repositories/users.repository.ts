@@ -23,6 +23,7 @@ export class UsersRepository {
     const where: Prisma.UserWhereInput = {
       deletedAt: null,
       ...(query.role ? { role: query.role } : {}),
+      ...(query.status ? { status: query.status } : {}),
       ...(query.search ? { email: { contains: query.search, mode: 'insensitive' } } : {}),
       ...(query.createdFrom || query.createdTo
         ? {
@@ -46,7 +47,7 @@ export class UsersRepository {
     ]);
 
     return {
-      data: data.map((user) => ({ ...user, status: 'ACTIVE' as const })),
+      data,
       meta: {
         total,
         skip,
@@ -62,7 +63,7 @@ export class UsersRepository {
       where: { id, deletedAt: null },
       select: adminUserDetailSelect,
     });
-    return user ? { ...user, status: 'ACTIVE' as const } : null;
+    return user;
   }
 
   async create(email: string, passwordHash: string) {
@@ -86,7 +87,7 @@ export class UsersRepository {
   /** Re-read persisted privilege state: sessions never decide capabilities. */
   async findCapabilitySnapshot(id: string) {
     return this.prisma.user.findUnique({
-      where: { id, deletedAt: null },
+      where: { id, deletedAt: null, status: 'ACTIVE' },
       select: {
         role: true,
         trainerProfile: { select: { isActive: true } },
@@ -96,7 +97,7 @@ export class UsersRepository {
 
   async findMe(id: string) {
     return this.prisma.user.findUnique({
-      where: { id, deletedAt: null },
+      where: { id, deletedAt: null, status: 'ACTIVE' },
       select: userWithProfileSelect,
     });
   }
@@ -105,7 +106,7 @@ export class UsersRepository {
   async updateMyPreferences(userId: string, preferredLocale: 'uk' | 'en' | null) {
     try {
       return await this.prisma.user.update({
-        where: { id: userId, deletedAt: null },
+        where: { id: userId, deletedAt: null, status: 'ACTIVE' },
         data: { preferredLocale },
         select: userWithProfileSelect,
       });
@@ -121,7 +122,7 @@ export class UsersRepository {
     try {
       // One atomic upsert, safe when two requests create a missing profile.
       return await this.prisma.user.update({
-        where: { id: userId, deletedAt: null },
+        where: { id: userId, deletedAt: null, status: 'ACTIVE' },
         data: {
           profile: {
             upsert: { create: data, update: data },
@@ -151,7 +152,7 @@ export class UsersRepository {
     return this.prisma.$transaction(async (tx) => {
       const rows = await tx.$queryRaw<Array<{ id: string }>>`
         SELECT "id" FROM "users"
-        WHERE "id" = ${userId} AND "deleted_at" IS NULL
+        WHERE "id" = ${userId} AND "deleted_at" IS NULL AND "status" = 'ACTIVE'
         FOR UPDATE
       `;
 
@@ -175,7 +176,7 @@ export class UsersRepository {
       }
 
       const user = await tx.user.update({
-        where: { id: userId, deletedAt: null },
+        where: { id: userId, deletedAt: null, status: 'ACTIVE' },
         data: {
           profile: {
             upsert: {
@@ -198,13 +199,13 @@ export class UsersRepository {
       select: profileAvatarOwnerSelect,
     });
 
-    return Boolean(profile && profile.user.deletedAt === null);
+    return Boolean(profile && profile.user.deletedAt === null && profile.user.status === 'ACTIVE');
   }
 
   /** Transactional mail uses the persisted account setting, not link/query language hints. */
   async getPreferredMailLocale(email: string): Promise<'uk' | 'en'> {
     const user = await this.prisma.user.findUnique({
-      where: { email: normalizeEmail(email), deletedAt: null },
+      where: { email: normalizeEmail(email), deletedAt: null, status: 'ACTIVE' },
       select: { preferredLocale: true },
     });
     return user?.preferredLocale === 'en' ? 'en' : 'uk';
@@ -219,21 +220,21 @@ export class UsersRepository {
 
   async findUserById(id: string) {
     return this.prisma.user.findUnique({
-      where: { id, deletedAt: null },
+      where: { id, deletedAt: null, status: 'ACTIVE' },
       select: userSelect,
     });
   }
 
   async findCredentials(email: string) {
     return this.prisma.user.findUnique({
-      where: { email: normalizeEmail(email), deletedAt: null },
+      where: { email: normalizeEmail(email), deletedAt: null, status: 'ACTIVE' },
       select: userSelectWithCredentials,
     });
   }
 
   async updatePassHash(id: string, passwordHash: string): Promise<void> {
     await this.prisma.user.update({
-      where: { id },
+      where: { id, deletedAt: null, status: 'ACTIVE' },
       data: { passwordHash },
       select: userSelect,
     });
@@ -258,7 +259,7 @@ export class UsersRepository {
       return false;
     }
     await this.prisma.user.update({
-      where: { id: userId },
+      where: { id: userId, deletedAt: null, status: 'ACTIVE' },
       data: { emailVerified: true },
       select: userEmailVerificationSelect,
     });

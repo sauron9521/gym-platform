@@ -34,6 +34,7 @@ describe('PrismaTokenStore security and persistence contracts', () => {
   };
 
   const prisma = {
+    user: { findUnique: vi.fn() },
     refreshToken: {
       findUnique: vi.fn(),
       findFirst: vi.fn(),
@@ -64,6 +65,7 @@ describe('PrismaTokenStore security and persistence contracts', () => {
     prisma.$transaction.mockImplementation(
       async (callback: (transaction: typeof prisma) => Promise<unknown>) => callback(prisma),
     );
+    prisma.user.findUnique.mockResolvedValue({ id: refresh.userId });
     prisma.refreshToken.findUnique.mockResolvedValue(null);
     prisma.refreshToken.findFirst.mockResolvedValue(null);
     prisma.refreshTokenFamily.findUnique.mockResolvedValue(null);
@@ -90,7 +92,7 @@ describe('PrismaTokenStore security and persistence contracts', () => {
   it('looks up refresh tokens only for non-deleted owners and limits selected fields', async () => {
     await expect(store.getRefreshToken(refresh.id)).resolves.toBeUndefined();
     expect(prisma.refreshToken.findUnique).toHaveBeenCalledExactlyOnceWith({
-      where: { id: refresh.id, user: { deletedAt: null } },
+      where: { id: refresh.id, user: { deletedAt: null, status: 'ACTIVE' } },
       select: authRefreshTokenSelect,
     });
     expect(authRefreshTokenSelect).not.toHaveProperty('revoked');
@@ -109,10 +111,21 @@ describe('PrismaTokenStore security and persistence contracts', () => {
     expect(actual).not.toHaveProperty('usedAt');
   });
 
+  it('never mints refresh credentials for a suspended or missing account', async () => {
+    prisma.user.findUnique.mockResolvedValueOnce(null);
+    await expect(store.saveRefreshToken(refresh)).rejects.toThrow('Account unavailable');
+    expect(prisma.refreshTokenFamily.upsert).not.toHaveBeenCalled();
+    expect(prisma.refreshToken.create).not.toHaveBeenCalled();
+  });
+
   it('creates a refresh family and token within one transaction', async () => {
     await store.saveRefreshToken(refresh);
 
     expect(prisma.$transaction).toHaveBeenCalledOnce();
+    expect(prisma.user.findUnique).toHaveBeenCalledExactlyOnceWith({
+      where: { id: refresh.userId, deletedAt: null, status: 'ACTIVE' },
+      select: { id: true },
+    });
     expect(prisma.refreshTokenFamily.upsert).toHaveBeenCalledExactlyOnceWith({
       where: { id: refresh.familyId },
       create: {
@@ -169,7 +182,7 @@ describe('PrismaTokenStore security and persistence contracts', () => {
       where: {
         id: refresh.id,
         usedAt: null,
-        user: { deletedAt: null },
+        user: { deletedAt: null, status: 'ACTIVE' },
       },
       data: { usedAt: now },
     });
@@ -410,7 +423,7 @@ describe('PrismaTokenStore security and persistence contracts', () => {
 
       await expect(store.markRefreshTokenUsed(refresh.id, now)).rejects.toBe(failure);
       expect(prisma.refreshToken.updateMany).toHaveBeenCalledExactlyOnceWith({
-        where: { id: refresh.id, usedAt: null, user: { deletedAt: null } },
+        where: { id: refresh.id, usedAt: null, user: { deletedAt: null, status: 'ACTIVE' } },
         data: { usedAt: now },
       });
     });
@@ -473,7 +486,7 @@ describe('PrismaTokenStore security and persistence contracts', () => {
 
       await expect(store.getRefreshToken(refresh.id)).rejects.toBe(failure);
       expect(prisma.refreshToken.findUnique).toHaveBeenCalledExactlyOnceWith({
-        where: { id: refresh.id, user: { deletedAt: null } },
+        where: { id: refresh.id, user: { deletedAt: null, status: 'ACTIVE' } },
         select: authRefreshTokenSelect,
       });
     });

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import {
   AuthenticationStorage,
   type SessionRecord,
@@ -21,7 +21,7 @@ export class PrismaSessionStore implements SessionStore {
 
   async getSession(id: string): Promise<SessionRecord | undefined> {
     const session = await this.prisma.session.findUnique({
-      where: { id, user: { deletedAt: null } },
+      where: { id, user: { deletedAt: null, status: 'ACTIVE' } },
       select: authSessionSelect,
     });
 
@@ -41,6 +41,13 @@ export class PrismaSessionStore implements SessionStore {
         : {}),
     };
 
+    // Prevent issuance to an account that is already suspended. The future
+    // suspend command must serialize this check and insert with its user lock.
+    const account = await this.prisma.user.findUnique({
+      where: { id: record.userId, deletedAt: null, status: 'ACTIVE' },
+      select: { id: true },
+    });
+    if (!account) throw new UnauthorizedException('Account unavailable');
     await this.prisma.session.create({ data });
   }
 
@@ -48,7 +55,7 @@ export class PrismaSessionStore implements SessionStore {
     await this.prisma.session.updateMany({
       where: {
         id,
-        user: { deletedAt: null },
+        user: { deletedAt: null, status: 'ACTIVE' },
         lastActiveAt: { lt: lastActiveAt },
       },
       data: { lastActiveAt },
@@ -65,7 +72,7 @@ export class PrismaSessionStore implements SessionStore {
 
   async listUserSessions(userId: string): Promise<SessionRecord[]> {
     const sessions = await this.prisma.session.findMany({
-      where: { userId, user: { deletedAt: null } },
+      where: { userId, user: { deletedAt: null, status: 'ACTIVE' } },
       orderBy: { createdAt: 'desc' },
       select: authSessionSelect,
     });

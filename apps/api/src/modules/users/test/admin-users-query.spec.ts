@@ -12,7 +12,7 @@ describe('Privileged users list query', () => {
     });
   });
 
-  it('rejects unknown fields, invalid ranges, wildcards and suspension until modelled', () => {
+  it('rejects unknown fields, invalid ranges, wildcards and unsupported status', () => {
     for (const input of [
       { limit: '51' },
       { limit: '0' },
@@ -21,7 +21,7 @@ describe('Privileged users list query', () => {
       { search: 'x' },
       { search: 'a'.repeat(101) },
       { role: 'SUPERADMIN' },
-      { status: 'SUSPENDED' },
+      { status: 'UNKNOWN' },
       { deletedAt: 'any' },
       { createdFrom: 'bad' },
       { createdFrom: '2026-11-30T00:00:00Z', createdTo: '2026-11-01T00:00:00Z' },
@@ -30,7 +30,8 @@ describe('Privileged users list query', () => {
     }
   });
 
-  it('accepts explicit bounded creation-date filters and ACTIVE status', () => {
+  it('accepts explicit bounded creation-date filters and persisted statuses', () => {
+    expect(adminUsersQuerySchema.parse({ status: 'SUSPENDED' }).status).toBe('SUSPENDED');
     expect(
       adminUsersQuerySchema.parse({
         status: 'ACTIVE',

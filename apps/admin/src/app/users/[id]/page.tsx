@@ -106,7 +106,10 @@ export default async function AdminUserDetailPage({ params }: { params: Promise<
                       user.role
                     ],
                   ],
-                  [users('status'), users('active')],
+                  [
+                    users('status'),
+                    user.status === 'SUSPENDED' ? users('suspended') : users('active'),
+                  ],
                   [t('emailVerified'), user.emailVerified ? t('verified') : t('notVerified')],
                   [users('joined'), format(user.createdAt)],
                   [t('updated'), format(user.updatedAt)],

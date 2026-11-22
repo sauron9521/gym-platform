@@ -35,6 +35,7 @@ export const adminUserListSelect = {
   email: true,
   role: true,
   createdAt: true,
+  status: true,
 } satisfies Prisma.UserSelect;
 
 /** Operator account detail projection; excludes sensitive profile, sessions and credentials. */
@@ -55,7 +56,7 @@ export const userAvatarKeySelect = {
 } satisfies Prisma.UserSelect;
 
 export const profileAvatarOwnerSelect = {
-  user: { select: { deletedAt: true } },
+  user: { select: { deletedAt: true, status: true } },
 } satisfies Prisma.ProfileSelect;
 
 export const userEmailVerificationSelect = {

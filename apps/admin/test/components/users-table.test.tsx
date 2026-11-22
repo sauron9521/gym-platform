@@ -14,6 +14,7 @@ const copy: DirectoryCopy = {
   trainer: 'Trainer',
   admin: 'Administrator',
   active: 'Active',
+  suspended: 'Suspended',
   unavailableTitle: 'Directory unavailable',
   unavailableDescription: 'Check API availability',
   forbiddenTitle: 'Insufficient permissions',
@@ -70,6 +71,19 @@ describe('Admin UsersTable with server-driven data', () => {
     expect(screen.queryByRole('link', { name: 'Next' })).toBeNull();
     expect(screen.getByText('Newest first')).toBeTruthy();
     expect(screen.queryByRole('button', { name: /Sort/ })).toBeNull();
+  });
+
+  test('shows persisted SUSPENDED status without adding a mutation control', () => {
+    render(
+      <UsersTable
+        result={{ ...ready, data: [{ ...data[0]!, status: 'SUSPENDED' }] }}
+        filters={filters}
+        locale="en"
+        copy={copy}
+      />,
+    );
+    expect(screen.getByText('Suspended')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /suspend|reactivate|restore/i })).toBeNull();
   });
 
   test('uses a normal GET form for API-side email and role filtering, not current-page state', () => {

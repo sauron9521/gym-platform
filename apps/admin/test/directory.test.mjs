@@ -72,6 +72,14 @@ test('operator directory sends credentials to fixed trusted internal API only, n
   assert.equal(options.signal instanceof AbortSignal, true);
 });
 
+test('accepts persisted SUSPENDED as a public operator-only account status', async () => {
+  const suspended = { ...payload, data: [{ ...row, status: 'SUSPENDED' }] };
+  assert.deepEqual(
+    await readAdminDirectory('sid=foo', filters, endpoint, respond(200, suspended)),
+    { kind: 'ready', ...suspended },
+  );
+});
+
 test('401, 403, missing cookies, invalid upstream and upstream failures all fail closed', async () => {
   assert.deepEqual(await readAdminDirectory('', filters, endpoint, respond(200)), {
     kind: 'unauthenticated',
@@ -115,7 +123,7 @@ test('unexpected account fields or meta cause fail closed with no PII exposed', 
   for (const body of [
     { ...payload, data: [{ ...row, passwordHash: 'secret' }] },
     { ...payload, data: [{ ...row, deletedAt: null }] },
-    { ...payload, data: [{ ...row, status: 'SUSPENDED' }] },
+    { ...payload, data: [{ ...row, status: 'BANNED' }] },
     { ...payload, data: [{ ...row, email: null }] },
     { ...payload, data: [{ ...row, id: 'not-uuid' }] },
     { ...payload, data: [{ ...row, createdAt: 'not-a-date' }] },

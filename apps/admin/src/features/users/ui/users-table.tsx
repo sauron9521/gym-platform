@@ -17,6 +17,7 @@ export type DirectoryCopy = {
   trainer: string;
   admin: string;
   active: string;
+  suspended: string;
   unavailableTitle: string;
   unavailableDescription: string;
   forbiddenTitle: string;
@@ -148,7 +149,7 @@ export function UsersTable({
                   </td>
                   <td className="px-4 py-3">
                     <span className="rounded-md bg-muted px-2 py-1 text-xs text-foreground">
-                      {copy.active}
+                      {user.status === 'SUSPENDED' ? copy.suspended : copy.active}
                     </span>
                   </td>
                   <td className="px-4 py-3 text-muted-foreground">
