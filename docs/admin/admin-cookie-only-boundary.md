@@ -3,7 +3,7 @@
 **Status: partial security hardening, not a complete admin-session implementation.**
 
 The existing privileged routes now require an authenticated, persisted,
-server-side cookie session via `@Authenticate({ providers: [SessionAuth] })`:
+server-side cookie session via `@Authenticate({ providers: [SessionCookieProvider] })`:
 
 - `GET /admin/users` and `GET /admin/users/:userId`
 - `GET /admin/trainer-applications`

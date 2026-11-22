@@ -1,11 +1,10 @@
-import { Authenticate, CurrentUser } from '@nestjs/authentication';
+import { Authenticate, CurrentUser, SessionCookieProvider } from '@nestjs/authentication';
 import { Controller, Get, NotFoundException, Param, Query, Req, UseGuards } from '@nestjs/common';
 import { ApiCookieAuth, ApiNotFoundResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import type { Request } from 'express';
 import { z } from 'zod';
 
 import { AdminAuditLogger } from '#src/common/audit/admin-audit.logger';
-import { SessionAuth } from '#src/modules/auth/providers/session-auth.provider';
 import { RateLimit } from '#src/common/rate-limit/rate-limit.policies';
 import { AdminUsersReadGuard } from './admin-users-read.guard.js';
 import {
@@ -23,7 +22,7 @@ type Actor = { id: string };
 @Controller('admin/users')
 // Restrict privileged reads to live server-side cookies, not bearer JWTs.
 // Dedicated admin-purpose sessions and step-up remain #289/#290 follow-ups.
-@Authenticate({ providers: [SessionAuth] })
+@Authenticate({ providers: [SessionCookieProvider] })
 export class AdminUsersController {
   constructor(
     private readonly users: UsersRepository,
