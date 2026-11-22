@@ -18,6 +18,8 @@ export class SessionAuth extends SessionCookieProvider<UserResponse> {
   }
 
   validate(session: SessionRecord) {
+    // Legacy admin-purpose tokens must never authorize the ordinary cookie realm.
+    if (session.metadata?.purpose === 'admin') return null;
     return this.usersRepository.findUserById(session.userId);
   }
 }

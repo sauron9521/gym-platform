@@ -54,6 +54,7 @@ describe('AuthModule controller registry', () => {
     [SessionsController, 'list', RequestMethod.GET, 'sessions', undefined],
     [SessionsController, 'revoke', RequestMethod.DELETE, 'sessions/:id', 204],
     [SessionsController, 'signOut', RequestMethod.POST, 'sign-out', 204],
+    [SessionsController, 'adminSignOut', RequestMethod.POST, 'admin-sign-out', 204],
     [SessionsController, 'signOutEverywhere', RequestMethod.POST, 'sign-out-everywhere', 204],
   ] as const)('preserves %s.%s HTTP contract', (controller, name, method, path, code) => {
     const handler = Object.getOwnPropertyDescriptor(controller.prototype, name)?.value as (
@@ -92,7 +93,7 @@ describe('AuthModule controller registry', () => {
     }
   });
 
-  it('registers exactly sixteen unique HTTP verb/path pairs', () => {
+  it('registers exactly seventeen unique HTTP verb/path pairs', () => {
     const routes = controllers.flatMap((controller) => {
       const prefix = Reflect.getMetadata(PATH_METADATA, controller) as string;
       return Object.getOwnPropertyNames(controller.prototype)
@@ -109,7 +110,7 @@ describe('AuthModule controller registry', () => {
         });
     });
 
-    expect(routes).toHaveLength(16);
+    expect(routes).toHaveLength(17);
     expect(new Set(routes).size).toBe(routes.length);
   });
 });

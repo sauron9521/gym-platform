@@ -36,14 +36,14 @@ export default function AdminSignInPage() {
 
       if (signedIn.data.mfaRequired) {
         // A pending MFA session must never grant Admin UI access.
-        await api.POST('/auth/sign-out').catch(() => undefined);
+        await api.POST('/auth/admin-sign-out').catch(() => undefined);
         setError(admin('mfaRequired'));
         return;
       }
 
       const verified = await api.GET('/auth/admin-session');
       if (verified.response.status !== 200 || verified.data?.role !== 'ADMIN') {
-        await api.POST('/auth/sign-out').catch(() => undefined);
+        await api.POST('/auth/admin-sign-out').catch(() => undefined);
         setError(admin('forbidden'));
         return;
       }

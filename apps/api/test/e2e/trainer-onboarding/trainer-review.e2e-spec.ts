@@ -51,7 +51,7 @@ describe('Operator trainer review (HTTP + PostgreSQL)', () => {
     const values = Array.isArray(setCookies) ? setCookies : setCookies ? [setCookies] : [];
     const cookie = values
       .map((value) => value.split(';', 1)[0] ?? '')
-      .find((value) => value.startsWith('__Host-sid='));
+      .find((value) => value.startsWith(role === 'ADMIN' ? '__Host-admin-sid=' : '__Host-sid='));
     if (!cookie) throw new Error('No test session cookie');
     cookies[key] = cookie;
     return user;
@@ -108,13 +108,13 @@ describe('Operator trainer review (HTTP + PostgreSQL)', () => {
       const listing = await request(app.getHttpServer())
         .get('/admin/trainer-applications')
         .set('Cookie', asUser(key));
-      expect(listing.status).toBe(403);
+      expect(listing.status).toBe(key === 'plain-admin' ? 403 : 401);
 
       const mutation = await request(app.getHttpServer())
         .post(endpoint)
         .set('Cookie', asUser(key))
         .send({ reason: 'Verified qualifications' });
-      expect(mutation.status).toBe(403);
+      expect(mutation.status).toBe(key === 'plain-admin' ? 403 : 401);
     }
 
     const anon = await request(app.getHttpServer()).post(endpoint).send({
@@ -143,12 +143,12 @@ describe('Operator trainer review (HTTP + PostgreSQL)', () => {
     const queue = await request(app.getHttpServer())
       .get('/admin/trainer-applications')
       .set('Cookie', cookie!);
-    expect(queue.status).toBe(403);
+    expect(queue.status).toBe(401);
     const denied = await request(app.getHttpServer())
       .post(url(pendingId, 'approve'))
       .set('Cookie', cookie!)
       .send({ reason: 'Valid credentials but wrong session purpose' });
-    expect(denied.status).toBe(403);
+    expect(denied.status).toBe(401);
     const state = await prisma.trainerApplication.findUniqueOrThrow({ where: { id: pendingId } });
     expect(state.status).toBe('PENDING');
   });

@@ -23,6 +23,11 @@ export function createOpenApiDocument(app: INestApplication) {
       },
       'sessionCookie',
     )
+    .addCookieAuth(
+      '__Host-admin-sid',
+      { type: 'apiKey', in: 'cookie', name: '__Host-admin-sid' },
+      'adminSessionCookie',
+    )
     .build();
 
   return SwaggerModule.createDocument(app, config, {

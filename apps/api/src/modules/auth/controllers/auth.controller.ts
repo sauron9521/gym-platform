@@ -12,7 +12,6 @@ import { AuthNoStoreInterceptor } from '../interceptors/auth-no-store.intercepto
 import { EmailVerificationService, Public, SignInService } from '@nestjs/authentication';
 import { RateLimit } from '#src/common/rate-limit/rate-limit.policies';
 import { ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
-import { ADMIN_SESSION_PURPOSE } from '#src/common/auth/admin-session-purpose.guard';
 import { AdminOriginGuard } from '#src/common/auth/admin-origin.guard';
 import {
   registrationResponseSchema,
@@ -25,6 +24,9 @@ import {
   type SignUpInput,
 } from '../dto/auth.schemas.js';
 import { CredentialsService } from '../services/index.js';
+import { AdminCookieAuthService } from '../services/admin-cookie-auth.service.js';
+import { Req, Res } from '@nestjs/common';
+import type { Request, Response } from 'express';
 
 @Public()
 @ApiTags('Authentication')
@@ -37,6 +39,7 @@ export class AuthController {
     private readonly credentialsService: CredentialsService,
     private readonly signInService: SignInService,
     private readonly emailVerificationService: EmailVerificationService,
+    private readonly adminCookies: AdminCookieAuthService,
   ) {}
 
   @RateLimit('auth')
@@ -71,15 +74,16 @@ export class AuthController {
   @UseGuards(AdminOriginGuard)
   @HttpCode(200)
   @ApiOkResponse({ schema: sessionSignInResponseSchema })
-  async adminSignIn(@Body({ schema: signInSchema }) body: SignInInput) {
+  async adminSignIn(
+    @Body({ schema: signInSchema }) body: SignInInput,
+    @Req() request: Request,
+    @Res({ passthrough: true }) response: Response,
+  ) {
     const user = await this.credentialsService.verify(body.email, body.password);
     if (!user || user.role !== 'ADMIN') {
       throw new UnauthorizedException('Invalid credentials');
     }
-    const { session } = await this.signInService.signIn(user.id, {
-      method: 'password',
-      metadata: { purpose: ADMIN_SESSION_PURPOSE },
-    });
+    const { session } = await this.adminCookies.signIn(user.id, request, response);
     return { mfaRequired: session.mfa === 'pending' };
   }
 

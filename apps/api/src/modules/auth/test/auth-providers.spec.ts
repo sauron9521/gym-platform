@@ -36,6 +36,19 @@ describe('auth provider registration and user resolution contracts', () => {
     expect(repository.findUserForJwtAuth).not.toHaveBeenCalled();
   });
 
+  it('never authenticates a legacy admin-purpose record through the ordinary SessionCookieProvider', async () => {
+    const record: SessionRecord = {
+      id: 'old-admin-session',
+      userId: 'admin-user',
+      createdAt: new Date('2026-11-20T10:00:00Z'),
+      expiresAt: new Date('2026-11-20T18:00:00Z'),
+      lastActiveAt: new Date('2026-11-20T10:00:00Z'),
+      metadata: { purpose: 'admin' },
+    };
+    expect(session.validate(record)).toBeNull();
+    expect(repository.findUserById).not.toHaveBeenCalled();
+  });
+
   it('resolves JWT subjects using the public, soft-delete-aware UsersRepository', async () => {
     const user = { id: 'user-1', role: 'ATHLETE' };
     repository.findUserForJwtAuth.mockResolvedValueOnce(user);

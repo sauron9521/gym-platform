@@ -52,7 +52,7 @@ describe('GET /admin/users (HTTP + PostgreSQL)', () => {
       const setCookies = Array.isArray(raw) ? raw : raw ? [raw] : [];
       const cookie = setCookies
         .map((value) => value.split(';', 1)[0] ?? '')
-        .find((value) => value.startsWith('__Host-sid='));
+        .find((value) => value.startsWith(role === 'ADMIN' ? '__Host-admin-sid=' : '__Host-sid='));
       if (!cookie) throw new Error('Expected session cookie');
       cookies[key] = cookie;
     }
@@ -111,7 +111,9 @@ describe('GET /admin/users (HTTP + PostgreSQL)', () => {
     expect(signed.status).toBe(200);
     const raw = signed.headers['set-cookie'];
     const headers = Array.isArray(raw) ? raw : raw ? [raw] : [];
-    const cookieHeader = headers.find((value) => value.startsWith('__Host-sid='));
+    const cookieHeader = headers.find((value) =>
+      value.startsWith(path === '/auth/admin-login' ? '__Host-admin-sid=' : '__Host-sid='),
+    );
     expect(cookieHeader).toBeTruthy();
     const cookie = cookieHeader!.split(';', 1)[0]!;
     const id = createHash('sha256').update(cookie.split('=', 2)[1]!).digest('base64url');
@@ -233,7 +235,7 @@ describe('GET /admin/users (HTTP + PostgreSQL)', () => {
     const profile = await request(app.getHttpServer()).get('/users/me').set('Cookie', cookie);
     expect(profile.status).toBe(200);
     expect(profile.body.id).toBe(operatorId);
-    expect((await list(cookie)).status).toBe(403);
+    expect((await list(cookie)).status).toBe(401);
   });
 
   it('rejects anonymous 401 and all non-operator roles 403 without leaking records', async () => {
@@ -242,7 +244,7 @@ describe('GET /admin/users (HTTP + PostgreSQL)', () => {
     expect(anonymous.headers['cache-control']).toContain('no-store');
     for (const key of ['plain-admin', 'athlete', 'trainer']) {
       const response = await list(cookies[key]!);
-      expect(response.status).toBe(403);
+      expect(response.status).toBe(key === 'plain-admin' ? 403 : 401);
       expect(JSON.stringify(response.body)).not.toContain(`admin-list-athlete-${suffix}`);
       expect(response.headers['cache-control']).toContain('no-store');
     }
@@ -268,9 +270,9 @@ describe('GET /admin/users (HTTP + PostgreSQL)', () => {
     const oldSession = await request(app.getHttpServer())
       .get('/auth/admin-session')
       .set('Cookie', normal!);
-    expect(oldSession.status).toBe(403);
+    expect(oldSession.status).toBe(401);
     expect(oldSession.headers['cache-control']).toContain('no-store');
-    expect((await list(normal!)).status).toBe(403);
+    expect((await list(normal!)).status).toBe(401);
 
     const liveSession = await request(app.getHttpServer())
       .get('/auth/admin-session')
@@ -380,7 +382,7 @@ describe('GET /admin/users (HTTP + PostgreSQL)', () => {
       .get('/admin/users')
       .set('Cookie', cookies.athlete!)
       .set('Authorization', 'Bearer ' + operatorJwt);
-    expect(cannotEscalate.status).toBe(403);
+    expect(cannotEscalate.status).toBe(401);
 
     const cookieWins = await request(app.getHttpServer())
       .get('/admin/users')
@@ -402,7 +404,7 @@ describe('GET /admin/users (HTTP + PostgreSQL)', () => {
     const headers = Array.isArray(raw) ? raw : raw ? [raw] : [];
     const cookie = headers
       .map((value) => value.split(';', 1)[0] ?? '')
-      .find((value) => value.startsWith('__Host-sid='));
+      .find((value) => value.startsWith('__Host-admin-sid='));
     expect(cookie).toBeTruthy();
 
     const issued = await request(app.getHttpServer())
@@ -410,7 +412,7 @@ describe('GET /admin/users (HTTP + PostgreSQL)', () => {
       .send({ email: operator.email, password });
     expect(issued.status).toBe(200);
     const signedOut = await request(app.getHttpServer())
-      .post('/auth/sign-out')
+      .post('/auth/admin-sign-out')
       .set('Cookie', cookie!);
     expect(signedOut.status).toBe(204);
 
@@ -568,7 +570,7 @@ describe('GET /admin/users (HTTP + PostgreSQL)', () => {
         const denied = await request(app.getHttpServer())
           .get(`/admin/users/${id}`)
           .set('Cookie', cookies[key]!);
-        expect(denied.status).toBe(403);
+        expect(denied.status).toBe(key === 'plain-admin' ? 403 : 401);
         expect(JSON.stringify(denied.body)).not.toContain(`admin-list-athlete-${suffix}`);
         expect(denied.headers['cache-control']).toContain('no-store');
       }
@@ -602,8 +604,8 @@ describe('GET /admin/users (HTTP + PostgreSQL)', () => {
     expect((await revoke().set('Authorization', 'Bearer ' + issued.body.accessToken)).status).toBe(
       401,
     );
-    expect((await revoke().set('Cookie', regular.cookie)).status).toBe(403);
-    expect((await revoke().set('Cookie', cookies.athlete!)).status).toBe(403);
+    expect((await revoke().set('Cookie', regular.cookie)).status).toBe(401);
+    expect((await revoke().set('Cookie', cookies.athlete!)).status).toBe(401);
 
     const crossOrigin = await revoke()
       .set('Cookie', cookies.operator!)
@@ -625,6 +627,81 @@ describe('GET /admin/users (HTTP + PostgreSQL)', () => {
     ).toBe(200);
   });
 
+  it('keeps independent Admin and ordinary cookie sessions alive in one browser and signs out only Admin', async () => {
+    const ordinary = await loginOperator('/auth/login');
+    const operator = await prisma.user.findUniqueOrThrow({
+      where: { id: operatorId },
+      select: { email: true },
+    });
+    const elevated = await request(app.getHttpServer())
+      .post('/auth/admin-login')
+      .set('Cookie', ordinary.cookie)
+      .send({ email: operator.email, password });
+    expect(elevated.status).toBe(200);
+    const raw = elevated.headers['set-cookie'];
+    const items = Array.isArray(raw) ? raw : raw ? [raw] : [];
+    const elevatedCookie = items
+      .map((c) => c.split(';', 1)[0] ?? '')
+      .find((c) => c.startsWith('__Host-admin-sid='))!;
+    expect(elevatedCookie).toBeTruthy();
+    expect(items.some((item) => item.startsWith('__Host-sid='))).toBe(false);
+
+    // The privileged cookie must not authenticate an ordinary API route.
+    expect(
+      (await request(app.getHttpServer()).get('/users/me').set('Cookie', elevatedCookie)).status,
+    ).toBe(401);
+    expect(
+      (await request(app.getHttpServer()).get('/auth/admin-session').set('Cookie', ordinary.cookie))
+        .status,
+    ).toBe(401);
+    // Both cookies may be sent together: each route chooses its own realm.
+    const combined = ordinary.cookie + '; ' + elevatedCookie;
+    expect(
+      (await request(app.getHttpServer()).get('/users/me').set('Cookie', combined)).status,
+    ).toBe(200);
+    expect(
+      (await request(app.getHttpServer()).get('/auth/admin-session').set('Cookie', combined))
+        .status,
+    ).toBe(200);
+    expect((await list(combined)).status).toBe(200);
+
+    const adminLogout = await request(app.getHttpServer())
+      .post('/auth/admin-sign-out')
+      .set('Cookie', combined);
+    expect(adminLogout.status).toBe(204);
+    const clears = adminLogout.headers['set-cookie'];
+    const cleared = Array.isArray(clears) ? clears : clears ? [clears] : [];
+    expect(
+      cleared.some((item) => item.startsWith('__Host-admin-sid=;') && item.includes('Max-Age=0')),
+    ).toBe(true);
+    expect(cleared.some((item) => item.startsWith('__Host-sid='))).toBe(false);
+    expect(
+      (await request(app.getHttpServer()).get('/auth/admin-session').set('Cookie', elevatedCookie))
+        .status,
+    ).toBe(401);
+    expect(
+      (await request(app.getHttpServer()).get('/users/me').set('Cookie', ordinary.cookie)).status,
+    ).toBe(200);
+  });
+
+  it('denies pending-MFA Admin cookies and lets a pending challenge sign out without touching normal auth', async () => {
+    const admin = await loginOperator('/auth/admin-login');
+    const regular = await loginOperator('/auth/login');
+    await prisma.session.update({ where: { id: admin.id }, data: { mfa: 'pending' } });
+    expect(
+      (await request(app.getHttpServer()).get('/auth/admin-session').set('Cookie', admin.cookie))
+        .status,
+    ).toBe(401);
+    const end = await request(app.getHttpServer())
+      .post('/auth/admin-sign-out')
+      .set('Cookie', admin.cookie);
+    expect(end.status).toBe(204);
+    expect(await prisma.session.findUnique({ where: { id: admin.id } })).toBeNull();
+    expect(
+      (await request(app.getHttpServer()).get('/users/me').set('Cookie', regular.cookie)).status,
+    ).toBe(200);
+  });
+
   it('revokes only caller admin sessions across devices, clears cookie and preserves all ordinary sessions', async () => {
     const actor = await seedAccount('revoke-actor', 'ADMIN');
     const first = cookies['revoke-actor']!;
@@ -634,20 +711,23 @@ describe('GET /admin/users (HTTP + PostgreSQL)', () => {
     const thirdResponse = await auth('/auth/admin-login');
     const regularResponse = await auth('/auth/login');
 
-    const extractCookie = (result: typeof secondResponse) => {
+    const extractCookie = (
+      result: typeof secondResponse,
+      name: '__Host-admin-sid' | '__Host-sid',
+    ) => {
       const raw = result.headers['set-cookie'];
       const all = Array.isArray(raw) ? raw : raw ? [raw] : [];
       return all
         .map((item) => item.split(';', 1)[0] ?? '')
-        .find((item) => item.startsWith('__Host-sid='))!;
+        .find((item) => item.startsWith(name + '='))!;
     };
     expect(secondResponse.status).toBe(200);
     expect(thirdResponse.status).toBe(200);
     expect(regularResponse.status).toBe(200);
 
-    const second = extractCookie(secondResponse);
-    const third = extractCookie(thirdResponse);
-    const regular = extractCookie(regularResponse);
+    const second = extractCookie(secondResponse, '__Host-admin-sid');
+    const third = extractCookie(thirdResponse, '__Host-admin-sid');
+    const regular = extractCookie(regularResponse, '__Host-sid');
     const adminCount = await prisma.session.count({
       where: { userId: actor.id, metadata: { path: ['purpose'], equals: 'admin' } },
     });
@@ -660,7 +740,7 @@ describe('GET /admin/users (HTTP + PostgreSQL)', () => {
     const setCookie = revoked.headers['set-cookie'];
     const cleared = Array.isArray(setCookie) ? setCookie : setCookie ? [setCookie] : [];
     expect(
-      cleared.some((item) => item.startsWith('__Host-sid=;') && item.includes('Max-Age=0')),
+      cleared.some((item) => item.startsWith('__Host-admin-sid=;') && item.includes('Max-Age=0')),
     ).toBe(true);
 
     for (const cookie of [first, second, third]) {

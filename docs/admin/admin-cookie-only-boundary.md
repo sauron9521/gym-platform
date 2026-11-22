@@ -52,13 +52,14 @@ token family for the user.
 **Still NO-GO:** The admin-purpose session shares the ordinary cookie name
 and session table, even though expiry and purpose-scoped revocation now differ.
 Finish #289 with origin/lifecycle hardening, including cross-origin session
-boundaries and admin UX. There is not yet a separate Admin cookie realm. Complete #290 for
+boundaries and admin UX. A separate Admin cookie realm is introduced below. Complete #290 for
 recent proof of password/MFA, step-up expiry and safe recovery before enabling
 account suspension/reactivation or role/price privilege changes. The current
 trainer-review write endpoints already exist but remain without step-up, which
 must be addressed as part of the future sensitive-mutation hardening.
 
-No Prisma migration or separate cookie realm is introduced in this slice.
+That earlier slice introduced no Prisma migration or separate cookie realm; the later
+Admin-cookie realm cutover is documented below.
 
 ### Admin-only Origin boundary (#289)
 
@@ -75,3 +76,28 @@ Web/Mobile auth, CORS or session origin configuration. Set `ADMIN_APP_URL` to
 the exact public Admin Web origin on deployments with a separate Admin site.
 This is defense in depth, not a substitute for the library's CSRF checks,
 MFA/step-up, or a dedicated Admin cookie realm.
+
+### Separate Admin-cookie realm (#289)
+
+Admin browser sessions now use an independent, host-prefixed, Secure, HttpOnly
+cookie named `__Host-admin-sid` (Path=/, SameSite=Lax). Regular Web
+sessions retain `__Host-sid`; both can coexist on the same host and their
+session providers do not authenticate on each other's routes. Admin routes
+explicitly select the Admin-only provider, which refuses ordinary-route
+requests even when an Admin cookie is supplied. Existing Admin sessions
+issued under the former `__Host-sid` cookie must sign in again after this
+cutover; legacy Admin tokens cannot become ordinary sessions.
+
+The new Admin session service reuses the existing session store and MFA
+verifier but has its own 8h absolute and 15m idle limits, cookie issuance,
+second-factor rotation and current-cookie sign-out. `POST /auth/admin-sign-out`
+clears only `__Host-admin-sid`, including a pending MFA session; the normal
+`POST /auth/sign-out` continues to clear only `__Host-sid`. Admin Web uses
+the Admin-specific sign-out on denied or pending sign-in.
+
+Independent cookie names do **not** mean separate database or identities:
+admin-purpose and ordinary rows still live in the same Session table and
+may be revoked globally by account-wide security actions. Dedicated Admin
+MFA enrollment, step-up challenges and privileged action re-auth remain
+scope of #290. Do not close #289 until operational session lifecycle and
+browser/proxy behavior are verified at staging.
