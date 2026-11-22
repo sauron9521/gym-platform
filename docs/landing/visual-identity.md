@@ -80,6 +80,33 @@ theme watcher or separate tracking is used. Validate visible variant, image
 load, descriptive alt text, no horizontal overflow and persistence across
 manual theme switches, OS changes and navigation in Chromium at 320/1280px.
 
+## Theme-aware screenshot loading / LCP budget (#388)
+
+Product previews keep both real UI screenshots in the DOM so the CSS-only
+System / Light / Dark selector continues working before hydration and without
+JavaScript. Both variants retain `loading="lazy"`; hidden variants use
+`display: none`, preventing an eager duplicate download on initial load.
+
+Next.js 16 recommends `fetchPriority="high"` **without** `preload` /
+`loading="eager"` when CSS selects between Light/Dark `next/image` elements:
+https://nextjs.org/docs/app/api-reference/components/image#theme-detection
+
+We apply that hint only to both variants of the **first Athlete preview**,
+which may be an LCP candidate at desktop sizes, and leave the secondary Coach
+preview at the default browser priority. Only the actually visible variant
+should be requested initially. Do **not** prefetch or eagerly load both theme
+images, and do not treat the Next.js dev LCP warning as evidence of an actual
+Core Web Vitals failure.
+
+The regression browser test monitors real `/_next/image` requests on 320px
+and 1280px, asserts the hidden theme stays unfetched during initial render,
+checks the priority hint and confirms Dark loads on explicit theme change.
+This is a request-policy / correctness gate, **not** a measured field LCP
+improvement. Before launch, collect p75 real-user LCP via RUM or
+production-like Lighthouse traces with repeat runs / realistic mobile
+network conditions, and only then decide if artwork placement or priority
+needs further work. Keep responsive sizes and dimensions to prevent CLS.
+
 ## Public theme preference
 
 The marketing header offers one accessible System / Light / Dark selector across

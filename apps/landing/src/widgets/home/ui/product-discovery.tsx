@@ -76,6 +76,7 @@ export function ProductDiscovery({ locale }: { locale: Locale }) {
                 height={700}
                 sizes="(min-width: 1024px) 46vw, (min-width: 640px) 85vw, 100vw"
                 loading="lazy"
+                fetchPriority={index === 0 ? 'high' : 'auto'}
                 className="landing-product-preview--light h-auto w-full"
               />
               <Image
@@ -85,6 +86,7 @@ export function ProductDiscovery({ locale }: { locale: Locale }) {
                 height={700}
                 sizes="(min-width: 1024px) 46vw, (min-width: 640px) 85vw, 100vw"
                 loading="lazy"
+                fetchPriority={index === 0 ? 'high' : 'auto'}
                 className="landing-product-preview--dark h-auto w-full"
               />
               <figcaption className="border-t border-border/70 px-4 py-3 text-xs leading-5 text-muted-foreground">
