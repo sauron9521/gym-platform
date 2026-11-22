@@ -185,6 +185,36 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
+  admin-browser-e2e:
+    name: Admin / Browser Cookie & Proxy E2E (Chromium)
+    needs: changes
+    if: ${{ needs.changes.outputs.admin }} == 'true'
+    runs-on: ubuntu-24.04
+    container:
+      # Reuse the version-pinned image used for existing browser tests.
+      image: mcr.microsoft.com/playwright:v1.65.1-noble@sha256:1507cbfc550a63a6b7396791ca4f00df17beb56342d2447b3f106c306f525579
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Admin browser cookie and Next proxy smoke
+        run: pnpm --filter @gym/admin test:e2e
+        env:
+          CI: 'true'
+      - name: Retain Admin browser traces on failure
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: admin-cookie-browser-traces
+          path: apps/admin/test-results/browser/
+          if-no-files-found: ignore
+          retention-days: 7
+
   landing-browser-e2e:
     name: Landing / Browser E2E (Chromium)
     needs: changes
@@ -372,6 +402,7 @@ jobs:
       - tooling-contracts
       - prepush-windows
       - web-browser-e2e
+      - admin-browser-e2e
       - dependency-security
       - mobile-ios-dev-windows
       - landing-browser-e2e
@@ -393,6 +424,8 @@ jobs:
           CHANGE_DETECTION_RESULT: ${{ needs.changes.result }}
           FULL_SCOPE: ${{ needs.changes.outputs.full }}
           WEB_REQUIRED: ${{ needs.changes.outputs.web }}
+          ADMIN_REQUIRED: ${{ needs.changes.outputs.admin }}
+          ADMIN_E2E_RESULT: ${{ needs.admin-browser-e2e.result }}
           DEPS_REQUIRED: ${{ needs.changes.outputs.deps }}
           WINDOWS_RESULT: ${{ needs.prepush-windows.result }}
           WEB_E2E_RESULT: ${{ needs.web-browser-e2e.result }}
@@ -424,6 +457,12 @@ jobs:
           else
             test "$WEB_REQUIRED" = false
             test "$WEB_E2E_RESULT" = skipped
+          fi
+          if [ "$ADMIN_REQUIRED" = true ]; then
+            test "$ADMIN_E2E_RESULT" = success
+          else
+            test "$ADMIN_REQUIRED" = false
+            test "$ADMIN_E2E_RESULT" = skipped
           fi
           if [ "$DEPS_REQUIRED" = true ]; then
             test "$SECURITY_RESULT" = success
