@@ -47,8 +47,8 @@ for (const width of [320, 390, 768, 1440]) {
       await page.goto('/');
       await expect(page.locator('header [data-slot="brand-logo"]')).toBeVisible();
       const hero = page.getByRole('main');
-      await expect(hero.getByRole('link', { name: 'Дізнатися більше' })).toBeVisible();
-      await expect(hero.getByRole('link', { name: 'Переглянути застосунки' })).toBeVisible();
+      await expect(hero.getByRole('link', { name: 'Для атлетів' })).toBeVisible();
+      await expect(hero.getByRole('link', { name: 'Для тренерів' })).toBeVisible();
       expect(
         await page.evaluate(
           () => document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1,

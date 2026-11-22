@@ -77,7 +77,7 @@ describe('Landing site header', () => {
 });
 
 describe('Landing home screen', () => {
-  test('renders a single primary heading and reachable feature and app actions', () => {
+  test('renders a single primary heading and reachable audience actions', () => {
     render(<HomeScreen />);
 
     const main = screen.getByRole('main');
@@ -86,12 +86,12 @@ describe('Landing home screen', () => {
     expect(within(main).getByRole('heading', { level: 1 }).textContent).toContain(
       'Тренуйся розумніше.',
     );
-    expect(within(main).getByRole('link', { name: 'Дізнатися більше' }).getAttribute('href')).toBe(
-      '/features',
+    expect(within(main).getByRole('link', { name: 'Для атлетів' }).getAttribute('href')).toBe(
+      '/for-athletes',
     );
-    expect(
-      within(main).getByRole('link', { name: 'Переглянути застосунки' }).getAttribute('href'),
-    ).toBe('/apps');
+    expect(within(main).getByRole('link', { name: 'Для тренерів' }).getAttribute('href')).toBe(
+      '/for-trainers',
+    );
   });
 
   test('audience cards link to athlete, trainer and application routes', () => {

@@ -716,6 +716,8 @@
       "headlineLead": "Train smarter.",
       "headlineAccent": "Progress further.",
       "description": "A platform for athletes and coaches: exercises, training programs, and progress in one ecosystem.",
+      "heroAthleteAction": "For athletes",
+      "heroTrainerAction": "For coaches",
       "phase": "Early development",
       "learnMore": "Learn more",
       "browseApps": "Explore applications",

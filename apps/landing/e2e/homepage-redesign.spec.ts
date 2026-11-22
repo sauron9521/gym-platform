@@ -13,9 +13,13 @@ for (const width of [320, 1280]) {
     await expect(page.getByText(/не реальні дані спортсмена/)).toBeVisible();
 
     const main = page.getByRole('main');
-    await expect(main.getByRole('link', { name: 'Переглянути продукти' })).toHaveAttribute(
+    await expect(main.getByRole('link', { name: 'Для атлетів' })).toHaveAttribute(
       'href',
-      '/apps',
+      '/for-athletes',
+    );
+    await expect(main.getByRole('link', { name: 'Для тренерів' })).toHaveAttribute(
+      'href',
+      '/for-trainers',
     );
     await expect(main.getByRole('link', { name: 'Про проєкт' })).toHaveAttribute('href', '/about');
 
