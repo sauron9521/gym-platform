@@ -1,0 +1,81 @@
+name: Admin staging HTTPS and session smoke (manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_staging:
+        description: 'Explicitly authorize only the protected admin-staging environment'
+        required: true
+        type: choice
+        default: NO_STAGING_RUN
+        options:
+          - NO_STAGING_RUN
+          - RUN_DEDICATED_STAGING
+      scope:
+        description: 'Quick login/logout, 16-minute idle expiry, or scoped revoke-all'
+        required: true
+        type: choice
+        default: quick
+        options:
+          - quick
+          - idle-expiry
+          - revoke-all
+      confirm_revoke:
+        description: 'Additional approval; revoke-all ends all sessions for the staging test operator'
+        required: true
+        type: choice
+        default: NO_REVOKE
+        options:
+          - NO_REVOKE
+          - I_APPROVE_STAGING_REVOKE
+
+# Never triggered by PRs, pushes, schedules, or production deployments.
+permissions:
+  contents: read
+
+concurrency:
+  group: admin-staging-manual-session-smoke
+  cancel-in-progress: false
+
+jobs:
+  admin-staging:
+    name: Admin staging / HTTPS and session lifecycle (NO-GO)
+    if: >-
+      github.ref == 'refs/heads/main' &&
+      inputs.confirm_staging == 'RUN_DEDICATED_STAGING' &&
+      (inputs.scope != 'revoke-all' || inputs.confirm_revoke == 'I_APPROVE_STAGING_REVOKE')
+    environment: admin-staging
+    runs-on: ubuntu-24.04
+    timeout-minutes: 28
+    container:
+      image: mcr.microsoft.com/playwright:v1.65.1-noble@sha256:1507cbfc550a63a6b7396791ca4f00df17beb56342d2447b3f106c306f525579
+    env:
+      CI: 'true'
+      ADMIN_STAGING_SCOPE: ${{ inputs.scope }}
+      ADMIN_STAGING_ORIGIN: ${{ vars.ADMIN_STAGING_ORIGIN }}
+      ADMIN_STAGING_ALLOWED_HOST: ${{ vars.ADMIN_STAGING_ALLOWED_HOST }}
+      ADMIN_PRODUCTION_ORIGIN: ${{ vars.ADMIN_PRODUCTION_ORIGIN }}
+      ADMIN_STAGING_ACCOUNT_SCOPE: ${{ vars.ADMIN_STAGING_ACCOUNT_SCOPE }}
+      ADMIN_STAGING_EMAIL: ${{ secrets.ADMIN_STAGING_EMAIL }}
+      ADMIN_STAGING_PASSWORD: ${{ secrets.ADMIN_STAGING_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - name: Browser checks on protected HTTPS staging (never on production)
+        run: pnpm --filter @gym/admin test:e2e:staging
+      # No traces, screenshots, browser storage state, cookies or response
+      # bodies are uploaded: all can contain privileged session credentials.
+      - name: Record status only, never secrets or session identifiers
+        if: success()
+        run: |
+          echo 'Admin external staging browser session check succeeded.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'The selected scenario was ${{ inputs.scope }}.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'This is NOT production approval. Absolute 8h TTL still requires separate verification.' >> "$GITHUB_STEP_SUMMARY"
