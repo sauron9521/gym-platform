@@ -13,7 +13,7 @@ export class JwtAuth extends JwtBearerProvider<UserResponse> {
     registry.registerProvider(this, { order: 1 });
   }
 
-  validate({ sub }: JwtClaims) {
-    return sub ? this.usersRepository.findUserById(sub) : null;
+  validate({ sub, iat }: JwtClaims) {
+    return sub ? this.usersRepository.findUserForJwtAuth(sub, iat) : null;
   }
 }

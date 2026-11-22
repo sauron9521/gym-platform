@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import {
   AuthenticationStorage,
   type EmailTokenPurpose,
@@ -17,6 +17,7 @@ import {
 } from '../selects/auth-token.select.js';
 import { toEmailTokenRecord, toRefreshTokenRecord } from '../mappers/auth-token.mapper.js';
 import type { AuthConsumedEmailTokenRow } from '../types/auth-store.types.js';
+import { lockActiveCredentialOwner } from './lock-active-credential-owner.js';
 
 /** PostgreSQL-backed stores for opaque refresh tokens and email links. */
 @Injectable()
@@ -41,13 +42,8 @@ export class PrismaTokenStore implements RefreshTokenStore, EmailTokenStore {
 
   async saveRefreshToken(record: RefreshTokenRecord): Promise<void> {
     await this.prisma.$transaction(async (tx) => {
-      // Fail closed on an already-suspended owner before inserting a refresh
-      // family/token. A future suspend command must serialize these writes.
-      const account = await tx.user.findUnique({
-        where: { id: record.userId, deletedAt: null, status: 'ACTIVE' },
-        select: { id: true },
-      });
-      if (!account) throw new UnauthorizedException('Account unavailable');
+      await lockActiveCredentialOwner(tx, record.userId);
+      // Lock order: user row, then refresh-family row.
       // Ensure the family exists before acquiring a row lock. A preceding
       // upsert with update: {} may be a plain read and does NOT serialize
       // concurrent revocations.

@@ -282,6 +282,45 @@ describe('UsersRepository', () => {
     });
   });
 
+  describe('findUserForJwtAuth', () => {
+    it('checks issued-at strictly after the persisted auth invalidation fence', async () => {
+      const issuedAt = 1_700_000_000;
+      const record = { id: 'user-1', email: 'test@example.com' };
+      prisma.user.findUnique.mockResolvedValueOnce(record);
+      await expect(repository.findUserForJwtAuth(record.id, issuedAt)).resolves.toEqual(record);
+      expect(prisma.user.findUnique).toHaveBeenCalledWith({
+        where: {
+          id: record.id,
+          deletedAt: null,
+          status: 'ACTIVE',
+          OR: [
+            { authInvalidatedAt: null },
+            { authInvalidatedAt: { lt: new Date(issuedAt * 1000) } },
+          ],
+        },
+        select: userSelect,
+      });
+      expect(userSelect).not.toHaveProperty('authInvalidatedAt');
+    });
+
+    it('treats missing, fractional and unsafe iat as legacy-only: no revocation-fence bypass', async () => {
+      for (const iat of [undefined, -1, NaN, 1.5, Number.POSITIVE_INFINITY]) {
+        prisma.user.findUnique.mockClear();
+        prisma.user.findUnique.mockResolvedValueOnce(null);
+        await expect(repository.findUserForJwtAuth('user-1', iat)).resolves.toBeNull();
+        expect(prisma.user.findUnique).toHaveBeenCalledWith({
+          where: {
+            id: 'user-1',
+            deletedAt: null,
+            status: 'ACTIVE',
+            OR: [{ authInvalidatedAt: null }],
+          },
+          select: userSelect,
+        });
+      }
+    });
+  });
+
   describe('findCredentials', () => {
     it('should return credentials when user exists', async () => {
       const user = {

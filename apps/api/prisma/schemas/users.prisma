@@ -16,6 +16,7 @@ model User {
   passwordHash  String    @map("password_hash")
   role          Role      @default(ATHLETE)
   status        AccountStatus @default(ACTIVE)
+  authInvalidatedAt DateTime? @map("auth_invalidated_at") @db.Timestamptz(3)
   preferredLocale String?  @map("preferred_locale") @db.VarChar(10)
   createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt     DateTime  @updatedAt() @map("updated_at") @db.Timestamptz(3)

@@ -6,7 +6,7 @@ import { JwtAuth } from '../providers/jwt-auth.provider.js';
 import { SessionAuth } from '../providers/session-auth.provider.js';
 
 describe('auth provider registration and user resolution contracts', () => {
-  const repository = { findUserById: vi.fn() };
+  const repository = { findUserById: vi.fn(), findUserForJwtAuth: vi.fn() };
   const registry = { registerProvider: vi.fn() };
 
   let jwt: JwtAuth;
@@ -33,17 +33,19 @@ describe('auth provider registration and user resolution contracts', () => {
 
   it('does not query a user for a JWT without a subject', () => {
     expect(jwt.validate({} as JwtClaims)).toBeNull();
-    expect(repository.findUserById).not.toHaveBeenCalled();
+    expect(repository.findUserForJwtAuth).not.toHaveBeenCalled();
   });
 
   it('resolves JWT subjects using the public, soft-delete-aware UsersRepository', async () => {
     const user = { id: 'user-1', role: 'ATHLETE' };
-    repository.findUserById.mockResolvedValueOnce(user);
+    repository.findUserForJwtAuth.mockResolvedValueOnce(user);
 
-    await expect(jwt.validate({ sub: 'user-1' } as JwtClaims)).resolves.toEqual(user);
-    expect(repository.findUserById).toHaveBeenCalledWith('user-1');
+    await expect(jwt.validate({ sub: 'user-1', iat: 1700000000 } as JwtClaims)).resolves.toEqual(
+      user,
+    );
+    expect(repository.findUserForJwtAuth).toHaveBeenCalledWith('user-1', 1700000000);
 
-    repository.findUserById.mockResolvedValueOnce(null);
+    repository.findUserForJwtAuth.mockResolvedValueOnce(null);
     await expect(jwt.validate({ sub: 'deleted-user' } as JwtClaims)).resolves.toBeNull();
   });
 

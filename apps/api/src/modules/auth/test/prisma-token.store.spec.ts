@@ -72,9 +72,11 @@ describe('PrismaTokenStore security and persistence contracts', () => {
     prisma.refreshTokenFamily.upsert.mockResolvedValue({ revokedAt: null });
     prisma.refreshToken.updateMany.mockResolvedValue({ count: 0 });
     prisma.emailToken.findMany.mockResolvedValue([]);
-    prisma.$queryRaw.mockImplementation(async (sql: TemplateStringsArray) =>
-      sql.join('').includes('FOR UPDATE') ? [{ revokedAt: null }] : [],
-    );
+    prisma.$queryRaw.mockImplementation(async (sql: TemplateStringsArray) => {
+      if (sql.join('').includes('FROM "users"')) return [{ id: refresh.userId }];
+      if (sql.join('').includes('FROM "refresh_token_families"')) return [{ revokedAt: null }];
+      return [];
+    });
     prisma.$executeRaw.mockResolvedValue(0);
     store = new PrismaTokenStore(
       prisma as unknown as PrismaService,
@@ -112,7 +114,7 @@ describe('PrismaTokenStore security and persistence contracts', () => {
   });
 
   it('never mints refresh credentials for a suspended or missing account', async () => {
-    prisma.user.findUnique.mockResolvedValueOnce(null);
+    prisma.$queryRaw.mockResolvedValueOnce([]);
     await expect(store.saveRefreshToken(refresh)).rejects.toThrow('Account unavailable');
     expect(prisma.refreshTokenFamily.upsert).not.toHaveBeenCalled();
     expect(prisma.refreshToken.create).not.toHaveBeenCalled();
@@ -122,10 +124,14 @@ describe('PrismaTokenStore security and persistence contracts', () => {
     await store.saveRefreshToken(refresh);
 
     expect(prisma.$transaction).toHaveBeenCalledOnce();
-    expect(prisma.user.findUnique).toHaveBeenCalledExactlyOnceWith({
-      where: { id: refresh.userId, deletedAt: null, status: 'ACTIVE' },
-      select: { id: true },
-    });
+    expect(prisma.$queryRaw).toHaveBeenCalledTimes(2);
+    const [userSql, lockedUserId] = prisma.$queryRaw.mock.calls[0] as [
+      TemplateStringsArray,
+      string,
+    ];
+    expect(userSql.join('?')).toContain('FROM "users"');
+    expect(userSql.join('?')).toContain('FOR UPDATE');
+    expect(lockedUserId).toBe(refresh.userId);
     expect(prisma.refreshTokenFamily.upsert).toHaveBeenCalledExactlyOnceWith({
       where: { id: refresh.familyId },
       create: {
@@ -136,8 +142,8 @@ describe('PrismaTokenStore security and persistence contracts', () => {
       update: {},
       select: { id: true },
     });
-    expect(prisma.$queryRaw).toHaveBeenCalledOnce();
-    const [sql, familyId] = prisma.$queryRaw.mock.calls[0] as unknown as [
+    expect(prisma.$queryRaw).toHaveBeenCalledTimes(2);
+    const [sql, familyId] = prisma.$queryRaw.mock.calls[1] as unknown as [
       TemplateStringsArray,
       string,
     ];
@@ -160,7 +166,9 @@ describe('PrismaTokenStore security and persistence contracts', () => {
   });
 
   it('persists a successor as revoked when its family was already revoked', async () => {
-    prisma.$queryRaw.mockResolvedValueOnce([{ revokedAt: now }]);
+    prisma.$queryRaw
+      .mockResolvedValueOnce([{ id: refresh.userId }])
+      .mockResolvedValueOnce([{ revokedAt: now }]);
 
     await store.saveRefreshToken(refresh);
 
@@ -379,7 +387,7 @@ describe('PrismaTokenStore security and persistence contracts', () => {
 
   describe('failure-safe refresh and email token persistence', () => {
     it('does not issue a refresh token when its family disappears after upsert', async () => {
-      prisma.$queryRaw.mockResolvedValueOnce([]);
+      prisma.$queryRaw.mockResolvedValueOnce([{ id: refresh.userId }]).mockResolvedValueOnce([]);
 
       await expect(store.saveRefreshToken(refresh)).rejects.toThrow(
         'Refresh token family missing after upsert',
@@ -394,13 +402,15 @@ describe('PrismaTokenStore security and persistence contracts', () => {
       prisma.refreshTokenFamily.upsert.mockRejectedValueOnce(failure);
 
       await expect(store.saveRefreshToken(refresh)).rejects.toBe(failure);
-      expect(prisma.$queryRaw).not.toHaveBeenCalled();
+      expect(prisma.$queryRaw).toHaveBeenCalledOnce();
       expect(prisma.refreshToken.create).not.toHaveBeenCalled();
     });
 
     it('does not insert an unlocked refresh token when the family lock fails', async () => {
       const failure = new Error('Refresh family row lock failed');
-      prisma.$queryRaw.mockRejectedValueOnce(failure);
+      prisma.$queryRaw
+        .mockResolvedValueOnce([{ id: refresh.userId }])
+        .mockRejectedValueOnce(failure);
 
       await expect(store.saveRefreshToken(refresh)).rejects.toBe(failure);
       expect(prisma.refreshTokenFamily.upsert).toHaveBeenCalledOnce();
@@ -413,7 +423,7 @@ describe('PrismaTokenStore security and persistence contracts', () => {
 
       await expect(store.saveRefreshToken(refresh)).rejects.toBe(failure);
       expect(prisma.$transaction).toHaveBeenCalledOnce();
-      expect(prisma.$queryRaw).toHaveBeenCalledOnce();
+      expect(prisma.$queryRaw).toHaveBeenCalledTimes(2);
       expect(prisma.refreshToken.create).toHaveBeenCalledOnce();
     });
 

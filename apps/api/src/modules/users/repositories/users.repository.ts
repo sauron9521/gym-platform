@@ -225,6 +225,30 @@ export class UsersRepository {
     });
   }
 
+  /**
+   * A signed JWT must have been issued strictly after the account's latest
+   * suspension/reactivation fence. JWT iat uses whole seconds: tokens in
+   * the same second as the fence fail closed instead of reviving.
+   */
+  async findUserForJwtAuth(id: string, issuedAt?: number) {
+    const validTime =
+      typeof issuedAt === 'number' &&
+      Number.isSafeInteger(issuedAt) &&
+      issuedAt >= 0 &&
+      issuedAt <= 8_640_000_000_000;
+    return this.prisma.user.findUnique({
+      where: {
+        id,
+        deletedAt: null,
+        status: 'ACTIVE',
+        OR: validTime
+          ? [{ authInvalidatedAt: null }, { authInvalidatedAt: { lt: new Date(issuedAt * 1000) } }]
+          : [{ authInvalidatedAt: null }],
+      },
+      select: userSelect,
+    });
+  }
+
   async findCredentials(email: string) {
     return this.prisma.user.findUnique({
       where: { email: normalizeEmail(email), deletedAt: null, status: 'ACTIVE' },
