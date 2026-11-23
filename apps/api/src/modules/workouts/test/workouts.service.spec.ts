@@ -138,11 +138,13 @@ describe('WorkoutsService', () => {
       trainer: id === trainer.id,
       admin: id === staleAdmin.id,
     }));
-    usersService.findMyCapabilitiesForWrite.mockImplementation(async (_tx: unknown, id: string) => ({
-      athlete: id !== staleAdmin.id,
-      trainer: id === trainer.id,
-      admin: id === staleAdmin.id,
-    }));
+    usersService.findMyCapabilitiesForWrite.mockImplementation(
+      async (_tx: unknown, id: string) => ({
+        athlete: id !== staleAdmin.id,
+        trainer: id === trainer.id,
+        admin: id === staleAdmin.id,
+      }),
+    );
 
     service = new WorkoutsService(
       repository as unknown as WorkoutsRepository,
