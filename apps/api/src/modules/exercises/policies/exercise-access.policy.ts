@@ -1,7 +1,11 @@
 import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 
 import type { ExerciseSource, ExerciseVisibility, Prisma } from '#prisma/client';
-import type { ExerciseAccessContext, ExerciseActor } from '../types/exercise.types.js';
+import type {
+  ExerciseAccessContext,
+  ExerciseActor,
+  ExerciseCreationScope,
+} from '../types/exercise.types.js';
 
 /** Centralizes all exercise read and write visibility rules. */
 export function buildExerciseVisibilityWhere(
@@ -86,10 +90,13 @@ type ExerciseCreationCapabilities = {
 export function resolveExerciseSource(
   actor: ExerciseActor,
   capabilities: ExerciseCreationCapabilities,
+  creationScope?: ExerciseCreationScope,
 ): ExerciseSource {
   if (actor.role === 'ADMIN') {
-    if (!capabilities.admin) {
-      throw new ForbiddenException('You cannot create global exercises');
+    // The public creation-scope selector cannot elevate an Admin into an
+    // Athlete or Trainer operation (or silently ignore an invalid intent).
+    if (!capabilities.admin || creationScope !== undefined) {
+      throw new ForbiddenException('You cannot create this exercise');
     }
     return 'GLOBAL';
   }
@@ -100,6 +107,19 @@ export function resolveExerciseSource(
     throw new ForbiddenException('Only athletes can create personal exercises');
   }
 
+  // Explicit intent never falls back to a different source after revocation.
+  if (creationScope === 'TRAINER') {
+    if (!capabilities.trainer) {
+      throw new ForbiddenException('An active Trainer capability is required');
+    }
+    return 'TRAINER_CUSTOM';
+  }
+
+  if (creationScope === 'ATHLETE') {
+    return 'ATHLETE_CUSTOM';
+  }
+
+  // Clients without creationScope preserve the old role-selected default.
   return actor.role === 'TRAINER' && capabilities.trainer ? 'TRAINER_CUSTOM' : 'ATHLETE_CUSTOM';
 }
 
