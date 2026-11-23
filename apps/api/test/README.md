@@ -11,6 +11,24 @@ The test root is `apps/api/test/`.
 
 Vitest discovers nested `test/**/*.e2e-spec.ts`; `fileParallelism: false` preserves the existing test concurrency policy.
 
+## Runtime NestJS dependency-injection smoke (E14 / #664)
+
+`e2e/infra/app.e2e-spec.ts` reuses its existing **real AppModule bootstrap**
+(`Test.createTestingModule`, `compile()`, `app.init()`). After the
+application starts, it resolves representative providers with
+`app.select(OwnerModule).get(Provider, { strict: true })` in all nine feature
+module scopes, and checks the Prisma, rate-limit storage and audit
+infrastructure modules. Because Prisma 7 exposes a proxied client,
+`PrismaService` is checked by its scoped/global singleton identity and
+`$transaction` method rather than `instanceof`. Global `ConfigService`
+resolution is checked without reading or logging configuration secrets.
+
+The test adds no second application instance, mocks or database writes.
+It complements the AST architecture checks, but it is a smoke test rather
+than an exhaustive check of every dynamic injection token or lifecycle.
+Run it only with the normal isolated API E2E environment and disposable
+`*_test` PostgreSQL database; CI already includes the suite.
+
 ## Legacy inventory integrity
 
 `../migration-source-inventory.json` is a **frozen record of original imported paths**, not a file layout manifest. Never rewrite it simply to move tests. `relocations.json` maps an original path to its new physical test location for `scripts/api-migration-readiness.mjs`. Every mapping must be under `test/`, unique, safe and refer to an actual historical test path.
