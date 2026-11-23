@@ -68,6 +68,32 @@ test path will now fail the root tooling gate instead of being silently skipped.
 This inventory does not imply that manually triggered Maestro or staging E2E
 checks run in every PR.
 
+## Static CI scanners (advisory pilot)
+
+The path-scoped [Static CI analysis](../.github/workflows/static-ci-analysis.yml)
+workflow runs on PRs and main pushes touching GitHub configuration or tracked
+shell scripts; it also supports manual dispatch. It uses pinned tools:
+
+- `actionlint 1.7.12` checks workflow syntax, expressions, and embedded bash/sh
+  through the official container (which includes ShellCheck).
+- `ShellCheck` inspects all tracked standalone `*.sh` files.
+- `zizmor 1.32.0` scans workflow security in offline mode, without a GitHub
+  token or additional repository permissions.
+
+**Pilot limitation:** scanner steps use `continue-on-error: true`. Their
+outcomes and warnings appear in the job summary, but a successful job is **not**
+evidence of zero findings. Do not make this job required or remove existing CI
+contracts until results are reviewed, findings fixed or individually justified,
+and a follow-up PR switches the checks to enforcement.
+
+Local equivalent (requires Docker, ShellCheck and uv):
+
+```bash
+docker run --rm --network none -v "$PWD:/repo:ro" -w /repo rhysd/actionlint:1.7.12 -shellcheck=shellcheck
+git ls-files -z -- '*.sh' | xargs -0 -r shellcheck --severity=warning --
+uvx "zizmor@1.32.0" --offline --collect=workflows --strict-collection --format=github .
+```
+
 ## Safety
 
 Keep tests deterministic and use `onTestFinished` for temp-resource cleanup
