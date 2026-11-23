@@ -25,6 +25,11 @@ export class WorkoutCreationRepository {
     authorize: (tx: Prisma.TransactionClient) => Promise<void>,
   ) {
     return this.prisma.$transaction(async (tx) => {
+      // Lock the current actor before exercise rows: exercise management
+      // follows User -> Exercise order, so reversing it can deadlock against
+      // a concurrent archive of the athlete's own exercise.
+      await authorize(tx);
+
       const uniqueIds = [...new Set(exerciseIds)];
 
       // Lock exercise rows BEFORE relationship rows (the same order as
@@ -75,10 +80,8 @@ export class WorkoutCreationRepository {
         throw new BadRequestException('One or more exercises are not available');
       }
 
-      // Read current Athlete capability under the same User/Profile locks
-      // that moderation updates. The lock remains held through the insert
-      // and transaction commit, even if the earlier HTTP preflight was stale.
-      await authorize(tx);
+      // The actor's User/Profile locks acquired before exercise access
+      // validation remain held through the INSERT and transaction commit.
       return tx.workout.create({ data, select: workoutSelect });
     });
   }
