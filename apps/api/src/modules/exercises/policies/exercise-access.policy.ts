@@ -13,7 +13,9 @@ export function buildExerciseVisibilityWhere(
   }
 
   if (actor.role === 'ADMIN') {
-    return {};
+    // Admin capability does not authorize reading private Athlete/Trainer exercises.
+    // Catalog moderation of personal content requires a separate, audited permission.
+    return { source: 'GLOBAL' };
   }
 
   if (actor.role === 'ATHLETE') {
