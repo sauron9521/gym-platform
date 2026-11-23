@@ -28,7 +28,7 @@ function setOptions({ url = origin, indexing = true, localeRoutes = true } = {})
 function home(locale) {
   return localizedMetadata({
     locale,
-    title: locale === 'en' ? 'Gym Platform — Train smarter' : 'Gym Platform — тренування',
+    title: locale === 'en' ? 'OVRANTO — Train with purpose' : 'OVRANTO — тренуйся з метою',
     description: locale === 'en' ? 'English description' : 'Український опис',
     englishReady: true,
   });
@@ -102,10 +102,11 @@ describe('Landing localized SEO publication', () => {
       expect(seo.robots.index).toBe(true);
       expect(seo.robots.follow).toBe(true);
       expect(seo.title).toEqual({
-        absolute: locale === 'uk' ? 'Gym Platform — тренування' : 'Gym Platform — Train smarter',
+        absolute: locale === 'uk' ? 'OVRANTO — тренуйся з метою' : 'OVRANTO — Train with purpose',
       });
       expect(seo.openGraph.url).toBe(languages[locale]);
       expect(seo.openGraph.locale).toBe(locale === 'uk' ? 'uk_UA' : 'en_US');
+      expect(seo.openGraph.siteName).toBe('OVRANTO');
       expect(seo.twitter.description).toBe(
         locale === 'uk' ? 'Український опис' : 'English description',
       );

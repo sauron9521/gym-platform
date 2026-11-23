@@ -6,6 +6,9 @@ test('social previews and indexing work', async ({ page, request }) => {
   const ogImage = page.locator('meta[property="og:image"]');
   await expect(ogImage).toHaveAttribute('content', /\/opengraph-image/);
 
+  await expect(page).toHaveTitle(/OVRANTO/);
+  await expect(page.locator('meta[property="og:site_name"]')).toHaveAttribute('content', 'OVRANTO');
+
   const twitterCard = page.locator('meta[name="twitter:card"]');
   await expect(twitterCard).toHaveAttribute('content', 'summary_large_image');
 
@@ -17,7 +20,7 @@ test('social previews and indexing work', async ({ page, request }) => {
   const jsonLd = (await schema.textContent()) ?? '{}';
   expect(JSON.parse(jsonLd)).toMatchObject({
     '@type': 'Organization',
-    name: 'Gym Platform',
+    name: 'OVRANTO',
     url: 'https://gym.example.test',
     logo: 'https://gym.example.test/icon.svg',
   });

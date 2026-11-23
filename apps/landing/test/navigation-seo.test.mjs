@@ -7,7 +7,7 @@ import {
   mainNavigation,
   publicRoutes,
 } from '../src/shared/config/navigation.ts';
-import { getSiteOrigin, pageMetadata } from '../src/shared/lib/seo.ts';
+import { getSiteOrigin, pageMetadata, siteName } from '../src/shared/lib/seo.ts';
 
 test('all public navigation links point to existing app-router pages', () => {
   const routes = new Set(publicRoutes);
@@ -56,6 +56,8 @@ test('explicit HTTPS origin creates canonical and social metadata', () => {
     });
     assert.equal(metadata.alternates?.canonical, 'https://gym.example.test/features');
     assert.equal(metadata.openGraph?.url, 'https://gym.example.test/features');
+    assert.equal(metadata.openGraph?.siteName, siteName);
+    assert.equal(siteName, 'OVRANTO');
   } finally {
     if (previous === undefined) delete process.env.LANDING_SITE_URL;
     else process.env.LANDING_SITE_URL = previous;

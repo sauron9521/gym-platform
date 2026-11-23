@@ -18,7 +18,7 @@ export async function generateMetadata({
   const { locale: raw } = await params;
   const locale = requirePublishedLocale(raw, isEnglishPageReady('/'));
   const title =
-    locale === 'en' ? 'Gym Platform — Train smarter' : 'Gym Platform — тренування та прогрес';
+    locale === 'en' ? 'OVRANTO — Train with purpose' : 'OVRANTO — тренуйся з метою';
   const description = getMessages(locale).landing.home.description;
   return localizedMetadata({ locale, title, description, englishReady: isEnglishPageReady('/') });
 }

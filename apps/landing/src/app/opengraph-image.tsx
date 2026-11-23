@@ -1,6 +1,6 @@
 import { ImageResponse } from 'next/og';
 
-export const alt = 'Gym Platform — тренування та прогрес';
+export const alt = 'OVRANTO — тренуйся з метою. Прогресуй.';
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
 
@@ -14,19 +14,19 @@ export default function OpenGraphImage() {
         width: '100%',
         height: '100%',
         padding: 76,
-        background: '#161b21',
-        color: '#f1f4f5',
+        background: '#F5F0E9',
+        color: '#1C262A',
         fontFamily: 'Arial, sans-serif',
       }}
     >
-      <div style={{ fontSize: 28, fontWeight: 700, color: '#c5ef5b' }}>GYM PLATFORM</div>
+      <div style={{ fontSize: 28, fontWeight: 700, color: '#075C55' }}>OVRANTO</div>
       <div style={{ marginTop: 42, fontSize: 72, fontWeight: 800, lineHeight: 1.12 }}>
-        Тренуйся розумніше.
+        Тренуйся з метою.
       </div>
-      <div style={{ marginTop: 10, fontSize: 72, fontWeight: 800, color: '#c5ef5b' }}>
-        Прогресуй далі.
+      <div style={{ marginTop: 10, fontSize: 72, fontWeight: 800, color: '#075C55' }}>
+        Прогресуй.
       </div>
-      <div style={{ marginTop: 42, fontSize: 27, color: '#b0bac6' }}>
+      <div style={{ marginTop: 42, fontSize: 27, color: '#59666D' }}>
         Платформа для спортсменів і тренерів
       </div>
     </div>,

@@ -1,7 +1,7 @@
 import type { Locale } from '@gym/i18n';
 import type { Metadata } from 'next';
 
-import { getSiteOrigin, isIndexingEnabled, siteDescription } from '../shared/lib/seo';
+import { getSiteOrigin, isIndexingEnabled, siteDescription, siteName } from '../shared/lib/seo';
 
 const publicationEnabled = () => process.env.LANDING_ENABLE_I18N_ROUTES === 'true';
 
@@ -42,7 +42,7 @@ export function localizedMetadata({
     openGraph: {
       type: 'website',
       locale: locale === 'uk' ? 'uk_UA' : 'en_US',
-      siteName: 'Gym Platform',
+      siteName,
       title,
       description,
       url,
@@ -74,7 +74,7 @@ export function localizedPageMetadata({
   return localizedMetadata({
     locale,
     path,
-    title: typeof original.title === 'string' ? original.title : 'Gym Platform',
+    title: typeof original.title === 'string' ? original.title : siteName,
     description: typeof original.description === 'string' ? original.description : siteDescription,
     englishReady: false,
   });
