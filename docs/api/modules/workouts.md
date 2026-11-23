@@ -1,5 +1,16 @@
 # Workouts module
 
+## Public Athlete authorization policy (E14 / #652)
+
+`apps/api/src/modules/workouts/public-api.ts` re-exports the **canonical**
+`assertWorkoutAthlete` policy for Workout Analytics. This public read
+contract does not make authorization decisions from JWT roles: consumers must
+first obtain the current persisted capabilities from
+`UsersService.findMyCapabilities(actor.id)`. The assertion continues to
+deny accounts without Athlete capability and current Admins using the
+existing `ForbiddenException`. Internal Workouts policy paths stay private
+to the module; the feature architecture guard has no cross-feature exceptions.
+
 ## Live athlete capability (M05 / #291)
 
 Personal workout read, creation and lifecycle operations authorize the **current database-derived** athlete capability via `UsersService.findMyCapabilities`, not the actor's cached `role`. Existing `TRAINER`-role accounts and approved `ATHLETE`-role trainers retain their own athlete workouts; revoked trainer approval removes trainer privileges **without** removing personal athlete history. An account currently promoted to `ADMIN`, or deleted, cannot use athlete workout routes even with a stale non-admin session. Existing `athleteId`-scoped queries still prevent cross-account IDOR. No API shape or Prisma migrations changed.
