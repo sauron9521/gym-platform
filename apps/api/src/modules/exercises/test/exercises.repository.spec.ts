@@ -30,6 +30,7 @@ describe('ExercisesRepository', () => {
   beforeEach(() => {
     vi.resetAllMocks();
 
+    prisma.$transaction.mockImplementation(async (callback) => callback(prisma));
     repository = new ExercisesRepository(prisma as unknown as PrismaService);
   });
 
@@ -209,7 +210,9 @@ describe('ExercisesRepository', () => {
 
       prisma.exercise.create.mockResolvedValue(exercise);
 
-      const result = await repository.create(data);
+      const authorize = vi.fn().mockResolvedValue(undefined);
+      const result = await repository.create(data, authorize);
+      expect(authorize).toHaveBeenCalledExactlyOnceWith(prisma);
 
       expect(prisma.exercise.create).toHaveBeenCalledWith({
         data,
@@ -225,15 +228,26 @@ describe('ExercisesRepository', () => {
       prisma.exercise.create.mockRejectedValue(error);
 
       await expect(
-        repository.create({
-          name: 'Bench Press',
-          source: 'ATHLETE_CUSTOM',
-          createdBy: {
-            connect: { id: 'athlete-1' },
+        repository.create(
+          {
+            name: 'Bench Press',
+            source: 'ATHLETE_CUSTOM',
+            createdBy: { connect: { id: 'athlete-1' } },
           },
-        }),
+          async () => {},
+        ),
       ).rejects.toBe(error);
     });
+    it('does not INSERT when the locked authorization callback rejects', async () => {
+      const denied = new Error('Trainer capability revoked');
+      const authorize = vi.fn().mockRejectedValue(denied);
+
+      await expect(
+        repository.create({ name: 'Denied', source: 'TRAINER_CUSTOM' }, authorize),
+      ).rejects.toBe(denied);
+      expect(prisma.exercise.create).not.toHaveBeenCalled();
+    });
+
   });
 
   describe('update', () => {
