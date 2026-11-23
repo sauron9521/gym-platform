@@ -1,10 +1,6 @@
 import { randomUUID } from 'node:crypto';
 
-import {
-  ForbiddenException,
-  NotFoundException,
-  type INestApplication,
-} from '@nestjs/common';
+import { ForbiddenException, NotFoundException, type INestApplication } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { Test } from '@nestjs/testing';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
