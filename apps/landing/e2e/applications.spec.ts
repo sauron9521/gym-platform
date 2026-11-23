@@ -45,7 +45,7 @@ for (const app of [
     highlight: 'Каталог вправ',
     audience: 'Можливості для спортсменів',
     audienceDestination: '/for-athletes',
-    other: 'Про Mobile',
+    other: 'Про Athlete Mobile',
     destination: '/apps/mobile',
   },
   {
@@ -54,7 +54,7 @@ for (const app of [
     highlight: 'Мої тренування',
     audience: 'Можливості для спортсменів',
     audienceDestination: '/for-athletes',
-    other: 'Про Web',
+    other: 'Про Athlete Web',
     destination: '/apps/web',
   },
 ] as const) {
@@ -77,6 +77,10 @@ for (const app of [
       `https://gym.example.test${app.path}`,
     );
 
+    const nextSteps = main.getByRole('region', { name: 'Що дослідити далі?' });
+    const [primary, secondary] = await nextSteps.getByRole('link').all();
+    await expect(primary).toHaveAttribute('href', app.audienceDestination);
+    await expect(secondary).toHaveAttribute('href', app.destination);
     const otherApp = main.getByRole('link', { name: app.other, exact: true });
     await expect(otherApp).toHaveAttribute('href', app.destination);
     await otherApp.click();

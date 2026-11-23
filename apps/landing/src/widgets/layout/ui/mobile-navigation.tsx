@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import Link from 'next/link';
 
 import { defaultLocale, type Locale } from '@gym/i18n';
@@ -10,6 +10,28 @@ export function MobileNavigation({ locale = defaultLocale }: { locale?: Locale }
   const { main, productDirectoryLabel, shell } = getLandingNavigation(locale);
   const details = useRef<HTMLDetailsElement>(null);
   const summary = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const dismissOutside = (event: PointerEvent) => {
+      const menu = details.current;
+      if (menu?.open && event.target instanceof Node && !menu.contains(event.target)) {
+        menu.open = false;
+      }
+    };
+
+    const dismissOnDesktop = () => {
+      if (window.innerWidth >= 1024 && details.current) {
+        details.current.open = false;
+      }
+    };
+
+    document.addEventListener('pointerdown', dismissOutside);
+    window.addEventListener('resize', dismissOnDesktop);
+    return () => {
+      document.removeEventListener('pointerdown', dismissOutside);
+      window.removeEventListener('resize', dismissOnDesktop);
+    };
+  }, []);
 
   function closeMenu() {
     if (details.current) {
@@ -26,6 +48,11 @@ export function MobileNavigation({ locale = defaultLocale }: { locale?: Locale }
           closeMenu();
           summary.current?.focus();
           event.stopPropagation();
+        }
+      }}
+      onBlur={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget)) {
+          closeMenu();
         }
       }}
     >
