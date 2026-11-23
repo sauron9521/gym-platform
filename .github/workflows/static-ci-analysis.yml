@@ -1,0 +1,89 @@
+name: Tooling / Static CI analysis (advisory)
+
+on:
+  pull_request:
+    paths:
+      - '.github/**'
+      - 'scripts/**/*.sh'
+      - 'infra/**/*.sh'
+      - 'apps/**/scripts/**/*.sh'
+  push:
+    branches: [main]
+    paths:
+      - '.github/**'
+      - 'scripts/**/*.sh'
+      - 'infra/**/*.sh'
+      - 'apps/**/scripts/**/*.sh'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: static-ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+jobs:
+  static-analysis:
+    name: Static CI / actionlint, ShellCheck, zizmor (advisory)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout without persisted credentials
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # The official actionlint image bundles ShellCheck to inspect bash/sh run blocks.
+      # Mount source read-only and disable container network access.
+      - name: Validate GitHub workflows and embedded shell
+        id: actionlint
+        continue-on-error: true
+        run: |
+          docker run --rm --network none \
+            -v "$GITHUB_WORKSPACE:/repo:ro" --workdir /repo \
+            rhysd/actionlint:1.7.12 -shellcheck=shellcheck
+
+      # actionlint does not inspect standalone shell files called by workflows.
+      - name: Check all tracked shell scripts
+        id: shellcheck
+        continue-on-error: true
+        run: |
+          command -v shellcheck
+          git ls-files -z -- '*.sh' | xargs -0 -r shellcheck --severity=warning --
+
+      - name: Set up uv for pinned zizmor
+        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          enable-cache: false
+
+      - name: Audit workflow security (offline)
+        id: zizmor
+        continue-on-error: true
+        run: uvx "zizmor@1.32.0" --offline --collect=workflows --strict-collection --format=github .
+
+      # Deliberately advisory until legacy findings are triaged. Do not present
+      # this green job as proof that no findings exist.
+      - name: Summarize pilot findings
+        if: always()
+        env:
+          ACTIONLINT_OUTCOME: ${{ steps.actionlint.outcome }}
+          SHELLCHECK_OUTCOME: ${{ steps.shellcheck.outcome }}
+          ZIZMOR_OUTCOME: ${{ steps.zizmor.outcome }}
+        run: |
+          {
+            echo "## Static CI analysis (advisory pilot)"
+            echo
+            echo "| Scanner | Result |"
+            echo "| --- | --- |"
+            echo "| actionlint + embedded ShellCheck | $ACTIONLINT_OUTCOME |"
+            echo "| standalone ShellCheck | $SHELLCHECK_OUTCOME |"
+            echo "| zizmor (offline) | $ZIZMOR_OUTCOME |"
+            echo
+            echo "Results are diagnostic; findings do not block merging yet."
+            echo "Review individual scanner logs before enabling enforcement."
+          } >> "$GITHUB_STEP_SUMMARY"
+          if [ "$ACTIONLINT_OUTCOME" != success ] || [ "$SHELLCHECK_OUTCOME" != success ] || [ "$ZIZMOR_OUTCOME" != success ]; then
+            echo "::warning::Static CI analysis found issues or failed to run. Review the scanner logs; this pilot is non-blocking."
+          fi
