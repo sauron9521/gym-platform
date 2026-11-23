@@ -27,6 +27,29 @@ Infrastructure includes `src/infra/database` (Prisma), `src/infra/health`, `src/
 - OpenAPI is enabled at runtime only when `ENABLE_OPENAPI=true`; do not assume it is available on a deployed instance.
 - Do not silently change authentication, public/private visibility, HTTP status codes or token/cookie semantics.
 
+## Nest feature dependency boundaries (E14 / #654)
+
+The nine API feature modules form an acyclic `@Module.imports` graph; the
+`apps/api/scripts/check-feature-dependencies.mjs` AST guard also rejects
+cross-feature access to private repositories, policies, controllers and selects.
+Pure functions/types exposed through a feature's explicit `public-api.ts`
+entrypoint do not need a Nest provider.
+
+For **named runtime imports from another feature's `services/`**, the
+owning feature must both be present in the consumer's `@Module.imports`
+and list the imported service/facade under its own literal
+`@Module({ exports: [...] })`. This prevents compiling a class import
+that Nest cannot inject at runtime. Type-only imports do not require a
+provider or a Nest module edge. For runtime providers, avoid importing
+`services/` just for a pure helper: expose helpers from `public-api.ts`.
+
+The dependency check intentionally handles **direct named static imports**
+and explicit, literal Nest metadata export arrays. It is not a replacement
+for API bootstrap/integration tests or an exhaustive DI graph verifier;
+advanced dynamic provider/export patterns require separate review.
+Run `pnpm --filter @gym/api architecture:deps` and
+`pnpm --filter @gym/api test:architecture` before review.
+
 ## Quality and operations
 
 - [Current endpoint permission and ownership matrix](permission-matrix.md) — #288 audit baseline; not a release/security GO
