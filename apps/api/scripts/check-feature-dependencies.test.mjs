@@ -380,7 +380,11 @@ test('local injection guard excludes explicit tokens, optional and nonlocal depe
       "@Injectable() export class FirstService { constructor(@Inject('TOKEN') private readonly explicit: TokenService, @Optional() private readonly optional: OptionalService, private readonly external: PrismaService) {} }",
     );
     source('first', 'services/token.service.ts', '@Injectable() export class TokenService {}');
-    source('first', 'services/optional.service.ts', '@Injectable() export class OptionalService {}');
+    source(
+      'first',
+      'services/optional.service.ts',
+      '@Injectable() export class OptionalService {}',
+    );
     assert.deepEqual(check(), []);
   });
 });
