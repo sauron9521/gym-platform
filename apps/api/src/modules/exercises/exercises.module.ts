@@ -7,9 +7,10 @@ import { ExerciseTrainerAccessRepository } from './repositories/exercise-trainer
 import { ExercisesService } from './services/exercises.service.js';
 import { ExerciseTrainerAccessService } from './services/exercise-trainer-access.service.js';
 import { TrainerAthletesModule } from '#src/modules/trainer-athletes/trainer-athletes.module';
+import { UsersModule } from '#src/modules/users/users.module';
 
 @Module({
-  imports: [TrainerAthletesModule],
+  imports: [TrainerAthletesModule, UsersModule],
   controllers: [ExercisesController, ExerciseTrainerAccessController],
   providers: [
     ExercisesRepository,
