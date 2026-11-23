@@ -2,7 +2,7 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { parseModuleImports } from './import-parser.mjs';
+import { parseModuleImports, parseNestModuleExports } from './import-parser.mjs';
 
 function walk(dir) {
   if (!existsSync(dir)) return [];
@@ -79,6 +79,9 @@ export function checkFeatureDependencies(repositoryRoot) {
       name,
       readFileSync(join(modulesRoot, name, name + '.module.ts'), 'utf8'),
     ]),
+  );
+  const moduleExports = new Map(
+    modules.map((name) => [name, parseNestModuleExports(moduleSources.get(name))]),
   );
   const errors = [];
 
@@ -188,6 +191,23 @@ export function checkFeatureDependencies(repositoryRoot) {
                   name +
                   '.module.ts',
               );
+            }
+
+            // Imported service classes must also be exported by their owning
+            // Nest module. Type-only symbols and pure public APIs are not DI.
+            if (imported.kind === 'static-import' && targetPath.startsWith('services/')) {
+              for (const symbol of imported.symbols) {
+                if (!moduleExports.get(targetFeature).has(symbol)) {
+                  errors.push(
+                    display +
+                      ": provider '" +
+                      symbol +
+                      "' is not exported by " +
+                      targetFeature +
+                      '.module.ts',
+                  );
+                }
+              }
             }
           }
         }
