@@ -28,11 +28,19 @@ export class WorkoutsRepository extends WorkoutQueriesRepository {
   }
 
   // UPDATE
-  async update(where: Prisma.WorkoutWhereUniqueInput, data: Prisma.WorkoutUpdateInput) {
-    return this.prisma.workout.update({
-      where,
-      data,
-      select: workoutSelect,
+  async update(
+    where: Prisma.WorkoutWhereUniqueInput,
+    data: Prisma.WorkoutUpdateInput,
+    authorize: (tx: Prisma.TransactionClient) => Promise<void>,
+  ) {
+    return this.prisma.$transaction(async (tx) => {
+      // Hold the account permission locks until the conditional write commits.
+      await authorize(tx);
+      return tx.workout.update({
+        where,
+        data,
+        select: workoutSelect,
+      });
     });
   }
 

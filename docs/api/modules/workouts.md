@@ -27,3 +27,22 @@ Preserve transitions and invariants (especially completion and assignment state)
 **Tests:** `test/e2e/workouts/workouts.e2e-spec.ts`, `test/integration/workouts/workouts.repository.integration.e2e-spec.ts` and co-located module tests.
 
 See [training programs](training-programs.md) and [testing guide](../testing.md).
+
+## Transactional management authorization (Issue #288)
+
+Planned-workout `PATCH /workouts/:id` and `POST /workouts/:id/cancel`
+now perform a final **current database-derived Athlete capability** check in
+one PostgreSQL transaction with the actual conditional UPDATE. The existing
+`UsersService.findMyCapabilitiesForWrite` holds the User/Profile row locks
+through commit, so account suspension or promotion to Admin between the
+preflight and the final write must deny rather than mutate a workout using a
+stale actor/session. Existing `athleteId` and lifecycle status predicates,
+and conflict mapping, remain unchanged.
+
+Legacy/approved/revoked Trainers retain access to their own personal
+workouts while their current Athlete capability remains active. A PostgreSQL
+regression holds an uncommitted account promotion while planned edit and
+cancellation wait for the account lock; neither may mutate the workout after
+promotion. Creation, set-result updates and start/complete operations are
+**separate** authorization review slices; do not infer they share this
+transactional boundary. No Prisma migration or API contract changes.
