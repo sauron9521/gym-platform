@@ -68,7 +68,11 @@ export function ProductDiscovery({ locale }: { locale: Locale }) {
             <p className="mt-5 max-w-lg text-base leading-7 text-muted-foreground">
               {product.description}
             </p>
-            <figure className="landing-product-frame mt-8 overflow-hidden rounded-2xl border border-border/80 bg-secondary/30">
+            <figure className="landing-product-frame relative mt-8 overflow-hidden rounded-2xl border border-border/80 bg-secondary/30 shadow-lg shadow-foreground/10 ring-1 ring-primary/15">
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-x-0 top-0 z-10 h-[3px] bg-gradient-to-r from-[var(--brand-terracotta)] to-primary"
+              />
               <Image
                 src={product.previewSrc}
                 alt={product.previewAlt}

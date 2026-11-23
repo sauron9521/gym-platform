@@ -15,7 +15,7 @@ export function HomeScreen({ locale = defaultLocale }: { locale?: Locale } = {})
   return (
     <main id="main-content" className="flex-1">
       <section className="landing-hero-surface relative isolate overflow-hidden border-b border-border/70">
-        <Container className="relative grid items-center gap-12 py-20 sm:py-28 lg:grid-cols-[minmax(0,1.04fr)_minmax(0,0.96fr)] lg:gap-16 lg:py-36">
+        <Container className="relative grid items-center gap-12 py-16 sm:gap-16 sm:py-24 lg:grid-cols-[minmax(0,1.08fr)_minmax(0,0.92fr)] lg:gap-14 lg:py-32">
           <div className="landing-hero-copy relative z-10 min-w-0">
             <p className="inline-flex items-center gap-2.5 rounded-full border border-primary/20 bg-primary/10 px-4 py-2 text-xs font-bold tracking-[0.13em] text-primary uppercase">
               <span
@@ -25,7 +25,10 @@ export function HomeScreen({ locale = defaultLocale }: { locale?: Locale } = {})
               OVRANTO · {t.phase}
             </p>
             <h1 className="mt-8 max-w-2xl text-[clamp(2.8rem,5.5vw,5.2rem)] leading-[1.08] font-extrabold tracking-[-0.055em] text-balance">
-              {t.headlineLead} <span className="text-primary">{t.headlineAccent}</span>
+              {t.headlineLead}{' '}
+              <span className="landing-hero-accent text-primary underline decoration-[var(--brand-terracotta)] decoration-[0.075em] underline-offset-[0.12em]">
+                {t.headlineAccent}
+              </span>
             </h1>
             <p className="mt-7 max-w-xl text-base leading-8 text-muted-foreground sm:text-lg">
               {t.description}
@@ -49,63 +52,75 @@ export function HomeScreen({ locale = defaultLocale }: { locale?: Locale } = {})
           </div>
 
           <div className="landing-hero-visual relative min-w-0">
-            <div
-              aria-hidden="true"
-              className="pointer-events-none absolute -top-9 -right-8 h-36 w-36 rounded-full border-[18px] border-[var(--brand-terracotta)]/20 sm:h-52 sm:w-52"
-            />
-            <div
-              role="img"
-              aria-label={t.mockAria}
-              className="relative overflow-hidden rounded-[2rem] border border-border bg-card shadow-2xl shadow-foreground/10 ring-1 ring-primary/10"
-            >
-              <div className="flex items-center justify-between gap-4 bg-primary px-5 py-5 text-primary-foreground sm:px-7">
-                <div className="flex min-w-0 items-center gap-3">
-                  <span aria-hidden="true" className="flex shrink-0 gap-1.5">
-                    <span className="size-2 rounded-full bg-primary-foreground/55" />
-                    <span className="size-2 rounded-full bg-primary-foreground/35" />
-                    <span className="size-2 rounded-full bg-[var(--brand-terracotta)]" />
+            <div className="landing-hero-stage relative isolate p-3 sm:p-5 lg:p-6">
+              <div
+                aria-hidden="true"
+                data-hero-depth-layer
+                className="pointer-events-none absolute inset-x-5 inset-y-5 -rotate-3 rounded-[2rem] border border-border bg-secondary shadow-xl"
+              />
+              <div
+                aria-hidden="true"
+                data-hero-depth-layer
+                className="pointer-events-none absolute inset-x-3 inset-y-8 rotate-3 rounded-[2rem] border border-border bg-card shadow-lg"
+              />
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute -top-9 -right-8 h-36 w-36 rounded-full border-[18px] border-[var(--brand-terracotta)]/20 sm:h-52 sm:w-52"
+              />
+              <div
+                role="img"
+                aria-label={t.mockAria}
+                className="landing-hero-browser relative z-10 overflow-hidden rounded-[2rem] border border-border bg-card shadow-2xl shadow-foreground/10 ring-1 ring-primary/10 motion-safe:transition-transform motion-safe:duration-200 motion-safe:ease-out motion-safe:hover:-translate-y-1"
+              >
+                <div className="flex items-center justify-between gap-4 bg-primary px-5 py-5 text-primary-foreground sm:px-7">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <span aria-hidden="true" className="flex shrink-0 gap-1.5">
+                      <span className="size-2 rounded-full bg-primary-foreground/55" />
+                      <span className="size-2 rounded-full bg-primary-foreground/35" />
+                      <span className="size-2 rounded-full bg-[var(--brand-terracotta)]" />
+                    </span>
+                    <span className="truncate text-sm font-bold tracking-tight">{t.mockTitle}</span>
+                  </div>
+                  <span className="shrink-0 rounded-full border border-primary-foreground/25 bg-primary-foreground/15 px-3 py-1 text-xs font-semibold">
+                    {t.mockBadge}
                   </span>
-                  <span className="truncate text-sm font-bold tracking-tight">{t.mockTitle}</span>
                 </div>
-                <span className="shrink-0 rounded-full border border-primary-foreground/25 bg-primary-foreground/15 px-3 py-1 text-xs font-semibold">
-                  {t.mockBadge}
-                </span>
-              </div>
-              <div className="landing-preview-grid p-5 sm:p-7">
-                <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
-                  <div
-                    aria-hidden="true"
-                    className="mb-5 h-1.5 w-10 rounded-full bg-[var(--brand-terracotta)]"
-                  />
-                  <div className="grid grid-cols-3 gap-2 sm:gap-3">
-                    {[t.mockExercises, t.mockSets, t.mockProgress].map((label, index) => (
-                      <div key={label} className="min-w-0 rounded-xl bg-secondary/80 px-3 py-4">
-                        <p className="text-[11px] leading-4 font-medium text-muted-foreground sm:text-xs">
-                          {label}
-                        </p>
-                        <p className="mt-4 text-2xl font-extrabold tracking-tight text-primary sm:text-3xl">
-                          0{index + 1}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="mt-7 space-y-4" aria-hidden="true">
-                    {[65, 83, 45].map((value, index) => (
-                      <div key={value} className="flex items-center gap-3">
-                        <span className="w-5 shrink-0 text-xs font-bold text-muted-foreground">
-                          0{index + 1}
-                        </span>
-                        <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-muted">
-                          <div
-                            className="h-full rounded-full bg-primary"
-                            style={{ width: value + '%' }}
-                          />
+                <div className="landing-preview-grid p-5 sm:p-7">
+                  <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+                    <div
+                      aria-hidden="true"
+                      className="mb-5 h-1.5 w-10 rounded-full bg-[var(--brand-terracotta)]"
+                    />
+                    <div className="grid grid-cols-3 gap-2 sm:gap-3">
+                      {[t.mockExercises, t.mockSets, t.mockProgress].map((label, index) => (
+                        <div key={label} className="min-w-0 rounded-xl bg-secondary/80 px-3 py-4">
+                          <p className="text-[11px] leading-4 font-medium text-muted-foreground sm:text-xs">
+                            {label}
+                          </p>
+                          <p className="mt-4 text-2xl font-extrabold tracking-tight text-primary sm:text-3xl">
+                            0{index + 1}
+                          </p>
                         </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
+                    <div className="mt-7 space-y-4" aria-hidden="true">
+                      {[65, 83, 45].map((value, index) => (
+                        <div key={value} className="flex items-center gap-3">
+                          <span className="w-5 shrink-0 text-xs font-bold text-muted-foreground">
+                            0{index + 1}
+                          </span>
+                          <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-muted">
+                            <div
+                              className="h-full rounded-full bg-primary"
+                              style={{ width: value + '%' }}
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
+                  <p className="mt-5 text-xs leading-5 text-muted-foreground">{t.mockDisclaimer}</p>
                 </div>
-                <p className="mt-5 text-xs leading-5 text-muted-foreground">{t.mockDisclaimer}</p>
               </div>
             </div>
           </div>
