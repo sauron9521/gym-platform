@@ -48,7 +48,8 @@ describe('UsersRepository', () => {
         .mockResolvedValueOnce([{ role: 'ATHLETE' }])
         .mockResolvedValueOnce([{ isActive: true }]);
 
-      await expect(repository.findCapabilitySnapshotForWrite(tx as never, 'actor-1')).resolves.toEqual({
+      const result = await repository.findCapabilitySnapshotForWrite(tx as never, 'actor-1');
+      expect(result).toEqual({
         role: 'ATHLETE',
         trainerProfile: { isActive: true },
       });
@@ -66,16 +67,15 @@ describe('UsersRepository', () => {
     it('preserves legacy TRAINER without a profile but never skips the profile query', async () => {
       const tx = { $queryRaw: vi.fn() };
       tx.$queryRaw.mockResolvedValueOnce([{ role: 'TRAINER' }]).mockResolvedValueOnce([]);
-      await expect(repository.findCapabilitySnapshotForWrite(tx as never, 'legacy')).resolves.toEqual({
-        role: 'TRAINER',
-        trainerProfile: null,
-      });
+      const result = await repository.findCapabilitySnapshotForWrite(tx as never, 'legacy');
+      expect(result).toEqual({ role: 'TRAINER', trainerProfile: null });
       expect(tx.$queryRaw).toHaveBeenCalledTimes(2);
     });
 
     it('fails closed for deleted or suspended users without reading a profile', async () => {
       const tx = { $queryRaw: vi.fn().mockResolvedValue([]) };
-      await expect(repository.findCapabilitySnapshotForWrite(tx as never, 'gone')).resolves.toBeNull();
+      const result = await repository.findCapabilitySnapshotForWrite(tx as never, 'gone');
+      expect(result).toBeNull();
       expect(tx.$queryRaw).toHaveBeenCalledOnce();
     });
   });
