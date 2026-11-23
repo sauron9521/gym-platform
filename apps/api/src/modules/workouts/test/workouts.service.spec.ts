@@ -644,13 +644,26 @@ describe('WorkoutsService', () => {
       );
     });
 
-    it('hides missing exports and denormalized legacy rows without a completion time', async () => {
-      for (const record of [null, { title: 'Legacy', completedAt: null, exercises: [] }]) {
-        repository.findCompletedExport.mockResolvedValue(record);
-        await expect(
-          service.exportCompleted('workout-1', athlete, { locale: 'uk' }),
-        ).rejects.toThrow(NotFoundException);
-      }
+    it('hides missing or ineligible exports', async () => {
+      repository.findCompletedExport.mockResolvedValue(null);
+      await expect(service.exportCompleted('workout-1', athlete, { locale: 'uk' })).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+
+    it('exports legacy completed records without inventing a completion time', async () => {
+      repository.findCompletedExport.mockResolvedValue({
+        title: 'Legacy',
+        completedAt: null,
+        exercises: [],
+      });
+      await expect(
+        service.exportCompleted('workout-1', athlete, { locale: 'uk' }),
+      ).resolves.toEqual({
+        schemaVersion: 1,
+        workout: { title: 'Legacy', completedAt: null, exercises: [] },
+        text: 'Тренування: Legacy\nЧас завершення не записано',
+      });
     });
 
     it('checks persisted Athlete capability before reading export data', async () => {

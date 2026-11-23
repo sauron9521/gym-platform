@@ -89,7 +89,7 @@ export class WorkoutQueriesRepository {
 
   async findCompletedExport(id: string, athleteId: string) {
     return this.prisma.workout.findFirst({
-      where: { id, athleteId, status: 'COMPLETED', completedAt: { not: null } },
+      where: { id, athleteId, status: 'COMPLETED' },
       select: workoutExportSelect,
     });
   }

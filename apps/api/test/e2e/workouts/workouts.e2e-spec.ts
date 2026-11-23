@@ -3388,6 +3388,13 @@ describe('Workouts (HTTP + PostgreSQL)', () => {
         );
         const missing = await make('missing timestamp', null, '2036-03-01T00:00:00Z');
 
+        const legacyExport = await request(app!.getHttpServer())
+          .get(`/workouts/${missing}/export`)
+          .set('Cookie', ownerCookie)
+          .expect(200);
+        expect(legacyExport.body.workout.completedAt).toBeNull();
+        expect(legacyExport.body.text).toContain('Час завершення не записано');
+
         const response = await request(app!.getHttpServer())
           .get('/workouts')
           .set('Cookie', ownerCookie)

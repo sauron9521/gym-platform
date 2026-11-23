@@ -239,11 +239,11 @@ export class WorkoutsService {
     assertWorkoutAthlete(await this.usersService.findMyCapabilities(actor.id));
 
     const workout = await this.workoutsRepository.findCompletedExport(id, actor.id);
-    if (!workout?.completedAt) {
+    if (!workout) {
       throw new NotFoundException('Completed workout not found');
     }
 
-    return buildWorkoutExport({ ...workout, completedAt: workout.completedAt }, locale);
+    return buildWorkoutExport(workout, locale);
   }
 
   // UPDATE PLANNED WORKOUT

@@ -3775,7 +3775,7 @@ export interface operations {
             workout: {
               title: string;
               /** Format: date-time */
-              completedAt: string;
+              completedAt: string | null;
               exercises: {
                 name: string;
                 sets: {

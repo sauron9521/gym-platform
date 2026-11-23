@@ -213,7 +213,7 @@ export const workoutExportResponseSchema = objectSchema({
   schemaVersion: { type: 'integer', enum: [1] },
   workout: objectSchema({
     title: stringSchema,
-    completedAt: dateTimeSchema,
+    completedAt: nullable(dateTimeSchema),
     exercises: arraySchema(
       objectSchema({
         name: stringSchema,

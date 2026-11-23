@@ -8,6 +8,7 @@ const exportCopy = {
   uk: {
     workout: 'Тренування',
     completed: 'Завершено (UTC)',
+    unknownCompletion: 'Час завершення не записано',
     reps: 'повт.',
     weight: 'кг',
     duration: 'с',
@@ -17,6 +18,7 @@ const exportCopy = {
   en: {
     workout: 'Workout',
     completed: 'Completed (UTC)',
+    unknownCompletion: 'Completion time not recorded',
     reps: 'reps',
     weight: 'kg',
     duration: 's',
@@ -25,13 +27,10 @@ const exportCopy = {
   },
 };
 
-export function buildWorkoutExport(
-  record: ExportWorkout & { completedAt: Date },
-  locale: WorkoutExportQuery['locale'],
-) {
+export function buildWorkoutExport(record: ExportWorkout, locale: WorkoutExportQuery['locale']) {
   const workout = {
     title: record.title,
-    completedAt: record.completedAt.toISOString(),
+    completedAt: record.completedAt?.toISOString() ?? null,
     exercises: record.exercises.map(({ exerciseNameSnapshot, sets }) => ({
       name: exerciseNameSnapshot,
       sets: sets.map((set) => ({
@@ -49,7 +48,7 @@ export function buildWorkoutExport(
   const copy = exportCopy[locale];
   const text = [
     `${copy.workout}: ${workout.title}`,
-    `${copy.completed}: ${workout.completedAt}`,
+    workout.completedAt ? `${copy.completed}: ${workout.completedAt}` : copy.unknownCompletion,
     ...workout.exercises.flatMap(({ name, sets }) => [
       '',
       name,

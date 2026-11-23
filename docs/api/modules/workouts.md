@@ -41,7 +41,8 @@ Authenticated workout creation, retrieval, editing, set updates, lifecycle trans
 locale is optional and selects Ukrainian (default) or English text. The
 workout includes its title, UTC completion time, historical exercise names
 and completed sets in workout order. Weight in kg, distance in m and RPE
-use exact decimal strings. Unrecorded metrics are null.
+use exact decimal strings. Unrecorded metrics and legacy completion times
+are null.
 
 The API checks current Athlete capability and ownership on every request.
 Unknown, foreign and unfinished workouts return the same 404. The response
