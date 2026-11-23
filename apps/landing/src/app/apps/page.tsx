@@ -5,7 +5,8 @@ import { Container, MarketingSection, SectionHeading } from '@/shared/ui/marketi
 
 export const metadata = pageMetadata({
   title: 'Продукти OVRANTO',
-  description: 'OVRANTO Athlete для спортсменів у Web і Mobile та OVRANTO Coach для тренерів. Інформація про продукти й етапи їхнього розвитку.',
+  description:
+    'OVRANTO Athlete для спортсменів у Web і Mobile та OVRANTO Coach для тренерів. Інформація про продукти й етапи їхнього розвитку.',
   path: '/apps',
 });
 
@@ -29,7 +30,8 @@ const applications = [
   {
     title: 'OVRANTO Coach Web',
     audience: 'Для тренерів · браузер',
-    description: 'Окремий вебпродукт для керування тренувальними програмами й роботою зі спортсменами.',
+    description:
+      'Окремий вебпродукт для керування тренувальними програмами й роботою зі спортсменами.',
     status: 'У розробці',
     href: '/for-trainers',
     action: 'Про OVRANTO Coach',
