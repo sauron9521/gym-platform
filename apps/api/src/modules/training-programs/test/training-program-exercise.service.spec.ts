@@ -75,6 +75,7 @@ describe('TrainingProgramExerciseService', () => {
     await service.addExercise(actor, ...ids, { exerciseId: 'library-exercise' });
     expect(repository.createProgramExercise).toHaveBeenCalledWith(
       ...ids,
+      actor.id,
       expect.objectContaining({ sortOrder: 0, notes: null }),
     );
   });
