@@ -41,7 +41,7 @@ administrative permissions; it does not create a separate automatic
 | `/exercises/:id/trainer-access*`  | Explicit owner-controlled Trainer grant    | Trainer access service           |
 | `/trainer-athletes*`              | Current participant + relation ownership   | Relationship service + SQL       |
 | `GET /trainer-dashboard*`         | Current trainer + active client scope      | Dashboard service                |
-| `/training-programs/:programId*`  | Active trainer + owned program             | Program access service           |
+| `/training-programs/:programId*`  | Active trainer + owned draft + scoped exercise | Program and exercise policies  |
 | `/training-programs/assignments*` | Athlete self or authorized trainer side    | Assignment read/write policy     |
 | `GET /admin/users*`               | Admin-purpose cookie + `accounts.read`     | Origin/purpose/permission guards |
 | `/admin/trainer-applications*`    | Admin-purpose cookie + `accounts.manage`   | Origin/purpose + service policy  |
@@ -71,6 +71,11 @@ and [Program access](../../apps/api/src/modules/training-programs/services/train
 3. **No role-based Trainer escalation.** Workout and program/relationship
    flows use current account capabilities; Trainer work must not become
    available through stale role claims, inactive profiles or an Admin cookie.
+   Exercise eligibility in Training Program Builder now uses the same fresh
+   Trainer capability check, so an approved `ATHLETE`-role trainer can select
+   global and own `TRAINER_CUSTOM` exercises, but a revoked legacy Trainer
+   cannot select even a global exercise. Foreign and private Athlete exercises
+   remain unavailable, and program draft ownership checks still apply.
 4. **Live Trainer approval on exercise reads.** Shared Athlete exercises
    require an unrevoked grant, an `ACTIVE` collaboration, and currently active
    TrainerProfile (or a legacy `TRAINER` without a profile), all checked in the
