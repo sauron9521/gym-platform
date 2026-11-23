@@ -44,6 +44,7 @@ describe('exercise access policy', () => {
       OR: [
         { source: 'GLOBAL' },
         { source: 'ATHLETE_CUSTOM', createdById: athlete.id },
+        { source: 'TRAINER_CUSTOM', createdById: athlete.id },
         {
           source: 'ATHLETE_CUSTOM',
           visibility: 'SELECTED_TRAINERS',
@@ -82,6 +83,7 @@ describe('exercise access policy', () => {
       OR: [
         { source: 'GLOBAL' },
         { source: 'ATHLETE_CUSTOM', createdById: athlete.id },
+        { source: 'TRAINER_CUSTOM', createdById: athlete.id },
         {
           source: 'TRAINER_CUSTOM',
           createdById: { in: ['trainer-1'] },
