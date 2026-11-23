@@ -18,7 +18,12 @@ export class WorkoutCreationRepository {
    * Both operations use the same relationship row lock. Recheck access after
    * acquiring it, then insert before releasing the lock at commit.
    */
-  async create(data: Prisma.WorkoutCreateInput, athleteId: string, exerciseIds: string[]) {
+  async create(
+    data: Prisma.WorkoutCreateInput,
+    athleteId: string,
+    exerciseIds: string[],
+    authorize: (tx: Prisma.TransactionClient) => Promise<void>,
+  ) {
     return this.prisma.$transaction(async (tx) => {
       const uniqueIds = [...new Set(exerciseIds)];
 
