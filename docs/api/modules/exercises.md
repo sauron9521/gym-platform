@@ -44,6 +44,6 @@ program ownership and editable-draft checks remain separate requirements.
 A privilege change between capability lookup and the final write remains
 a separate atomicity-hardening task under #288.
 
-**Tests:** `test/e2e/exercises/exercises.e2e-spec.ts`, `test/integration/exercises/exercise-trainer-access.integration.e2e-spec.ts` and co-located module unit tests.
+**Tests:** `test/e2e/exercises/exercises.e2e-spec.ts`, `test/integration/exercises/exercise-trainer-access.integration.e2e-spec.ts`, `test/integration/exercises/exercise-program-library.integration.e2e-spec.ts` and co-located module unit tests.
 
 See [testing guide](../testing.md).
