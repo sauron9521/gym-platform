@@ -27,7 +27,8 @@ test('outside pointer and keyboard focus exit dismiss the open mobile menu', asy
 
   await summary.click();
   await expect(menu).toHaveAttribute('open', '');
-  await page.getByRole('main').getByRole('heading', { level: 1 }).click();
+  // Click the left gutter outside the right-aligned menu without relying on animated hero layout.
+  await page.mouse.click(20, 450);
   await expect(menu).not.toHaveAttribute('open', '');
 
   await summary.click();
