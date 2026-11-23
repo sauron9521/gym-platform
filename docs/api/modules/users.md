@@ -24,6 +24,24 @@ The current-user endpoints are authenticated. Public avatar serving is intention
 
 **Important:** These values allow UIs to explain access. They do not, by themselves, authorize protected trainer operations. Migrate server-side trainer and athlete resource policies under #291 and verify cross-product E2E in #361 **before** enabling Trainer Web routes (#363).
 
+## Internal capability contract (Issue #360)
+
+Other NestJS feature modules should import `deriveAccountCapabilities` and its
+snapshot/result types from `#src/modules/users/public-api`, not from the private
+`users/policies/account-capabilities.policy` implementation. This public API is a
+re-export of the **same** canonical function; there is no duplicated role logic
+or new Nest provider.
+
+The `trainer-athletes` invitation and `training-programs` assignment
+repositories may evaluate the public contract **only after** acquiring their
+existing User and TrainerProfile locks within their own Prisma transactions.
+The exported helper does not query the database, acquire locks or authorize
+writes by itself. Its input must reflect the current persisted account state.
+
+The API dependency guard accepts the exact `public-api` entrypoint and rejects
+direct cross-feature imports of the underlying private policy. Other
+cross-domain repository accesses remain separately audited under #360.
+
 Check controller, validation schema and OpenAPI for the current public profile field set. Do not return credential secrets. Avatar writes have additional throttling.
 
 **Tests:** `src/modules/users/test/`, `test/e2e/users/users.e2e-spec.ts`, `test/integration/users/users.repository.integration.e2e-spec.ts`.
