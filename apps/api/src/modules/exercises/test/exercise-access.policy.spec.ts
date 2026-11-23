@@ -183,9 +183,30 @@ describe('exercise access policy', () => {
 
   it('limits Admin catalog reads to global exercises, never private user content', () => {
     expect(buildExerciseVisibilityWhere(admin, access)).toEqual({ source: 'GLOBAL' });
-    expect(resolveExerciseSource(admin)).toBe('GLOBAL');
-    expect(resolveExerciseSource(trainer)).toBe('TRAINER_CUSTOM');
-    expect(resolveExerciseSource(athlete)).toBe('ATHLETE_CUSTOM');
+    expect(resolveExerciseSource(admin, { athlete: false, trainer: false, admin: true })).toBe(
+      'GLOBAL',
+    );
+    expect(resolveExerciseSource(trainer, { athlete: true, trainer: true, admin: false })).toBe(
+      'TRAINER_CUSTOM',
+    );
+    expect(resolveExerciseSource(athlete, { athlete: true, trainer: false, admin: false })).toBe(
+      'ATHLETE_CUSTOM',
+    );
+  });
+
+  it('uses current capabilities rather than legacy role for exercise creation', () => {
+    const activeDual = { athlete: true, trainer: true, admin: false };
+    const revokedTrainer = { athlete: true, trainer: false, admin: false };
+    const promotedAdmin = { athlete: false, trainer: false, admin: true };
+
+    expect(resolveExerciseSource(athlete, activeDual)).toBe('ATHLETE_CUSTOM');
+    expect(resolveExerciseSource(trainer, revokedTrainer)).toBe('ATHLETE_CUSTOM');
+    expect(() => resolveExerciseSource(trainer, promotedAdmin)).toThrow(ForbiddenException);
+    expect(() => resolveExerciseSource(athlete, promotedAdmin)).toThrow(ForbiddenException);
+    expect(() => resolveExerciseSource(admin, activeDual)).toThrow(ForbiddenException);
+    expect(() =>
+      resolveExerciseSource(athlete, { athlete: false, trainer: false, admin: false }),
+    ).toThrow(ForbiddenException);
   });
 
   it('keeps private as athlete default and rejects visibility on non-athlete exercises', () => {

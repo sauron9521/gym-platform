@@ -393,6 +393,65 @@ describe('Exercises (HTTP + PostgreSQL)', () => {
       expect(response.status).toBe(400);
     });
 
+    it('uses live TrainerProfile approval for legacy trainer exercise creation', async () => {
+      const email = `exercise-trainer-create-${randomUUID()}@example.com`;
+      const trainerUser = await prisma.user.create({
+        data: {
+          email,
+          passwordHash: await passwordHasher.hash(password),
+          role: 'TRAINER',
+        },
+        select: { id: true },
+      });
+      userIds.push(trainerUser.id);
+
+      try {
+        await prisma.trainerProfile.create({
+          data: {
+            userId: trainerUser.id,
+            isActive: true,
+            approvedAt: new Date(),
+            approvedById: ownerId,
+          },
+        });
+        const cookie = await login(email);
+        const payload = {
+          muscleGroups: [{ slug: 'chest', role: 'PRIMARY' }],
+          equipment: [],
+        };
+        const approved = await request(app!.getHttpServer())
+          .post('/exercises')
+          .set('Cookie', cookie)
+          .send({ ...payload, name: 'Approved Trainer Exercise' });
+        expect(approved.status).toBe(201);
+        expect(approved.body).toMatchObject({
+          source: 'TRAINER_CUSTOM',
+          createdById: trainerUser.id,
+        });
+        exerciseIds.push(approved.body.id as string);
+
+        await prisma.trainerProfile.update({
+          where: { userId: trainerUser.id },
+          data: { isActive: false, revokedAt: new Date(), revokedById: ownerId },
+        });
+
+        // The same session role is now stale. It cannot mint a Trainer exercise.
+        const revoked = await request(app!.getHttpServer())
+          .post('/exercises')
+          .set('Cookie', cookie)
+          .send({ ...payload, name: 'Revoked Trainer Personal Exercise' });
+        expect(revoked.status).toBe(201);
+        expect(revoked.body).toMatchObject({
+          source: 'ATHLETE_CUSTOM',
+          visibility: 'PRIVATE',
+          createdById: trainerUser.id,
+        });
+        exerciseIds.push(revoked.body.id as string);
+      } finally {
+        await prisma.trainerProfile.deleteMany({ where: { userId: trainerUser.id } });
+      }
+    });
+
     it('should create a private athlete exercise', async () => {
       const response = await request(app!.getHttpServer())
         .post('/exercises')
