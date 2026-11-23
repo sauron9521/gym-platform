@@ -91,6 +91,35 @@ describe('UsersService', () => {
     );
   });
 
+  it('returns the canonical full capability snapshot under held User/Profile locks', async () => {
+    const tx = { id: 'write-tx' } as never;
+    repository.findCapabilitySnapshotForWrite
+      .mockResolvedValueOnce({ role: 'ATHLETE', trainerProfile: { isActive: true } })
+      .mockResolvedValueOnce({ role: 'TRAINER', trainerProfile: { isActive: false } })
+      .mockResolvedValueOnce({ role: 'ADMIN', trainerProfile: null })
+      .mockResolvedValueOnce(null);
+
+    await expect(service.findMyCapabilitiesForWrite(tx, 'actor')).resolves.toEqual({
+      athlete: true,
+      trainer: true,
+      admin: false,
+    });
+    await expect(service.findMyCapabilitiesForWrite(tx, 'actor')).resolves.toEqual({
+      athlete: true,
+      trainer: false,
+      admin: false,
+    });
+    await expect(service.findMyCapabilitiesForWrite(tx, 'actor')).resolves.toEqual({
+      athlete: false,
+      trainer: false,
+      admin: true,
+    });
+    await expect(service.findMyCapabilitiesForWrite(tx, 'actor')).rejects.toThrow(
+      NotFoundException,
+    );
+    expect(repository.findCapabilitySnapshotForWrite).toHaveBeenCalledTimes(4);
+  });
+
   it('returns a user without a profile as profile: null', async () => {
     repository.findMe.mockResolvedValue({
       id: 'user-1',
