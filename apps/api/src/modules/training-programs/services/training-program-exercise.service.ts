@@ -48,7 +48,7 @@ export class TrainingProgramExerciseService {
     const sortOrder = Math.max(-1, ...workout.exercises.map((item) => item.sortOrder)) + 1;
 
     try {
-      return await this.repository.createProgramExercise(programId, versionId, workoutId, {
+      return await this.repository.createProgramExercise(programId, versionId, workoutId, actor.id, {
         exerciseId: exercise.id,
         exerciseNameSnapshot: exercise.name,
         exerciseTypeSnapshot: exercise.exerciseType,
