@@ -61,7 +61,7 @@ describe('TrainingProgramExerciseService', () => {
       'library-exercise',
       actor,
     );
-    expect(repository.createProgramExercise).toHaveBeenCalledExactlyOnceWith(...ids, {
+    expect(repository.createProgramExercise).toHaveBeenCalledExactlyOnceWith(...ids, actor.id, {
       exerciseId: 'library-exercise',
       exerciseNameSnapshot: 'Bench',
       exerciseTypeSnapshot: 'STRENGTH',
