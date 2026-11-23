@@ -9,10 +9,7 @@ import { UsersModule } from '../users.module.js';
 describe('UsersModule public dependency boundary', () => {
   it('provides UsersRepository privately and exports only public services', () => {
     const providers = Reflect.getMetadata(MODULE_METADATA.PROVIDERS, UsersModule) as unknown[];
-    const exportedProviders = Reflect.getMetadata(
-      MODULE_METADATA.EXPORTS,
-      UsersModule,
-    ) as unknown[];
+    const exportedProviders = Reflect.getMetadata(MODULE_METADATA.EXPORTS, UsersModule) as unknown[];
 
     expect(providers).toContain(UsersRepository);
     expect(exportedProviders).toContain(UsersService);
