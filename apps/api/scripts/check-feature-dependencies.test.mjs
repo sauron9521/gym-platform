@@ -163,10 +163,7 @@ test('Users public-api is stable but direct cross-feature capability policy impo
   fixture(({ module, source, check }) => {
     module('users');
     for (const consumer of ['trainer-athletes', 'training-programs']) {
-      module(
-        consumer,
-        "import { UsersModule } from '#src/modules/users/users.module';",
-      );
+      module(consumer, "import { UsersModule } from '#src/modules/users/users.module';");
       source(
         consumer,
         'repositories/example.repository.ts',
@@ -182,7 +179,7 @@ test('Users public-api is stable but direct cross-feature capability policy impo
         'repositories/example.repository.ts',
         "import { deriveAccountCapabilities } from '#src/modules/users/policies/account-capabilities.policy';",
       );
-      const diagnostics = check().join('\\n');
+      const diagnostics = check().join('\n');
       assert.match(diagnostics, /private cross-feature import/);
       source(
         consumer,
