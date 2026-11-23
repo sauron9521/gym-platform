@@ -22,9 +22,8 @@ describe('Landing Web and Mobile feature showcases', () => {
     expect(within(region).getByRole('heading', { name: 'Каталог вправ' })).toBeTruthy();
     expect(within(region).getByRole('heading', { name: 'Програми та тренування' })).toBeTruthy();
     expect(screen.getByText('Статус: у розробці')).toBeTruthy();
-    expect(screen.getByRole('link', { name: 'Можливості для спортсменів' }).getAttribute('href')).toBe(
-      '/for-athletes',
-    );
+    const athleteLink = screen.getByRole('link', { name: 'Можливості для спортсменів' });
+    expect(athleteLink.getAttribute('href')).toBe('/for-athletes');
     expect(screen.getByRole('link', { name: 'Про Mobile' }).getAttribute('href')).toBe(
       '/apps/mobile',
     );
