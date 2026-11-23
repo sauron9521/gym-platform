@@ -82,7 +82,7 @@ export function ApplicationDetail({
       </MarketingSection>
       <CallToAction
         title="Ознайомся з іншим застосунком"
-        description="Відкрий повну екосистему Gym Platform."
+        description="Переглянь інші продукти OVRANTO."
         primary={relatedApp}
         secondary={audienceLink}
       />

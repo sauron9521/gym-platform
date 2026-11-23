@@ -2,9 +2,9 @@ import { pageMetadata } from '@/shared/lib/seo';
 import { ApplicationDetail } from '@/widgets/applications/ui/application-detail';
 
 export const metadata = pageMetadata({
-  title: 'Mobile',
+  title: 'OVRANTO Athlete Mobile',
   description:
-    'Мобільний Gym Platform розвивається як інструмент для тренувань зі смартфона. Публічне встановлення поки не оголошено.',
+    'OVRANTO Athlete Mobile розвивається для тренувань зі смартфона. Публічне встановлення поки не оголошено.',
   path: '/apps/mobile',
 });
 
@@ -30,9 +30,9 @@ const highlights = [
 export default function ApplicationPage() {
   return (
     <ApplicationDetail
-      eyebrow="Gym Platform Mobile"
+      eyebrow="OVRANTO Athlete Mobile"
       title="Тренування під рукою"
-      description="Мобільний Gym Platform розвивається як інструмент для тренувань зі смартфона. Публічне встановлення поки не оголошено."
+      description="OVRANTO Athlete Mobile розвивається для тренувань зі смартфона. Публічне встановлення поки не оголошено."
       highlights={highlights}
       audienceLink={{ href: '/for-athletes', label: 'Можливості для спортсменів' }}
       relatedApp={{ href: '/apps/web', label: 'Про Web' }}

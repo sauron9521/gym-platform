@@ -6,7 +6,7 @@ import { CallToAction, Container, MarketingSection, SectionHeading } from '@/sha
 export const metadata = pageMetadata({
   title: 'Тренерам',
   description:
-    'Інструменти Gym Platform для персональних тренерів: програми, версії та взаємодія зі спортсменами.',
+    'OVRANTO Coach — вебпродукт для персональних тренерів: програми, версії та робота зі спортсменами.',
   path: '/for-trainers',
 });
 
@@ -35,8 +35,8 @@ export default function TrainersPage() {
             Більше уваги спортсменам, менше хаосу з програмами
           </h1>
           <p className="mt-6 max-w-2xl text-lg leading-8 text-muted-foreground">
-            Gym Platform розвиває інструменти для тренерів: тренувальні програми, їхні версії та
-            керовану взаємодію зі спортсменами. Функціонал доповнюється поступово.
+            OVRANTO Coach — окремий вебпродукт для тренерів: тренувальні програми, їхні версії та
+            керована взаємодія зі спортсменами. Публічний запуск ще не оголошено.
           </p>
           <Link
             href="/features"
@@ -72,10 +72,10 @@ export default function TrainersPage() {
         </Container>
       </MarketingSection>
       <CallToAction
-        title="Ознайомся з продуктами Gym Platform"
-        description="Дізнайся більше про вебзастосунок та мобільну частину платформи."
-        primary={{ href: '/apps/web', label: 'Про вебзастосунок' }}
-        secondary={{ href: '/apps/mobile', label: 'Про Mobile' }}
+        title="Дізнайся більше про OVRANTO Coach"
+        description="Coach — окремий вебпродукт для тренерів. Публічний доступ ще не відкрито."
+        primary={{ href: '/apps', label: 'Каталог продуктів' }}
+        secondary={{ href: '/features', label: 'Усі можливості' }}
       />
     </main>
   );

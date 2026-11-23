@@ -4,25 +4,37 @@ import { pageMetadata } from '@/shared/lib/seo';
 import { Container, MarketingSection, SectionHeading } from '@/shared/ui/marketing';
 
 export const metadata = pageMetadata({
-  title: 'Застосунки',
-  description: 'Знайомтеся з вебзастосунком та мобільною частиною екосистеми Gym Platform.',
+  title: 'Продукти OVRANTO',
+  description:
+    'OVRANTO Athlete для спортсменів у Web і Mobile та OVRANTO Coach для тренерів. Інформація про продукти й етапи їхнього розвитку.',
   path: '/apps',
 });
 
 const applications = [
   {
-    title: 'Gym Platform Web',
-    description: 'Тренувальні програми, вправи та історія тренувань у браузері.',
+    title: 'OVRANTO Athlete Web',
+    audience: 'Для спортсменів · браузер',
+    description: 'Бібліотека вправ, журнал тренувань і прогрес у вебінтерфейсі спортсмена.',
     status: 'У розробці',
     href: '/apps/web',
-    action: 'Дізнатися про Web',
+    action: 'Про Athlete Web',
   },
   {
-    title: 'Gym Platform Mobile',
-    description: 'Інструменти тренувань на смартфоні, що поступово доповнюються.',
+    title: 'OVRANTO Athlete Mobile',
+    audience: 'Для спортсменів · смартфон',
+    description: 'Тренування, підходи та історія занять у мобільному інтерфейсі.',
     status: 'У розробці',
     href: '/apps/mobile',
-    action: 'Дізнатися про Mobile',
+    action: 'Про Athlete Mobile',
+  },
+  {
+    title: 'OVRANTO Coach Web',
+    audience: 'Для тренерів · браузер',
+    description:
+      'Окремий вебпродукт для керування тренувальними програмами й роботою зі спортсменами.',
+    status: 'У розробці',
+    href: '/for-trainers',
+    action: 'Про OVRANTO Coach',
   },
 ] as const;
 
@@ -32,19 +44,19 @@ export default function ApplicationsPage() {
       <MarketingSection aria-labelledby="app-title">
         <Container>
           <p className="text-xs font-bold tracking-[0.18em] text-primary uppercase">
-            Застосунки Gym Platform
+            Продукти OVRANTO
           </p>
           <h1
             id="app-title"
             className="mt-6 max-w-4xl text-4xl font-extrabold tracking-[-0.05em] sm:text-6xl"
           >
-            Одне тренувальне середовище — Web і Mobile
+            Athlete і Coach — для різних ролей
           </h1>
           <p className="mt-6 max-w-2xl text-lg leading-8 text-muted-foreground">
-            Обирай спосіб взаємодії з платформою. Веб- і мобільний застосунки розвиваються
-            паралельно; публічні посилання на запуск з’являться після релізу.
+            OVRANTO Athlete розвивається для спортсменів у Web і Mobile, а OVRANTO Coach — окремий
+            вебпродукт для тренерів. Публічні посилання з’являться лише після запуску.
           </p>
-          <div className="mt-12 grid gap-5 md:grid-cols-2">
+          <div className="mt-12 grid gap-5 lg:grid-cols-3">
             {applications.map((app) => (
               <article
                 key={app.href}
@@ -54,6 +66,7 @@ export default function ApplicationsPage() {
                   {app.status}
                 </p>
                 <h2 className="mt-6 text-2xl font-extrabold tracking-tight">{app.title}</h2>
+                <p className="mt-3 text-sm font-semibold text-muted-foreground">{app.audience}</p>
                 <p className="mt-4 leading-7 text-muted-foreground">{app.description}</p>
                 <Link
                   href={app.href}
@@ -71,8 +84,8 @@ export default function ApplicationsPage() {
           <SectionHeading
             id="apps-goals"
             eyebrow="Екосистема"
-            title="Тренуйся на власних умовах"
-            description="Gym Platform поєднує різні інтерфейси навколо одного тренувального процесу."
+            title="Тренування для спортсмена й тренера"
+            description="OVRANTO поєднує продукти для різних ролей навколо тренувального процесу."
           />
         </Container>
       </MarketingSection>

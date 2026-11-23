@@ -8,19 +8,26 @@ for (const width of [320, 1280]) {
     const main = page.getByRole('main');
     const heading = main.getByRole('heading', { level: 1 });
     await expect(heading).toHaveCount(1);
-    await expect(heading).toContainText('Web і Mobile');
-    await expect(main.getByRole('article')).toHaveCount(2);
+    await expect(heading).toContainText('Athlete і Coach');
+    await expect(main.getByRole('article')).toHaveCount(3);
     await expect(
-      main.getByRole('heading', { name: 'Gym Platform Web', exact: true }),
+      main.getByRole('heading', { name: 'OVRANTO Athlete Web', exact: true }),
     ).toBeVisible();
     await expect(
-      main.getByRole('heading', { name: 'Gym Platform Mobile', exact: true }),
+      main.getByRole('heading', { name: 'OVRANTO Athlete Mobile', exact: true }),
     ).toBeVisible();
 
-    const webLink = main.getByRole('link', { name: 'Дізнатися про Web', exact: true });
-    const mobileLink = main.getByRole('link', { name: 'Дізнатися про Mobile', exact: true });
+    await expect(
+      main.getByRole('heading', { name: 'OVRANTO Coach Web', exact: true }),
+    ).toBeVisible();
+    await expect(main.getByRole('article').getByText('У розробці')).toHaveCount(3);
+
+    const webLink = main.getByRole('link', { name: 'Про Athlete Web', exact: true });
+    const mobileLink = main.getByRole('link', { name: 'Про Athlete Mobile', exact: true });
     await expect(webLink).toHaveAttribute('href', '/apps/web');
     await expect(mobileLink).toHaveAttribute('href', '/apps/mobile');
+    const coachLink = main.getByRole('link', { name: 'Про OVRANTO Coach', exact: true });
+    await expect(coachLink).toHaveAttribute('href', '/for-trainers');
     await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
       'href',
       'https://gym.example.test/apps',
@@ -36,8 +43,8 @@ for (const app of [
     path: '/apps/web',
     title: 'Тренувальна платформа у браузері',
     highlight: 'Каталог вправ',
-    audience: 'Можливості для тренерів',
-    audienceDestination: '/for-trainers',
+    audience: 'Можливості для спортсменів',
+    audienceDestination: '/for-athletes',
     other: 'Про Mobile',
     destination: '/apps/mobile',
   },
@@ -77,3 +84,10 @@ for (const app of [
     await expect(page.getByRole('main')).toBeVisible();
   });
 }
+
+test('Coach product opens a truthful internal page, not an undeployed signup', async ({ page }) => {
+  await page.goto('/apps');
+  await page.getByRole('main').getByRole('link', { name: 'Про OVRANTO Coach' }).click();
+  await expect(page).toHaveURL(/\/for-trainers$/);
+  await expect(page.getByRole('main').getByText(/Публічний запуск ще не оголошено/)).toBeVisible();
+});
