@@ -220,6 +220,8 @@ describe('WorkoutsRepository', () => {
   });
 
   describe('create', () => {
+    const authorize = vi.fn(async (_tx: Prisma.TransactionClient) => {});
+
     beforeEach(() => {
       prisma.$transaction.mockImplementation(async (cb: (tx: typeof prisma) => Promise<unknown>) =>
         cb(prisma),
@@ -285,7 +287,7 @@ describe('WorkoutsRepository', () => {
 
       prisma.workout.create.mockResolvedValue(workout);
 
-      const result = await repository.create(data, 'athlete-1', ['exercise-1']);
+      const result = await repository.create(data, 'athlete-1', ['exercise-1'], authorize);
 
       expect(prisma.workout.create).toHaveBeenCalledWith({
         data,
@@ -293,6 +295,35 @@ describe('WorkoutsRepository', () => {
       });
 
       expect(result).toEqual(workout);
+      expect(authorize).toHaveBeenCalledExactlyOnceWith(prisma);
+      expect(prisma.exercise.findMany.mock.invocationCallOrder[0]).toBeLessThan(
+        authorize.mock.invocationCallOrder[0]!,
+      );
+      expect(authorize.mock.invocationCallOrder[0]).toBeLessThan(
+        prisma.workout.create.mock.invocationCallOrder[0]!,
+      );
+    });
+
+    it('refuses the final insert when Athlete capability was revoked', async () => {
+      const revoked = new Error('Current Athlete capability required');
+      authorize.mockRejectedValueOnce(revoked);
+
+      await expect(
+        repository.create(
+          {
+            title: 'Denied workout',
+            athlete: { connect: { id: 'athlete-1' } },
+            createdBy: { connect: { id: 'athlete-1' } },
+          },
+          'athlete-1',
+          ['exercise-1'],
+          authorize,
+        ),
+      ).rejects.toBe(revoked);
+
+      expect(prisma.exercise.findMany).toHaveBeenCalledOnce();
+      expect(authorize).toHaveBeenCalledExactlyOnceWith(prisma);
+      expect(prisma.workout.create).not.toHaveBeenCalled();
     });
 
     it('locks exercises before active trainer relationships and the workout insert', async () => {
@@ -319,6 +350,7 @@ describe('WorkoutsRepository', () => {
           },
           'athlete-1',
           ['exercise-1'],
+          authorize,
         ),
       ).resolves.toMatchObject({ id: 'created-workout' });
       expect(prisma.$queryRaw).toHaveBeenCalledTimes(2);
@@ -353,6 +385,7 @@ describe('WorkoutsRepository', () => {
           },
           'athlete-1',
           ['exercise-1'],
+          authorize,
         ),
       ).rejects.toThrow('One or more exercises are not available');
       expect(prisma.workout.create).not.toHaveBeenCalled();
@@ -378,6 +411,7 @@ describe('WorkoutsRepository', () => {
             },
             'athlete-1',
             ['exercise-1'],
+            authorize,
           ),
         ).rejects.toThrow('One or more exercises are not available');
         expect(prisma.$queryRaw).toHaveBeenCalledOnce();
@@ -397,6 +431,7 @@ describe('WorkoutsRepository', () => {
           },
           'athlete-1',
           ['exercise-1'],
+          authorize,
         ),
       ).rejects.toThrow('One or more exercises are not available');
       expect(prisma.exercise.findMany).not.toHaveBeenCalled();
@@ -413,6 +448,7 @@ describe('WorkoutsRepository', () => {
         },
         'athlete-1',
         ['exercise-1', 'exercise-1'],
+        authorize,
       );
       expect(prisma.$queryRaw).toHaveBeenCalledOnce();
       expect(prisma.exercise.findMany).toHaveBeenCalledOnce();
@@ -437,6 +473,7 @@ describe('WorkoutsRepository', () => {
           },
           'athlete-1',
           ['exercise-1'],
+          authorize,
         ),
       ).rejects.toBe(error);
     });
