@@ -73,18 +73,17 @@ describe('App (e2e)', () => {
     }
   });
 
-  it('resolves actual infrastructure providers and global configuration', () => {
-    const scopes = [
-      [PrismaModule, PrismaService],
-      [RateLimitStorageModule, DistributedThrottlerStorage],
-      [AdminAuditModule, AdminAuditLogger],
-    ] as const;
+  it.each([
+    ['PrismaModule / PrismaService', PrismaModule, PrismaService],
+    ['RateLimitStorageModule / DistributedThrottlerStorage', RateLimitStorageModule, DistributedThrottlerStorage],
+    ['AdminAuditModule / AdminAuditLogger', AdminAuditModule, AdminAuditLogger],
+  ] as const)('resolves %s from its declaring infrastructure module', (_name, owner, provider) => {
+    const instance = app.select(owner).get(provider, { strict: true });
+    // Boolean assertion avoids recursive inspection of PrismaClient proxies.
+    expect(instance instanceof provider).toBe(true);
+  });
 
-    for (const [owner, provider] of scopes) {
-      expect(app.select(owner).get(provider, { strict: true })).toBeInstanceOf(provider);
-    }
-
-    // ConfigModule.forRoot is global; only resolve it, never read secrets.
-    expect(app.get(ConfigService)).toBeInstanceOf(ConfigService);
+  it('resolves global ConfigService without reading secrets', () => {
+    expect(app.get(ConfigService) instanceof ConfigService).toBe(true);
   });
 });
