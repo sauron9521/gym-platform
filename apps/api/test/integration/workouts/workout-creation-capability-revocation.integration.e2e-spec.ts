@@ -124,10 +124,7 @@ describe('Manual workout creation permission revocation (PostgreSQL)', () => {
         // The ordinary service preflight still observes the committed Athlete.
         expect((await users.findMyCapabilities(athleteId)).athlete).toBe(true);
 
-        pending = workouts.create(
-          { id: athleteId, role: 'ATHLETE' },
-          input(),
-        ).then(
+        pending = workouts.create({ id: athleteId, role: 'ATHLETE' }, input()).then(
           () => 'UNEXPECTED_CREATE',
           (error: unknown) => error,
         );
