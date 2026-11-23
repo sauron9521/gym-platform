@@ -22,6 +22,20 @@ Authenticated workout creation, retrieval, editing, set updates, lifecycle trans
 | POST   | `/workouts/:id/cancel`      | Cancel                |
 | POST   | `/workouts/from-program`    | Create from a program |
 
+## Exercise visibility boundary (E14 / #650)
+
+`WorkoutCreationRepository` imports `buildExerciseVisibilityWhere` and
+`workoutExerciseReferenceSelect` exclusively through
+`#src/modules/exercises/public-api`. They are the **same** canonical
+Exercises policy function and minimal Prisma projection used previously;
+no new visibility logic or broader data selection has been introduced.
+
+The existing manual workout transaction still acquires User/Profile and
+exercise locks before relationship locks, then rechecks exercise visibility
+before INSERT. Never move that check to a preflight-only lookup or remove the
+transactional locks. Direct imports of Exercises internal policies/selects
+from another feature are prohibited by the dependency guard.
+
 Preserve transitions and invariants (especially completion and assignment state), ownership checks and version linkage. Controllers and generated OpenAPI are the source of truth for accepted fields and transition error codes.
 
 **Tests:** `test/e2e/workouts/workouts.e2e-spec.ts`, `test/integration/workouts/workouts.repository.integration.e2e-spec.ts` and co-located module tests.

@@ -15,6 +15,20 @@ Maintains the exercise library, user-owned exercises and trainer access. Lists/d
 | POST   | `/exercises/:id/trainer-access`            | Grant trainer access                 |
 | DELETE | `/exercises/:id/trainer-access/:trainerId` | Revoke trainer access                |
 
+## Transactional workout read contract (E14 / #650)
+
+`apps/api/src/modules/exercises/public-api.ts` explicitly exports
+`buildExerciseVisibilityWhere` and `workoutExerciseReferenceSelect` for
+`Workouts` consumers. These names **re-export** the canonical Exercises
+policy and the minimal `{ id, name, exerciseType }` projection; do not
+duplicate or weaken either implementation inside `Workouts`.
+
+The contract does not authorize a request by itself. The caller must keep
+the existing persisted Athlete capability check, exercise/relationship row
+locks, and visibility recheck inside the same PostgreSQL transaction as the
+workout INSERT. Internal `exercises/policies` and `exercises/selects` paths
+remain private to this feature, enforced by the architecture guard.
+
 Treat public/global, private/owned and trainer-visible exercises differently; a guest must never gain private exercise access. Preserve archive visibility and trainer-relationship termination rules. Review `src/modules/exercises/` source for the authoritative ownership implementation.
 
 **POST creation scope (legacy-compatible):** The optional `creationScope`
