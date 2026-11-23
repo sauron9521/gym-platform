@@ -46,10 +46,7 @@ describe('UsersAuthFacade', () => {
     expect(repository.create).toHaveBeenCalledExactlyOnceWith('person@example.test', 'new-hash');
     expect(repository.findCredentials).toHaveBeenCalledExactlyOnceWith('person@example.test');
     expect(repository.updatePassHash).toHaveBeenCalledExactlyOnceWith('user', 'next-hash');
-    expect(repository.findUserForJwtAuth).toHaveBeenCalledExactlyOnceWith(
-      'jwt-user',
-      1700000000,
-    );
+    expect(repository.findUserForJwtAuth).toHaveBeenCalledExactlyOnceWith('jwt-user', 1700000000);
     expect(repository.findUserById).toHaveBeenCalledExactlyOnceWith('session-user');
     expect(repository.getPreferredMailLocale).toHaveBeenCalledExactlyOnceWith(
       'person@example.test',
