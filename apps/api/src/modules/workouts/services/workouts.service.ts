@@ -263,6 +263,7 @@ export class WorkoutsService {
         status: 'PLANNED',
       },
       data,
+      actor.id,
     );
   }
 
@@ -461,6 +462,7 @@ export class WorkoutsService {
       {
         status: 'CANCELLED',
       },
+      actor.id,
     );
   }
 
@@ -510,9 +512,12 @@ export class WorkoutsService {
   private async updateWithConflictHandling(
     where: Prisma.WorkoutWhereUniqueInput,
     data: Prisma.WorkoutUpdateInput,
+    athleteId: string,
   ) {
     try {
-      return await this.workoutsRepository.update(where, data);
+      return await this.workoutsRepository.update(where, data, async (tx) => {
+        assertWorkoutAthlete(await this.usersService.findMyCapabilitiesForWrite(tx, athleteId));
+      });
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
         throw new ConflictException('Workout state has changed. Reload and try again.');
