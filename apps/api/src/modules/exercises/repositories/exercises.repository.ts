@@ -72,21 +72,34 @@ export class ExercisesRepository {
     });
   }
 
-  async update(where: Prisma.ExerciseWhereUniqueInput, data: Prisma.ExerciseUpdateInput) {
-    return this.prisma.exercise.update({
-      where,
-      data,
-      select: exerciseSelect,
+  async update(
+    where: Prisma.ExerciseWhereUniqueInput,
+    data: Prisma.ExerciseUpdateInput,
+    authorize: (tx: Prisma.TransactionClient) => Promise<void>,
+  ) {
+    return this.prisma.$transaction(async (tx) => {
+      await authorize(tx);
+      return tx.exercise.update({
+        where,
+        data,
+        select: exerciseSelect,
+      });
     });
   }
 
-  async archive(where: Prisma.ExerciseWhereUniqueInput) {
-    return this.prisma.exercise.update({
-      where,
-      data: {
-        isArchived: true,
-      },
-      select: archivedExerciseSelect,
+  async archive(
+    where: Prisma.ExerciseWhereUniqueInput,
+    authorize: (tx: Prisma.TransactionClient) => Promise<void>,
+  ) {
+    return this.prisma.$transaction(async (tx) => {
+      await authorize(tx);
+      return tx.exercise.update({
+        where,
+        data: {
+          isArchived: true,
+        },
+        select: archivedExerciseSelect,
+      });
     });
   }
 

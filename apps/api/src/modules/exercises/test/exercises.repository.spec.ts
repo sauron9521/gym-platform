@@ -269,7 +269,9 @@ describe('ExercisesRepository', () => {
 
       prisma.exercise.update.mockResolvedValue(exercise);
 
-      const result = await repository.update(where, data);
+      const authorize = vi.fn().mockResolvedValue(undefined);
+      const result = await repository.update(where, data, authorize);
+      expect(authorize).toHaveBeenCalledExactlyOnceWith(prisma);
 
       expect(prisma.exercise.update).toHaveBeenCalledWith({
         where,
@@ -292,8 +294,19 @@ describe('ExercisesRepository', () => {
             createdById: 'athlete-1',
           },
           { name: 'Updated name' },
+          async () => {},
         ),
       ).rejects.toBe(error);
+    });
+
+    it('never writes an update after a failed locked authorization', async () => {
+      const denied = new Error('Account no longer permitted');
+      await expect(
+        repository.update({ id: 'exercise-1' }, { name: 'Blocked' }, async () => {
+          throw denied;
+        }),
+      ).rejects.toBe(denied);
+      expect(prisma.exercise.update).not.toHaveBeenCalled();
     });
   });
 
@@ -312,7 +325,9 @@ describe('ExercisesRepository', () => {
 
       prisma.exercise.update.mockResolvedValue(archivedExercise);
 
-      const result = await repository.archive(where);
+      const authorize = vi.fn().mockResolvedValue(undefined);
+      const result = await repository.archive(where, authorize);
+      expect(authorize).toHaveBeenCalledExactlyOnceWith(prisma);
 
       expect(prisma.exercise.update).toHaveBeenCalledWith({
         where,
@@ -327,6 +342,16 @@ describe('ExercisesRepository', () => {
       });
 
       expect(result).toEqual(archivedExercise);
+    });
+
+    it('never archives after a failed locked authorization', async () => {
+      const denied = new Error('Account no longer permitted');
+      await expect(
+        repository.archive({ id: 'exercise-1' }, async () => {
+          throw denied;
+        }),
+      ).rejects.toBe(denied);
+      expect(prisma.exercise.update).not.toHaveBeenCalled();
     });
   });
 

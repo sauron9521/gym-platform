@@ -281,7 +281,9 @@ export class ExercisesService {
     const where = getExerciseManagementWhere(actor, exercise);
 
     try {
-      return await this.exercisesRepository.update(where, data);
+      return await this.exercisesRepository.update(where, data, (tx) =>
+        this.assertManagementCapabilityForWrite(tx, actor),
+      );
     } catch (error) {
       if (this.isRecordNotFound(error)) {
         throw new NotFoundException('Exercise not found');
@@ -305,13 +307,31 @@ export class ExercisesService {
     assertCanManageExercise(actor, exercise);
 
     try {
-      return await this.exercisesRepository.archive(getExerciseManagementWhere(actor, exercise));
+      return await this.exercisesRepository.archive(
+        getExerciseManagementWhere(actor, exercise),
+        (tx) => this.assertManagementCapabilityForWrite(tx, actor),
+      );
     } catch (error) {
       if (this.isRecordNotFound(error)) {
         throw new NotFoundException('Exercise not found');
       }
 
       throw error;
+    }
+  }
+
+  /**
+   * Serialize account moderation and exercise writes on the same User/Profile
+   * locks. Revoked trainers keep ownership of their own personal exercises
+   * as long as their Athlete capability remains active.
+   */
+  private async assertManagementCapabilityForWrite(
+    tx: Prisma.TransactionClient,
+    actor: ExerciseActor,
+  ) {
+    const current = await this.usersService.findMyCapabilitiesForWrite(tx, actor.id);
+    if (actor.role === 'ADMIN' ? !current.admin : !current.athlete || current.admin) {
+      throw new ForbiddenException('Exercise management capability changed');
     }
   }
 
