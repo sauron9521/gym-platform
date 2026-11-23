@@ -18,7 +18,7 @@
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
     "format": "prettier --write .",
-    "format:check": "prettier --write docs/beta-readiness-gates.md && node -e 'console.log(\"FORMATTED_MD_B64=\" + require(\"node:fs\").readFileSync(\"docs/beta-readiness-gates.md\").toString(\"base64\"))' && prettier --check .",
+    "format:check": "prettier --check .",
     "prepare": "husky",
     "api:openapi": "pnpm --filter @gym/api docs:openapi",
     "api:types": "pnpm --filter @gym/api-client generate",
