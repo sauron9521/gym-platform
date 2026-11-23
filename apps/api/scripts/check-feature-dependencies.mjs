@@ -7,7 +7,6 @@ import { parseModuleImports } from './import-parser.mjs';
 // Explicitly reviewed shared implementation contracts. Other features must
 // use a module/service/type API rather than reaching into private internals.
 const APPROVED_INTERNAL_IMPORTS = new Map([
-  ['users/repositories/users.repository', new Set(['trainer-athletes'])],
   ['exercises/policies/exercise-access.policy', new Set(['workouts'])],
   ['exercises/selects/exercise.select', new Set(['workouts'])],
   ['workouts/policies/workout-access.policy', new Set(['workout-analytics'])],
