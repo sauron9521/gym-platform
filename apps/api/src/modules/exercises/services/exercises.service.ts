@@ -38,6 +38,7 @@ export class ExercisesService {
     const source = resolveExerciseSource(
       actor,
       await this.usersService.findMyCapabilities(actor.id),
+      input.creationScope,
     );
 
     const visibility = resolveExerciseVisibility(source, input.visibility);
