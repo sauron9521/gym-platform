@@ -6,9 +6,7 @@ import { parseModuleImports } from './import-parser.mjs';
 
 // Explicitly reviewed shared implementation contracts. Other features must
 // use a module/service/type API rather than reaching into private internals.
-const APPROVED_INTERNAL_IMPORTS = new Map([
-  ['workouts/policies/workout-access.policy', new Set(['workout-analytics'])],
-]);
+const APPROVED_INTERNAL_IMPORTS = new Map([]);
 
 function walk(dir) {
   if (!existsSync(dir)) return [];
