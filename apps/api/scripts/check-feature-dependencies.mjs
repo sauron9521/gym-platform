@@ -4,10 +4,6 @@ import { fileURLToPath } from 'node:url';
 
 import { parseModuleImports } from './import-parser.mjs';
 
-// Explicitly reviewed shared implementation contracts. Other features must
-// use a module/service/type API rather than reaching into private internals.
-const APPROVED_INTERNAL_IMPORTS = new Map([]);
-
 function walk(dir) {
   if (!existsSync(dir)) return [];
   return readdirSync(dir, { withFileTypes: true })
@@ -162,10 +158,7 @@ export function checkFeatureDependencies(repositoryRoot) {
           // A module may expose an explicit stable root contract while its
           // repositories, policies, selects and internal files stay private.
           const isPublicContract = targetPath === 'public-api';
-          const approved = APPROVED_INTERNAL_IMPORTS.get(targetFeature + '/' + targetPath)?.has(
-            name,
-          );
-          if (!isModule && !isServiceOrType && !isPublicContract && !approved) {
+          if (!isModule && !isServiceOrType && !isPublicContract) {
             errors.push(
               display +
                 ": private cross-feature import '" +
