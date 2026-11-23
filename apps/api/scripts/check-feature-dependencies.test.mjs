@@ -139,6 +139,38 @@ test('forbids imports of another feature controller and private repository', () 
   });
 });
 
+test('Workouts imports public Exercises read contracts, never private policy or select', () => {
+  fixture(({ module, source, check }) => {
+    module('exercises');
+    module('workouts', "import { ExercisesModule } from '#src/modules/exercises/exercises.module';");
+    source(
+      'workouts',
+      'repositories/workout-creation.repository.ts',
+      "import { buildExerciseVisibilityWhere, workoutExerciseReferenceSelect } from '#src/modules/exercises/public-api';",
+    );
+    assert.deepEqual(check(), []);
+
+    for (const internal of [
+      'policies/exercise-access.policy',
+      'selects/exercise.select',
+    ]) {
+      source(
+        'workouts',
+        'repositories/workout-creation.repository.ts',
+        "import { internalContract } from '#src/modules/exercises/" + internal + "';",
+      );
+      assert.match(check().join('\\n'), /private cross-feature import/);
+    }
+
+    source(
+      'workouts',
+      'repositories/workout-creation.repository.ts',
+      "import { buildExerciseVisibilityWhere, workoutExerciseReferenceSelect } from '#src/modules/exercises/public-api';",
+    );
+    assert.deepEqual(check(), []);
+  });
+});
+
 test('UsersRepository is private to Users, including Trainer–Athletes and Auth imports', () => {
   fixture(({ module, source, check }) => {
     module('auth', "import { UsersModule } from '#src/modules/users/users.module';");
