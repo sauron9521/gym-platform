@@ -49,9 +49,18 @@ must therefore serialize before or after the write, even if the earlier
 service check observed a stale grant. The exercise still requires the owned
 draft/version/workout boundary; no private or foreign library access is added.
 
-Other write paths (including direct `POST /exercises`, set/workout
-edits and publication) still need individual concurrency review under #288.
+Direct `POST /exercises` also uses the shared transactional User/Profile
+lock capability snapshot before its final `INSERT`: a Trainer revocation,
+Admin demotion or promotion to Admin after preflight cannot authorize a stale
+`TRAINER_CUSTOM`, `GLOBAL` or `ATHLETE_CUSTOM` write. Source selection is
+recomputed using the existing exercise policy, and a changed implicit
+default is rejected instead of silently changing the exercise type.
 
-**Tests:** `test/e2e/exercises/exercises.e2e-spec.ts`, `test/integration/exercises/exercise-trainer-access.integration.e2e-spec.ts`, `test/integration/exercises/exercise-program-library.integration.e2e-spec.ts` and co-located module unit tests.
+Other write paths (program set/workout edits, publication, and exercise
+updates/archives) still need individual concurrency review under #288.
+
+**Tests:** `test/e2e/exercises/exercises.e2e-spec.ts`, `test/integration/exercises/exercise-trainer-access.integration.e2e-spec.ts`, `test/integration/exercises/exercise-program-library.integration.e2e-spec.ts`,
+`test/integration/exercises/exercise-create-revocation.integration.e2e-spec.ts`
+and co-located module unit tests.
 
 See [testing guide](../testing.md).
