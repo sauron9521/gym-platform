@@ -75,6 +75,10 @@ export class WorkoutCreationRepository {
         throw new BadRequestException('One or more exercises are not available');
       }
 
+      // Read current Athlete capability under the same User/Profile locks
+      // that moderation updates. The lock remains held through the insert
+      // and transaction commit, even if the earlier HTTP preflight was stale.
+      await authorize(tx);
       return tx.workout.create({ data, select: workoutSelect });
     });
   }
