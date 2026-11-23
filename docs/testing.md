@@ -100,8 +100,9 @@ Read-only GitHub Actions jobs should use `actions/checkout` with
 `persist-credentials: false`, so the short-lived GitHub token is not left in
 Git configuration for subsequent build, test or script steps.
 
-The CI, Web Integration E2E and scheduled Dependency Audit workflows enforce
-this for every checkout. The root tooling contract
+The CI, Web Integration E2E, scheduled Dependency Audit, Mobile Native E2E,
+OVRANTO Visual Review and manual Staging Live Smoke workflows enforce this
+for every checkout. The root tooling contract
 `scripts/ci-checkout-credentials.test.mjs` checks each of their checkout steps
 and fails if the setting is removed or a new unprotected checkout is added.
 Full-history checkout still uses `fetch-depth: 0` for safe PR comparisons.

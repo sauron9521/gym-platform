@@ -6,6 +6,9 @@ const targetWorkflows = [
   ['ci.yml', 17],
   ['web-integration.yml', 2],
   ['dependency-audit.yml', 1],
+  ['mobile-native-e2e.yml', 1],
+  ['ovranto-visual-review.yml', 1],
+  ['staging-live-smoke.yml', 1],
 ];
 
 function checkoutSteps(workflow) {
@@ -38,7 +41,7 @@ function checkoutSteps(workflow) {
   return steps;
 }
 
-test('read-only CI and integration checkout steps never persist Git credentials', () => {
+test('read-only CI and manual workflow checkouts never persist Git credentials', () => {
   for (const [name, expectedCount] of targetWorkflows) {
     const workflow = readFileSync(new URL('../.github/workflows/' + name, import.meta.url), 'utf8');
 
