@@ -75,7 +75,11 @@ describe('App (e2e)', () => {
 
   it.each([
     ['PrismaModule / PrismaService', PrismaModule, PrismaService],
-    ['RateLimitStorageModule / DistributedThrottlerStorage', RateLimitStorageModule, DistributedThrottlerStorage],
+    [
+      'RateLimitStorageModule / DistributedThrottlerStorage',
+      RateLimitStorageModule,
+      DistributedThrottlerStorage,
+    ],
     ['AdminAuditModule / AdminAuditLogger', AdminAuditModule, AdminAuditLogger],
   ] as const)('resolves %s from its declaring infrastructure module', (_name, owner, provider) => {
     const instance = app.select(owner).get(provider, { strict: true });
