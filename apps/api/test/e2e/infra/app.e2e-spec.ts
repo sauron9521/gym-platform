@@ -73,8 +73,14 @@ describe('App (e2e)', () => {
     }
   });
 
+  it('resolves the same Prisma singleton from the declaring module and app context', () => {
+    const scoped = app.select(PrismaModule).get(PrismaService, { strict: true });
+    // Prisma 7 returns a client proxy: instanceof PrismaService is not reliable.
+    expect(Object.is(scoped, app.get(PrismaService))).toBe(true);
+    expect(typeof scoped.$transaction).toBe('function');
+  });
+
   it.each([
-    ['PrismaModule / PrismaService', PrismaModule, PrismaService],
     [
       'RateLimitStorageModule / DistributedThrottlerStorage',
       RateLimitStorageModule,
@@ -83,7 +89,6 @@ describe('App (e2e)', () => {
     ['AdminAuditModule / AdminAuditLogger', AdminAuditModule, AdminAuditLogger],
   ] as const)('resolves %s from its declaring infrastructure module', (_name, owner, provider) => {
     const instance = app.select(owner).get(provider, { strict: true });
-    // Boolean assertion avoids recursive inspection of PrismaClient proxies.
     expect(instance instanceof provider).toBe(true);
   });
 
