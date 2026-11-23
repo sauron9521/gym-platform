@@ -159,6 +159,39 @@ test('allows only the audited cross-feature implementation contracts', () => {
   });
 });
 
+test('Users public-api is stable but direct cross-feature capability policy imports are private', () => {
+  fixture(({ module, source, check }) => {
+    module('users');
+    for (const consumer of ['trainer-athletes', 'training-programs']) {
+      module(consumer, "import { UsersModule } from '#src/modules/users/users.module';");
+      source(
+        consumer,
+        'repositories/example.repository.ts',
+        "import { deriveAccountCapabilities } from '#src/modules/users/public-api';",
+      );
+    }
+
+    assert.deepEqual(check(), []);
+
+    for (const consumer of ['trainer-athletes', 'training-programs']) {
+      source(
+        consumer,
+        'repositories/example.repository.ts',
+        "import { deriveAccountCapabilities } from '#src/modules/users/policies/account-capabilities.policy';",
+      );
+      const diagnostics = check().join('\n');
+      assert.match(diagnostics, /private cross-feature import/);
+      source(
+        consumer,
+        'repositories/example.repository.ts',
+        "import { deriveAccountCapabilities } from '#src/modules/users/public-api';",
+      );
+    }
+
+    assert.deepEqual(check(), []);
+  });
+});
+
 test('rejects runtime provider injection if Nest module dependency is absent', () => {
   fixture(({ module, source, check }) => {
     module('first');
