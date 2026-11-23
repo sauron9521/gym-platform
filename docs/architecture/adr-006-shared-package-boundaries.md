@@ -89,7 +89,7 @@ pnpm --filter @gym/design-tokens test
 pnpm --filter @gym/i18n test
 ```
 
-The new guard covers direct dependencies in all workspace manifests, cycles among shared packages, and *literal* source imports under `apps/*/src` and `packages/*/src` that reach another app or import an app package. It does **not** resolve arbitrary computed imports, every alias or imports from `scripts/`; code review and existing API AST guards remain necessary. Keep any future extension deliberate rather than claiming a complete import graph.
+The new guard covers direct dependencies in all workspace manifests, cycles among shared packages, and _literal_ source imports under `apps/*/src` and `packages/*/src` that reach another app or import an app package. It does **not** resolve arbitrary computed imports, every alias or imports from `scripts/`; code review and existing API AST guards remain necessary. Keep any future extension deliberate rather than claiming a complete import graph.
 
 Unit fixtures exercise valid imports, app-to-app manifest imports, app-to-app source imports, package-to-app source imports and package cycles. GitHub CI provides the repository-wide verification; this ADR is not evidence of device-level tests or production readiness.
 
