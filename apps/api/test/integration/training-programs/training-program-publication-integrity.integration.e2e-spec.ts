@@ -137,10 +137,8 @@ describe('Published training program integrity (PostgreSQL)', () => {
     prisma = app.get(PrismaService);
     versions = new TrainingProgramVersionRepository(prisma);
     // This suite exercises publication and post-publication updates, not creation.
-    exercises = new TrainingProgramExerciseRepository(
-      prisma,
-      { assertTrainerCapabilityForWrite: vi.fn() } as never,
-    );
+    const trainerGuard = { assertTrainerCapabilityForWrite: vi.fn() };
+    exercises = new TrainingProgramExerciseRepository(prisma, trainerGuard as never);
     assignments = new TrainingProgramAssignmentRepository(prisma);
     workouts = new WorkoutsRepository(
       prisma,
