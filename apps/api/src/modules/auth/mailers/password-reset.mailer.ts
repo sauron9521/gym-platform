@@ -5,7 +5,7 @@ import {
 } from '@nestjs/authentication';
 import { Injectable } from '@nestjs/common';
 import { type Mailable, Mailer } from '@nestjs/mail';
-import { UsersRepository } from '#src/modules/users/repositories/users.repository';
+import { UsersAuthFacade } from '#src/modules/users/services/users-auth.facade';
 
 type LocalizedResetLink = PasswordResetLink & { locale?: 'uk' | 'en' };
 
@@ -24,7 +24,7 @@ export class PasswordResetMail implements Mailable<LocalizedResetLink> {
 @Injectable()
 export class PasswordResetMailer extends PasswordResetHandler {
   constructor(
-    private readonly usersRepository: UsersRepository,
+    private readonly usersRepository: UsersAuthFacade,
     private readonly mailer: Mailer,
     registry: AuthenticationRegistry,
   ) {

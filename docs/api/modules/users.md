@@ -42,6 +42,29 @@ The API dependency guard accepts the exact `public-api` entrypoint and rejects
 direct cross-feature imports of the underlying private policy. Other
 cross-domain repository accesses remain separately audited under #360.
 
+## Auth persistence facade (Issue #360)
+
+`UsersAuthFacade` in
+`apps/api/src/modules/users/services/users-auth.facade.ts` is the
+**public Nest provider** for the Auth module. `UsersModule` exports it,
+and the Auth module imports `UsersModule`. It delegates the minimum
+persistence operations needed for registration, credential verification,
+password updates, JWT/session identity lookups, persisted mail locale
+and email verification to the canonical `UsersRepository`.
+
+Auth must not inject or import `UsersRepository` directly. The facade
+does **not** store or expose secrets outside existing Auth consumers,
+change account selectors, cache user roles, open transactions or implement
+new password policies. The repository keeps email normalization, active
+account checks, the JWT invalidation-time fence and existing error handling.
+The earlier pure `users/public-api.ts` remains separate so consumers of
+`deriveAccountCapabilities` do not import Nest provider code.
+
+The architecture guard now rejects Auth-to-Users repository imports; the
+narrow Trainer–Athletes repository exception remains for a subsequent slice.
+Regression coverage includes Auth providers, mailers, credential flows and
+the Users facade delegations.
+
 Check controller, validation schema and OpenAPI for the current public profile field set. Do not return credential secrets. Avatar writes have additional throttling.
 
 **Tests:** `src/modules/users/test/`, `test/e2e/users/users.e2e-spec.ts`, `test/integration/users/users.repository.integration.e2e-spec.ts`.

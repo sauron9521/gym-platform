@@ -1,12 +1,12 @@
 import { AuthenticationRegistry, JwtBearerProvider, type JwtClaims } from '@nestjs/authentication';
-import { UsersRepository } from '#src/modules/users/repositories/users.repository';
+import { UsersAuthFacade } from '#src/modules/users/services/users-auth.facade';
 import { Injectable } from '@nestjs/common';
 import type { UserResponse } from '#src/modules/users/types/user-payload.types';
 
 @Injectable()
 export class JwtAuth extends JwtBearerProvider<UserResponse> {
   constructor(
-    private readonly usersRepository: UsersRepository,
+    private readonly usersRepository: UsersAuthFacade,
     registry: AuthenticationRegistry,
   ) {
     super({ realm: 'store' });

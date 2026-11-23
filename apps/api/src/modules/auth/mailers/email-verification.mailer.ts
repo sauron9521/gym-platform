@@ -5,7 +5,7 @@ import {
 } from '@nestjs/authentication';
 import { Injectable } from '@nestjs/common';
 import { Mailable, Mailer } from '@nestjs/mail';
-import { UsersRepository } from '#src/modules/users/repositories/users.repository';
+import { UsersAuthFacade } from '#src/modules/users/services/users-auth.facade';
 
 type LocalizedVerificationLink = EmailVerificationLink & { locale?: 'uk' | 'en' };
 
@@ -25,7 +25,7 @@ export class VerifyEmailMail implements Mailable<LocalizedVerificationLink> {
 @Injectable()
 export class EmailVerificationMailer extends EmailVerificationHandler {
   constructor(
-    private readonly usersRepository: UsersRepository,
+    private readonly usersRepository: UsersAuthFacade,
     private readonly mailer: Mailer,
     registry: AuthenticationRegistry,
   ) {

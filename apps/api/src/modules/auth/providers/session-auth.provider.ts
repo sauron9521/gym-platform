@@ -4,13 +4,13 @@ import {
   type SessionRecord,
 } from '@nestjs/authentication';
 import { Injectable } from '@nestjs/common';
-import { UsersRepository } from '#src/modules/users/repositories/users.repository';
+import { UsersAuthFacade } from '#src/modules/users/services/users-auth.facade';
 import type { UserResponse } from '#src/modules/users/types/user-payload.types';
 
 @Injectable()
 export class SessionAuth extends SessionCookieProvider<UserResponse> {
   constructor(
-    private readonly usersRepository: UsersRepository,
+    private readonly usersRepository: UsersAuthFacade,
     registry: AuthenticationRegistry,
   ) {
     super();

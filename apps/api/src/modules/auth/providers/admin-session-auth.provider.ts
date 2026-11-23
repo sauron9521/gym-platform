@@ -5,7 +5,7 @@ import { Reflector } from '@nestjs/core';
 import { ADMIN_COOKIE_ROUTE } from '#src/common/auth/admin-cookie-route';
 import { AdminSessionCookieProvider } from '#src/common/auth/admin-session-cookie.provider';
 import { ADMIN_SESSION_PURPOSE } from '#src/common/auth/admin-session-purpose.guard';
-import { UsersRepository } from '#src/modules/users/repositories/users.repository';
+import { UsersAuthFacade } from '#src/modules/users/services/users-auth.facade';
 import { AdminCookieAuthService } from '../services/admin-cookie-auth.service.js';
 
 /**
@@ -15,7 +15,7 @@ import { AdminCookieAuthService } from '../services/admin-cookie-auth.service.js
 @Injectable()
 export class AdminSessionAuth extends AdminSessionCookieProvider {
   constructor(
-    private readonly users: UsersRepository,
+    private readonly users: UsersAuthFacade,
     private readonly cookies: AdminCookieAuthService,
     private readonly reflector: Reflector,
     registry: AuthenticationRegistry,

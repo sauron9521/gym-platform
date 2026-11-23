@@ -31,6 +31,13 @@ Exact request/response bodies, authentication requirements and status codes are 
 
 Auth HTTP controllers validate bodies through Nest 12's `@Body({ schema })` and strict Zod schemas in `src/modules/auth/dto/auth.schemas.ts`. OpenAPI request bodies are now generated from the same strict Zod schemas as runtime validation; the frontend client is regenerated from that contract. The historical `auth.dto.ts` path now exports only TypeScript aliases for the Zod request types; it is retained so the frozen API migration inventory remains valid. Production bootstrap uses only `StandardSchemaValidationPipe`. All HTTP test hosts and production API now use `StandardSchemaValidationPipe`. The direct `class-validator` and `class-transformer` API dependencies have been removed; NestJS may still declare them as optional peer dependencies and the lockfile may retain transitive resolutions. The request contract and generated OpenAPI remain Zod-based.
 
+Auth services and providers depend on the exported `UsersAuthFacade` from
+`UsersModule`, not on the Users module's private repository. The
+facade delegates the same persisted credential checks, JWT account
+invalidation fence, soft-delete and active-status filtering, mail locale
+resolution, password updates and verification. No token, cookie, MFA,
+rate-limit or API route behavior is changed by this dependency refactor.
+
 Preserve email normalization behavior, password constraints, throttling, session invalidation and redaction/no-store semantics. Never include tokens, passwords or email addresses in logs.
 
 ## Verification

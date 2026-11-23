@@ -1,6 +1,6 @@
 import { PasswordHasher } from '@nestjs/authentication';
 import { Injectable } from '@nestjs/common';
-import { UsersRepository } from '#src/modules/users/repositories/users.repository';
+import { UsersAuthFacade } from '#src/modules/users/services/users-auth.facade';
 import type { SignUpInput } from '../dto/auth.schemas.js';
 import { toAuthenticatedUser } from '../mappers/auth-credential-user.mapper.js';
 import type { UserResponse } from '#src/modules/users/types/user-payload.types';
@@ -8,7 +8,7 @@ import type { UserResponse } from '#src/modules/users/types/user-payload.types';
 @Injectable()
 export class CredentialsService {
   constructor(
-    private readonly usersRepository: UsersRepository,
+    private readonly usersRepository: UsersAuthFacade,
     private readonly passwordHasher: PasswordHasher,
   ) {}
 

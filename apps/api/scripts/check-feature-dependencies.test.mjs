@@ -139,13 +139,19 @@ test('forbids imports of another feature controller and private repository', () 
   });
 });
 
-test('allows only the audited cross-feature implementation contracts', () => {
+test('Auth uses the Users service facade and cannot import its private repository', () => {
   fixture(({ module, source, check }) => {
     module('auth', "import { UsersModule } from '#src/modules/users/users.module';");
+    module('trainer-athletes', "import { UsersModule } from '#src/modules/users/users.module';");
     module('users');
     source(
       'auth',
       'services/credentials.service.ts',
+      "import { UsersAuthFacade } from '#src/modules/users/services/users-auth.facade';",
+    );
+    source(
+      'trainer-athletes',
+      'services/relationship.service.ts',
       "import { UsersRepository } from '#src/modules/users/repositories/users.repository';",
     );
     assert.deepEqual(check(), []);
@@ -153,9 +159,21 @@ test('allows only the audited cross-feature implementation contracts', () => {
     source(
       'auth',
       'services/credentials.service.ts',
+      "import { UsersRepository } from '#src/modules/users/repositories/users.repository';",
+    );
+    assert.match(check().join('\\n'), /private cross-feature import/);
+
+    source(
+      'auth',
+      'services/credentials.service.ts',
+      "import { UsersAuthFacade } from '#src/modules/users/services/users-auth.facade';",
+    );
+    source(
+      'trainer-athletes',
+      'services/relationship.service.ts',
       "import { OtherRepository } from '#src/modules/users/repositories/other.repository';",
     );
-    assert.match(check().join('\n'), /private cross-feature import/);
+    assert.match(check().join('\\n'), /private cross-feature import/);
   });
 });
 
