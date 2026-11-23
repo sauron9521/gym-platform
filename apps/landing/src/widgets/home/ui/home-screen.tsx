@@ -125,7 +125,11 @@ export function HomeScreen({ locale = defaultLocale }: { locale?: Locale } = {})
         </Container>
       </MarketingSection>
 
-      <MarketingSection tone="subtle" aria-labelledby="workflow" className="landing-workflow-surface">
+      <MarketingSection
+        tone="subtle"
+        aria-labelledby="workflow"
+        className="landing-workflow-surface"
+      >
         <Container>
           <SectionHeading
             id="workflow"
@@ -147,7 +151,7 @@ export function HomeScreen({ locale = defaultLocale }: { locale?: Locale } = {})
                 <span className="text-sm font-extrabold tracking-widest text-primary">
                   {step.number}
                 </span>
-                <h3 className="mt-6 text-xl font-bold tracking-[-0.03em] sm:text-2xl">{step.title}</h3>
+                <h3 className="mt-6 text-xl font-bold tracking-tight sm:text-2xl">{step.title}</h3>
                 <p className="mt-3 leading-7 text-muted-foreground">{step.detail}</p>
               </div>
             ))}
