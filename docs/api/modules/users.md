@@ -60,10 +60,13 @@ account checks, the JWT invalidation-time fence and existing error handling.
 The earlier pure `users/public-api.ts` remains separate so consumers of
 `deriveAccountCapabilities` do not import Nest provider code.
 
-The architecture guard now rejects Auth-to-Users repository imports; the
-narrow Trainer–Athletes repository exception remains for a subsequent slice.
-Regression coverage includes Auth providers, mailers, credential flows and
-the Users facade delegations.
+The architecture guard rejects cross-feature `UsersRepository` imports from both
+Auth and Trainer–Athletes. `UsersModule` keeps the repository as a private
+provider and exports only `UsersService` and `UsersAuthFacade`. The stale
+Trainer–Athletes allowlist exception was removed in follow-up [#648](https://github.com/sauron9521/gym-platform/issues/648).
+The public, pure `users/public-api.ts` capability contract remains available
+without importing a Nest provider. Regression tests cover the Nest export
+boundary, private import guard, Auth providers, mailers and credential flows.
 
 Check controller, validation schema and OpenAPI for the current public profile field set. Do not return credential secrets. Avatar writes have additional throttling.
 

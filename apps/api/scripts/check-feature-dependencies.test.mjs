@@ -139,7 +139,7 @@ test('forbids imports of another feature controller and private repository', () 
   });
 });
 
-test('Auth uses the Users service facade and cannot import its private repository', () => {
+test('UsersRepository is private to Users, including Trainer–Athletes and Auth imports', () => {
   fixture(({ module, source, check }) => {
     module('auth', "import { UsersModule } from '#src/modules/users/users.module';");
     module('trainer-athletes', "import { UsersModule } from '#src/modules/users/users.module';");
@@ -152,7 +152,7 @@ test('Auth uses the Users service facade and cannot import its private repositor
     source(
       'trainer-athletes',
       'services/relationship.service.ts',
-      "import { UsersRepository } from '#src/modules/users/repositories/users.repository';",
+      "import { UsersService } from '#src/modules/users/services/users.service';",
     );
     assert.deepEqual(check(), []);
 
@@ -161,19 +161,33 @@ test('Auth uses the Users service facade and cannot import its private repositor
       'services/credentials.service.ts',
       "import { UsersRepository } from '#src/modules/users/repositories/users.repository';",
     );
-    assert.match(check().join('\\n'), /private cross-feature import/);
-
+    assert.match(check().join('\n'), /private cross-feature import/);
     source(
       'auth',
       'services/credentials.service.ts',
       "import { UsersAuthFacade } from '#src/modules/users/services/users-auth.facade';",
     );
+
     source(
       'trainer-athletes',
       'services/relationship.service.ts',
-      "import { OtherRepository } from '#src/modules/users/repositories/other.repository';",
+      "import { UsersRepository } from '#src/modules/users/repositories/users.repository';",
     );
-    assert.match(check().join('\\n'), /private cross-feature import/);
+    assert.match(check().join('\n'), /private cross-feature import/);
+
+    source(
+      'trainer-athletes',
+      'services/relationship.service.ts',
+      "import type { UsersRepository } from '#src/modules/users/repositories/users.repository';",
+    );
+    assert.match(check().join('\n'), /private cross-feature import/);
+
+    source(
+      'trainer-athletes',
+      'services/relationship.service.ts',
+      "import { UsersService } from '#src/modules/users/services/users.service';",
+    );
+    assert.deepEqual(check(), []);
   });
 });
 
