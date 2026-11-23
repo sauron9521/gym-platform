@@ -1,7 +1,7 @@
 import { ConflictException, Injectable } from '@nestjs/common';
 
 import { PrismaService } from '#src/infra/database/index';
-import { deriveAccountCapabilities } from '#src/modules/users/policies/account-capabilities.policy';
+import { deriveAccountCapabilities } from '#src/modules/users/public-api';
 import { fullRelationshipReadWhere } from '../policies/trainer-athlete-read.policy.js';
 import { Prisma } from '#prisma/client';
 import {
