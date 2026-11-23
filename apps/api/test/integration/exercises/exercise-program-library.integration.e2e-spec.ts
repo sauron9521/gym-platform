@@ -7,6 +7,8 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { AppModule } from '../../../src/app.module.js';
 import { PrismaService } from '../../../src/infra/database/index.js';
+import { UsersService } from '../../../src/modules/users/services/users.service.js';
+import { TrainingProgramExerciseRepository } from '../../../src/modules/training-programs/repositories/training-program-exercise.repository.js';
 import { TrainingProgramExerciseService } from '../../../src/modules/training-programs/services/training-program-exercise.service.js';
 import { useTestDatabase } from '../../utility/test-db-helper.js';
 
@@ -14,6 +16,8 @@ describe('Training program exercise eligibility (PostgreSQL + Nest services)', (
   let app: INestApplication | undefined;
   let prisma: PrismaService;
   let programExercises: TrainingProgramExerciseService;
+  let exerciseRepository: TrainingProgramExerciseRepository;
+  let usersService: UsersService;
 
   const userIds: string[] = [];
   const exerciseIds: string[] = [];
@@ -30,6 +34,8 @@ describe('Training program exercise eligibility (PostgreSQL + Nest services)', (
     await app.init();
     prisma = app.get(PrismaService);
     programExercises = app.get(TrainingProgramExerciseService);
+    exerciseRepository = app.get(TrainingProgramExerciseRepository);
+    usersService = app.get(UsersService);
   }, 20_000);
 
   afterAll(async () => {
@@ -51,7 +57,7 @@ describe('Training program exercise eligibility (PostgreSQL + Nest services)', (
     }
   }, 20_000);
 
-  it('accepts approved ATHLETE-role trainers and rejects revoked or foreign exercise access', async () => {
+  it('accepts approved trainers, excludes foreign exercises and denies stale writes after revocation', async () => {
     const suffix = randomUUID();
     const trainer = await prisma.user.create({
       data: {
@@ -163,6 +169,57 @@ describe('Training program exercise eligibility (PostgreSQL + Nest services)', (
       ).rejects.toThrow(ForbiddenException);
     }
 
+    expect(await prisma.trainingProgramExercise.count({ where: { workoutId: workout.id } })).toBe(
+      2,
+    );
+
+    // Simulate a stale successful service preflight while moderation holds
+    // the User row lock and has not yet COMMITTED its profile revocation.
+    await prisma.trainerProfile.update({
+      where: { userId: trainer.id },
+      data: { isActive: true, revokedAt: null, revokedById: null },
+    });
+
+    const held = Promise.withResolvers<void>();
+    const release = Promise.withResolvers<void>();
+    const revocation = prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`
+        SELECT "id" FROM "users" WHERE "id" = ${trainer.id} FOR UPDATE
+      `;
+      await tx.trainerProfile.update({
+        where: { userId: trainer.id },
+        data: { isActive: false, revokedAt: new Date(), revokedById: trainer.id },
+      });
+      held.resolve();
+      await release.promise;
+    });
+
+    await held.promise;
+    let pendingWrite: Promise<unknown> | undefined;
+    try {
+      // A normal READ COMMITTED capability query still sees the old grant.
+      expect(await usersService.hasTrainerCapability(trainer.id)).toBe(true);
+
+      // This repository write must wait for the conflicting row lock, then
+      // re-read the revoked profile rather than trusting the preflight.
+      pendingWrite = exerciseRepository
+        .createProgramExercise(programId, version.id, workout.id, trainer.id, {
+          exerciseId: global,
+          exerciseNameSnapshot: 'Stale permission attempt',
+          exerciseTypeSnapshot: 'STRENGTH',
+          sortOrder: 2,
+          notes: null,
+        })
+        .then(
+          () => 'UNEXPECTED_WRITE',
+          (error: unknown) => error,
+        );
+    } finally {
+      release.resolve();
+    }
+
+    await revocation;
+    await expect(pendingWrite).resolves.toBeInstanceOf(ForbiddenException);
     expect(await prisma.trainingProgramExercise.count({ where: { workoutId: workout.id } })).toBe(
       2,
     );
