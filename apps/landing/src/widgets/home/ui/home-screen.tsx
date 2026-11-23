@@ -153,24 +153,45 @@ export function HomeScreen({ locale = defaultLocale }: { locale?: Locale } = {})
             title={t.workflowTitle}
             description={t.workflowDescription}
           />
-          <div className="landing-scroll-reveal mt-12 grid gap-5 md:grid-cols-3">
-            {milestones.map((step) => (
-              <div
+          <ol
+            aria-label={t.workflowTitle}
+            className="landing-scroll-reveal landing-workflow-steps mt-12 grid gap-5 md:grid-cols-3 md:gap-7"
+          >
+            {milestones.map((step, index) => (
+              <li
                 key={step.number}
-                className="landing-milestone-card relative overflow-hidden rounded-[1.6rem] border border-border bg-card p-7 shadow-sm shadow-foreground/5"
+                className="landing-milestone-card group relative rounded-[1.6rem] border border-border bg-card p-7 shadow-sm shadow-foreground/5 ring-1 ring-primary/5"
               >
                 <span
                   aria-hidden="true"
                   className="absolute top-0 left-0 h-1.5 w-20 rounded-br-full bg-[var(--brand-terracotta)]"
                 />
-                <span className="text-sm font-extrabold tracking-widest text-primary">
+                <span className="inline-flex size-14 items-center justify-center rounded-2xl border border-primary/20 bg-primary/10 text-lg font-extrabold tracking-widest text-primary">
                   {step.number}
                 </span>
                 <h3 className="mt-6 text-xl font-bold tracking-tight sm:text-2xl">{step.title}</h3>
                 <p className="mt-3 leading-7 text-muted-foreground">{step.detail}</p>
-              </div>
+                {index < milestones.length - 1 ? (
+                  <>
+                    <span
+                      data-slot="landing-workflow-desktop-connector"
+                      aria-hidden="true"
+                      className="pointer-events-none absolute top-10 -right-5 z-20 hidden size-10 items-center justify-center rounded-full border border-primary/20 bg-card text-primary shadow-sm md:flex"
+                    >
+                      <span className="motion-safe:transition-transform motion-safe:duration-200 motion-safe:group-hover:translate-x-1">
+                        →
+                      </span>
+                    </span>
+                    <span
+                      data-slot="landing-workflow-mobile-connector"
+                      aria-hidden="true"
+                      className="pointer-events-none absolute -bottom-5 left-10 z-20 h-5 w-px bg-primary/40 md:hidden"
+                    />
+                  </>
+                ) : null}
+              </li>
             ))}
-          </div>
+          </ol>
         </Container>
       </MarketingSection>
 

@@ -27,6 +27,7 @@ import {
   ApiQuery,
 } from '@nestjs/swagger';
 import {
+  workoutExportResponseSchema,
   workoutListResponseSchema,
   workoutSummaryListResponseSchema,
   workoutResponseSchema,
@@ -35,7 +36,12 @@ import {
 
 import { WorkoutsService } from '../services/workouts.service.js';
 
-import { workoutIdSchema, workoutSetIdSchema } from '../dto/workout.schemas.js';
+import {
+  type WorkoutExportQuery,
+  workoutExportQuerySchema,
+  workoutIdSchema,
+  workoutSetIdSchema,
+} from '../dto/workout.schemas.js';
 
 import { type CreateWorkoutDto, createWorkoutSchema } from '../dto/create-workout.dto.js';
 
@@ -100,6 +106,17 @@ export class WorkoutsController {
   @ApiOkResponse({ schema: workoutResponseSchema })
   findOne(@Param('id', { schema: workoutIdSchema }) id: string, @CurrentUser() user: WorkoutActor) {
     return this.workoutsService.findOne(id, user);
+  }
+
+  @RateLimit('read')
+  @Get(':id/export')
+  @ApiOkResponse({ schema: workoutExportResponseSchema })
+  exportCompleted(
+    @Param('id', { schema: workoutIdSchema }) id: string,
+    @CurrentUser() user: WorkoutActor,
+    @Query({ schema: workoutExportQuerySchema }) query: WorkoutExportQuery,
+  ) {
+    return this.workoutsService.exportCompleted(id, user, query);
   }
 
   @Patch(':id')
