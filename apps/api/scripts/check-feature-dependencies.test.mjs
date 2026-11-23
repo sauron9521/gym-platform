@@ -142,7 +142,10 @@ test('forbids imports of another feature controller and private repository', () 
 test('Workouts imports public Exercises read contracts, never private policy or select', () => {
   fixture(({ module, source, check }) => {
     module('exercises');
-    module('workouts', "import { ExercisesModule } from '#src/modules/exercises/exercises.module';");
+    module(
+      'workouts',
+      "import { ExercisesModule } from '#src/modules/exercises/exercises.module';",
+    );
     source(
       'workouts',
       'repositories/workout-creation.repository.ts',
