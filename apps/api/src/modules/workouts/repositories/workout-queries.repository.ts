@@ -3,6 +3,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '#src/infra/database/index';
 import { Prisma } from '#prisma/client';
 import {
+  workoutExportSelect,
   workoutIdempotencySelect,
   workoutSelect,
   workoutSummarySelect,
@@ -83,6 +84,13 @@ export class WorkoutQueriesRepository {
         AND: [{ id }, where],
       },
       select: workoutSelect,
+    });
+  }
+
+  async findCompletedExport(id: string, athleteId: string) {
+    return this.prisma.workout.findFirst({
+      where: { id, athleteId, status: 'COMPLETED' },
+      select: workoutExportSelect,
     });
   }
 

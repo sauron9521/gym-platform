@@ -2397,6 +2397,11 @@ describe('Workouts (HTTP + PostgreSQL)', () => {
       expect(completed.status).toBe(200);
       expect(completed.body.status).toBe('COMPLETED');
 
+      await request(app!.getHttpServer())
+        .get(`/workouts/${workoutId}/export`)
+        .set('Cookie', trainerCookie)
+        .expect(404);
+
       // 5. Terminate collaboration.
       const terminated = await request(app!.getHttpServer())
         .post(`/trainer-athletes/${relationship.id}/terminate`)
@@ -2480,6 +2485,13 @@ describe('Workouts (HTTP + PostgreSQL)', () => {
       });
 
       expect(historical.body.completedAt).toBeTruthy();
+
+      const exported = await request(app!.getHttpServer())
+        .get(`/workouts/${workoutId}/export`)
+        .set('Cookie', athleteCookie)
+        .expect(200);
+      expect(exported.body.workout.exercises[0].name).toBe('Original Trainer Press');
+      expect(exported.body.text).not.toContain('Renamed And Archived Trainer Press');
 
       // 9. Another athlete cannot read the history.
       const unrelatedResponse = await request(app!.getHttpServer())
@@ -3376,6 +3388,13 @@ describe('Workouts (HTTP + PostgreSQL)', () => {
         );
         const missing = await make('missing timestamp', null, '2036-03-01T00:00:00Z');
 
+        const legacyExport = await request(app!.getHttpServer())
+          .get(`/workouts/${missing}/export`)
+          .set('Cookie', ownerCookie)
+          .expect(200);
+        expect(legacyExport.body.workout.completedAt).toBeNull();
+        expect(legacyExport.body.text).toContain('Час завершення не записано');
+
         const response = await request(app!.getHttpServer())
           .get('/workouts')
           .set('Cookie', ownerCookie)
@@ -3516,6 +3535,83 @@ describe('Workouts (HTTP + PostgreSQL)', () => {
         .set('Cookie', ownerCookie);
 
       expect(response.status).toBe(400);
+    });
+  });
+
+  describe('GET /workouts/:id/export', () => {
+    it('exports the owner’s completed sets as versioned JSON and localized plain text', async () => {
+      const http = request(app!.getHttpServer());
+      const title = 'Workout export fixture';
+      const created = await http
+        .post('/workouts')
+        .set('Cookie', ownerCookie)
+        .send(workoutPayload(title))
+        .expect(201);
+      const id = created.body.id as string;
+      const path = `/workouts/${id}/export`;
+      const [recorded, skipped] = created.body.exercises[0].sets as Array<{ id: string }>;
+      const exportAsOwner = () => http.get(path).set('Cookie', ownerCookie);
+
+      await http.get(path).expect(401);
+      await exportAsOwner().expect(404);
+      await http.post(`/workouts/${id}/start`).set('Cookie', ownerCookie).expect(200);
+      await exportAsOwner().expect(404);
+      await http
+        .patch(`/workouts/${id}/sets/${recorded!.id}`)
+        .set('Cookie', ownerCookie)
+        .send({
+          status: 'COMPLETED',
+          actualReps: 7,
+          actualWeightKg: 0,
+          actualDurationSeconds: 32,
+          actualDistanceMeters: 12.34,
+          rpe: 8.5,
+          rir: 0,
+          notes: 'Private set note',
+        })
+        .expect(200);
+      await http
+        .patch(`/workouts/${id}/sets/${skipped!.id}`)
+        .set('Cookie', ownerCookie)
+        .send({ status: 'SKIPPED' })
+        .expect(200);
+      const completed = await http
+        .post(`/workouts/${id}/complete`)
+        .set('Cookie', ownerCookie)
+        .expect(200);
+
+      const exported = await exportAsOwner().expect('Cache-Control', 'no-store').expect(200);
+      const completedAt = completed.body.completedAt as string;
+      expect(exported.body).toEqual({
+        schemaVersion: 1,
+        workout: {
+          title,
+          completedAt,
+          exercises: [
+            {
+              name: 'E2E Workout Bench Press',
+              sets: [
+                {
+                  setNumber: 1,
+                  actualReps: 7,
+                  actualWeightKg: '0',
+                  actualDurationSeconds: 32,
+                  actualDistanceMeters: '12.34',
+                  rpe: '8.5',
+                  rir: 0,
+                },
+              ],
+            },
+          ],
+        },
+        text: `Тренування: ${title}\nЗавершено (UTC): ${completedAt}\n\nE2E Workout Bench Press\n1. 7 повт. · 0 кг · 32 с · 12.34 м · 8.5 RPE · 0 RIR`,
+      });
+
+      const english = await exportAsOwner().query({ locale: 'en' }).expect(200);
+      expect(english.body.workout).toEqual(exported.body.workout);
+      expect(english.body.text).toContain('1. 7 reps · 0 kg · 32 s · 12.34 m · 8.5 RPE · 0 RIR');
+      await exportAsOwner().query({ locale: 'invalid' }).expect(400);
+      await http.get(path).set('Cookie', otherAthleteCookie).expect(404);
     });
   });
 

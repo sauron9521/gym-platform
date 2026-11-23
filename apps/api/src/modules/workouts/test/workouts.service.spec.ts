@@ -30,6 +30,7 @@ describe('WorkoutsService', () => {
     findMany: vi.fn(),
     findManySummary: vi.fn(),
     findById: vi.fn(),
+    findCompletedExport: vi.fn(),
     update: vi.fn(),
     updateSet: vi.fn(),
     completeWorkout: vi.fn(),
@@ -603,6 +604,73 @@ describe('WorkoutsService', () => {
     it('rejects current admins without querying private workout rows', async () => {
       await expect(service.findOne('workout-1', staleAdmin)).rejects.toThrow(ForbiddenException);
       expect(repository.findById).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('exportCompleted', () => {
+    it('requests only the actor’s completed workout and builds a versioned export', async () => {
+      repository.findCompletedExport.mockResolvedValue({
+        title: 'Upper Body',
+        completedAt: new Date('2026-11-23T14:15:00.000Z'),
+        exercises: [
+          {
+            exerciseNameSnapshot: 'Bench Press',
+            sets: [
+              {
+                setNumber: 1,
+                actualReps: 8,
+                actualWeightKg: new Prisma.Decimal('62.55'),
+                actualDurationSeconds: null,
+                actualDistanceMeters: null,
+                rpe: null,
+                rir: 0,
+              },
+            ],
+          },
+        ],
+      });
+
+      const result = await service.exportCompleted('workout-1', athlete, { locale: 'en' });
+
+      expect(repository.findCompletedExport).toHaveBeenCalledWith('workout-1', athlete.id);
+      expect(result.schemaVersion).toBe(1);
+      expect(result.workout.exercises[0]?.sets[0]).toMatchObject({
+        actualWeightKg: '62.55',
+        actualDurationSeconds: null,
+        rir: 0,
+      });
+      expect(result.text).toBe(
+        'Workout: Upper Body\nCompleted (UTC): 2026-11-23T14:15:00.000Z\n\nBench Press\n1. 8 reps · 62.55 kg · 0 RIR',
+      );
+    });
+
+    it('hides missing or ineligible exports', async () => {
+      repository.findCompletedExport.mockResolvedValue(null);
+      await expect(service.exportCompleted('workout-1', athlete, { locale: 'uk' })).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+
+    it('exports legacy completed records without inventing a completion time', async () => {
+      repository.findCompletedExport.mockResolvedValue({
+        title: 'Legacy',
+        completedAt: null,
+        exercises: [],
+      });
+      await expect(
+        service.exportCompleted('workout-1', athlete, { locale: 'uk' }),
+      ).resolves.toEqual({
+        schemaVersion: 1,
+        workout: { title: 'Legacy', completedAt: null, exercises: [] },
+        text: 'Тренування: Legacy\nЧас завершення не записано',
+      });
+    });
+
+    it('checks persisted Athlete capability before reading export data', async () => {
+      await expect(
+        service.exportCompleted('workout-1', staleAdmin, { locale: 'uk' }),
+      ).rejects.toThrow(ForbiddenException);
+      expect(repository.findCompletedExport).not.toHaveBeenCalled();
     });
   });
 

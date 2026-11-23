@@ -5964,6 +5964,142 @@
         "tags": ["Workouts"]
       }
     },
+    "/workouts/{id}/export": {
+      "get": {
+        "operationId": "WorkoutsController_exportCompleted",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          },
+          {
+            "name": "locale",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": "uk",
+              "type": "string",
+              "enum": ["uk", "en"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "schemaVersion": {
+                      "type": "integer",
+                      "enum": [1]
+                    },
+                    "workout": {
+                      "type": "object",
+                      "properties": {
+                        "title": {
+                          "type": "string"
+                        },
+                        "completedAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "nullable": true
+                        },
+                        "exercises": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "name": {
+                                "type": "string"
+                              },
+                              "sets": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "setNumber": {
+                                      "type": "integer"
+                                    },
+                                    "actualReps": {
+                                      "type": "integer",
+                                      "nullable": true
+                                    },
+                                    "actualWeightKg": {
+                                      "type": "string",
+                                      "description": "Exact decimal encoded as a JSON string by Prisma.Decimal",
+                                      "nullable": true
+                                    },
+                                    "actualDurationSeconds": {
+                                      "type": "integer",
+                                      "nullable": true
+                                    },
+                                    "actualDistanceMeters": {
+                                      "type": "string",
+                                      "description": "Exact decimal encoded as a JSON string by Prisma.Decimal",
+                                      "nullable": true
+                                    },
+                                    "rpe": {
+                                      "type": "string",
+                                      "description": "Exact decimal encoded as a JSON string by Prisma.Decimal",
+                                      "nullable": true
+                                    },
+                                    "rir": {
+                                      "type": "integer",
+                                      "nullable": true
+                                    }
+                                  },
+                                  "required": [
+                                    "setNumber",
+                                    "actualReps",
+                                    "actualWeightKg",
+                                    "actualDurationSeconds",
+                                    "actualDistanceMeters",
+                                    "rpe",
+                                    "rir"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              }
+                            },
+                            "required": ["name", "sets"],
+                            "additionalProperties": false
+                          }
+                        }
+                      },
+                      "required": ["title", "completedAt", "exercises"],
+                      "additionalProperties": false
+                    },
+                    "text": {
+                      "type": "string",
+                      "description": "Plain text in the requested locale."
+                    }
+                  },
+                  "required": ["schemaVersion", "workout", "text"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "accessToken": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "tags": ["Workouts"]
+      }
+    },
     "/workouts/{id}/start": {
       "post": {
         "operationId": "WorkoutsController_start",

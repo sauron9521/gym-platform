@@ -3,6 +3,12 @@ import { z } from 'zod';
 export const workoutIdSchema = z.string().uuid();
 export const workoutSetIdSchema = z.string().uuid();
 
+export const workoutExportQuerySchema = z.strictObject({
+  locale: z.enum(['uk', 'en']).default('uk'),
+});
+
+export type WorkoutExportQuery = z.infer<typeof workoutExportQuerySchema>;
+
 export const workoutStatusSchema = z.enum(['PLANNED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED']);
 
 export const workoutSetTypeSchema = z.enum(['WARMUP', 'WORKING', 'DROP_SET', 'AMRAP']);
