@@ -1,7 +1,12 @@
 import assert from 'node:assert/strict';
 import { test } from 'vitest';
 
-import { parseModuleImports, parseNestModuleExports } from './import-parser.mjs';
+import {
+  parseClassConstructorDependencies,
+  parseModuleImports,
+  parseNestModuleExports,
+  parseNestModuleMetadata,
+} from './import-parser.mjs';
 
 const scan = (source) => parseModuleImports(source, 'fixtures/example.ts');
 
@@ -149,4 +154,43 @@ test('extracts explicit Nest @Module exports from TypeScript AST only', () => {
   );
   assert.deepEqual([...exported], ['VisibleService']);
   assert.deepEqual([...parseNestModuleExports('export class EmptyModule {}')], []);
+});
+
+test('reads literal local providers and controllers without treating factory tokens as classes', () => {
+  const metadata = parseNestModuleMetadata(
+    [
+      "import { Module } from '@nestjs/common';",
+      '@Module({',
+      '  providers: [VisibleService, { provide: MY_TOKEN, useValue: 42 }, HiddenRepository],',
+      '  controllers: [VisibleController],',
+      '  exports: [VisibleService],',
+      '})',
+      'export class FeatureModule {}',
+    ].join('\n'),
+  );
+  assert.deepEqual([...metadata.providers], ['VisibleService', 'HiddenRepository']);
+  assert.deepEqual([...metadata.controllers], ['VisibleController']);
+  assert.deepEqual([...metadata.exports], ['VisibleService']);
+});
+
+test('reads class constructor types while ignoring tokens, optional and external primitives', () => {
+  const classes = parseClassConstructorDependencies(
+    [
+      '@Injectable()',
+      'export class OwnerService {',
+      '  constructor(',
+      '    private readonly helper: HelperService,',
+      "    @Inject('CUSTOM_TOKEN') private readonly viaToken: TokenService,",
+      '    @Optional() private readonly maybe: OptionalService,',
+      '    private readonly external: Promise<string>,',
+      '    private readonly count: number,',
+      '  ) {}',
+      '}',
+      'export class HelperService {}',
+    ].join('\n'),
+  );
+  assert.deepEqual(classes, [
+    { name: 'OwnerService', dependencies: ['HelperService', 'Promise'] },
+    { name: 'HelperService', dependencies: [] },
+  ]);
 });

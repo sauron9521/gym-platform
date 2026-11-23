@@ -43,6 +43,21 @@ that Nest cannot inject at runtime. Type-only imports do not require a
 provider or a Nest module edge. For runtime providers, avoid importing
 `services/` just for a pure helper: expose helpers from `public-api.ts`.
 
+### Local Nest dependency registrations (E14 / #657)
+
+The same AST guard now checks class-typed constructor dependencies of
+locally registered `providers` and `controllers`. If an injected class
+is declared within that feature module, the owner must register it under
+`@Module({ providers: [...] })`. A locally defined class listed under
+`exports` must likewise be a registered provider. These checks catch
+missing internal DI registrations without instantiating application services.
+
+The static analysis intentionally skips nonlocal dependencies such as
+`PrismaService`, explicit `@Inject(token)` and optional constructor
+parameters, as well as non-literal dynamic/factory registration patterns.
+It cannot replace actual Nest bootstrap and HTTP/E2E verification, and
+does not automatically validate tokens registered by dynamic modules.
+
 The dependency check intentionally handles **direct named static imports**
 and explicit, literal Nest metadata export arrays. It is not a replacement
 for API bootstrap/integration tests or an exhaustive DI graph verifier;
