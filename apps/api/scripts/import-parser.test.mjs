@@ -148,8 +148,5 @@ test('extracts explicit Nest @Module exports from TypeScript AST only', () => {
     ].join('\n'),
   );
   assert.deepEqual([...exported], ['VisibleService']);
-  assert.deepEqual(
-    [...parseNestModuleExports('export class EmptyModule {}')],
-    [],
-  );
+  assert.deepEqual([...parseNestModuleExports('export class EmptyModule {}')], []);
 });
