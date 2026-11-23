@@ -235,6 +235,65 @@ describe('ExercisesService', () => {
       expect(repository.create).not.toHaveBeenCalled();
     });
 
+    it('supports explicit Trainer scope for an approved ATHLETE-role trainer', async () => {
+      usersService.findMyCapabilities.mockResolvedValue({
+        athlete: true,
+        trainer: true,
+        admin: false,
+      });
+
+      await service.create(athlete, { ...input, creationScope: 'TRAINER' });
+
+      expect(repository.create).toHaveBeenCalledWith(
+        expect.objectContaining({ source: 'TRAINER_CUSTOM', visibility: null }),
+      );
+    });
+
+    it('supports explicit personal scope for an approved legacy TRAINER', async () => {
+      await service.create(trainer, { ...input, creationScope: 'ATHLETE' });
+
+      expect(repository.create).toHaveBeenCalledWith(
+        expect.objectContaining({ source: 'ATHLETE_CUSTOM', visibility: 'PRIVATE' }),
+      );
+    });
+
+    it('never falls back when explicitly requested Trainer scope was revoked', async () => {
+      usersService.findMyCapabilities.mockResolvedValue({
+        athlete: true,
+        trainer: false,
+        admin: false,
+      });
+
+      await expect(
+        service.create(trainer, { ...input, creationScope: 'TRAINER' }),
+      ).rejects.toThrow(ForbiddenException);
+      expect(repository.create).not.toHaveBeenCalled();
+    });
+
+    it('does not accept personal scope on an Admin account', async () => {
+      await expect(
+        service.create(admin, { ...input, creationScope: 'ATHLETE' }),
+      ).rejects.toThrow(ForbiddenException);
+      expect(repository.create).not.toHaveBeenCalled();
+    });
+
+    it('rejects visibility on explicit Trainer creation scope', async () => {
+      usersService.findMyCapabilities.mockResolvedValue({
+        athlete: true,
+        trainer: true,
+        admin: false,
+      });
+
+      await expect(
+        service.create(athlete, {
+          ...input,
+          creationScope: 'TRAINER',
+          visibility: 'PRIVATE',
+        }),
+      ).rejects.toThrow(BadRequestException);
+      expect(repository.create).not.toHaveBeenCalled();
+    });
+
     it('should reject visibility for trainer exercises', async () => {
       await expect(
         service.create(trainer, {
