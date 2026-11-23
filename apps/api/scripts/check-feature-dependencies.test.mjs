@@ -295,10 +295,7 @@ test('cross-feature service imports require an explicit Nest module export', () 
       'services/first.service.ts',
       "import { SecondService } from '#src/modules/second/services/second.service';",
     );
-    assert.match(
-      check().join(' '),
-      /provider 'SecondService' is not exported by second.module.ts/,
-    );
+    assert.match(check().join(' '), /provider 'SecondService' is not exported by second.module.ts/);
 
     module(
       'second',
@@ -317,10 +314,7 @@ test('provider export checks recognize import aliases but ignore type-only impor
       'services/first.service.ts',
       "import { SecondService as Alias } from '#src/modules/second/services/second.service';",
     );
-    assert.match(
-      check().join(' '),
-      /provider 'SecondService' is not exported by second.module.ts/,
-    );
+    assert.match(check().join(' '), /provider 'SecondService' is not exported by second.module.ts/);
 
     source(
       'first',
