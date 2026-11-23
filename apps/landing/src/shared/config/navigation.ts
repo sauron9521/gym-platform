@@ -6,8 +6,9 @@ export const mainNavigation = [
 ] as const;
 
 export const applicationNavigation = [
-  { label: 'Вебзастосунок', href: '/apps/web' },
-  { label: 'Мобільний застосунок', href: '/apps/mobile' },
+  { label: 'OVRANTO Athlete Web', href: '/apps/web' },
+  { label: 'OVRANTO Athlete Mobile', href: '/apps/mobile' },
+  { label: 'OVRANTO Coach Web', href: '/for-trainers' },
 ] as const;
 
 export const publicRoutes = [

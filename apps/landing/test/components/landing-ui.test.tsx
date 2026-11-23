@@ -53,7 +53,7 @@ describe('Landing site header', () => {
     const nav = screen.getByRole('navigation', { name: 'Основна навігація' });
     expectLinks(nav, mainNavigation);
     expect(within(nav).getAllByRole('link')).toHaveLength(mainNavigation.length);
-    expect(screen.getAllByRole('link', { name: 'Застосунки' })).toHaveLength(2);
+    expect(screen.getAllByRole('link', { name: 'Продукти' })).toHaveLength(2);
   });
 
   test('mobile menu exposes all site destinations and an applications shortcut', () => {
@@ -61,9 +61,8 @@ describe('Landing site header', () => {
 
     const mobile = screen.getByRole('navigation', { name: 'Мобільна навігація' });
     expectLinks(mobile, mainNavigation);
-    expect(within(mobile).getByRole('link', { name: 'Застосунки' }).getAttribute('href')).toBe(
-      '/apps',
-    );
+    const directoryLink = within(mobile).getByRole('link', { name: 'Продукти' });
+    expect(directoryLink.getAttribute('href')).toBe('/apps');
 
     const summary = screen.getByText('Меню').closest('summary');
     expect(summary).not.toBeNull();
@@ -139,9 +138,8 @@ describe('Landing footer and secondary page', () => {
     expectLinks(screen.getByRole('navigation', { name: 'Розділи сайту' }), mainNavigation);
     const appsNav = screen.getByRole('navigation', { name: 'Застосунки' });
     expectLinks(appsNav, applicationNavigation);
-    expect(within(appsNav).getByRole('link', { name: 'Усі застосунки' }).getAttribute('href')).toBe(
-      '/apps',
-    );
+    const directoryLink = within(appsNav).getByRole('link', { name: 'Продукти' });
+    expect(directoryLink.getAttribute('href')).toBe('/apps');
   });
 
   test('footer includes a home link and the current year', () => {
