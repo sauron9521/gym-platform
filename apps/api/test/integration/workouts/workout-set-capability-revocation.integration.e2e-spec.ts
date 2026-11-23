@@ -145,15 +145,17 @@ describe('Workout set write authorization races (PostgreSQL)', () => {
         await held;
         expect((await users.findMyCapabilities(athleteId)).athlete).toBe(true);
 
-        pending = workouts.updateSet(
-          workoutId,
-          setId,
-          { id: athleteId, role: 'ATHLETE' },
-          { status: 'COMPLETED', actualReps: 9 },
-        ).then(
-          () => 'UNEXPECTED_WRITE',
-          (error: unknown) => error,
-        );
+        pending = workouts
+          .updateSet(
+            workoutId,
+            setId,
+            { id: athleteId, role: 'ATHLETE' },
+            { status: 'COMPLETED', actualReps: 9 },
+          )
+          .then(
+            () => 'UNEXPECTED_WRITE',
+            (error: unknown) => error,
+          );
 
         // The write must wait for the moderation transaction to commit.
         await attempted;
@@ -210,13 +212,17 @@ describe('Workout set write authorization races (PostgreSQL)', () => {
     });
     const { workoutId, setId } = await createInProgressWorkout();
     await expect(
-      workoutRepository.updateSet(setId, { status: 'COMPLETED' }, {
-        workoutId,
-        athleteId,
-        authorize: async (tx) => {
-          assertWorkoutAthlete(await users.findMyCapabilitiesForWrite(tx, athleteId));
+      workoutRepository.updateSet(
+        setId,
+        { status: 'COMPLETED' },
+        {
+          workoutId,
+          athleteId,
+          authorize: async (tx) => {
+            assertWorkoutAthlete(await users.findMyCapabilitiesForWrite(tx, athleteId));
+          },
         },
-      }),
+      ),
     ).rejects.toThrow(ForbiddenException);
   });
 });
