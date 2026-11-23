@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   loadTrainerProgramSelector,
   parseProgramChoicePage,
+  parseVersionCursor,
 } from '../src/shared/api/trainer-program-selector';
 
 const origin = 'https://trainer-api.internal.test';
@@ -45,12 +46,16 @@ function list(data: unknown[] = [record()], total = data.length, page = 1) {
   };
 }
 
-function backend(programs: unknown = list(), versions: unknown = [version()]) {
+function publishedPage(data: unknown[] = [version()], nextBeforeVersion: number | null = null) {
+  return { data, nextBeforeVersion };
+}
+
+function backend(programs: unknown = list(), versions: unknown = publishedPage()) {
   const calls: Request[] = [];
   const send: typeof fetch = async (input) => {
     const request = new Request(input);
     calls.push(request);
-    return Response.json(request.url.includes('/versions') ? versions : programs);
+    return Response.json(request.url.includes('/published-versions') ? versions : programs);
   };
   return { calls, send };
 }
@@ -72,31 +77,42 @@ describe('Trainer published program/version read-only chooser', () => {
     expect(parseProgramChoicePage(input)).toBe(expected);
   });
 
+  it.each([
+    ['2', 2],
+    ['2147483647', 2_147_483_647],
+    ['2147483648', undefined],
+    ['0', undefined],
+    ['01', undefined],
+    ['1.2', undefined],
+    [['2', '3'], undefined],
+    [undefined, undefined],
+  ] as const)('parses the exclusive version cursor %s', (input, expected) => {
+    expect(parseVersionCursor(input)).toBe(expected);
+  });
+
   it('never sends an API request for missing credentials or unsafe pagination', async () => {
     const { calls, send } = backend();
-    expect(await loadTrainerProgramSelector('', 1, undefined, undefined, origin, send)).toEqual({
+    expect(await loadTrainerProgramSelector('', { page: 1 }, origin, send)).toEqual({
       kind: 'unauthenticated',
     });
     for (const page of [0, -1, 1.5, Number.NaN, 10001]) {
-      expect(
-        await loadTrainerProgramSelector(cookie, page, undefined, undefined, origin, send),
-      ).toEqual({ kind: 'unavailable' });
+      expect(await loadTrainerProgramSelector(cookie, { page }, origin, send)).toEqual({
+        kind: 'unavailable',
+      });
     }
     expect(calls).toHaveLength(0);
   });
 
   it('makes exactly one trusted owner-scoped, PUBLISHED-only bounded read initially', async () => {
     const { calls, send } = backend();
-    expect(await loadTrainerProgramSelector(cookie, 1, undefined, undefined, origin, send)).toEqual(
-      {
-        kind: 'ready',
-        programs: [{ id: programId, title: 'My program' }],
-        total: 1,
-        page: 1,
-        totalPages: 1,
-        selection: { kind: 'none' },
-      },
-    );
+    expect(await loadTrainerProgramSelector(cookie, { page: 1 }, origin, send)).toEqual({
+      kind: 'ready',
+      programs: [{ id: programId, title: 'My program' }],
+      total: 1,
+      page: 1,
+      totalPages: 1,
+      selection: { kind: 'none' },
+    });
     expect(calls).toHaveLength(1);
     const r = calls[0]!;
     const url = new URL(r.url);
@@ -115,23 +131,11 @@ describe('Trainer published program/version read-only chooser', () => {
     expect(r.signal).toBeInstanceOf(AbortSignal);
   });
 
-  it('selects only PUBLISHED versions; draft cannot be selected even if its UUID is injected', async () => {
-    const versions = [
-      version({
-        id: draftId,
-        version: 2,
-        title: 'Hidden draft',
-        status: 'DRAFT',
-        publishedAt: null,
-      }),
-      version(),
-    ];
-    const { calls, send } = backend(list(), versions);
+  it('selects a published row and ignores a draft ID supplied in the URL', async () => {
+    const { calls, send } = backend();
     const selected = await loadTrainerProgramSelector(
       cookie,
-      1,
-      programId,
-      versionId,
+      { page: 1, programId, versionId },
       origin,
       send,
     );
@@ -145,13 +149,17 @@ describe('Trainer published program/version read-only chooser', () => {
         kind: 'ready',
         program: { id: programId, title: 'My program' },
         versions: [{ id: versionId, title: 'Published plan v1', version: 1 }],
+        nextBeforeVersion: null,
         selectedVersion: { id: versionId, title: 'Published plan v1', version: 1 },
       },
     });
     expect(calls.map((r) => new URL(r.url).pathname)).toEqual([
       '/training-programs',
-      `/training-programs/${programId}/versions`,
+      `/training-programs/${programId}/published-versions`,
     ]);
+    const versionQuery = new URL(calls[1]!.url).searchParams;
+    expect(versionQuery.get('limit')).toBe('40');
+    expect(versionQuery.has('beforeVersion')).toBe(false);
     for (const r of calls) {
       expect(r.method).toBe('GET');
       expect(r.headers.get('cookie')).toBe(cookie);
@@ -160,20 +168,56 @@ describe('Trainer published program/version read-only chooser', () => {
     }
     const draft = await loadTrainerProgramSelector(
       cookie,
-      1,
-      programId,
-      draftId,
+      { page: 1, programId, versionId: draftId },
       origin,
-      backend(list(), versions).send,
+      backend().send,
     );
-    expect(draft.kind).toBe('ready');
-    if (draft.kind === 'ready') {
-      expect(draft.selection.kind).toBe('ready');
-      if (draft.selection.kind === 'ready') {
-        expect(draft.selection.selectedVersion).toBeNull();
-        expect(draft.selection.versions.some((v) => v.title === 'Hidden draft')).toBe(false);
-      }
+    expect(draft).toMatchObject({
+      kind: 'ready',
+      selection: { kind: 'ready', selectedVersion: null },
+    });
+  });
+
+  it('requests one bounded page at a time and selects an older version with its cursor', async () => {
+    const firstPage = Array.from({ length: 40 }, (_, index) =>
+      version({
+        id: `123e4567-e89b-42d3-a456-${String(index + 101).padStart(12, '0')}`,
+        version: 41 - index,
+      }),
+    );
+    const first = backend(list(), publishedPage(firstPage, 2));
+    const firstResult = await loadTrainerProgramSelector(
+      cookie,
+      { page: 1, programId, versionId },
+      origin,
+      first.send,
+    );
+    expect(firstResult.kind).toBe('ready');
+    if (firstResult.kind !== 'ready' || firstResult.selection.kind !== 'ready') {
+      throw new Error('Expected the first version page');
     }
+    expect(firstResult.selection.versions).toHaveLength(40);
+    expect(firstResult.selection.selectedVersion).toBeNull();
+    expect(firstResult.selection.nextBeforeVersion).toBe(2);
+    expect(first.calls).toHaveLength(2);
+
+    const older = backend();
+    const olderResult = await loadTrainerProgramSelector(
+      cookie,
+      { page: 1, programId, versionId, beforeVersion: 2 },
+      origin,
+      older.send,
+    );
+    expect(olderResult).toMatchObject({
+      kind: 'ready',
+      selection: {
+        kind: 'ready',
+        selectedVersion: { id: versionId, version: 1 },
+        nextBeforeVersion: null,
+      },
+    });
+    expect(new URL(older.calls[1]!.url).searchParams.get('beforeVersion')).toBe('2');
+    expect(older.calls).toHaveLength(2);
   });
 
   it('allows published programs with newer DRAFT title previews, but no draft version choice', async () => {
@@ -182,11 +226,9 @@ describe('Trainer published program/version read-only chooser', () => {
     newerDraft.versions[0]!.status = 'DRAFT';
     const selected = await loadTrainerProgramSelector(
       cookie,
-      1,
-      programId,
-      versionId,
+      { page: 1, programId, versionId },
       origin,
-      backend(list([newerDraft]), [version()]).send,
+      backend(list([newerDraft])).send,
     );
     expect(selected.kind).toBe('ready');
     if (selected.kind === 'ready') {
@@ -201,7 +243,7 @@ describe('Trainer published program/version read-only chooser', () => {
   it('does not send a user-controlled program URL for invalid, missing or off-page IDs', async () => {
     for (const raw of ['bad', foreignId, [programId], '', draftId]) {
       const { calls, send } = backend();
-      const r = await loadTrainerProgramSelector(cookie, 1, raw, undefined, origin, send);
+      const r = await loadTrainerProgramSelector(cookie, { page: 1, programId: raw }, origin, send);
       expect(r.kind).toBe('ready');
       if (r.kind === 'ready') expect(r.selection).toEqual({ kind: 'not_found' });
       expect(calls).toHaveLength(1);
@@ -210,7 +252,12 @@ describe('Trainer published program/version read-only chooser', () => {
 
   it('does not select a forged, mismatched or absent version UUID', async () => {
     for (const raw of [foreignId, ['abc'], undefined]) {
-      const r = await loadTrainerProgramSelector(cookie, 1, programId, raw, origin, backend().send);
+      const r = await loadTrainerProgramSelector(
+        cookie,
+        { page: 1, programId, versionId: raw },
+        origin,
+        backend().send,
+      );
       expect(r.kind).toBe('ready');
       if (r.kind === 'ready' && r.selection.kind === 'ready') {
         expect(r.selection.selectedVersion).toBeNull();
@@ -221,18 +268,14 @@ describe('Trainer published program/version read-only chooser', () => {
   it('accepts legitimately empty programs and page-two/out-of-range responses', async () => {
     const empty = await loadTrainerProgramSelector(
       cookie,
-      1,
-      undefined,
-      undefined,
+      { page: 1 },
       origin,
       backend(list([])).send,
     );
     expect(empty).toMatchObject({ kind: 'ready', programs: [], total: 0, totalPages: 0 });
     const out = await loadTrainerProgramSelector(
       cookie,
-      3,
-      undefined,
-      undefined,
+      { page: 3 },
       origin,
       backend(list([], 9, 3)).send,
     );
@@ -242,11 +285,9 @@ describe('Trainer published program/version read-only chooser', () => {
   it('handles published programs with no eligible published versions', async () => {
     const r = await loadTrainerProgramSelector(
       cookie,
-      1,
-      programId,
-      undefined,
+      { page: 1, programId },
       origin,
-      backend(list(), [version({ status: 'DRAFT', publishedAt: null })]).send,
+      backend(list(), publishedPage([])).send,
     );
     expect(r.kind).toBe('ready');
     if (r.kind === 'ready') {
@@ -266,9 +307,9 @@ describe('Trainer published program/version read-only chooser', () => {
       calls++;
       return new Response(null, { status });
     };
-    expect(await loadTrainerProgramSelector(cookie, 1, programId, undefined, origin, send)).toEqual(
-      { kind },
-    );
+    expect(await loadTrainerProgramSelector(cookie, { page: 1, programId }, origin, send)).toEqual({
+      kind,
+    });
     expect(calls).toBe(1);
   });
 
@@ -284,7 +325,7 @@ describe('Trainer published program/version read-only chooser', () => {
         return calls === 1 ? Response.json(list()) : new Response(null, { status });
       };
       expect(
-        await loadTrainerProgramSelector(cookie, 1, programId, undefined, origin, send),
+        await loadTrainerProgramSelector(cookie, { page: 1, programId }, origin, send),
       ).toEqual({ kind });
       expect(calls).toBe(2);
     },
@@ -300,7 +341,7 @@ describe('Trainer published program/version read-only chooser', () => {
       calls++;
       return calls === 1 ? Response.json(list()) : new Response(null, { status });
     };
-    const r = await loadTrainerProgramSelector(cookie, 1, programId, undefined, origin, send);
+    const r = await loadTrainerProgramSelector(cookie, { page: 1, programId }, origin, send);
     expect(r.kind).toBe('ready');
     if (r.kind === 'ready') expect(r.selection).toEqual({ kind });
     expect(calls).toBe(2);
@@ -324,42 +365,45 @@ describe('Trainer published program/version read-only chooser', () => {
     ];
     for (const input of malformed) {
       expect(
-        await loadTrainerProgramSelector(
-          cookie,
-          1,
-          undefined,
-          undefined,
-          origin,
-          backend(input).send,
-        ),
+        await loadTrainerProgramSelector(cookie, { page: 1 }, origin, backend(input).send),
       ).toEqual({ kind: 'unavailable' });
     }
   });
 
   it('rejects forged, duplicated, malformed or excessive version list payloads', async () => {
     const bad = [
-      [version({ programId: foreignId })],
-      [version(), version()],
-      [version({ id: 'invalid' })],
-      [version({ version: -1 })],
-      [version({ title: '' })],
-      [version({ status: 'ARCHIVED' })],
-      [version({ publishedAt: null })],
-      [version({ publishedAt: 'invalid-date' })],
-      Array.from({ length: 41 }, (_, i) => version({ id: `fake-${i}`, version: i + 1 })),
+      [version()],
+      publishedPage([version({ programId: foreignId })]),
+      publishedPage([version({ version: 2 }), version()]),
+      publishedPage([version(), version({ id: draftId, version: 2 })]),
+      publishedPage([version({ id: 'invalid' })]),
+      publishedPage([version({ version: -1 })]),
+      publishedPage([version({ title: '' })]),
+      publishedPage([version({ status: 'DRAFT' })]),
+      publishedPage([version({ status: 'ARCHIVED' })]),
+      publishedPage([version({ publishedAt: null })]),
+      publishedPage([version({ publishedAt: 'invalid-date' })]),
+      publishedPage([version()], 1),
+      { data: [version()] },
+      publishedPage(Array.from({ length: 41 }, () => version())),
     ];
     for (const data of bad) {
       const r = await loadTrainerProgramSelector(
         cookie,
-        1,
-        programId,
-        versionId,
+        { page: 1, programId, versionId },
         origin,
         backend(list(), data).send,
       );
       expect(r.kind).toBe('ready');
       if (r.kind === 'ready') expect(r.selection).toEqual({ kind: 'unavailable' });
     }
+  });
+
+  it('rejects a version at or beyond the requested cursor', async () => {
+    const { send } = backend(list(), publishedPage([version({ version: 2 })]));
+    await expect(
+      loadTrainerProgramSelector(cookie, { page: 1, programId, beforeVersion: 2 }, origin, send),
+    ).resolves.toMatchObject({ kind: 'ready', selection: { kind: 'unavailable' } });
   });
 
   it('does not send the session cookie to unsafe hosts, redirects or unexpected transport errors', async () => {
@@ -371,9 +415,7 @@ describe('Trainer published program/version read-only chooser', () => {
     expect(
       await loadTrainerProgramSelector(
         cookie,
-        1,
-        programId,
-        versionId,
+        { page: 1, programId, versionId },
         'https://user:password@hostile.test',
         send,
       ),
@@ -387,9 +429,9 @@ describe('Trainer published program/version read-only chooser', () => {
         throw new Error('private API failure');
       },
     ]) {
-      expect(
-        await loadTrainerProgramSelector(cookie, 1, undefined, undefined, origin, failure),
-      ).toEqual({ kind: 'unavailable' });
+      expect(await loadTrainerProgramSelector(cookie, { page: 1 }, origin, failure)).toEqual({
+        kind: 'unavailable',
+      });
     }
   });
 });
