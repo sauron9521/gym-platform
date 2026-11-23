@@ -122,6 +122,18 @@ describe('Landing shared shell i18n', () => {
     expect(document.activeElement).toBe(summary);
   });
 
+  test('mobile disclosure closes when keyboard focus moves beyond the menu', () => {
+    render(<SiteHeader />);
+    const summary = screen.getByText('Меню').closest('summary');
+    const menu = summary?.closest('details');
+    expect(menu).not.toBeNull();
+
+    fireEvent.click(summary as HTMLElement);
+    expect(menu?.open).toBe(true);
+    fireEvent.blur(summary as HTMLElement, { relatedTarget: document.body });
+    expect(menu?.open).toBe(false);
+  });
+
   test('switching language does not change route URLs or navigation count', () => {
     const view = render(<SiteHeader locale="en" />);
     const english = screen.getByRole('navigation', { name: 'Main navigation' });
