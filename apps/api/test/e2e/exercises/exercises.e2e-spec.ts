@@ -436,7 +436,10 @@ describe('Exercises (HTTP + PostgreSQL)', () => {
         });
 
         // The same session role is now stale. It cannot mint a Trainer exercise.
-        const revoked = await create('Revoked Trainer Personal Exercise');
+        const revoked = await request(app!.getHttpServer())
+          .post('/exercises')
+          .set('Cookie', cookie)
+          .send({ ...payload, name: 'Revoked Trainer Personal Exercise' });
         expect(revoked.status).toBe(201);
         expect(revoked.body).toMatchObject({
           source: 'ATHLETE_CUSTOM',
