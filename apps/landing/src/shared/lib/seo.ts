@@ -1,9 +1,9 @@
 import type { Metadata } from 'next';
 
-const siteName = 'Gym Platform';
+export const siteName = 'OVRANTO';
 
 export const siteDescription =
-  'Gym Platform — екосистема для спортсменів і тренерів: програми тренувань, бібліотека вправ та відстеження прогресу.';
+  'OVRANTO — платформа для спортсменів і тренерів: програми тренувань, бібліотека вправ та відстеження прогресу.';
 
 /**
  * No canonical URLs or public indexing until the real production domain is configured.

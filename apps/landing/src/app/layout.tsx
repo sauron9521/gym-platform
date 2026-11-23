@@ -6,7 +6,7 @@ import { NextIntlClientProvider } from 'next-intl';
 import { getLocale, getMessages } from 'next-intl/server';
 import { cookies } from 'next/headers';
 
-import { getSiteOrigin, isIndexingEnabled, siteDescription } from '@/shared/lib/seo';
+import { getSiteOrigin, isIndexingEnabled, siteDescription, siteName } from '@/shared/lib/seo';
 import { parseThemePreference, THEME_COOKIE_NAME } from '@/shared/lib/theme-preference';
 import { SiteFooter } from '@/widgets/layout/ui/site-footer';
 import { SiteHeader } from '@/widgets/layout/ui/site-header';
@@ -25,22 +25,22 @@ const origin = getSiteOrigin();
 export const metadata: Metadata = {
   metadataBase: origin ? new URL(origin) : undefined,
   title: {
-    default: 'Gym Platform — тренування та прогрес',
-    template: '%s | Gym Platform',
+    default: 'OVRANTO — тренування та прогрес',
+    template: '%s | OVRANTO',
   },
   description: siteDescription,
   alternates: origin ? { canonical: origin } : undefined,
   openGraph: {
     type: 'website',
     locale: 'uk_UA',
-    siteName: 'Gym Platform',
-    title: 'Gym Platform — тренування та прогрес',
+    siteName,
+    title: 'OVRANTO — тренування та прогрес',
     description: siteDescription,
     images: [{ url: '/opengraph-image', width: 1200, height: 630 }],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Gym Platform — тренування та прогрес',
+    title: 'OVRANTO — тренування та прогрес',
     description: siteDescription,
     images: ['/opengraph-image'],
   },
@@ -75,7 +75,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
               __html: JSON.stringify({
                 '@context': 'https://schema.org',
                 '@type': 'Organization',
-                name: 'Gym Platform',
+                name: siteName,
                 url: origin,
                 logo: new URL('/icon.svg', origin).toString(),
               }).replaceAll('<', '\\u003c'),
