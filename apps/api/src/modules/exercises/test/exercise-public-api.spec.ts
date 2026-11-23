@@ -1,9 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import {
-  buildExerciseVisibilityWhere,
-  workoutExerciseReferenceSelect,
-} from '../public-api.js';
+import { buildExerciseVisibilityWhere, workoutExerciseReferenceSelect } from '../public-api.js';
 import { buildExerciseVisibilityWhere as internalVisibilityWhere } from '../policies/exercise-access.policy.js';
 import { workoutExerciseReferenceSelect as internalReferenceSelect } from '../selects/exercise.select.js';
 
