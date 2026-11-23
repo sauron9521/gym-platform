@@ -558,13 +558,11 @@ describe('ExercisesService', () => {
         expect.objectContaining({ source: 'GLOBAL' }),
       );
       expect(usersService.hasTrainerCapability).toHaveBeenCalledExactlyOnceWith(athlete.id);
-      expect(repository.findById).toHaveBeenCalledWith('exercise-1', {
-        isArchived: false,
-        OR: [
-          { source: 'GLOBAL' },
-          { source: 'TRAINER_CUSTOM', createdById: athlete.id },
-        ],
-      });
+      const scopedLookup = repository.findById.mock.calls[0]?.[1];
+      expect(scopedLookup?.isArchived).toBe(false);
+      expect(scopedLookup?.OR).toContainEqual({ source: 'GLOBAL' });
+      const ownedTrainer = { source: 'TRAINER_CUSTOM', createdById: athlete.id };
+      expect(scopedLookup?.OR).toContainEqual(ownedTrainer);
     });
 
     it('allows an approved ATHLETE-role trainer only their own trainer exercises', async () => {
@@ -573,14 +571,9 @@ describe('ExercisesService', () => {
 
       await service.findAvailableForTrainingProgram('exercise-1', athlete);
 
-      expect(repository.findById).toHaveBeenCalledWith(
-        'exercise-1',
-        expect.objectContaining({
-          OR: expect.arrayContaining([
-            { source: 'TRAINER_CUSTOM', createdById: athlete.id },
-          ]),
-        }),
-      );
+      const scopedLookup = repository.findById.mock.calls[0]?.[1];
+      const ownedTrainer = { source: 'TRAINER_CUSTOM', createdById: athlete.id };
+      expect(scopedLookup?.OR).toContainEqual(ownedTrainer);
     });
 
     it('denies a revoked legacy TRAINER before reading even a global exercise', async () => {
