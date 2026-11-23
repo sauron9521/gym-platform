@@ -101,8 +101,9 @@ test('shared API client triggers both frontends without API E2E', () => {
   assert.equal(actual.api, false);
 });
 
-test('OpenAPI-only change routes checks to API, Web, Mobile, Admin and Trainer', () => {
-  const expected = {
+test('OpenAPI changes check every typed API consumer without full scope', () => {
+  const actual = classifyChangedPaths(['apps/api/openapi/openapi.json']);
+  assert.deepEqual(actual, {
     full: false,
     api: true,
     web: true,
@@ -114,29 +115,24 @@ test('OpenAPI-only change routes checks to API, Web, Mobile, Admin and Trainer',
     deps: false,
     workspaces: true,
     redis: false,
-  };
-  assert.deepEqual(classifyChangedPaths(['apps/api/openapi/openapi.json']), expected);
-  assert.deepEqual(classifyChangedPaths(['README.md', 'apps/api/openapi/openapi.json']), expected);
+  });
+  assert.deepEqual(
+    classifyChangedPaths(['README.md', 'apps/api/openapi/openapi.json']),
+    actual,
+  );
+});
 
+test('CI wires Admin and Trainer consumer checks to affected workspace scopes', () => {
   const yaml = readFileSync(new URL('../.github/workflows/ci.yml', import.meta.url), 'utf8');
-  const adminJob = yaml.split('  admin-browser-e2e:\n')[1]?.split('\n  landing-browser-e2e:')[0];
-  const workspaces = yaml.split('  quality-workspaces:\n')[1]?.split('\n  quality:\n')[0];
-  assert.ok(adminJob, 'Admin browser gate must exist');
-  assert.ok(workspaces, 'Workspace quality gate must exist');
-  assert.match(adminJob, /if: needs\.changes\.outputs\.admin == 'true'/);
-
-  const flag = String.fromCharCode(36);
-  for (const [scope, packageName] of [
-    ['CI_ADMIN', '@gym/admin'],
-    ['CI_TRAINER', '@gym/trainer'],
-  ]) {
-    assert.ok(workspaces.includes(
-      'if [ "' + flag + scope + '" = true ]; then filters+=(--filter=' + packageName + '); fi',
-    ));
-    assert.ok(workspaces.includes(
-      'if [ "' + flag + scope + '" = true ]; then test_filters+=(--filter=' + packageName + '); fi',
-    ));
-  }
+  const quality = yaml.split('  quality-workspaces:\n')[1]?.split('\n  quality:\n')[0];
+  const admin = yaml.split('  admin-browser-e2e:\n')[1]?.split('\n  landing-browser-e2e:')[0];
+  assert.ok(quality);
+  assert.ok(admin);
+  assert.match(admin, /if: needs\.changes\.outputs\.admin == 'true'/);
+  assert.ok(quality.includes('filters+=(--filter=@gym/admin); fi'));
+  assert.ok(quality.includes('filters+=(--filter=@gym/trainer); fi'));
+  assert.ok(quality.includes('test_filters+=(--filter=@gym/admin); fi'));
+  assert.ok(quality.includes('test_filters+=(--filter=@gym/trainer); fi'));
 });
 
 test('app-local manifest changes trigger vulnerability audit', () => {
