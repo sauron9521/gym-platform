@@ -52,7 +52,12 @@ export function CallToAction({
             {description}
           </p>
           <div className="mt-9 flex flex-wrap gap-3">
-            <Button asChild size="touch" variant="secondary" className="landing-cta-action rounded-xl px-6 font-bold">
+            <Button
+              asChild
+              size="touch"
+              variant="secondary"
+              className="landing-cta-action rounded-xl px-6 font-bold"
+            >
               <TrackedLink eventName="landing_primary_cta" href={primary.href}>
                 {primary.label}
               </TrackedLink>
