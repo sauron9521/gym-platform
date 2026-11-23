@@ -107,8 +107,10 @@ describe('Training program exercise eligibility (PostgreSQL + Nest services)', (
       select: { id: true },
     });
 
-    async function createExercise(source: 'GLOBAL' | 'TRAINER_CUSTOM' | 'ATHLETE_CUSTOM',
-      ownerId?: string) {
+    async function createExercise(
+      source: 'GLOBAL' | 'TRAINER_CUSTOM' | 'ATHLETE_CUSTOM',
+      ownerId?: string,
+    ) {
       const exercise = await prisma.exercise.create({
         data: {
           name: `Library eligibility ${randomUUID()}`,
