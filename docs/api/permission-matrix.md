@@ -1,9 +1,10 @@
 # API permission matrix: current implementation (#288)
 
-This is a **source-backed inventory** of selected HTTP permissions on `main` as
-reviewed on 2026-11-23, plus the narrow Admin exercise-read correction in this
-PR. It is **not** a completed authorization audit or a new permission engine.
-Source code and server-side policy checks remain authoritative.
+This is a **source-backed inventory** of selected HTTP permissions as
+reviewed on 2026-11-23, including the Admin catalog boundary in PR #633 and
+the live Trainer grant check in this PR. It is **not** a completed authorization
+audit or a new permission engine. Source code and server-side policy checks
+remain authoritative.
 
 ## Principal and object rules
 
@@ -69,12 +70,15 @@ and [Program access](../../apps/api/src/modules/training-programs/services/train
 3. **No role-based Trainer escalation.** Workout and program/relationship
    flows use current account capabilities; Trainer work must not become
    available through stale role claims, inactive profiles or an Admin cookie.
-4. **Known legacy risk: exercises.** The exercise source/visibility policy
-   still switches on `User.role` instead of the derived Trainer capability.
-   Thus an approved `ATHLETE` with TrainerProfile can follow the
-   `ATHLETE_CUSTOM` branch. Audit and migrate this separately with
-   [#361](https://github.com/sauron9521/gym-platform/issues/361), preserving
-   existing Athlete-owned private exercises and explicit Trainer grants.
+4. **Live Trainer approval on exercise reads.** Shared Athlete exercises
+   require an unrevoked grant, an `ACTIVE` collaboration, and currently active
+   TrainerProfile (or a legacy `TRAINER` without a profile), all checked in the
+   SQL read predicate. This protects against a revoked profile after the initial
+   capability lookup. A legacy `TRAINER` also retains access to its own private
+   `ATHLETE_CUSTOM` exercises. **Remaining risk:** exercise creation and
+   source selection still branch on legacy `User.role`, not an explicit
+   Athlete/Trainer creation purpose. Handle separately under #288 without
+   regressing the completed cross-product matrix [#361](https://github.com/sauron9521/gym-platform/issues/361).
 5. **Admin session isolation.** The privileged Admin directory and Trainer
    review routes require an admin-purpose cookie and server-side permission,
    not merely a regular bearer token. Basic `ADMIN` does not imply
@@ -82,13 +86,13 @@ and [Program access](../../apps/api/src/modules/training-programs/services/train
 
 ## Verification and remaining acceptance
 
-This PR changes **only** the Admin exercise catalog read predicate and unit
-tests for list/detail queries; it does not alter session issuance, Admin
-moderation, Prisma schema, API response shape or other exercise permissions.
-The existing Exercise HTTP/PostgreSQL suite and current authorization tests
-must pass on this PR. Tests for role transitions, BOLA/IDOR, active-grant
-revocation, cross-account access and dual-capability Trainer workflows are
-still needed for full [#288](https://github.com/sauron9521/gym-platform/issues/288)
-and [#361](https://github.com/sauron9521/gym-platform/issues/361) acceptance.
-**Keep #288 open** after this first slice and do not treat CI as production
-security approval.
+This PR adds SQL-time Trainer eligibility and dual-role private ownership
+checks without changing sessions, Admin moderation, Prisma schema, HTTP routes,
+or response shapes. The Exercise HTTP/PostgreSQL integration regression
+simulates revocation **after** a grant and while the relationship stays active.
+Further object-authorization audit, role-based source-creation migration,
+cross-account fuzzing and concurrency tests remain under
+[#288](https://github.com/sauron9521/gym-platform/issues/288).
+[#361](https://github.com/sauron9521/gym-platform/issues/361) is already closed;
+do not reopen or duplicate its completed cross-product matrix.
+**Keep #288 open**, and do not treat CI as production security approval.
