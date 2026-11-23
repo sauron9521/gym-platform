@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
+import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
 import { test } from 'vitest';
 
@@ -29,7 +30,7 @@ function withFixture(run) {
 }
 
 test('actual workspace dependency graph and app imports stay within boundaries', () => {
-  assert.deepEqual(checkWorkspaceBoundaries(new URL('../', import.meta.url).pathname), []);
+  assert.deepEqual(checkWorkspaceBoundaries(fileURLToPath(new URL('../', import.meta.url))), []);
 });
 
 test('valid shared-package imports do not trigger false positives', () => {
