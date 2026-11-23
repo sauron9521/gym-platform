@@ -101,12 +101,35 @@ test('shared API client triggers both frontends without API E2E', () => {
   assert.equal(actual.api, false);
 });
 
-test('committed OpenAPI contract triggers API and both consumers', () => {
+test('OpenAPI changes check every typed API consumer without full scope', () => {
   const actual = classifyChangedPaths(['apps/api/openapi/openapi.json']);
-  assert.equal(actual.api, true);
-  assert.equal(actual.client, true);
-  assert.equal(actual.web, true);
-  assert.equal(actual.mobile, true);
+  assert.deepEqual(actual, {
+    full: false,
+    api: true,
+    web: true,
+    landing: false,
+    admin: true,
+    trainer: true,
+    mobile: true,
+    client: true,
+    deps: false,
+    workspaces: true,
+    redis: false,
+  });
+  assert.deepEqual(classifyChangedPaths(['README.md', 'apps/api/openapi/openapi.json']), actual);
+});
+
+test('CI wires Admin and Trainer consumer checks to affected workspace scopes', () => {
+  const yaml = readFileSync(new URL('../.github/workflows/ci.yml', import.meta.url), 'utf8');
+  const quality = yaml.split('  quality-workspaces:\n')[1]?.split('\n  quality:\n')[0];
+  const admin = yaml.split('  admin-browser-e2e:\n')[1]?.split('\n  landing-browser-e2e:')[0];
+  assert.ok(quality);
+  assert.ok(admin);
+  assert.match(admin, /if: needs\.changes\.outputs\.admin == 'true'/);
+  assert.ok(quality.includes('filters+=(--filter=@gym/admin); fi'));
+  assert.ok(quality.includes('filters+=(--filter=@gym/trainer); fi'));
+  assert.ok(quality.includes('test_filters+=(--filter=@gym/admin); fi'));
+  assert.ok(quality.includes('test_filters+=(--filter=@gym/trainer); fi'));
 });
 
 test('app-local manifest changes trigger vulnerability audit', () => {
