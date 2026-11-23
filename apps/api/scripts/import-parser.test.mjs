@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'vitest';
 
-import { parseModuleImports } from './import-parser.mjs';
+import { parseModuleImports, parseNestModuleExports } from './import-parser.mjs';
 
 const scan = (source) => parseModuleImports(source, 'fixtures/example.ts');
 
@@ -123,4 +123,30 @@ test('handles multiple statements separated only by newlines', () => {
     imports.map(({ path }) => path),
     ['./first.js', './second.js', './third.js'],
   );
+});
+
+test('tracks original named runtime service symbols rather than local import aliases', () => {
+  const imports = scan(
+    [
+      "import { FirstService as Local, type TypeOnly } from './services/first.service';",
+      "import type { OtherService } from './services/other.service';",
+      "import { type OnlyType } from './services/third.service';",
+    ].join('\n'),
+  );
+  assert.deepEqual(
+    imports.map(({ symbols }) => symbols),
+    [['FirstService'], [], []],
+  );
+});
+
+test('extracts explicit Nest @Module exports from TypeScript AST only', () => {
+  const exported = parseNestModuleExports(
+    [
+      "import { Module } from '@nestjs/common';",
+      '@Module({ providers: [VisibleService, PrivateService], exports: [VisibleService] })',
+      'export class FeatureModule {}',
+    ].join('\n'),
+  );
+  assert.deepEqual([...exported], ['VisibleService']);
+  assert.deepEqual([...parseNestModuleExports('export class EmptyModule {}')], []);
 });

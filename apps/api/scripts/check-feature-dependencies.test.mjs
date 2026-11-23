@@ -40,7 +40,7 @@ test('allows a Nest dependency and its runtime service contract', () => {
       'first',
       "import { SecondModule } from '#src/modules/second/second.module';\nexport class FirstModule {}",
     );
-    module('second');
+    module('second', '@Module({ exports: [SecondService] }) export class SecondModule {}');
     source(
       'first',
       'services/first.service.ts',
@@ -71,7 +71,7 @@ test('type-only cycles are not runtime cycles, including inline type imports', (
 test('a runtime service edge and reverse type-only import are allowed', () => {
   fixture(({ module, source, check }) => {
     module('first', "import { SecondModule } from '#src/modules/second/second.module';");
-    module('second');
+    module('second', '@Module({ exports: [SecondService] }) export class SecondModule {}');
     source(
       'first',
       'services/first.service.ts',
@@ -202,7 +202,10 @@ test('UsersRepository is private to Users, including Trainer–Athletes and Auth
   fixture(({ module, source, check }) => {
     module('auth', "import { UsersModule } from '#src/modules/users/users.module';");
     module('trainer-athletes', "import { UsersModule } from '#src/modules/users/users.module';");
-    module('users');
+    module(
+      'users',
+      '@Module({ exports: [UsersService, UsersAuthFacade] }) export class UsersModule {}',
+    );
     source(
       'auth',
       'services/credentials.service.ts',
@@ -283,10 +286,49 @@ test('Users public-api is stable but direct cross-feature capability policy impo
   });
 });
 
+test('cross-feature service imports require an explicit Nest module export', () => {
+  fixture(({ module, source, check }) => {
+    module('first', "import { SecondModule } from '#src/modules/second/second.module';");
+    module('second', '@Module({ providers: [SecondService] }) export class SecondModule {}');
+    source(
+      'first',
+      'services/first.service.ts',
+      "import { SecondService } from '#src/modules/second/services/second.service';",
+    );
+    assert.match(check().join(' '), /provider 'SecondService' is not exported by second.module.ts/);
+
+    module(
+      'second',
+      '@Module({ providers: [SecondService], exports: [SecondService] }) export class SecondModule {}',
+    );
+    assert.deepEqual(check(), []);
+  });
+});
+
+test('provider export checks recognize import aliases but ignore type-only imports', () => {
+  fixture(({ module, source, check }) => {
+    module('first', "import { SecondModule } from '#src/modules/second/second.module';");
+    module('second', '@Module({ exports: [OtherService] }) export class SecondModule {}');
+    source(
+      'first',
+      'services/first.service.ts',
+      "import { SecondService as Alias } from '#src/modules/second/services/second.service';",
+    );
+    assert.match(check().join(' '), /provider 'SecondService' is not exported by second.module.ts/);
+
+    source(
+      'first',
+      'services/first.service.ts',
+      "import { type SecondService } from '#src/modules/second/services/second.service';",
+    );
+    assert.deepEqual(check(), []);
+  });
+});
+
 test('rejects runtime provider injection if Nest module dependency is absent', () => {
   fixture(({ module, source, check }) => {
     module('first');
-    module('second');
+    module('second', '@Module({ exports: [SecondService] }) export class SecondModule {}');
     source(
       'first',
       'services/first.service.ts',
