@@ -480,6 +480,10 @@ describe('Exercises (HTTP + PostgreSQL)', () => {
           createdById: ownerId,
         });
         exerciseIds.push(trainerExercise.body.id as string);
+        const ownTrainerRead = await request(server)
+          .get(`/exercises/${trainerExercise.body.id as string}`)
+          .set('Cookie', ownerCookie);
+        expect(ownTrainerRead.status).toBe(200);
 
         const ownExercise = await request(server)
           .post('/exercises')
@@ -507,6 +511,12 @@ describe('Exercises (HTTP + PostgreSQL)', () => {
           where: { userId: ownerId },
           data: { isActive: false, revokedAt: new Date(), revokedById: ownerId },
         });
+
+        // Revocation removes Trainer actions, not ownership of existing records.
+        const retained = await request(server)
+          .get(`/exercises/${trainerExercise.body.id as string}`)
+          .set('Cookie', ownerCookie);
+        expect(retained.status).toBe(200);
 
         const revoked = await request(server)
           .post('/exercises')
