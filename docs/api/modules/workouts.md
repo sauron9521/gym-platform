@@ -63,3 +63,24 @@ Athlete capability is active. PostgreSQL race tests cover an uncommitted
 account promotion and suspension, plus foreign workout/athlete contexts.
 No Prisma migration or HTTP contract changes. Workout creation and
 remaining lifecycle writes are separate #288 authorization review slices.
+
+## Atomic manual workout creation authorization (Issue #288)
+
+`POST /workouts` still performs normal Athlete preflight, input validation,
+exercise visibility checks, and existing transaction-scoped exercise and
+TrainerAthlete locks. Before the final manual workout INSERT, the same
+transaction now re-evaluates the **current persisted Athlete capability**
+under User/Profile row locks via `UsersService.findMyCapabilitiesForWrite`.
+Account promotion or suspension and workout creation therefore serialize
+rather than authorizing a stale Athlete session. No bypass is available via
+the repository's manual-create method: a transaction authorization callback
+is required.
+
+The authorization happens **after** exercise and relationship access locks
+and **before** the insert; the locks are held through commit. Current
+Athlete-capable former Trainers retain their own manual workouts. PostgreSQL
+race tests cover an uncommitted Athlete-to-Admin promotion and suspension,
+asserting that neither creates a workout after moderation commits. There
+are no HTTP/Prisma schema or migration changes. Program-based creation,
+workout start/completion, and remaining #288 endpoints require separate
+review; a successful CI run does not imply production security sign-off.
