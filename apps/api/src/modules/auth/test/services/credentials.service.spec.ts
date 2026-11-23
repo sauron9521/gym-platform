@@ -1,7 +1,7 @@
 import { PasswordHasher } from '@nestjs/authentication';
 import { randomUUID } from 'node:crypto';
 import type { User } from '#prisma/client';
-import { UsersRepository } from '#src/modules/users/repositories/users.repository';
+import { UsersAuthFacade } from '#src/modules/users/services/users-auth.facade';
 import { CredentialsService } from '../../services/index.js';
 import type { UserResponse } from '#src/modules/users/types/user-payload.types';
 import { SignInDto } from '../../dto/auth.dto.js';
@@ -26,7 +26,7 @@ describe('Credentials service', () => {
     vi.resetAllMocks();
 
     service = new CredentialsService(
-      userRepository as unknown as UsersRepository,
+      userRepository as unknown as UsersAuthFacade,
       passwordHasher as unknown as PasswordHasher,
     );
   });
