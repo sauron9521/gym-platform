@@ -2,8 +2,17 @@ import { createTrainerServerApiClient } from './trainer-server-api';
 
 const PROGRAM_PAGE_SIZE = 8;
 const MAX_PAGE = 10_000;
-const MAX_VERSION_ROWS = 40;
+const VERSION_PAGE_SIZE = 40;
+const MAX_VERSION_NUMBER = 2_147_483_647;
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+type QueryValue = string | readonly string[] | undefined;
+type ProgramSelectorQuery = {
+  page: number;
+  programId?: QueryValue;
+  versionId?: QueryValue;
+  beforeVersion?: number;
+};
 
 type ProgramChoice = { id: string; title: string };
 type VersionChoice = { id: string; title: string; version: number };
@@ -15,6 +24,7 @@ type VersionSelection =
       program: ProgramChoice;
       versions: VersionChoice[];
       selectedVersion: VersionChoice | null;
+      nextBeforeVersion: number | null;
     };
 
 export type TrainerProgramSelectorResult =
@@ -30,10 +40,16 @@ export type TrainerProgramSelectorResult =
   | { kind: 'forbidden' }
   | { kind: 'unavailable' };
 
-export function parseProgramChoicePage(value: string | readonly string[] | undefined): number {
+export function parseProgramChoicePage(value: QueryValue): number {
   if (typeof value !== 'string' || !/^[1-9][0-9]{0,4}$/.test(value)) return 1;
   const parsed = Number(value);
   return parsed <= MAX_PAGE ? parsed : 1;
+}
+
+export function parseVersionCursor(value: QueryValue): number | undefined {
+  if (typeof value !== 'string' || !/^[1-9][0-9]{0,9}$/.test(value)) return undefined;
+  const parsed = Number(value);
+  return parsed <= MAX_VERSION_NUMBER ? parsed : undefined;
 }
 
 function isUuid(value: unknown): value is string {
@@ -44,6 +60,75 @@ function isPublishedAt(value: unknown): value is string {
   return typeof value === 'string' && Number.isFinite(Date.parse(value));
 }
 
+async function loadPublishedVersionSelection(
+  api: ReturnType<typeof createTrainerServerApiClient>,
+  program: ProgramChoice,
+  versionId: QueryValue,
+  beforeVersion: number | undefined,
+): Promise<VersionSelection | { kind: 'unauthenticated' } | { kind: 'forbidden' }> {
+  const { response, data: page } = await api.GET(
+    '/training-programs/{programId}/published-versions',
+    {
+      params: {
+        path: { programId: program.id },
+        query: { limit: VERSION_PAGE_SIZE, beforeVersion },
+      },
+    },
+  );
+  if (response.status === 401) return { kind: 'unauthenticated' };
+  if (response.status === 403) return { kind: 'forbidden' };
+  if (response.status === 404) return { kind: 'not_found' };
+  if (
+    response.status !== 200 ||
+    !Array.isArray(page?.data) ||
+    page.data.length > VERSION_PAGE_SIZE
+  ) {
+    return { kind: 'unavailable' };
+  }
+
+  const versions: VersionChoice[] = [];
+  const ids = new Set<string>();
+  let previous = beforeVersion ?? MAX_VERSION_NUMBER + 1;
+  for (const row of page.data) {
+    if (
+      !row ||
+      !isUuid(row.id) ||
+      ids.has(row.id.toLowerCase()) ||
+      row.programId !== program.id ||
+      row.status !== 'PUBLISHED' ||
+      !Number.isSafeInteger(row.version) ||
+      row.version < 1 ||
+      row.version >= previous ||
+      typeof row.title !== 'string' ||
+      !row.title.trim() ||
+      !isPublishedAt(row.publishedAt)
+    ) {
+      return { kind: 'unavailable' };
+    }
+    previous = row.version;
+    ids.add(row.id.toLowerCase());
+    versions.push({ id: row.id, title: row.title, version: row.version });
+  }
+
+  const { nextBeforeVersion } = page;
+  if (
+    nextBeforeVersion !== null &&
+    (versions.length !== VERSION_PAGE_SIZE || nextBeforeVersion !== previous || previous <= 1)
+  ) {
+    return { kind: 'unavailable' };
+  }
+
+  return {
+    kind: 'ready',
+    program,
+    versions,
+    nextBeforeVersion,
+    selectedVersion: isUuid(versionId)
+      ? (versions.find((version) => version.id.toLowerCase() === versionId.toLowerCase()) ?? null)
+      : null,
+  };
+}
+
 /**
  * A bounded read-only chooser, not an assignment intent/commit.
  * Current-grant and ACTIVE collaboration checks run in the protected route
@@ -51,14 +136,20 @@ function isPublishedAt(value: unknown): value is string {
  */
 export async function loadTrainerProgramSelector(
   cookieHeader: string,
-  page: number,
-  selectedProgramId: string | readonly string[] | undefined,
-  selectedVersionId: string | readonly string[] | undefined,
+  { page, programId, versionId, beforeVersion }: ProgramSelectorQuery,
   configuredOrigin: string | undefined = process.env.GYM_API_INTERNAL_URL,
   send: typeof fetch = fetch,
 ): Promise<TrainerProgramSelectorResult> {
   if (!cookieHeader) return { kind: 'unauthenticated' };
-  if (!Number.isSafeInteger(page) || page < 1 || page > MAX_PAGE) {
+  if (
+    !Number.isSafeInteger(page) ||
+    page < 1 ||
+    page > MAX_PAGE ||
+    (beforeVersion !== undefined &&
+      (!Number.isSafeInteger(beforeVersion) ||
+        beforeVersion < 1 ||
+        beforeVersion > MAX_VERSION_NUMBER))
+  ) {
     return { kind: 'unavailable' };
   }
 
@@ -112,75 +203,14 @@ export async function loadTrainerProgramSelector(
       programs.push({ id: item.id, title: latest.title });
     }
 
-    let selection: VersionSelection = { kind: 'none' };
-    if (selectedProgramId !== undefined) {
-      if (!isUuid(selectedProgramId)) {
-        selection = { kind: 'not_found' };
-      } else {
-        const program = programs.find(
-          (entry) => entry.id.toLowerCase() === selectedProgramId.toLowerCase(),
-        );
-        if (!program) {
-          // Never issue a user-controlled foreign program lookup.
-          selection = { kind: 'not_found' };
-        } else {
-          const versionsResponse = await api.GET('/training-programs/{programId}/versions', {
-            params: { path: { programId: program.id } },
-          });
-          if (versionsResponse.response.status === 401) return { kind: 'unauthenticated' };
-          if (versionsResponse.response.status === 403) return { kind: 'forbidden' };
-          if (versionsResponse.response.status === 404) {
-            selection = { kind: 'not_found' };
-          } else if (versionsResponse.response.status !== 200 || !versionsResponse.data) {
-            selection = { kind: 'unavailable' };
-          } else {
-            const source = versionsResponse.data;
-            if (!Array.isArray(source) || source.length > MAX_VERSION_ROWS) {
-              selection = { kind: 'unavailable' };
-            } else {
-              const versions: VersionChoice[] = [];
-              const versionIds = new Set<string>();
-              const versionNumbers = new Set<number>();
-              let valid = true;
-              for (const v of source) {
-                if (
-                  !isUuid(v.id) ||
-                  versionIds.has(v.id) ||
-                  v.programId !== program.id ||
-                  !Number.isSafeInteger(v.version) ||
-                  v.version < 1 ||
-                  versionNumbers.has(v.version) ||
-                  (v.status !== 'DRAFT' && v.status !== 'PUBLISHED') ||
-                  typeof v.title !== 'string' ||
-                  !v.title.trim() ||
-                  (v.status === 'PUBLISHED' && !isPublishedAt(v.publishedAt))
-                ) {
-                  valid = false;
-                  break;
-                }
-                versionIds.add(v.id);
-                versionNumbers.add(v.version);
-                if (v.status === 'PUBLISHED') {
-                  versions.push({ id: v.id, title: v.title, version: v.version });
-                }
-              }
-              selection = valid
-                ? {
-                    kind: 'ready',
-                    program,
-                    versions,
-                    selectedVersion: isUuid(selectedVersionId)
-                      ? (versions.find(
-                          (v) => v.id.toLowerCase() === selectedVersionId.toLowerCase(),
-                        ) ?? null)
-                      : null,
-                  }
-                : { kind: 'unavailable' };
-            }
-          }
-        }
-      }
-    }
+    // Only use the canonical program ID from the current scoped program page.
+    const program = isUuid(programId)
+      ? programs.find((entry) => entry.id.toLowerCase() === programId.toLowerCase())
+      : undefined;
+    const selection = program
+      ? await loadPublishedVersionSelection(api, program, versionId, beforeVersion)
+      : ({ kind: programId === undefined ? 'none' : 'not_found' } as const);
+    if (selection.kind === 'unauthenticated' || selection.kind === 'forbidden') return selection;
 
     return {
       kind: 'ready',

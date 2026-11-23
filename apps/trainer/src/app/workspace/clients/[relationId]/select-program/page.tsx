@@ -12,6 +12,7 @@ import { loadTrainerClientProgress } from '@/shared/api/trainer-client-progress'
 import {
   loadTrainerProgramSelector,
   parseProgramChoicePage,
+  parseVersionCursor,
 } from '@/shared/api/trainer-program-selector';
 import { getTrainerCopy } from '@/shared/i18n/copy';
 
@@ -71,6 +72,7 @@ export default async function TrainerChooseClientProgramPage({
     page?: string | string[];
     programId?: string | string[];
     versionId?: string | string[];
+    beforeVersion?: string | string[];
   }>;
 }) {
   const t = getTrainerCopy((await getLocale()) as Locale);
@@ -88,12 +90,13 @@ export default async function TrainerChooseClientProgramPage({
 
   const query = await searchParams;
   const page = parseProgramChoicePage(query.page);
-  const choices = await loadTrainerProgramSelector(
-    cookieHeader,
+  const beforeVersion = parseVersionCursor(query.beforeVersion);
+  const choices = await loadTrainerProgramSelector(cookieHeader, {
     page,
-    query.programId,
-    query.versionId,
-  );
+    programId: query.programId,
+    versionId: query.versionId,
+    beforeVersion,
+  });
 
   // Rejected/revoked authorization in any *later* upstream read suppresses
   // earlier client contact and program data, not just the affected widget.
@@ -111,6 +114,11 @@ export default async function TrainerChooseClientProgramPage({
     choices.kind === 'ready' && choices.selection.kind === 'ready'
       ? choices.selection.selectedVersion?.id
       : undefined;
+  const newestVersionsHref = `${choicePath}?page=${page}&programId=${selectedProgramId}`;
+  const currentVersionsHref =
+    beforeVersion === undefined
+      ? newestVersionsHref
+      : `${newestVersionsHref}&beforeVersion=${beforeVersion}`;
   return (
     <section aria-labelledby="program-choice-title" className="space-y-7">
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -245,7 +253,9 @@ export default async function TrainerChooseClientProgramPage({
               </h2>
               {choices.selection.versions.length === 0 ? (
                 <p className="mt-4 rounded-xl border border-dashed border-border p-5 text-muted-foreground">
-                  {t.programChoiceNoVersions}
+                  {beforeVersion === undefined
+                    ? t.programChoiceNoVersions
+                    : t.programChoiceVersionPageEmpty}
                 </p>
               ) : (
                 <ul
@@ -264,7 +274,7 @@ export default async function TrainerChooseClientProgramPage({
                         </p>
                       </div>
                       <Link
-                        href={`${choicePath}?page=${choices.page}&programId=${selectedProgramId}&versionId=${version.id}`}
+                        href={`${currentVersionsHref}&versionId=${version.id}`}
                         prefetch={false}
                         aria-current={selectedVersionId === version.id ? 'true' : undefined}
                         className="inline-flex min-h-11 shrink-0 items-center rounded-lg border border-border px-4 text-sm font-semibold text-primary hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
@@ -275,6 +285,31 @@ export default async function TrainerChooseClientProgramPage({
                   ))}
                 </ul>
               )}
+              {beforeVersion !== undefined || choices.selection.nextBeforeVersion !== null ? (
+                <nav
+                  aria-label={t.programChoiceVersionPages}
+                  className="mt-5 flex flex-wrap gap-3 border-t border-border pt-4"
+                >
+                  {beforeVersion !== undefined ? (
+                    <Link
+                      href={newestVersionsHref}
+                      prefetch={false}
+                      className="inline-flex min-h-11 items-center rounded-lg border border-border px-4 font-medium hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                    >
+                      {t.programChoiceNewestVersions}
+                    </Link>
+                  ) : null}
+                  {choices.selection.nextBeforeVersion !== null ? (
+                    <Link
+                      href={`${newestVersionsHref}&beforeVersion=${choices.selection.nextBeforeVersion}`}
+                      prefetch={false}
+                      className="inline-flex min-h-11 items-center rounded-lg border border-border px-4 font-medium hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                    >
+                      {t.programChoiceOlderVersions}
+                    </Link>
+                  ) : null}
+                </nav>
+              ) : null}
               {choices.selection.selectedVersion ? (
                 <TrainerAssignVersionButton
                   relationId={relationId}

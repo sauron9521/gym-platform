@@ -139,35 +139,31 @@ ACTIVE owner-scoped progress + matching relation/contact using existing
 read models. Only then does it list up to **8 owned PUBLISHED programs per page**
 from the existing typed `GET /training-programs?status=PUBLISHED` API.
 A selected program must exist on **that exact paginated owner-scoped page**
-before the server may call existing `GET /training-programs/:id/versions`.
+before the server may call `GET /training-programs/:id/published-versions`.
 
 - Only **PUBLISHED** versions are displayed as choices. Latest-title
   previews on a published program may themselves be a DRAFT; the UI labels
   this explicitly and _never_ offers a draft version. Archived/draft programs
   and foreign trainer programs cannot become selectable.
-- SSR query params `page`, `programId` and `versionId` are validated.
+- SSR query params `page`, `programId`, `beforeVersion` and `versionId` are validated.
   Bad page numbers normalize to 1; invalid/foreign program IDs do not trigger
-  an arbitrary `:id/versions` request. A selected version must match one of
-  the validated published rows, never just a user-supplied UUID.
+  a version request. The chooser asks for up to **40 published versions**
+  at a time. The **Older versions** link uses the server's exclusive cursor;
+  returning to **Newest versions** clears it. Version selection preserves the
+  cursor and requires a matching row on that version page.
 - The existing trusted host-only cookie transport uses `no-store`, rejects
   redirects and bounds each request to five seconds. Any 401/403 **during
   either follow-up read hides all earlier client data**; 5xx, malformed data,
   missing or archived programs show safe unavailable/not-found states.
-  The version list is capped at 40 rows and malformed/cross-program data
-  never enters the UI. Real owned program pagination is server-side.
-- `GET /training-programs` and `GET /training-programs/:id/versions`
-  use the existing centralized `RateLimit('read')` preset (60/minute).
-  The former 10/minute global preset exhausted during legitimate SSR
-  chooser navigation; this changes **only** these two owner-scoped read
-  handlers, not mutation budgets or the global policy.
-- There are **no writes, assignment creation, client-side session state or
-  automatic confirmation**. A selected version is only reflected in a
-  server-rendered confirmation that explicitly says nothing has been saved.
-  The actual create assignment action and conflict/retry semantics are
-  a separate follow-up PR.
+  Malformed, out-of-order or cross-program version pages are rejected.
+- `GET /training-programs` and `GET /training-programs/:id/published-versions`
+  use the centralized `RateLimit('read')` preset (60/minute).
+- Browsing and selecting a version perform GET requests. Creating an
+  assignment requires a separate explicit confirmation as described below.
 - uk/en responsive noindex route, unit transport/auth/selection tests and
   real Trainer Next/Nest/PostgreSQL browser verification cover client eligibility,
-  published/draft/foreign boundaries, selection and no mutations.
+  published/draft/foreign boundaries and selection from a program with 41
+  published versions.
 
 ## Trainer single-attempt assignment confirmation (#366)
 

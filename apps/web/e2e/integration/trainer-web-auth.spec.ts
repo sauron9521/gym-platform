@@ -210,10 +210,15 @@ test('Trainer browser requires live approval, protects Origin/cookies, and revok
         'UPDATE "training_program_versions" SET "status" = $1, "published_at" = NOW(), "updated_at" = NOW() WHERE "id" IN ($2, $3)',
         ['PUBLISHED', ownVersionId, foreignVersionId],
       );
-      // The newest version may be a DRAFT even when a program is PUBLISHED.
-      // Its title is a preview only; only version 1 can actually be selected.
+      // Place v1 on the second page while retaining a non-selectable newer draft.
       await db.query(
-        'INSERT INTO "training_program_versions" ("id", "program_id", "version", "title", "description", "status", "updated_at") VALUES ($1, $2, 2, $3, NULL, $4, NOW())',
+        `INSERT INTO "training_program_versions" ("id", "program_id", "version", "title", "status", "published_at", "updated_at")
+         SELECT gen_random_uuid(), $1, number, 'Published version ' || number, 'PUBLISHED', NOW(), NOW()
+         FROM generate_series(2, 41) AS number`,
+        [ownProgramId],
+      );
+      await db.query(
+        'INSERT INTO "training_program_versions" ("id", "program_id", "version", "title", "description", "status", "updated_at") VALUES ($1, $2, 42, $3, NULL, $4, NOW())',
         [ownDraftVersionId, ownProgramId, ownDraftVersionTitle, 'DRAFT'],
       );
     });
@@ -235,16 +240,33 @@ test('Trainer browser requires live approval, protects Origin/cookies, and revok
     await expect(page.getByText(foreignProgramTitle)).toHaveCount(0);
     await page.getByRole('link', { name: 'View versions' }).click({ timeout: 10_000 });
     const selectableVersions = page.getByRole('list', { name: 'Published versions' });
+    await expect(selectableVersions.getByRole('listitem')).toHaveCount(40);
+    await expect(
+      selectableVersions.getByText('Published version 41', { exact: true }),
+    ).toBeVisible();
+    await expect(selectableVersions.getByText(ownProgramTitle)).toHaveCount(0);
+    await expect(selectableVersions.getByText(ownDraftVersionTitle)).toHaveCount(0);
+    const versionPages = page.getByRole('navigation', { name: 'Published version pages' });
+    await versionPages.getByRole('link', { name: 'Older versions' }).click();
     await expect(selectableVersions.getByRole('listitem')).toHaveCount(1);
     await expect(selectableVersions.getByText(ownProgramTitle)).toBeVisible();
-    await expect(selectableVersions.getByText(ownDraftVersionTitle)).toHaveCount(0);
-    await page.getByRole('link', { name: 'Select version' }).click({ timeout: 10_000 });
+    await expect(versionPages.getByRole('link', { name: 'Older versions' })).toHaveCount(0);
+    await expect(versionPages.getByRole('link', { name: 'Newest versions' })).toHaveAttribute(
+      'href',
+      `/workspace/clients/${dashboardRelationId}/select-program?page=1&programId=${ownProgramId}`,
+    );
+    await selectableVersions
+      .getByRole('link', { name: 'Select version' })
+      .click({ timeout: 10_000 });
     await expect(page.getByText('Selected version:', { exact: false })).toContainText(
       ownProgramTitle,
     );
     await expect(page.getByRole('status')).toContainText('No assignment has been created.');
     await expect(page.getByRole('button', { name: 'Assign version to client' })).toBeEnabled();
     await expect(page.getByText(foreignProgramTitle)).toHaveCount(0);
+    const selectedVersionUrl = page.url();
+    expect(new URL(selectedVersionUrl).searchParams.get('beforeVersion')).toBe('2');
+    expect(new URL(selectedVersionUrl).searchParams.get('versionId')).toBe(ownVersionId);
 
     // A crafted foreign program ID must never cause cross-trainer version reads.
     await page.goto(`${choicePath}?page=1&programId=${foreignProgramId}`);
@@ -266,7 +288,7 @@ test('Trainer browser requires live approval, protects Origin/cookies, and revok
 
     // The selected v1 is eligible: real browser -> Trainer rewrite -> Nest
     // POST -> PostgreSQL. Two same-tick button clicks must issue one POST.
-    await page.goto(`${choicePath}?page=1&programId=${ownProgramId}&versionId=${ownVersionId}`);
+    await page.goto(selectedVersionUrl);
     const posted: string[] = [];
     page.on('request', (request) => {
       if (
@@ -299,7 +321,7 @@ test('Trainer browser requires live approval, protects Origin/cookies, and revok
 
     // A new page may attempt an already-active version; Nest and the DB
     // partial unique index resolve that attempt to a 409, never a second row.
-    await page.goto(`${choicePath}?page=1&programId=${ownProgramId}&versionId=${ownVersionId}`);
+    await page.goto(selectedVersionUrl);
     await page.getByRole('button', { name: 'Assign version to client' }).click();
     await expect(page.getByRole('status')).toContainText('Conflict:');
     await expect(page.getByRole('button', { name: 'Assign version to client' })).toBeDisabled();
@@ -492,10 +514,9 @@ test('Trainer browser requires live approval, protects Origin/cookies, and revok
         'DELETE FROM "training_program_assignments" WHERE "trainer_athlete_id" IN ($1, $2)',
         [dashboardRelationId, otherRelationId],
       );
-      await db.query('DELETE FROM "training_program_versions" WHERE "id" IN ($1, $2, $3)', [
-        ownVersionId,
-        ownDraftVersionId,
-        foreignVersionId,
+      await db.query('DELETE FROM "training_program_versions" WHERE "program_id" IN ($1, $2)', [
+        ownProgramId,
+        foreignProgramId,
       ]);
       await db.query('DELETE FROM "training_programs" WHERE "id" IN ($1, $2)', [
         ownProgramId,
