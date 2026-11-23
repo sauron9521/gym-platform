@@ -117,6 +117,62 @@ describe('Users /me (HTTP + PostgreSQL)', () => {
     expect(patch.status).toBe(401);
   });
 
+  it('intakes one confirmed deletion request and keeps the receipt private to its owner', async () => {
+    const path = '/users/me/account-deletion-request';
+    const http = request(app.getHttpServer());
+    const input = { password, confirm: true };
+    const readOwn = () => http.get(path).set('Cookie', athleteCookie);
+    const submitOwn = () => http.post(path).set('Cookie', athleteCookie);
+
+    await http.get(path).expect(401);
+    await http.post(path).send(input).expect(401);
+    expect((await readOwn().expect('Cache-Control', 'no-store').expect(200)).body).toEqual({
+      request: null,
+    });
+    await submitOwn()
+      .send({ ...input, confirm: false })
+      .expect(400);
+    await submitOwn()
+      .send({ ...input, userId: otherId })
+      .expect(400);
+    await submitOwn().set('Origin', 'https://untrusted.example.test').send(input).expect(401);
+    await submitOwn()
+      .send({ ...input, password: 'WrongPassword!' })
+      .expect(403);
+    expect(await prisma.accountDeletionRequest.count({ where: { userId: athleteId } })).toBe(0);
+
+    const tokens = await http
+      .post('/auth/token')
+      .send({ email: athleteEmail, password })
+      .expect(200);
+    const accessToken = tokens.body.accessToken as string;
+    const [first, duplicate] = await Promise.all([
+      submitOwn().send(input).expect('Cache-Control', 'no-store').expect(200),
+      http.post(path).set('Authorization', `Bearer ${accessToken}`).send(input).expect(200),
+    ]);
+    const stored = await prisma.accountDeletionRequest.findUniqueOrThrow({
+      where: { userId: athleteId },
+    });
+    const expected = {
+      request: {
+        id: stored.id,
+        requestedAt: stored.requestedAt.toISOString(),
+        status: 'REQUESTED',
+      },
+    };
+    expect(first.body).toEqual(expected);
+    expect(duplicate.body).toEqual(expected);
+    expect((await readOwn().expect(200)).body).toEqual(expected);
+    expect((await http.get(path).set('Cookie', otherCookie).expect(200)).body).toEqual({
+      request: null,
+    });
+    // Password confirmation is limited per owner even with the generic IP
+    // throttler disabled in this suite. Receipt reads stay available.
+    await submitOwn().send(input).expect(429);
+    await readOwn().expect(200);
+    await http.get('/users/me').set('Cookie', athleteCookie).expect(200);
+  });
+
   it('reads fresh grants from the current actor, not a stale session role', async () => {
     const anonymous = await request(app.getHttpServer()).get('/users/me/capabilities');
     expect(anonymous.status).toBe(401);

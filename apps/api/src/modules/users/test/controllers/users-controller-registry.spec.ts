@@ -9,17 +9,26 @@ import {
 import { UsersController } from '../../controllers/users.controller.js';
 import { AvatarPublicController } from '../../controllers/avatar-public.controller.js';
 import { AdminUsersController } from '../../controllers/admin-users.controller.js';
+import { AccountDeletionRequestsController } from '../../controllers/account-deletion-requests.controller.js';
 import { UsersModule } from '../../users.module.js';
 
 describe('UsersModule controller registry', () => {
-  const controllers = [UsersController, AvatarPublicController];
+  const controllers = [UsersController, AvatarPublicController, AccountDeletionRequestsController];
 
   it('preserves existing controllers and registers the scoped Admin directory', () => {
     const registered: unknown[] = Reflect.getMetadata(MODULE_METADATA.CONTROLLERS, UsersModule);
-    expect(registered).toEqual([...controllers, AdminUsersController]);
+    expect(registered).toEqual([
+      UsersController,
+      AvatarPublicController,
+      AdminUsersController,
+      AccountDeletionRequestsController,
+    ]);
     expect(Reflect.getMetadata(PATH_METADATA, AdminUsersController)).toBe('admin/users');
     expect(Reflect.getMetadata(PATH_METADATA, UsersController)).toBe('users');
     expect(Reflect.getMetadata(PATH_METADATA, AvatarPublicController)).toBe('avatars');
+    expect(Reflect.getMetadata(PATH_METADATA, AccountDeletionRequestsController)).toBe(
+      'users/me/account-deletion-request',
+    );
   });
 
   it.each([
@@ -30,6 +39,8 @@ describe('UsersModule controller registry', () => {
     [UsersController, 'uploadAvatar', RequestMethod.POST, 'me/avatar'],
     [UsersController, 'deleteAvatar', RequestMethod.DELETE, 'me/avatar'],
     [AvatarPublicController, 'get', RequestMethod.GET, ':key'],
+    [AccountDeletionRequestsController, 'findOwn', RequestMethod.GET, '/'],
+    [AccountDeletionRequestsController, 'submit', RequestMethod.POST, '/'],
   ] as const)('preserves %s.%s HTTP method and route', (controller, name, method, path) => {
     const handler = Object.getOwnPropertyDescriptor(controller.prototype, name)?.value as (
       ...args: unknown[]
@@ -48,7 +59,7 @@ describe('UsersModule controller registry', () => {
     }
   });
 
-  it('has seven unique HTTP method/path pairs', () => {
+  it('has nine unique HTTP method/path pairs', () => {
     const routes = controllers.flatMap((controller) => {
       const base = Reflect.getMetadata(PATH_METADATA, controller) as string;
       return Object.getOwnPropertyNames(controller.prototype)
@@ -64,7 +75,7 @@ describe('UsersModule controller registry', () => {
           return `${method}:${base}/${path}`;
         });
     });
-    expect(routes).toHaveLength(7);
+    expect(routes).toHaveLength(9);
     expect(new Set(routes).size).toBe(routes.length);
   });
 });

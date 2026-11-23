@@ -4,14 +4,34 @@
 
 The current-user endpoints are authenticated. Public avatar serving is intentionally separate from authenticated profile mutations.
 
-| Method | Path                     | Purpose                                      |
-| ------ | ------------------------ | -------------------------------------------- |
-| GET    | `/users/me`              | Read own profile (legacy contract unchanged) |
-| GET    | `/users/me/capabilities` | Read own current capability flags            |
-| PATCH  | `/users/me`              | Update own profile                           |
-| POST   | `/users/me/avatar`       | Upload/replace avatar                        |
-| DELETE | `/users/me/avatar`       | Remove avatar                                |
-| GET    | `/avatars/:key`          | Public avatar retrieval                      |
+| Method | Path                                 | Purpose                                          |
+| ------ | ------------------------------------ | ------------------------------------------------ |
+| GET    | `/users/me`                          | Read own profile (legacy contract unchanged)     |
+| GET    | `/users/me/capabilities`             | Read own current capability flags                |
+| GET    | `/users/me/account-deletion-request` | Read the current user's deletion request receipt |
+| POST   | `/users/me/account-deletion-request` | Submit a confirmed account deletion request      |
+| PATCH  | `/users/me`                          | Update own profile                               |
+| POST   | `/users/me/avatar`                   | Upload/replace avatar                            |
+| DELETE | `/users/me/avatar`                   | Remove avatar                                    |
+| GET    | `/avatars/:key`                      | Public avatar retrieval                          |
+
+## Account deletion request intake (#297)
+
+`GET /users/me/account-deletion-request` returns `{ "request": null }` until
+the current user submits a request. A submitted request returns an opaque
+receipt ID, the `REQUESTED` state and the original UTC submission time.
+
+`POST /users/me/account-deletion-request` requires explicit confirmation
+(`confirm: true`) and the current password. Accounts enrolled in MFA also
+provide a fresh authenticator code. Both endpoints use the existing session
+or access token and are served with `Cache-Control: no-store`. The submission
+has the existing auth rate limit per IP and per account.
+
+Submission records the request for review. The user can keep the receipt and
+track it through the existing account. A confirmed retry returns the same
+receipt. Only the receipt, account reference and submission time are
+persisted. The Privacy Center, review, data removal and its verification
+depend on the subsequent implementation of the S03 data lifecycle.
 
 ## Current capabilities (migration slice #291)
 
