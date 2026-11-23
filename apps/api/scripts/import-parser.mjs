@@ -98,11 +98,10 @@ export function parseModuleImports(source, filename = 'source.ts') {
 }
 
 /**
- * Read only explicit, literal `@Module({ exports: [...] })` entries.
- * Runtime consumers must not assume a service is injectable merely because
- * its source file can be imported. This is static analysis; no Nest bootstrap.
+ * Read explicit class-based Nest metadata without evaluating application code.
+ * Factory/value tokens and dynamic metadata are intentionally out of scope.
  */
-export function parseNestModuleExports(source, filename = 'feature.module.ts') {
+export function parseNestModuleMetadata(source, filename = 'feature.module.ts') {
   const parsed = ts.createSourceFile(
     filename,
     source,
@@ -110,7 +109,11 @@ export function parseNestModuleExports(source, filename = 'feature.module.ts') {
     true,
     ts.ScriptKind.TS,
   );
-  const exported = new Set();
+  const metadata = {
+    providers: new Set(),
+    controllers: new Set(),
+    exports: new Set(),
+  };
 
   for (const declaration of parsed.statements) {
     if (!ts.isClassDeclaration(declaration)) continue;
@@ -118,19 +121,65 @@ export function parseNestModuleExports(source, filename = 'feature.module.ts') {
       const call = decorator.expression;
       if (!ts.isCallExpression(call)) continue;
       if (!ts.isIdentifier(call.expression) || call.expression.text !== 'Module') continue;
-      const metadata = call.arguments[0];
-      if (!metadata || !ts.isObjectLiteralExpression(metadata)) continue;
+      const options = call.arguments[0];
+      if (!options || !ts.isObjectLiteralExpression(options)) continue;
 
-      for (const property of metadata.properties) {
+      for (const property of options.properties) {
         if (!ts.isPropertyAssignment(property)) continue;
-        if (!ts.isIdentifier(property.name) || property.name.text !== 'exports') continue;
-        if (!ts.isArrayLiteralExpression(property.initializer)) continue;
+        if (!ts.isIdentifier(property.name)) continue;
+        const registered = metadata[property.name.text];
+        if (!registered || !ts.isArrayLiteralExpression(property.initializer)) continue;
         for (const element of property.initializer.elements) {
-          if (ts.isIdentifier(element)) exported.add(element.text);
+          if (ts.isIdentifier(element)) registered.add(element.text);
         }
       }
     }
   }
 
-  return exported;
+  return metadata;
+}
+
+/** Keep the original exports-only API for feature import validation. */
+export function parseNestModuleExports(source, filename = 'feature.module.ts') {
+  return parseNestModuleMetadata(source, filename).exports;
+}
+
+/**
+ * Read simple class-typed constructor dependencies, without treating explicit
+ * @Inject tokens, @Optional dependencies or primitives as class injections.
+ * Callers decide which declared classes are registered Nest providers.
+ */
+export function parseClassConstructorDependencies(source, filename = 'source.ts') {
+  const parsed = ts.createSourceFile(
+    filename,
+    source,
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.TS,
+  );
+  const classes = [];
+
+  for (const declaration of parsed.statements) {
+    if (!ts.isClassDeclaration(declaration) || !declaration.name) continue;
+    const constructor = declaration.members.find((member) => ts.isConstructorDeclaration(member));
+    const dependencies = [];
+    for (const parameter of constructor?.parameters ?? []) {
+      const type = parameter.type;
+      if (!type || !ts.isTypeReferenceNode(type) || !ts.isIdentifier(type.typeName)) continue;
+      const decorators = ts.getDecorators(parameter) ?? [];
+      if (
+        decorators.some((decorator) => {
+          const expression = decorator.expression;
+          const name = ts.isCallExpression(expression) ? expression.expression : expression;
+          return ts.isIdentifier(name) && (name.text === 'Inject' || name.text === 'Optional');
+        })
+      ) {
+        continue;
+      }
+      dependencies.push(type.typeName.text);
+    }
+    classes.push({ name: declaration.name.text, dependencies });
+  }
+
+  return classes;
 }
