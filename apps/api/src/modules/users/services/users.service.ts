@@ -34,6 +34,13 @@ export class UsersService {
     }
   }
 
+  /** A held User/Profile row-lock snapshot for a caller's write transaction. */
+  async findMyCapabilitiesForWrite(tx: Prisma.TransactionClient, userId: string) {
+    const account = await this.usersRepository.findCapabilitySnapshotForWrite(tx, userId);
+    if (!account) throw new NotFoundException('User not found');
+    return deriveAccountCapabilities(account);
+  }
+
   /** Uses a fresh DB projection so moderation/revocation takes effect on the next read. */
   async findMyCapabilities(userId: string) {
     const account = await this.usersRepository.findCapabilitySnapshot(userId);
