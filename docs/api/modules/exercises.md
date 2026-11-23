@@ -41,8 +41,16 @@ approved `ATHLETE`-role trainers may select global and **self-owned**
 `ATHLETE_CUSTOM` exercises and archived items remain unavailable to program
 drafts. Revocation blocks selection even for a former `TRAINER`-role user;
 program ownership and editable-draft checks remain separate requirements.
-A privilege change between capability lookup and the final write remains
-a separate atomicity-hardening task under #288.
+When **adding a library exercise to a program draft**, the final repository
+write rechecks Trainer capability **within the write transaction**. It locks
+the current User row (`FOR UPDATE`) and optional TrainerProfile row
+(`FOR SHARE`) until the nested draft INSERT commits. Moderation revocation
+must therefore serialize before or after the write, even if the earlier
+service check observed a stale grant. The exercise still requires the owned
+draft/version/workout boundary; no private or foreign library access is added.
+
+Other write paths (including direct `POST /exercises`, set/workout
+edits and publication) still need individual concurrency review under #288.
 
 **Tests:** `test/e2e/exercises/exercises.e2e-spec.ts`, `test/integration/exercises/exercise-trainer-access.integration.e2e-spec.ts`, `test/integration/exercises/exercise-program-library.integration.e2e-spec.ts` and co-located module unit tests.
 
