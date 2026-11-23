@@ -2,6 +2,7 @@ import { BadRequestException, ForbiddenException, NotFoundException } from '@nes
 
 import { ExercisesService } from '../services/exercises.service.js';
 import { ExercisesRepository } from '../repositories/exercises.repository.js';
+import { UsersService } from '#src/modules/users/services/users.service';
 
 import type {
   CreateExerciseInput,
@@ -11,6 +12,10 @@ import type {
 
 describe('ExercisesService', () => {
   let service: ExercisesService;
+
+  const usersService = {
+    findMyCapabilities: vi.fn(),
+  };
 
   const repository = {
     create: vi.fn(),
@@ -84,7 +89,16 @@ describe('ExercisesService', () => {
       { id: 'equipment-2', slug: 'bench' },
     ]);
 
-    service = new ExercisesService(repository as unknown as ExercisesRepository);
+    usersService.findMyCapabilities.mockImplementation(async (id: string) => ({
+      athlete: id !== admin.id,
+      trainer: id === trainer.id,
+      admin: id === admin.id,
+    }));
+
+    service = new ExercisesService(
+      repository as unknown as ExercisesRepository,
+      usersService as unknown as UsersService,
+    );
   });
 
   describe('public taxonomy', () => {
@@ -161,6 +175,64 @@ describe('ExercisesService', () => {
           },
         }),
       );
+    });
+
+    it('keeps an approved ATHLETE-role trainer in personal exercise scope by default', async () => {
+      usersService.findMyCapabilities.mockResolvedValue({
+        athlete: true,
+        trainer: true,
+        admin: false,
+      });
+
+      await service.create(athlete, input);
+
+      expect(usersService.findMyCapabilities).toHaveBeenCalledExactlyOnceWith(athlete.id);
+      expect(repository.create).toHaveBeenCalledWith(
+        expect.objectContaining({ source: 'ATHLETE_CUSTOM', visibility: 'PRIVATE' }),
+      );
+    });
+
+    it('does not grant trainer exercise creation from a revoked legacy TRAINER role', async () => {
+      usersService.findMyCapabilities.mockResolvedValue({
+        athlete: true,
+        trainer: false,
+        admin: false,
+      });
+
+      await service.create(trainer, input);
+
+      expect(repository.create).toHaveBeenCalledWith(
+        expect.objectContaining({ source: 'ATHLETE_CUSTOM', visibility: 'PRIVATE' }),
+      );
+    });
+
+    it('denies a stale Athlete/Trainer session after the account becomes Admin', async () => {
+      usersService.findMyCapabilities.mockResolvedValue({
+        athlete: false,
+        trainer: false,
+        admin: true,
+      });
+
+      await expect(service.create(athlete, input)).rejects.toThrow(ForbiddenException);
+      expect(repository.create).not.toHaveBeenCalled();
+    });
+
+    it('denies stale Admin global writes after privilege revocation', async () => {
+      usersService.findMyCapabilities.mockResolvedValue({
+        athlete: true,
+        trainer: false,
+        admin: false,
+      });
+
+      await expect(service.create(admin, input)).rejects.toThrow(ForbiddenException);
+      expect(repository.create).not.toHaveBeenCalled();
+    });
+
+    it('fails closed when the persisted account cannot be verified', async () => {
+      usersService.findMyCapabilities.mockRejectedValue(new Error('Database unavailable'));
+
+      await expect(service.create(trainer, input)).rejects.toThrow('Database unavailable');
+      expect(repository.create).not.toHaveBeenCalled();
     });
 
     it('should reject visibility for trainer exercises', async () => {
