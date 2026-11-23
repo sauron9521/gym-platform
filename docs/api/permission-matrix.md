@@ -109,10 +109,14 @@ to a program draft now takes a transactional User row lock plus an optional
 TrainerProfile row lock, then reuses the canonical persisted Trainer
 capability policy before its nested write. A PostgreSQL regression exercises
 a stale positive preflight while a revocation transaction holds the rows;
-the write must fail after the revocation commits. Other write paths, including
-direct exercise creation, program set/workout edits and publication, still
-need concurrency review, alongside cross-account fuzzing and further
-resource-policy audit under
+the write must fail after the revocation commits. Direct exercise creation
+now similarly re-evaluates the canonical source/visibility policy under
+transactional User/Profile locks, disallowing stale Trainer and Admin writes
+and rejecting an implicit source change after revocation. The PostgreSQL
+regression covers a stale approval while a revocation transaction holds the
+account row. Other write paths, including program set/workout edits,
+publication, exercise updates/archives, and cross-account fuzzing still
+need review under
 [#288](https://github.com/sauron9521/gym-platform/issues/288).
 [#361](https://github.com/sauron9521/gym-platform/issues/361) is already closed;
 do not reopen or duplicate its completed cross-product matrix.
