@@ -19,6 +19,21 @@ const access: ExerciseAccessContext = {
   activeAthleteIds: ['athlete-1'],
 };
 
+const liveTrainerGrant = (trainerId: string) => ({
+  trainerId,
+  revokedAt: null,
+  trainer: {
+    is: {
+      deletedAt: null,
+      role: { not: 'ADMIN' },
+      OR: [
+        { trainerProfile: { is: { isActive: true } } },
+        { role: 'TRAINER', trainerProfile: { is: null } },
+      ],
+    },
+  },
+});
+
 describe('exercise access policy', () => {
   it('restricts guests to global exercises', () => {
     expect(buildExerciseVisibilityWhere(null, access)).toEqual({ source: 'GLOBAL' });
@@ -33,7 +48,7 @@ describe('exercise access policy', () => {
           source: 'ATHLETE_CUSTOM',
           visibility: 'SELECTED_TRAINERS',
           createdById: { in: ['athlete-1'] },
-          trainerAccesses: { some: { trainerId: athlete.id, revokedAt: null } },
+          trainerAccesses: { some: liveTrainerGrant(athlete.id) },
           createdBy: {
             is: {
               athleteRelationships: {
@@ -86,12 +101,13 @@ describe('exercise access policy', () => {
     expect(buildExerciseVisibilityWhere(trainer, access)).toEqual({
       OR: [
         { source: 'GLOBAL' },
+        { source: 'ATHLETE_CUSTOM', createdById: trainer.id },
         { source: 'TRAINER_CUSTOM', createdById: trainer.id },
         {
           source: 'ATHLETE_CUSTOM',
           visibility: 'SELECTED_TRAINERS',
           createdById: { in: ['athlete-1'] },
-          trainerAccesses: { some: { trainerId: trainer.id, revokedAt: null } },
+          trainerAccesses: { some: liveTrainerGrant(trainer.id) },
           createdBy: {
             is: {
               athleteRelationships: {
@@ -132,7 +148,7 @@ describe('exercise access policy', () => {
         OR: expect.arrayContaining([
           expect.objectContaining({
             createdById: { in: ['former-athlete'] },
-            trainerAccesses: { some: { trainerId: trainer.id, revokedAt: null } },
+            trainerAccesses: { some: liveTrainerGrant(trainer.id) },
             createdBy: {
               is: {
                 athleteRelationships: {
@@ -144,6 +160,25 @@ describe('exercise access policy', () => {
         ]),
       }),
     );
+  });
+
+  it('retains self-owned athlete exercises for a TRAINER without exposing others', () => {
+    const revoked = buildExerciseVisibilityWhere(trainer, {
+      activeTrainerIds: [],
+      activeAthleteIds: [],
+    });
+    expect(revoked).toEqual({
+      OR: [
+        { source: 'GLOBAL' },
+        { source: 'ATHLETE_CUSTOM', createdById: trainer.id },
+        { source: 'TRAINER_CUSTOM', createdById: trainer.id },
+        expect.objectContaining({
+          source: 'ATHLETE_CUSTOM',
+          createdById: { in: [] },
+          trainerAccesses: { some: liveTrainerGrant(trainer.id) },
+        }),
+      ],
+    });
   });
 
   it('limits Admin catalog reads to global exercises, never private user content', () => {
