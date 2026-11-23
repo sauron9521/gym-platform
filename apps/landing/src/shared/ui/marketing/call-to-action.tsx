@@ -63,7 +63,7 @@ export function CallToAction({
                 asChild
                 size="touch"
                 variant="secondary"
-                className="landing-cta-action group/action min-w-0 justify-between gap-4 rounded-xl px-6 font-bold shadow-sm sm:flex-1 lg:flex-none"
+                className="landing-cta-action group/action h-auto min-h-11 min-w-0 justify-between gap-4 rounded-xl whitespace-normal break-words py-3 text-left leading-5 px-6 font-bold shadow-sm sm:flex-1 lg:flex-none"
               >
                 <TrackedLink eventName="landing_primary_cta" href={primary.href}>
                   {primary.label}
@@ -81,7 +81,7 @@ export function CallToAction({
                   asChild
                   size="touch"
                   variant="outline"
-                  className="landing-cta-action group/action min-w-0 justify-between gap-4 rounded-xl border-primary-foreground/40 bg-transparent px-6 font-bold text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground sm:flex-1 lg:flex-none"
+                  className="landing-cta-action group/action h-auto min-h-11 min-w-0 justify-between gap-4 rounded-xl whitespace-normal break-words py-3 text-left leading-5 border-primary-foreground/40 bg-transparent px-6 font-bold text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground sm:flex-1 lg:flex-none"
                 >
                   <TrackedLink eventName="landing_secondary_cta" href={secondary.href}>
                     {secondary.label}
