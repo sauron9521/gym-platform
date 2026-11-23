@@ -190,7 +190,7 @@ jobs:
           test "$(docker inspect --format '{{.State.Running}}' "$STAGING_API")" = false
           docker start "$STAGING_API" >/dev/null
           healthy=0
-          for attempt in $(seq 1 50); do
+          for _ in $(seq 1 50); do
             status="$(docker inspect --format '{{.State.Health.Status}}' "$STAGING_API" 2>/dev/null || true)"
             if [ "$status" = healthy ]; then healthy=1; break; fi
             test "$(docker inspect --format '{{.State.Running}}' "$STAGING_API" 2>/dev/null || true)" = true || break
