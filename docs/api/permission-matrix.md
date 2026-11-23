@@ -1,8 +1,9 @@
 # API permission matrix: current implementation (#288)
 
 This is a **source-backed inventory** of selected HTTP permissions as
-reviewed on 2026-11-23, including the Admin catalog boundary in PR #633 and
-the live Trainer grant check in this PR. It is **not** a completed authorization
+reviewed on 2026-11-23, including the Admin catalog boundary in PR #633,
+the live Trainer grant check in PR #634 and persisted-capability enforcement
+of exercise creation in this PR. This is **not** a completed authorization
 audit or a new permission engine. Source code and server-side policy checks
 remain authoritative.
 
@@ -35,7 +36,7 @@ administrative permissions; it does not create a separate automatic
 | `GET/POST/PATCH /workouts*`       | Athlete capability + own `athleteId`       | Workout service + repository     |
 | `GET /exercises*`                 | Guest: global; account: owner/share policy | Exercise visibility SQL          |
 | `GET /exercises/:id`              | Same visibility predicate as list          | Exercise `findById`              |
-| `POST /exercises`                 | Role-selected global/custom source         | Exercise source policy           |
+| `POST /exercises`                 | Live capability + legacy default scope     | Exercise source policy           |
 | `PATCH/DELETE /exercises/:id`     | Own custom or Admin-managed global only    | Management SQL + policy          |
 | `/exercises/:id/trainer-access*`  | Explicit owner-controlled Trainer grant    | Trainer access service           |
 | `/trainer-athletes*`              | Current participant + relation ownership   | Relationship service + SQL       |
@@ -75,10 +76,15 @@ and [Program access](../../apps/api/src/modules/training-programs/services/train
    TrainerProfile (or a legacy `TRAINER` without a profile), all checked in the
    SQL read predicate. This protects against a revoked profile after the initial
    capability lookup. A legacy `TRAINER` also retains access to its own private
-   `ATHLETE_CUSTOM` exercises. **Remaining risk:** exercise creation and
-   source selection still branch on legacy `User.role`, not an explicit
-   Athlete/Trainer creation purpose. Handle separately under #288 without
-   regressing the completed cross-product matrix [#361](https://github.com/sauron9521/gym-platform/issues/361).
+   `ATHLETE_CUSTOM` exercises. **Creation is now capability-checked** against
+   the current account: `ADMIN` needs Admin capability for `GLOBAL`,
+   `TRAINER` needs active Trainer capability for `TRAINER_CUSTOM`, and
+   revoked legacy trainers fall back to `ATHLETE_CUSTOM`. The legacy role
+   remains **only a default source preference**, not an authorization grant.
+   Approved `ATHLETE`-role trainers still create personal exercises by
+   default. A separate, explicit Athlete/Trainer creation-purpose contract
+   is future work under #288; do not silently switch their existing default.
+   See the completed cross-product matrix [#361](https://github.com/sauron9521/gym-platform/issues/361).
 5. **Admin session isolation.** The privileged Admin directory and Trainer
    review routes require an admin-purpose cookie and server-side permission,
    not merely a regular bearer token. Basic `ADMIN` does not imply
@@ -86,12 +92,13 @@ and [Program access](../../apps/api/src/modules/training-programs/services/train
 
 ## Verification and remaining acceptance
 
-This PR adds SQL-time Trainer eligibility and dual-role private ownership
-checks without changing sessions, Admin moderation, Prisma schema, HTTP routes,
-or response shapes. The Exercise HTTP/PostgreSQL integration regression
-simulates revocation **after** a grant and while the relationship stays active.
-Further object-authorization audit, role-based source-creation migration,
-cross-account fuzzing and concurrency tests remain under
+This PR protects exercise creation against stale Trainer/Admin role claims
+using the persisted account capability snapshot, while preserving existing
+request shapes and legacy defaults. It includes a PostgreSQL HTTP regression
+for trainer approval revocation. The prior SQL-time trainer read eligibility
+is retained. Privilege transitions between capability lookup and database
+INSERT are a remaining concurrency hardening task, along with explicit
+creation purpose, cross-account fuzzing and further resource-policy audit under
 [#288](https://github.com/sauron9521/gym-platform/issues/288).
 [#361](https://github.com/sauron9521/gym-platform/issues/361) is already closed;
 do not reopen or duplicate its completed cross-product matrix.
