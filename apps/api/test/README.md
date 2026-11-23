@@ -18,8 +18,10 @@ Vitest discovers nested `test/**/*.e2e-spec.ts`; `fileParallelism: false` preser
 application starts, it resolves representative providers with
 `app.select(OwnerModule).get(Provider, { strict: true })` in all nine feature
 module scopes, and checks the Prisma, rate-limit storage and audit
-infrastructure modules. Global `ConfigService` resolution is checked
-without reading or logging configuration secrets.
+infrastructure modules. Because Prisma 7 exposes a proxied client,
+`PrismaService` is checked by its scoped/global singleton identity and
+`$transaction` method rather than `instanceof`. Global `ConfigService`
+resolution is checked without reading or logging configuration secrets.
 
 The test adds no second application instance, mocks or database writes.
 It complements the AST architecture checks, but it is a smoke test rather
