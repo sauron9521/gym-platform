@@ -1,6 +1,7 @@
 import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 
 import type { ExerciseSource, ExerciseVisibility, Prisma } from '#prisma/client';
+import type { AccountCapabilities } from '#src/modules/users/policies/account-capabilities.policy';
 import type { ExerciseAccessContext, ExerciseActor } from '../types/exercise.types.js';
 
 /** Centralizes all exercise read and write visibility rules. */
@@ -71,20 +72,32 @@ export function buildExerciseVisibilityWhere(
   throw new ForbiddenException();
 }
 
-export function resolveExerciseSource(actor: ExerciseActor): ExerciseSource {
-  switch (actor.role) {
-    case 'ADMIN':
-      return 'GLOBAL';
-
-    case 'TRAINER':
-      return 'TRAINER_CUSTOM';
-
-    case 'ATHLETE':
-      return 'ATHLETE_CUSTOM';
-
-    default:
-      throw new ForbiddenException('You cannot create exercises');
+/**
+ * Source selection is backward-compatible for clients without a creation scope:
+ * legacy TRAINER defaults to trainer exercises, ATHLETE to personal exercises.
+ * The session role is only a default preference; CURRENT persisted capabilities
+ * are authoritative for authorization. A revoked Trainer retains Athlete use.
+ */
+export function resolveExerciseSource(
+  actor: ExerciseActor,
+  capabilities: AccountCapabilities,
+): ExerciseSource {
+  if (actor.role === 'ADMIN') {
+    if (!capabilities.admin) {
+      throw new ForbiddenException('You cannot create global exercises');
+    }
+    return 'GLOBAL';
   }
+
+  // Neither a stale Athlete/Trainer session nor an Admin account can claim
+  // personal data privileges that the persisted account does not grant.
+  if (!capabilities.athlete || capabilities.admin) {
+    throw new ForbiddenException('Only athletes can create personal exercises');
+  }
+
+  return actor.role === 'TRAINER' && capabilities.trainer
+    ? 'TRAINER_CUSTOM'
+    : 'ATHLETE_CUSTOM';
 }
 
 export function resolveExerciseVisibility(
