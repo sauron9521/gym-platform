@@ -1,7 +1,6 @@
 import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 
 import type { ExerciseSource, ExerciseVisibility, Prisma } from '#prisma/client';
-import type { AccountCapabilities } from '#src/modules/users/policies/account-capabilities.policy';
 import type { ExerciseAccessContext, ExerciseActor } from '../types/exercise.types.js';
 
 /** Centralizes all exercise read and write visibility rules. */
@@ -78,9 +77,15 @@ export function buildExerciseVisibilityWhere(
  * The session role is only a default preference; CURRENT persisted capabilities
  * are authoritative for authorization. A revoked Trainer retains Athlete use.
  */
+type ExerciseCreationCapabilities = {
+  athlete: boolean;
+  trainer: boolean;
+  admin: boolean;
+};
+
 export function resolveExerciseSource(
   actor: ExerciseActor,
-  capabilities: AccountCapabilities,
+  capabilities: ExerciseCreationCapabilities,
 ): ExerciseSource {
   if (actor.role === 'ADMIN') {
     if (!capabilities.admin) {
