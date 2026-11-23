@@ -65,6 +65,20 @@ export function paginatedSchema(items: ResponseSchema): ResponseSchema {
   });
 }
 
+const accountDeletionReceiptSchema = objectSchema({
+  id: uuidSchema,
+  status: enumSchema(['REQUESTED']),
+  requestedAt: dateTimeSchema,
+});
+
+export const accountDeletionStatusResponseSchema = objectSchema({
+  request: nullable(accountDeletionReceiptSchema),
+});
+
+export const accountDeletionReceiptResponseSchema = objectSchema({
+  request: accountDeletionReceiptSchema,
+});
+
 /**
  * Registration always reports account creation. SUBMITTED means the mailer
  * accepted the send request, not that the message reached the inbox.

@@ -34,6 +34,7 @@ import { TrainerAthletesModule } from '#src/modules/trainer-athletes/trainer-ath
 import { TrainerOnboardingModule } from '#src/modules/trainer-onboarding/trainer-onboarding.module';
 import { TrainingProgramsModule } from '#src/modules/training-programs/training-programs.module';
 import { UsersModule } from '#src/modules/users/users.module';
+import { AccountDeletionRequestsModule } from '#src/modules/account-deletion-requests/account-deletion-requests.module';
 import { WorkoutsModule } from '#src/modules/workouts/workouts.module';
 import { WorkoutAnalyticsModule } from '#src/modules/workout-analytics/workout-analytics.module';
 
@@ -95,6 +96,7 @@ import { WorkoutAnalyticsModule } from '#src/modules/workout-analytics/workout-a
     }),
     ScheduleModule.forRoot(),
     UsersModule,
+    AccountDeletionRequestsModule,
     ExercisesModule,
     WorkoutsModule,
     WorkoutAnalyticsModule,

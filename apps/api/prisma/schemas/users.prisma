@@ -35,6 +35,7 @@ model User {
   refreshTokens        RefreshToken[]
   refreshTokenFamilies RefreshTokenFamily[]
   emailTokens          EmailToken[]
+  accountDeletionRequest AccountDeletionRequest?
 
   // Exercises
   createdExercises            Exercise[]                  @relation("ExerciseCreator")
@@ -60,4 +61,14 @@ model User {
   endedProgramAssignments    TrainingProgramAssignment[] @relation("ProgramAssignmentEndedBy")
 
   @@map("users")
+}
+
+model AccountDeletionRequest {
+  id          String   @id @default(uuid(4))
+  userId      String   @unique @map("user_id")
+  requestedAt DateTime @default(now()) @map("requested_at") @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("account_deletion_requests")
 }
