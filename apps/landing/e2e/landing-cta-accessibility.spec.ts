@@ -4,9 +4,8 @@ for (const { width, theme } of [
   { width: 320, theme: 'light' },
   { width: 1280, theme: 'dark' },
 ] as const) {
-  test('Landing CTA stays keyboard reachable and touch-sized at ' + width + 'px', async ({
-    page,
-  }) => {
+  const label = width + 'px / ' + theme;
+  test('Landing CTA keyboard and touch: ' + label, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
     await page.goto('/');
     await page.getByRole('combobox', { name: 'Тема інтерфейсу' }).selectOption(theme);
@@ -33,9 +32,7 @@ for (const { width, theme } of [
     await expect(page.getByRole('main').getByText('Статус: у розробці')).toBeVisible();
   });
 
-  test('Landing footer has visible keyboard focus and touch-sized links at ' + width + 'px', async ({
-    page,
-  }) => {
+  test('Landing footer focus and touch: ' + label, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
     await page.goto('/');
     await page.getByRole('combobox', { name: 'Тема інтерфейсу' }).selectOption(theme);
