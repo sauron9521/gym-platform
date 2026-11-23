@@ -264,16 +264,14 @@ describe('ExercisesService', () => {
         admin: false,
       });
 
-      await expect(
-        service.create(trainer, { ...input, creationScope: 'TRAINER' }),
-      ).rejects.toThrow(ForbiddenException);
+      const requested: CreateExerciseInput = { ...input, creationScope: 'TRAINER' };
+      await expect(service.create(trainer, requested)).rejects.toThrow(ForbiddenException);
       expect(repository.create).not.toHaveBeenCalled();
     });
 
     it('does not accept personal scope on an Admin account', async () => {
-      await expect(
-        service.create(admin, { ...input, creationScope: 'ATHLETE' }),
-      ).rejects.toThrow(ForbiddenException);
+      const requested: CreateExerciseInput = { ...input, creationScope: 'ATHLETE' };
+      await expect(service.create(admin, requested)).rejects.toThrow(ForbiddenException);
       expect(repository.create).not.toHaveBeenCalled();
     });
 
