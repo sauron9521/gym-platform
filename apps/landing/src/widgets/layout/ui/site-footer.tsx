@@ -26,7 +26,7 @@ export function SiteFooter({ locale = defaultLocale }: { locale?: Locale } = {})
             {main.map(({ label, href }) => (
               <li key={href}>
                 <Link
-                  className="text-sm text-muted-foreground transition-colors hover:text-primary"
+                  className="inline-flex min-h-11 items-center rounded-sm text-sm text-muted-foreground transition-colors hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"
                   href={href}
                 >
                   {label}
@@ -40,7 +40,7 @@ export function SiteFooter({ locale = defaultLocale }: { locale?: Locale } = {})
           <ul className="mt-4 space-y-3">
             <li>
               <Link
-                className="text-sm text-muted-foreground transition-colors hover:text-primary"
+                className="inline-flex min-h-11 items-center rounded-sm text-sm text-muted-foreground transition-colors hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"
                 href="/apps"
               >
                 {productDirectoryLabel}
@@ -49,7 +49,7 @@ export function SiteFooter({ locale = defaultLocale }: { locale?: Locale } = {})
             {applications.map(({ label, href }) => (
               <li key={href}>
                 <Link
-                  className="text-sm text-muted-foreground transition-colors hover:text-primary"
+                  className="inline-flex min-h-11 items-center rounded-sm text-sm text-muted-foreground transition-colors hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"
                   href={href}
                 >
                   {label}
