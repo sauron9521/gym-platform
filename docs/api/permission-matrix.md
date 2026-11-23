@@ -7,14 +7,14 @@ Source code and server-side policy checks remain authoritative.
 
 ## Principal and object rules
 
-| Actor | Current account capability | Authorized object scope |
-| --- | --- | --- |
-| Guest | None | Public exercise catalog and taxonomy |
-| Athlete | `athlete` | Own workouts, exercises and relationships |
-| Approved trainer | `athlete` + `trainer` | Own athlete history; own programs and active clients |
-| Revoked trainer | `athlete`, no `trainer` | Own history; limited relationship cleanup |
-| Admin | `admin`, not `athlete` | Explicit admin operations; global exercise catalog |
-| Allowlisted operator | Admin + scoped admin permission | Admin-purpose session and audited privileged route |
+| Actor                | Current account capability      | Authorized object scope                              |
+| -------------------- | ------------------------------- | ---------------------------------------------------- |
+| Guest                | None                            | Public exercise catalog and taxonomy                 |
+| Athlete              | `athlete`                       | Own workouts, exercises and relationships            |
+| Approved trainer     | `athlete` + `trainer`           | Own athlete history; own programs and active clients |
+| Revoked trainer      | `athlete`, no `trainer`         | Own history; limited relationship cleanup            |
+| Admin                | `admin`, not `athlete`          | Explicit admin operations; global exercise catalog   |
+| Allowlisted operator | Admin + scoped admin permission | Admin-purpose session and audited privileged route   |
 
 Capabilities are derived from the **current persisted account**, not a JWT role
 claim: [account policy](../../apps/api/src/modules/users/policies/account-capabilities.policy.ts).
@@ -27,22 +27,22 @@ administrative permissions; it does not create a separate automatic
 
 ## Endpoint x capability x ownership
 
-| Method / route group | Permission / object predicate | Enforcement |
-| --- | --- | --- |
-| `GET/PATCH /users/me*` | Own authenticated account | Users service + account ID |
-| `GET /users/me/capabilities` | Own current capability snapshot | Users service |
-| `GET/POST/PATCH /workouts*` | Athlete capability + own `athleteId` | Workout service + repository |
-| `GET /exercises*` | Guest: global; account: owner/share policy | Exercise visibility SQL |
-| `GET /exercises/:id` | Same visibility predicate as list | Exercise `findById` |
-| `POST /exercises` | Role-selected global/custom source | Exercise source policy |
-| `PATCH/DELETE /exercises/:id` | Own custom or Admin-managed global only | Management SQL + policy |
-| `/exercises/:id/trainer-access*` | Explicit owner-controlled Trainer grant | Trainer access service |
-| `/trainer-athletes*` | Current participant + relation ownership | Relationship service + SQL |
-| `GET /trainer-dashboard*` | Current trainer + active client scope | Dashboard service |
-| `/training-programs/:programId*` | Active trainer + owned program | Program access service |
-| `/training-programs/assignments*` | Athlete self or authorized trainer side | Assignment read/write policy |
-| `GET /admin/users*` | Admin-purpose cookie + `accounts.read` | Origin/purpose/permission guards |
-| `/admin/trainer-applications*` | Admin-purpose cookie + `accounts.manage` | Origin/purpose + service policy |
+| Method / route group              | Permission / object predicate              | Enforcement                      |
+| --------------------------------- | ------------------------------------------ | -------------------------------- |
+| `GET/PATCH /users/me*`            | Own authenticated account                  | Users service + account ID       |
+| `GET /users/me/capabilities`      | Own current capability snapshot            | Users service                    |
+| `GET/POST/PATCH /workouts*`       | Athlete capability + own `athleteId`       | Workout service + repository     |
+| `GET /exercises*`                 | Guest: global; account: owner/share policy | Exercise visibility SQL          |
+| `GET /exercises/:id`              | Same visibility predicate as list          | Exercise `findById`              |
+| `POST /exercises`                 | Role-selected global/custom source         | Exercise source policy           |
+| `PATCH/DELETE /exercises/:id`     | Own custom or Admin-managed global only    | Management SQL + policy          |
+| `/exercises/:id/trainer-access*`  | Explicit owner-controlled Trainer grant    | Trainer access service           |
+| `/trainer-athletes*`              | Current participant + relation ownership   | Relationship service + SQL       |
+| `GET /trainer-dashboard*`         | Current trainer + active client scope      | Dashboard service                |
+| `/training-programs/:programId*`  | Active trainer + owned program             | Program access service           |
+| `/training-programs/assignments*` | Athlete self or authorized trainer side    | Assignment read/write policy     |
+| `GET /admin/users*`               | Admin-purpose cookie + `accounts.read`     | Origin/purpose/permission guards |
+| `/admin/trainer-applications*`    | Admin-purpose cookie + `accounts.manage`   | Origin/purpose + service policy  |
 
 The table groups related routes; each mutation still has its own state and
 ownership requirements. For example: program draft mutation requires a **DRAFT**
