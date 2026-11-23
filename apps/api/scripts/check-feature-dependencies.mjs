@@ -8,14 +8,6 @@ import { parseModuleImports } from './import-parser.mjs';
 // use a module/service/type API rather than reaching into private internals.
 const APPROVED_INTERNAL_IMPORTS = new Map([
   ['users/repositories/users.repository', new Set(['auth', 'trainer-athletes'])],
-  // Transactional Trainer–Athlete creation must apply the exact Users capability policy
-  // while holding the participant/Profile row locks in the same Prisma transaction.
-  // Training-program assignment writes must reuse the same canonical policy
-  // under PostgreSQL user/profile locks; avoid a divergent role predicate.
-  [
-    'users/policies/account-capabilities.policy',
-    new Set(['trainer-athletes', 'training-programs']),
-  ],
   ['exercises/policies/exercise-access.policy', new Set(['workouts'])],
   ['exercises/selects/exercise.select', new Set(['workouts'])],
   ['workouts/policies/workout-access.policy', new Set(['workout-analytics'])],
@@ -172,10 +164,13 @@ export function checkFeatureDependencies(repositoryRoot) {
           const isModule = targetPath === targetFeature + '.module';
           const isServiceOrType =
             targetPath.startsWith('services/') || targetPath.startsWith('types/');
+          // A module may expose an explicit stable root contract while its
+          // repositories, policies, selects and internal files stay private.
+          const isPublicContract = targetPath === 'public-api';
           const approved = APPROVED_INTERNAL_IMPORTS.get(targetFeature + '/' + targetPath)?.has(
             name,
           );
-          if (!isModule && !isServiceOrType && !approved) {
+          if (!isModule && !isServiceOrType && !isPublicContract && !approved) {
             errors.push(
               display +
                 ": private cross-feature import '" +
