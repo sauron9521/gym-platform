@@ -162,8 +162,11 @@ export class ExercisesService {
 
   // FIND EXERCISE AVAILABLE FOR TRAINING PROGRAM
   async findAvailableForTrainingProgram(id: string, actor: ExerciseActor) {
-    if (actor.role !== 'TRAINER') {
-      throw new ForbiddenException('Only trainers can use exercises in training programs');
+    // Program editing already checks current Trainer capability, but keep
+    // this library boundary independently fail-closed for direct callers.
+    // Approved trainers may still have the legacy ATHLETE role.
+    if (!(await this.usersService.hasTrainerCapability(actor.id))) {
+      throw new ForbiddenException('Only active trainers can use exercises in training programs');
     }
 
     const exercise = await this.exercisesRepository.findById(id, {
