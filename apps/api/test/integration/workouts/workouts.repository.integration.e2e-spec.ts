@@ -957,7 +957,7 @@ describe('WorkoutsRepository.createFromProgram integration (e2e)', () => {
         expect(locked).toBeDefined();
 
         // B's validation must wait for the shared relationship lock.
-        creationPromise = repository.create(workoutData, fixture.athleteId, [source.id]).then(
+        creationPromise = repository.create(workoutData, fixture.athleteId, [source.id], async () => {}).then(
           () => 'CREATED' as const,
           (error: unknown) =>
             error instanceof BadRequestException ? ('DENIED' as const) : ('OTHER' as const),
@@ -1572,6 +1572,7 @@ describe('WorkoutsRepository.createFromProgram integration (e2e)', () => {
         ),
         fixture.athleteId,
         [fixture.exerciseId],
+        async () => {},
       ),
     ).rejects.toBeInstanceOf(BadRequestException);
 
@@ -1742,6 +1743,7 @@ describe('WorkoutsRepository.createFromProgram integration (e2e)', () => {
       ),
       fixture.athleteId,
       [fixture.exerciseId],
+      async () => {},
     );
     expect(created.status).toBe('PLANNED');
 
