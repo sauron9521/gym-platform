@@ -23,6 +23,8 @@ import { TrainerApplicationsService } from '../../../src/modules/trainer-onboard
 import { TrainingProgramsModule } from '../../../src/modules/training-programs/training-programs.module.js';
 import { TrainingProgramsService } from '../../../src/modules/training-programs/services/training-programs.service.js';
 import { UsersModule } from '../../../src/modules/users/users.module.js';
+import { AccountDeletionRequestsModule } from '../../../src/modules/account-deletion-requests/account-deletion-requests.module.js';
+import { AccountDeletionRequestsService } from '../../../src/modules/account-deletion-requests/services/account-deletion-requests.service.js';
 import { UsersAuthFacade } from '../../../src/modules/users/services/users-auth.facade.js';
 import { UsersService } from '../../../src/modules/users/services/users.service.js';
 import { WorkoutAnalyticsModule } from '../../../src/modules/workout-analytics/workout-analytics.module.js';
@@ -52,13 +54,14 @@ describe('App (e2e)', () => {
     expect(app.getHttpServer()).toBeDefined();
   });
 
-  it('resolves real providers in all nine feature module scopes', () => {
+  it('resolves real providers in feature module scopes', () => {
     // Select each declaring module, not the application-wide provider lookup.
     // This catches accidentally removed or moved Nest registrations.
     const scopes = [
       [AuthModule, CredentialsService],
       [UsersModule, UsersService],
       [UsersModule, UsersAuthFacade],
+      [AccountDeletionRequestsModule, AccountDeletionRequestsService],
       [ExercisesModule, ExercisesService],
       [WorkoutsModule, WorkoutsService],
       [WorkoutAnalyticsModule, WorkoutAnalyticsService],
