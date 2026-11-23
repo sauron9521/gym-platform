@@ -57,10 +57,18 @@ export class ExercisesRepository {
     });
   }
 
-  async create(data: Prisma.ExerciseCreateInput) {
-    return this.prisma.exercise.create({
-      data,
-      select: exerciseSelect,
+  async create(
+    data: Prisma.ExerciseCreateInput,
+    authorize: (tx: Prisma.TransactionClient) => Promise<void>,
+  ) {
+    return this.prisma.$transaction(async (tx) => {
+      // Re-check and hold current account privilege locks until this INSERT
+      // commits. The service supplies policy and this repository owns the tx.
+      await authorize(tx);
+      return tx.exercise.create({
+        data,
+        select: exerciseSelect,
+      });
     });
   }
 
