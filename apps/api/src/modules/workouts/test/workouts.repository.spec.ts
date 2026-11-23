@@ -443,6 +443,10 @@ describe('WorkoutsRepository', () => {
   });
 
   describe('update', () => {
+    beforeEach(() => {
+      prisma.$transaction.mockImplementation(async (callback) => callback(prisma));
+    });
+
     it('should update a workout using ownership conditions', async () => {
       const where = {
         id: 'workout-1',
@@ -461,7 +465,9 @@ describe('WorkoutsRepository', () => {
 
       prisma.workout.update.mockResolvedValue(workout);
 
-      const result = await repository.update(where, data);
+      const authorize = vi.fn().mockResolvedValue(undefined);
+      const result = await repository.update(where, data, authorize);
+      expect(authorize).toHaveBeenCalledExactlyOnceWith(prisma);
 
       expect(prisma.workout.update).toHaveBeenCalledWith({
         where,
@@ -478,8 +484,24 @@ describe('WorkoutsRepository', () => {
       prisma.workout.update.mockRejectedValue(error);
 
       await expect(
-        repository.update({ id: 'workout-1' }, { title: 'Updated workout' }),
+        repository.update({ id: 'workout-1' }, { title: 'Updated workout' }, async () => {}),
       ).rejects.toBe(error);
+    });
+  });
+
+  describe('update authorization', () => {
+    beforeEach(() => {
+      prisma.$transaction.mockImplementation(async (callback) => callback(prisma));
+    });
+
+    it('does not write if the locked permission callback denies', async () => {
+      const denied = new Error('Athlete capability revoked');
+      await expect(
+        repository.update({ id: 'workout-1' }, { title: 'Denied' }, async () => {
+          throw denied;
+        }),
+      ).rejects.toBe(denied);
+      expect(prisma.workout.update).not.toHaveBeenCalled();
     });
   });
 
