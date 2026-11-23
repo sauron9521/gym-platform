@@ -1,7 +1,7 @@
 import type { AuthenticationRegistry, JwtClaims, SessionRecord } from '@nestjs/authentication';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { UsersRepository } from '#src/modules/users/repositories/users.repository';
+import { UsersAuthFacade } from '#src/modules/users/services/users-auth.facade';
 import { JwtAuth } from '../providers/jwt-auth.provider.js';
 import { SessionAuth } from '../providers/session-auth.provider.js';
 
@@ -15,11 +15,11 @@ describe('auth provider registration and user resolution contracts', () => {
   beforeEach(() => {
     vi.resetAllMocks();
     session = new SessionAuth(
-      repository as unknown as UsersRepository,
+      repository as unknown as UsersAuthFacade,
       registry as unknown as AuthenticationRegistry,
     );
     jwt = new JwtAuth(
-      repository as unknown as UsersRepository,
+      repository as unknown as UsersAuthFacade,
       registry as unknown as AuthenticationRegistry,
     );
   });
@@ -49,7 +49,7 @@ describe('auth provider registration and user resolution contracts', () => {
     expect(repository.findUserById).not.toHaveBeenCalled();
   });
 
-  it('resolves JWT subjects using the public, soft-delete-aware UsersRepository', async () => {
+  it('resolves JWT subjects using the soft-delete-aware UsersAuthFacade', async () => {
     const user = { id: 'user-1', role: 'ATHLETE' };
     repository.findUserForJwtAuth.mockResolvedValueOnce(user);
 
