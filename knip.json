@@ -1,0 +1,14 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "workspaces": {
+    "apps/admin": {
+      "playwright": false,
+      "entry": [
+        "playwright.config.ts",
+        "playwright.real-api.config.ts",
+        "playwright.staging.config.mjs",
+        "e2e/**/*.spec.ts"
+      ]
+    }
+  }
+}

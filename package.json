@@ -27,10 +27,14 @@
     "perf:api:baseline": "node scripts/api-performance-baseline.mjs",
     "perf:api:compare": "node scripts/api-performance-compare.mjs",
     "perf:api:repeats": "node scripts/api-performance-repeats.mjs",
-    "test:tooling": "vitest run --config vitest.config.mts"
+    "test:tooling": "vitest run --config vitest.config.mts",
+    "knip": "knip",
+    "knip:report": "knip --no-exit-code --no-progress --reporter compact --max-show-issues 12",
+    "turbo:plan": "turbo run lint typecheck build --dry=json"
   },
   "devDependencies": {
     "husky": "^9.1.7",
+    "knip": "6.48.0",
     "lint-staged": "^17.6.1",
     "prettier": "^3.10.0",
     "turbo": "^2.11.11",
