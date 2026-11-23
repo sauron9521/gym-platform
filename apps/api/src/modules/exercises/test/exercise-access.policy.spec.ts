@@ -221,18 +221,10 @@ describe('exercise access policy', () => {
     expect(resolveExerciseSource(trainer, dual, 'ATHLETE')).toBe('ATHLETE_CUSTOM');
     expect(resolveExerciseSource(trainer, dual, 'TRAINER')).toBe('TRAINER_CUSTOM');
     expect(resolveExerciseSource(trainer, revoked, 'ATHLETE')).toBe('ATHLETE_CUSTOM');
-    expect(() => resolveExerciseSource(trainer, revoked, 'TRAINER')).toThrow(
-      ForbiddenException,
-    );
-    expect(() => resolveExerciseSource(athlete, revoked, 'TRAINER')).toThrow(
-      ForbiddenException,
-    );
-    expect(() => resolveExerciseSource(admin, onlyAdmin, 'ATHLETE')).toThrow(
-      ForbiddenException,
-    );
-    expect(() => resolveExerciseSource(admin, onlyAdmin, 'TRAINER')).toThrow(
-      ForbiddenException,
-    );
+    expect(() => resolveExerciseSource(trainer, revoked, 'TRAINER')).toThrow(ForbiddenException);
+    expect(() => resolveExerciseSource(athlete, revoked, 'TRAINER')).toThrow(ForbiddenException);
+    expect(() => resolveExerciseSource(admin, onlyAdmin, 'ATHLETE')).toThrow(ForbiddenException);
+    expect(() => resolveExerciseSource(admin, onlyAdmin, 'TRAINER')).toThrow(ForbiddenException);
     expect(resolveExerciseSource(admin, onlyAdmin)).toBe('GLOBAL');
   });
 
