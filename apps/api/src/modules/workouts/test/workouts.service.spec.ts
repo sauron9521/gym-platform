@@ -854,6 +854,7 @@ describe('WorkoutsService', () => {
 
       expect(repository.updateSet).toHaveBeenCalledOnce();
     });
+
     it('rejects a set write when Athlete was promoted to Admin after preflight', async () => {
       repository.findById.mockResolvedValue({ ...plannedWorkout, status: 'IN_PROGRESS' });
       repository.updateSet.mockResolvedValue({ id: 'set-1', status: 'COMPLETED' });
