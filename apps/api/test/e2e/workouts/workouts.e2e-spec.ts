@@ -2995,11 +2995,11 @@ describe('Workouts (HTTP + PostgreSQL)', () => {
         resumeUpdate = resolve;
       });
 
-      const spy = vi.spyOn(repository, 'updateSet').mockImplementation(async (id, data) => {
+      const spy = vi.spyOn(repository, 'updateSet').mockImplementation(async (id, data, context) => {
         notifyEntered();
         await allowed;
 
-        return originalUpdateSet(id, data);
+        return originalUpdateSet(id, data, context);
       });
 
       let pendingUpdate: Promise<unknown> | undefined;
