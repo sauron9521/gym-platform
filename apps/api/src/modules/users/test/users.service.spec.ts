@@ -7,6 +7,7 @@ describe('UsersService', () => {
   const repository = {
     findMe: vi.fn(),
     findCapabilitySnapshot: vi.fn(),
+    findCapabilitySnapshotForWrite: vi.fn(),
     upsertMyProfile: vi.fn(),
     updateMyPreferences: vi.fn(),
     replaceAvatar: vi.fn(),
@@ -61,6 +62,33 @@ describe('UsersService', () => {
   it('does not grant trainer access if the capability lookup fails', async () => {
     repository.findCapabilitySnapshot.mockRejectedValue(new Error('Database unavailable'));
     await expect(service.hasTrainerCapability('actor-1')).rejects.toThrow('Database unavailable');
+  });
+
+  it('uses persisted capability derivation under the caller transaction lock', async () => {
+    const tx = { id: 'write-tx' } as never;
+    repository.findCapabilitySnapshotForWrite
+      .mockResolvedValueOnce({ role: 'ATHLETE', trainerProfile: { isActive: true } })
+      .mockResolvedValueOnce({ role: 'TRAINER', trainerProfile: null })
+      .mockResolvedValueOnce({ role: 'TRAINER', trainerProfile: { isActive: false } })
+      .mockResolvedValueOnce({ role: 'ADMIN', trainerProfile: { isActive: true } })
+      .mockResolvedValueOnce(null);
+
+    await expect(service.assertTrainerCapabilityForWrite(tx, 'actor-1')).resolves.toBeUndefined();
+    await expect(service.assertTrainerCapabilityForWrite(tx, 'actor-1')).resolves.toBeUndefined();
+    for (let index = 0; index < 3; index++) {
+      await expect(service.assertTrainerCapabilityForWrite(tx, 'actor-1')).rejects.toThrow(
+        'Only active trainers',
+      );
+    }
+    expect(repository.findCapabilitySnapshotForWrite).toHaveBeenCalledTimes(5);
+    expect(repository.findCapabilitySnapshotForWrite).toHaveBeenCalledWith(tx, 'actor-1');
+  });
+
+  it('fails closed if the locked capability query itself fails', async () => {
+    repository.findCapabilitySnapshotForWrite.mockRejectedValue(new Error('Database unavailable'));
+    await expect(service.assertTrainerCapabilityForWrite({} as never, 'actor-1')).rejects.toThrow(
+      'Database unavailable',
+    );
   });
 
   it('returns a user without a profile as profile: null', async () => {
