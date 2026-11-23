@@ -67,9 +67,9 @@ describe('Workout command repository transaction boundaries', () => {
     const denied = new Error('Athlete capability revoked');
     authorize.mockRejectedValueOnce(denied);
 
-    await expect(
-      setsRepository.updateSet('set-1', { status: 'COMPLETED' }, context),
-    ).rejects.toBe(denied);
+    await expect(setsRepository.updateSet('set-1', { status: 'COMPLETED' }, context)).rejects.toBe(
+      denied,
+    );
     expect(tx.$queryRaw).not.toHaveBeenCalled();
     expect(tx.workoutSet.update).not.toHaveBeenCalled();
   });
