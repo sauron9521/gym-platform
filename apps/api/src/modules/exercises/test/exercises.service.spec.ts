@@ -15,6 +15,7 @@ describe('ExercisesService', () => {
 
   const usersService = {
     findMyCapabilities: vi.fn(),
+    hasTrainerCapability: vi.fn(),
   };
 
   const repository = {
@@ -94,6 +95,7 @@ describe('ExercisesService', () => {
       trainer: id === trainer.id,
       admin: id === admin.id,
     }));
+    usersService.hasTrainerCapability.mockImplementation(async (id: string) => id === trainer.id);
 
     service = new ExercisesService(
       repository as unknown as ExercisesRepository,
@@ -546,6 +548,51 @@ describe('ExercisesService', () => {
           },
         ],
       });
+    });
+
+    it('allows an approved ATHLETE-role trainer to use global exercises', async () => {
+      usersService.hasTrainerCapability.mockResolvedValue(true);
+      repository.findById.mockResolvedValue({ ...exercise, source: 'GLOBAL' });
+
+      await expect(service.findAvailableForTrainingProgram('exercise-1', athlete)).resolves.toEqual(
+        expect.objectContaining({ source: 'GLOBAL' }),
+      );
+      expect(usersService.hasTrainerCapability).toHaveBeenCalledExactlyOnceWith(athlete.id);
+      const scopedLookup = repository.findById.mock.calls[0]?.[1];
+      expect(scopedLookup?.isArchived).toBe(false);
+      expect(scopedLookup?.OR).toContainEqual({ source: 'GLOBAL' });
+      const ownedTrainer = { source: 'TRAINER_CUSTOM', createdById: athlete.id };
+      expect(scopedLookup?.OR).toContainEqual(ownedTrainer);
+    });
+
+    it('allows an approved ATHLETE-role trainer only their own trainer exercises', async () => {
+      usersService.hasTrainerCapability.mockResolvedValue(true);
+      repository.findById.mockResolvedValue({ ...exercise, source: 'TRAINER_CUSTOM' });
+
+      await service.findAvailableForTrainingProgram('exercise-1', athlete);
+
+      const scopedLookup = repository.findById.mock.calls[0]?.[1];
+      const ownedTrainer = { source: 'TRAINER_CUSTOM', createdById: athlete.id };
+      expect(scopedLookup?.OR).toContainEqual(ownedTrainer);
+    });
+
+    it('denies a revoked legacy TRAINER before reading even a global exercise', async () => {
+      usersService.hasTrainerCapability.mockResolvedValue(false);
+
+      await expect(service.findAvailableForTrainingProgram('exercise-1', trainer)).rejects.toThrow(
+        ForbiddenException,
+      );
+      expect(usersService.hasTrainerCapability).toHaveBeenCalledExactlyOnceWith(trainer.id);
+      expect(repository.findById).not.toHaveBeenCalled();
+    });
+
+    it('fails closed when persisted capability verification is unavailable', async () => {
+      usersService.hasTrainerCapability.mockRejectedValue(new Error('Database unavailable'));
+
+      await expect(service.findAvailableForTrainingProgram('exercise-1', trainer)).rejects.toThrow(
+        'Database unavailable',
+      );
+      expect(repository.findById).not.toHaveBeenCalled();
     });
 
     it('should allow trainer-owned custom exercises', async () => {

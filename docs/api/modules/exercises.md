@@ -34,9 +34,16 @@ remains server-controlled and cannot be supplied by the client.
   values (including `GLOBAL`) are rejected by the strict request schema.
 
 The API checks **current persisted capabilities**, never a frontend context or
-stale JWT role, before creating a record. A privilege change between lookup
-and INSERT remains a separate atomicity-hardening task under #288.
+stale JWT role, before creating a record. Training Program Builder also checks
+current Trainer capability before resolving a program's library exercise;
+approved `ATHLETE`-role trainers may select global and **self-owned**
+`TRAINER_CUSTOM` exercises only. Foreign Trainer exercises, personal
+`ATHLETE_CUSTOM` exercises and archived items remain unavailable to program
+drafts. Revocation blocks selection even for a former `TRAINER`-role user;
+program ownership and editable-draft checks remain separate requirements.
+A privilege change between capability lookup and the final write remains
+a separate atomicity-hardening task under #288.
 
-**Tests:** `test/e2e/exercises/exercises.e2e-spec.ts`, `test/integration/exercises/exercise-trainer-access.integration.e2e-spec.ts` and co-located module unit tests.
+**Tests:** `test/e2e/exercises/exercises.e2e-spec.ts`, `test/integration/exercises/exercise-trainer-access.integration.e2e-spec.ts`, `test/integration/exercises/exercise-program-library.integration.e2e-spec.ts` and co-located module unit tests.
 
 See [testing guide](../testing.md).
