@@ -20,14 +20,14 @@ for (const width of [320, 1280]) {
     ]) {
       await expect(main.getByRole('heading', { name: title, exact: true })).toBeVisible();
     }
-    await expect(main.getByText(/Функціонал доповнюється поступово/)).toBeVisible();
+    await expect(main.getByText(/Публічний запуск ще не оголошено/)).toBeVisible();
 
     const featuresLink = main.getByRole('link', { name: 'Можливості платформи', exact: true });
-    const webLink = main.getByRole('link', { name: 'Про вебзастосунок', exact: true });
-    const mobileLink = main.getByRole('link', { name: 'Про Mobile', exact: true });
+    const appsLink = main.getByRole('link', { name: 'Каталог продуктів', exact: true });
+    const overviewLink = main.getByRole('link', { name: 'Усі можливості', exact: true });
     await expect(featuresLink).toHaveAttribute('href', '/features');
-    await expect(webLink).toHaveAttribute('href', '/apps/web');
-    await expect(mobileLink).toHaveAttribute('href', '/apps/mobile');
+    await expect(appsLink).toHaveAttribute('href', '/apps');
+    await expect(overviewLink).toHaveAttribute('href', '/features');
     await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
       'href',
       'https://gym.example.test/for-trainers',
@@ -38,10 +38,10 @@ for (const width of [320, 1280]) {
   });
 }
 
-test('trainer CTA leads to existing web application overview', async ({ page }) => {
+test('trainer CTA leads to public product discovery', async ({ page }) => {
   await page.goto('/for-trainers');
   const main = page.getByRole('main');
-  await main.getByRole('link', { name: 'Про вебзастосунок', exact: true }).click();
-  await expect(page).toHaveURL(/\/apps\/web$/);
+  await main.getByRole('link', { name: 'Каталог продуктів', exact: true }).click();
+  await expect(page).toHaveURL(/\/apps$/);
   await expect(page.getByRole('main')).toBeVisible();
 });
