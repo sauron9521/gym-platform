@@ -9,6 +9,7 @@ import request from 'supertest';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import { AppModule } from '../../../src/app.module.js';
+import { buildExerciseVisibilityWhere } from '../../../src/modules/exercises/policies/exercise-access.policy.js';
 import { PrismaService } from '../../../src/infra/database/index.js';
 import { useTestDatabase } from '../../utility/test-db-helper.js';
 
@@ -289,6 +290,74 @@ describe('Exercise trainer access (HTTP + PostgreSQL)', () => {
     expect(
       (await request(server).get(`/exercises/${sharedId}`).set('Cookie', trainerCookie)).status,
     ).toBe(200);
+  });
+
+  it('rejects a stale trainer grant after revocation while retaining own Athlete exercises', async () => {
+    const server = app.getHttpServer();
+    const own = await prisma.exercise.create({
+      data: {
+        name: `${base}-trainer-own-private`,
+        source: 'ATHLETE_CUSTOM',
+        createdById: trainerId,
+        visibility: 'PRIVATE',
+      },
+      select: { id: true },
+    });
+
+    try {
+      // The same identity can be an ATHLETE and an approved Trainer.
+      await prisma.user.update({ where: { id: trainerId }, data: { role: 'ATHLETE' } });
+      await prisma.trainerProfile.create({
+        data: {
+          userId: trainerId,
+          isActive: true,
+          approvedAt: new Date(),
+          approvedById: ownerId,
+        },
+      });
+      const approvedCookie = await login(`${base}-trainer@example.test`);
+
+      const grant = await request(server)
+        .post(`/exercises/${sharedId}/trainer-access`)
+        .set('Cookie', ownerCookie)
+        .send({ trainerId });
+      expect(grant.status).toBe(200);
+      expect(
+        (await request(server).get(`/exercises/${sharedId}`).set('Cookie', approvedCookie)).status,
+      ).toBe(200);
+
+      // Simulate moderation between access-context lookup and the SQL read:
+      // the relationship and grant remain ACTIVE, but TrainerProfile is revoked.
+      const staleContext = { activeTrainerIds: [], activeAthleteIds: [ownerId] };
+      await prisma.trainerProfile.update({
+        where: { userId: trainerId },
+        data: { isActive: false, revokedAt: new Date(), revokedById: ownerId },
+      });
+      const staleWhere = buildExerciseVisibilityWhere(
+        { id: trainerId, role: 'ATHLETE' },
+        staleContext,
+      );
+      const leaked = await prisma.exercise.findFirst({
+        where: { AND: [{ id: sharedId }, staleWhere] },
+        select: { id: true },
+      });
+      expect(leaked).toBeNull();
+      expect(
+        (await request(server).get(`/exercises/${sharedId}`).set('Cookie', approvedCookie)).status,
+      ).toBe(404);
+      expect(
+        (await request(server).get(`/exercises/${own.id}`).set('Cookie', approvedCookie)).status,
+      ).toBe(200);
+      expect(
+        await prisma.exerciseTrainerAccess.count({
+          where: { exerciseId: sharedId, trainerId, revokedAt: null },
+        }),
+      ).toBe(1);
+    } finally {
+      await prisma.exercise.delete({ where: { id: own.id } });
+      await prisma.trainerProfile.deleteMany({ where: { userId: trainerId } });
+      await prisma.user.update({ where: { id: trainerId }, data: { role: 'TRAINER' } });
+    }
   });
 
   it('revokes all grants when visibility becomes PRIVATE', async () => {

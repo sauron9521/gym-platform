@@ -54,6 +54,10 @@ export function buildExerciseVisibilityWhere(
       OR: [
         { source: 'GLOBAL' },
 
+        // A legacy TRAINER identity is also an Athlete; preserve its own
+        // private exercises without requiring any trainer-side grant.
+        { source: 'ATHLETE_CUSTOM', createdById: actor.id },
+
         {
           source: 'TRAINER_CUSTOM',
           createdById: actor.id,
@@ -169,7 +173,22 @@ function sharedAthleteExerciseWhere(
     visibility: 'SELECTED_TRAINERS',
     createdById: { in: access.activeAthleteIds },
     trainerAccesses: {
-      some: { trainerId: actor.id, revokedAt: null },
+      some: {
+        trainerId: actor.id,
+        revokedAt: null,
+        // Re-check current TrainerProfile approval in this SAME SQL query.
+        // A cached activeAthleteIds list must never outlive moderation.
+        trainer: {
+          is: {
+            deletedAt: null,
+            role: { not: 'ADMIN' },
+            OR: [
+              { trainerProfile: { is: { isActive: true } } },
+              { role: 'TRAINER', trainerProfile: { is: null } },
+            ],
+          },
+        },
+      },
     },
     createdBy: {
       is: {
