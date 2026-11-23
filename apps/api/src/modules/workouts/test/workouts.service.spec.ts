@@ -854,10 +854,9 @@ describe('WorkoutsService', () => {
 
       expect(repository.updateSet).toHaveBeenCalledOnce();
     });
-  });
-
     it('rejects a set write when Athlete was promoted to Admin after preflight', async () => {
       repository.findById.mockResolvedValue({ ...plannedWorkout, status: 'IN_PROGRESS' });
+      repository.updateSet.mockResolvedValue({ id: 'set-1', status: 'COMPLETED' });
       await service.updateSet('workout-1', 'set-1', athlete, { status: 'COMPLETED' });
       const context = repository.updateSet.mock.calls[0]?.[2];
       usersService.findMyCapabilitiesForWrite.mockResolvedValue({
@@ -878,6 +877,7 @@ describe('WorkoutsService', () => {
         status: 'IN_PROGRESS',
         athleteId: trainer.id,
       });
+      repository.updateSet.mockResolvedValue({ id: 'set-1', status: 'COMPLETED' });
       await service.updateSet('workout-1', 'set-1', trainer, { status: 'COMPLETED' });
       const context = repository.updateSet.mock.calls[0]?.[2];
       usersService.findMyCapabilitiesForWrite.mockResolvedValue({
@@ -887,6 +887,7 @@ describe('WorkoutsService', () => {
       });
       await expect(context.authorize({})).resolves.toBeUndefined();
     });
+  });
 
   describe('complete', () => {
     it('should complete a workout when all sets are processed', async () => {
