@@ -15,14 +15,17 @@ complete Git history (`actions/checkout` with `fetch-depth: 0`).
 | `packages/ui-web/**`                                           | Web + Landing                        | No                          | If UI package manifest changed         |
 | `packages/design-tokens/**`                                    | Web + Landing + Mobile               | No                          | If token package manifest changed      |
 | `tooling/config/**`                                            | Web + Landing                        | No                          | No (config-only files)                 |
-| `apps/api/openapi/**`                                          | API + client + Web + Mobile          | Yes                         | No                                     |
+| `apps/api/openapi/**`                                          | API + all typed-client consumers     | Yes                         | No                                     |
 | `docs/**`, root `*.md`                                         | Prettier formatting + required gates | No                          | No                                     |
 | Known app/client `README.md`, `apps/api/test/README.md`        | Prettier formatting + required gates | No                          | No                                     |
 | `infra/**/*.md`                                                | Prettier formatting + required gates | No                          | No                                     |
 | Root lockfile, root config, CI, non-doc infra or unknown files | All workspaces                       | Yes                         | Yes                                    |
 
-For mixed PRs, all relevant workspaces run. Unknown paths, empty diffs, missing
-commits and cross-cutting files must never silently bypass API checks.
+For mixed PRs, all relevant workspaces run. An OpenAPI-only diff selects the API,
+shared client, Athlete Web/Mobile, Admin and Trainer; this also runs the existing
+Admin browser gate and Trainer workspace lint, typecheck, tests and build. Landing
+is not an OpenAPI consumer. Unknown paths, empty diffs, missing commits and
+cross-cutting files must never silently bypass API checks.
 
 Only **known documentation locations** are exempt: top-level `README.md` in
 `apps/api`, `apps/web`, `apps/landing`, `apps/mobile` and `packages/api-client`, the API test
