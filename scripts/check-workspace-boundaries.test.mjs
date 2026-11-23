@@ -46,7 +46,11 @@ test('reject direct workspace dependencies on another application', () => {
       join(web, 'package.json'),
       JSON.stringify({ name: '@gym/web', dependencies: { '@gym/api': 'workspace:*' } }),
     );
-    assert.ok(checkWorkspaceBoundaries(root).some((message) => message.includes('must not depend on app @gym/api')));
+    assert.ok(
+      checkWorkspaceBoundaries(root).some((message) =>
+        message.includes('must not depend on app @gym/api'),
+      ),
+    );
   });
 });
 
@@ -69,7 +73,9 @@ test('reject package-to-app relative imports', () => {
       "const source = import('../../../apps/web/src/index');\n",
     );
     assert.ok(
-      checkWorkspaceBoundaries(root).some((message) => message.includes('cross-workspace relative import')),
+      checkWorkspaceBoundaries(root).some((message) =>
+        message.includes('cross-workspace relative import'),
+      ),
     );
   });
 });
@@ -85,7 +91,9 @@ test('reject shared package dependency cycles', () => {
       JSON.stringify({ name: '@gym/domain', dependencies: { '@gym/api-client': 'workspace:*' } }),
     );
     assert.ok(
-      checkWorkspaceBoundaries(root).some((message) => message.includes('Shared package dependency cycle')),
+      checkWorkspaceBoundaries(root).some((message) =>
+        message.includes('Shared package dependency cycle'),
+      ),
     );
   });
 });
