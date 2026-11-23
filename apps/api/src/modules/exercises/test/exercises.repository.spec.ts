@@ -298,7 +298,6 @@ describe('ExercisesRepository', () => {
         ),
       ).rejects.toBe(error);
     });
-  });
 
     it('never writes an update after a failed locked authorization', async () => {
       const denied = new Error('Account no longer permitted');
@@ -309,6 +308,7 @@ describe('ExercisesRepository', () => {
       ).rejects.toBe(denied);
       expect(prisma.exercise.update).not.toHaveBeenCalled();
     });
+  });
 
   describe('archive', () => {
     it('should archive an exercise', async () => {
@@ -343,16 +343,16 @@ describe('ExercisesRepository', () => {
 
       expect(result).toEqual(archivedExercise);
     });
-  });
 
-  it('never archives after a failed locked authorization', async () => {
-    const denied = new Error('Account no longer permitted');
-    await expect(
-      repository.archive({ id: 'exercise-1' }, async () => {
-        throw denied;
-      }),
-    ).rejects.toBe(denied);
-    expect(prisma.exercise.update).not.toHaveBeenCalled();
+    it('never archives after a failed locked authorization', async () => {
+      const denied = new Error('Account no longer permitted');
+      await expect(
+        repository.archive({ id: 'exercise-1' }, async () => {
+          throw denied;
+        }),
+      ).rejects.toBe(denied);
+      expect(prisma.exercise.update).not.toHaveBeenCalled();
+    });
   });
 
   describe('public taxonomy', () => {
