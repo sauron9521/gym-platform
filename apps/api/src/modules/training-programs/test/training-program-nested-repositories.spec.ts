@@ -8,6 +8,7 @@ import {
 } from '../selects/training-program-query.select.js';
 
 describe('Training program nested command repositories', () => {
+  const usersService = { assertTrainerCapabilityForWrite: vi.fn() };
   const prisma = {
     $transaction: vi.fn(),
     trainingProgramVersion: { update: vi.fn(), findUnique: vi.fn() },
@@ -28,7 +29,7 @@ describe('Training program nested command repositories', () => {
   beforeEach(() => {
     vi.resetAllMocks();
     sets = new TrainingProgramSetRepository(prisma as never);
-    exercises = new TrainingProgramExerciseRepository(prisma as never);
+    exercises = new TrainingProgramExerciseRepository(prisma as never, usersService as never);
     workouts = new TrainingProgramWorkoutRepository(prisma as never);
     prisma.$transaction.mockImplementation(async (callback) => callback(prisma));
     prisma.trainingProgramVersion.update.mockResolvedValue(projection);
@@ -172,7 +173,7 @@ describe('Training program nested command repositories', () => {
   });
 
   it('creates a program exercise snapshot through the matching draft workout', async () => {
-    await exercises.createProgramExercise(programId, versionId, workoutId, {
+    await exercises.createProgramExercise(programId, versionId, workoutId, 'trainer-1', {
       exerciseId: 'library-1',
       exerciseNameSnapshot: 'Bench',
       exerciseTypeSnapshot: 'STRENGTH',
@@ -180,7 +181,11 @@ describe('Training program nested command repositories', () => {
       notes: null,
     });
     const command = prisma.trainingProgramVersion.update.mock.calls[0]?.[0];
-    expect(command.where).toEqual(draftWhere);
+    expect(usersService.assertTrainerCapabilityForWrite).toHaveBeenCalledExactlyOnceWith(
+      prisma,
+      'trainer-1',
+    );
+    expect(command.where).toEqual({ ...draftWhere, program: { trainerId: 'trainer-1' } });
     expect(command.data.workouts.update).toEqual({
       where: { id: workoutId },
       data: {
@@ -195,6 +200,21 @@ describe('Training program nested command repositories', () => {
         },
       },
     });
+  });
+
+  it('does not write when the transaction-locked Trainer check rejects', async () => {
+    usersService.assertTrainerCapabilityForWrite.mockRejectedValueOnce(new Error('REVOKED'));
+
+    await expect(
+      exercises.createProgramExercise(programId, versionId, workoutId, 'trainer-1', {
+        exerciseId: 'library-1',
+        exerciseNameSnapshot: 'Bench',
+        exerciseTypeSnapshot: 'STRENGTH',
+        sortOrder: 0,
+        notes: null,
+      }),
+    ).rejects.toThrow('REVOKED');
+    expect(prisma.trainingProgramVersion.update).not.toHaveBeenCalled();
   });
 
   it('updates only the requested program exercise', async () => {

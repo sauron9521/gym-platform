@@ -1,4 +1,5 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import type { Prisma } from '#prisma/client';
 
 import { AvatarService } from '../avatar/avatar.service.js';
 import type { UpdateMyProfileDto } from '../dto/update-my-profile.dto.js';
@@ -18,6 +19,19 @@ export class UsersService {
   async hasTrainerCapability(userId: string): Promise<boolean> {
     const account = await this.usersRepository.findCapabilitySnapshot(userId);
     return account !== null && deriveAccountCapabilities(account).trainer;
+  }
+
+  /**
+   * Final authorization checkpoint for a write inside the caller's transaction.
+   * User/Profile locks acquired by the repository remain held until COMMIT, so
+   * revocation and the guarded write are serialized. Reuse the SAME capability
+   * derivation as the normal read facade, never a duplicated SQL role rule.
+   */
+  async assertTrainerCapabilityForWrite(tx: Prisma.TransactionClient, userId: string) {
+    const account = await this.usersRepository.findCapabilitySnapshotForWrite(tx, userId);
+    if (!account || !deriveAccountCapabilities(account).trainer) {
+      throw new ForbiddenException('Only active trainers can modify training programs');
+    }
   }
 
   /** Uses a fresh DB projection so moderation/revocation takes effect on the next read. */

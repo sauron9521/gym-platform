@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '#src/infra/database/index';
+import { UsersService } from '#src/modules/users/services/users.service';
 import type { ExerciseType } from '#prisma/client';
 import { trainingProgramVersionSelect } from '../selects/training-program-version.select.js';
 import { trainingProgramExerciseOrderSelect } from '../selects/training-program-query.select.js';
@@ -7,12 +8,16 @@ import type { UpdateTrainingProgramExerciseInput } from '../types/training-progr
 
 @Injectable()
 export class TrainingProgramExerciseRepository {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly usersService: UsersService,
+  ) {}
 
   async createProgramExercise(
     programId: string,
     versionId: string,
     workoutId: string,
+    trainerId: string,
     data: {
       exerciseId: string;
       exerciseNameSnapshot: string;
@@ -21,34 +26,42 @@ export class TrainingProgramExerciseRepository {
       notes: string | null;
     },
   ) {
-    return this.prisma.trainingProgramVersion.update({
-      where: {
-        id: versionId,
-        programId,
-        status: 'DRAFT',
-      },
-      data: {
-        updatedAt: new Date(),
-        workouts: {
-          update: {
-            where: { id: workoutId },
-            data: {
-              exercises: {
-                create: {
-                  exercise: {
-                    connect: { id: data.exerciseId },
+    return this.prisma.$transaction(async (tx) => {
+      // The service's preflight check is intentionally NOT the write gate.
+      // Hold the current User and optional TrainerProfile row locks until the
+      // nested draft mutation commits, serializing moderation and writes.
+      await this.usersService.assertTrainerCapabilityForWrite(tx, trainerId);
+
+      return tx.trainingProgramVersion.update({
+        where: {
+          id: versionId,
+          programId,
+          status: 'DRAFT',
+          program: { trainerId },
+        },
+        data: {
+          updatedAt: new Date(),
+          workouts: {
+            update: {
+              where: { id: workoutId },
+              data: {
+                exercises: {
+                  create: {
+                    exercise: {
+                      connect: { id: data.exerciseId },
+                    },
+                    exerciseNameSnapshot: data.exerciseNameSnapshot,
+                    exerciseTypeSnapshot: data.exerciseTypeSnapshot,
+                    sortOrder: data.sortOrder,
+                    notes: data.notes,
                   },
-                  exerciseNameSnapshot: data.exerciseNameSnapshot,
-                  exerciseTypeSnapshot: data.exerciseTypeSnapshot,
-                  sortOrder: data.sortOrder,
-                  notes: data.notes,
                 },
               },
             },
           },
         },
-      },
-      select: trainingProgramVersionSelect,
+        select: trainingProgramVersionSelect,
+      });
     });
   }
 

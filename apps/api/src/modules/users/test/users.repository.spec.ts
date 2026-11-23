@@ -41,6 +41,45 @@ describe('UsersRepository', () => {
     });
   });
 
+  describe('findCapabilitySnapshotForWrite', () => {
+    it('locks active User then TrainerProfile in the same write transaction', async () => {
+      const tx = { $queryRaw: vi.fn() };
+      tx.$queryRaw
+        .mockResolvedValueOnce([{ role: 'ATHLETE' }])
+        .mockResolvedValueOnce([{ isActive: true }]);
+
+      const result = await repository.findCapabilitySnapshotForWrite(tx as never, 'actor-1');
+      expect(result).toEqual({
+        role: 'ATHLETE',
+        trainerProfile: { isActive: true },
+      });
+      expect(tx.$queryRaw).toHaveBeenCalledTimes(2);
+      const userSql = tx.$queryRaw.mock.calls[0]![0].join('?') as string;
+      const profileSql = tx.$queryRaw.mock.calls[1]![0].join('?') as string;
+      expect(userSql).toContain('FROM "users"');
+      expect(userSql).toContain('FOR UPDATE');
+      expect(userSql).toContain('"deleted_at" IS NULL');
+      expect(userSql).toContain('"status" = \'ACTIVE\'');
+      expect(profileSql).toContain('FROM "trainer_profiles"');
+      expect(profileSql).toContain('FOR SHARE');
+    });
+
+    it('preserves legacy TRAINER without a profile but never skips the profile query', async () => {
+      const tx = { $queryRaw: vi.fn() };
+      tx.$queryRaw.mockResolvedValueOnce([{ role: 'TRAINER' }]).mockResolvedValueOnce([]);
+      const result = await repository.findCapabilitySnapshotForWrite(tx as never, 'legacy');
+      expect(result).toEqual({ role: 'TRAINER', trainerProfile: null });
+      expect(tx.$queryRaw).toHaveBeenCalledTimes(2);
+    });
+
+    it('fails closed for deleted or suspended users without reading a profile', async () => {
+      const tx = { $queryRaw: vi.fn().mockResolvedValue([]) };
+      const result = await repository.findCapabilitySnapshotForWrite(tx as never, 'gone');
+      expect(result).toBeNull();
+      expect(tx.$queryRaw).toHaveBeenCalledOnce();
+    });
+  });
+
   describe('create', () => {
     it('should create a user without returning passwordHash', async () => {
       const input = {

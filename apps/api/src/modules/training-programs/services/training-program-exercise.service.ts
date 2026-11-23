@@ -48,13 +48,20 @@ export class TrainingProgramExerciseService {
     const sortOrder = Math.max(-1, ...workout.exercises.map((item) => item.sortOrder)) + 1;
 
     try {
-      return await this.repository.createProgramExercise(programId, versionId, workoutId, {
+      const data = {
         exerciseId: exercise.id,
         exerciseNameSnapshot: exercise.name,
         exerciseTypeSnapshot: exercise.exerciseType,
         sortOrder,
         notes: input.notes ?? null,
-      });
+      };
+      return await this.repository.createProgramExercise(
+        programId,
+        versionId,
+        workoutId,
+        actor.id,
+        data,
+      );
     } catch (error) {
       if (this.isPrismaError(error, 'P2002')) {
         throw new ConflictException('Exercise order has changed. Reload and try again.');

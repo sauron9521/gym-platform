@@ -296,6 +296,7 @@ describe('TrainingProgramsService', () => {
         'program-1',
         'version-1',
         'program-workout-1',
+        trainer.id,
         {
           exerciseId: 'exercise-1',
           exerciseNameSnapshot: 'Bench Press',
