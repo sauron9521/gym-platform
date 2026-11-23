@@ -311,6 +311,18 @@ describe('ExercisesService', () => {
       });
     });
 
+    it('scopes Admin list reads to global catalog, not Athlete private exercises', async () => {
+      repository.findMany.mockResolvedValue({ data: [], meta: {} });
+
+      await service.findMany(admin, { page: 1, limit: 10 }, access);
+
+      expect(repository.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { AND: [{ source: 'GLOBAL' }, { isArchived: false }] },
+        }),
+      );
+    });
+
     it('should reject invalid pagination', async () => {
       await expect(
         service.findMany(
@@ -355,6 +367,17 @@ describe('ExercisesService', () => {
       await expect(service.findOne('missing-id', athlete, access)).rejects.toThrow(
         NotFoundException,
       );
+    });
+
+    it('uses the global-only predicate for Admin detail reads', async () => {
+      repository.findById.mockResolvedValue(null);
+
+      await expect(service.findOne('foreign-private-id', admin, access)).rejects.toThrow(
+        NotFoundException,
+      );
+      expect(repository.findById).toHaveBeenCalledWith('foreign-private-id', {
+        AND: [{ source: 'GLOBAL' }, { isArchived: false }],
+      });
     });
 
     it('should not expose private exercises to guests', async () => {

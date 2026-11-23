@@ -146,8 +146,8 @@ describe('exercise access policy', () => {
     );
   });
 
-  it('keeps existing admin read and global-source behavior', () => {
-    expect(buildExerciseVisibilityWhere(admin, access)).toEqual({});
+  it('limits Admin catalog reads to global exercises, never private user content', () => {
+    expect(buildExerciseVisibilityWhere(admin, access)).toEqual({ source: 'GLOBAL' });
     expect(resolveExerciseSource(admin)).toBe('GLOBAL');
     expect(resolveExerciseSource(trainer)).toBe('TRAINER_CUSTOM');
     expect(resolveExerciseSource(athlete)).toBe('ATHLETE_CUSTOM');

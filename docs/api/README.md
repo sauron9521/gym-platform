@@ -29,6 +29,7 @@ Infrastructure includes `src/infra/database` (Prisma), `src/infra/health`, `src/
 
 ## Quality and operations
 
+- [Current endpoint permission and ownership matrix](permission-matrix.md) — #288 audit baseline; not a release/security GO
 - [Test and quality guide](testing.md)
 - [Read-only API performance baseline](performance-baseline.md)
 - [Local API setup](../../apps/api/README.md)
