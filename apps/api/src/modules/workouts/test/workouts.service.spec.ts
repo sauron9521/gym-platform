@@ -50,7 +50,10 @@ describe('WorkoutsService', () => {
     role: 'TRAINER',
   };
   const staleAdmin: WorkoutActor = { id: 'admin-1', role: 'ATHLETE' };
-  const usersService = { findMyCapabilities: vi.fn() };
+  const usersService = {
+    findMyCapabilities: vi.fn(),
+    findMyCapabilitiesForWrite: vi.fn(),
+  };
 
   const availableExercise = {
     id: 'exercise-1',
@@ -131,6 +134,11 @@ describe('WorkoutsService', () => {
 
     trainerAthletesService.getExerciseAccessContext.mockResolvedValue(exerciseAccess);
     usersService.findMyCapabilities.mockImplementation(async (id: string) => ({
+      athlete: id !== staleAdmin.id,
+      trainer: id === trainer.id,
+      admin: id === staleAdmin.id,
+    }));
+    usersService.findMyCapabilitiesForWrite.mockImplementation(async (_tx: unknown, id: string) => ({
       athlete: id !== staleAdmin.id,
       trainer: id === trainer.id,
       admin: id === staleAdmin.id,
@@ -586,7 +594,36 @@ describe('WorkoutsService', () => {
         {
           title: 'Updated Upper Body',
         },
+        expect.any(Function),
       );
+    });
+
+    it('denies a planned edit after account promotion to Admin', async () => {
+      repository.findById.mockResolvedValue(plannedWorkout);
+      await service.update('workout-1', athlete, { title: 'Denied' });
+      const authorize = repository.update.mock.calls[0]?.[2];
+      usersService.findMyCapabilitiesForWrite.mockResolvedValue({
+        athlete: false,
+        trainer: false,
+        admin: true,
+      });
+      await expect(authorize({ id: 'tx' })).rejects.toThrow(ForbiddenException);
+      expect(usersService.findMyCapabilitiesForWrite).toHaveBeenCalledWith(
+        { id: 'tx' },
+        athlete.id,
+      );
+    });
+
+    it('preserves revoked Trainer access to their own workouts', async () => {
+      repository.findById.mockResolvedValue({ ...plannedWorkout, athleteId: trainer.id });
+      await service.update('workout-1', trainer, { title: 'Own workout' });
+      const authorize = repository.update.mock.calls[0]?.[2];
+      usersService.findMyCapabilitiesForWrite.mockResolvedValue({
+        athlete: true,
+        trainer: false,
+        admin: false,
+      });
+      await expect(authorize({})).resolves.toBeUndefined();
     });
 
     it('should reject editing a completed workout', async () => {
@@ -941,7 +978,20 @@ describe('WorkoutsService', () => {
           status: 'PLANNED',
         },
         { status: 'CANCELLED' },
+        expect.any(Function),
       );
+    });
+
+    it('denies cancellation after account promotion to Admin', async () => {
+      repository.findById.mockResolvedValue(plannedWorkout);
+      await service.cancel('workout-1', athlete);
+      const authorize = repository.update.mock.calls[0]?.[2];
+      usersService.findMyCapabilitiesForWrite.mockResolvedValue({
+        athlete: false,
+        trainer: false,
+        admin: true,
+      });
+      await expect(authorize({})).rejects.toThrow(ForbiddenException);
     });
 
     it('should reject cancelling a completed workout', async () => {
