@@ -15,6 +15,7 @@ describe('ExercisesService', () => {
 
   const usersService = {
     findMyCapabilities: vi.fn(),
+    findMyCapabilitiesForWrite: vi.fn(),
     hasTrainerCapability: vi.fn(),
   };
 
@@ -95,6 +96,11 @@ describe('ExercisesService', () => {
       trainer: id === trainer.id,
       admin: id === admin.id,
     }));
+    usersService.findMyCapabilitiesForWrite.mockImplementation(async (_tx: unknown, id: string) => ({
+      athlete: id !== admin.id,
+      trainer: id === trainer.id,
+      admin: id === admin.id,
+    }));
     usersService.hasTrainerCapability.mockImplementation(async (id: string) => id === trainer.id);
 
     service = new ExercisesService(
@@ -125,7 +131,7 @@ describe('ExercisesService', () => {
 
       expect(result).toEqual(exercise);
 
-      expect(repository.create).toHaveBeenCalledWith(
+      expect(repository.create.mock.calls[0]?.[0]).toEqual(
         expect.objectContaining({
           name: 'Bench Press',
           source: 'ATHLETE_CUSTOM',
@@ -147,7 +153,7 @@ describe('ExercisesService', () => {
 
       await service.create(trainer, input);
 
-      expect(repository.create).toHaveBeenCalledWith(
+      expect(repository.create.mock.calls[0]?.[0]).toEqual(
         expect.objectContaining({
           source: 'TRAINER_CUSTOM',
           visibility: null,
@@ -168,7 +174,7 @@ describe('ExercisesService', () => {
 
       await service.create(admin, input);
 
-      expect(repository.create).toHaveBeenCalledWith(
+      expect(repository.create.mock.calls[0]?.[0]).toEqual(
         expect.objectContaining({
           source: 'GLOBAL',
           visibility: null,
@@ -189,7 +195,7 @@ describe('ExercisesService', () => {
       await service.create(athlete, input);
 
       expect(usersService.findMyCapabilities).toHaveBeenCalledExactlyOnceWith(athlete.id);
-      expect(repository.create).toHaveBeenCalledWith(
+      expect(repository.create.mock.calls[0]?.[0]).toEqual(
         expect.objectContaining({ source: 'ATHLETE_CUSTOM', visibility: 'PRIVATE' }),
       );
     });
@@ -203,7 +209,7 @@ describe('ExercisesService', () => {
 
       await service.create(trainer, input);
 
-      expect(repository.create).toHaveBeenCalledWith(
+      expect(repository.create.mock.calls[0]?.[0]).toEqual(
         expect.objectContaining({ source: 'ATHLETE_CUSTOM', visibility: 'PRIVATE' }),
       );
     });
@@ -246,7 +252,7 @@ describe('ExercisesService', () => {
 
       await service.create(athlete, { ...input, creationScope: 'TRAINER' });
 
-      expect(repository.create).toHaveBeenCalledWith(
+      expect(repository.create.mock.calls[0]?.[0]).toEqual(
         expect.objectContaining({ source: 'TRAINER_CUSTOM', visibility: null }),
       );
     });
@@ -254,7 +260,7 @@ describe('ExercisesService', () => {
     it('supports explicit personal scope for an approved legacy TRAINER', async () => {
       await service.create(trainer, { ...input, creationScope: 'ATHLETE' });
 
-      expect(repository.create).toHaveBeenCalledWith(
+      expect(repository.create.mock.calls[0]?.[0]).toEqual(
         expect.objectContaining({ source: 'ATHLETE_CUSTOM', visibility: 'PRIVATE' }),
       );
     });
@@ -292,6 +298,79 @@ describe('ExercisesService', () => {
         }),
       ).rejects.toThrow(BadRequestException);
       expect(repository.create).not.toHaveBeenCalled();
+    });
+
+    it('holds a live capability check for the transaction before returning a write', async () => {
+      await service.create(trainer, input);
+
+      const verify = repository.create.mock.calls[0]?.[1];
+      expect(verify).toEqual(expect.any(Function));
+      await expect(verify({ id: 'tx' })).resolves.toBeUndefined();
+      expect(usersService.findMyCapabilitiesForWrite).toHaveBeenCalledExactlyOnceWith(
+        { id: 'tx' },
+        trainer.id,
+      );
+    });
+
+    it('rejects an implicit Trainer write if its source changed after preflight', async () => {
+      await service.create(trainer, input);
+      usersService.findMyCapabilitiesForWrite.mockResolvedValue({
+        athlete: true,
+        trainer: false,
+        admin: false,
+      });
+
+      const verify = repository.create.mock.calls[0]?.[1];
+      await expect(verify({})).rejects.toThrow(ForbiddenException);
+    });
+
+    it('rejects an explicit Trainer write after revocation', async () => {
+      usersService.findMyCapabilities.mockResolvedValue({
+        athlete: true,
+        trainer: true,
+        admin: false,
+      });
+      await service.create(athlete, { ...input, creationScope: 'TRAINER' });
+      usersService.findMyCapabilitiesForWrite.mockResolvedValue({
+        athlete: true,
+        trainer: false,
+        admin: false,
+      });
+
+      const verify = repository.create.mock.calls[0]?.[1];
+      await expect(verify({})).rejects.toThrow(ForbiddenException);
+    });
+
+    it('rejects a global exercise when Admin capability is demoted before commit', async () => {
+      await service.create(admin, input);
+      usersService.findMyCapabilitiesForWrite.mockResolvedValue({
+        athlete: true,
+        trainer: false,
+        admin: false,
+      });
+
+      const verify = repository.create.mock.calls[0]?.[1];
+      await expect(verify({})).rejects.toThrow(ForbiddenException);
+    });
+
+    it('rejects a personal exercise when the account becomes Admin before commit', async () => {
+      await service.create(athlete, input);
+      usersService.findMyCapabilitiesForWrite.mockResolvedValue({
+        athlete: false,
+        trainer: false,
+        admin: true,
+      });
+
+      const verify = repository.create.mock.calls[0]?.[1];
+      await expect(verify({})).rejects.toThrow(ForbiddenException);
+    });
+
+    it('propagates locked capability lookup errors before a write', async () => {
+      await service.create(trainer, input);
+      usersService.findMyCapabilitiesForWrite.mockRejectedValue(new Error('DB unavailable'));
+
+      const verify = repository.create.mock.calls[0]?.[1];
+      await expect(verify({})).rejects.toThrow('DB unavailable');
     });
 
     it('should reject visibility for trainer exercises', async () => {
