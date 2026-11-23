@@ -18,6 +18,7 @@ const workflowInventory = [
   ['roadmap-milestones.yml', 2],
   ['ovranto-visual-review.yml', 5],
   ['mobile-native-e2e.yml', 4],
+  ['admin-staging-session-smoke.yml', 3],
 ];
 
 test('pilot workflows pin every external action to a reviewed immutable commit', () => {
