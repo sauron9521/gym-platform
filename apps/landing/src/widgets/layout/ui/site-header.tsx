@@ -12,7 +12,7 @@ export function SiteHeader({
   locale = defaultLocale,
   initialTheme = 'system',
 }: { locale?: Locale; initialTheme?: ThemePreference } = {}) {
-  const { main, nav, shell } = getLandingNavigation(locale);
+  const { main, productDirectoryLabel, shell } = getLandingNavigation(locale);
   return (
     <header className="sticky top-0 z-50 border-b border-border/70 bg-background/95 backdrop-blur-xl">
       <div className="mx-auto flex min-h-20 max-w-6xl items-center justify-between gap-2 px-3 py-3 sm:gap-4 sm:px-6 lg:gap-6">
@@ -40,7 +40,7 @@ export function SiteHeader({
           <ThemeSwitcher initialPreference={initialTheme} locale={locale} />
           <div className="hidden lg:block">
             <Button asChild size="touch" className="rounded-xl px-6">
-              <Link href="/apps">{nav.apps}</Link>
+              <Link href="/apps">{productDirectoryLabel}</Link>
             </Button>
           </div>
           <MobileNavigation locale={locale} />

@@ -15,6 +15,10 @@ test('all public navigation links point to existing app-router pages', () => {
     assert.ok(routes.has(link.href), 'Link missing from publicRoutes: ' + link.href);
   }
   assert.equal(new Set(publicRoutes).size, publicRoutes.length);
+  assert.deepEqual(
+    applicationNavigation.map(({ href }) => href),
+    ['/apps/web', '/apps/mobile', '/for-trainers'],
+  );
   for (const route of publicRoutes) {
     const page = '../src/app' + (route === '/' ? '' : route) + '/page.tsx';
     assert.ok(existsSync(new URL(page, import.meta.url)), 'Missing page: ' + page);

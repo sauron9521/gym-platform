@@ -1,5 +1,4 @@
 import type { AnchorHTMLAttributes, ReactNode } from 'react';
-import { getMessages } from '@gym/i18n';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 
@@ -33,9 +32,11 @@ function checkLinks(nav: HTMLElement, items: ReadonlyArray<{ label: string; href
 
 describe('Landing shared shell i18n', () => {
   test.each(['uk', 'en'] as const)('%s navigation preserves all public hrefs', (locale) => {
-    const { main, applications, nav } = getLandingNavigation(locale);
+    const { main, applications, nav, productDirectoryLabel } = getLandingNavigation(locale);
     expect(main.map((x) => x.href)).toEqual(mainNavigation.map((x) => x.href));
     expect(applications.map((x) => x.href)).toEqual(applicationNavigation.map((x) => x.href));
+    expect(applications.map((x) => x.label)).toEqual(applicationNavigation.map((x) => x.label));
+    expect(productDirectoryLabel).toBe(locale === 'en' ? 'Products' : 'Продукти');
     expect(main.map((x) => x.label)).toEqual([nav.features, nav.athletes, nav.trainers, nav.about]);
     expect(main.every((x) => x.label.length > 0)).toBe(true);
   });
@@ -43,7 +44,7 @@ describe('Landing shared shell i18n', () => {
   test.each(['uk', 'en'] as const)(
     '%s header shares labels across desktop and mobile',
     (locale) => {
-      const { main, nav, shell } = getLandingNavigation(locale);
+      const { main, productDirectoryLabel, shell } = getLandingNavigation(locale);
       render(<SiteHeader locale={locale} />);
       const home = screen.getByRole('link', { name: 'OVRANTO — ' + shell.homeAria });
       expect(home.getAttribute('href')).toBe('/');
@@ -52,17 +53,15 @@ describe('Landing shared shell i18n', () => {
       checkLinks(desktop, main);
       checkLinks(mobile, main);
       expect(within(desktop).getAllByRole('link')).toHaveLength(mainNavigation.length);
-      expect(within(mobile).getByRole('link', { name: nav.apps }).getAttribute('href')).toBe(
-        '/apps',
-      );
-      expect(screen.getAllByRole('link', { name: nav.apps })).toHaveLength(2);
+      const productLink = within(mobile).getByRole('link', { name: productDirectoryLabel });
+      expect(productLink.getAttribute('href')).toBe('/apps');
+      expect(screen.getAllByRole('link', { name: productDirectoryLabel })).toHaveLength(2);
       expect(screen.getByText(shell.menu).closest('summary')).not.toBeNull();
     },
   );
 
   test.each(['uk', 'en'] as const)('%s footer translates all UI labels', (locale) => {
-    const { main, applications, shell } = getLandingNavigation(locale);
-    const common = getMessages(locale).landing.common;
+    const { main, applications, productDirectoryLabel, shell } = getLandingNavigation(locale);
     render(<SiteFooter locale={locale} />);
     expect(screen.getByText(shell.summary)).toBeTruthy();
     expect(screen.getByRole('heading', { name: shell.platform })).toBeTruthy();
@@ -70,7 +69,7 @@ describe('Landing shared shell i18n', () => {
     const apps = screen.getByRole('navigation', { name: shell.applications });
     checkLinks(apps, applications);
     expect(
-      within(apps).getByRole('link', { name: common.allApplications }).getAttribute('href'),
+      within(apps).getByRole('link', { name: productDirectoryLabel }).getAttribute('href'),
     ).toBe('/apps');
     expect(screen.getByText(new RegExp(shell.inDevelopment))).toBeTruthy();
     expect(screen.getByText(new RegExp(String(new Date().getFullYear())))).toBeTruthy();
@@ -87,9 +86,10 @@ describe('Landing shared shell i18n', () => {
     expect(screen.getByRole('navigation', { name: 'Mobile navigation' })).toBeTruthy();
     expect(screen.getByText('Menu')).toBeTruthy();
     expect(screen.getByRole('navigation', { name: 'Site sections' })).toBeTruthy();
-    expect(screen.getByText('All applications')).toBeTruthy();
-    expect(screen.getByText('Web application')).toBeTruthy();
-    expect(screen.getByText('Mobile application')).toBeTruthy();
+    expect(screen.getAllByText('Products').length).toBeGreaterThan(0);
+    expect(screen.getByText('OVRANTO Athlete Web')).toBeTruthy();
+    expect(screen.getByText('OVRANTO Athlete Mobile')).toBeTruthy();
+    expect(screen.getByText('OVRANTO Coach Web')).toBeTruthy();
     expect(screen.queryByText('Можливості')).toBeNull();
     expect(screen.queryByText('Усі застосунки')).toBeNull();
   });
@@ -103,11 +103,10 @@ describe('Landing shared shell i18n', () => {
     );
     expect(screen.getByRole('navigation', { name: 'Основна навігація' })).toBeTruthy();
     expect(screen.getByText('Меню')).toBeTruthy();
-    expect(screen.getByText('Усі застосунки')).toBeTruthy();
+    expect(screen.getAllByText('Продукти').length).toBeGreaterThan(0);
     const mobile = screen.getByRole('navigation', { name: 'Мобільна навігація' });
-    expect(within(mobile).getByRole('link', { name: 'Застосунки' }).getAttribute('href')).toBe(
-      '/apps',
-    );
+    const productLink = within(mobile).getByRole('link', { name: 'Продукти' });
+    expect(productLink.getAttribute('href')).toBe('/apps');
   });
 
   test('English mobile menu Escape closes disclosure and restores focus', () => {
