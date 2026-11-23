@@ -142,10 +142,7 @@ test('forbids imports of another feature controller and private repository', () 
 test('Auth uses the Users service facade and cannot import its private repository', () => {
   fixture(({ module, source, check }) => {
     module('auth', "import { UsersModule } from '#src/modules/users/users.module';");
-    module(
-      'trainer-athletes',
-      "import { UsersModule } from '#src/modules/users/users.module';",
-    );
+    module('trainer-athletes', "import { UsersModule } from '#src/modules/users/users.module';");
     module('users');
     source(
       'auth',
