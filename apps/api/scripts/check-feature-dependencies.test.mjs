@@ -325,6 +325,66 @@ test('provider export checks recognize import aliases but ignore type-only impor
   });
 });
 
+test('local constructor-injected feature classes must be registered as providers', () => {
+  fixture(({ module, source, check }) => {
+    module(
+      'first',
+      '@Module({ providers: [FirstService, HelperService], controllers: [FirstController], exports: [FirstService] }) export class FirstModule {}',
+    );
+    source(
+      'first',
+      'services/first.service.ts',
+      '@Injectable() export class FirstService { constructor(private readonly helper: HelperService, private readonly db: PrismaService) {} }',
+    );
+    source('first', 'services/helper.service.ts', '@Injectable() export class HelperService {}');
+    source(
+      'first',
+      'controllers/first.controller.ts',
+      '@Controller() export class FirstController { constructor(private readonly service: FirstService) {} }',
+    );
+    assert.deepEqual(check(), []);
+
+    module(
+      'first',
+      '@Module({ providers: [FirstService], controllers: [FirstController], exports: [FirstService] }) export class FirstModule {}',
+    );
+    assert.match(
+      check().join(' '),
+      /FirstService injects local HelperService missing from providers/,
+    );
+  });
+});
+
+test('locally declared exported services must also be provided in their Nest module', () => {
+  fixture(({ module, source, check }) => {
+    module(
+      'first',
+      '@Module({ providers: [], exports: [FirstService] }) export class FirstModule {}',
+    );
+    source('first', 'services/first.service.ts', '@Injectable() export class FirstService {}');
+    assert.match(check().join(' '), /local export FirstService is missing from providers/);
+    module(
+      'first',
+      '@Module({ providers: [FirstService], exports: [FirstService] }) export class FirstModule {}',
+    );
+    assert.deepEqual(check(), []);
+  });
+});
+
+test('local injection guard excludes explicit tokens, optional and nonlocal dependencies', () => {
+  fixture(({ module, source, check }) => {
+    module('first', '@Module({ providers: [FirstService] }) export class FirstModule {}');
+    source(
+      'first',
+      'services/first.service.ts',
+      "@Injectable() export class FirstService { constructor(@Inject('TOKEN') private readonly explicit: TokenService, @Optional() private readonly optional: OptionalService, private readonly external: PrismaService) {} }",
+    );
+    source('first', 'services/token.service.ts', '@Injectable() export class TokenService {}');
+    source('first', 'services/optional.service.ts', '@Injectable() export class OptionalService {}');
+    assert.deepEqual(check(), []);
+  });
+});
+
 test('rejects runtime provider injection if Nest module dependency is absent', () => {
   fixture(({ module, source, check }) => {
     module('first');
