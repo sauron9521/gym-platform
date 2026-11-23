@@ -41,7 +41,7 @@ administrative permissions; it does not create a separate automatic
 | `/exercises/:id/trainer-access*`  | Explicit owner-controlled Trainer grant    | Trainer access service           |
 | `/trainer-athletes*`              | Current participant + relation ownership   | Relationship service + SQL       |
 | `GET /trainer-dashboard*`         | Current trainer + active client scope      | Dashboard service                |
-| `/training-programs/:programId*`  | Active trainer + owned draft + scoped exercise | Program and exercise policies  |
+| `/training-programs/:programId*`  | Active trainer + owned program             | Program access service           |
 | `/training-programs/assignments*` | Athlete self or authorized trainer side    | Assignment read/write policy     |
 | `GET /admin/users*`               | Admin-purpose cookie + `accounts.read`     | Origin/purpose/permission guards |
 | `/admin/trainer-applications*`    | Admin-purpose cookie + `accounts.manage`   | Origin/purpose + service policy  |
