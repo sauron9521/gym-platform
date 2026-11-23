@@ -96,11 +96,12 @@ describe('ExercisesService', () => {
       trainer: id === trainer.id,
       admin: id === admin.id,
     }));
-    usersService.findMyCapabilitiesForWrite.mockImplementation(async (_tx: unknown, id: string) => ({
+    const currentForWrite = async (_tx: unknown, id: string) => ({
       athlete: id !== admin.id,
       trainer: id === trainer.id,
       admin: id === admin.id,
-    }));
+    });
+    usersService.findMyCapabilitiesForWrite.mockImplementation(currentForWrite);
     usersService.hasTrainerCapability.mockImplementation(async (id: string) => id === trainer.id);
 
     service = new ExercisesService(
