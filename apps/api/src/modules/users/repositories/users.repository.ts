@@ -1,6 +1,6 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import type { AdminUsersQuery } from '../dto/admin-users-query.dto.js';
-import { Prisma } from '#prisma/client';
+import { Prisma, type Role } from '#prisma/client';
 import { PrismaService } from '#src/infra/database/index';
 
 import {
@@ -93,6 +93,40 @@ export class UsersRepository {
         trainerProfile: { select: { isActive: true } },
       },
     });
+  }
+
+  /**
+   * Transaction-scoped privilege snapshot for writes. Lock the parent User
+   * first: FOR UPDATE also prevents a concurrent TrainerProfile INSERT from
+   * inventing a new facet for a legacy TRAINER between the two reads.
+   *
+   * Hold FOR SHARE on the optional TrainerProfile until the caller commits:
+   * moderation UPDATE/DELETE must then serialize before or after the write.
+   * Do not replace these locks with an ordinary read or call outside tx.
+   */
+  async findCapabilitySnapshotForWrite(tx: Prisma.TransactionClient, id: string) {
+    const users = await tx.$queryRaw<Array<{ role: Role }>>`
+      SELECT "role"
+      FROM "users"
+      WHERE "id" = ${id}
+        AND "deleted_at" IS NULL
+        AND "status" = 'ACTIVE'
+      FOR UPDATE
+    `;
+
+    if (users.length !== 1) return null;
+
+    const profiles = await tx.$queryRaw<Array<{ isActive: boolean }>>`
+      SELECT "is_active" AS "isActive"
+      FROM "trainer_profiles"
+      WHERE "user_id" = ${id}
+      FOR SHARE
+    `;
+
+    return {
+      role: users[0]!.role,
+      trainerProfile: profiles[0] ?? null,
+    };
   }
 
   async findMe(id: string) {
