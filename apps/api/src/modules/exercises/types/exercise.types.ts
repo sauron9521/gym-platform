@@ -15,6 +15,8 @@ export type ExerciseMuscleInput = {
   role: MuscleRole;
 };
 
+export type ExerciseCreationScope = 'ATHLETE' | 'TRAINER';
+
 export type CreateExerciseInput = {
   name: string;
   description?: string;
@@ -22,6 +24,7 @@ export type CreateExerciseInput = {
   exerciseType?: ExerciseType;
 
   visibility?: ExerciseVisibility;
+  creationScope?: ExerciseCreationScope;
   trainerIds?: string[];
 
   muscleGroups: ExerciseMuscleInput[];
