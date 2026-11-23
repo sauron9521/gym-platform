@@ -44,7 +44,7 @@ export function ProductDiscovery({ locale }: { locale: Locale }) {
       {products.map((product, index) => (
         <article
           key={product.href}
-          className="group relative flex min-w-0 flex-col overflow-hidden rounded-[2rem] border border-border/80 bg-card shadow-sm shadow-foreground/5 transition-[border-color,box-shadow] duration-200 hover:border-primary/40 hover:shadow-lg hover:shadow-foreground/10 focus-within:border-primary/40 motion-reduce:transition-none"
+          className="landing-product-card group relative flex min-w-0 flex-col overflow-hidden rounded-[2rem] border border-border/80 bg-card shadow-sm shadow-foreground/5 transition-[border-color,box-shadow] duration-200 hover:border-primary/40 hover:shadow-lg hover:shadow-foreground/10 focus-within:border-primary/40 motion-reduce:transition-none"
         >
           <div
             aria-hidden="true"
@@ -68,7 +68,7 @@ export function ProductDiscovery({ locale }: { locale: Locale }) {
             <p className="mt-5 max-w-lg text-base leading-7 text-muted-foreground">
               {product.description}
             </p>
-            <figure className="mt-8 overflow-hidden rounded-2xl border border-border/80 bg-secondary/30">
+            <figure className="landing-product-frame mt-8 overflow-hidden rounded-2xl border border-border/80 bg-secondary/30">
               <Image
                 src={product.previewSrc}
                 alt={product.previewAlt}
@@ -77,7 +77,7 @@ export function ProductDiscovery({ locale }: { locale: Locale }) {
                 sizes="(min-width: 1024px) 46vw, (min-width: 640px) 85vw, 100vw"
                 loading="lazy"
                 fetchPriority={index === 0 ? 'high' : 'auto'}
-                className="landing-product-preview--light h-auto w-full"
+                className="landing-product-preview--light landing-product-image h-auto w-full"
               />
               <Image
                 src={product.darkPreviewSrc}
@@ -87,7 +87,7 @@ export function ProductDiscovery({ locale }: { locale: Locale }) {
                 sizes="(min-width: 1024px) 46vw, (min-width: 640px) 85vw, 100vw"
                 loading="lazy"
                 fetchPriority={index === 0 ? 'high' : 'auto'}
-                className="landing-product-preview--dark h-auto w-full"
+                className="landing-product-preview--dark landing-product-image h-auto w-full"
               />
               <figcaption className="border-t border-border/70 px-4 py-3 text-xs leading-5 text-muted-foreground">
                 {t.productPreviewDisclaimer}

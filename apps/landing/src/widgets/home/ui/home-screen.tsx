@@ -16,7 +16,7 @@ export function HomeScreen({ locale = defaultLocale }: { locale?: Locale } = {})
     <main id="main-content" className="flex-1">
       <section className="landing-hero-surface relative isolate overflow-hidden border-b border-border/70">
         <Container className="relative grid items-center gap-12 py-20 sm:py-28 lg:grid-cols-[minmax(0,1.04fr)_minmax(0,0.96fr)] lg:gap-16 lg:py-36">
-          <div className="relative z-10 min-w-0">
+          <div className="landing-hero-copy relative z-10 min-w-0">
             <p className="inline-flex items-center gap-2.5 rounded-full border border-primary/20 bg-primary/10 px-4 py-2 text-xs font-bold tracking-[0.13em] text-primary uppercase">
               <span
                 aria-hidden="true"
@@ -48,7 +48,7 @@ export function HomeScreen({ locale = defaultLocale }: { locale?: Locale } = {})
             </p>
           </div>
 
-          <div className="relative min-w-0">
+          <div className="landing-hero-visual relative min-w-0">
             <div
               aria-hidden="true"
               className="pointer-events-none absolute -top-9 -right-8 h-36 w-36 rounded-full border-[18px] border-[var(--brand-terracotta)]/20 sm:h-52 sm:w-52"
@@ -56,7 +56,7 @@ export function HomeScreen({ locale = defaultLocale }: { locale?: Locale } = {})
             <div
               role="img"
               aria-label={t.mockAria}
-              className="relative overflow-hidden rounded-[2rem] border border-border bg-card shadow-2xl shadow-foreground/10"
+              className="relative overflow-hidden rounded-[2rem] border border-border bg-card shadow-2xl shadow-foreground/10 ring-1 ring-primary/10"
             >
               <div className="flex items-center justify-between gap-4 bg-primary px-5 py-5 text-primary-foreground sm:px-7">
                 <div className="flex min-w-0 items-center gap-3">
@@ -136,7 +136,7 @@ export function HomeScreen({ locale = defaultLocale }: { locale?: Locale } = {})
             {milestones.map((step) => (
               <div
                 key={step.number}
-                className="relative overflow-hidden rounded-[1.6rem] border border-border bg-card p-7 shadow-sm shadow-foreground/5"
+                className="landing-milestone-card relative overflow-hidden rounded-[1.6rem] border border-border bg-card p-7 shadow-sm shadow-foreground/5"
               >
                 <span
                   aria-hidden="true"
