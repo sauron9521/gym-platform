@@ -75,7 +75,9 @@ describe('Exercises (HTTP + PostgreSQL)', () => {
     const moduleRef = await Test.createTestingModule({
       imports: [await ConfigModule.forRoot({ isGlobal: true }), AppModule],
     })
-      .overrideGuard(ThrottlerGuard)
+      // APP_GUARD uses the existing ThrottlerGuard provider; override its DI
+      // provider so this suite verifies exercise authorization, not rate budgets.
+      .overrideProvider(ThrottlerGuard)
       .useValue({ canActivate: () => true })
       .compile();
 
