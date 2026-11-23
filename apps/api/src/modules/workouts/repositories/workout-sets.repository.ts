@@ -4,14 +4,25 @@ import { Prisma } from '#prisma/client';
 import { PrismaService } from '#src/infra/database/index';
 import { workoutSetSelect } from '../selects/workout.select.js';
 
-/** Set updates take the parent workout lock, serializing with completion. */
+/** Set writes lock the current account, then the parent workout through commit. */
 @Injectable()
 export class WorkoutSetsRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  async updateSet(id: string, data: Prisma.WorkoutSetUpdateInput) {
+  async updateSet(
+    id: string,
+    data: Prisma.WorkoutSetUpdateInput,
+    context: {
+      workoutId: string;
+      athleteId: string;
+      authorize: (tx: Prisma.TransactionClient) => Promise<void>;
+    },
+  ) {
     return this.prisma.$transaction(async (tx) => {
-      // Lock the parent workout row before modifying its set.
+      // Moderation and set writes serialize on the account privilege lock.
+      await context.authorize(tx);
+
+      // Lock the parent workout while checking BOTH route and athlete scope.
       const workouts = await tx.$queryRaw<Array<{ id: string; status: string }>>`
       SELECT
         w."id",
@@ -22,6 +33,8 @@ export class WorkoutSetsRepository {
       INNER JOIN "workout_sets" AS ws
         ON ws."workout_exercise_id" = we."id"
       WHERE ws."id" = ${id}
+        AND w."id" = ${context.workoutId}
+        AND w."athlete_id" = ${context.athleteId}
       FOR UPDATE OF w
     `;
 

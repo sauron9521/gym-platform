@@ -2723,13 +2723,13 @@ describe('Workouts (HTTP + PostgreSQL)', () => {
 
       const updateSpy = vi
         .spyOn(repository, 'updateSet')
-        .mockImplementation(async (setId, data) => {
+        .mockImplementation(async (setId, data, context) => {
           notifyUpdateEntered();
 
           // Pause before writing to PostgreSQL.
           await allowUpdate;
 
-          return originalUpdateSet(setId, data);
+          return originalUpdateSet(setId, data, context);
         });
 
       let pendingUpdate: Promise<unknown> | undefined;
@@ -2995,12 +2995,14 @@ describe('Workouts (HTTP + PostgreSQL)', () => {
         resumeUpdate = resolve;
       });
 
-      const spy = vi.spyOn(repository, 'updateSet').mockImplementation(async (id, data) => {
-        notifyEntered();
-        await allowed;
+      const spy = vi
+        .spyOn(repository, 'updateSet')
+        .mockImplementation(async (id, data, context) => {
+          notifyEntered();
+          await allowed;
 
-        return originalUpdateSet(id, data);
-      });
+          return originalUpdateSet(id, data, context);
+        });
 
       let pendingUpdate: Promise<unknown> | undefined;
 
