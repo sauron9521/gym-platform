@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '#src/infra/database/index';
 import { Prisma } from '#prisma/client';
-import { deriveAccountCapabilities } from '#src/modules/users/policies/account-capabilities.policy';
+import { deriveAccountCapabilities } from '#src/modules/users/public-api';
 import { assignmentFullReadWhere } from '../policies/training-program-assignment-read.policy.js';
 import {
   trainingProgramAssignmentSelect,
