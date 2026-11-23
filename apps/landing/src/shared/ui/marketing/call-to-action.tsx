@@ -29,7 +29,7 @@ export function CallToAction({
       <Container>
         <div
           className={cn(
-            'relative isolate overflow-hidden rounded-[2rem] bg-primary px-7 py-12 text-primary-foreground shadow-xl shadow-foreground/10',
+            'landing-cta-surface relative isolate overflow-hidden rounded-[2rem] bg-primary px-7 py-12 text-primary-foreground shadow-xl shadow-foreground/10',
             'sm:px-12 sm:py-16',
           )}
         >
@@ -52,7 +52,12 @@ export function CallToAction({
             {description}
           </p>
           <div className="mt-9 flex flex-wrap gap-3">
-            <Button asChild size="touch" variant="secondary" className="rounded-xl px-6 font-bold">
+            <Button
+              asChild
+              size="touch"
+              variant="secondary"
+              className="landing-cta-action rounded-xl px-6 font-bold"
+            >
               <TrackedLink eventName="landing_primary_cta" href={primary.href}>
                 {primary.label}
               </TrackedLink>
@@ -62,7 +67,7 @@ export function CallToAction({
                 asChild
                 size="touch"
                 variant="outline"
-                className="rounded-xl border-primary-foreground/40 bg-transparent px-6 font-bold text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground"
+                className="landing-cta-action rounded-xl border-primary-foreground/40 bg-transparent px-6 font-bold text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground"
               >
                 <TrackedLink eventName="landing_secondary_cta" href={secondary.href}>
                   {secondary.label}

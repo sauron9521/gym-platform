@@ -103,3 +103,63 @@
     display: block;
   }
 }
+
+/* OVRANTO motion: short, transform-only feedback on public marketing surfaces.
+   No scroll listeners, animation framework or content hidden before hydration. */
+@keyframes landing-rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* A restrained second highlight gives the final CTA a more editorial surface. */
+.landing-cta-surface {
+  background-image: radial-gradient(
+    ellipse at 88% 90%,
+    color-mix(in srgb, var(--brand-terracotta) 22%, transparent),
+    transparent 48%
+  );
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .landing-hero-copy {
+    animation: landing-rise-in 220ms ease-out both;
+  }
+
+  .landing-hero-visual {
+    animation: landing-rise-in 240ms 70ms ease-out both;
+  }
+
+  .landing-product-card,
+  .landing-milestone-card,
+  .landing-cta-action {
+    transition-property: transform, border-color, box-shadow;
+    transition-duration: 200ms;
+    transition-timing-function: ease-out;
+  }
+
+  .landing-product-image {
+    transition: transform 200ms ease-out;
+  }
+}
+
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .landing-product-card:hover,
+  .landing-milestone-card:hover {
+    transform: translateY(-3px);
+  }
+
+  .landing-product-card:hover .landing-product-image {
+    transform: scale(1.015);
+  }
+
+  .landing-cta-action:hover {
+    transform: translateY(-2px);
+  }
+}

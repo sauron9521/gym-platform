@@ -153,3 +153,26 @@ Check light and dark OS themes, mobile and desktop, all public routes, UA/EN
 component labels, accessibility semantics, navigation links and planned-features
 disclaimers. Next.js needs access to Google Fonts **at build time** to self-host
 Manrope; release runners should confirm the generated font assets are present.
+
+## Landing visual polish and motion (Issue #391)
+
+A focused Landing-only visual pass adds a subtle editorial terracotta glow to
+the final product CTA, a restrained outline around the hero preview and
+transform-only interactions for the existing Athlete/Coach product cards,
+workflow steps and CTA actions. The hero copy and existing conceptual UI
+preview fade/translate into place once (220–240ms), with a small stagger.
+Interaction transitions last 200ms; they only run on hover-capable devices.
+
+All entrance and hover animations are guarded by
+`prefers-reduced-motion: no-preference`. **Reduced motion leaves the content
+fully visible and disables these animation and transform transitions**.
+The improvements require no client-side observer, new library, extra media
+downloads, invented product screenshots or external signup URLs. Preserve
+both Light and Dark semantic colors, and confirm the same public navigation
+and development-status claims in visual reviews.
+
+Run the existing Landing Chromium suite plus
+`apps/landing/e2e/marketing-motion.spec.ts` at 320/1280px, with and without
+reduced motion, and manually inspect Safari/Firefox, high zoom and both
+OS theme modes before public release. Automated motion checks are not a
+complete perceptual, vestibular or screen-reader acceptance signoff.
