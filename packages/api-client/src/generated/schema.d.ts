@@ -676,6 +676,22 @@ export interface paths {
     patch: operations['WorkoutsController_update'];
     trace?: never;
   };
+  '/workouts/{id}/export': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['WorkoutsController_exportCompleted'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/workouts/{id}/start': {
     parameters: {
       query?: never;
@@ -3730,6 +3746,54 @@ export interface operations {
             createdAt: string;
             /** Format: date-time */
             updatedAt: string;
+          };
+        };
+      };
+    };
+  };
+  WorkoutsController_exportCompleted: {
+    parameters: {
+      query?: {
+        locale?: 'uk' | 'en';
+      };
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** @enum {integer} */
+            schemaVersion: 1;
+            workout: {
+              title: string;
+              /** Format: date-time */
+              completedAt: string;
+              exercises: {
+                name: string;
+                sets: {
+                  setNumber: number;
+                  actualReps: number | null;
+                  /** @description Exact decimal encoded as a JSON string by Prisma.Decimal */
+                  actualWeightKg: string | null;
+                  actualDurationSeconds: number | null;
+                  /** @description Exact decimal encoded as a JSON string by Prisma.Decimal */
+                  actualDistanceMeters: string | null;
+                  /** @description Exact decimal encoded as a JSON string by Prisma.Decimal */
+                  rpe: string | null;
+                  rir: number | null;
+                }[];
+              }[];
+            };
+            /** @description Plain text in the requested locale. */
+            text: string;
           };
         };
       };

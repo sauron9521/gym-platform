@@ -7,6 +7,7 @@ describe('WorkoutsController', () => {
     create: vi.fn(),
     findMany: vi.fn(),
     findOne: vi.fn(),
+    exportCompleted: vi.fn(),
     update: vi.fn(),
     start: vi.fn(),
     updateSet: vi.fn(),
@@ -71,6 +72,15 @@ describe('WorkoutsController', () => {
 
     await expect(controller.findOne('workout-1', athlete)).resolves.toBe(result);
     expect(service.findOne).toHaveBeenCalledWith('workout-1', athlete);
+  });
+
+  it('delegates export with the workout ID, current owner and requested locale', async () => {
+    const query = { locale: 'en' as const };
+    const result = { schemaVersion: 1, workout: {}, text: 'Workout' };
+    service.exportCompleted.mockResolvedValue(result);
+
+    await expect(controller.exportCompleted('workout-1', athlete, query)).resolves.toBe(result);
+    expect(service.exportCompleted).toHaveBeenCalledWith('workout-1', athlete, query);
   });
 
   it('delegates workout update with the original body and athlete', async () => {

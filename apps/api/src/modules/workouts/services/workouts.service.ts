@@ -22,6 +22,8 @@ import type {
   WorkoutRecord,
 } from '../types/workout.types.js';
 import { TrainerAthletesService } from '#src/modules/trainer-athletes/services/trainer-athletes.service';
+import type { WorkoutExportQuery } from '../dto/workout.schemas.js';
+import { buildWorkoutExport } from '../utils/workout-export.js';
 import { workoutIdempotency } from '../utils/workout-idempotency.js';
 import type { WorkoutIdempotency } from '../utils/workout-idempotency.js';
 
@@ -231,6 +233,17 @@ export class WorkoutsService {
     }
 
     return workout;
+  }
+
+  async exportCompleted(id: string, actor: WorkoutActor, { locale }: WorkoutExportQuery) {
+    assertWorkoutAthlete(await this.usersService.findMyCapabilities(actor.id));
+
+    const workout = await this.workoutsRepository.findCompletedExport(id, actor.id);
+    if (!workout?.completedAt) {
+      throw new NotFoundException('Completed workout not found');
+    }
+
+    return buildWorkoutExport({ ...workout, completedAt: workout.completedAt }, locale);
   }
 
   // UPDATE PLANNED WORKOUT

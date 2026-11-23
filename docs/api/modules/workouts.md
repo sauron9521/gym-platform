@@ -26,12 +26,27 @@ Authenticated workout creation, retrieval, editing, set updates, lifecycle trans
 | POST   | `/workouts`                 | Create                |
 | GET    | `/workouts`                 | List                  |
 | GET    | `/workouts/:id`             | Detail                |
+| GET    | `/workouts/:id/export`      | Export own results    |
 | PATCH  | `/workouts/:id`             | Update                |
 | POST   | `/workouts/:id/start`       | Start                 |
 | PATCH  | `/workouts/:id/sets/:setId` | Update set            |
 | POST   | `/workouts/:id/complete`    | Complete              |
 | POST   | `/workouts/:id/cancel`      | Cancel                |
 | POST   | `/workouts/from-program`    | Create from a program |
+
+## Export a completed workout (#300)
+
+`GET /workouts/:id/export?locale=uk` returns versioned JSON with
+`schemaVersion: 1`, a structured `workout` and copyable plain `text`. The
+locale is optional and selects Ukrainian (default) or English text. The
+workout includes its title, UTC completion time, historical exercise names
+and completed sets in workout order. Weight in kg, distance in m and RPE
+use exact decimal strings. Unrecorded metrics are null.
+
+The API checks current Athlete capability and ownership on every request.
+Unknown, foreign and unfinished workouts return the same 404. The response
+uses `Cache-Control: no-store` and contains recorded results without planned
+targets, skipped sets, private notes or account and program identifiers.
 
 ## Exercise visibility boundary (E14 / #650)
 
