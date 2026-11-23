@@ -2,9 +2,9 @@ import { pageMetadata } from '@/shared/lib/seo';
 import { ApplicationDetail } from '@/widgets/applications/ui/application-detail';
 
 export const metadata = pageMetadata({
-  title: 'Web',
+  title: 'OVRANTO Athlete Web',
   description:
-    'Вебзастосунок Gym Platform розвивається для роботи з вправами, журналом тренувань та програмами. Публічний запуск ще не оголошено.',
+    'OVRANTO Athlete Web розвивається для спортсменів: вправи, журнал тренувань, програми й прогрес. Публічний запуск ще не оголошено.',
   path: '/apps/web',
 });
 
@@ -14,8 +14,8 @@ const highlights = [
     description: 'Глобальні та власні вправи з правилами приватного доступу.',
   },
   {
-    title: 'Тренувальні програми',
-    description: 'Чернетки, версії та призначення програм у роботі тренера.',
+    title: 'Програми та тренування',
+    description: 'Перегляд призначених програм і організація власних тренувань.',
   },
   {
     title: 'Журнал тренувань',
@@ -30,11 +30,11 @@ const highlights = [
 export default function ApplicationPage() {
   return (
     <ApplicationDetail
-      eyebrow="Gym Platform Web"
+      eyebrow="OVRANTO Athlete Web"
       title="Тренувальна платформа у браузері"
-      description="Вебзастосунок Gym Platform розвивається для роботи з вправами, журналом тренувань та програмами. Публічний запуск ще не оголошено."
+      description="OVRANTO Athlete Web розвивається для спортсменів: вправи, журнал тренувань, програми й прогрес. Публічний запуск ще не оголошено."
       highlights={highlights}
-      audienceLink={{ href: '/for-trainers', label: 'Можливості для тренерів' }}
+      audienceLink={{ href: '/for-athletes', label: 'Можливості для спортсменів' }}
       relatedApp={{ href: '/apps/mobile', label: 'Про Mobile' }}
     />
   );
