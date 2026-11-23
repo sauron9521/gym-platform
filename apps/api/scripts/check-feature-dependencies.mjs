@@ -2,7 +2,11 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { parseModuleImports, parseNestModuleExports } from './import-parser.mjs';
+import {
+  parseClassConstructorDependencies,
+  parseModuleImports,
+  parseNestModuleMetadata,
+} from './import-parser.mjs';
 
 function walk(dir) {
   if (!existsSync(dir)) return [];
@@ -80,8 +84,8 @@ export function checkFeatureDependencies(repositoryRoot) {
       readFileSync(join(modulesRoot, name, name + '.module.ts'), 'utf8'),
     ]),
   );
-  const moduleExports = new Map(
-    modules.map((name) => [name, parseNestModuleExports(moduleSources.get(name))]),
+  const moduleMetadata = new Map(
+    modules.map((name) => [name, parseNestModuleMetadata(moduleSources.get(name))]),
   );
   const errors = [];
 
@@ -91,6 +95,36 @@ export function checkFeatureDependencies(repositoryRoot) {
         file.endsWith('.ts') &&
         !relative(join(modulesRoot, name), file).split(sep).includes('test'),
     );
+    const registration = moduleMetadata.get(name);
+    const localClasses = new Map();
+    for (const file of files) {
+      for (const declaration of parseClassConstructorDependencies(readFileSync(file, 'utf8'), file)) {
+        localClasses.set(declaration.name, declaration.dependencies);
+      }
+    }
+
+    for (const exported of registration.exports) {
+      if (localClasses.has(exported) && !registration.providers.has(exported)) {
+        errors.push(
+          name + '.module.ts: local export ' + exported + ' is missing from providers',
+        );
+      }
+    }
+
+    for (const registered of [...registration.providers, ...registration.controllers]) {
+      for (const dependency of localClasses.get(registered) ?? []) {
+        if (localClasses.has(dependency) && !registration.providers.has(dependency)) {
+          errors.push(
+            name +
+              '.module.ts: ' +
+              registered +
+              ' injects local ' +
+              dependency +
+              ' missing from providers',
+          );
+        }
+      }
+    }
 
     for (const file of files) {
       const display = relative(resolve(repositoryRoot), file).split(sep).join('/');
@@ -197,7 +231,7 @@ export function checkFeatureDependencies(repositoryRoot) {
             // Nest module. Type-only symbols and pure public APIs are not DI.
             if (imported.kind === 'static-import' && targetPath.startsWith('services/')) {
               for (const symbol of imported.symbols) {
-                if (!moduleExports.get(targetFeature).has(symbol)) {
+                if (!moduleMetadata.get(targetFeature).exports.has(symbol)) {
                   errors.push(
                     display +
                       ": provider '" +
