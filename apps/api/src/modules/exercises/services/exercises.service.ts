@@ -8,6 +8,7 @@ import {
 import { Prisma } from '#prisma/client';
 
 import { ExercisesRepository } from '../repositories/exercises.repository.js';
+import { UsersService } from '#src/modules/users/services/users.service';
 import {
   assertCanManageExercise,
   buildExerciseManagementLookupWhere,
@@ -27,11 +28,17 @@ import type {
 
 @Injectable()
 export class ExercisesService {
-  constructor(private readonly exercisesRepository: ExercisesRepository) {}
+  constructor(
+    private readonly exercisesRepository: ExercisesRepository,
+    private readonly usersService: UsersService,
+  ) {}
 
   // CREATE
   async create(actor: ExerciseActor, input: CreateExerciseInput) {
-    const source = resolveExerciseSource(actor);
+    const source = resolveExerciseSource(
+      actor,
+      await this.usersService.findMyCapabilities(actor.id),
+    );
 
     const visibility = resolveExerciseVisibility(source, input.visibility);
 
