@@ -307,7 +307,14 @@ describe('Exercise trainer access (HTTP + PostgreSQL)', () => {
     try {
       // The same identity can be an ATHLETE and an approved Trainer.
       await prisma.user.update({ where: { id: trainerId }, data: { role: 'ATHLETE' } });
-      await prisma.trainerProfile.create({ data: { userId: trainerId, isActive: true } });
+      await prisma.trainerProfile.create({
+        data: {
+          userId: trainerId,
+          isActive: true,
+          approvedAt: new Date(),
+          approvedById: ownerId,
+        },
+      });
       const approvedCookie = await login(`${base}-trainer@example.test`);
 
       const grant = await request(server)
@@ -324,7 +331,7 @@ describe('Exercise trainer access (HTTP + PostgreSQL)', () => {
       const staleContext = { activeTrainerIds: [], activeAthleteIds: [ownerId] };
       await prisma.trainerProfile.update({
         where: { userId: trainerId },
-        data: { isActive: false },
+        data: { isActive: false, revokedAt: new Date(), revokedById: ownerId },
       });
       const staleWhere = buildExerciseVisibilityWhere(
         { id: trainerId, role: 'ATHLETE' },
