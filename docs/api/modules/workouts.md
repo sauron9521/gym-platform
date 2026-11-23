@@ -46,3 +46,20 @@ cancellation wait for the account lock; neither may mutate the workout after
 promotion. Creation, set-result updates and start/complete operations are
 **separate** authorization review slices; do not infer they share this
 transactional boundary. No Prisma migration or API contract changes.
+
+## Transactional result-set authorization (Issue #288)
+
+`PATCH /workouts/:id/sets/:setId` retains its service-side payload,
+state, and ownership validation. Before the final set UPDATE, a PostgreSQL
+transaction rechecks the **current persisted Athlete capability** under
+User/Profile locks. It then locks the parent workout with `FOR UPDATE`,
+scoped to both the exact route `workoutId` and persisted `athleteId`.
+A set ID alone never authorizes a write. This serializes with moderation
+(role promotion/suspension) and workout completion without altering
+the existing `409` conflict on a no-longer-active workout.
+
+Approved and former Trainers retain personal set access while their
+Athlete capability is active. PostgreSQL race tests cover an uncommitted
+account promotion and suspension, plus foreign workout/athlete contexts.
+No Prisma migration or HTTP contract changes. Workout creation and
+remaining lifecycle writes are separate #288 authorization review slices.

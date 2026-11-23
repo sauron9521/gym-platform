@@ -710,6 +710,11 @@ describe('WorkoutsService', () => {
           rpe: 8,
           completedAt: expect.any(Date),
         }),
+        expect.objectContaining({
+          workoutId: 'workout-1',
+          athleteId: athlete.id,
+          authorize: expect.any(Function),
+        }),
       );
     });
 
@@ -804,6 +809,11 @@ describe('WorkoutsService', () => {
           rir: null,
           notes: 'Skipped due to fatigue',
         }),
+        expect.objectContaining({
+          workoutId: 'workout-1',
+          athleteId: athlete.id,
+          authorize: expect.any(Function),
+        }),
       );
     });
 
@@ -843,6 +853,40 @@ describe('WorkoutsService', () => {
       ).rejects.toThrow(ConflictException);
 
       expect(repository.updateSet).toHaveBeenCalledOnce();
+    });
+
+    it('rejects a set write when Athlete was promoted to Admin after preflight', async () => {
+      repository.findById.mockResolvedValue({ ...plannedWorkout, status: 'IN_PROGRESS' });
+      repository.updateSet.mockResolvedValue({ id: 'set-1', status: 'COMPLETED' });
+      await service.updateSet('workout-1', 'set-1', athlete, { status: 'COMPLETED' });
+      const context = repository.updateSet.mock.calls[0]?.[2];
+      usersService.findMyCapabilitiesForWrite.mockResolvedValue({
+        athlete: false,
+        trainer: false,
+        admin: true,
+      });
+      await expect(context.authorize({ id: 'tx' })).rejects.toThrow(ForbiddenException);
+      expect(usersService.findMyCapabilitiesForWrite).toHaveBeenCalledWith(
+        { id: 'tx' },
+        athlete.id,
+      );
+    });
+
+    it('preserves former Trainer access to their own workout sets', async () => {
+      repository.findById.mockResolvedValue({
+        ...plannedWorkout,
+        status: 'IN_PROGRESS',
+        athleteId: trainer.id,
+      });
+      repository.updateSet.mockResolvedValue({ id: 'set-1', status: 'COMPLETED' });
+      await service.updateSet('workout-1', 'set-1', trainer, { status: 'COMPLETED' });
+      const context = repository.updateSet.mock.calls[0]?.[2];
+      usersService.findMyCapabilitiesForWrite.mockResolvedValue({
+        athlete: true,
+        trainer: false,
+        admin: false,
+      });
+      await expect(context.authorize({})).resolves.toBeUndefined();
     });
   });
 
@@ -1173,6 +1217,11 @@ describe('WorkoutsService', () => {
           rir: 2,
           notes: 'Controlled tempo',
           completedAt: expect.any(Date),
+        }),
+        expect.objectContaining({
+          workoutId: 'workout-1',
+          athleteId: athlete.id,
+          authorize: expect.any(Function),
         }),
       );
     });

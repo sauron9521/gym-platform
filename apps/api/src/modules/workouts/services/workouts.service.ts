@@ -383,7 +383,13 @@ export class WorkoutsService {
     }
 
     try {
-      const updatedSet = await this.workoutsRepository.updateSet(setId, data);
+      const updatedSet = await this.workoutsRepository.updateSet(setId, data, {
+        workoutId,
+        athleteId: actor.id,
+        authorize: async (tx) => {
+          assertWorkoutAthlete(await this.usersService.findMyCapabilitiesForWrite(tx, actor.id));
+        },
+      });
 
       if (!updatedSet) {
         throw new ConflictException('Workout is no longer in progress. Reload and try again.');

@@ -44,8 +44,12 @@ export class WorkoutsRepository extends WorkoutQueriesRepository {
     });
   }
 
-  updateSet(id: string, data: Prisma.WorkoutSetUpdateInput) {
-    return this.setsRepository.updateSet(id, data);
+  updateSet(
+    id: string,
+    data: Prisma.WorkoutSetUpdateInput,
+    context: Parameters<WorkoutSetsRepository['updateSet']>[2],
+  ) {
+    return this.setsRepository.updateSet(id, data, context);
   }
 
   completeWorkout(input: Parameters<WorkoutLifecycleRepository['completeWorkout']>[0]) {

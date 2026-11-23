@@ -15,6 +15,14 @@ describe('Workout command repository transaction boundaries', () => {
   const setsRepository = new WorkoutSetsRepository(prisma as unknown as PrismaService);
   const lifecycleRepository = new WorkoutLifecycleRepository(prisma as unknown as PrismaService);
 
+  const authorize = vi.fn(async () => {});
+
+  const context = {
+    workoutId: 'workout-1',
+    athleteId: 'athlete-1',
+    authorize,
+  };
+
   beforeEach(() => {
     vi.resetAllMocks();
     prisma.$transaction.mockImplementation(
@@ -27,26 +35,51 @@ describe('Workout command repository transaction boundaries', () => {
     tx.workoutSet.update.mockResolvedValue({ id: 'set-1', status: 'COMPLETED' });
     const data = { status: 'COMPLETED' as const };
 
-    await expect(setsRepository.updateSet('set-1', data)).resolves.toEqual({
+    await expect(setsRepository.updateSet('set-1', data, context)).resolves.toEqual({
       id: 'set-1',
       status: 'COMPLETED',
     });
 
+    expect(authorize).toHaveBeenCalledExactlyOnceWith(tx);
     expect(tx.workoutSet.update).toHaveBeenCalledWith({
       where: { id: 'set-1' },
       data,
       select: workoutSetSelect,
     });
-    expect(tx.$queryRaw.mock.calls[0]?.[0].join('?')).toContain('FOR UPDATE OF w');
+    const scopedLock = tx.$queryRaw.mock.calls[0]?.[0].join('?');
+    expect(scopedLock).toContain('FOR UPDATE OF w');
+    expect(scopedLock).toContain('w."id" = ?');
+    expect(scopedLock).toContain('w."athlete_id" = ?');
+    expect(tx.$queryRaw.mock.calls[0]?.slice(1)).toEqual([
+      'set-1',
+      context.workoutId,
+      context.athleteId,
+    ]);
+    expect(authorize.mock.invocationCallOrder[0]).toBeLessThan(
+      tx.$queryRaw.mock.invocationCallOrder[0]!,
+    );
     expect(tx.$queryRaw.mock.invocationCallOrder[0]).toBeLessThan(
       tx.workoutSet.update.mock.invocationCallOrder[0]!,
     );
   });
 
+  it('does not lock or write a set after the account callback denies', async () => {
+    const denied = new Error('Athlete capability revoked');
+    authorize.mockRejectedValueOnce(denied);
+
+    await expect(setsRepository.updateSet('set-1', { status: 'COMPLETED' }, context)).rejects.toBe(
+      denied,
+    );
+    expect(tx.$queryRaw).not.toHaveBeenCalled();
+    expect(tx.workoutSet.update).not.toHaveBeenCalled();
+  });
+
   it('does not update sets when their parent is not in progress', async () => {
     tx.$queryRaw.mockResolvedValue([{ id: 'workout-1', status: 'COMPLETED' }]);
 
-    await expect(setsRepository.updateSet('set-1', { status: 'COMPLETED' })).resolves.toBeNull();
+    await expect(
+      setsRepository.updateSet('set-1', { status: 'COMPLETED' }, context),
+    ).resolves.toBeNull();
     expect(tx.workoutSet.update).not.toHaveBeenCalled();
   });
 
@@ -100,7 +133,9 @@ describe('Workout command repository transaction boundaries', () => {
   it('refuses set updates when the parent workout row no longer exists', async () => {
     tx.$queryRaw.mockResolvedValue([]);
 
-    await expect(setsRepository.updateSet('set-1', { status: 'COMPLETED' })).resolves.toBeNull();
+    await expect(
+      setsRepository.updateSet('set-1', { status: 'COMPLETED' }, context),
+    ).resolves.toBeNull();
 
     expect(tx.$queryRaw).toHaveBeenCalledOnce();
     expect(tx.workoutSet.update).not.toHaveBeenCalled();
