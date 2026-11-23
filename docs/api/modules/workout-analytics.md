@@ -1,5 +1,16 @@
 # Workout analytics module
 
+## Workouts policy boundary (E14 / #652)
+
+`WorkoutAnalyticsService` imports `assertWorkoutAthlete` from
+`#src/modules/workouts/public-api`, not the internal
+`workouts/policies/workout-access.policy` path. The exported function is
+the **same** canonical Workouts authorization assertion. Each summary,
+personal-records and exercise-history request still loads current persisted
+capabilities through `UsersService.findMyCapabilities(actor.id)` before
+accessing athlete-scoped SQL data. This refactor changes no permission
+semantics, response schemas, Prisma queries, or throttling.
+
 ## Live athlete capability (M05 / #291)
 
 Summary, personal records, and exercise analytics now authorize the **persisted athlete capability**, not a session's legacy `User.role`. Thus legacy TRAINER identities remain able to see their **own** workout history and analytics, while a current `ADMIN` or deleted account is denied. The analytics repository queries remain actor-id scoped. Both services use the same `UsersService.findMyCapabilities` facade; no client-supplied permission flags are trusted.
