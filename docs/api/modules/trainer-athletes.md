@@ -30,6 +30,19 @@ Authenticated `GET /trainer-athletes` and `GET /trainer-athletes/:id` use the sh
 - Preserves 400 for invalid initial role pairs, 404 for a missing initial target, 409 for duplicate open pairs (including concurrent `P2002` races), and the existing response projection. No raw SQL string interpolation, database migrations or public API payload changes.
 - Tests cover both invitation directions, approved `ATHLETE`-role trainers, target/admin changes, and deterministic HTTP/PostgreSQL revocation between the preflight and the database write.
 
+## Users dependency boundary (E14 / #648)
+
+This module uses the exported `UsersService` for current-account capability
+reads and the pure `deriveAccountCapabilities` from
+`#src/modules/users/public-api` to evaluate snapshots **after** obtaining
+the existing User/TrainerProfile row locks. It does not import, inject or
+export `UsersRepository` from another feature. Its obsolete architecture
+allowlist exception has been removed; direct cross-feature repository imports
+now fail the TypeScript AST dependency check.
+
+Invitation transaction order, moderation race handling, database predicates,
+public response projection and HTTP error behavior are unchanged.
+
 ## Live capability checks for relationship reads (M05 / #291)
 
 Both `GET /trainer-athletes` and `GET /trainer-athletes/:id` now load **current persisted** user capabilities via `UsersService.findMyCapabilities`, not the role captured by an older session. Deleted and current-admin accounts cannot read relationship details even if a prior session identifies them as an athlete or trainer.
