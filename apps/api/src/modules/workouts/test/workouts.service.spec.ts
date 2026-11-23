@@ -1133,6 +1133,7 @@ describe('WorkoutsService', () => {
       expect(repository.update).toHaveBeenCalledWith(
         { id: plannedWorkout.id, athleteId: athlete.id, status: 'PLANNED' },
         { title: 'Trimmed workout', notes: null, scheduledAt: null },
+        expect.any(Function),
       );
     });
 
@@ -1226,6 +1227,7 @@ describe('WorkoutsService', () => {
       expect(repository.update).toHaveBeenCalledWith(
         { id: plannedWorkout.id, athleteId: athlete.id, status: 'IN_PROGRESS' },
         { status: 'CANCELLED' },
+        expect.any(Function),
       );
     });
 
