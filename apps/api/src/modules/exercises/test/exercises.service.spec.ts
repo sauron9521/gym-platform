@@ -843,17 +843,22 @@ describe('ExercisesService', () => {
         expect.any(Function),
       );
     });
+
     it('denies a stale Admin update after demotion at final write checkpoint', async () => {
-      repository.findById.mockResolvedValue({ ...exercise, source: 'GLOBAL', createdById: null });
+      repository.findById.mockResolvedValue({
+        ...exercise,
+        source: 'GLOBAL',
+        createdById: null,
+      });
       await service.update(exercise.id, admin, { name: 'Denied' });
       const authorize = repository.update.mock.calls[0]?.[2];
       usersService.findMyCapabilitiesForWrite.mockResolvedValue({
-        athlete: true, trainer: false, admin: false,
+        athlete: true,
+        trainer: false,
+        admin: false,
       });
       await expect(authorize({ id: 'tx' })).rejects.toThrow(ForbiddenException);
-      expect(usersService.findMyCapabilitiesForWrite).toHaveBeenCalledWith(
-        { id: 'tx' }, admin.id,
-      );
+      expect(usersService.findMyCapabilitiesForWrite).toHaveBeenCalledWith({ id: 'tx' }, admin.id);
     });
 
     it('denies an Athlete update after account promotion to Admin', async () => {
@@ -861,23 +866,28 @@ describe('ExercisesService', () => {
       await service.update(exercise.id, athlete, { name: 'Denied' });
       const authorize = repository.update.mock.calls[0]?.[2];
       usersService.findMyCapabilitiesForWrite.mockResolvedValue({
-        athlete: false, trainer: false, admin: true,
+        athlete: false,
+        trainer: false,
+        admin: true,
       });
       await expect(authorize({})).rejects.toThrow(ForbiddenException);
     });
 
     it('preserves a revoked Trainer ability to edit their own exercises', async () => {
       repository.findById.mockResolvedValue({
-        ...exercise, createdById: trainer.id, source: 'TRAINER_CUSTOM',
+        ...exercise,
+        createdById: trainer.id,
+        source: 'TRAINER_CUSTOM',
       });
       await service.update(exercise.id, trainer, { name: 'Owned' });
       const authorize = repository.update.mock.calls[0]?.[2];
       usersService.findMyCapabilitiesForWrite.mockResolvedValue({
-        athlete: true, trainer: false, admin: false,
+        athlete: true,
+        trainer: false,
+        admin: false,
       });
       await expect(authorize({})).resolves.toBeUndefined();
     });
-
   });
 
   describe('archive', () => {
@@ -960,11 +970,17 @@ describe('ExercisesService', () => {
     });
 
     it('denies a stale Admin archive after demotion at final write checkpoint', async () => {
-      repository.findById.mockResolvedValue({ ...exercise, source: 'GLOBAL', createdById: null });
+      repository.findById.mockResolvedValue({
+        ...exercise,
+        source: 'GLOBAL',
+        createdById: null,
+      });
       await service.archive(exercise.id, admin);
       const authorize = repository.archive.mock.calls[0]?.[1];
       usersService.findMyCapabilitiesForWrite.mockResolvedValue({
-        athlete: true, trainer: false, admin: false,
+        athlete: true,
+        trainer: false,
+        admin: false,
       });
       await expect(authorize({})).rejects.toThrow(ForbiddenException);
     });
