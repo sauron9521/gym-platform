@@ -13,13 +13,13 @@ Promote code only when two real consumers share the same stable behavior **or** 
 
 ## Package ownership and compatibility matrix
 
-| Package | Owns / public interface | Declared app consumers | Runtime boundary |
-| --- | --- | --- | --- |
-| `@gym/api-client` | OpenAPI-generated types; `openapi-fetch` transport; browser-cookie and native-bearer adapters; HTTP failure classification | `web`, `trainer`, `admin`, `mobile` | Uses standard Fetch interfaces; no Prisma, Node secrets, token persistence or automatic retry. Browser and native auth modes are explicit. Next SSR cookie forwarding remains app-local and deliberate. |
-| `@gym/domain` | Pure, deterministic workout status, transition precondition and set-progress helpers | `mobile` **only** (declared today) | No framework or runtime dependencies. API validates permissions and writes independently. Keep small until a second real consumer adopts it; this is a deliberate limited cross-runtime contract, not permission to extract a duplicate domain layer. |
-| `@gym/i18n` | Ukrainian/English ICU catalogs, typed keys, locale negotiation and lazy catalog loading | `web`, `trainer`, `admin`, `landing`, `mobile` | Framework-neutral messages. Next uses `next-intl`, Expo uses `react-intl` in their own adapters. API error codes stay locale-neutral. |
-| `@gym/design-tokens` | Semantic theme palette, CSS and explicit native color adapter | `web`, `trainer`, `admin`, `landing`, `mobile` | CSS entrypoints are web-only; `./native` and `./ovranto-native` are native-specific. Do not import both legacy and OVRANTO root CSS stylesheets together. |
-| `@gym/ui-web` | React Web UI primitives: Button, Input, Card, BrandLogo, AsyncFeedback | `web`, `trainer`, `admin`, `landing` | Browser/Next React UI only. **Forbidden in Expo**. No business forms, data fetching, app navigation or native widgets. |
+| Package              | Owns / public interface                                                                                                    | Declared app consumers                         | Runtime boundary                                                                                                                                                                                                                                      |
+| -------------------- | -------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `@gym/api-client`    | OpenAPI-generated types; `openapi-fetch` transport; browser-cookie and native-bearer adapters; HTTP failure classification | `web`, `trainer`, `admin`, `mobile`            | Uses standard Fetch interfaces; no Prisma, Node secrets, token persistence or automatic retry. Browser and native auth modes are explicit. Next SSR cookie forwarding remains app-local and deliberate.                                               |
+| `@gym/domain`        | Pure, deterministic workout status, transition precondition and set-progress helpers                                       | `mobile` **only** (declared today)             | No framework or runtime dependencies. API validates permissions and writes independently. Keep small until a second real consumer adopts it; this is a deliberate limited cross-runtime contract, not permission to extract a duplicate domain layer. |
+| `@gym/i18n`          | Ukrainian/English ICU catalogs, typed keys, locale negotiation and lazy catalog loading                                    | `web`, `trainer`, `admin`, `landing`, `mobile` | Framework-neutral messages. Next uses `next-intl`, Expo uses `react-intl` in their own adapters. API error codes stay locale-neutral.                                                                                                                 |
+| `@gym/design-tokens` | Semantic theme palette, CSS and explicit native color adapter                                                              | `web`, `trainer`, `admin`, `landing`, `mobile` | CSS entrypoints are web-only; `./native` and `./ovranto-native` are native-specific. Do not import both legacy and OVRANTO root CSS stylesheets together.                                                                                             |
+| `@gym/ui-web`        | React Web UI primitives: Button, Input, Card, BrandLogo, AsyncFeedback                                                     | `web`, `trainer`, `admin`, `landing`           | Browser/Next React UI only. **Forbidden in Expo**. No business forms, data fetching, app navigation or native widgets.                                                                                                                                |
 
 The API does not declare a direct dependency on any of these five packages in its manifest. `scripts/ci-select.mjs` conservatively includes API checks for i18n catalog edits because of transactional email concerns; **CI selection is not equivalent to a package import**.
 
@@ -43,7 +43,7 @@ apps/api ──────────────> (no declared @gym shared-pa
 @ gym shared packages ─> (no declared intra-workspace package edges at baseline)
 ```
 
-In the last line, `@ gym` is a human-readable group label, not a package specifier. No app-to-app manifest edge or shared-package cycle appears in the reviewed manifests. Native and browser consumers share contracts/tokens, **not** the same UI implementation.
+No app-to-app manifest edge or shared-package cycle appears in the reviewed manifests. Native and browser consumers share contracts/tokens, **not** the same UI implementation.
 
 ## Import and ownership rules
 
