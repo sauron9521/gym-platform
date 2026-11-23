@@ -32,7 +32,9 @@ test('all new native flows stay opt-in, approved main-only staging and verified 
   expect(workflow).toContain('dump badging');
   expect(workflow).toContain('validate-mobile-smoke-inputs.mjs');
   expect(workflow).toContain("MAESTRO_VERSION: '2.12.1'");
-  expect(workflow).toContain('reactivecircus/android-emulator-runner@v2');
+  expect(workflow).toContain(
+    'reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2',
+  );
   expect(workflow).toContain('MOBILE_E2E_EMAIL');
   expect(workflow).toContain('MOBILE_E2E_PASSWORD');
   expect(workflow).toContain('E2E_WORKOUT_TITLE="$WORKOUT_TITLE"');
