@@ -452,6 +452,89 @@ describe('Exercises (HTTP + PostgreSQL)', () => {
       }
     });
 
+    it('honors explicit dual-capability creation scope and denies revoked Trainer intent', async () => {
+      const server = app!.getHttpServer();
+      const payload = {
+        muscleGroups: [{ slug: 'chest', role: 'PRIMARY' }],
+        equipment: [],
+      };
+
+      await prisma.trainerProfile.create({
+        data: {
+          userId: ownerId,
+          isActive: true,
+          approvedAt: new Date(),
+          approvedById: ownerId,
+        },
+      });
+
+      try {
+        const trainerExercise = await request(server)
+          .post('/exercises')
+          .set('Cookie', ownerCookie)
+          .send({ ...payload, name: 'Dual Capability Trainer Exercise', creationScope: 'TRAINER' });
+        expect(trainerExercise.status).toBe(201);
+        expect(trainerExercise.body).toMatchObject({
+          source: 'TRAINER_CUSTOM',
+          visibility: null,
+          createdById: ownerId,
+        });
+        exerciseIds.push(trainerExercise.body.id as string);
+
+        const ownExercise = await request(server)
+          .post('/exercises')
+          .set('Cookie', ownerCookie)
+          .send({
+            ...payload,
+            name: 'Dual Capability Personal Exercise',
+            creationScope: 'ATHLETE',
+          });
+        expect(ownExercise.status).toBe(201);
+        expect(ownExercise.body).toMatchObject({
+          source: 'ATHLETE_CUSTOM',
+          visibility: 'PRIVATE',
+          createdById: ownerId,
+        });
+        exerciseIds.push(ownExercise.body.id as string);
+
+        const invalid = await request(server)
+          .post('/exercises')
+          .set('Cookie', ownerCookie)
+          .send({ ...payload, name: 'Invalid Scope', creationScope: 'GLOBAL' });
+        expect(invalid.status).toBe(400);
+
+        await prisma.trainerProfile.update({
+          where: { userId: ownerId },
+          data: { isActive: false, revokedAt: new Date(), revokedById: ownerId },
+        });
+
+        const revoked = await request(server)
+          .post('/exercises')
+          .set('Cookie', ownerCookie)
+          .send({ ...payload, name: 'Revoked Trainer Scope', creationScope: 'TRAINER' });
+        expect(revoked.status).toBe(403);
+        expect(
+          await prisma.exercise.count({
+            where: { name: 'Revoked Trainer Scope', createdById: ownerId },
+          }),
+        ).toBe(0);
+
+        const personal = await request(server)
+          .post('/exercises')
+          .set('Cookie', ownerCookie)
+          .send({ ...payload, name: 'Revoked Trainer Personal Scope', creationScope: 'ATHLETE' });
+        expect(personal.status).toBe(201);
+        expect(personal.body).toMatchObject({
+          source: 'ATHLETE_CUSTOM',
+          visibility: 'PRIVATE',
+          createdById: ownerId,
+        });
+        exerciseIds.push(personal.body.id as string);
+      } finally {
+        await prisma.trainerProfile.deleteMany({ where: { userId: ownerId } });
+      }
+    });
+
     it('should create a private athlete exercise', async () => {
       const response = await request(app!.getHttpServer())
         .post('/exercises')
