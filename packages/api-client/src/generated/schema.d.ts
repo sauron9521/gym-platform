@@ -388,22 +388,6 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/users/me/account-deletion-request': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get: operations['AccountDeletionRequestsController_findOwn'];
-    put?: never;
-    post: operations['AccountDeletionRequestsController_submit'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
   '/health/live': {
     parameters: {
       query?: never;
@@ -430,6 +414,22 @@ export interface paths {
     get: operations['HealthController_readiness'];
     put?: never;
     post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/users/me/account-deletion-request': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['AccountDeletionRequestsController_findOwn'];
+    put?: never;
+    post: operations['AccountDeletionRequestsController_submit'];
     delete?: never;
     options?: never;
     head?: never;
@@ -2010,6 +2010,40 @@ export interface operations {
       };
     };
   };
+  HealthController_liveness: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  HealthController_readiness: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
   AccountDeletionRequestsController_findOwn: {
     parameters: {
       query?: never;
@@ -2072,40 +2106,6 @@ export interface operations {
             };
           };
         };
-      };
-    };
-  };
-  HealthController_liveness: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  HealthController_readiness: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
       };
     };
   };
