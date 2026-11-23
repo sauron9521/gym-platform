@@ -100,9 +100,7 @@ export function resolveExerciseSource(
     throw new ForbiddenException('Only athletes can create personal exercises');
   }
 
-  return actor.role === 'TRAINER' && capabilities.trainer
-    ? 'TRAINER_CUSTOM'
-    : 'ATHLETE_CUSTOM';
+  return actor.role === 'TRAINER' && capabilities.trainer ? 'TRAINER_CUSTOM' : 'ATHLETE_CUSTOM';
 }
 
 export function resolveExerciseVisibility(
