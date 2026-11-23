@@ -35,7 +35,7 @@ export default function ApplicationPage() {
       description="OVRANTO Athlete Mobile розвивається для тренувань зі смартфона. Публічне встановлення поки не оголошено."
       highlights={highlights}
       audienceLink={{ href: '/for-athletes', label: 'Можливості для спортсменів' }}
-      relatedApp={{ href: '/apps/web', label: 'Про Web' }}
+      relatedApp={{ href: '/apps/web', label: 'Про Athlete Web' }}
     />
   );
 }

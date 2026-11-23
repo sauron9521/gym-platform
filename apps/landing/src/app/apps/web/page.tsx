@@ -35,7 +35,7 @@ export default function ApplicationPage() {
       description="OVRANTO Athlete Web розвивається для спортсменів: вправи, журнал тренувань, програми й прогрес. Публічний запуск ще не оголошено."
       highlights={highlights}
       audienceLink={{ href: '/for-athletes', label: 'Можливості для спортсменів' }}
-      relatedApp={{ href: '/apps/mobile', label: 'Про Mobile' }}
+      relatedApp={{ href: '/apps/mobile', label: 'Про Athlete Mobile' }}
     />
   );
 }

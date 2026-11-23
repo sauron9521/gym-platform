@@ -38,6 +38,9 @@ export default function TrainersPage() {
             OVRANTO Coach — окремий вебпродукт для тренерів: тренувальні програми, їхні версії та
             керована взаємодія зі спортсменами. Публічний запуск ще не оголошено.
           </p>
+          <p className="mt-7 inline-flex rounded-full border border-primary/20 bg-primary/10 px-4 py-2 text-sm font-semibold text-primary">
+            Статус: у розробці
+          </p>
           <Link
             href="/features"
             className="mt-8 inline-flex rounded-sm font-semibold text-primary underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"
@@ -72,8 +75,8 @@ export default function TrainersPage() {
         </Container>
       </MarketingSection>
       <CallToAction
-        title="Дізнайся більше про OVRANTO Coach"
-        description="Coach — окремий вебпродукт для тренерів. Публічний доступ ще не відкрито."
+        title="OVRANTO Coach готується до запуску"
+        description="Coach — окремий вебпродукт для тренерів. Зараз доступний лише огляд можливостей, не реєстрація чи вхід."
         primary={{ href: '/apps', label: 'Каталог продуктів' }}
         secondary={{ href: '/features', label: 'Усі можливості' }}
       />
