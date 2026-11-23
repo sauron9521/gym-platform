@@ -121,3 +121,23 @@ need review under
 [#361](https://github.com/sauron9521/gym-platform/issues/361) is already closed;
 do not reopen or duplicate its completed cross-product matrix.
 **Keep #288 open**, and do not treat CI as production security approval.
+
+## Atomic exercise management writes (#288)
+
+`PATCH /exercises/:id` and `DELETE /exercises/:id` retain their existing
+object ownership/source predicates: foreign custom exercises return `404`,
+while a non-admin attempting to modify a global exercise receives `403`.
+After the initial read and validation, the repository now runs each mutation
+in a transaction with a fresh account capability check **under the same
+User/Profile row locks** used by exercise creation. Moderation, account
+suspension, and role promotion/demotion must serialize before or after the
+actual UPDATE/soft archive, rather than granting writes based on a stale
+session role.
+
+Former trainers retain Athlete access to **their own** trainer/custom
+exercises after Trainer approval revocation; a suspended account or one
+promoted to Admin cannot use a stale Athlete session to write personal data.
+No extra private-catalog visibility, migrations, endpoints, or response-shape
+changes are introduced. A PostgreSQL integration regression holds an
+uncommitted Admin demotion and asserts that both UPDATE and archive are
+denied without any mutation.
