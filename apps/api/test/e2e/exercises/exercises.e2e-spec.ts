@@ -415,14 +415,14 @@ describe('Exercises (HTTP + PostgreSQL)', () => {
           },
         });
         const cookie = await login(email);
-        const create = (name: string) =>
-          request(app!.getHttpServer()).post('/exercises').set('Cookie', cookie).send({
-            name,
-            muscleGroups: [{ slug: 'chest', role: 'PRIMARY' }],
-            equipment: [],
-          });
-
-        const approved = await create('Approved Trainer Exercise');
+        const payload = {
+          muscleGroups: [{ slug: 'chest', role: 'PRIMARY' }],
+          equipment: [],
+        };
+        const approved = await request(app!.getHttpServer())
+          .post('/exercises')
+          .set('Cookie', cookie)
+          .send({ ...payload, name: 'Approved Trainer Exercise' });
         expect(approved.status).toBe(201);
         expect(approved.body).toMatchObject({
           source: 'TRAINER_CUSTOM',
