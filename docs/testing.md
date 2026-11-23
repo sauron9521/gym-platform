@@ -96,9 +96,9 @@ uvx "zizmor@1.32.0" --offline --collect=workflows --strict-collection --format=g
 
 ## Immutable GitHub Action revisions (incremental rollout)
 
-The Dependency Audit, Staging Live Smoke, Roadmap Milestones and OVRANTO
-Visual Review workflows are part of the gradual migration from mutable
-major-version tags to immutable GitHub Action commit SHAs. Their `uses` entries retain major-version comments
+The Dependency Audit, Staging Live Smoke, Roadmap Milestones, OVRANTO
+Visual Review and Mobile Native E2E workflows are part of the gradual migration
+from mutable major-version tags to immutable GitHub Action commit SHAs. Their `uses` entries retain major-version comments
 for readability, but the SHA controls the actual code executed.
 
 - `actions/checkout@v7` is pinned to the reviewed `v7` tag commit.
@@ -107,9 +107,12 @@ for readability, but the SHA controls the actual code executed.
   `v6` tag, **not** the tag object's SHA.
 - `actions/cache@v6` and `actions/upload-artifact@v7` are pinned to official
   tag commits for OVRANTO visual-review evidence generation.
+- `actions/setup-java@v6` and `reactivecircus/android-emulator-runner@v2`
+  are pinned for manual Android Maestro device smoke tests. The emulator
+  runner's annotated `v2` tag is resolved to its **target commit**, not the tag object.
 
-The root `scripts/ci-action-pins.test.mjs` test protects all twelve references,
-including the visual-review cache and artifact-upload actions.
+The root `scripts/ci-action-pins.test.mjs` test protects all sixteen references,
+including visual-review evidence and mobile emulator setup actions.
 For future upgrades, verify the new commit against the official upstream
 tag/release, update the explicit hash and its regression test in the same PR,
 then review CI. Do not blindly copy a version label or an unverified hash.

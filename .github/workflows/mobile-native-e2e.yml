@@ -49,7 +49,7 @@ jobs:
       FLOW: ${{ inputs.flow }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
 
@@ -62,7 +62,7 @@ jobs:
           fi
 
       - name: Set up Node.js for input validation
-        uses: actions/setup-node@v7
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version: '24'
 
@@ -70,7 +70,7 @@ jobs:
         run: node scripts/validate-mobile-smoke-inputs.mjs
 
       - name: Set up Java
-        uses: actions/setup-java@v6
+        uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6
         with:
           distribution: temurin
           java-version: '17'
@@ -87,7 +87,7 @@ jobs:
           echo "$HOME/.maestro/bin" >> "$GITHUB_PATH"
 
       - name: Run authenticated staging smoke on a verified APK
-        uses: reactivecircus/android-emulator-runner@v2
+        uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2
         env:
           E2E_EMAIL: ${{ secrets.MOBILE_E2E_EMAIL }}
           E2E_PASSWORD: ${{ secrets.MOBILE_E2E_PASSWORD }}

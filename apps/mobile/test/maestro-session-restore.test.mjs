@@ -28,7 +28,10 @@ test('preview APK and Maestro tests are explicitly operator-driven', () => {
   assert.match(flow, /- tapOn: Вийти/);
   assert.match(workflow, /workflow_dispatch/);
   assert.match(workflow, /mobile-staging/);
-  assert.match(workflow, /reactivecircus\/android-emulator-runner@v2/);
+  assert.match(
+    workflow,
+    /reactivecircus\/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2/,
+  );
   assert.match(workflow, /validate-mobile-smoke-inputs\.mjs/);
   assert.match(workflow, /sha256sum --check --status/);
   assert.match(workflow, /dump badging/);
