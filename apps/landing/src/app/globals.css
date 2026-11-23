@@ -163,3 +163,62 @@
     transform: translateY(-2px);
   }
 }
+
+/* Home section rhythm: semantic tint, a restrained editorial divider and
+   no extra imagery or downloads. Both themes use the OVRANTO token palette. */
+.landing-audience-surface {
+  background-image: radial-gradient(
+    ellipse at 3% 12%,
+    color-mix(in srgb, var(--primary) 7%, transparent),
+    transparent 60%
+  );
+}
+
+.landing-workflow-surface {
+  background-image: radial-gradient(
+    ellipse at 92% 85%,
+    color-mix(in srgb, var(--brand-terracotta) 9%, transparent),
+    transparent 55%
+  );
+}
+
+.landing-section-heading::before {
+  content: '';
+  display: block;
+  width: 3.25rem;
+  height: 0.25rem;
+  margin-bottom: 1.5rem;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--brand-terracotta), var(--primary));
+}
+
+.landing-section-heading h2 {
+  max-width: 20ch;
+  letter-spacing: -0.045em;
+}
+
+/* Progressive enhancement: never hide content if view timelines are unavailable.
+   The animation starts at 92% opacity so offscreen/focused text is still legible.
+   It is disabled completely for users preferring reduced motion. */
+@keyframes landing-scroll-entrance {
+  from {
+    opacity: 0.92;
+    transform: translateY(12px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  @supports (animation-timeline: view()) {
+    .landing-scroll-reveal {
+      animation: landing-scroll-entrance linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 75%;
+      animation-duration: auto;
+    }
+  }
+}
