@@ -116,10 +116,7 @@ test('OpenAPI changes check every typed API consumer without full scope', () => 
     workspaces: true,
     redis: false,
   });
-  assert.deepEqual(
-    classifyChangedPaths(['README.md', 'apps/api/openapi/openapi.json']),
-    actual,
-  );
+  assert.deepEqual(classifyChangedPaths(['README.md', 'apps/api/openapi/openapi.json']), actual);
 });
 
 test('CI wires Admin and Trainer consumer checks to affected workspace scopes', () => {
