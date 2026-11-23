@@ -76,8 +76,10 @@ rather than authorizing a stale Athlete session. No bypass is available via
 the repository's manual-create method: a transaction authorization callback
 is required.
 
-The authorization happens **after** exercise and relationship access locks
-and **before** the insert; the locks are held through commit. Current
+The transaction acquires **User/Profile locks before exercise rows**, then
+exercise rows before trainer relationships. This matches exercise-management
+writes' User-to-Exercise lock order and avoids an archive/create deadlock.
+All locks remain held through the final INSERT and commit. Current
 Athlete-capable former Trainers retain their own manual workouts. PostgreSQL
 race tests cover an uncommitted Athlete-to-Admin promotion and suspension,
 asserting that neither creates a workout after moderation commits. There
