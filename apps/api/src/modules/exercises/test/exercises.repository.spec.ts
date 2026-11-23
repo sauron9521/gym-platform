@@ -238,6 +238,7 @@ describe('ExercisesRepository', () => {
         ),
       ).rejects.toBe(error);
     });
+
     it('does not INSERT when the locked authorization callback rejects', async () => {
       const denied = new Error('Trainer capability revoked');
       const authorize = vi.fn().mockRejectedValue(denied);
@@ -247,7 +248,6 @@ describe('ExercisesRepository', () => {
       ).rejects.toBe(denied);
       expect(prisma.exercise.create).not.toHaveBeenCalled();
     });
-
   });
 
   describe('update', () => {
