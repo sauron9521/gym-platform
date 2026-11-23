@@ -3,7 +3,6 @@ import { UsersController } from './controllers/users.controller.js';
 import { AdminUsersController } from './controllers/admin-users.controller.js';
 import { AdminUsersReadGuard } from './controllers/admin-users-read.guard.js';
 import { AdminAuditModule } from '#src/common/audit/admin-audit.module';
-import { RateLimitStorageModule } from '#src/common/rate-limit/rate-limit-storage.module';
 import { AdminSessionPurposeGuard } from '#src/common/auth/admin-session-purpose.guard';
 import { AdminOriginGuard } from '#src/common/auth/admin-origin.guard';
 import { UsersRepository } from './repositories/users.repository.js';
@@ -15,12 +14,9 @@ import { AvatarService } from './avatar/avatar.service.js';
 import { AvatarImageProcessor } from './avatar/avatar-image.processor.js';
 import { AvatarOrphanCleanupService } from './avatar/avatar-orphan-cleanup.service.js';
 import { AvatarPublicController } from './controllers/avatar-public.controller.js';
-import { AccountDeletionRequestsController } from './controllers/account-deletion-requests.controller.js';
-import { AccountDeletionRequestsRepository } from './repositories/account-deletion-requests.repository.js';
-import { AccountDeletionRequestsService } from './services/account-deletion-requests.service.js';
 
 @Module({
-  imports: [AdminAuditModule, RateLimitStorageModule],
+  imports: [AdminAuditModule],
   providers: [
     AdminUsersReadGuard,
     AdminSessionPurposeGuard,
@@ -28,20 +24,13 @@ import { AccountDeletionRequestsService } from './services/account-deletion-requ
     UsersRepository,
     UsersService,
     UsersAuthFacade,
-    AccountDeletionRequestsRepository,
-    AccountDeletionRequestsService,
     AdminAccountStatusService,
     AvatarService,
     AvatarDiskStorage,
     AvatarImageProcessor,
     AvatarOrphanCleanupService,
   ],
-  controllers: [
-    UsersController,
-    AvatarPublicController,
-    AdminUsersController,
-    AccountDeletionRequestsController,
-  ],
+  controllers: [UsersController, AvatarPublicController, AdminUsersController],
   exports: [UsersService, UsersAuthFacade],
 })
 export class UsersModule {}
