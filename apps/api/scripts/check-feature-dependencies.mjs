@@ -98,16 +98,17 @@ export function checkFeatureDependencies(repositoryRoot) {
     const registration = moduleMetadata.get(name);
     const localClasses = new Map();
     for (const file of files) {
-      for (const declaration of parseClassConstructorDependencies(readFileSync(file, 'utf8'), file)) {
+      for (const declaration of parseClassConstructorDependencies(
+        readFileSync(file, 'utf8'),
+        file,
+      )) {
         localClasses.set(declaration.name, declaration.dependencies);
       }
     }
 
     for (const exported of registration.exports) {
       if (localClasses.has(exported) && !registration.providers.has(exported)) {
-        errors.push(
-          name + '.module.ts: local export ' + exported + ' is missing from providers',
-        );
+        errors.push(name + '.module.ts: local export ' + exported + ' is missing from providers');
       }
     }
 
