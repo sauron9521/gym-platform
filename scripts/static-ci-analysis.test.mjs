@@ -23,7 +23,10 @@ test('pinned scanners cover workflow YAML, embedded shell and standalone .sh fil
   assert.match(workflow, /rhysd\/actionlint:1\.7\.12 -shellcheck=shellcheck/);
   assert.match(workflow, /--network none/);
   assert.match(workflow, /\/repo:ro/);
-  assert.match(workflow, /git ls-files -z -- '\*\.sh' \| xargs -0 -r shellcheck --severity=warning --/);
+  assert.match(
+    workflow,
+    /git ls-files -z -- '\*\.sh' \| xargs -0 -r shellcheck --severity=warning --/,
+  );
   assert.match(workflow, /astral-sh\/setup-uv@[0-9a-f]{40}/);
   assert.match(workflow, /enable-cache: false/);
   assert.match(workflow, /zizmor@1\.32\.0/);
