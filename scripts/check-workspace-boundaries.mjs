@@ -2,9 +2,22 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const dependencyFields = ['dependencies', 'devDependencies', 'peerDependencies', 'optionalDependencies'];
+const dependencyFields = [
+  'dependencies',
+  'devDependencies',
+  'peerDependencies',
+  'optionalDependencies',
+];
 const sourceExtensions = /\.(?:[cm]?[jt]sx?)$/;
-const skippedDirectories = new Set(['node_modules', '.next', '.expo', 'dist', 'build', 'coverage', 'generated']);
+const skippedDirectories = new Set([
+  'node_modules',
+  '.next',
+  '.expo',
+  'dist',
+  'build',
+  'coverage',
+  'generated',
+]);
 
 // Conservatively extract literal static/re-export, side-effect and dynamic import paths.
 // This is an additional cross-workspace guard, not a complete TypeScript parser.
@@ -63,7 +76,9 @@ export function checkWorkspaceBoundaries(repositoryRoot) {
         const target = byName.get(dependency);
         if (!target) continue;
         if (target.kind === 'apps') {
-          errors.push(workspace.name + ': must not depend on app ' + dependency + ' (' + field + ')');
+          errors.push(
+            workspace.name + ': must not depend on app ' + dependency + ' (' + field + ')',
+          );
         } else if (workspace.kind === 'packages') {
           sharedGraph.get(workspace.name).add(dependency);
         }
@@ -82,8 +97,7 @@ export function checkWorkspaceBoundaries(repositoryRoot) {
         if (!specifier.startsWith('.')) continue;
         const absoluteTarget = resolve(dirname(file), specifier);
         const foreign = workspaces.find(
-          (candidate) =>
-            candidate !== workspace && within(candidate.directory, absoluteTarget),
+          (candidate) => candidate !== workspace && within(candidate.directory, absoluteTarget),
         );
         if (foreign?.kind === 'apps' || (workspace.kind === 'packages' && foreign)) {
           errors.push(
