@@ -150,10 +150,7 @@ test('Workouts imports public Exercises read contracts, never private policy or 
     );
     assert.deepEqual(check(), []);
 
-    for (const internal of [
-      'policies/exercise-access.policy',
-      'selects/exercise.select',
-    ]) {
+    for (const internal of ['policies/exercise-access.policy', 'selects/exercise.select']) {
       source(
         'workouts',
         'repositories/workout-creation.repository.ts',
