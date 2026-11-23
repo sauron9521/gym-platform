@@ -171,6 +171,33 @@ test('Workouts imports public Exercises read contracts, never private policy or 
   });
 });
 
+test('Workout Analytics uses the public Workouts athlete policy, not private internals', () => {
+  fixture(({ module, source, check }) => {
+    module('workout-analytics');
+    module('workouts');
+    source(
+      'workout-analytics',
+      'services/workout-analytics.service.ts',
+      "import { assertWorkoutAthlete } from '#src/modules/workouts/public-api';",
+    );
+    assert.deepEqual(check(), []);
+
+    source(
+      'workout-analytics',
+      'services/workout-analytics.service.ts',
+      "import { assertWorkoutAthlete } from '#src/modules/workouts/policies/workout-access.policy';",
+    );
+    assert.match(check().join(' '), /private cross-feature import/);
+
+    source(
+      'workout-analytics',
+      'services/workout-analytics.service.ts',
+      "import type { WorkoutActor } from '#src/modules/workouts/types/workout.types';",
+    );
+    assert.deepEqual(check(), []);
+  });
+});
+
 test('UsersRepository is private to Users, including Trainer–Athletes and Auth imports', () => {
   fixture(({ module, source, check }) => {
     module('auth', "import { UsersModule } from '#src/modules/users/users.module';");
