@@ -100,12 +100,11 @@ describe('Exercise creation revocation race (PostgreSQL)', () => {
     });
 
     const original = usersRepository.findCapabilitySnapshotForWrite.bind(usersRepository);
-    const spy = vi.spyOn(usersRepository, 'findCapabilitySnapshotForWrite').mockImplementation(
-      async (tx, id) => {
-        if (id === userId) markWriteAttempt();
-        return original(tx, id);
-      },
-    );
+    const spy = vi.spyOn(usersRepository, 'findCapabilitySnapshotForWrite');
+    spy.mockImplementation(async (tx, id) => {
+      if (id === userId) markWriteAttempt();
+      return original(tx, id);
+    });
 
     const moderation = prisma.$transaction(async (tx) => {
       await tx.$queryRaw`
