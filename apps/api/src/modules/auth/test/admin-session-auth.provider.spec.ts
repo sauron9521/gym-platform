@@ -3,7 +3,7 @@ import type { Reflector } from '@nestjs/core';
 import type { AuthenticationRegistry } from '@nestjs/authentication';
 import { describe, expect, it, vi } from 'vitest';
 
-import type { UsersRepository } from '#src/modules/users/repositories/users.repository';
+import type { UsersAuthFacade } from '#src/modules/users/services/users-auth.facade';
 import type { AdminCookieAuthService } from '../services/admin-cookie-auth.service.js';
 import { AdminSessionAuth } from '../providers/admin-session-auth.provider.js';
 
@@ -14,7 +14,7 @@ function setup() {
   const reflector = { getAllAndOverride: vi.fn() };
   const registry = { registerProvider: vi.fn() };
   const provider = new AdminSessionAuth(
-    users as unknown as UsersRepository,
+    users as unknown as UsersAuthFacade,
     cookies as unknown as AdminCookieAuthService,
     reflector as unknown as Reflector,
     registry as unknown as AuthenticationRegistry,
