@@ -16,6 +16,7 @@ import type { TrainingProgramActor } from '../../types/training-program.types.js
 describe('TrainingProgramVersionsController', () => {
   const service = {
     findVersions: vi.fn(),
+    findPublishedVersions: vi.fn(),
     createNextDraft: vi.fn(),
     findVersion: vi.fn(),
     updateDraftVersion: vi.fn(),
@@ -46,6 +47,14 @@ describe('TrainingProgramVersionsController', () => {
     service.findVersions.mockResolvedValue([]);
     await expect(controller.findVersions('program-1', actor)).resolves.toEqual([]);
     expect(service.findVersions).toHaveBeenCalledWith('program-1', actor);
+  });
+
+  it('passes the validated published version query to the facade', async () => {
+    const page = { data: [], nextBeforeVersion: null };
+    const query = { limit: 20, beforeVersion: 41 };
+    service.findPublishedVersions.mockResolvedValue(page);
+    await expect(controller.findPublishedVersions('program-1', actor, query)).resolves.toBe(page);
+    expect(service.findPublishedVersions).toHaveBeenCalledWith('program-1', actor, query);
   });
 
   it('creates a new draft from an existing program', async () => {
@@ -91,6 +100,7 @@ describe('TrainingProgramVersionsController', () => {
 
   it.each([
     ['findVersions', ':programId/versions', RequestMethod.GET],
+    ['findPublishedVersions', ':programId/published-versions', RequestMethod.GET],
     ['createNextDraft', ':programId/versions/drafts', RequestMethod.POST],
     ['findVersion', ':programId/versions/:versionId', RequestMethod.GET],
     ['updateDraftVersion', ':programId/versions/:versionId', RequestMethod.PATCH],

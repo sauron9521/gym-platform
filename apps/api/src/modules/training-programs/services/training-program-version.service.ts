@@ -12,6 +12,7 @@ import { assertPublishableVersion } from '../policies/training-program-publicati
 import { TrainingProgramCrudService } from './training-program-crud.service.js';
 
 import type {
+  PublishedTrainingProgramVersionsQuery,
   TrainingProgramActor,
   UpdateTrainingProgramDraftInput,
 } from '../types/training-program.types.js';
@@ -30,6 +31,21 @@ export class TrainingProgramVersionService {
     await this.crudService.findOne(programId, actor);
 
     return this.repository.findVersions(programId);
+  }
+
+  async findPublishedVersions(
+    programId: string,
+    actor: TrainingProgramActor,
+    query: PublishedTrainingProgramVersionsQuery,
+  ) {
+    await this.crudService.findOne(programId, actor);
+
+    const versions = await this.repository.findPublishedVersions(programId, actor.id, query);
+    const data = versions.slice(0, query.limit);
+    return {
+      data,
+      nextBeforeVersion: versions.length > query.limit ? data.at(-1)!.version : null,
+    };
   }
 
   // ===========================================================================

@@ -396,10 +396,17 @@ const versionFields = {
   publishedAt: nullable(dateTimeSchema),
 };
 
-export const trainingProgramVersionListItemSchema = objectSchema({
+const versionListFields = {
   ...versionFields,
   createdAt: dateTimeSchema,
   updatedAt: dateTimeSchema,
+};
+
+export const trainingProgramVersionListItemSchema = objectSchema(versionListFields);
+
+export const publishedTrainingProgramVersionsResponseSchema = objectSchema({
+  data: arraySchema(objectSchema({ ...versionListFields, status: enumSchema(['PUBLISHED']) })),
+  nextBeforeVersion: nullable(integerSchema),
 });
 
 // Shared fixed fields ensure the detailed projection and assignment schema

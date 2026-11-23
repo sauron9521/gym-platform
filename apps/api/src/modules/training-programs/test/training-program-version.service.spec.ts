@@ -11,6 +11,7 @@ import type { TrainingProgramActor } from '../types/training-program.types.js';
 describe('TrainingProgramVersionService', () => {
   const repository = {
     findVersions: vi.fn(),
+    findPublishedVersions: vi.fn(),
     findVersionById: vi.fn(),
     findDraftVersion: vi.fn(),
     createDraftFromLatestPublished: vi.fn(),
@@ -62,6 +63,32 @@ describe('TrainingProgramVersionService', () => {
     crud.findOne.mockRejectedValue(new ForbiddenException());
     await expect(service.findVersions(ids[0], athlete)).rejects.toBeInstanceOf(ForbiddenException);
     expect(repository.findVersions).not.toHaveBeenCalled();
+  });
+
+  it('uses the last returned version as the cursor when the repository finds another row', async () => {
+    const query = { limit: 1, beforeVersion: 4 };
+    const versions = [{ version: 3 }, { version: 2 }];
+    repository.findPublishedVersions.mockResolvedValue(versions);
+
+    await expect(service.findPublishedVersions(ids[0], trainer, query)).resolves.toEqual({
+      data: [versions[0]],
+      nextBeforeVersion: 3,
+    });
+    expect(crud.findOne).toHaveBeenCalledExactlyOnceWith(ids[0], trainer);
+    expect(repository.findPublishedVersions).toHaveBeenCalledExactlyOnceWith(
+      ids[0],
+      trainer.id,
+      query,
+    );
+  });
+
+  it('returns a null cursor when all remaining published versions fit', async () => {
+    const data = [{ version: 1 }];
+    repository.findPublishedVersions.mockResolvedValue(data);
+    await expect(service.findPublishedVersions(ids[0], trainer, { limit: 1 })).resolves.toEqual({
+      data,
+      nextBeforeVersion: null,
+    });
   });
 
   it('scopes the version lookup to the requested program', async () => {

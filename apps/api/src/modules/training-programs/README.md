@@ -41,6 +41,21 @@ GET /training-programs/assignments?trainerAthleteId=<relationship-uuid>&view=sum
   regenerated `@gym/api-client` path/query types. There is no new client
   history/feedback service.
 
+## Published program versions (#366)
+
+`GET /training-programs/{programId}/published-versions` returns version
+summaries ordered by version number descending for an active trainer's own
+program. The response is `{ data, nextBeforeVersion }`. Page size defaults to
+20 and accepts 1–40. To fetch older versions, send the previous response's
+`nextBeforeVersion` as the exclusive `beforeVersion` query parameter. A
+`null` cursor marks the last page, including when no version is published.
+
+Drafts are excluded before pagination. Version numbers are unique within a
+program, so publishing a newer version during paging does not shift older
+results. Missing and foreign programs return 404. The existing
+`GET /training-programs/{programId}/versions` still returns the full array
+of version summaries.
+
 ## Verification
 
 - Service/controller unit tests for opt-in SQL predicate and pagination,

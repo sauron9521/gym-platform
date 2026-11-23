@@ -1,5 +1,15 @@
 import { Authenticate, CurrentUser } from '@nestjs/authentication';
-import { Body, Controller, Get, HttpCode, HttpStatus, Param, Patch, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Patch,
+  Post,
+  Query,
+} from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiCookieAuth,
@@ -10,9 +20,14 @@ import {
 
 import { RateLimit } from '#src/common/rate-limit/rate-limit.policies';
 import {
+  publishedTrainingProgramVersionsResponseSchema,
   trainingProgramVersionResponseSchema,
   trainingProgramVersionListItemSchema,
 } from '#src/infra/openapi/response-contracts';
+import {
+  type QueryPublishedTrainingProgramVersionsDto,
+  queryPublishedTrainingProgramVersionsSchema,
+} from '../dto/query-published-training-program-versions.dto.js';
 import {
   trainingProgramIdSchema,
   trainingProgramVersionIdSchema,
@@ -43,6 +58,19 @@ export class TrainingProgramVersionsController {
     @CurrentUser() actor: TrainingProgramActor,
   ) {
     return this.trainingProgramsService.findVersions(programId, actor);
+  }
+
+  @Get(':programId/published-versions')
+  @RateLimit('read')
+  @ApiOkResponse({ schema: publishedTrainingProgramVersionsResponseSchema })
+  findPublishedVersions(
+    @Param('programId', { schema: trainingProgramIdSchema })
+    programId: string,
+    @CurrentUser() actor: TrainingProgramActor,
+    @Query({ schema: queryPublishedTrainingProgramVersionsSchema })
+    query: QueryPublishedTrainingProgramVersionsDto,
+  ) {
+    return this.trainingProgramsService.findPublishedVersions(programId, actor, query);
   }
 
   @Post(':programId/versions/drafts')

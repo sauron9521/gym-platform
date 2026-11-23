@@ -1044,6 +1044,22 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/training-programs/{programId}/published-versions': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['TrainingProgramVersionsController_findPublishedVersions'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/training-programs/{programId}/versions/drafts': {
     parameters: {
       query?: never;
@@ -5699,6 +5715,51 @@ export interface operations {
             /** Format: date-time */
             updatedAt: string;
           }[];
+        };
+      };
+    };
+  };
+  TrainingProgramVersionsController_findPublishedVersions: {
+    parameters: {
+      query?: {
+        limit?: number;
+        /** @description Exclusive version number returned as nextBeforeVersion on the previous page. */
+        beforeVersion?: number;
+      };
+      header?: never;
+      path: {
+        programId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            data: {
+              /** Format: uuid */
+              id: string;
+              /** Format: uuid */
+              programId: string;
+              version: number;
+              title: string;
+              description: string | null;
+              durationWeeks: number | null;
+              /** @enum {string} */
+              status: 'PUBLISHED';
+              /** Format: date-time */
+              publishedAt: string | null;
+              /** Format: date-time */
+              createdAt: string;
+              /** Format: date-time */
+              updatedAt: string;
+            }[];
+            nextBeforeVersion: number | null;
+          };
         };
       };
     };

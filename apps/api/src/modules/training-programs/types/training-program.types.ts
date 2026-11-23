@@ -28,6 +28,11 @@ export type TrainingProgramListQuery = {
   status?: TrainingProgramStatus;
 };
 
+export type PublishedTrainingProgramVersionsQuery = {
+  limit: number;
+  beforeVersion?: number;
+};
+
 export type CreateTrainingProgramWorkoutInput = {
   weekNumber: number;
   dayNumber: number;

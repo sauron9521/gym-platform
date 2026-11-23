@@ -10,6 +10,7 @@ describe('TrainingProgramsService facade delegation', () => {
   };
   const version = {
     findVersions: vi.fn(),
+    findPublishedVersions: vi.fn(),
     findVersion: vi.fn(),
     createNextDraft: vi.fn(),
     updateDraftVersion: vi.fn(),
@@ -77,6 +78,11 @@ describe('TrainingProgramsService facade delegation', () => {
     { name: 'findOne', target: crud.findOne, args: [programId, actor] },
     { name: 'archive', target: crud.archive, args: [programId, actor] },
     { name: 'findVersions', target: version.findVersions, args: [programId, actor] },
+    {
+      name: 'findPublishedVersions',
+      target: version.findPublishedVersions,
+      args: [programId, actor, { limit: 20, beforeVersion: 25 }],
+    },
     { name: 'findVersion', target: version.findVersion, args: [programId, versionId, actor] },
     { name: 'createNextDraft', target: version.createNextDraft, args: [programId, actor] },
     {
