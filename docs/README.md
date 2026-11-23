@@ -12,6 +12,7 @@ This index groups developer-facing API documentation and operational runbooks. P
 ## Application development
 
 - [ADR-005: product ownership and Trainer Web migration](architecture/adr-005-product-ownership-trainer-migration.md) — M05 app boundaries, route inventory, migration order and security gates
+- [ADR-006: shared package ownership and runtime boundaries](architecture/adr-006-shared-package-boundaries.md) — package consumer matrix, dependency rules, import verification and follow-up ownership
 
 - [NestJS API handbook](api/README.md) — module map, contracts, validation, local testing
 - [API test strategy](api/testing.md) — unit, HTTP e2e and PostgreSQL integration suites
