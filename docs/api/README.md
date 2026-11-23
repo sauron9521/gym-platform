@@ -58,6 +58,22 @@ parameters, as well as non-literal dynamic/factory registration patterns.
 It cannot replace actual Nest bootstrap and HTTP/E2E verification, and
 does not automatically validate tokens registered by dynamic modules.
 
+### Intra-feature provider injection cycles (E14 / #661)
+
+Registered, locally declared class providers must also form an **acyclic
+constructor injection graph**. The architecture guard reports a deterministic
+path for a cycle (including direct self-injection), for example
+`FirstService -> SecondService -> FirstService`. This complements the
+existing checks for Nest module cycles, missing local providers and missing
+cross-feature exports.
+
+This source-level guard includes only class-typed constructor injections
+between classes listed in the same feature's literal `providers` array.
+It intentionally skips explicit `@Inject(token)` and optional dependencies,
+dynamic factories and externally registered providers. Such paths require
+runtime Nest bootstrap/integration verification; the guard does not claim to
+prove the absence of all possible dependency cycles.
+
 The dependency check intentionally handles **direct named static imports**
 and explicit, literal Nest metadata export arrays. It is not a replacement
 for API bootstrap/integration tests or an exhaustive DI graph verifier;
