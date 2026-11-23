@@ -17,16 +17,25 @@ Maintains the exercise library, user-owned exercises and trainer access. Lists/d
 
 Treat public/global, private/owned and trainer-visible exercises differently; a guest must never gain private exercise access. Preserve archive visibility and trainer-relationship termination rules. Review `src/modules/exercises/` source for the authoritative ownership implementation.
 
-**POST creation scope (legacy-compatible):** Source is server-selected, never
-accepted from client input. The API re-reads current account capabilities from
-the database before creating an exercise: Admin creates `GLOBAL` only with
-Admin capability; a legacy `TRAINER` with live Trainer capability defaults to
-`TRAINER_CUSTOM`; `ATHLETE` (including an approved TrainerProfile) defaults to
-`ATHLETE_CUSTOM`. A revoked legacy Trainer retains personal Athlete creation
-but cannot create another Trainer exercise. An explicit dual-capability
-creation-purpose selector is not yet part of the HTTP contract. Do not infer
-Trainer access from a stale JWT role or frontend app context. Future strict
-insert-time revalidation belongs to #288.
+**POST creation scope (legacy-compatible):** The optional `creationScope`
+request field accepts only `ATHLETE` or `TRAINER`; the persisted `source`
+remains server-controlled and cannot be supplied by the client.
+
+- `creationScope: "ATHLETE"`: creates `ATHLETE_CUSTOM`, default `PRIVATE`;
+  requires current Athlete capability, including for legacy `TRAINER` users.
+- `creationScope: "TRAINER"`: creates `TRAINER_CUSTOM`; requires current
+  Trainer capability and does not support `visibility`. A revoked Trainer
+  gets `403` rather than silently creating another exercise source.
+- No `creationScope` (existing clients): `ATHLETE` defaults to personal,
+  active legacy `TRAINER` defaults to Trainer, and `ADMIN` creates
+  `GLOBAL`. An approved `ATHLETE` with TrainerProfile stays personal by
+  default; a revoked legacy Trainer falls back to personal.
+- Admin cannot request Athlete/Trainer scope via this public endpoint. Unknown
+  values (including `GLOBAL`) are rejected by the strict request schema.
+
+The API checks **current persisted capabilities**, never a frontend context or
+stale JWT role, before creating a record. A privilege change between lookup
+and INSERT remains a separate atomicity-hardening task under #288.
 
 **Tests:** `test/e2e/exercises/exercises.e2e-spec.ts`, `test/integration/exercises/exercise-trainer-access.integration.e2e-spec.ts` and co-located module unit tests.
 

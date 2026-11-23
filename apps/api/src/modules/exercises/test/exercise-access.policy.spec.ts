@@ -44,6 +44,7 @@ describe('exercise access policy', () => {
       OR: [
         { source: 'GLOBAL' },
         { source: 'ATHLETE_CUSTOM', createdById: athlete.id },
+        { source: 'TRAINER_CUSTOM', createdById: athlete.id },
         {
           source: 'ATHLETE_CUSTOM',
           visibility: 'SELECTED_TRAINERS',
@@ -82,6 +83,7 @@ describe('exercise access policy', () => {
       OR: [
         { source: 'GLOBAL' },
         { source: 'ATHLETE_CUSTOM', createdById: athlete.id },
+        { source: 'TRAINER_CUSTOM', createdById: athlete.id },
         {
           source: 'TRAINER_CUSTOM',
           createdById: { in: ['trainer-1'] },
@@ -207,6 +209,23 @@ describe('exercise access policy', () => {
     expect(() =>
       resolveExerciseSource(athlete, { athlete: false, trainer: false, admin: false }),
     ).toThrow(ForbiddenException);
+  });
+
+  it('allows explicit Athlete/Trainer scopes only with live authorization', () => {
+    const dual = { athlete: true, trainer: true, admin: false };
+    const revoked = { athlete: true, trainer: false, admin: false };
+    const onlyAdmin = { athlete: false, trainer: false, admin: true };
+
+    expect(resolveExerciseSource(athlete, dual, 'TRAINER')).toBe('TRAINER_CUSTOM');
+    expect(resolveExerciseSource(athlete, dual, 'ATHLETE')).toBe('ATHLETE_CUSTOM');
+    expect(resolveExerciseSource(trainer, dual, 'ATHLETE')).toBe('ATHLETE_CUSTOM');
+    expect(resolveExerciseSource(trainer, dual, 'TRAINER')).toBe('TRAINER_CUSTOM');
+    expect(resolveExerciseSource(trainer, revoked, 'ATHLETE')).toBe('ATHLETE_CUSTOM');
+    expect(() => resolveExerciseSource(trainer, revoked, 'TRAINER')).toThrow(ForbiddenException);
+    expect(() => resolveExerciseSource(athlete, revoked, 'TRAINER')).toThrow(ForbiddenException);
+    expect(() => resolveExerciseSource(admin, onlyAdmin, 'ATHLETE')).toThrow(ForbiddenException);
+    expect(() => resolveExerciseSource(admin, onlyAdmin, 'TRAINER')).toThrow(ForbiddenException);
+    expect(resolveExerciseSource(admin, onlyAdmin)).toBe('GLOBAL');
   });
 
   it('keeps private as athlete default and rejects visibility on non-athlete exercises', () => {

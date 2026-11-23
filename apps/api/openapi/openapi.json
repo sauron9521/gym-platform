@@ -1545,6 +1545,10 @@
                     "type": "string",
                     "enum": ["PRIVATE", "SELECTED_TRAINERS"]
                   },
+                  "creationScope": {
+                    "type": "string",
+                    "enum": ["ATHLETE", "TRAINER"]
+                  },
                   "muscleGroups": {
                     "minItems": 1,
                     "maxItems": 10,

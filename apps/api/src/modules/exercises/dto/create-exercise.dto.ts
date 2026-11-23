@@ -18,6 +18,9 @@ export const createExerciseSchema = z.strictObject({
 
   visibility: exerciseVisibilitySchema.optional(),
 
+  // Optional explicit purpose for accounts with both Athlete and Trainer capabilities.
+  creationScope: z.enum(['ATHLETE', 'TRAINER']).optional(),
+
   muscleGroups: z.array(exerciseMuscleGroupSchema).min(1).max(10),
 
   equipment: z.array(exerciseEquipmentSchema).max(20).default([]),

@@ -2090,6 +2090,8 @@ export interface operations {
           exerciseType?: 'STRENGTH' | 'CARDIO' | 'MOBILITY' | 'PLYOMETRIC' | 'OTHER';
           /** @enum {string} */
           visibility?: 'PRIVATE' | 'SELECTED_TRAINERS';
+          /** @enum {string} */
+          creationScope?: 'ATHLETE' | 'TRAINER';
           muscleGroups: {
             slug: string;
             /** @enum {string} */
