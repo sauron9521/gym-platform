@@ -96,17 +96,20 @@ uvx "zizmor@1.32.0" --offline --collect=workflows --strict-collection --format=g
 
 ## Immutable GitHub Action revisions (incremental rollout)
 
-The Dependency Audit, Staging Live Smoke and Roadmap Milestones workflows
-start the gradual migration from mutable major-version tags to immutable
-GitHub Action commit SHAs. Their `uses` entries retain major-version comments
+The Dependency Audit, Staging Live Smoke, Roadmap Milestones and OVRANTO
+Visual Review workflows are part of the gradual migration from mutable
+major-version tags to immutable GitHub Action commit SHAs. Their `uses` entries retain major-version comments
 for readability, but the SHA controls the actual code executed.
 
 - `actions/checkout@v7` is pinned to the reviewed `v7` tag commit.
 - `actions/setup-node@v7` is pinned to the reviewed `v7` tag commit.
 - `pnpm/action-setup@v6` is pinned to the commit targeted by its annotated
   `v6` tag, **not** the tag object's SHA.
+- `actions/cache@v6` and `actions/upload-artifact@v7` are pinned to official
+  tag commits for OVRANTO visual-review evidence generation.
 
-The root `scripts/ci-action-pins.test.mjs` test protects all seven references.
+The root `scripts/ci-action-pins.test.mjs` test protects all twelve references,
+including the visual-review cache and artifact-upload actions.
 For future upgrades, verify the new commit against the official upstream
 tag/release, update the explicit hash and its regression test in the same PR,
 then review CI. Do not blindly copy a version label or an unverified hash.
