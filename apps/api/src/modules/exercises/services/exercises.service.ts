@@ -307,8 +307,9 @@ export class ExercisesService {
     assertCanManageExercise(actor, exercise);
 
     try {
-      return await this.exercisesRepository.archive(getExerciseManagementWhere(actor, exercise), (tx) =>
-        this.assertManagementCapabilityForWrite(tx, actor),
+      return await this.exercisesRepository.archive(
+        getExerciseManagementWhere(actor, exercise),
+        (tx) => this.assertManagementCapabilityForWrite(tx, actor),
       );
     } catch (error) {
       if (this.isRecordNotFound(error)) {
