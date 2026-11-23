@@ -22,9 +22,13 @@ describe('Landing Web and Mobile feature showcases', () => {
     expect(within(region).getByRole('heading', { name: 'Каталог вправ' })).toBeTruthy();
     expect(within(region).getByRole('heading', { name: 'Програми та тренування' })).toBeTruthy();
     expect(screen.getByText('Статус: у розробці')).toBeTruthy();
+    const cta = screen.getByRole('region', { name: 'Що дослідити далі?' });
+    const ctaLinks = within(cta).getAllByRole('link');
+    expect(ctaLinks[0].getAttribute('href')).toBe('/for-athletes');
+    expect(ctaLinks[1].getAttribute('href')).toBe('/apps/mobile');
     const athleteLink = screen.getByRole('link', { name: 'Можливості для спортсменів' });
     expect(athleteLink.getAttribute('href')).toBe('/for-athletes');
-    expect(screen.getByRole('link', { name: 'Про Mobile' }).getAttribute('href')).toBe(
+    expect(screen.getByRole('link', { name: 'Про Athlete Mobile' }).getAttribute('href')).toBe(
       '/apps/mobile',
     );
   });
@@ -37,7 +41,8 @@ describe('Landing Web and Mobile feature showcases', () => {
     expect(screen.getByText(/повний офлайн-режим ще в розробці/)).toBeTruthy();
     const athleteLink = screen.getByRole('link', { name: 'Можливості для спортсменів' });
     expect(athleteLink.getAttribute('href')).toBe('/for-athletes');
-    expect(screen.getByRole('link', { name: 'Про Web' }).getAttribute('href')).toBe('/apps/web');
+    const alternateProduct = screen.getByRole('link', { name: 'Про Athlete Web' });
+    expect(alternateProduct.getAttribute('href')).toBe('/apps/web');
   });
 
   it('preserves the generic development and screenshot disclosures', () => {
@@ -53,6 +58,7 @@ describe('Landing Web and Mobile feature showcases', () => {
     );
     expect(screen.getByText(/Реальні скриншоти інтерфейсу додамо/)).toBeTruthy();
     expect(screen.getByText(/а не обіцянку доступності/)).toBeTruthy();
-    expect(screen.getByRole('link', { name: 'Усі застосунки' }).getAttribute('href')).toBe('/apps');
+    const directoryLink = screen.getByRole('link', { name: 'Продукти OVRANTO' });
+    expect(directoryLink.getAttribute('href')).toBe('/apps');
   });
 });

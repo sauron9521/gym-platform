@@ -21,6 +21,9 @@ for (const width of [320, 1280]) {
       await expect(main.getByRole('heading', { name: title, exact: true })).toBeVisible();
     }
     await expect(main.getByText(/Публічний запуск ще не оголошено/)).toBeVisible();
+    await expect(main.getByText('Статус: у розробці')).toBeVisible();
+    const coachCta = main.getByRole('region', { name: 'OVRANTO Coach готується до запуску' });
+    await expect(coachCta).toBeVisible();
 
     const featuresLink = main.getByRole('link', { name: 'Можливості платформи', exact: true });
     const appsLink = main.getByRole('link', { name: 'Каталог продуктів', exact: true });

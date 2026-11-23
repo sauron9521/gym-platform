@@ -49,7 +49,7 @@ export function ApplicationDetail({
             href="/apps"
             className="mt-8 inline-flex rounded-sm font-semibold text-primary underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"
           >
-            Усі застосунки
+            Продукти OVRANTO
           </Link>
         </Container>
       </MarketingSection>
@@ -81,10 +81,10 @@ export function ApplicationDetail({
         </Container>
       </MarketingSection>
       <CallToAction
-        title="Ознайомся з іншим застосунком"
-        description="Переглянь інші продукти OVRANTO."
-        primary={relatedApp}
-        secondary={audienceLink}
+        title="Що дослідити далі?"
+        description="Переглянь можливості для своєї ролі або іншу версію OVRANTO Athlete. Публічний запуск ще не оголошено."
+        primary={audienceLink}
+        secondary={relatedApp}
       />
     </main>
   );

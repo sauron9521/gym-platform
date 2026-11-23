@@ -6,7 +6,7 @@ import { CallToAction, Container, MarketingSection, SectionHeading } from '@/sha
 export const metadata = pageMetadata({
   title: 'Спортсменам',
   description:
-    'Знайомтеся з Gym Platform для спортсменів: бібліотека вправ, журнал тренувань, програми й прогрес.',
+    'OVRANTO Athlete для спортсменів: бібліотека вправ, журнал тренувань, програми та прогрес. Athlete Web і Mobile ще в розробці.',
   path: '/for-athletes',
 });
 
@@ -30,15 +30,20 @@ export default function AthletesPage() {
             Твоє тренування — під твоїм контролем
           </h1>
           <p className="mt-6 max-w-2xl text-lg leading-8 text-muted-foreground">
-            Gym Platform допомагає організовувати тренувальний процес і зосередитися на поступовому
-            прогресі. Доступність функцій залежить від етапу розробки.
+            OVRANTO Athlete розвивається для організації вправ, тренувань і прогресу у Web та
+            Mobile. Публічний запуск цих продуктів ще не оголошено.
           </p>
-          <Link
-            href="/features"
-            className="mt-8 inline-flex min-h-11 items-center font-bold text-primary underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"
-          >
-            Переглянути можливості
-          </Link>
+          <p className="mt-7 inline-flex rounded-full border border-primary/20 bg-primary/10 px-4 py-2 text-sm font-semibold text-primary">
+            Статус: у розробці
+          </p>
+          <div className="mt-6">
+            <Link
+              href="/features"
+              className="inline-flex min-h-11 items-center font-bold text-primary underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"
+            >
+              Переглянути можливості
+            </Link>
+          </div>
         </Container>
       </MarketingSection>
       <MarketingSection tone="subtle" aria-labelledby="athlete-journey">
@@ -64,9 +69,10 @@ export default function AthletesPage() {
         </Container>
       </MarketingSection>
       <CallToAction
-        title="Дізнайся більше про застосунки"
-        description="Ознайомся з Web і Mobile, що розвиваються як частини Gym Platform."
-        primary={{ href: '/apps', label: 'Застосунки платформи' }}
+        title="Обери, як знайомитися з OVRANTO Athlete"
+        description="Athlete Web і Athlete Mobile перебувають у розробці. Дізнайся про кожну версію без переходу до неоголошеного запуску."
+        primary={{ href: '/apps/web', label: 'Про Athlete Web' }}
+        secondary={{ href: '/apps/mobile', label: 'Про Athlete Mobile' }}
       />
     </main>
   );
