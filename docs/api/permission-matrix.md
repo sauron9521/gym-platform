@@ -36,7 +36,7 @@ administrative permissions; it does not create a separate automatic
 | `GET/POST/PATCH /workouts*`       | Athlete capability + own `athleteId`       | Workout service + repository     |
 | `GET /exercises*`                 | Guest: global; account: owner/share policy | Exercise visibility SQL          |
 | `GET /exercises/:id`              | Same visibility predicate as list          | Exercise `findById`              |
-| `POST /exercises`                 | Live capability + legacy default scope     | Exercise source policy           |
+| `POST /exercises`                 | Live capability + optional explicit scope  | Exercise source policy           |
 | `PATCH/DELETE /exercises/:id`     | Own custom or Admin-managed global only    | Management SQL + policy          |
 | `/exercises/:id/trainer-access*`  | Explicit owner-controlled Trainer grant    | Trainer access service           |
 | `/trainer-athletes*`              | Current participant + relation ownership   | Relationship service + SQL       |
@@ -82,8 +82,12 @@ and [Program access](../../apps/api/src/modules/training-programs/services/train
    revoked legacy trainers fall back to `ATHLETE_CUSTOM`. The legacy role
    remains **only a default source preference**, not an authorization grant.
    Approved `ATHLETE`-role trainers still create personal exercises by
-   default. A separate, explicit Athlete/Trainer creation-purpose contract
-   is future work under #288; do not silently switch their existing default.
+   default; `creationScope: "TRAINER"` explicitly creates `TRAINER_CUSTOM`
+   only with current Trainer capability. `creationScope: "ATHLETE"` explicitly
+   creates personal exercises, including for approved legacy `TRAINER` users.
+   Invalid scopes fail schema validation; revoked Trainer scope returns
+   `403` without a fallback write, and Admin cannot select personal scopes.
+   Legacy clients omitting `creationScope` preserve their existing default.
    See the completed cross-product matrix [#361](https://github.com/sauron9521/gym-platform/issues/361).
 5. **Admin session isolation.** The privileged Admin directory and Trainer
    review routes require an admin-purpose cookie and server-side permission,
@@ -92,13 +96,12 @@ and [Program access](../../apps/api/src/modules/training-programs/services/train
 
 ## Verification and remaining acceptance
 
-This PR protects exercise creation against stale Trainer/Admin role claims
-using the persisted account capability snapshot, while preserving existing
-request shapes and legacy defaults. It includes a PostgreSQL HTTP regression
-for trainer approval revocation. The prior SQL-time trainer read eligibility
-is retained. Privilege transitions between capability lookup and database
-INSERT are a remaining concurrency hardening task, along with explicit
-creation purpose, cross-account fuzzing and further resource-policy audit under
+This PR adds optional `creationScope` to exercise creation, with strict
+Athlete/Trainer capability checks, public schema validation, unchanged legacy
+defaults, generated OpenAPI/client types and HTTP/PostgreSQL revocation tests.
+The prior SQL-time trainer read eligibility is retained. Privilege transitions
+between capability lookup and database INSERT remain a concurrency hardening
+task, along with cross-account fuzzing and further resource-policy audit under
 [#288](https://github.com/sauron9521/gym-platform/issues/288).
 [#361](https://github.com/sauron9521/gym-platform/issues/361) is already closed;
 do not reopen or duplicate its completed cross-product matrix.
