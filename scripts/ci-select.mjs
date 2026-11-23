@@ -80,10 +80,12 @@ export function classifyChangedPaths(paths, { forceFull = false } = {}) {
       continue;
     }
 
-    // The generated OpenAPI contract is consumed by both frontends.
+    // The committed OpenAPI contract affects every generated API-client consumer.
     if (path.startsWith('apps/api/openapi/')) {
       selected.api = true;
       selected.web = true;
+      selected.admin = true;
+      selected.trainer = true;
       selected.mobile = true;
       selected.client = true;
       continue;
