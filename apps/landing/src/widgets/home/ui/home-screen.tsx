@@ -112,10 +112,11 @@ export function HomeScreen({ locale = defaultLocale }: { locale?: Locale } = {})
         </Container>
       </section>
 
-      <MarketingSection aria-labelledby="audiences">
+      <MarketingSection aria-labelledby="audiences" className="landing-audience-surface">
         <Container>
           <SectionHeading
             id="audiences"
+            className="landing-section-heading landing-scroll-reveal"
             eyebrow={t.audiencesEyebrow}
             title={t.audiencesTitle}
             description={t.audiencesDescription}
@@ -124,15 +125,16 @@ export function HomeScreen({ locale = defaultLocale }: { locale?: Locale } = {})
         </Container>
       </MarketingSection>
 
-      <MarketingSection tone="subtle" aria-labelledby="workflow">
+      <MarketingSection tone="subtle" aria-labelledby="workflow" className="landing-workflow-surface">
         <Container>
           <SectionHeading
             id="workflow"
+            className="landing-section-heading landing-scroll-reveal"
             eyebrow={t.workflowEyebrow}
             title={t.workflowTitle}
             description={t.workflowDescription}
           />
-          <div className="mt-12 grid gap-5 md:grid-cols-3">
+          <div className="landing-scroll-reveal mt-12 grid gap-5 md:grid-cols-3">
             {milestones.map((step) => (
               <div
                 key={step.number}
@@ -145,7 +147,7 @@ export function HomeScreen({ locale = defaultLocale }: { locale?: Locale } = {})
                 <span className="text-sm font-extrabold tracking-widest text-primary">
                   {step.number}
                 </span>
-                <h3 className="mt-6 text-xl font-bold tracking-tight">{step.title}</h3>
+                <h3 className="mt-6 text-xl font-bold tracking-[-0.03em] sm:text-2xl">{step.title}</h3>
                 <p className="mt-3 leading-7 text-muted-foreground">{step.detail}</p>
               </div>
             ))}
@@ -154,6 +156,7 @@ export function HomeScreen({ locale = defaultLocale }: { locale?: Locale } = {})
       </MarketingSection>
 
       <CallToAction
+        className="landing-scroll-reveal"
         title={t.ctaTitle}
         description={t.ctaDescription}
         primary={{ href: '/apps', label: t.ctaPrimary }}

@@ -40,7 +40,7 @@ export function ProductDiscovery({ locale }: { locale: Locale }) {
   ] as const;
 
   return (
-    <div className="mt-12 grid gap-6 lg:grid-cols-2">
+    <div className="landing-scroll-reveal mt-12 grid gap-6 lg:grid-cols-2">
       {products.map((product, index) => (
         <article
           key={product.href}

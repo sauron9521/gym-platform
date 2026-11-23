@@ -176,3 +176,24 @@ Run the existing Landing Chromium suite plus
 reduced motion, and manually inspect Safari/Firefox, high zoom and both
 OS theme modes before public release. Automated motion checks are not a
 complete perceptual, vestibular or screen-reader acceptance signoff.
+
+## Homepage section hierarchy and scroll enhancement (Issue #391)
+
+The next Landing visual pass distinguishes the Athlete/Coach discovery and
+three-step workflow sections with restrained semantic backgrounds, terracotta
+to teal editorial rules, a slightly tighter section-heading hierarchy, and
+larger workflow card headings. It does not alter copy, product availability,
+route destinations, image assets or the shared Design System.
+
+Homepage section headings, product discovery, workflow cards and the final
+CTA use **CSS view-timeline scroll entrance** when the browser supports it
+and `prefers-reduced-motion: no-preference` is active. The short
+12px translation and opacity range **0.92–1.0** keep content readable
+even before it is fully in view. Unsupported browsers and reduced-motion
+visitors receive ordinary static sections; there is no IntersectionObserver,
+hydration gate, observer polyfill or new JavaScript package.
+
+The Chromium tests in `apps/landing/e2e/scroll-entrance.spec.ts` cover
+mobile Light (320px), desktop Dark (1280px), feature support and reduced
+motion. Manually inspect Safari/Firefox, high zoom and keyboard focus
+traversal before release. This is visual polish, **not final UX/a11y signoff**.
