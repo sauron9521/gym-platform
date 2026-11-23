@@ -48,6 +48,25 @@ describe('TrainingProgramVersionRepository', () => {
       expect(result).toEqual(versions);
     });
 
+    it('applies program, trainer, publication and cursor scope before taking a bounded page', async () => {
+      await repository.findPublishedVersions('program-1', 'trainer-1', {
+        limit: 40,
+        beforeVersion: 42,
+      });
+
+      expect(models.trainingProgramVersion.findMany).toHaveBeenCalledExactlyOnceWith({
+        where: {
+          programId: 'program-1',
+          program: { trainerId: 'trainer-1' },
+          status: 'PUBLISHED',
+          version: { lt: 42 },
+        },
+        orderBy: { version: 'desc' },
+        take: 41,
+        select: trainingProgramVersionListSelect,
+      });
+    });
+
     it('should find a version by ID with additional conditions', async () => {
       const version = { id: 'version-1' };
 

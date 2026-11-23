@@ -6,6 +6,7 @@ import type {
   CreateTrainingProgramInput,
   CreateTrainingProgramSetInput,
   CreateTrainingProgramWorkoutInput,
+  PublishedTrainingProgramVersionsQuery,
   ReorderTrainingProgramExercisesInput,
   ReorderTrainingProgramSetsInput,
   TrainingProgramActor,
@@ -132,6 +133,14 @@ export class TrainingProgramsService {
 
   async findVersions(programId: string, actor: TrainingProgramActor) {
     return this.versionService.findVersions(programId, actor);
+  }
+
+  async findPublishedVersions(
+    programId: string,
+    actor: TrainingProgramActor,
+    query: PublishedTrainingProgramVersionsQuery,
+  ) {
+    return this.versionService.findPublishedVersions(programId, actor, query);
   }
 
   async findVersion(programId: string, versionId: string, actor: TrainingProgramActor) {

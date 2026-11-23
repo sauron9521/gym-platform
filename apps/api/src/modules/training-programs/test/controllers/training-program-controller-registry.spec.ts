@@ -27,7 +27,7 @@ describe('TrainingProgramsModule controller registry', () => {
     expect(controllers).toEqual(expectedControllers);
   });
 
-  it('exposes exactly 25 unique HTTP method/path pairs', () => {
+  it('exposes exactly 26 unique HTTP method/path pairs', () => {
     const routes = expectedControllers.flatMap((controller) => {
       const base = Reflect.getMetadata(PATH_METADATA, controller) as string;
       return Object.getOwnPropertyNames(controller.prototype)
@@ -43,7 +43,7 @@ describe('TrainingProgramsModule controller registry', () => {
           return `${method}:${base}/${path}`;
         });
     });
-    expect(routes).toHaveLength(25);
+    expect(routes).toHaveLength(26);
     expect(new Set(routes).size).toBe(routes.length);
   });
 });

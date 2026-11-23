@@ -6,6 +6,7 @@ import { trainingProgramDraftAccessSelect } from '../selects/training-program-ac
 import { trainingProgramVersionListSelect } from '../selects/training-program-query.select.js';
 import { Prisma } from '#prisma/client';
 import type { TrainingProgramVersionPayload } from '../types/training-program-payload.types.js';
+import type { PublishedTrainingProgramVersionsQuery } from '../types/training-program.types.js';
 
 @Injectable()
 export class TrainingProgramVersionRepository {
@@ -15,6 +16,24 @@ export class TrainingProgramVersionRepository {
     return this.prisma.trainingProgramVersion.findMany({
       where: { programId },
       orderBy: { version: 'desc' },
+      select: trainingProgramVersionListSelect,
+    });
+  }
+
+  async findPublishedVersions(
+    programId: string,
+    trainerId: string,
+    { beforeVersion, limit }: PublishedTrainingProgramVersionsQuery,
+  ) {
+    return this.prisma.trainingProgramVersion.findMany({
+      where: {
+        programId,
+        program: { trainerId },
+        status: 'PUBLISHED',
+        ...(beforeVersion === undefined ? {} : { version: { lt: beforeVersion } }),
+      },
+      orderBy: { version: 'desc' },
+      take: limit + 1,
       select: trainingProgramVersionListSelect,
     });
   }
