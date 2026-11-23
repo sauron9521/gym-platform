@@ -13,7 +13,7 @@ export type ResponseSchema = {
   type?: 'object' | 'array' | 'string' | 'number' | 'integer' | 'boolean';
   format?: string;
   description?: string;
-  enum?: string[];
+  enum?: Array<string | number>;
   nullable?: boolean;
   properties?: Record<string, ResponseSchema>;
   required?: string[];
@@ -208,6 +208,31 @@ export const workoutResponseSchema = objectSchema({
   updatedAt: dateTimeSchema,
 });
 export const workoutListResponseSchema = paginatedSchema(workoutResponseSchema);
+
+export const workoutExportResponseSchema = objectSchema({
+  schemaVersion: { type: 'integer', enum: [1] },
+  workout: objectSchema({
+    title: stringSchema,
+    completedAt: nullable(dateTimeSchema),
+    exercises: arraySchema(
+      objectSchema({
+        name: stringSchema,
+        sets: arraySchema(
+          objectSchema({
+            setNumber: integerSchema,
+            actualReps: nullable(integerSchema),
+            actualWeightKg: nullable(decimalSchema),
+            actualDurationSeconds: nullable(integerSchema),
+            actualDistanceMeters: nullable(decimalSchema),
+            rpe: nullable(decimalSchema),
+            rir: nullable(integerSchema),
+          }),
+        ),
+      }),
+    ),
+  }),
+  text: { type: 'string', description: 'Plain text in the requested locale.' },
+});
 
 /** Operator-only directory; shows persisted status without exposing credentials. */
 export const adminUserListResponseSchema = paginatedSchema(

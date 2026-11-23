@@ -67,6 +67,32 @@ export const workoutSelect = {
   updatedAt: true,
 } satisfies Prisma.WorkoutSelect;
 
+/** Export only recorded results and historical exercise names. */
+export const workoutExportSelect = {
+  title: true,
+  completedAt: true,
+  exercises: {
+    where: { sets: { some: { status: 'COMPLETED' } } },
+    orderBy: { sortOrder: 'asc' },
+    select: {
+      exerciseNameSnapshot: true,
+      sets: {
+        where: { status: 'COMPLETED' },
+        orderBy: { setNumber: 'asc' },
+        select: {
+          setNumber: true,
+          actualReps: true,
+          actualWeightKg: true,
+          actualDurationSeconds: true,
+          actualDistanceMeters: true,
+          rpe: true,
+          rir: true,
+        },
+      },
+    },
+  },
+} satisfies Prisma.WorkoutSelect;
+
 /** Compact list item: never fetch nested exercise/set collections. */
 export const workoutSummarySelect = {
   id: true,

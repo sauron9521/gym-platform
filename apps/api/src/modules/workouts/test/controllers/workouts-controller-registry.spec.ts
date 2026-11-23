@@ -20,6 +20,7 @@ describe('WorkoutsModule controller registry', () => {
     ['create', RequestMethod.POST, '/'],
     ['findMany', RequestMethod.GET, '/'],
     ['findOne', RequestMethod.GET, ':id'],
+    ['exportCompleted', RequestMethod.GET, ':id/export'],
     ['update', RequestMethod.PATCH, ':id'],
     ['start', RequestMethod.POST, ':id/start'],
     ['updateSet', RequestMethod.PATCH, ':id/sets/:setId'],
@@ -42,7 +43,7 @@ describe('WorkoutsModule controller registry', () => {
     }
   });
 
-  it('registers nine unique verb/path pairs', () => {
+  it('registers ten unique verb/path pairs', () => {
     const routes = Object.getOwnPropertyNames(WorkoutsController.prototype)
       .filter((name) => name !== 'constructor')
       .map((name) => {
@@ -52,7 +53,7 @@ describe('WorkoutsModule controller registry', () => {
         const path = Reflect.getMetadata(PATH_METADATA, handler) as string;
         return `${method}:workouts/${path}`;
       });
-    expect(routes).toHaveLength(9);
+    expect(routes).toHaveLength(10);
     expect(new Set(routes).size).toBe(routes.length);
   });
 });
