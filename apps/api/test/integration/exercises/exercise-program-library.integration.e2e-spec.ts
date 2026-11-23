@@ -180,8 +180,14 @@ describe('Training program exercise eligibility (PostgreSQL + Nest services)', (
       data: { isActive: true, revokedAt: null, revokedById: null },
     });
 
-    const held = Promise.withResolvers<void>();
-    const release = Promise.withResolvers<void>();
+    let signalHeld!: () => void;
+    const held = new Promise<void>((resolve) => {
+      signalHeld = resolve;
+    });
+    let releaseHold!: () => void;
+    const release = new Promise<void>((resolve) => {
+      releaseHold = resolve;
+    });
     const revocation = prisma.$transaction(async (tx) => {
       await tx.$queryRaw`
         SELECT "id" FROM "users" WHERE "id" = ${trainer.id} FOR UPDATE
@@ -190,11 +196,11 @@ describe('Training program exercise eligibility (PostgreSQL + Nest services)', (
         where: { userId: trainer.id },
         data: { isActive: false, revokedAt: new Date(), revokedById: trainer.id },
       });
-      held.resolve();
-      await release.promise;
+      signalHeld();
+      await release;
     });
 
-    await held.promise;
+    await held;
     let pendingWrite: Promise<unknown> | undefined;
     try {
       // A normal READ COMMITTED capability query still sees the old grant.
@@ -215,7 +221,7 @@ describe('Training program exercise eligibility (PostgreSQL + Nest services)', (
           (error: unknown) => error,
         );
     } finally {
-      release.resolve();
+      releaseHold();
     }
 
     await revocation;
