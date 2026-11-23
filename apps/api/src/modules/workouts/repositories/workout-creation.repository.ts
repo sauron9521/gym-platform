@@ -2,8 +2,10 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 
 import { Prisma } from '#prisma/client';
 import { PrismaService } from '#src/infra/database/index';
-import { buildExerciseVisibilityWhere } from '#src/modules/exercises/policies/exercise-access.policy';
-import { workoutExerciseReferenceSelect } from '#src/modules/exercises/selects/exercise.select';
+import {
+  buildExerciseVisibilityWhere,
+  workoutExerciseReferenceSelect,
+} from '#src/modules/exercises/public-api';
 import { workoutSelect } from '../selects/workout.select.js';
 import { lockActiveTrainerRelationships, lockExerciseReferences } from './workout-locks.js';
 
