@@ -38,7 +38,7 @@ export function parseModuleImports(source, filename = 'source.ts') {
         declaration.moduleSpecifier,
         Boolean(clause?.isTypeOnly || inlineTypesOnly),
         'static-import',
-        named && ts.isNamedImports(named)
+        !clause?.isTypeOnly && named && ts.isNamedImports(named)
           ? named.elements
               .filter((binding) => !binding.isTypeOnly)
               .map((binding) => binding.propertyName?.text ?? binding.name.text)
