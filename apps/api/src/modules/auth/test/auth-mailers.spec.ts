@@ -6,7 +6,7 @@ import type {
 import type { Mailer } from '@nestjs/mail';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import type { UsersRepository } from '#src/modules/users/repositories/users.repository';
+import type { UsersAuthFacade } from '#src/modules/users/services/users-auth.facade';
 import { EmailVerificationMailer, VerifyEmailMail } from '../mailers/email-verification.mailer.js';
 import { PasswordResetMail, PasswordResetMailer } from '../mailers/password-reset.mailer.js';
 
@@ -26,12 +26,12 @@ describe('Auth mail handlers', () => {
     vi.resetAllMocks();
     users.getPreferredMailLocale.mockResolvedValue('uk');
     verification = new EmailVerificationMailer(
-      users as unknown as UsersRepository,
+      users as unknown as UsersAuthFacade,
       mailer as unknown as Mailer,
       registry as unknown as AuthenticationRegistry,
     );
     recovery = new PasswordResetMailer(
-      users as unknown as UsersRepository,
+      users as unknown as UsersAuthFacade,
       mailer as unknown as Mailer,
       registry as unknown as AuthenticationRegistry,
     );
