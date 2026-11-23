@@ -104,9 +104,15 @@ and [Program access](../../apps/api/src/modules/training-programs/services/train
 This PR adds optional `creationScope` to exercise creation, with strict
 Athlete/Trainer capability checks, public schema validation, unchanged legacy
 defaults, generated OpenAPI/client types and HTTP/PostgreSQL revocation tests.
-The prior SQL-time trainer read eligibility is retained. Privilege transitions
-between capability lookup and database INSERT remain a concurrency hardening
-task, along with cross-account fuzzing and further resource-policy audit under
+The prior SQL-time trainer read eligibility is retained. Adding an exercise
+to a program draft now takes a transactional User row lock plus an optional
+TrainerProfile row lock, then reuses the canonical persisted Trainer
+capability policy before its nested write. A PostgreSQL regression exercises
+a stale positive preflight while a revocation transaction holds the rows;
+the write must fail after the revocation commits. Other write paths, including
+direct exercise creation, program set/workout edits and publication, still
+need concurrency review, alongside cross-account fuzzing and further
+resource-policy audit under
 [#288](https://github.com/sauron9521/gym-platform/issues/288).
 [#361](https://github.com/sauron9521/gym-platform/issues/361) is already closed;
 do not reopen or duplicate its completed cross-product matrix.
