@@ -20,10 +20,10 @@ describe('Landing Web and Mobile feature showcases', () => {
     const region = screen.getByRole('region', { name: 'Ключові можливості' });
     expect(within(region).getAllByRole('listitem')).toHaveLength(4);
     expect(within(region).getByRole('heading', { name: 'Каталог вправ' })).toBeTruthy();
-    expect(within(region).getByRole('heading', { name: 'Тренувальні програми' })).toBeTruthy();
+    expect(within(region).getByRole('heading', { name: 'Програми та тренування' })).toBeTruthy();
     expect(screen.getByText('Статус: у розробці')).toBeTruthy();
-    expect(screen.getByRole('link', { name: 'Можливості для тренерів' }).getAttribute('href')).toBe(
-      '/for-trainers',
+    expect(screen.getByRole('link', { name: 'Можливості для спортсменів' }).getAttribute('href')).toBe(
+      '/for-athletes',
     );
     expect(screen.getByRole('link', { name: 'Про Mobile' }).getAttribute('href')).toBe(
       '/apps/mobile',
@@ -44,7 +44,7 @@ describe('Landing Web and Mobile feature showcases', () => {
   it('preserves the generic development and screenshot disclosures', () => {
     render(
       <ApplicationDetail
-        eyebrow="Gym Platform"
+        eyebrow="OVRANTO"
         title="Демонстраційний застосунок"
         description="Публічний запуск не оголошено."
         highlights={[{ title: 'Тренування', description: 'Робота з тренуваннями.' }]}
