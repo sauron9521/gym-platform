@@ -7,7 +7,7 @@ import { defaultLocale, type Locale } from '@gym/i18n';
 import { getLandingNavigation } from '@/shared/lib/landing-navigation';
 
 export function MobileNavigation({ locale = defaultLocale }: { locale?: Locale } = {}) {
-  const { main, nav, shell } = getLandingNavigation(locale);
+  const { main, productDirectoryLabel, shell } = getLandingNavigation(locale);
   const details = useRef<HTMLDetailsElement>(null);
   const summary = useRef<HTMLElement>(null);
 
@@ -57,7 +57,7 @@ export function MobileNavigation({ locale = defaultLocale }: { locale?: Locale }
           onClick={closeMenu}
           className="rounded-xl bg-primary px-3 py-3 text-sm font-semibold text-primary-foreground focus-visible:outline-2 focus-visible:outline-primary"
         >
-          {nav.apps}
+          {productDirectoryLabel}
         </Link>
       </nav>
     </details>

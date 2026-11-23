@@ -1,13 +1,12 @@
 import Link from 'next/link';
-import { defaultLocale, getMessages, type Locale } from '@gym/i18n';
+import { defaultLocale, type Locale } from '@gym/i18n';
 import { BrandLogo } from '@gym/ui-web';
 
 import { getLandingNavigation } from '@/shared/lib/landing-navigation';
 import { AnalyticsScript } from '@/widgets/analytics/ui/analytics-script';
 
 export function SiteFooter({ locale = defaultLocale }: { locale?: Locale } = {}) {
-  const { main, applications, shell } = getLandingNavigation(locale);
-  const common = getMessages(locale).landing.common;
+  const { main, applications, productDirectoryLabel, shell } = getLandingNavigation(locale);
   return (
     <footer className="border-t border-border/70 bg-secondary/45">
       <div className="mx-auto grid max-w-6xl gap-12 px-6 py-16 sm:grid-cols-[1.4fr_1fr_1fr]">
@@ -37,14 +36,14 @@ export function SiteFooter({ locale = defaultLocale }: { locale?: Locale } = {})
           </ul>
         </nav>
         <nav aria-label={shell.applications}>
-          <h2 className="text-sm font-semibold text-foreground">{shell.applications}</h2>
+          <h2 className="text-sm font-semibold text-foreground">{productDirectoryLabel}</h2>
           <ul className="mt-4 space-y-3">
             <li>
               <Link
                 className="text-sm text-muted-foreground transition-colors hover:text-primary"
                 href="/apps"
               >
-                {common.allApplications}
+                {productDirectoryLabel}
               </Link>
             </li>
             {applications.map(({ label, href }) => (

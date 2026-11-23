@@ -11,13 +11,10 @@ export function getLandingNavigation(locale: Locale = defaultLocale) {
     '/for-trainers': nav.trainers,
     '/about': nav.about,
   };
-  const appLabels: Record<(typeof applicationNavigation)[number]['href'], string> = {
-    '/apps/web': shell.webApp,
-    '/apps/mobile': shell.mobileApp,
-  };
   return {
     main: mainNavigation.map(({ href }) => ({ href, label: labels[href] })),
-    applications: applicationNavigation.map(({ href }) => ({ href, label: appLabels[href] })),
+    applications: applicationNavigation.map(({ href, label }) => ({ href, label })),
+    productDirectoryLabel: locale === 'en' ? 'Products' : 'Продукти',
     nav,
     shell,
   };
