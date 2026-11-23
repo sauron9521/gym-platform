@@ -296,10 +296,10 @@ describe('WorkoutsRepository', () => {
 
       expect(result).toEqual(workout);
       expect(authorize).toHaveBeenCalledExactlyOnceWith(prisma);
-      expect(prisma.exercise.findMany.mock.invocationCallOrder[0]).toBeLessThan(
-        authorize.mock.invocationCallOrder[0]!,
-      );
       expect(authorize.mock.invocationCallOrder[0]).toBeLessThan(
+        prisma.$queryRaw.mock.invocationCallOrder[0]!,
+      );
+      expect(prisma.exercise.findMany.mock.invocationCallOrder[0]).toBeLessThan(
         prisma.workout.create.mock.invocationCallOrder[0]!,
       );
     });
@@ -321,8 +321,9 @@ describe('WorkoutsRepository', () => {
         ),
       ).rejects.toBe(revoked);
 
-      expect(prisma.exercise.findMany).toHaveBeenCalledOnce();
       expect(authorize).toHaveBeenCalledExactlyOnceWith(prisma);
+      expect(prisma.$queryRaw).not.toHaveBeenCalled();
+      expect(prisma.exercise.findMany).not.toHaveBeenCalled();
       expect(prisma.workout.create).not.toHaveBeenCalled();
     });
 
