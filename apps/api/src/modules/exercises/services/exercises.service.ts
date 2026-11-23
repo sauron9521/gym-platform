@@ -75,7 +75,19 @@ export class ExercisesService {
       },
     } satisfies Prisma.ExerciseCreateInput;
 
-    return this.exercisesRepository.create(data);
+    return this.exercisesRepository.create(data, async (tx) => {
+      const currentSource = resolveExerciseSource(
+        actor,
+        await this.usersService.findMyCapabilitiesForWrite(tx, actor.id),
+        input.creationScope,
+      );
+
+      // An implicit legacy TRAINER default must not silently change scope
+      // after revocation between preflight and the locked INSERT.
+      if (currentSource !== source) {
+        throw new ForbiddenException('Exercise creation scope changed. Retry the request');
+      }
+    });
   }
 
   /** Reference data is public, independent of custom exercise visibility. */
