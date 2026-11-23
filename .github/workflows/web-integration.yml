@@ -25,6 +25,7 @@ jobs:
       - name: Checkout complete history for safe PR diff
         uses: actions/checkout@v7
         with:
+          persist-credentials: false
           fetch-depth: 0
       - name: Classify changed files
         id: select
@@ -71,6 +72,8 @@ jobs:
       JWT_SECRET: browser-integration-test-only-secret-123456
     steps:
       - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
       - uses: pnpm/action-setup@v6
       - uses: actions/setup-node@v7
         with:

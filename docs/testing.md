@@ -94,6 +94,23 @@ git ls-files -z -- '*.sh' | xargs -0 -r shellcheck --severity=warning --
 uvx "zizmor@1.32.0" --offline --collect=workflows --strict-collection --format=github .
 ```
 
+## Checkout credential hardening
+
+Read-only GitHub Actions jobs should use `actions/checkout` with
+`persist-credentials: false`, so the short-lived GitHub token is not left in
+Git configuration for subsequent build, test or script steps.
+
+The CI, Web Integration E2E and scheduled Dependency Audit workflows enforce
+this for every checkout. The root tooling contract
+`scripts/ci-checkout-credentials.test.mjs` checks each of their checkout steps
+and fails if the setting is removed or a new unprotected checkout is added.
+Full-history checkout still uses `fetch-depth: 0` for safe PR comparisons.
+
+Do not apply this blindly to a workflow that must perform authenticated Git
+writes. Those workflows need an explicit, narrowly scoped credentials strategy.
+The zizmor advisory pilot continues to report other workflow findings for
+separate review.
+
 ## Safety
 
 Keep tests deterministic and use `onTestFinished` for temp-resource cleanup
