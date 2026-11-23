@@ -126,6 +126,9 @@ export class WorkoutsService {
         },
         actor.id,
         exerciseIds,
+        async (tx) => {
+          assertWorkoutAthlete(await this.usersService.findMyCapabilitiesForWrite(tx, actor.id));
+        },
       );
     });
   }
