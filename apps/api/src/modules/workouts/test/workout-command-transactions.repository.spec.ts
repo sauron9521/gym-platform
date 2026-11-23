@@ -77,7 +77,9 @@ describe('Workout command repository transaction boundaries', () => {
   it('does not update sets when their parent is not in progress', async () => {
     tx.$queryRaw.mockResolvedValue([{ id: 'workout-1', status: 'COMPLETED' }]);
 
-    await expect(setsRepository.updateSet('set-1', { status: 'COMPLETED' }, context)).resolves.toBeNull();
+    await expect(
+      setsRepository.updateSet('set-1', { status: 'COMPLETED' }, context),
+    ).resolves.toBeNull();
     expect(tx.workoutSet.update).not.toHaveBeenCalled();
   });
 
@@ -131,7 +133,9 @@ describe('Workout command repository transaction boundaries', () => {
   it('refuses set updates when the parent workout row no longer exists', async () => {
     tx.$queryRaw.mockResolvedValue([]);
 
-    await expect(setsRepository.updateSet('set-1', { status: 'COMPLETED' }, context)).resolves.toBeNull();
+    await expect(
+      setsRepository.updateSet('set-1', { status: 'COMPLETED' }, context),
+    ).resolves.toBeNull();
 
     expect(tx.$queryRaw).toHaveBeenCalledOnce();
     expect(tx.workoutSet.update).not.toHaveBeenCalled();
