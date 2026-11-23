@@ -389,6 +389,84 @@ test('local injection guard excludes explicit tokens, optional and nonlocal depe
   });
 });
 
+test('rejects direct self-injection of a registered Nest provider', () => {
+  fixture(({ module, source, check }) => {
+    module('first', '@Module({ providers: [FirstService] }) export class FirstModule {}');
+    source(
+      'first',
+      'services/first.service.ts',
+      '@Injectable() export class FirstService { constructor(private readonly self: FirstService) {} }',
+    );
+    assert.match(
+      check().join(' '),
+      /first\.module\.ts: Nest provider injection cycle: FirstService -> FirstService/,
+    );
+  });
+});
+
+test('rejects two-provider and three-provider local constructor injection cycles', () => {
+  fixture(({ module, source, check }) => {
+    module(
+      'first',
+      '@Module({ providers: [FirstService, SecondService, ThirdService] }) export class FirstModule {}',
+    );
+    source(
+      'first',
+      'services/first.service.ts',
+      '@Injectable() export class FirstService { constructor(private readonly second: SecondService) {} }',
+    );
+    source(
+      'first',
+      'services/second.service.ts',
+      '@Injectable() export class SecondService { constructor(private readonly first: FirstService) {} }',
+    );
+    source('first', 'services/third.service.ts', '@Injectable() export class ThirdService {}');
+
+    assert.match(
+      check().join(' '),
+      /Nest provider injection cycle: FirstService -> SecondService -> FirstService/,
+    );
+
+    source(
+      'first',
+      'services/second.service.ts',
+      '@Injectable() export class SecondService { constructor(private readonly third: ThirdService) {} }',
+    );
+    source(
+      'first',
+      'services/third.service.ts',
+      '@Injectable() export class ThirdService { constructor(private readonly first: FirstService) {} }',
+    );
+    assert.match(
+      check().join(' '),
+      /Nest provider injection cycle: FirstService -> SecondService -> ThirdService -> FirstService/,
+    );
+
+    source('first', 'services/third.service.ts', '@Injectable() export class ThirdService {}');
+    assert.deepEqual(check(), []);
+  });
+});
+
+test('skips explicit and optional injection edges when detecting provider cycles', () => {
+  fixture(({ module, source, check }) => {
+    module(
+      'first',
+      '@Module({ providers: [FirstService, SecondService] }) export class FirstModule {}',
+    );
+    source(
+      'first',
+      'services/first.service.ts',
+      "@Injectable() export class FirstService { constructor(@Inject('TOKEN') private readonly viaToken: SecondService, @Optional() private readonly maybe: SecondService) {} }",
+    );
+    source(
+      'first',
+      'services/second.service.ts',
+      '@Injectable() export class SecondService { constructor(private readonly first: FirstService) {} }',
+    );
+    assert.deepEqual(check(), []);
+  });
+});
+
 test('rejects runtime provider injection if Nest module dependency is absent', () => {
   fixture(({ module, source, check }) => {
     module('first');

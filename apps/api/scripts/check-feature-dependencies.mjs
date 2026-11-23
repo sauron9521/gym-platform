@@ -127,6 +127,25 @@ export function checkFeatureDependencies(repositoryRoot) {
       }
     }
 
+    // Only actual class providers participate in Nest constructor injection.
+    // Keep self-edges here: a provider injecting itself is a DI cycle too.
+    const providerGraph = new Map(
+      [...registration.providers]
+        .filter((provider) => localClasses.has(provider))
+        .map((provider) => [provider, new Set()]),
+    );
+    for (const [provider, dependencies] of providerGraph) {
+      for (const dependency of localClasses.get(provider)) {
+        if (providerGraph.has(dependency)) dependencies.add(dependency);
+      }
+    }
+    const providerCycle = firstCycle(providerGraph);
+    if (providerCycle) {
+      errors.push(
+        name + '.module.ts: Nest provider injection cycle: ' + providerCycle.join(' -> '),
+      );
+    }
+
     for (const file of files) {
       const display = relative(resolve(repositoryRoot), file).split(sep).join('/');
       for (const imported of parseModuleImports(readFileSync(file, 'utf8'), file)) {
