@@ -14,9 +14,9 @@ export function parseModuleImports(source, filename = 'source.ts') {
   );
   const imports = [];
 
-  const append = (node, value, typeOnly, kind) => {
+  const append = (node, value, typeOnly, kind, symbols = []) => {
     if (value && ts.isStringLiteralLike(value)) {
-      imports.push({ path: value.text, typeOnly, kind });
+      imports.push({ path: value.text, typeOnly, kind, symbols });
     } else {
       const line = parsed.getLineAndCharacterOfPosition(node.getStart(parsed)).line + 1;
       imports.push({ path: null, typeOnly, kind, line });
@@ -38,6 +38,11 @@ export function parseModuleImports(source, filename = 'source.ts') {
         declaration.moduleSpecifier,
         Boolean(clause?.isTypeOnly || inlineTypesOnly),
         'static-import',
+        named && ts.isNamedImports(named)
+          ? named.elements
+              .filter((binding) => !binding.isTypeOnly)
+              .map((binding) => binding.propertyName?.text ?? binding.name.text)
+          : [],
       );
     } else if (ts.isExportDeclaration(declaration) && declaration.moduleSpecifier) {
       const named = declaration.exportClause;
@@ -90,4 +95,42 @@ export function parseModuleImports(source, filename = 'source.ts') {
   };
   ts.forEachChild(parsed, visit);
   return imports;
+}
+
+/**
+ * Read only explicit, literal `@Module({ exports: [...] })` entries.
+ * Runtime consumers must not assume a service is injectable merely because
+ * its source file can be imported. This is static analysis; no Nest bootstrap.
+ */
+export function parseNestModuleExports(source, filename = 'feature.module.ts') {
+  const parsed = ts.createSourceFile(
+    filename,
+    source,
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.TS,
+  );
+  const exported = new Set();
+
+  for (const declaration of parsed.statements) {
+    if (!ts.isClassDeclaration(declaration)) continue;
+    for (const decorator of ts.getDecorators(declaration) ?? []) {
+      const call = decorator.expression;
+      if (!ts.isCallExpression(call)) continue;
+      if (!ts.isIdentifier(call.expression) || call.expression.text !== 'Module') continue;
+      const metadata = call.arguments[0];
+      if (!metadata || !ts.isObjectLiteralExpression(metadata)) continue;
+
+      for (const property of metadata.properties) {
+        if (!ts.isPropertyAssignment(property)) continue;
+        if (!ts.isIdentifier(property.name) || property.name.text !== 'exports') continue;
+        if (!ts.isArrayLiteralExpression(property.initializer)) continue;
+        for (const element of property.initializer.elements) {
+          if (ts.isIdentifier(element)) exported.add(element.text);
+        }
+      }
+    }
+  }
+
+  return exported;
 }
