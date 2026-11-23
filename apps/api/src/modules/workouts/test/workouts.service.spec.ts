@@ -308,7 +308,40 @@ describe('WorkoutsService', () => {
         }),
         athlete.id,
         ['exercise-1'],
+        expect.any(Function),
       );
+    });
+
+    it('denies a stale Athlete creation after promotion at the final write checkpoint', async () => {
+      repository.create.mockResolvedValue(plannedWorkout);
+      await service.create(athlete, createInput);
+      const authorize = repository.create.mock.calls[0]?.[3];
+
+      usersService.findMyCapabilitiesForWrite.mockResolvedValue({
+        athlete: false,
+        trainer: false,
+        admin: true,
+      });
+
+      await expect(authorize({ id: 'tx' })).rejects.toThrow(ForbiddenException);
+      expect(usersService.findMyCapabilitiesForWrite).toHaveBeenCalledWith(
+        { id: 'tx' },
+        athlete.id,
+      );
+    });
+
+    it('allows former Trainers to create their own Athlete workouts', async () => {
+      repository.create.mockResolvedValue(plannedWorkout);
+      await service.create(trainer, createInput);
+      const authorize = repository.create.mock.calls[0]?.[3];
+
+      usersService.findMyCapabilitiesForWrite.mockResolvedValue({
+        athlete: true,
+        trainer: false,
+        admin: false,
+      });
+
+      await expect(authorize({})).resolves.toBeUndefined();
     });
 
     it('rejects admin-promoted accounts even with stale ATHLETE sessions', async () => {

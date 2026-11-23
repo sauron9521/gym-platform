@@ -957,11 +957,13 @@ describe('WorkoutsRepository.createFromProgram integration (e2e)', () => {
         expect(locked).toBeDefined();
 
         // B's validation must wait for the shared relationship lock.
-        creationPromise = repository.create(workoutData, fixture.athleteId, [source.id]).then(
-          () => 'CREATED' as const,
-          (error: unknown) =>
-            error instanceof BadRequestException ? ('DENIED' as const) : ('OTHER' as const),
-        );
+        creationPromise = repository
+          .create(workoutData, fixture.athleteId, [source.id], async () => {})
+          .then(
+            () => 'CREATED' as const,
+            (error: unknown) =>
+              error instanceof BadRequestException ? ('DENIED' as const) : ('OTHER' as const),
+          );
 
         for (let attempt = 0; attempt < 60; attempt++) {
           const [state] = await prisma.$queryRaw<Array<{ blocked: boolean }>>`
@@ -1572,6 +1574,7 @@ describe('WorkoutsRepository.createFromProgram integration (e2e)', () => {
         ),
         fixture.athleteId,
         [fixture.exerciseId],
+        async () => {},
       ),
     ).rejects.toBeInstanceOf(BadRequestException);
 
@@ -1633,6 +1636,7 @@ describe('WorkoutsRepository.createFromProgram integration (e2e)', () => {
             manualWorkoutWithExercise(fixture.athleteId, fixture.exerciseId, title),
             fixture.athleteId,
             [fixture.exerciseId],
+            async () => {},
           )
           .then(
             () => 'CREATED' as const,
@@ -1742,6 +1746,7 @@ describe('WorkoutsRepository.createFromProgram integration (e2e)', () => {
       ),
       fixture.athleteId,
       [fixture.exerciseId],
+      async () => {},
     );
     expect(created.status).toBe('PLANNED');
 

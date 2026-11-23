@@ -19,8 +19,13 @@ export class WorkoutsRepository extends WorkoutQueriesRepository {
     super(prisma);
   }
 
-  create(data: Prisma.WorkoutCreateInput, athleteId: string, exerciseIds: string[]) {
-    return this.creationRepository.create(data, athleteId, exerciseIds);
+  create(
+    data: Prisma.WorkoutCreateInput,
+    athleteId: string,
+    exerciseIds: string[],
+    authorize: (tx: Prisma.TransactionClient) => Promise<void>,
+  ) {
+    return this.creationRepository.create(data, athleteId, exerciseIds, authorize);
   }
 
   createFromProgram(input: Parameters<WorkoutCreationRepository['createFromProgram']>[0]) {
