@@ -22,7 +22,6 @@
 
 All rows are **PENDING** as of the stated source snapshot unless an independently verified artifact and approved gate decision are attached to the release record. This is an evidence inventory, **not** an assertion that no local tests or operator work have ever occurred.
 
-<!-- prettier-ignore-start -->
 | ID | Gate / acceptance evidence required | Existing owners and runbooks | Status |
 | --- | --- | --- | --- |
 | L1 | Named eligible legal operator, authority/contact, legal and accounting conclusions as applicable; lawyer-reviewed UA+EN Terms, Privacy Notice, Trainer Terms, content and physical-safety/non-medical terms; verified acceptance **version/time/actor**, separate notice and purpose-specific optional consents | [S04 L1](product-strategy/s04-legal-compliance-v1.md), [S03](product-strategy/s03-privacy-data-ownership-v1.md) | PENDING |
@@ -41,7 +40,6 @@ All rows are **PENDING** as of the stated source snapshot unless an independentl
 | Q1 | Cross-product accessible/responsive UA+EN critical paths, native keyboard/safe areas, realistic operator support, accurate landing/signup availability, no inaccessible download claim; reviewer-attached browser/device evidence | [#385](https://github.com/sauron9521/gym-platform/issues/385), [#389](https://github.com/sauron9521/gym-platform/issues/389), [#393](https://github.com/sauron9521/gym-platform/issues/393) | PENDING |
 | A1 | Privacy-safe, server-authoritative Trainer/Athlete activation/W4 event dictionary and full-window cohort fixtures; validation of counts without sensitive workout payloads or fabricated zeros | [S07](product-strategy/s07-product-analytics-experiments-v1.md), [S01](product-strategy/s01-product-strategy-v1.md) | PENDING |
 | G1 | Named owner review of **all** above release-specific evidence, documented acceptable residual risk, support/stop plan, independent L1/S05/S06 decisions and explicit **GO** for precisely scoped free Beta | [#352](https://github.com/sauron9521/gym-platform/issues/352), [#323](https://github.com/sauron9521/gym-platform/issues/323) | PENDING |
-<!-- prettier-ignore-end -->
 
 **Gate semantics:** `Q1` and `A1` are pre-Beta acceptance of necessary UX and **ability to measure**; they do not require W4 results before the participants begin their individual four-week windows. A source-level test, prepared workflow or link to its instructions leaves the row **PENDING** until execution evidence is verified. No implicit PASS from green CI.
 
@@ -49,7 +47,6 @@ All rows are **PENDING** as of the stated source snapshot unless an independentl
 
 **Already approved internal objectives, not achieved service promises** ([S06](product-strategy/s06-production-reliability-v1.md)):
 
-<!-- prettier-ignore-start -->
 | Measure | First free Beta decision target | Verification requirement |
 | --- | --- | --- |
 | RPO | **≤ 1 hour** | Dated isolated restore with identified recovery point, PostgreSQL plus required durable components and media |
@@ -59,7 +56,6 @@ All rows are **PENDING** as of the stated source snapshot unless an independentl
 | 5xx / write failure rate | **TBD after measured baseline** | Distinguish 5xx, business validation failures, lost writes and server-acknowledged writes; owner-approved alert/stop limits |
 | 429 / throttling | **TBD and tracked separately** | Measure 429 by scenario and caller class, test abuse protection and legitimate Trainer/Athlete flows; owner-approved rate and alert action |
 | Alert delivery | Two independent P0/P1 channels with actual delivered test | Receiver, timestamp, routing/deduplication, escalation and incident stop/rollback action |
-<!-- prettier-ignore-end -->
 
 **No invented performance gates.** S06 deliberately requires p95/error/429 values derived from staging tests and adopted **before** owner Beta GO, not arbitrary universal numbers. Record baseline and signed thresholds in restricted release evidence or a reviewed follow-up operational runbook. A provisional Prometheus rule, passing promtool or successful `/health` alone is insufficient. Rolling-30-day availability is a target and measurement policy; a shorter clean staging window cannot be misrepresented as 30-day production history.
 
@@ -69,7 +65,6 @@ Stop intake or the Beta when a critical security/privacy failure, confirmed dupl
 
 Use a private, access-controlled record; the following is an **empty template**, not test output:
 
-<!-- prettier-ignore-start -->
 | Field | Required value |
 | --- | --- |
 | `decision_id`, `candidate_sha`, `signed_artifact_digest` | Unique review ID; exact commit; runtime / APK / iOS identifiers as applicable |
@@ -80,13 +75,11 @@ Use a private, access-controlled record; the following is an **empty template**,
 | `valid_until_or_retest_on`, `residual_risk` | Version/environment validity, explicit risk disposition |
 | `legal_l1_decision`, `security_decision`, `reliability_decision` | Three distinct approvals with proof; never inferred from Docs/CI |
 | `owner_beta_decision`, `signed_at_utc`, `scope` | Final explicit NO_GO/GO, identity, date, approved trainer cohort and conditions |
-<!-- prettier-ignore-end -->
 
 Owner review should validate references rather than simply accepting field presence. The repository's [staging evidence inventory](staging-readiness-inventory.md) checks **syntactic presence only** and always remains NO_GO. The [production evidence review](production-readiness-review.md) also intentionally never authorizes a deployment.
 
 ### Current evidence register — source snapshot only
 
-<!-- prettier-ignore-start -->
 | Evidence class | What was verified at 2c79ed1 | Release acceptance |
 | --- | --- | --- |
 | Source build | [CI](https://github.com/sauron9521/gym-platform/actions/runs/45075022427) and [Web / Integration E2E](https://github.com/sauron9521/gym-platform/actions/runs/45075022434) succeeded on this main SHA | **Not** native, legal, staging, recovery or owner signoff |
@@ -94,7 +87,6 @@ Owner review should validate references rather than simply accepting field prese
 | Mobile | Reconciliation code and Maestro harness exist; [#324](https://github.com/sauron9521/gym-platform/issues/324) still requires actual Android/iOS evidence and exact server PATCH counts | **PENDING** |
 | Recovery and rollout | Runbooks and offline safety validators exist; [#351](https://github.com/sauron9521/gym-platform/issues/351) awaits real restore/rollback/staging evidence | **PENDING** |
 | Legal/security | S03–S06 are approved policies, not executed L1/legal or security acceptance | **PENDING** |
-<!-- prettier-ignore-end -->
 
 This snapshot is not an exhaustive inventory of private work. Any operator who performed tests outside GitHub can supply dated, independently verifiable evidence without publishing secrets. Reassess on every candidate rather than freezing this snapshot as perpetual truth.
 
