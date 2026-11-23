@@ -32,6 +32,10 @@ export function buildExerciseVisibilityWhere(
           createdById: actor.id,
         },
 
+        // An approved ATHLETE-role trainer can create Trainer-scoped exercises.
+        // Ownership grants access to their own creations even if approval ends.
+        { source: 'TRAINER_CUSTOM', createdById: actor.id },
+
         // Approved ATHLETE-role trainers may also read explicitly shared athlete exercises.
         ...(access.activeAthleteIds.length > 0 ? [sharedAthleteExerciseWhere(actor, access)] : []),
         {
