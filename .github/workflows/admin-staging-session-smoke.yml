@@ -83,6 +83,8 @@ jobs:
       - name: Record status only, never secrets or session identifiers
         if: success()
         run: |
-          echo 'Admin external staging selected smoke scope succeeded.' >> "$GITHUB_STEP_SUMMARY"
-          echo 'The selected scenario was ${{ inputs.scope }}.' >> "$GITHUB_STEP_SUMMARY"
-          echo 'This is NOT production approval. Absolute 8h TTL still requires separate verification.' >> "$GITHUB_STEP_SUMMARY"
+          {
+            echo 'Admin external staging selected smoke scope succeeded.'
+            echo 'The selected scenario was ${{ inputs.scope }}.'
+            echo 'This is NOT production approval. Absolute 8h TTL still requires separate verification.'
+          } >> "$GITHUB_STEP_SUMMARY"

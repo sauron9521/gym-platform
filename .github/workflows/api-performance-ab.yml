@@ -110,7 +110,7 @@ jobs:
       - name: Verify commits and identical fixture/schema/dependency trees
         run: |
           set -euo pipefail
-          mkdir -m 700 -p "$RUNNER_TEMP/gym-perf-ab"
+          install -d -m 700 "$RUNNER_TEMP/gym-perf-ab"
           node scripts/api-performance-ab.mjs preflight \
             before after "$BEFORE_SHA" "$AFTER_SHA" "$RUNNER_TEMP/gym-perf-ab/manifest.json"
 

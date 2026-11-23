@@ -38,8 +38,8 @@ trap cleanup EXIT
 
 ready() {
   local container="$1"
-  local attempt
-  for attempt in $(seq 1 60); do
+  local _
+  for _ in $(seq 1 60); do
     if [ "$(docker exec "$container" redis-cli --raw PING 2>/dev/null || true)" = PONG ]; then
       return 0
     fi
@@ -81,7 +81,7 @@ verify_data "$old"
 
 docker exec "$old" redis-cli BGREWRITEAOF >/dev/null
 rewrite_ok=false
-for attempt in $(seq 1 60); do
+for _ in $(seq 1 60); do
   persistence="$(docker exec "$old" redis-cli --raw INFO persistence | tr -d '\r')"
   if grep -qx 'aof_rewrite_in_progress:0' <<< "$persistence" &&
      grep -qx 'aof_last_bgrewrite_status:ok' <<< "$persistence"; then
