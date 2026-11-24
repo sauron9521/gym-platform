@@ -2,10 +2,9 @@
 // Trusted host-side Docker sampler. Never execute inside gym-monitor.
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
-import { randomUUID } from 'node:crypto';
-import { lstat, open, rename, unlink } from 'node:fs/promises';
-import { basename, dirname, isAbsolute, join, resolve } from 'node:path';
+import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { publishDockerMetrics } from './monitoring-docker-publication.mjs';
 
 const execFileAsync = promisify(execFile);
 const DESTINATION = 'gym_api_docker.prom';
@@ -131,36 +130,12 @@ export function metricsFromSample(sample, now = Math.floor(Date.now() / 1000)) {
 }
 
 export async function publishMetrics(path, text) {
-  if (typeof path !== 'string' || !isAbsolute(path) || basename(path) !== DESTINATION) {
-    throw new Error('Invalid metrics path');
-  }
-  const parent = dirname(path);
-  const dir = await lstat(parent);
-  if (!dir.isDirectory() || (dir.mode & 0o022) !== 0) {
-    throw new Error('Unsafe metrics directory');
-  }
-  try {
-    const old = await lstat(path);
-    if (!old.isFile() || old.isSymbolicLink()) {
-      throw new Error('Unsafe metrics destination');
-    }
-  } catch (error) {
-    if (error?.code !== 'ENOENT') throw error;
-  }
-  const tmp = join(parent, '.' + DESTINATION + '.' + randomUUID() + '.tmp');
-  let handle;
-  try {
-    handle = await open(tmp, 'wx', 0o640);
-    await handle.writeFile(text, 'utf8');
-    await handle.sync();
-    await handle.close();
-    handle = undefined;
-    await rename(tmp, path);
-  } catch {
-    await handle?.close().catch(() => undefined);
-    await unlink(tmp).catch(() => undefined);
-    throw new Error('Metrics publication failed');
-  }
+  await publishDockerMetrics(path, text, DESTINATION, {
+    path: 'Invalid metrics path',
+    directory: 'Unsafe metrics directory',
+    target: 'Unsafe metrics destination',
+    publication: 'Metrics publication failed',
+  });
 }
 
 async function main() {

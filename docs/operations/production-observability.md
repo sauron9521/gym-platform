@@ -107,6 +107,43 @@ read real log files or alter server configuration. Real end-to-end
 telemetry and alert-delivery drills must be signed off on staging
 before cutover to the monorepo.
 
+## Collector replacement review (2026-11-24)
+
+The first consolidation shares only atomic publication between the two trusted
+Docker metrics collectors. Their fixed filenames, directory/target validation,
+0640 temporary files, flush/rename, error messages and stale-on-failure
+semantics remain unchanged. The log snapshot and unprivileged textfile
+publishers have distinct trust contracts and are intentionally not merged.
+
+| Candidate                                                                                 | Potential replacement                                                                                       | Decision                                                                               |
+| ----------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| [cAdvisor](https://github.com/google/cadvisor/blob/master/docs/storage/prometheus.md)     | CPU, memory, CFS counters, OOM metrics                                                                      | First resource shadow candidate; retain Docker inspect/events semantics until verified |
+| [Grafana Alloy](https://grafana.com/docs/alloy/latest/monitor/monitor-docker-containers/) | cAdvisor exporter and Docker log collection in one agent                                                    | Evaluate alongside standalone cAdvisor; not an additional mandatory agent              |
+| [Vector](https://vector.dev/docs/reference/configuration/sources/docker_logs/)            | Docker log ingestion and [VRL filtering](https://vector.dev/docs/reference/configuration/transforms/remap/) | Alternative log collector; append/stream output is not the atomic snapshot contract    |
+| [Fluent Bit](https://docs.fluentbit.io/manual/data-pipeline/filters/log_to_metrics)       | Log ingestion and metric conversion                                                                         | Defer; another agent is not justified before parity                                    |
+
+cAdvisor CPU counters and memory gauges do not automatically reproduce Docker
+CLI percentage formulas, stopped-container sentinels, restart counts or the
+bounded ten-minute Docker OOM event window. Never substitute missing series
+with zero. Alloy's Docker log source uses stored positions, unlike the current
+full ten-minute snapshot rebuilt each minute. A streaming collector must
+demonstrate equivalent handling of restarts, rotation, clock skew, malformed
+logs and failure freshness before cutover.
+
+Pilot on a disposable Linux/cgroup v2 test host only. Use synthetic HTTP status
+and Redis transitions, repeated collection, restart/stop and controlled
+resource fixtures; compare exact event counts, metric types, timestamps and
+alert evaluations, and bound resource cost/cardinality. Require an allowlist
+before any raw log leaves the privileged boundary, no raw logs in buffers,
+diagnostics or sinks, and no Docker socket for the API or gym-monitor. A
+read-only mount of the Docker socket does not enforce a read-only Docker API.
+Review privileges and pinned agent versions separately. Keep shadow metrics
+isolated from existing alerts and dashboards, and require human staging
+approval before any service installation or cutover.
+
+No candidate agent was installed or exercised in this refactor; no measured
+collector parity or production readiness is claimed.
+
 ## Future steps
 
 Staging verification, access-controlled HTTP metrics, multi-instance

@@ -2,10 +2,10 @@
 // Opt-in, trusted Docker host sampler. Never run inside gym-monitor or API.
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
-import { randomUUID } from 'node:crypto';
-import { lstat, open, readFile, rename, unlink } from 'node:fs/promises';
-import { basename, dirname, isAbsolute, join, resolve } from 'node:path';
+import { readFile } from 'node:fs/promises';
+import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { publishDockerMetrics } from './monitoring-docker-publication.mjs';
 
 const run = promisify(execFile);
 const CONTAINER_NAME = /^[A-Za-z0-9][A-Za-z0-9_.-]*$/;
@@ -209,36 +209,12 @@ export function metricsFromSignals(sample, now = Math.floor(Date.now() / 1000)) 
 }
 
 export async function publishSignals(output, contents) {
-  if (typeof output !== 'string' || !isAbsolute(output) || basename(output) !== OUTPUT_NAME) {
-    throw new Error('Invalid Docker signals destination');
-  }
-  const parent = dirname(output);
-  const info = await lstat(parent);
-  if (!info.isDirectory() || (info.mode & 0o022) !== 0) {
-    throw new Error('Unsafe Docker signals directory');
-  }
-  try {
-    const old = await lstat(output);
-    if (!old.isFile() || old.isSymbolicLink()) {
-      throw new Error('Unsafe Docker signals file');
-    }
-  } catch (err) {
-    if (err?.code !== 'ENOENT') throw err;
-  }
-  const temp = join(parent, '.' + OUTPUT_NAME + '.' + randomUUID() + '.tmp');
-  let handle;
-  try {
-    handle = await open(temp, 'wx', 0o640);
-    await handle.writeFile(contents, 'utf8');
-    await handle.sync();
-    await handle.close();
-    handle = undefined;
-    await rename(temp, output);
-  } catch {
-    await handle?.close().catch(() => undefined);
-    await unlink(temp).catch(() => undefined);
-    throw new Error('Docker signals publication failed');
-  }
+  await publishDockerMetrics(output, contents, OUTPUT_NAME, {
+    path: 'Invalid Docker signals destination',
+    directory: 'Unsafe Docker signals directory',
+    target: 'Unsafe Docker signals file',
+    publication: 'Docker signals publication failed',
+  });
 }
 
 async function main() {

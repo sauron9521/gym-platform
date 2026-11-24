@@ -143,3 +143,19 @@ test('atomic 0640 metric publication protects prior snapshot and rejects unsafe 
     rmSync(root, { recursive: true, force: true });
   }
 });
+
+test('failed write preserves the prior metrics file and leaves no temporary file', async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'gym-monitor-write-'));
+  const output = join(dir, 'gym_api_docker.prom');
+  try {
+    await publishMetrics(output, 'prior\n');
+    const before = lstatSync(output);
+    await assert.rejects(publishMetrics(output, null), /Metrics publication failed/);
+    assert.equal(readFileSync(output, 'utf8'), 'prior\n');
+    assert.equal(lstatSync(output).mtimeMs, before.mtimeMs);
+    const { readdirSync } = await import('node:fs');
+    assert.deepEqual(readdirSync(dir), ['gym_api_docker.prom']);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
