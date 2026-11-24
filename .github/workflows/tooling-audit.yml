@@ -33,11 +33,7 @@ jobs:
         run: |
           set -euo pipefail
           pnpm knip:report 2>&1 | tee "$RUNNER_TEMP/knip.txt"
-      - name: Check dependency-cruiser source boundaries (manual diagnostic)
-        run: |
-          set -euo pipefail
-          pnpm architecture:cruise 2>&1 | tee "$RUNNER_TEMP/architecture-cruise.txt"
-      - name: Check named and relative imports using one dependency-cruiser graph
+      - name: Check workspace imports and resolved rules using one graph
         run: |
           set -euo pipefail
           pnpm architecture:cruise:boundaries 2>&1 | tee "$RUNNER_TEMP/architecture-workspace-imports.txt"
@@ -56,7 +52,7 @@ jobs:
             '### Advisory Knip / dependency-cruiser / Turborepo baseline',
             '',
             'Knip findings are diagnostic and are **not** automatically removed.',
-            'Resolved dependency-cruiser rules are also reported in the dedicated diagnostic log.',
+            'Resolved dependency-cruiser rule details are emitted by the native err-long formatter from the same graph.',
             'The combined named/relative workspace import graph gate is required in CI.',
             'Turborepo was run with `--dry=json`; **no lint, test or build tasks executed**.',
             '',
@@ -72,7 +68,6 @@ jobs:
           name: tooling-audit-${{ github.run_id }}
           path: |
             ${{ runner.temp }}/knip.txt
-            ${{ runner.temp }}/architecture-cruise.txt
             ${{ runner.temp }}/architecture-workspace-imports.txt
             ${{ runner.temp }}/turbo-plan.json
           if-no-files-found: error

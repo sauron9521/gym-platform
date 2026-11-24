@@ -168,7 +168,7 @@ test.each([
   });
 });
 
-test('manual audit uses one combined graph gate while standalone scripts remain available', () => {
+test('manual audit runs one graph scan and retains standalone commands', () => {
   const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
   const workflow = readFileSync(
     new URL('../.github/workflows/tooling-audit.yml', import.meta.url),
@@ -177,10 +177,11 @@ test('manual audit uses one combined graph gate while standalone scripts remain 
   const ci = readFileSync(new URL('../.github/workflows/ci.yml', import.meta.url), 'utf8');
   assert.match(pkg.scripts['architecture:cruise:relative'], /dependency-cruiser-relative-imports/);
   assert.match(workflow, /pnpm architecture:cruise:boundaries/);
-  assert.match(workflow, /pnpm architecture:cruise\b/);
+  assert.doesNotMatch(workflow, /pnpm architecture:cruise(?:\s|$)/m);
   assert.doesNotMatch(workflow, /pnpm architecture:cruise:named/);
   assert.doesNotMatch(workflow, /pnpm architecture:cruise:relative/);
   assert.match(workflow, /architecture-workspace-imports\.txt/);
+  assert.doesNotMatch(workflow, /architecture-cruise\.txt/);
   assert.doesNotMatch(workflow, /architecture-(?:named|relative)-imports\.txt/);
   assert.equal((workflow.match(/pnpm architecture:cruise:boundaries/g) ?? []).length, 1);
   assert.match(ci, /pnpm architecture:cruise:boundaries/);

@@ -93,6 +93,8 @@ test('dependency-cruiser pilot does not bypass existing API guards', () => {
     'utf8',
   );
   assert.match(diagnosticWorkflow, /^  workflow_dispatch:$/m);
-  assert.match(diagnosticWorkflow, /pnpm architecture:cruise/);
-  assert.match(diagnosticWorkflow, /architecture-cruise\.txt/);
+  assert.match(diagnosticWorkflow, /pnpm architecture:cruise:boundaries/);
+  assert.doesNotMatch(diagnosticWorkflow, /pnpm architecture:cruise(?:\s|$)/m);
+  assert.match(diagnosticWorkflow, /architecture-workspace-imports\.txt/);
+  assert.doesNotMatch(diagnosticWorkflow, /architecture-cruise\.txt/);
 });
