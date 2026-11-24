@@ -9,6 +9,11 @@ import {
 import { Prisma } from '#prisma/client';
 
 import { UsersService } from '#src/modules/users/services/users.service';
+import {
+  canInitiateInvitation,
+  isSelfInvitation,
+  resolveInvitationDirection,
+} from '../domain/invitation-policy.js';
 import { fullRelationshipReadWhere } from '../policies/trainer-athlete-read.policy.js';
 import { TrainerAthletesRepository } from '../repositories/trainer-athletes.repository.js';
 import { TrainerAthleteTerminationService } from './trainer-athlete-termination.service.js';
@@ -32,33 +37,33 @@ export class TrainerAthletesService {
 
   // CREATE REQUEST
   async create(actor: TrainerAthleteActor, input: CreateTrainerAthleteInput) {
-    if (actor.id === input.userId) {
+    if (isSelfInvitation(actor.id, input.userId)) {
       throw new BadRequestException('You cannot create a relationship with yourself');
     }
 
     // Read both current DB capabilities: a JWT role or a public client flag
     // must never grant trainer privileges after approval is revoked.
     const actorCapabilities = await this.usersService.findMyCapabilities(actor.id);
-    if (!actorCapabilities.athlete || actorCapabilities.admin) {
+    if (!canInitiateInvitation(actorCapabilities)) {
       throw new ForbiddenException('Only athletes and active trainers can invite participants');
     }
     const targetCapabilities = await this.usersService.findMyCapabilities(input.userId);
 
-    const trainerInvitesAthlete = actorCapabilities.trainer && targetCapabilities.athlete;
-    const athleteInvitesTrainer = actorCapabilities.athlete && targetCapabilities.trainer;
+    const direction = resolveInvitationDirection(
+      actor.id,
+      input.userId,
+      actorCapabilities,
+      targetCapabilities,
+    );
 
-    // This endpoint only carries userId, not the intended relationship roles.
-    // When both people have Trainer capability, avoid silently reversing the
-    // invitation or granting an unintended trainer-to-athlete relationship.
-    if (trainerInvitesAthlete && athleteInvitesTrainer) {
+    if (direction.status === 'AMBIGUOUS') {
       throw new BadRequestException('Invitation roles are ambiguous');
     }
-    if (!trainerInvitesAthlete && !athleteInvitesTrainer) {
+    if (direction.status === 'INELIGIBLE') {
       throw new BadRequestException('An athlete and an active trainer are required');
     }
 
-    const trainerId = trainerInvitesAthlete ? actor.id : input.userId;
-    const athleteId = trainerInvitesAthlete ? input.userId : actor.id;
+    const { trainerId, athleteId } = direction.pair;
 
     const existing = await this.trainerAthletesRepository.findOpenByPair(trainerId, athleteId);
 

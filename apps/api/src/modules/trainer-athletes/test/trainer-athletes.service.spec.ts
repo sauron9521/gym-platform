@@ -182,7 +182,7 @@ describe('TrainerAthletesService', () => {
       });
 
       await expect(service.create(trainer, { userId: 'another-trainer' })).rejects.toThrow(
-        BadRequestException,
+        new BadRequestException('Invitation roles are ambiguous'),
       );
       expect(repository.findOpenByPair).not.toHaveBeenCalled();
     });
@@ -249,7 +249,7 @@ describe('TrainerAthletesService', () => {
 
     it('should reject creating a relationship with yourself', async () => {
       await expect(service.create(trainer, { userId: trainer.id })).rejects.toThrow(
-        BadRequestException,
+        new BadRequestException('You cannot create a relationship with yourself'),
       );
 
       expect(usersService.findMyCapabilities).not.toHaveBeenCalled();
@@ -279,7 +279,7 @@ describe('TrainerAthletesService', () => {
 
     it('should reject an athlete inviting another athlete', async () => {
       await expect(service.create(athlete, { userId: athlete.id + '-2' })).rejects.toThrow(
-        BadRequestException,
+        new BadRequestException('An athlete and an active trainer are required'),
       );
 
       expect(repository.createWithCurrentCapabilities).not.toHaveBeenCalled();
@@ -287,10 +287,12 @@ describe('TrainerAthletesService', () => {
 
     it('should reject users with unsupported roles', async () => {
       await expect(service.create(admin, { userId: athlete.id })).rejects.toThrow(
-        ForbiddenException,
+        new ForbiddenException('Only athletes and active trainers can invite participants'),
       );
 
       expect(usersService.findMyCapabilities).toHaveBeenCalledExactlyOnceWith(admin.id);
+      expect(repository.findOpenByPair).not.toHaveBeenCalled();
+      expect(repository.createWithCurrentCapabilities).not.toHaveBeenCalled();
     });
 
     it('should reject an existing pending or active relationship', async () => {
