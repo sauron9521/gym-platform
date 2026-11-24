@@ -5,6 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Prisma } from '#prisma/client';
+import { DraftVersionStateChanged } from '../application/draft-version-update.js';
 import { createPublishProgramUseCase } from '../publication.provider.js';
 import { TrainingProgramVersionService } from '../services/training-program-version.service.js';
 import type { TrainingProgramActor } from '../types/training-program.types.js';
@@ -16,7 +17,7 @@ describe('TrainingProgramVersionService', () => {
     findVersionById: vi.fn(),
     findDraftVersion: vi.fn(),
     createDraftFromLatestPublished: vi.fn(),
-    updateVersion: vi.fn(),
+    updateDraftVersion: vi.fn(),
     publishVersion: vi.fn(),
   };
   const crud = { findOne: vi.fn() };
@@ -175,46 +176,40 @@ describe('TrainingProgramVersionService', () => {
     await expect(
       service.updateDraftVersion(...ids, trainer, { title: 'New' }),
     ).rejects.toBeInstanceOf(ConflictException);
-    expect(repository.updateVersion).not.toHaveBeenCalled();
+    expect(repository.updateDraftVersion).not.toHaveBeenCalled();
   });
 
   it('rejects a draft update without any fields', async () => {
     await expect(service.updateDraftVersion(...ids, trainer, {})).rejects.toBeInstanceOf(
       BadRequestException,
     );
-    expect(repository.updateVersion).not.toHaveBeenCalled();
+    expect(repository.updateDraftVersion).not.toHaveBeenCalled();
   });
 
   it('refuses to shorten duration past a scheduled workout', async () => {
     await expect(
       service.updateDraftVersion(...ids, trainer, { durationWeeks: 2 }),
     ).rejects.toBeInstanceOf(BadRequestException);
-    expect(repository.updateVersion).not.toHaveBeenCalled();
+    expect(repository.updateDraftVersion).not.toHaveBeenCalled();
   });
 
   it('allows the workout on the last week and preserves null as unbounded', async () => {
     const updated = { id: ids[1], durationWeeks: 3 };
-    repository.updateVersion.mockResolvedValue(updated);
+    repository.updateDraftVersion.mockResolvedValue(updated);
     await expect(service.updateDraftVersion(...ids, trainer, { durationWeeks: 3 })).resolves.toBe(
       updated,
     );
     await service.updateDraftVersion(...ids, trainer, { durationWeeks: null });
-    expect(repository.updateVersion).toHaveBeenNthCalledWith(
+    expect(repository.updateDraftVersion).toHaveBeenNthCalledWith(
       1,
-      {
-        id: ids[1],
-        programId: ids[0],
-        status: 'DRAFT',
-      },
+      ids[0],
+      ids[1],
       { durationWeeks: 3 },
     );
-    expect(repository.updateVersion).toHaveBeenNthCalledWith(
+    expect(repository.updateDraftVersion).toHaveBeenNthCalledWith(
       2,
-      {
-        id: ids[1],
-        programId: ids[0],
-        status: 'DRAFT',
-      },
+      ids[0],
+      ids[1],
       { durationWeeks: null },
     );
   });
@@ -224,12 +219,9 @@ describe('TrainingProgramVersionService', () => {
       title: '  Progressive overload  ',
       description: '   ',
     });
-    expect(repository.updateVersion).toHaveBeenCalledExactlyOnceWith(
-      {
-        id: ids[1],
-        programId: ids[0],
-        status: 'DRAFT',
-      },
+    expect(repository.updateDraftVersion).toHaveBeenCalledExactlyOnceWith(
+      ids[0],
+      ids[1],
       { title: 'Progressive overload', description: null },
     );
   });
@@ -239,18 +231,15 @@ describe('TrainingProgramVersionService', () => {
       description: '  Focus on technique  ',
       durationWeeks: 5,
     });
-    expect(repository.updateVersion).toHaveBeenCalledExactlyOnceWith(
-      {
-        id: ids[1],
-        programId: ids[0],
-        status: 'DRAFT',
-      },
+    expect(repository.updateDraftVersion).toHaveBeenCalledExactlyOnceWith(
+      ids[0],
+      ids[1],
       { description: 'Focus on technique', durationWeeks: 5 },
     );
   });
 
   it('maps a concurrent draft publication during update to conflict', async () => {
-    repository.updateVersion.mockRejectedValue(prismaError('P2025'));
+    repository.updateDraftVersion.mockRejectedValue(new DraftVersionStateChanged());
     await expect(
       service.updateDraftVersion(...ids, trainer, { title: 'New' }),
     ).rejects.toBeInstanceOf(ConflictException);
@@ -258,7 +247,7 @@ describe('TrainingProgramVersionService', () => {
 
   it('does not hide unexpected update failures', async () => {
     const failure = new Error('connection closed');
-    repository.updateVersion.mockRejectedValue(failure);
+    repository.updateDraftVersion.mockRejectedValue(failure);
     await expect(service.updateDraftVersion(...ids, trainer, { title: 'New' })).rejects.toBe(
       failure,
     );
