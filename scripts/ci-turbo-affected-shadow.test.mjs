@@ -250,7 +250,6 @@ test('workflow sanitizes optional inputs in environment variables without shell 
   assert.doesNotMatch(ci, /comparison-range|AUDIT_BASE_SHA|resolveAuditRange/);
 });
 
-
 test('historical samples represent distinct concrete change categories', () => {
   const c = (number) => number.toString(16).padStart(40, '0');
   const candidate = (number, paths) => ({
@@ -269,14 +268,14 @@ test('historical samples represent distinct concrete change categories', () => {
     ],
     5,
   );
-  assert.deepEqual(selected.map(({ category }) => category), [
-    'cross-cutting',
-    'web',
-    'docs',
-    'openapi',
-    'mixed',
-  ]);
-  assert.deepEqual(selected.map(({ head }) => head), [10, 9, 7, 6, 5].map(c));
+  assert.deepEqual(
+    selected.map(({ category }) => category),
+    ['cross-cutting', 'web', 'docs', 'openapi', 'mixed'],
+  );
+  assert.deepEqual(
+    selected.map(({ head }) => head),
+    [10, 9, 7, 6, 5].map(c),
+  );
   assert.equal(historyChangeCategory(['pnpm-lock.yaml']), 'lockfile');
   assert.equal(historyChangeCategory(['packages/i18n/src/messages/uk.json']), 'i18n');
   assert.equal(historyChangeCategory([]), 'empty');
@@ -299,7 +298,14 @@ test('historical shadow analysis runs only bounded Turbo dry plans on main', () 
     calls.push({ cmd, args, options });
     if (cmd === 'pnpm') {
       assert.deepEqual(args, [
-        'exec', 'turbo', 'run', 'lint', 'typecheck', 'build', '--affected', '--dry=json',
+        'exec',
+        'turbo',
+        'run',
+        'lint',
+        'typecheck',
+        'build',
+        '--affected',
+        '--dry=json',
       ]);
       const name = options.env.TURBO_SCM_HEAD === current ? '@gym/web' : '@gym/api';
       return JSON.stringify(plan([name]));
@@ -317,13 +323,22 @@ test('historical shadow analysis runs only bounded Turbo dry plans on main', () 
   const report = inspectHistoricalAffected(2, execute, { GITHUB_REF: 'refs/heads/main' });
   assert.equal(report.mainHead, current);
   assert.equal(report.examinedFirstParentCommits, 2);
-  assert.deepEqual(report.samples.map((x) => x.category), ['web', 'api']);
-  assert.deepEqual(report.samples.map((x) => x.missingFromTurbo), [[], []]);
+  assert.deepEqual(
+    report.samples.map((x) => x.category),
+    ['web', 'api'],
+  );
+  assert.deepEqual(
+    report.samples.map((x) => x.missingFromTurbo),
+    [[], []],
+  );
   const turbo = calls.filter((call) => call.cmd === 'pnpm');
   assert.equal(turbo.length, 2);
   assert.deepEqual(
     turbo.map((call) => [call.options.env.TURBO_SCM_BASE, call.options.env.TURBO_SCM_HEAD]),
-    [[middle, current], [older, middle]],
+    [
+      [middle, current],
+      [older, middle],
+    ],
   );
   assert.ok(report.note.includes('Advisory only'));
 });
