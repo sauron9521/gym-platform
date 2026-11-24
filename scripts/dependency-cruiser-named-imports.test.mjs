@@ -110,3 +110,17 @@ test('required CI tooling gate enforces named application imports from parsed gr
   assert.match(tooling, /run: pnpm architecture:cruise:named/);
   assert.match(ci, /tooling-contracts/);
 });
+
+test('type-only TypeScript imports are present in the parsed graph', () => {
+  withFixture(
+    { 'apps/alpha/src/types.ts': "import type { Example } from '@gym/beta';\n" },
+    (root) => {
+      const result = inspectNamedApplicationImports(root);
+      assert.ok(
+        result.violations.some((message) =>
+          message.includes('apps/alpha/src/types.ts: import of application @gym/beta'),
+        ),
+      );
+    },
+  );
+});
