@@ -9,3 +9,15 @@ Rules live in .dependency-cruiser.cjs. Dependency-cruiser resolves import target
 Regression tests create temporary fixtures to show that invalid dependencies are rejected and same-workspace imports are accepted. These tests run with pnpm test:tooling.
 
 Only remove an old script after migrating every required invariant, proving equivalence and preserving CI gating.
+
+## Workspace-boundary parity and legacy coverage
+
+The workspace guard now checks all three pnpm workspace roots: `apps/`, `packages/`, and `tooling/`. Dependency-cruiser is still a manual diagnostic.
+
+- **Both checkers:** cross-app source imports and relative cross-workspace source imports, including tooling packages.
+- **Legacy checker only:** named app imports, manifest dependencies on apps, duplicate or missing workspace names, and shared dependency cycles.
+- **API-specific guards:** Nest DI/provider exports, feature contract rules, and computed dynamic imports.
+
+The parity tests run both import checkers against the same temporary source fixtures. These tests cover representative resolved imports; the legacy manifest and Nest DI guards remain required.
+
+A future PR may remove the regex import extraction from the legacy checker after separately verifying named-package imports, unresolved paths and CI behavior across the whole codebase. This PR does not remove it.
