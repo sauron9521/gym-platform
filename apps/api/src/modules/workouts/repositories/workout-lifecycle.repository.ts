@@ -4,6 +4,12 @@ import { canCompleteWorkout } from '@gym/domain';
 import { Prisma } from '#prisma/client';
 import { PrismaService } from '#src/infra/database/index';
 import {
+  WorkoutCompletionStateChanged,
+  type CompleteWorkoutCommand,
+  type WorkoutCompletionResult,
+} from '../application/workout-completion.js';
+import type { WorkoutRecord } from '../types/workout.types.js';
+import {
   WorkoutStartStateChanged,
   type StartWorkoutCommand,
 } from '../application/workout-start.js';
@@ -19,7 +25,22 @@ import { lockActiveTrainerRelationships } from './workout-locks.js';
 export class WorkoutLifecycleRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  async completeWorkout(input: { id: string; athleteId: string; completedAt: Date }) {
+  async completeWorkout(
+    input: CompleteWorkoutCommand,
+  ): Promise<WorkoutCompletionResult<WorkoutRecord>> {
+    try {
+      return await this.completeWorkoutAtomically(input);
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+        throw new WorkoutCompletionStateChanged();
+      }
+      throw error;
+    }
+  }
+
+  private async completeWorkoutAtomically(
+    input: CompleteWorkoutCommand,
+  ): Promise<WorkoutCompletionResult<WorkoutRecord>> {
     return this.prisma.$transaction(async (tx) => {
       // Use the same parent-row lock as updateSet().
       const workouts = await tx.$queryRaw<Array<{ id: string; status: string }>>`

@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { Prisma } from '#prisma/client';
+import { WorkoutCompletionStateChanged } from '../application/workout-completion.js';
 import { PrismaService } from '#src/infra/database/index';
 import { workoutSelect, workoutSetSelect } from '../selects/workout.select.js';
 import { WorkoutLifecycleRepository } from '../repositories/workout-lifecycle.repository.js';
@@ -81,6 +83,41 @@ describe('Workout command repository transaction boundaries', () => {
       setsRepository.updateSet('set-1', { status: 'COMPLETED' }, context),
     ).resolves.toBeNull();
     expect(tx.workoutSet.update).not.toHaveBeenCalled();
+  });
+
+  it('translates a stale completion write into a typed conflict', async () => {
+    tx.$queryRaw.mockResolvedValue([{ id: 'workout-1', status: 'IN_PROGRESS' }]);
+    tx.workoutSet.findMany.mockResolvedValue([{ status: 'COMPLETED' }]);
+    tx.workout.update.mockRejectedValueOnce(
+      new Prisma.PrismaClientKnownRequestError('Record missing', {
+        code: 'P2025',
+        clientVersion: '7.10.1',
+      }),
+    );
+
+    await expect(
+      lifecycleRepository.completeWorkout({
+        id: 'workout-1',
+        athleteId: 'athlete-1',
+        completedAt: new Date('2030-01-01T10:00:00Z'),
+      }),
+    ).rejects.toBeInstanceOf(WorkoutCompletionStateChanged);
+  });
+
+  it('preserves unrelated completion transaction errors', async () => {
+    const error = new Prisma.PrismaClientKnownRequestError('Transaction conflict', {
+      code: 'P2034',
+      clientVersion: '7.10.1',
+    });
+    prisma.$transaction.mockRejectedValueOnce(error);
+
+    await expect(
+      lifecycleRepository.completeWorkout({
+        id: 'workout-1',
+        athleteId: 'athlete-1',
+        completedAt: new Date('2030-01-01T10:00:00Z'),
+      }),
+    ).rejects.toBe(error);
   });
 
   it('refuses completion while a set is pending after acquiring the parent lock', async () => {
