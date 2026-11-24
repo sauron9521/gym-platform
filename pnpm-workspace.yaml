@@ -8,7 +8,6 @@ nodeLinker: hoisted
 allowBuilds:
   '@prisma/engines': true
   prisma: true
-  bcrypt: true
   esbuild: true
   '@swc/core': true
   '@parcel/watcher': false
