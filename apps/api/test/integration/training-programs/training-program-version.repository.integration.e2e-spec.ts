@@ -381,12 +381,11 @@ describe('TrainingProgramVersionRepository integration (e2e)', () => {
           `;
           expect(holder).toBeDefined();
 
-          shrink = repository
-            .updateDraftVersion(program.id, versionId, { durationWeeks: 4 })
-            .then(
-              () => null,
-              (error: unknown) => error,
-            );
+          const update = repository.updateDraftVersion(program.id, versionId, { durationWeeks: 4 });
+          shrink = update.then(
+            () => null,
+            (error: unknown) => error,
+          );
 
           for (let attempt = 0; attempt < 60; attempt++) {
             const [state] = await prisma.$queryRaw<Array<{ blocked: boolean }>>`
