@@ -114,7 +114,6 @@ export function changedPathsBetween(base, head, git = execFileSync) {
     .filter(Boolean);
 }
 
-
 const historyCategoryMatchers = [
   ['openapi', /^apps\/api\/openapi\//],
   ['api-client', /^packages\/api-client\//],
@@ -140,7 +139,9 @@ export function historyChangeCategory(paths) {
     } else if (path.startsWith('docs/') || path.endsWith('.md')) {
       continue;
     } else {
-      kinds.add(historyCategoryMatchers.find(([, pattern]) => pattern.test(path))?.[0] ?? 'cross-cutting');
+      kinds.add(
+        historyCategoryMatchers.find(([, pattern]) => pattern.test(path))?.[0] ?? 'cross-cutting',
+      );
     }
   }
   return kinds.size > 1 ? 'mixed' : (kinds.values().next().value ?? 'docs');
@@ -179,11 +180,7 @@ export function inspectHistoricalAffected(count, run = execFileSync, env = proce
   const gitOptions = { cwd: repositoryRoot, encoding: 'utf8', maxBuffer: 10 * 1024 * 1024 };
   const current = run('git', ['rev-parse', 'HEAD'], gitOptions).trim();
   if (!commitSha.test(current)) throw new Error('Invalid current main commit');
-  const commits = run(
-    'git',
-    ['rev-list', '--first-parent', '--max-count=81', 'HEAD'],
-    gitOptions,
-  )
+  const commits = run('git', ['rev-list', '--first-parent', '--max-count=81', 'HEAD'], gitOptions)
     .trim()
     .split('\n');
   if (commits.length < 2 || commits[0] !== current || commits.some((sha) => !commitSha.test(sha))) {
@@ -219,8 +216,7 @@ export function inspectHistoricalAffected(count, run = execFileSync, env = proce
     mainHead: current,
     examinedFirstParentCommits: candidates.length,
     samples: results,
-    note:
-      'Advisory only. Historical Git diffs are evaluated against the current checkout dependency graph, not their original workspace configuration. No required CI routing or gates are changed.',
+    note: 'Advisory only. Historical Git diffs are evaluated against the current checkout dependency graph, not their original workspace configuration. No required CI routing or gates are changed.',
   };
 }
 
@@ -244,9 +240,7 @@ function main(args = process.argv.slice(2)) {
           item.head.slice(0, 12) +
           '): ' +
           item.status +
-          (item.missingFromTurbo.length
-            ? ' — missing ' + item.missingFromTurbo.join(', ')
-            : ''),
+          (item.missingFromTurbo.length ? ' — missing ' + item.missingFromTurbo.join(', ') : ''),
       ),
       '',
       'These are read-only dry-run observations, not CI routing or release eligibility.',
