@@ -4,7 +4,7 @@ import type { Role } from '#prisma/client';
 import { hasAdminPermission } from '#src/common/rbac/admin-permissions';
 
 export const ACCOUNT_STATUSES = ['ACTIVE', 'SUSPENDED'] as const;
-export type AccountStatus = (typeof ACCOUNT_STATUSES)[number];
+type AccountStatus = (typeof ACCOUNT_STATUSES)[number];
 
 const ACCOUNT_STATUS_ACTIONS = ['SUSPEND', 'REACTIVATE'] as const;
 export type AccountStatusAction = (typeof ACCOUNT_STATUS_ACTIONS)[number];

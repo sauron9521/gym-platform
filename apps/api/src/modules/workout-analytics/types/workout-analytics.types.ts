@@ -1,6 +1,6 @@
 import type { Prisma } from '#prisma/client';
 
-export type VolumeValue = Prisma.Decimal | number | string;
+type VolumeValue = Prisma.Decimal | number | string;
 
 /** PostgreSQL aggregate rows. Counts are cast to int in SQL. */
 export type WorkoutAnalyticsDailyRow = {
