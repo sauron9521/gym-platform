@@ -1,0 +1,52 @@
+/**
+ * Initial declarative replacement for a subset of custom import-boundary checks.
+ * Existing Nest and workspace architecture guards remain authoritative.
+ *
+ * @type {import('dependency-cruiser').IConfiguration}
+ */
+module.exports = {
+  forbidden: [
+    {
+      name: 'no-cross-app-source-imports',
+      severity: 'error',
+      comment: 'Applications must not import source code from other applications.',
+      from: { path: '^apps/([^/]+)/src/' },
+      to: { path: '^apps/[^/]+/src/', pathNot: '^apps/$1/' },
+    },
+    {
+      name: 'no-app-source-in-shared-packages',
+      severity: 'error',
+      comment: 'Shared packages must not depend on application implementation files.',
+      from: { path: '^(?:packages|tooling)/[^/]+/src/' },
+      to: { path: '^apps/[^/]+/src/' },
+    },
+    {
+      name: 'no-relative-cross-workspace-source-imports',
+      severity: 'error',
+      comment: 'Use workspace package exports rather than relative paths across workspaces.',
+      from: { path: '^((?:apps|packages|tooling)/[^/]+)/src/' },
+      to: {
+        path: '^(?:apps|packages|tooling)/[^/]+/src/',
+        pathNot: '^$1/',
+        dependencyTypes: ['local'],
+      },
+    },
+    {
+      name: 'no-relative-cross-feature-api-imports',
+      severity: 'error',
+      comment: 'Use the reviewed #src/modules/<feature> alias for API feature boundaries.',
+      from: { path: '^apps/api/src/modules/([^/]+)/' },
+      to: {
+        path: '^apps/api/src/modules/[^/]+/',
+        pathNot: '^apps/api/src/modules/$1/',
+        dependencyTypes: ['local'],
+      },
+    },
+  ],
+  options: {
+    doNotFollow: { path: 'node_modules' },
+    exclude: {
+      path: '(^|/)(?:node_modules|\\.next|\\.expo|dist|build|coverage|generated|test|tests|e2e)(/|$)|\\.(?:spec|test)\\.[cm]?[jt]sx?$',
+    },
+  },
+};

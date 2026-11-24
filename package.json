@@ -30,9 +30,11 @@
     "test:tooling": "vitest run --config vitest.config.mts",
     "knip": "knip",
     "knip:report": "knip --no-exit-code --no-progress --reporter compact --max-show-issues 12",
-    "turbo:plan": "turbo run lint typecheck build --dry=json"
+    "turbo:plan": "turbo run lint typecheck build --dry=json",
+    "architecture:cruise": "depcruise --config .dependency-cruiser.cjs --include-only \"^(apps|packages|tooling)/[^/]+/src/\" --output-type err apps packages tooling"
   },
   "devDependencies": {
+    "dependency-cruiser": "18.9.0",
     "husky": "^9.1.7",
     "knip": "6.48.0",
     "lint-staged": "^17.6.1",
