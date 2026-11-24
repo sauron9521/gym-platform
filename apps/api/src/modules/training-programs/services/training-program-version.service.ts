@@ -9,8 +9,8 @@ import {
 import { Prisma } from '#prisma/client';
 
 import { TrainingProgramVersionRepository } from '../repositories/training-program-version.repository.js';
-import { PublicationConflict, type PublishProgramUseCase } from '../application/publish-program.use-case.js';
-import { ProgramPublicationError } from '../domain/publication.policy.js';
+import type { PublishProgramUseCase } from '../application/publish-program.use-case.js';
+import { rethrowPublicationHttpError } from '../policies/training-program-publication.policy.js';
 import { PUBLISH_PROGRAM_USE_CASE } from '../publication.provider.js';
 import type { TrainingProgramVersionPayload } from '../types/training-program-payload.types.js';
 import { TrainingProgramCrudService } from './training-program-crud.service.js';
@@ -182,13 +182,7 @@ export class TrainingProgramVersionService {
     try {
       return await this.publication.execute({ programId, versionId, actor });
     } catch (error) {
-      if (error instanceof PublicationConflict) {
-        throw new ConflictException(error.message);
-      }
-      if (error instanceof ProgramPublicationError) {
-        throw new BadRequestException(error.message);
-      }
-      throw error;
+      rethrowPublicationHttpError(error);
     }
   }
 
