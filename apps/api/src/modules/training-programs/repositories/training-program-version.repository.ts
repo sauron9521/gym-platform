@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { assertPublishableVersion, ProgramPublicationError } from '../domain/publication.policy.js';
 import { isWorkoutOutsideDuration } from '../domain/duration.policy.js';
+import { DraftVersionCreationConflict } from '../application/draft-version-creation.js';
 import {
   DraftVersionStateChanged,
   type DraftVersionChanges,
@@ -168,6 +169,17 @@ export class TrainingProgramVersionRepository {
   }
 
   async createDraftFromLatestPublished(programId: string) {
+    try {
+      return await this.cloneLatestPublished(programId);
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+        throw new DraftVersionCreationConflict();
+      }
+      throw error;
+    }
+  }
+
+  private async cloneLatestPublished(programId: string) {
     return this.prisma.$transaction(async (tx) => {
       // Serialize cloning requests on the parent program row. The partial
       // unique DRAFT index remains a second line of defence, but concurrent
