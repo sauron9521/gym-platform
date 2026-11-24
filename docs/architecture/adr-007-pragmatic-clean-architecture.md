@@ -1,6 +1,6 @@
 # ADR-007 — Pragmatic Clean Architecture for the API
 
-- **Status:** Accepted target direction (owner decision 2026-11-24); implementation planned, ADR pending PR review.
+- **Status:** Accepted target direction (owner decision 2026-11-24); ADR merged in PR #729; implementation in progress.
 - **Scope:** API modular monolith; [Epic #718](https://github.com/sauron9521/gym-platform/issues/718), [CA01 #719](https://github.com/sauron9521/gym-platform/issues/719).
 - **Baseline:** [main 4407a2c](https://github.com/sauron9521/gym-platform/commit/4407a2cdeaddaa158c538a06cb584cd67753074d); file and test inventory, not a measured coverage or performance result.
 - **Roadmaps:** [master #353](https://github.com/sauron9521/gym-platform/issues/353), [architecture #380](https://github.com/sauron9521/gym-platform/issues/380), [E14 #354](https://github.com/sauron9521/gym-platform/issues/354).
@@ -112,6 +112,14 @@ Existing pilot regression inventory (test files inspected, not executed by this 
 - PostgreSQL: `training-program-publication-integrity.integration.e2e-spec.ts` covers archived/private exercise rejection and archive-first concurrency; `training-program-version.repository.integration.e2e-spec.ts` covers archived parent rollback and successful publication.
 
 For CA03/04, add pure Vitest policy cases without Nest/Prisma; use case unit tests with typed fakes; adapter tests against disposable real PostgreSQL for concurrent publish/draft edit, exercise archival, authorization, stale state and rollback. Preserve HTTP contract and generated OpenAPI/client compatibility, including failure payloads. Run required CI and relevant full API/integration suites; mocks alone are not proof of transaction safety.
+
+### CA02 pilot enforcement
+
+The existing `architecture:deps` AST guard opts in Training Programs only. Production TypeScript files under its `domain/` and `application/` directories must resolve imports to the allowed inner layers of the same feature. The domain may import only its own domain; application may also import its own application contracts. Type-only imports, re-exports, literal dynamic imports and the current `#src/` alias are checked; computed imports and computed require are rejected in the pilot. File dependency cycles (including type-only and self edges) are forbidden.
+
+No external package or shared contract is approved for this pilot; any needed pure shared dependency must be reviewed and explicitly enabled, not accessed through an outer barrel. Unresolved local targets fail closed. The guard checks direct static source dependencies, not arbitrary indirect runtime loading or malicious code. Actual Nest factory wiring remains subject to integration tests.
+
+Legacy `services/`, `repositories/`, `policies/`, `types/`, `selects/`, `controllers/` and `dto/` paths, and other features, are not opted into the new inward-layer rule. Existing workspace/feature rules continue unchanged; there is no per-file bypass list. Expanding this scope requires a reviewed change to the explicit feature set. The new rules are exercised by existing `test:architecture` and `architecture:deps` CI steps; no additional checker or CI job is introduced.
 
 ## Shared domain ownership
 

@@ -610,3 +610,127 @@ test('fake imports inside comments and strings do not add dependencies', () => {
     assert.deepEqual(check(), []);
   });
 });
+
+test('allows pilot inner dependencies through aliases and NodeNext relative imports', () => {
+  fixture(({ module, source, check }) => {
+    module('training-programs');
+    source('training-programs', 'domain/model.ts', 'export type Model = string;');
+    source('training-programs', 'domain/policy.ts', "import type { Model } from './model.js';");
+    source(
+      'training-programs',
+      'application/ports/publication.ts',
+      "export type { Model } from '#src/modules/training-programs/domain/model';",
+    );
+    source(
+      'training-programs',
+      'application/publish.ts',
+      "import type { Model } from './ports/publication.js';",
+    );
+    assert.deepEqual(check(), []);
+  });
+});
+
+test.each([
+  ['domain', "import { Injectable } from '@nestjs/common';"],
+  ['domain', "import type { Prisma } from '#prisma/client';"],
+  ['domain', "import type { Port } from '../application/port.js';"],
+  ['domain', "import type { Port } from '#src/modules/training-programs/application/port';"],
+  ['domain', "export * from '../repositories/adapter.js';"],
+  ['domain', "import { Dto } from '../dto/input.js';"],
+  ['domain', "import { Adapter } from '#src/infra/database/index';"],
+  ['domain', "import { readFile } from 'node:fs';"],
+  ['domain', "import { x } from '@gym/domain';"],
+  ['domain', "import { x } from './missing.js';"],
+  ['domain', "import type { X } from '#src/modules/training-programs/domain/../dto/input';"],
+  ['application', "import { Injectable } from '@nestjs/common';"],
+  ['application', "type Client = import('#prisma/client').PrismaClient;"],
+  ['application', "import type { X } from '../types/payload.js';"],
+  ['application', "import { Adapter } from '../repositories/adapter.js';"],
+  ['application', "import { Service } from '../services/service.js';"],
+  ['application', "import { Controller } from '../controllers/controller.js';"],
+  ['application', "import { Adapter } from '../infrastructure/adapter.js';"],
+  ['application', "import { Dto } from '../presentation/dto.js';"],
+  ['application', "import { x } from '#src/modules/workouts/public-api';"],
+])('rejects outward or unresolved %s imports: %s', (layer, statement) => {
+  fixture(({ module, source, check }) => {
+    module('training-programs');
+    module('workouts');
+    source('workouts', 'public-api.ts', 'export const x = 1;');
+    for (const target of [
+      'application/port.ts',
+      'repositories/adapter.ts',
+      'dto/input.ts',
+      'types/payload.ts',
+      'services/service.ts',
+      'controllers/controller.ts',
+      'infrastructure/adapter.ts',
+      'presentation/dto.ts',
+    ]) {
+      source('training-programs', target, 'export {};');
+    }
+    source('training-programs', layer + '/example.ts', statement);
+    assert.match(check().join('\n'), new RegExp('clean architecture ' + layer + ' import'));
+  });
+});
+
+test('rejects computed imports and requires in opted-in layers', () => {
+  fixture(({ module, source, check }) => {
+    module('training-programs');
+    source(
+      'training-programs',
+      'domain/policy.ts',
+      'const a = import(name); const b = require(name);',
+    );
+    const errors = check().join('\n');
+    assert.match(errors, /computed dynamic import cannot be checked statically/);
+    assert.match(errors, /computed require cannot be checked statically/);
+  });
+});
+
+test('rejects cycles across type-only, alias and barrel edges in migrated code', () => {
+  fixture(({ module, source, check }) => {
+    module('training-programs');
+    source('training-programs', 'domain/model.ts', "import type { T } from './index.js';");
+    source(
+      'training-programs',
+      'domain/index.ts',
+      "export type { T } from '#src/modules/training-programs/domain/model';",
+    );
+    assert.match(
+      check().join('\n'),
+      /clean architecture file dependency cycle: domain\/index.ts -> domain\/model.ts -> domain\/index.ts/,
+    );
+    source('training-programs', 'domain/model.ts', 'export type T = string;');
+    assert.deepEqual(check(), []);
+    source('training-programs', 'application/self.ts', "import type { T } from './self.js';");
+    assert.match(
+      check().join('\n'),
+      /clean architecture file dependency cycle: application\/self.ts -> application\/self.ts/,
+    );
+  });
+});
+
+test('keeps legacy and non-opted-in feature paths outside the new inward rules', () => {
+  fixture(({ module, source, check }) => {
+    module('training-programs');
+    module('workouts');
+    source(
+      'training-programs',
+      'services/legacy.service.ts',
+      "import { Injectable } from '@nestjs/common';",
+    );
+    source(
+      'training-programs',
+      'policies/legacy.policy.ts',
+      "import type { Prisma } from '#prisma/client';",
+    );
+    source('workouts', 'domain/legacy.ts', "import { Injectable } from '@nestjs/common';");
+    source('training-programs', 'domain/policy.ts', 'export const rule = true;');
+    source(
+      'training-programs',
+      'repositories/adapter.ts',
+      "import { rule } from '../domain/policy.js';",
+    );
+    assert.deepEqual(check(), []);
+  });
+});

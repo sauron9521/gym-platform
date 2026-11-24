@@ -59,13 +59,69 @@ function firstCycle(graph) {
   return null;
 }
 
+// Opt in per feature after review; legacy folders are deliberately not migrated.
+const cleanArchitectureFeatures = new Set(['training-programs']);
+
+function cleanLayer(featureRoot, file) {
+  if (outside(featureRoot, file)) return null;
+  const [layer] = relative(featureRoot, file).split(sep);
+  return layer === 'domain' || layer === 'application' ? layer : null;
+}
+
+function resolveCleanImport(sourceRoot, file, specifier, files) {
+  let target;
+  if (specifier.startsWith('#src/')) {
+    target = resolve(sourceRoot, specifier.slice('#src/'.length));
+  } else if (specifier.startsWith('./') || specifier.startsWith('../')) {
+    target = resolve(dirname(file), specifier);
+  } else {
+    return null;
+  }
+
+  // Match NodeNext source conventions, including extensionless #src aliases.
+  const candidates = [
+    target,
+    target.replace(/\.js$/, '.ts'),
+    target + '.ts',
+    join(target, 'index.ts'),
+  ];
+  return candidates.find((candidate) => files.has(candidate)) ?? null;
+}
+
+function checkCleanImport(sourceRoot, featureRoot, file, imported, files, graph, errors) {
+  const layer = cleanLayer(featureRoot, file);
+  if (!layer) return;
+
+  const target = resolveCleanImport(sourceRoot, file, imported.path, files);
+  const targetLayer = target && cleanLayer(featureRoot, target);
+  const allowed =
+    targetLayer === 'domain' || (layer === 'application' && targetLayer === 'application');
+  if (!allowed) {
+    const display = relative(sourceRoot, file).split(sep).join('/');
+    errors.push(
+      'src/' +
+        display +
+        ': clean architecture ' +
+        layer +
+        " import '" +
+        imported.path +
+        "' must resolve within its allowed inner layers",
+    );
+    return;
+  }
+
+  // Include type-only edges and self-imports in the migrated file graph.
+  graph.get(file).add(target);
+}
+
 /**
  * Checks the source-level runtime dependency graph separately from type-only
  * references; checks Nest module imports and direct cross-feature boundaries.
  * No project compilation, Prisma, database or runtime imports are necessary.
  */
 export function checkFeatureDependencies(repositoryRoot) {
-  const modulesRoot = join(resolve(repositoryRoot), 'src', 'modules');
+  const sourceRoot = join(resolve(repositoryRoot), 'src');
+  const modulesRoot = join(sourceRoot, 'modules');
   if (!existsSync(modulesRoot)) return ['src/modules: feature directory is missing'];
 
   const modules = readdirSync(modulesRoot, { withFileTypes: true })
@@ -95,6 +151,13 @@ export function checkFeatureDependencies(repositoryRoot) {
         file.endsWith('.ts') &&
         !relative(join(modulesRoot, name), file).split(sep).includes('test'),
     );
+    const featureRoot = join(modulesRoot, name);
+    const cleanFiles = new Set(
+      cleanArchitectureFeatures.has(name)
+        ? files.filter((file) => cleanLayer(featureRoot, file))
+        : [],
+    );
+    const cleanGraph = new Map([...cleanFiles].map((file) => [file, new Set()]));
     const registration = moduleMetadata.get(name);
     const localClasses = new Map();
     for (const file of files) {
@@ -148,15 +211,23 @@ export function checkFeatureDependencies(repositoryRoot) {
 
     for (const file of files) {
       const display = relative(resolve(repositoryRoot), file).split(sep).join('/');
-      for (const imported of parseModuleImports(readFileSync(file, 'utf8'), file)) {
+      const imports = parseModuleImports(readFileSync(file, 'utf8'), file, {
+        checkComputedRequire: cleanFiles.has(file),
+      });
+      for (const imported of imports) {
         if (imported.path === null) {
           errors.push(
             display +
               ':' +
               imported.line +
-              ': computed dynamic import cannot be checked statically; use a string literal',
+              (imported.kind === 'require-unresolved'
+                ? ': computed require cannot be checked statically; use a string literal'
+                : ': computed dynamic import cannot be checked statically; use a string literal'),
           );
           continue;
+        }
+        if (cleanFiles.has(file)) {
+          checkCleanImport(sourceRoot, featureRoot, file, imported, cleanFiles, cleanGraph, errors);
         }
         let targetFeature;
         let targetPath;
@@ -266,6 +337,12 @@ export function checkFeatureDependencies(repositoryRoot) {
           }
         }
       }
+    }
+
+    const cleanCycle = firstCycle(cleanGraph);
+    if (cleanCycle) {
+      const cycle = cleanCycle.map((file) => relative(featureRoot, file).split(sep).join('/'));
+      errors.push(name + ': clean architecture file dependency cycle: ' + cycle.join(' -> '));
     }
   }
 
