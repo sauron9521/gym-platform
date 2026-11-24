@@ -194,6 +194,36 @@ required. Revisit this exception if the generator or Prisma runtime changes.
 See the [Prisma 7 upgrade guide](https://www.prisma.io/docs/guides/upgrade-prisma-orm/v7).
 A new manual audit is needed to confirm the corrected finding count.
 
+## Verified manual audit after PR #734 (2026-11-24)
+
+[Run #45393103809](https://github.com/sauron9521/gym-platform/actions/runs/45393103809)
+on main `1b66a854806a3f1ad769c06a70b28f98e45c31a9` completed successfully.
+Counts below are individual findings from the JSON artifacts, not compact
+report file groups, compared with run #45375253633.
+
+| Finding | Previous | Current |
+| --- | ---: | ---: |
+| Unused files | 11 | 2 |
+| Unused runtime dependencies | 11 | 0 |
+| Unused devDependencies | 8 | 4 |
+| Unlisted dependencies | 5 | 5 |
+| Unused exports | 36 | 37 |
+| Unused exported types | 35 | 35 |
+| Total | 106 | 83 |
+
+The two file findings are required: `apps/api/src/main.ts` is the Nest
+bootstrap compiled to `dist/main.js`, and `tooling/vitest/node.d.mts` is the
+TypeScript declaration companion of the shared `node.mjs` helper used by
+Admin, Landing, Web and Mobile Vitest configurations. Register the bootstrap
+as an explicit API entrypoint and ignore only the declaration file for file
+findings. The new `enableOpenApi` export finding is consistent with the
+missing bootstrap entrypoint; do not remove that export. Confirm all three
+findings in a fresh audit before reporting them resolved.
+
+The dependency-cruiser graph gate passed. Turbo planned 33 tasks, but the
+shadow comparison again missed all seven required application/client
+workspaces on the tooling-only change. Replacing CI selection remains NO-GO.
+
 ## Next safe steps
 
 1. Review the Knip baseline by workspace, confirm real entrypoints and
