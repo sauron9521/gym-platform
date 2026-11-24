@@ -1,15 +1,44 @@
 # Local services for Gym Platform
 
 This Docker Compose stack starts only **PostgreSQL 17**, **Redis 8**, and **Mailpit**.
-The NestJS API, Next.js Web and Expo Mobile run on your host using pnpm.
+All six applications (API, Athlete Web, Trainer Web, Admin, Landing and Mobile) run on your host using pnpm.
 
-## Quick start (PowerShell)
+## Quick start
 
-From the monorepo root:
+Install Node.js 24, the pnpm version pinned in root `package.json`, and Docker Engine/Desktop with Compose v2. On Linux, ensure your current user can access the Docker daemon; on Windows, use Linux containers.
+
+From the monorepo root, create the ignored local environment files **only if they do not already exist**.
+
+Linux/macOS (shell):
+
+```sh
+test -e infra/docker/.env || cp infra/docker/.env.example infra/docker/.env
+test -e apps/api/.env || cp apps/api/.env.local.example apps/api/.env
+```
+
+Windows (PowerShell):
 
 ```powershell
-Copy-Item infra/docker/.env.example infra/docker/.env
-Copy-Item apps/api/.env.local.example apps/api/.env
+if (-not (Test-Path infra/docker/.env)) { Copy-Item infra/docker/.env.example infra/docker/.env }
+if (-not (Test-Path apps/api/.env)) { Copy-Item apps/api/.env.local.example apps/api/.env }
+```
+
+Customize the local PostgreSQL credentials in both files before starting services. Keep the database host/port, username and password aligned. Do not commit either file. The example credentials are not suitable for public networks or production.
+
+For Admin and Trainer development, set the corresponding exact origins in `apps/api/.env` (preserving any other explicitly required local origins):
+
+```dotenv
+APP_URL=http://localhost:3000
+ADMIN_APP_URL=http://localhost:3003
+TRAINER_APP_URL=http://localhost:3004
+CORS_ORIGINS=http://localhost:3000,http://localhost:3003,http://localhost:3004
+```
+
+Use each app's `.env.example` as a reference for its ignored local configuration. Web, Trainer and Admin use a server-only `GYM_API_INTERNAL_URL` pointing to the trusted API origin; never expose it through `NEXT_PUBLIC_*`. Follow the [Admin guide](../../apps/admin/README.md) for existing authorized operator accounts and the [Mobile guide](../../apps/mobile/README.md) for emulator/physical-device networking and Expo Web origins. Keep Landing indexing disabled for local development.
+
+Run the shared setup commands in either shell. Before migrating or seeding, confirm the actual `DATABASE_URL` points to the intended local development database, not test, shared staging or production. For legacy pre-reset databases, stop and follow the [migration history policy](../../docs/database-baseline-reset.md).
+
+```sh
 pnpm install --frozen-lockfile
 pnpm db:up
 pnpm --filter @gym/api db:generate
@@ -18,15 +47,7 @@ pnpm --filter @gym/api db:seed
 pnpm dev
 ```
 
-Open Web at http://localhost:3000; the API listens on http://localhost:3001.
-Mailpit's local inbox is at http://localhost:8025 and its SMTP listener is at 127.0.0.1:1025.
-Register a user or request password recovery and inspect the message in Mailpit.
-Mailpit **does not send messages to real email recipients**.
-Expo Metro uses its own default port (usually 8081).
-
-Customize the **local** password in both copied `.env` files _before_ running the services.
-Do not commit either file. The password in the example is for localhost-only development,
-not for public networks or production.
+See the [application and port table](../../README.md#applications-and-local-development) for individual commands. Mailpit's inbox is at http://localhost:8025 and its SMTP listener defaults to 127.0.0.1:1025. Register a local user or request password recovery and inspect the message in Mailpit. Mailpit **does not send messages to real email recipients**.
 
 **Note:** The init script creates `gym_app_test` for future local e2e runs
 only when a new PostgreSQL data volume is first initialized.
@@ -38,8 +59,8 @@ It does **not** apply test migrations or run test seeds automatically.
 - `pnpm db:ps` — inspect containers
 - `pnpm db:logs` — follow service logs
 - `pnpm db:down` — stop containers while retaining data volumes
-- `pnpm dev` — start all three apps using Turborepo
-- `pnpm dev:api`, `pnpm dev:web`, `pnpm dev:mobile` — start separately
+- `pnpm dev` — start all six application dev tasks using Turborepo
+- `pnpm dev:api`, `pnpm dev:web`, `pnpm dev:landing`, `pnpm dev:admin`, `pnpm dev:trainer`, `pnpm dev:mobile` — start separately
 
 ## Safety
 
