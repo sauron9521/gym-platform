@@ -25,9 +25,9 @@ export type ResponseSchema = {
 export const stringSchema: ResponseSchema = { type: 'string' };
 export const uuidSchema: ResponseSchema = { type: 'string', format: 'uuid' };
 export const integerSchema: ResponseSchema = { type: 'integer' };
-export const booleanSchema: ResponseSchema = { type: 'boolean' };
+const booleanSchema: ResponseSchema = { type: 'boolean' };
 export const dateTimeSchema: ResponseSchema = { type: 'string', format: 'date-time' };
-export const decimalSchema: ResponseSchema = {
+const decimalSchema: ResponseSchema = {
   type: 'string',
   description: 'Exact decimal encoded as a JSON string by Prisma.Decimal',
 };
@@ -49,11 +49,11 @@ export function arraySchema(items: ResponseSchema): ResponseSchema {
   return { type: 'array', items };
 }
 
-export function enumSchema(values: string[]): ResponseSchema {
+function enumSchema(values: string[]): ResponseSchema {
   return { type: 'string', enum: values };
 }
 
-export function paginatedSchema(items: ResponseSchema): ResponseSchema {
+function paginatedSchema(items: ResponseSchema): ResponseSchema {
   return objectSchema({
     data: arraySchema(items),
     meta: objectSchema({
@@ -364,7 +364,7 @@ export const trainerApplicationAdminResponseSchema = objectSchema({
   updatedAt: dateTimeSchema,
 });
 
-export const trainingProgramVersionSummarySchema = objectSchema({
+const trainingProgramVersionSummarySchema = objectSchema({
   id: uuidSchema,
   version: integerSchema,
   title: stringSchema,
@@ -399,7 +399,7 @@ export const trainingProgramSetResponseSchema = objectSchema({
   notes: nullable(stringSchema),
 });
 
-export const trainingProgramExerciseResponseSchema = objectSchema({
+const trainingProgramExerciseResponseSchema = objectSchema({
   id: uuidSchema,
   workoutId: uuidSchema,
   exerciseId: uuidSchema,
@@ -412,7 +412,7 @@ export const trainingProgramExerciseResponseSchema = objectSchema({
   updatedAt: dateTimeSchema,
 });
 
-export const trainingProgramWorkoutResponseSchema = objectSchema({
+const trainingProgramWorkoutResponseSchema = objectSchema({
   id: uuidSchema,
   versionId: uuidSchema,
   weekNumber: integerSchema,
