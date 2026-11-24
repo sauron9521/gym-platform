@@ -1,8 +1,8 @@
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
-import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
+import { join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { inspectNamedApplicationImports } from './dependency-cruiser-named-imports.mjs';
+import { inspectWorkspaceImports } from './dependency-cruiser-workspace-imports.mjs';
 
 const dependencyFields = [
   'dependencies',
@@ -10,34 +10,8 @@ const dependencyFields = [
   'peerDependencies',
   'optionalDependencies',
 ];
-const sourceExtensions = /\.(?:[cm]?[jt]sx?)$/;
-const skippedDirectories = new Set([
-  'node_modules',
-  '.next',
-  '.expo',
-  'dist',
-  'build',
-  'coverage',
-  'generated',
-]);
-
-// Conservatively extract literal static/re-export, side-effect and dynamic import paths.
-// This is an additional cross-workspace guard, not a complete TypeScript parser.
-const importSpecifier = /\b(?:from\s*|import\s*(?:\(\s*)?|require\s*\(\s*)['"]([^'"\r\n]+)['"]/g;
-
-function within(directory, target) {
-  const path = relative(directory, target);
-  return path === '' || (path !== '..' && !path.startsWith('..' + sep) && !isAbsolute(path));
-}
-
-function walkSources(directory) {
-  if (!existsSync(directory)) return [];
-  return readdirSync(directory, { withFileTypes: true }).flatMap((item) => {
-    const path = join(directory, item.name);
-    if (item.isDirectory() && !skippedDirectories.has(item.name)) return walkSources(path);
-    return item.isFile() && sourceExtensions.test(item.name) ? [path] : [];
-  });
-}
+// Source imports are validated by the required dependency-cruiser graph gate.
+// This file deliberately reads manifests only; do not reintroduce source parsing.
 
 function workspacesUnder(root, kind) {
   const folder = join(root, kind);
@@ -87,27 +61,7 @@ export function checkWorkspaceBoundaries(repositoryRoot) {
       }
     }
 
-    for (const file of walkSources(join(workspace.directory, 'src'))) {
-      const source = readFileSync(file, 'utf8');
-      for (const match of source.matchAll(importSpecifier)) {
-        const specifier = match[1];
-        // Named imports are checked by dependency-cruiser's parsed graph.
-        // Keep the local relative-path check for targets that may not resolve.
-        if (!specifier.startsWith('.')) continue;
-        const absoluteTarget = resolve(dirname(file), specifier);
-        const foreign = workspaces.find(
-          (candidate) => candidate !== workspace && within(candidate.directory, absoluteTarget),
-        );
-        if (foreign) {
-          errors.push(
-            relative(root, file) +
-              ': cross-workspace relative import ' +
-              specifier +
-              ' (use public package exports)',
-          );
-        }
-      }
-    }
+
   }
 
   const visited = new Set();
@@ -131,9 +85,9 @@ export function checkWorkspaceBoundaries(repositoryRoot) {
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const root = fileURLToPath(new URL('../', import.meta.url));
   const errors = checkWorkspaceBoundaries(root);
-  // Both checks are required: manifest / unresolved relative paths and named imports.
-  const { violations, graphErrors } = inspectNamedApplicationImports(root);
-  errors.push(...violations);
+  // CLI checks manifests and the complete parsed source import graph.
+  const { named, relative: imports, graphErrors } = inspectWorkspaceImports(root);
+  errors.push(...named, ...imports);
   if (graphErrors) errors.push('dependency-cruiser graph violations: ' + graphErrors);
   if (errors.length) {
     console.error(errors.join('\n'));
