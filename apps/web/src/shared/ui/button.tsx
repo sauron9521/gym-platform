@@ -1,3 +1,3 @@
 'use client';
 
-export { Button, buttonVariants } from '@gym/ui-web';
+export { Button } from '@gym/ui-web';
