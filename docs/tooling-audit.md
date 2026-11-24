@@ -113,6 +113,29 @@ For a complete inventory of the current top-level `scripts/` modules, their
 replacement candidates and safety gates, see the [custom script replacement
 audit](custom-scripts-replacement-audit.md).
 
+## Knip follow-up: restore missing Vitest coverage
+
+After the [Web Playwright entrypoint fix](https://github.com/sauron9521/gym-platform/pull/706),
+the verified Knip unused-file count was **14**, down from 35. Two kinds of
+remaining findings exposed **real test-discovery gaps**, not dead source code:
+
+- `packages/design-tokens/vitest.config.mts` included only
+  `test/**/*.test.mjs`, omitting two existing `test/**/*.spec.mts` suites.
+  Those suites check generated CSS/native palette parity, semantic colors and
+  text contrast. The package's ordinary `pnpm test` now discovers both suffixes.
+- `apps/web/vitest.components.config.mts` included only component
+  `*.test.tsx`, omitting the existing
+  `test/components/workout-set-mutation-feedback.test.ts` suite. The Web
+  component test command now includes both `*.test.tsx` and `*.test.ts`.
+
+The correct fix is to **run these tests**, not to delete them or merely suppress
+Knip warnings. Confirm CI actually executes the newly discovered tests; any
+test failures must be fixed within their owning workspace before this change
+is eligible to merge. `packages/api-client/test/contract-types.test.ts`
+remains a compile-time contract included in that package's `tsconfig.json`,
+not a Vitest runtime test. Remaining unused-file findings require separate
+review and should not be mass-deleted.
+
 ## Verified manual pilot result (2026-11-24)
 
 [Manual run #45363672094](https://github.com/sauron9521/gym-platform/actions/runs/45363672094)
