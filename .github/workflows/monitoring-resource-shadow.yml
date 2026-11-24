@@ -1,0 +1,162 @@
+name: Monitoring / Resource shadow (manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      approval:
+        description: 'Approve trusted image, privileged collection and disposable hosted VM only'
+        required: true
+        type: choice
+        default: DO_NOT_RUN
+        options:
+          - DO_NOT_RUN
+          - APPROVE_DISPOSABLE_RESOURCE_SHADOW
+
+permissions:
+  contents: read
+
+concurrency:
+  group: monitoring-resource-shadow
+  cancel-in-progress: false
+
+jobs:
+  observe:
+    if: github.ref == 'refs/heads/main' && inputs.approval == 'APPROVE_DISPOSABLE_RESOURCE_SHADOW'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      ALLOY_IMAGE: grafana/alloy:v1.21.0@sha256:9726bfba078de9bc2212c60c6e643238c700b4fe0868ea78cbe03163d03d95bf
+      PROM_IMAGE: prom/prometheus@sha256:23031bfe0e74a13004252caaa74eccd0d62b6c6e7a04711d5b8bf5b7e113adc7
+      FIXTURE_IMAGE: node:24-alpine@sha256:116b800c3754b440ee0aa3ed2f20f5bf3d99a554bfd9adeea09ea8017f6e85f5
+    steps:
+      - name: Checkout reviewed main
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - name: Set up Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: '24'
+      - name: Preflight and preload pinned images
+        run: |
+          set -euo pipefail
+          test "$RUNNER_ENVIRONMENT" = github-hosted
+          test "$(stat -fc %T /sys/fs/cgroup)" = cgroup2fs
+          test -z "${DOCKER_HOST:-}"
+          test -z "${DOCKER_CONTEXT:-}"
+          test "$(docker context inspect --format '{{.Endpoints.docker.Host}}')" = unix:///var/run/docker.sock
+          test -z "$(docker ps -aq)"
+          test "$(docker info --format '{{.DockerRootDir}}')" = /var/lib/docker
+          docker pull "$ALLOY_IMAGE"
+          docker pull "$PROM_IMAGE"
+          docker pull "$FIXTURE_IMAGE"
+          docker compose -f ops/monitoring/shadow/fixture.compose.yml --profile resource-shadow config --quiet
+      - name: Run isolated exploratory resource observation
+        id: observe
+        run: |
+          set -euo pipefail
+          umask 077
+          private=$(mktemp -d "$RUNNER_TEMP/resource-shadow.XXXXXX")
+          config="$PWD/ops/monitoring/shadow"
+          fixture="$config/fixture.compose.yml"
+          # Cleanup only this job's named resources. Never prune the Docker daemon.
+          cleanup() {
+            docker rm -fv gym-shadow-alloy gym-shadow-prometheus >/dev/null 2>&1 || true
+            docker compose -f "$fixture" --profile resource-shadow down >/dev/null 2>&1 || true
+          }
+          trap cleanup EXIT
+          docker compose -f "$fixture" --profile resource-shadow up -d --pull never
+          docker run -d --pull never --name gym-shadow-prometheus --network none \
+            --log-driver local --log-opt max-size=5m --log-opt max-file=1 \
+            --cap-drop ALL --security-opt no-new-privileges \
+            -v "$config:/shadow:ro" "$PROM_IMAGE" \
+            --config.file=/shadow/prometheus.yml --web.listen-address=127.0.0.1:19090 \
+            --web.enable-remote-write-receiver --storage.tsdb.path=/prometheus \
+            --storage.tsdb.retention.time=1d --storage.tsdb.retention.size=128MB >/dev/null
+          # Trusted privileged agent on this disposable VM only. Shared isolated
+          # network namespace contains loopback; no published ports or egress.
+          # Docker socket access remains equivalent to host-level trust.
+          docker run -d --pull never --name gym-shadow-alloy \
+            --log-driver local --log-opt max-size=5m --log-opt max-file=1 \
+            --network container:gym-shadow-prometheus --pid host --cgroupns host --privileged \
+            -v "$config:/shadow:ro" -v /:/rootfs:ro \
+            -v /sys:/sys:ro -v /var/lib/docker:/var/lib/docker:ro \
+            -v /var/run/docker.sock:/var/run/docker.sock:ro \
+            --entrypoint /bin/alloy "$ALLOY_IMAGE" run --disable-reporting \
+            --server.http.listen-addr=127.0.0.1:12345 --storage.path=/tmp/shadow-alloy \
+            /shadow/config.alloy >/dev/null
+          docker inspect --format '{{.Id}}' gym-resource-shadow-fixture > "$private/id"
+          date +%s > "$private/start"
+          sleep 120
+          sample() {
+            local phase="$1" at
+            local dir="$private/$phase"
+            mkdir "$dir"
+            date +%s > "$dir/before"
+            RESOURCE_CONTAINER=gym-resource-shadow-fixture \
+              RESOURCE_TEXTFILE_PATH="$dir/gym_api_docker.prom" \
+              node scripts/monitoring-docker-resources.mjs
+            sudo env SIGNALS_CONTAINER=gym-resource-shadow-fixture \
+              SIGNALS_TEXTFILE_PATH="$dir/gym_api_docker_signals.prom" \
+              "$(command -v node)" scripts/monitoring-docker-signals.mjs
+            sudo chown "$(id -u):$(id -g)" "$dir/gym_api_docker_signals.prom"
+            cat "$dir/gym_api_docker.prom" "$dir/gym_api_docker_signals.prom" > "$dir/reference.txt"
+            at=$(date +%s)
+            printf '%s\n' "$at" > "$dir/time"
+            docker exec gym-shadow-prometheus wget -T 10 -qO- \
+              "http://127.0.0.1:19090/api/v1/query?query=%7B__name__%3D~%22.%2B%22%7D&time=$at" \
+              > "$dir/query.json"
+          }
+          sample idle
+          docker exec gym-resource-shadow-fixture node -e \
+            'const end=Date.now()+120000; while(Date.now()<end) {}' >/dev/null &
+          load=$!
+          sleep 75
+          sample cpu
+          wait "$load"
+          sleep 75
+          docker exec gym-resource-shadow-fixture node -e \
+            'const b=Buffer.alloc(256*1024*1024,1); setTimeout(()=>console.log(b[0]),120000)' >/dev/null &
+          load=$!
+          sleep 75
+          sample memory
+          wait "$load"
+          end=$(date +%s)
+          start=$(cat "$private/start")
+          docker exec gym-shadow-prometheus wget -T 10 -qO- \
+            "http://127.0.0.1:19090/api/v1/series?match%5B%5D=%7B__name__%3D~%22.%2B%22%7D&start=$start&end=$end" \
+            > "$private/series.json"
+          docker logs gym-shadow-alloy > "$private/diagnostics.txt" 2>&1
+          docker logs gym-shadow-prometheus >> "$private/diagnostics.txt" 2>&1
+          if grep -q 'FAKE_PRIVATE_' "$private/diagnostics.txt"; then
+            echo 'Private sentinel in diagnostics; refusing evidence publication' >&2
+            exit 1
+          fi
+          # Raw responses, full identities and diagnostics are never uploaded.
+          node --input-type=module - "$private" <<'NODE'
+          import { readFileSync, writeFileSync } from 'node:fs';
+          const dir = process.argv[2];
+          const read = (path) => readFileSync(dir + '/' + path, 'utf8');
+          const evidence = {
+            fixtureId: read('id').trim(),
+            series: JSON.parse(read('series.json')),
+            diagnosticsClean: true,
+            samples: ['idle', 'cpu', 'memory'].map((phase) => ({
+              phase,
+              time: Number(read(phase + '/time')),
+              before: Number(read(phase + '/before')),
+              reference: read(phase + '/reference.txt'),
+              query: JSON.parse(read(phase + '/query.json')),
+            })),
+          };
+          writeFileSync(dir + '/input.json', JSON.stringify(evidence), { mode: 0o600 });
+          NODE
+          node scripts/monitoring-shadow-evidence.mjs "$private/input.json" "$RUNNER_TEMP/shadow-report.json"
+      - name: Upload sanitized numeric observations
+        if: always() && steps.observe.outcome != 'skipped'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: resource-shadow-${{ github.run_id }}
+          path: ${{ runner.temp }}/shadow-report.json
+          if-no-files-found: ignore
+          retention-days: 7
