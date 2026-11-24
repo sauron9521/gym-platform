@@ -1,13 +1,15 @@
 # Gym Platform
 
-Monorepo for Gym App, powered by pnpm Workspaces and Turborepo.
+OVRANTO (Gym Platform) is a fitness platform monorepo powered by pnpm Workspaces and Turborepo. Athlete and Trainer products share one account identity and NestJS API; Admin access is independently protected. Product implementation and production approval are separate milestones.
 
 ## Repository layout
 
-- `apps/` — NestJS API, Next.js Web, Next.js Landing, and Expo Mobile.
+- `apps/` — NestJS API, Athlete Web, Trainer Web, Admin, Landing and Expo Mobile.
 - `packages/` — shared libraries, types, and generated API clients.
 - `tooling/` — shared development configuration.
-- `infra/` — Docker and deployment infrastructure.
+- `infra/` and `ops/` — Docker, deployment and operator infrastructure.
+- `scripts/` — repository tooling and operational contracts.
+- `docs/` — [technical documentation, decisions and runbooks](docs/README.md).
 
 ## Local setup
 
@@ -22,29 +24,20 @@ pnpm test
 pnpm build
 ```
 
-## Local development
+## Applications and local development
 
-Requires Docker Desktop/Engine and Docker Compose v2.
-The local services use PostgreSQL 17, Redis 8 and Mailpit; API, Web, and Mobile run on the host.
+| Workspace                             | Purpose                                           | Start command      | Default local address     |
+| ------------------------------------- | ------------------------------------------------- | ------------------ | ------------------------- |
+| [API](apps/api/README.md)             | NestJS backend                                    | `pnpm dev:api`     | http://localhost:3001     |
+| [Athlete Web](apps/web/README.md)     | Athlete experience                                | `pnpm dev:web`     | http://localhost:3000     |
+| [Landing](apps/landing/README.md)     | Public product site                               | `pnpm dev:landing` | http://localhost:3002     |
+| [Admin](apps/admin/README.md)         | Protected operator console with dedicated sign-in | `pnpm dev:admin`   | http://localhost:3003     |
+| [Trainer Web](apps/trainer/README.md) | Protected trainer workspace                       | `pnpm dev:trainer` | http://localhost:3004     |
+| [Mobile](apps/mobile/README.md)       | Expo iOS/Android and web development              | `pnpm dev:mobile`  | Metro (usually port 8081) |
 
-```powershell
-Copy-Item infra/docker/.env.example infra/docker/.env
-Copy-Item apps/api/.env.local.example apps/api/.env
-pnpm db:up
-pnpm --filter @gym/api db:generate
-pnpm --filter @gym/api db:migrate:deploy
-pnpm --filter @gym/api db:seed
-pnpm dev
-```
+Docker Compose v2 runs PostgreSQL 17, Redis 8 and Mailpit locally; all six applications run on the host. Mailpit's inbox defaults to http://localhost:8025.
 
-Web: http://localhost:3000 · Landing: http://localhost:3002 · API: http://localhost:3001 · Mailpit inbox: http://localhost:8025.
-Admin scaffold: http://localhost:3003 (read-only; no independent admin sign-in yet).
-The sample credentials are local placeholders; customize matching passwords
-in both untracked `.env` files. See [local services](infra/docker/README.md)
-for stopping services, persistent volumes and safety notes.
-
-To start applications individually, use `pnpm dev:web`, `pnpm dev:landing`,
-`pnpm dev:admin`, `pnpm dev:api`, or `pnpm dev:mobile`.
+Follow the [local development setup](infra/docker/README.md) for Linux/macOS and Windows, environment configuration, database safety and starting applications. After setup, use `pnpm dev` to start all application dev tasks or the individual commands above. Existing port conflicts must be resolved before starting the relevant application.
 
 ## Fresh database migration baseline
 
@@ -53,7 +46,7 @@ On 14 November 2026, the pre-production Prisma history was consolidated into a f
 ## Test runner and CI
 
 Unit and contract tests use **Vitest 5** across API, Web, Landing, Admin,
-Mobile, shared packages and root tooling. Web and Landing browser E2E remain
+Trainer, Mobile, shared packages and root tooling. Web, Admin and Landing browser E2E remain
 on Playwright; Mobile uses Vitest Native + React Native Testing Library for
 component tests, with Maestro reserved for device-level E2E.
 
@@ -79,7 +72,7 @@ Only the repository owner merges approved changes.
 
 ## Typed API contract
 
-Both frontends depend on `@gym/api-client` in `packages/api-client`.
+Athlete Web, Trainer Web, Admin and Mobile depend on `@gym/api-client` in `packages/api-client`. Landing does not consume the generated client.
 Types are generated from the NestJS OpenAPI schema and checked in CI.
 
 After changing API routes or DTOs, run `pnpm api:contract:generate` and commit

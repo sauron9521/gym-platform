@@ -18,9 +18,14 @@ This index groups developer-facing API documentation and operational runbooks. P
 - [NestJS API handbook](api/README.md) — module map, contracts, validation, local testing
 - [API test strategy](api/testing.md) — unit, HTTP e2e and PostgreSQL integration suites
 - [API README](../apps/api/README.md) — local setup, migration baseline and database commands
-- [Next.js Web handbook](../apps/web/README.md) — implemented routes, authentication, workouts, exercises and browser E2E
+- [Athlete Web](../apps/web/README.md) — routes, authentication, workouts, exercises and browser E2E
+- [Trainer Web](../apps/trainer/README.md) — protected trainer workspace and client read models
+- [Admin](../apps/admin/README.md) — dedicated operator sign-in and account directory
+- [Mobile](../apps/mobile/README.md) — Expo development, native authentication and testing
+- [Landing](../apps/landing/README.md) — public product site
+- [Repository overview and local application ports](../README.md#applications-and-local-development)
 - [Generated API client](../packages/api-client/README.md) — OpenAPI-to-TypeScript generation
-- [Docker local development](../infra/docker/README.md)
+- [Local development setup (Linux/macOS and Windows)](../infra/docker/README.md)
 
 ## Migration and quality
 
