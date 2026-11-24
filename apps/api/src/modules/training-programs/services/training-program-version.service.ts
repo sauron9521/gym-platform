@@ -6,11 +6,10 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 
-import { Prisma } from '#prisma/client';
-
 import { TrainingProgramVersionRepository } from '../repositories/training-program-version.repository.js';
 import type { PublishProgramUseCase } from '../application/publish-program.use-case.js';
 import { isWorkoutOutsideDuration } from '../domain/duration.policy.js';
+import { DraftVersionCreationConflict } from '../application/draft-version-creation.js';
 import {
   DraftVersionStateChanged,
   normalizeDraftVersionChanges,
@@ -92,15 +91,13 @@ export class TrainingProgramVersionService {
       throw new ConflictException('This program already has a draft version');
     }
 
-    let draft: Awaited<
-      ReturnType<TrainingProgramVersionRepository['createDraftFromLatestPublished']>
-    >;
+    let draft: TrainingProgramVersionPayload | null;
 
     try {
       draft = await this.repository.createDraftFromLatestPublished(programId);
     } catch (error) {
-      if (this.isPrismaError(error, 'P2002')) {
-        throw new ConflictException('A draft version already exists or was created concurrently');
+      if (error instanceof DraftVersionCreationConflict) {
+        throw new ConflictException(error.message);
       }
 
       throw error;
@@ -172,12 +169,5 @@ export class TrainingProgramVersionService {
     } catch (error) {
       return rethrowPublicationHttpError(error);
     }
-  }
-
-  // ===========================================================================
-  // PRIVATE METHODS
-  // ===========================================================================
-  private isPrismaError(error: unknown, code: string): boolean {
-    return error instanceof Prisma.PrismaClientKnownRequestError && error.code === code;
   }
 }
