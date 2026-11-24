@@ -6,54 +6,43 @@ complete Git history (`actions/checkout` with `fetch-depth: 0`).
 
 ## Pull request routing
 
-| Changed files                                                  | Quality checks                       | API E2E / coverage / Docker | Vulnerability audit                    |
-| -------------------------------------------------------------- | ------------------------------------ | --------------------------- | -------------------------------------- |
-| `apps/api/**`                                                  | API                                  | Yes                         | If the API package manifest changed    |
-| `apps/web/**`                                                  | Web                                  | No                          | If the Web package manifest changed    |
-| `apps/mobile/**`                                               | Mobile                               | No                          | If the Mobile package manifest changed |
-| `packages/api-client/**`                                       | API client + Web + Mobile            | No                          | If the client package manifest changed |
-| `packages/ui-web/**`                                           | Web + Landing                        | No                          | If UI package manifest changed         |
-| `packages/design-tokens/**`                                    | Web + Landing + Mobile               | No                          | If token package manifest changed      |
-| `tooling/config/**`                                            | Web + Landing                        | No                          | No (config-only files)                 |
-| `apps/api/openapi/**`                                          | API + all typed-client consumers     | Yes                         | No                                     |
-| `docs/**`, root `*.md`                                         | Prettier formatting + required gates | No                          | No                                     |
-| Known app/client `README.md`, `apps/api/test/README.md`        | Prettier formatting + required gates | No                          | No                                     |
-| `infra/**/*.md`                                                | Prettier formatting + required gates | No                          | No                                     |
-| Root lockfile, root config, CI, non-doc infra or unknown files | All workspaces                       | Yes                         | Yes                                    |
+The table describes the explicit application/client scopes returned by the selector. Shared package checks and Turbo task dependencies may add work beyond these scopes. Root tooling contracts, formatting and i18n catalog tests run even for documentation-only changes.
 
-For mixed PRs, all relevant workspaces run. An OpenAPI-only diff selects the API,
-shared client, Athlete Web/Mobile, Admin and Trainer; this also runs the existing
-Admin browser gate and Trainer workspace lint, typecheck, tests and build. Landing
-is not an OpenAPI consumer. Unknown paths, empty diffs, missing commits and
-cross-cutting files must never silently bypass API checks.
+| Changed files                                                                      | Selected scopes                           | API E2E / coverage / Docker | Vulnerability audit                              |
+| ---------------------------------------------------------------------------------- | ----------------------------------------- | --------------------------- | ------------------------------------------------ |
+| `apps/api/**`                                                                      | API                                       | Yes                         | On API manifest change                           |
+| `apps/web/**`                                                                      | Athlete Web                               | No                          | On Web manifest change                           |
+| `apps/landing/**`                                                                  | Landing                                   | No                          | On Landing manifest change                       |
+| `apps/admin/**`                                                                    | Admin                                     | No                          | On Admin manifest change                         |
+| `apps/trainer/**`                                                                  | Trainer                                   | No                          | On Trainer manifest change                       |
+| `apps/mobile/**`                                                                   | Mobile                                    | No                          | On Mobile manifest change                        |
+| `packages/api-client/**`                                                           | Client, Web, Admin, Trainer, Mobile       | No                          | On client manifest change                        |
+| `packages/ui-web/**`                                                               | Web, Admin, Trainer, Landing              | No                          | On UI manifest change                            |
+| `packages/design-tokens/**`                                                        | Web, Admin, Trainer, Landing, Mobile      | No                          | On tokens manifest change                        |
+| `packages/i18n/**`                                                                 | All six apps (API uses mail translations) | Yes                         | On i18n manifest change                          |
+| `tooling/config/**`                                                                | Web, Admin, Trainer, Landing              | No                          | No, unless package manifest changes (full scope) |
+| `apps/api/openapi/**`                                                              | API, Client, Web, Admin, Trainer, Mobile  | Yes                         | No                                               |
+| Known documentation paths (see below)                                              | No application scopes                     | No                          | No                                               |
+| Root lockfile, root config, CI, non-doc infra, `packages/domain/**`, unknown paths | Full                                      | Yes                         | Yes                                              |
 
-Only **known documentation locations** are exempt: top-level `README.md` in
-`apps/api`, `apps/web`, `apps/landing`, `apps/mobile` and `packages/api-client`, the API test
-`README.md`, and Markdown files under `infra/` (including Docker runbooks).
-Markdown files nested in application source directories still trigger that
-app's checks; Markdown in unrecognized packages forces full CI. Changing an actual
-`infra/` Compose file, init script or environment template, even alongside a
-README, still forces full CI. Docs-only PRs retain the always-required Quality,
-API E2E and Web integration **result gates**, which validate intentional skips.
+For mixed PRs, selected scopes are unioned. Landing is not an OpenAPI consumer. Empty diffs select full scope; invalid or unavailable base/head commits fail classification, and required result gates fail closed. Renames are compared as deletion and addition, so both old and new paths contribute to scope.
 
-The selector script itself (`scripts/ci-select.mjs`) and its tests remain
-cross-cutting changes: a PR modifying the classifier runs the full CI matrix,
-including the Redis upgrade rehearsal. Every push to `main` also still runs
-all checks, even if it only changes documentation.
+The documentation exemptions are `docs/**`, root Markdown files, `infra/**/*.md`, the top-level README in API, Athlete Web, Trainer, Landing, Mobile and API Client, and `apps/api/test/README.md`. Admin README is not currently exempt. Other app-local Markdown selects that application; unknown package paths fall back to full checks. Exemptions are applied to each path, not the entire mixed PR.
 
-The root `pnpm-lock.yaml` is deliberately a global invalidation boundary:
-dependency changes may affect any workspace, so full CI runs.
+The separate Web integration workflow runs four real-API browser shards when full, API, Web, Trainer or client scope is selected. Its stable result gate remains present even for intentional skips. Admin and Landing have separate browser checks inside CI; Mobile Metro and native manual testing remain distinct.
+
+The selector and CI configuration are cross-cutting paths. The Redis upgrade rehearsal runs on PRs touching `infra/docker/compose.yaml`, `scripts/test-redis-upgrade.sh`, `scripts/ci-select.mjs` or `.github/workflows/ci.yml`; it is not an unconditional main-push job. Main pushes and manual dispatch retain full workspace and release-source verification.
 
 ## Required status checks and release safety
 
-- Every push to `main` and manual CI dispatch runs all jobs. This preserves
+- Every push to `main` and manual CI dispatch selects full scope. The Redis upgrade rehearsal remains PR-specific. This preserves
   the exact-commit release/GHCR eligibility requirement.
 - `Quality / Node 24` remains the always-running required branch check and
   fails if change classification fails.
 - `API e2e / PostgreSQL 17` remains the required status check, but now acts
-  as a result gate. For API-impacting PRs, it requires a successful real
-  `API e2e suite / PostgreSQL 17` job. For frontend/docs-only PRs, it
-  verifies that the suite was intentionally skipped, not cancelled or failed.
+  as a result gate. For API-impacting PRs, it requires both the real
+  `API e2e suite / PostgreSQL 17` and API coverage to pass. For frontend/docs-only PRs, it
+  verifies that both jobs were intentionally skipped, not cancelled or failed.
 - API coverage, Docker, migration, operational, observability, staging and
   readiness jobs run only for API-impacting PRs (and all main pushes).
 - Dependency audits run for package manifests and cross-cutting changes;
@@ -61,7 +50,7 @@ dependency changes may affect any workspace, so full CI runs.
 
 ## Verify locally
 
-Run `node --test scripts/ci-select.test.mjs` for routing unit tests.
+Run `pnpm test:tooling scripts/ci-select.test.mjs` from the repository root for routing unit tests.
 The `CI / Determine affected workspaces` step records the selected scope
 in the GitHub Actions job log.
 
@@ -70,12 +59,11 @@ publishing. Deployment and release approval remain separate workflows.
 
 ## Build caching and removal of duplicate tests
 
-The `Quality / Node 24` job now restores the Turborepo task cache
-(`.turbo/cache`) and Next.js incremental cache (`apps/web/.next/cache`)
+The `Quality workspaces / Node 24` job restores the Turborepo task cache
+(`.turbo/cache`) and Next.js incremental caches for Web, Landing, Admin and Trainer
 using `actions/cache@v6`. Keys are scoped to the operating system,
 Node.js version, lockfile, workspace manifests, Turborepo configuration
-and commit SHA. A restore prefix permits reusing safe prior build artifacts
-within the same dependency configuration. The existing
+and commit SHA. Restore prefixes allow reuse within the same dependency configuration and then across older dependency configurations; Turbo and Next.js validate their own cache inputs. The existing
 `actions/setup-node@v7` pnpm-store cache remains in place.
 
 Only build caches are stored. Dependencies (`node_modules`), Prisma
@@ -83,8 +71,7 @@ generated files, credentials, test databases and coverage reports are
 never added to the build cache.
 
 API unit tests already run with coverage thresholds in
-`API Coverage / Critical modules`. The Quality job runs Web, Mobile
-and API Client tests without running the same API unit tests twice.
+`API Coverage / Critical modules`. The workspace quality job runs the selected frontend/client tests (and Domain in full scope) without repeating API unit coverage.
 The protected `API e2e / PostgreSQL 17` check **requires both** the
 real PostgreSQL E2E suite and API coverage to succeed when API files
 are affected; it fails if either fails or is missing.
@@ -101,20 +88,12 @@ The expensive workspace formatting, lint, typecheck, tests, and build run in the
 `Quality workspaces / Node 24` job as soon as change classification succeeds.
 The existing branch-protected `Quality / Node 24` name remains the result gate:
 it fails closed unless workspace quality, security audit, Windows checks,
-Mobile Metro and Web fixture-browser suites all have their expected results.
+Mobile Metro, Web fixture-browser, Admin/Landing browser and API operations jobs all have their expected results.
 The required API and real-API browser gates remain independent and unchanged.
 This split does **not** skip tests or change release-source CI requirements.
 
-## Known shared workspaces
+## Policy selector versus Turborepo affected
 
-`packages/ui-web/**` invalidates Web and Landing; the affected workspace
-quality job also runs the shared UI package's own TypeScript check.
-`packages/design-tokens/**` currently invalidates Web, Landing, and Mobile
-conservatively. `tooling/config/**` invalidates both Next.js apps, not
-NestJS or Expo. An unexpected new manifest in `tooling/config/` forces full
-CI because it may alter workspace topology.
+The current CI uses explicit Turbo filters chosen from the conservative selector, not `turbo --affected` as a replacement. Shared UI typecheck is included whenever Web scope is selected, and i18n is included for frontend scopes. The selector has policy obligations that a task graph alone cannot infer (security, database, operational and release checks).
 
-Known shared package `package.json` updates also select the vulnerability
-audit. Unknown package paths and the root `pnpm-lock.yaml` force full CI.
-For combined changes, selected consumer scopes are unioned. Full checks on
-every `main` push remain mandatory.
+The [observed Turbo shadow audit](turbo-affected-shadow-evidence-2026-11-24.md) found a cross-cutting change that selected zero Turbo packages while the policy required seven application/client workspaces. Direct replacement remains NO-GO. Use the [manual tooling audit](tooling-audit.md) for further diagnostic comparisons without changing protected checks.

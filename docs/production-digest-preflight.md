@@ -41,7 +41,7 @@ short success/failure message.
 The CI verification creates **synthetic test values only** and runs:
 
 ```sh
-node --test scripts/production-digest-guard.test.mjs
+pnpm test:tooling scripts/production-digest-guard.test.mjs
 
 docker compose --env-file infra/docker/.env.example \
   -f infra/docker/compose.prod.yaml \
