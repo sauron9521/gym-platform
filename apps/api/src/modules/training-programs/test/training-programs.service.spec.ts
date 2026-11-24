@@ -40,7 +40,7 @@ describe('TrainingProgramsService', () => {
     findVersionById: vi.fn(),
     findDraftVersion: vi.fn(),
     createDraftFromLatestPublished: vi.fn(),
-    updateVersion: vi.fn(),
+    updateDraftVersion: vi.fn(),
     publishVersion: vi.fn(),
     updateProgram: vi.fn(),
     createWorkout: vi.fn(),
@@ -173,7 +173,7 @@ describe('TrainingProgramsService', () => {
       findVersionForEditing: repository.findVersionById,
       findDraftVersion: repository.findDraftVersion,
       createDraftFromLatestPublished: repository.createDraftFromLatestPublished,
-      updateVersion: repository.updateVersion,
+      updateDraftVersion: repository.updateDraftVersion,
       publishVersion: repository.publishVersion,
     } as unknown as TrainingProgramVersionRepository;
 
@@ -542,7 +542,7 @@ describe('TrainingProgramsService', () => {
         }),
       ).rejects.toThrow(BadRequestException);
 
-      expect(repository.updateVersion).not.toHaveBeenCalled();
+      expect(repository.updateDraftVersion).not.toHaveBeenCalled();
     });
 
     it('should update a draft version', async () => {
@@ -554,18 +554,15 @@ describe('TrainingProgramsService', () => {
         title: 'Updated Beginner Program',
       };
 
-      repository.updateVersion.mockResolvedValue(updated);
+      repository.updateDraftVersion.mockResolvedValue(updated);
 
       const result = await service.updateDraftVersion('program-1', 'version-1', trainer, {
         title: 'Updated Beginner Program',
       });
 
-      expect(repository.updateVersion).toHaveBeenCalledWith(
-        {
-          id: 'version-1',
-          programId: 'program-1',
-          status: 'DRAFT',
-        },
+      expect(repository.updateDraftVersion).toHaveBeenCalledWith(
+        'program-1',
+        'version-1',
         {
           title: 'Updated Beginner Program',
         },
@@ -591,7 +588,7 @@ describe('TrainingProgramsService', () => {
         }),
       ).rejects.toThrow(ConflictException);
 
-      expect(repository.updateVersion).not.toHaveBeenCalled();
+      expect(repository.updateDraftVersion).not.toHaveBeenCalled();
     });
 
     it('should reject an empty update', async () => {
@@ -602,7 +599,7 @@ describe('TrainingProgramsService', () => {
         service.updateDraftVersion('program-1', 'version-1', trainer, {}),
       ).rejects.toThrow(BadRequestException);
 
-      expect(repository.updateVersion).not.toHaveBeenCalled();
+      expect(repository.updateDraftVersion).not.toHaveBeenCalled();
     });
   });
 
