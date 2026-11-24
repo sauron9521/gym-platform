@@ -32,8 +32,7 @@ pnpm --filter @gym/mobile build
 ```
 
 The `build` script exports both Expo web and **iOS JavaScript bundles** for CI. It does
-not produce an iOS/Android binary or exercise an iOS simulator. Native binaries will be
-built later with EAS.
+not produce an iOS/Android binary or exercise an iOS simulator. Native binaries require a separate EAS build; see the [native staging smoke guide](docs/native-staging-smoke.md) and [release channels](docs/release-channels.md).
 
 Web export stores Metro's temporary bundles in `apps/mobile/.cache/expo-tmp/`
 on the workspace drive. This avoids filling the Windows system temp drive when
@@ -50,9 +49,18 @@ be removed when no export is running.
 No additional Metro monorepo overrides are needed with modern Expo SDKs.
 `ios/` and `android/` are excluded for Continuous Native Generation.
 
-## Next steps
+## Current application scope
 
-Implement training programs and workout sessions in small PRs.
+| Area      | Implemented routes / functionality                                                                                        |
+| --------- | ------------------------------------------------------------------------------------------------------------------------- |
+| Account   | Sign-in, session recovery, home, profile and profile editing                                                              |
+| Workouts  | Paginated list, multi-exercise creation, detail, planned title editing, start/complete/cancel and in-progress set results |
+| Programs  | Paginated active assignments, assignment detail and workout creation from a program                                       |
+| Exercises | Read-only searchable catalogue with taxonomy filters                                                                      |
+| Progress  | Summary and per-exercise statistics                                                                                       |
+| Trainer   | Trainer-athlete relationship screen, gated by live capability                                                             |
+
+These are implemented UI slices, not native release acceptance. Device-level interruption/recovery, staging smoke and release approval remain separate gates. See [offline-first design](docs/offline-first-design.md) and [push notification design](docs/push-notification-design.md) for planned capabilities; design documents do not imply delivery.
 
 ## Live account capabilities (Mobile + Trainer)
 
@@ -89,8 +97,8 @@ refresh token in SecureStore. The legacy `account.role` is display metadata,
 - On iOS/Android, only the opaque **refresh token** persists in Expo SecureStore
   (iOS Keychain / encrypted Android Keystore). Access tokens stay in memory.
 - On startup, the app reads the stored token and performs exactly one
-  `POST /auth/token/refresh` rotation. Only a verified `GET /users/me` response
-  unlocks protected navigation; a full-screen loading overlay hides sign-in
+  `POST /auth/token/refresh` rotation. Only verified `GET /users/me` and current `GET /users/me/capabilities` responses
+  unlock protected navigation; a full-screen loading overlay hides sign-in
   during the attempt.
 - When an access token approaches expiry, concurrent API requests share one
   refresh operation. Refreshes are **never automatically retried**: NestJS
@@ -184,8 +192,7 @@ token revocation, avoiding cross-user data leaks. A genuine 401 signs the user
 out; transient network errors and HTTP 5xx do not discard their credentials.
 
 Future features should use feature-owned query hooks and query keys; do not
-persist private query data in AsyncStorage or localStorage. Automatic token
-refresh and offline detection will be handled separately.
+persist private query data in AsyncStorage or localStorage. Token refresh and network awareness are implemented separately as described in this guide; do not introduce automatic write replay.
 
 ### Workout set reconciliation on resume (#324)
 
@@ -288,6 +295,10 @@ The required `Mobile iOS Dev / Windows Metro` CI job now requests an actual
 production `expo export --platform ios` alone does **not** test Fast Refresh
 HMR or SHA-1 file-map resolution on Windows.
 
+## OVRANTO design tokens
+
+The existing native StyleSheet adapter in `src/shared/config/theme.ts` consumes `ovrantoNativePalette.dark` from `@gym/design-tokens/ovranto-native`. UniWind's `global.css` defines both OVRANTO Light and Dark semantic palettes. This does not mean all native screens already support switching between Light, Dark and System: the current StyleSheet adapter remains dark. Keep native channel mappings synchronized with the [shared design tokens guide](../../packages/design-tokens/README.md).
+
 ## Expo Web / React 19 theme initialization
 
 The generated gluestack-ui v5 web provider originally rendered an executable
@@ -324,14 +335,10 @@ and retry states are displayed, and 401 clears the local session. The athlete
 creation action remains available alongside the list. The older manual refresh
 button is also retained for accessibility and Maestro smoke tests.
 
-## Workout detail and lifecycle (first vertical slice)
+## Workout detail and lifecycle
 
 The authenticated workouts list now opens an individual workout route.
-A typed, user-scoped TanStack Query loads its details; the first native
-lifecycle controls start a planned workout and attempt to complete an active
-workout. API conflict responses are surfaced safely (for example, unfinished
-sets cannot be completed). Creating workouts, editing sets, cancel flows and
-full history remain future slices. Live native/device testing is still required.
+A typed, user-scoped TanStack Query loads its details. Users can edit a planned workout title, start a planned workout, explicitly confirm cancellation of a planned or active workout, and complete an active workout when its sets permit completion. In-progress set results support explicit updates; uncertain outcomes require canonical read-only reconciliation. API conflicts remain authoritative. Live native/device testing is still required.
 
 ## Vitest contract and React Native component tests
 
@@ -363,24 +370,17 @@ It never replays the already-consumed refresh token; expired or invalid sessions
 require a normal sign-in. Protected navigation remains locked until a successful
 verified profile response.
 
-## Create workout (first native write journey)
+## Create workout
 
-A protected `/workouts/new` route uses React Hook Form and Zod for title,
-exercise selection and a single planned-reps set. Exercises are loaded from
-the typed GET /exercises API; POST /workouts writes through the bearer client.
-Only verified success navigates back and invalidates the athlete's workout list.
-The screen is available only for ATHLETE accounts and currently lists the first
-20 accessible exercises, with a manual reload action on a read error.
+A protected `/workouts/new` route uses React Hook Form and Zod for a title, multiple exercise rows and multiple planned reps/weight sets. The shared searchable ExercisePicker loads accessible exercises; POST /workouts writes through the bearer client. Only verified success navigates back and invalidates the athlete's workout list. Access requires current athlete capability, not a legacy role label.
 A synchronous submit lock blocks duplicate presses. POST /workouts sends a
 stable Idempotency-Key for manual retries of the same canonical payload:
 a lost response must not create duplicate workouts. TanStack mutations are
-never automatically retried. Additional exercise search, multiple
-exercise creation, cancellation and advanced set editing are later PRs.
+never automatically retried. Creation, cancellation and in-progress result editing remain separate operations with explicit user actions.
 
-## Assigned training programs (first athlete mobile slice)
+## Assigned training programs
 
-The athlete-only **Програми** tab reads the first 20 active training-program
-assignments from GET /training-programs/assignments. The details route reads
+The athlete-only **Програми** tab reads active training-program assignment summaries from GET /training-programs/assignments in pages of 20, using the server pagination metadata. The details route reads
 GET /training-programs/assignments/{assignmentId}, including program workouts.
 For an active assignment the athlete can create a workout through typed
 POST /workouts/from-program and then open the created workout.
@@ -390,9 +390,7 @@ until the server confirms success. A synchronous button lock blocks duplicate
 taps; TanStack mutations never retry automatically. A successful creation
 invalidates all cached workout-list filters for the account.
 
-This is an initial assignment list with **no pagination beyond the first 20**.
-Athlete and trainer roles are not interchangeable. The tab is hidden for
-non-athletes and the details route is protected. Real-device navigation and
+The infinite-query list supports loading further pages and retrying failed page reads. The tab and details are gated by current athlete capability, including eligible dual-capability accounts. Real-device navigation and
 network-failure behavior still need physical-device testing.
 
 ## Exercise library (search and pagination)
@@ -439,8 +437,7 @@ The dashboard shows workout count, active days, completed sets, total strength
 volume and a lightweight daily volume chart. Zero-volume days have zero-height
 bars and an all-zero range displays an explicit empty-volume message. Offline
 or server errors offer a manual retry; no other chart library is required.
-This is a read-only summary; exercise-level performance charts and a device
-smoke test remain follow-up work.
+The exercise picker opens `/progress/exercises/[id]` for read-only per-exercise statistics and chart/personal-best highlights over the selected period. Device smoke verification remains a separate requirement.
 
 ## Native network awareness and safe offline behavior
 
