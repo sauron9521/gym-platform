@@ -186,5 +186,8 @@ test('relative parser remains advisory and old required checks stay in CI', () =
   assert.match(ci, /pnpm architecture:cruise:boundaries/);
   assert.match(ci, /pnpm test:tooling/);
   assert.doesNotMatch(ci, /run: pnpm architecture:cruise:relative/);
-  assert.match(pkg.scripts['architecture:cruise:boundaries'], /dependency-cruiser-workspace-imports/);
+  assert.match(
+    pkg.scripts['architecture:cruise:boundaries'],
+    /dependency-cruiser-workspace-imports/,
+  );
 });
