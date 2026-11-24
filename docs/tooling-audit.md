@@ -52,6 +52,10 @@ only a local Prisma Client, creates Knip and Turbo diagnostic artifacts,
 prints a summary and retains evidence for seven days. It is not a deployment
 or production-readiness approval.
 
+For a complete inventory of the current top-level `scripts/` modules, their
+replacement candidates and safety gates, see the [custom script replacement
+audit](custom-scripts-replacement-audit.md).
+
 ## Next safe steps
 
 1. Review the Knip baseline by workspace, confirm real entrypoints and
