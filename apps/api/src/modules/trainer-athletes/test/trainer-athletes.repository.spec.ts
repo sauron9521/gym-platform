@@ -3,6 +3,7 @@ import { ConflictException } from '@nestjs/common';
 import { PrismaService } from '#src/infra/database/index';
 import { Prisma } from '#prisma/client';
 
+import { InvitationAlreadyExists } from '../application/create-invitation.js';
 import { TrainerAthletesRepository } from '../repositories/trainer-athletes.repository.js';
 import { fullRelationshipReadWhere } from '../policies/trainer-athlete-read.policy.js';
 import {
@@ -470,6 +471,30 @@ describe('TrainerAthletesRepository', () => {
 
       await expect(repository.createWithCurrentCapabilities(invitation)).rejects.toBe(error);
       expect(tx.trainerAthlete.create).not.toHaveBeenCalled();
+    });
+
+    it('translates duplicate invitation writes after the transaction rejects', async () => {
+      tx.trainerAthlete.create.mockRejectedValueOnce(
+        new Prisma.PrismaClientKnownRequestError('Unique constraint failed', {
+          code: 'P2002',
+          clientVersion: '7.10.1',
+        }),
+      );
+
+      await expect(repository.createWithCurrentCapabilities(invitation)).rejects.toBeInstanceOf(
+        InvitationAlreadyExists,
+      );
+      expect(tx.trainerAthlete.create).toHaveBeenCalledOnce();
+    });
+
+    it('preserves unrelated Prisma transaction failures', async () => {
+      const error = new Prisma.PrismaClientKnownRequestError('Transaction conflict', {
+        code: 'P2034',
+        clientVersion: '7.10.1',
+      });
+      prisma.$transaction.mockRejectedValueOnce(error);
+
+      await expect(repository.createWithCurrentCapabilities(invitation)).rejects.toBe(error);
     });
 
     it('prevents malformed requests from writing a non-participant initiator', async () => {
