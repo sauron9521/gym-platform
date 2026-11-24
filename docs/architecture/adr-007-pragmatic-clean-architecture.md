@@ -14,13 +14,13 @@ Use the existing layered services/repositories for simple CRUD and read projecti
 
 ## Layer responsibilities and dependency rules
 
-| Boundary | Owns | Allowed dependencies |
-| --- | --- | --- |
-| Domain | Pure policies, invariants, domain errors and value types | Same domain; approved pure shared contracts |
-| Application | Use cases, actor-aware orchestration, input/output types and ports | Domain and application-owned contracts |
-| Infrastructure | Prisma queries, selects, mapping, transaction implementation and external adapters | Domain, application ports, infrastructure |
-| Presentation | HTTP controllers, DTO/Zod transport validation, response/error mapping | Application contracts; outer transport/runtime helpers |
-| Composition | Nest module wiring, provider tokens/factories | All layers solely to assemble them |
+| Boundary       | Owns                                                                               | Allowed dependencies                                   |
+| -------------- | ---------------------------------------------------------------------------------- | ------------------------------------------------------ |
+| Domain         | Pure policies, invariants, domain errors and value types                           | Same domain; approved pure shared contracts            |
+| Application    | Use cases, actor-aware orchestration, input/output types and ports                 | Domain and application-owned contracts                 |
+| Infrastructure | Prisma queries, selects, mapping, transaction implementation and external adapters | Domain, application ports, infrastructure              |
+| Presentation   | HTTP controllers, DTO/Zod transport validation, response/error mapping             | Application contracts; outer transport/runtime helpers |
+| Composition    | Nest module wiring, provider tokens/factories                                      | All layers solely to assemble them                     |
 
 Source dependencies point inward. Domain must not import NestJS, Prisma (including generated types), HTTP DTOs, environment configuration, other layers, or I/O adapters. Application code in migrated slices must not import Nest decorators, concrete repositories, Prisma types or transport exceptions; inject dependencies through plain TypeScript constructor parameters. Type-only imports follow the same boundaries. Do not hide prohibited imports behind barrels or aliases.
 
@@ -70,14 +70,14 @@ Application owns the business operation and its atomicity requirement. Infrastru
 
 At the pinned baseline:
 
-| File under `apps/api/src/modules/training-programs/` | Observed coupling |
-| --- | --- |
-| `policies/training-program-publication.policy.ts` | Pure structural checks except Nest `BadRequestException`; called both before and inside the write transaction |
-| `services/training-program-version.service.ts` | Concrete repository and CRUD service; Nest HTTP exceptions; Prisma update input and known-error codes P2002/P2025 in other version scenarios |
-| `repositories/training-program-version.repository.ts` | Prisma, SQL locks, policy invocation, exercise availability check, conditional publication and rollback |
-| `types/training-program-payload.types.ts` | Prisma GetPayload types derived from selects |
-| `types/training-program-repository.types.ts` | Prisma filter/order input types |
-| `training-programs.module.ts` | Nest composition with concrete providers |
+| File under `apps/api/src/modules/training-programs/`  | Observed coupling                                                                                                                            |
+| ----------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `policies/training-program-publication.policy.ts`     | Pure structural checks except Nest `BadRequestException`; called both before and inside the write transaction                                |
+| `services/training-program-version.service.ts`        | Concrete repository and CRUD service; Nest HTTP exceptions; Prisma update input and known-error codes P2002/P2025 in other version scenarios |
+| `repositories/training-program-version.repository.ts` | Prisma, SQL locks, policy invocation, exercise availability check, conditional publication and rollback                                      |
+| `types/training-program-payload.types.ts`             | Prisma GetPayload types derived from selects                                                                                                 |
+| `types/training-program-repository.types.ts`          | Prisma filter/order input types                                                                                                              |
+| `training-programs.module.ts`                         | Nest composition with concrete providers                                                                                                     |
 
 Before: controller/facade calls the version service; service checks program access, archive/draft state and publishability, then invokes the Prisma repository. The repository repeats publishability on locked data.
 
@@ -119,15 +119,15 @@ For CA03/04, add pure Vitest policy cases without Nest/Prisma; use case unit tes
 
 ## Rollout and acceptance
 
-| Stage | Issue | Gate |
-| --- | --- | --- |
-| ADR and baseline | [#719](https://github.com/sauron9521/gym-platform/issues/719) | Owner review and docs merge |
-| Guardrails | [#720](https://github.com/sauron9521/gym-platform/issues/720) | Tested inward rules before pilot |
-| Pure policy/errors | [#721](https://github.com/sauron9521/gym-platform/issues/721) | Exact error and locked invariant parity |
-| Publication use case/port | [#722](https://github.com/sauron9521/gym-platform/issues/722) | Atomicity, access, contracts and required CI |
-| Pilot evaluation | [#723](https://github.com/sauron9521/gym-platform/issues/723) | Explicit owner GO/no-go |
-| Selected expansion | [#724](https://github.com/sauron9521/gym-platform/issues/724), [#725](https://github.com/sauron9521/gym-platform/issues/725), [#726](https://github.com/sauron9521/gym-platform/issues/726) | Only after GO; one operation per PR |
-| Future-module adoption | [#727](https://github.com/sauron9521/gym-platform/issues/727) | Evidence or explicit deferral and roadmap reconciliation |
+| Stage                     | Issue                                                                                                                                                                                       | Gate                                                     |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
+| ADR and baseline          | [#719](https://github.com/sauron9521/gym-platform/issues/719)                                                                                                                               | Owner review and docs merge                              |
+| Guardrails                | [#720](https://github.com/sauron9521/gym-platform/issues/720)                                                                                                                               | Tested inward rules before pilot                         |
+| Pure policy/errors        | [#721](https://github.com/sauron9521/gym-platform/issues/721)                                                                                                                               | Exact error and locked invariant parity                  |
+| Publication use case/port | [#722](https://github.com/sauron9521/gym-platform/issues/722)                                                                                                                               | Atomicity, access, contracts and required CI             |
+| Pilot evaluation          | [#723](https://github.com/sauron9521/gym-platform/issues/723)                                                                                                                               | Explicit owner GO/no-go                                  |
+| Selected expansion        | [#724](https://github.com/sauron9521/gym-platform/issues/724), [#725](https://github.com/sauron9521/gym-platform/issues/725), [#726](https://github.com/sauron9521/gym-platform/issues/726) | Only after GO; one operation per PR                      |
+| Future-module adoption    | [#727](https://github.com/sauron9521/gym-platform/issues/727)                                                                                                                               | Evidence or explicit deferral and roadmap reconciliation |
 
 Coordinate with [#650](https://github.com/sauron9521/gym-platform/issues/650) for exercise read boundaries, [#344](https://github.com/sauron9521/gym-platform/issues/344) for workout concurrency, [#563](https://github.com/sauron9521/gym-platform/issues/563) for notifications and [#711](https://github.com/sauron9521/gym-platform/issues/711) for tooling. Do not duplicate their feature work.
 
