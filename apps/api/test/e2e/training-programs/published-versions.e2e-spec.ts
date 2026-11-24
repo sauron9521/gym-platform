@@ -154,6 +154,35 @@ describe('Published training program versions (HTTP + PostgreSQL)', () => {
     expect(legacy.body[41]).toMatchObject({ version: 1, status: 'PUBLISHED' });
   });
 
+  it('preserves the HTTP error envelope for an empty draft publication', async () => {
+    const draft = await prisma.trainingProgramVersion.findFirstOrThrow({
+      where: { programId: emptyProgramId, status: 'DRAFT' },
+      select: { id: true },
+    });
+
+    const response = await request(app!.getHttpServer())
+      .post(`/training-programs/${emptyProgramId}/versions/${draft.id}/publish`)
+      .set('Cookie', ownerCookie)
+      .expect(400);
+
+    expect(response.body).toEqual({
+      statusCode: 400,
+      code: 'BAD_REQUEST',
+      message: 'A program must contain at least one workout',
+      error: 'Bad Request',
+      requestId: expect.any(String),
+      timestamp: expect.any(String),
+    });
+    expect(response.headers['cache-control']).toBe('no-store');
+    expect(response.headers['x-request-id']).toBe(response.body.requestId);
+    expect(
+      await prisma.trainingProgramVersion.findUniqueOrThrow({
+        where: { id: draft.id },
+        select: { status: true, publishedAt: true },
+      }),
+    ).toEqual({ status: 'DRAFT', publishedAt: null });
+  });
+
   it('enforces trainer access and rejects invalid pagination input', async () => {
     const http = request(app!.getHttpServer());
     const path = publishedPath(largeProgramId);
