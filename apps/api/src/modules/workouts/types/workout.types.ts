@@ -1,16 +1,12 @@
 import type { Prisma, WorkoutSetType, WorkoutStatus } from '#prisma/client';
-import type {
-  workoutIdempotencySelect,
-  workoutSelect,
-  workoutSetSelect,
-} from '../selects/workout.select.js';
+import type { workoutSelect } from '../selects/workout.select.js';
 
 import type { WorkoutSetResultInput } from '../application/workout-set-result.js';
 import type { ExerciseActor } from '#src/modules/exercises/types/exercise.types';
 
 export type WorkoutActor = ExerciseActor;
 
-export type CreateWorkoutSetInput = {
+type CreateWorkoutSetInput = {
   setType?: WorkoutSetType;
 
   plannedReps?: number | null;
@@ -23,7 +19,7 @@ export type CreateWorkoutSetInput = {
   targetRir?: number | null;
 };
 
-export type CreateWorkoutExerciseInput = {
+type CreateWorkoutExerciseInput = {
   exerciseId: string;
   notes?: string | null;
   sets: CreateWorkoutSetInput[];
@@ -63,15 +59,6 @@ export type CreateWorkoutFromProgramInput = {
 /** Public Prisma-projected API records (no repository ReturnType coupling). */
 export type WorkoutRecord = Prisma.WorkoutGetPayload<{
   select: typeof workoutSelect;
-}>;
-
-export type WorkoutSetRecord = Prisma.WorkoutSetGetPayload<{
-  select: typeof workoutSetSelect;
-}>;
-
-/** Internal idempotency data: intentionally distinct from the public record. */
-export type WorkoutIdempotencyRecord = Prisma.WorkoutGetPayload<{
-  select: typeof workoutIdempotencySelect;
 }>;
 
 export type FindManyWorkoutsParams = {
