@@ -4,7 +4,10 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { test } from 'vitest';
 
-import { inspectWorkspaceImports } from './dependency-cruiser-workspace-imports.mjs';
+import {
+  formatResolvedCruiserViolations,
+  inspectWorkspaceImports,
+} from './dependency-cruiser-workspace-imports.mjs';
 
 function withFixture(files, check) {
   const root = mkdtempSync(join(tmpdir(), 'gym-combined-cruiser-'));
@@ -90,4 +93,22 @@ test('nonexistent apps root fails closed', () => {
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
+});
+
+test('native formatter prints resolved rule details from the already parsed graph', () => {
+  withFixture(
+    { 'apps/alpha/src/entry.js': "import '../../beta/src/index.js';\n" },
+    (root) => {
+      const result = inspectWorkspaceImports(root);
+      assert.ok(result.graphErrors > 0, 'Expected a resolved cross-app rule violation');
+      const details = formatResolvedCruiserViolations(result.graph);
+      assert.match(details, /no-cross-app-source-imports/);
+      assert.match(details, /apps\/alpha\/src\/entry\.js/);
+      assert.match(details, /apps\/beta\/src\/index\.js/);
+    },
+  );
+});
+
+test('native formatter rejects an invalid graph instead of hiding violations', () => {
+  assert.throws(() => formatResolvedCruiserViolations({}), /Invalid/);
 });
