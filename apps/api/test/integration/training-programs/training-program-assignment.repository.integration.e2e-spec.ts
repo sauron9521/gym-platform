@@ -479,8 +479,8 @@ describe('TrainingProgramAssignmentRepository integration (e2e)', () => {
       const terminated = await terminationPromise;
 
       expect(terminated).toMatchObject({
-        id: relationship.id,
         status: 'TERMINATED',
+        relationship: { id: relationship.id, status: 'TERMINATED' },
       });
 
       const persistedRelationship = await prisma.trainerAthlete.findUniqueOrThrow({
@@ -652,8 +652,8 @@ describe('TrainingProgramAssignmentRepository integration (e2e)', () => {
       }
 
       expect(termination.value).toMatchObject({
-        id: relationship.id,
         status: 'TERMINATED',
+        relationship: { id: relationship.id, status: 'TERMINATED' },
       });
 
       const persistedRelationship = await prisma.trainerAthlete.findUniqueOrThrow({
@@ -1200,7 +1200,10 @@ describe('TrainingProgramAssignmentRepository integration (e2e)', () => {
         reason: 'First termination',
       });
 
-      expect(firstResult).toMatchObject({
+      if (firstResult.status !== 'TERMINATED') {
+        throw new Error('Expected the first termination to succeed');
+      }
+      expect(firstResult.relationship).toMatchObject({
         id: relationship.id,
         status: 'TERMINATED',
         endReason: 'First termination',
@@ -1224,7 +1227,7 @@ describe('TrainingProgramAssignmentRepository integration (e2e)', () => {
         visibility: 'PRIVATE',
       });
 
-      const firstEndedAt = firstResult?.endedAt;
+      const firstEndedAt = firstResult.relationship.endedAt;
       expect(firstEndedAt).toBeInstanceOf(Date);
 
       // Second termination
@@ -1235,7 +1238,7 @@ describe('TrainingProgramAssignmentRepository integration (e2e)', () => {
         reason: 'Second termination',
       });
 
-      expect(secondResult).toBeNull();
+      expect(secondResult).toEqual({ status: 'STATE_CHANGED' });
 
       // No additional exercise copies
       const copiesAfterRetry = await prisma.exercise.findMany({
@@ -1360,7 +1363,7 @@ describe('TrainingProgramAssignmentRepository integration (e2e)', () => {
         reason: 'First collaboration ended',
       });
 
-      expect(firstTermination?.status).toBe('TERMINATED');
+      expect(firstTermination.status).toBe('TERMINATED');
 
       const copiesAfterFirstTermination = await prisma.exercise.findMany({
         where: {
@@ -1417,7 +1420,7 @@ describe('TrainingProgramAssignmentRepository integration (e2e)', () => {
         reason: 'Second collaboration ended',
       });
 
-      expect(secondTermination?.status).toBe('TERMINATED');
+      expect(secondTermination.status).toBe('TERMINATED');
 
       // The existing personal copy must be reused.
       const copiesAfterSecondTermination = await prisma.exercise.findMany({

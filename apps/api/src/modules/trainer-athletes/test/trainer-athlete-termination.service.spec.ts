@@ -75,7 +75,10 @@ describe('TrainerAthleteTerminationService', () => {
       redactForTrainer: true,
     });
 
-    expect(result).toMatchObject({ id: relationship.id, status: 'TERMINATED' });
+    expect(result).toMatchObject({
+      status: 'TERMINATED',
+      relationship: { id: relationship.id, status: 'TERMINATED' },
+    });
     expect(prisma.$transaction).toHaveBeenCalledOnce();
     expect(exerciseCopyService.copyRelevantExercises).toHaveBeenCalledWith(
       tx,
@@ -100,14 +103,14 @@ describe('TrainerAthleteTerminationService', () => {
     });
   });
 
-  it('returns null without side effects when relationship is no longer active', async () => {
+  it('reports a changed state without side effects when the relationship is no longer active', async () => {
     tx.trainerAthlete.findFirst.mockResolvedValue(null);
     const result = await service.terminateWithExerciseCopies({
       id: relationship.id,
       actorId: relationship.athleteId,
       redactForTrainer: false,
     });
-    expect(result).toBeNull();
+    expect(result).toEqual({ status: 'STATE_CHANGED' });
     expect(tx.trainerAthlete.updateMany).not.toHaveBeenCalled();
     expect(exerciseCopyService.copyRelevantExercises).not.toHaveBeenCalled();
   });
@@ -120,7 +123,7 @@ describe('TrainerAthleteTerminationService', () => {
         actorId: relationship.athleteId,
         redactForTrainer: false,
       }),
-    ).toBeNull();
+    ).toEqual({ status: 'STATE_CHANGED' });
     expect(tx.trainingProgramAssignment.updateMany).not.toHaveBeenCalled();
     expect(exerciseCopyService.copyRelevantExercises).not.toHaveBeenCalled();
   });
