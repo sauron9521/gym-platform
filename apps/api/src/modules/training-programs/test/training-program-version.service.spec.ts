@@ -4,7 +4,7 @@ import {
   ForbiddenException,
   NotFoundException,
 } from '@nestjs/common';
-import { Prisma } from '#prisma/client';
+import { DraftVersionCreationConflict } from '../application/draft-version-creation.js';
 import { DraftVersionStateChanged } from '../application/draft-version-update.js';
 import { createPublishProgramUseCase } from '../publication.provider.js';
 import { TrainingProgramVersionService } from '../services/training-program-version.service.js';
@@ -36,11 +36,6 @@ describe('TrainingProgramVersionService', () => {
       },
     ],
   });
-  const prismaError = (code: string) =>
-    new Prisma.PrismaClientKnownRequestError('Concurrent state change', {
-      code,
-      clientVersion: '7.0.0',
-    });
   let service: TrainingProgramVersionService;
 
   beforeEach(() => {
@@ -150,9 +145,9 @@ describe('TrainingProgramVersionService', () => {
 
   it('maps a concurrently created draft to a conflict', async () => {
     repository.findDraftVersion.mockResolvedValue(null);
-    repository.createDraftFromLatestPublished.mockRejectedValue(prismaError('P2002'));
-    await expect(service.createNextDraft(ids[0], trainer)).rejects.toBeInstanceOf(
-      ConflictException,
+    repository.createDraftFromLatestPublished.mockRejectedValue(new DraftVersionCreationConflict());
+    await expect(service.createNextDraft(ids[0], trainer)).rejects.toThrow(
+      new ConflictException('A draft version already exists or was created concurrently'),
     );
   });
 
