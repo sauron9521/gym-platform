@@ -1,6 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '#src/infra/database/index';
 import { Prisma } from '#prisma/client';
+import {
+  AssignmentCreationError,
+  type CreateProgramAssignment,
+} from '../application/assignment-creation.js';
 import { deriveAccountCapabilities } from '#src/modules/users/public-api';
 import { assignmentFullReadWhere } from '../policies/training-program-assignment-read.policy.js';
 import {
@@ -183,13 +187,29 @@ export class TrainingProgramAssignmentRepository {
     });
   }
 
-  async createAssignmentForActiveRelationship(input: {
-    programId: string;
-    versionId: string;
-    trainerAthleteId: string;
-    trainerId: string;
-    athleteId: string;
-  }): Promise<TrainingProgramAssignmentPayload | null> {
+  async createAssignmentForActiveRelationship(
+    input: CreateProgramAssignment,
+  ): Promise<TrainingProgramAssignmentPayload | null> {
+    try {
+      return await this.createAssignmentAtomically(input);
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        switch (error.code) {
+          case 'P2002':
+            throw new AssignmentCreationError('ALREADY_EXISTS');
+          case 'P2025':
+            throw new AssignmentCreationError('STATE_CHANGED');
+          case 'P2003':
+            throw new AssignmentCreationError('REFERENCE_MISSING');
+        }
+      }
+      throw error;
+    }
+  }
+
+  private async createAssignmentAtomically(
+    input: CreateProgramAssignment,
+  ): Promise<TrainingProgramAssignmentPayload | null> {
     return this.prisma.$transaction(async (tx) => {
       // Fetch the immutable PUBLISHED source tree first. A published version
       // cannot be edited by application endpoints, and the version lock below
