@@ -61,16 +61,7 @@ export function inspectNamedApplicationImports(root = repositoryRoot) {
   const configuration = resolve(repositoryRoot, '.dependency-cruiser.cjs');
   const result = spawnSync(
     process.execPath,
-    [
-      bin,
-      '--config',
-      configuration,
-      '--output-type',
-      'json',
-      'apps',
-      'packages',
-      'tooling',
-    ],
+    [bin, '--config', configuration, '--output-type', 'json', 'apps', 'packages', 'tooling'],
     {
       cwd: root,
       encoding: 'utf8',
