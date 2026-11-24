@@ -60,8 +60,6 @@ export function checkWorkspaceBoundaries(repositoryRoot) {
         }
       }
     }
-
-
   }
 
   const visited = new Set();
