@@ -83,3 +83,30 @@ the parser-based and regex-based scanners. The combined graph gate is **not**
 proof that the legacy parser can now be deleted: import-like strings can cause
 false positives in the legacy script, and the computed dynamic-import/Nest
 architecture guards remain separate.
+
+## Syntax equivalence: cutover checklist
+
+The required combined graph gate and independent legacy regex scanner stay
+enabled while we validate source-syntax parity. The focused regression suite
+`dependency-cruiser-syntax-parity.test.mjs` checks both analyzers against
+unresolved relative imports from static imports, side-effect imports,
+named/star re-exports, literal dynamic `import()`, CommonJS `require()`,
+TypeScript `import type` and `export type`, and `tsx` type-only imports.
+It also checks the named-app rule for the corresponding import forms.
+
+An import-like string or comment is **not** an import; the legacy regular
+expression can report a false positive in those cases, whereas the parsed
+graph does not. The tests record this difference rather than accepting the
+legacy false positive as an invariant.
+
+Retirement criteria for the legacy relative-path parser:
+1. Required combined graph gate remains green with source tests included.
+2. All literal import forms and unresolved cross-workspace paths are covered.
+3. The workspace-manifest, shared-dependency-cycle and Nest DI checks remain
+   in required CI after code removal.
+4. Any remaining gaps (computed dynamic imports, syntax parser diagnostics,
+   generated source exemptions) are either covered by a separate existing
+   guard or explicitly resolved.
+
+These tests support a later, separate removal PR; they do not remove or
+disable the legacy scanner.
