@@ -37,7 +37,7 @@ describe('PublishProgramUseCase', () => {
     port.publishAtomically.mockResolvedValue(snapshot);
   });
 
-  it('checks ownership and draft state before one atomic write and returns the unchanged snapshot', async () => {
+  it('checks access and draft state before one write and returns the unchanged snapshot', async () => {
     await expect(useCase.execute(command)).resolves.toBe(snapshot);
     expect(port.loadOwnedProgramStatus).toHaveBeenCalledExactlyOnceWith(command);
     expect(port.loadOwnedVersion).toHaveBeenCalledExactlyOnceWith(command);
@@ -92,9 +92,7 @@ describe('PublishProgramUseCase', () => {
 
   it('maps a stale atomic write to a stable conflict without retrying', async () => {
     port.publishAtomically.mockResolvedValue(null);
-    await expect(useCase.execute(command)).rejects.toEqual(
-      new PublicationConflict('STALE_VERSION'),
-    );
+    await expect(useCase.execute(command)).rejects.toEqual(new PublicationConflict('STALE_VERSION'));
     expect(port.publishAtomically).toHaveBeenCalledOnce();
   });
 
