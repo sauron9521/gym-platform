@@ -783,3 +783,48 @@ test('rejects type-only cycles inside Workouts application', () => {
     assert.match(check().join('\n'), /workouts: clean architecture file dependency cycle/);
   });
 });
+
+test('allows inward Trainer–Athletes dependencies without migrating legacy services', () => {
+  fixture(({ module, source, check }) => {
+    module('trainer-athletes');
+    source('trainer-athletes', 'domain/lifecycle.ts', 'export type Status = string;');
+    source(
+      'trainer-athletes',
+      'application/terminate.ts',
+      "import type { Status } from '#src/modules/trainer-athletes/domain/lifecycle';",
+    );
+    source(
+      'trainer-athletes',
+      'services/termination.service.ts',
+      "import { Injectable } from '@nestjs/common';",
+    );
+    assert.deepEqual(check(), []);
+  });
+});
+
+test.each([
+  ['domain', "import type { Prisma } from '#prisma/client';"],
+  ['domain', "import type { X } from '../application/port.js';"],
+  ['application', "import { Injectable } from '@nestjs/common';"],
+  ['application', "export * from '../repositories/adapter.js';"],
+  ['application', "import type { X } from '#src/modules/users/public-api';"],
+])('rejects outward Trainer–Athletes %s imports: %s', (layer, statement) => {
+  fixture(({ module, source, check }) => {
+    module('trainer-athletes');
+    module('users');
+    source('users', 'public-api.ts', 'export type X = string;');
+    source('trainer-athletes', 'application/port.ts', 'export type X = string;');
+    source('trainer-athletes', 'repositories/adapter.ts', 'export {};');
+    source('trainer-athletes', layer + '/example.ts', statement);
+    assert.match(check().join('\n'), new RegExp('clean architecture ' + layer + ' import'));
+  });
+});
+
+test('rejects type-only cycles inside Trainer–Athletes application', () => {
+  fixture(({ module, source, check }) => {
+    module('trainer-athletes');
+    source('trainer-athletes', 'application/a.ts', "import type { B } from './b.js';");
+    source('trainer-athletes', 'application/b.ts', "import type { A } from './a.js';");
+    assert.match(check().join('\n'), /trainer-athletes: clean architecture file dependency cycle/);
+  });
+});
