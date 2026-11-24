@@ -1,4 +1,4 @@
-name: Tooling / Knip and Turborepo baseline (manual)
+name: Tooling / Knip, Turborepo, and dependency-cruiser (manual)
 
 # Explicit on-demand diagnostics; never a required PR gate or deployment.
 on:
@@ -9,7 +9,7 @@ permissions:
 
 jobs:
   audit:
-    name: Tooling / Dependency hygiene and Turbo dry-run
+    name: Tooling / Dependency hygiene, boundaries, and Turbo dry-run
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -33,6 +33,10 @@ jobs:
         run: |
           set -euo pipefail
           pnpm knip:report 2>&1 | tee "$RUNNER_TEMP/knip.txt"
+      - name: Check dependency-cruiser source boundaries (manual diagnostic)
+        run: |
+          set -euo pipefail
+          pnpm architecture:cruise 2>&1 | tee "$RUNNER_TEMP/architecture-cruise.txt"
       - name: Preview Turborepo graph without running tasks
         run: |
           set -euo pipefail
@@ -45,9 +49,10 @@ jobs:
           const counts = new Map();
           for (const item of tasks) counts.set(item.task, (counts.get(item.task) ?? 0) + 1);
           const lines = [
-            '### Advisory Knip / Turborepo baseline',
+            '### Advisory Knip / dependency-cruiser / Turborepo baseline',
             '',
             'Knip findings are diagnostic and are **not** automatically removed.',
+            'Dependency-cruiser boundary rules run only in this manual audit workflow.',
             'Turborepo was run with `--dry=json`; **no lint, test or build tasks executed**.',
             '',
             'Total planned Turbo tasks: ' + tasks.length,
@@ -62,6 +67,7 @@ jobs:
           name: tooling-audit-${{ github.run_id }}
           path: |
             ${{ runner.temp }}/knip.txt
+            ${{ runner.temp }}/architecture-cruise.txt
             ${{ runner.temp }}/turbo-plan.json
           if-no-files-found: error
           retention-days: 7
