@@ -615,11 +615,7 @@ test('allows pilot inner dependencies through aliases and NodeNext relative impo
   fixture(({ module, source, check }) => {
     module('training-programs');
     source('training-programs', 'domain/model.ts', 'export type Model = string;');
-    source(
-      'training-programs',
-      'domain/policy.ts',
-      "import type { Model } from './model.js';",
-    );
+    source('training-programs', 'domain/policy.ts', "import type { Model } from './model.js';");
     source(
       'training-programs',
       'application/ports/publication.ts',
@@ -706,11 +702,7 @@ test('rejects cycles across type-only, alias and barrel edges in migrated code',
     );
     source('training-programs', 'domain/model.ts', 'export type T = string;');
     assert.deepEqual(check(), []);
-    source(
-      'training-programs',
-      'application/self.ts',
-      "import type { T } from './self.js';",
-    );
+    source('training-programs', 'application/self.ts', "import type { T } from './self.js';");
     assert.match(
       check().join('\n'),
       /clean architecture file dependency cycle: application\/self.ts -> application\/self.ts/,
