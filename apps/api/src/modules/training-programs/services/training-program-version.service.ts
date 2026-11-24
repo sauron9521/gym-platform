@@ -10,6 +10,7 @@ import { Prisma } from '#prisma/client';
 
 import { TrainingProgramVersionRepository } from '../repositories/training-program-version.repository.js';
 import type { PublishProgramUseCase } from '../application/publish-program.use-case.js';
+import { isWorkoutOutsideDuration } from '../domain/duration.policy.js';
 import { rethrowPublicationHttpError } from '../policies/training-program-publication.policy.js';
 import { PUBLISH_PROGRAM_USE_CASE } from '../publication.provider.js';
 import type { TrainingProgramVersionPayload } from '../types/training-program-payload.types.js';
@@ -138,7 +139,9 @@ export class TrainingProgramVersionService {
     const requestedWeeks = input.durationWeeks;
     if (
       typeof requestedWeeks === 'number' &&
-      version.workouts.some((workout) => workout.weekNumber > requestedWeeks)
+      version.workouts.some((workout) =>
+        isWorkoutOutsideDuration(workout.weekNumber, requestedWeeks),
+      )
     ) {
       throw new BadRequestException('A workout week cannot exceed the program duration');
     }
