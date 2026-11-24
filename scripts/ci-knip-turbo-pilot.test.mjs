@@ -126,3 +126,18 @@ test('Turborepo diagnostic retains its existing non-cached test and conservative
   assert.match(pkg.scripts['turbo:plan'], /--dry=json/);
   assert.match(selection, /return allScopes\(\)/);
 });
+
+test('root owns shared Next ESLint preset while apps retain local lint CLI', () => {
+  const root = JSON.parse(read('package.json'));
+  assert.ok(root.devDependencies.eslint);
+  assert.ok(root.devDependencies['eslint-config-next']);
+  assert.ok(root.devDependencies.typescript);
+  for (const app of ['admin', 'landing', 'trainer', 'web']) {
+    const manifest = JSON.parse(read('apps/' + app + '/package.json'));
+    assert.equal(manifest.devDependencies.eslint, root.devDependencies.eslint);
+    assert.equal(manifest.devDependencies.typescript, root.devDependencies.typescript);
+    assert.equal(manifest.devDependencies['eslint-config-next'], undefined);
+    assert.equal(manifest.scripts.lint, 'eslint .');
+    assert.match(read('apps/' + app + '/eslint.config.mjs'), /tooling\/config\/eslint-next\.mjs/);
+  }
+});
