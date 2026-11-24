@@ -24,7 +24,7 @@ The root [documentation index](README.md) links the thematic indexes and existin
 2. Prefer references to manifests, source, generated OpenAPI and checked commands rather than duplicating contracts or version numbers. Never include real credentials or production personal data.
 3. Distinguish implemented behavior from target designs, historical observations and explicitly deferred work. Date snapshots, pin the source SHA and preserve test scope and limitations. Owner approval and deployment acceptance are separate.
 4. Before moving documents, check Markdown links and non-Markdown references in code, workflows and tests. Update relative destinations, retain a link-only notice at old paths when historical GitHub references need it, and keep command working directories explicit. Old heading anchors do not automatically redirect.
-5. Run repository formatting and relative-link checks before review. At this stage only manual link-target checking is established; automated documentation-specific checks will be added separately. Do not infer that all anchors or external URLs were verified.
+5. Run `pnpm docs:check` and repository formatting before review. Markdownlint checks heading structure and empty links; the root Vitest contract parses Markdown and verifies tracked relative file targets and reachability from this documentation index. External URLs, heading anchors and raw HTML links are not checked.
 6. Keep the change narrow, verify required CI, and leave merge to the owner. Do not close issues or change security/release gates just because documentation was reorganized.
 
 ## Legacy paths

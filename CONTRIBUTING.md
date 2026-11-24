@@ -28,6 +28,10 @@ git commit -m "feat(web): example"
 If a hook is missing after installation, run `pnpm exec husky` or reinstall
 with `pnpm install`, and inspect `git config core.hooksPath`.
 
+## Documentation
+
+Run `pnpm docs:check` for Markdown structure, tracked relative links and documentation navigation. Prettier remains the formatting authority. See the [documentation maintenance guide](docs/documentation-maintenance.md). The existing required CI tooling job runs these checks without network requests to linked sites.
+
 ## Repository hygiene
 
 The root `.gitignore` excludes `.idea/`, `*.iml`, generated build outputs,
