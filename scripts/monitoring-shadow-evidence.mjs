@@ -1,6 +1,6 @@
 // Read-only evidence sanitizer for the isolated resource pilot. No live calls.
 import { readFileSync, writeFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const native = [
@@ -34,36 +34,61 @@ const referenceNames = [
   'gym_api_docker_signals_last_sample_timestamp_seconds',
 ];
 
-function checkLabels(labels, fixtureId) {
-  if (
-    !labels ||
-    Object.keys(labels).some((key) => !['__name__', 'id', 'cpu', 'job'].includes(key)) ||
-    ![...native, ...derived].includes(labels.__name__) ||
-    labels.job !== 'gym-resource-shadow' ||
-    !['/docker/' + fixtureId, '/system.slice/docker-' + fixtureId + '.scope'].includes(labels.id) ||
-    (labels.cpu !== undefined &&
-      (labels.cpu !== 'total' ||
-        !['container_cpu_usage_seconds_total', 'gym_shadow:cpu_percent'].includes(labels.__name__)))
-  ) {
-    throw new Error('Unexpected shadow series or labels');
+// Only constant codes reach public CI logs. Never interpolate input values.
+class ShadowEvidenceError extends Error {
+  constructor(code, phase = 'series') {
+    super(code);
+    this.code = code;
+    this.phase = phase;
   }
 }
 
-function readVector(response, fixtureId) {
+const reject = (code, phase) => {
+  throw new ShadowEvidenceError(code, phase);
+};
+
+function checkLabels(labels, fixtureId, phase) {
+  if (!labels || typeof labels !== 'object' || Array.isArray(labels)) {
+    reject('SHADOW_LABEL_SHAPE', phase);
+  }
+  if (Object.keys(labels).some((key) => !['__name__', 'id', 'cpu', 'job'].includes(key))) {
+    reject('SHADOW_LABEL_NOT_ALLOWED', phase);
+  }
+  if (![...native, ...derived].includes(labels.__name__)) {
+    reject('SHADOW_METRIC_NOT_ALLOWED', phase);
+  }
+  if (labels.job !== 'gym-resource-shadow') {
+    reject('SHADOW_JOB_MISMATCH', phase);
+  }
+  if (
+    !['/docker/' + fixtureId, '/system.slice/docker-' + fixtureId + '.scope'].includes(labels.id)
+  ) {
+    reject('SHADOW_ID_MISMATCH', phase);
+  }
+  if (
+    labels.cpu !== undefined &&
+    (labels.cpu !== 'total' ||
+      !['container_cpu_usage_seconds_total', 'gym_shadow:cpu_percent'].includes(labels.__name__))
+  ) {
+    reject('SHADOW_CPU_LABEL', phase);
+  }
+}
+
+function readVector(response, fixtureId, phase) {
   if (
     response?.status !== 'success' ||
     response.data?.resultType !== 'vector' ||
     !Array.isArray(response.data.result) ||
     response.data.result.length > 32
   ) {
-    throw new Error('Invalid shadow query');
+    reject('SHADOW_QUERY_SHAPE', phase);
   }
   const result = {};
   for (const item of response.data.result) {
-    checkLabels(item.metric, fixtureId);
+    checkLabels(item?.metric, fixtureId, phase);
     const name = item.metric.__name__;
+    if (Object.hasOwn(result, name)) reject('SHADOW_DUPLICATE_METRIC', phase);
     if (
-      Object.hasOwn(result, name) ||
       !Array.isArray(item.value) ||
       item.value.length !== 2 ||
       !Number.isFinite(item.value[0]) ||
@@ -71,14 +96,15 @@ function readVector(response, fixtureId) {
       item.value[1].trim() === '' ||
       !Number.isFinite(Number(item.value[1]))
     ) {
-      throw new Error('Invalid or ambiguous shadow sample');
+      reject('SHADOW_SAMPLE_VALUE', phase);
     }
     result[name] = { value: Number(item.value[1]), evaluatedAt: item.value[0] };
   }
   return result;
 }
 
-function readReference(text) {
+function readReference(text, phase) {
+  if (typeof text !== 'string') reject('SHADOW_REFERENCE_SHAPE', phase);
   const result = {};
   for (const line of text.split('\n')) {
     if (!line || line.startsWith('#')) continue;
@@ -87,14 +113,40 @@ function readReference(text) {
       // Running-state signal has the same meaning as the resource gauge.
       if (name === 'gym_api_docker_signals_running' && ['0', '1'].includes(value) && !rest.length)
         continue;
-      throw new Error('Unexpected reference metric');
+      reject('SHADOW_REFERENCE_METRIC', phase);
     }
     if (rest.length || !value || !Number.isFinite(Number(value)) || Object.hasOwn(result, name)) {
-      throw new Error('Invalid reference metric');
+      reject('SHADOW_REFERENCE_VALUE', phase);
     }
     result[name] = Number(value);
   }
   return result;
+}
+
+export function validateShadowSample(sample, fixtureId) {
+  const phase = sample?.phase;
+  if (
+    !['idle', 'cpu', 'memory'].includes(phase) ||
+    typeof fixtureId !== 'string' ||
+    !/^[a-f0-9]{64}$/.test(fixtureId)
+  ) {
+    reject('SHADOW_ENVELOPE', 'report');
+  }
+  const candidate = readVector(sample.query, fixtureId, phase);
+  const reference = readReference(sample.reference, phase);
+  const lastSeen = candidate.container_last_seen?.value ?? null;
+  const evaluation = sample.time;
+  if (
+    !Number.isFinite(evaluation) ||
+    !Number.isFinite(sample.before) ||
+    sample.before > evaluation ||
+    evaluation - sample.before > 60 ||
+    Object.values(candidate).some((v) => v.evaluatedAt !== evaluation)
+  ) {
+    reject('SHADOW_SAMPLE_TIME', phase);
+  }
+  const fresh = lastSeen !== null && evaluation - lastSeen >= -5 && evaluation - lastSeen <= 60;
+  return { candidate, reference, lastSeen, evaluation, fresh };
 }
 
 export function summarizeShadow({ fixtureId, series, samples, diagnosticsClean }) {
@@ -108,24 +160,14 @@ export function summarizeShadow({ fixtureId, series, samples, diagnosticsClean }
     !Array.isArray(samples) ||
     samples.map((s) => s.phase).join(',') !== 'idle,cpu,memory'
   ) {
-    throw new Error('Invalid or private shadow evidence');
+    reject('SHADOW_ENVELOPE', 'report');
   }
-  for (const labels of series.data) checkLabels(labels, fixtureId);
+  for (const labels of series.data) checkLabels(labels, fixtureId, 'series');
   const observations = samples.map((sample) => {
-    const candidate = readVector(sample.query, fixtureId);
-    const reference = readReference(sample.reference);
-    const lastSeen = candidate.container_last_seen?.value ?? null;
-    const evaluation = sample.time;
-    if (
-      !Number.isFinite(evaluation) ||
-      !Number.isFinite(sample.before) ||
-      sample.before > evaluation ||
-      evaluation - sample.before > 60 ||
-      Object.values(candidate).some((v) => v.evaluatedAt !== evaluation)
-    ) {
-      throw new Error('Invalid observation time');
-    }
-    const fresh = lastSeen !== null && evaluation - lastSeen >= -5 && evaluation - lastSeen <= 60;
+    const { candidate, reference, lastSeen, evaluation, fresh } = validateShadowSample(
+      sample,
+      fixtureId,
+    );
     const comparisons = [
       ['cpuPercent', 'gym_api_docker_cpu_percent', 'gym_shadow:cpu_percent'],
       ['memoryPercent', 'gym_api_docker_memory_percent', 'gym_shadow:memory_percent'],
@@ -181,12 +223,37 @@ export function summarizeShadow({ fixtureId, series, samples, diagnosticsClean }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   try {
-    const [input, output] = process.argv.slice(2);
-    const result = summarizeShadow(JSON.parse(readFileSync(input, 'utf8')));
-    writeFileSync(output, JSON.stringify(result, null, 2) + '\n', { flag: 'wx', mode: 0o600 });
-    if (result.status === 'inconclusive') process.exitCode = 2;
-  } catch {
-    process.stderr.write('Shadow evidence rejected; no raw data published\n');
+    const [input, output, phase, dir] = process.argv.slice(2);
+    if (input === '--check-sample') {
+      const read = (name) => readFileSync(join(dir, name), 'utf8');
+      const observation = validateShadowSample(
+        {
+          phase,
+          time: Number(read('time')),
+          before: Number(read('before')),
+          reference: read('reference.txt'),
+          query: JSON.parse(read('query.json')),
+        },
+        readFileSync(output, 'utf8').trim(),
+      );
+      process.stdout.write(
+        'Shadow phase validation: ' +
+          phase +
+          '; candidate freshness: ' +
+          (observation.fresh ? 'fresh' : 'missing-or-stale') +
+          '\n',
+      );
+    } else {
+      const result = summarizeShadow(JSON.parse(readFileSync(input, 'utf8')));
+      writeFileSync(output, JSON.stringify(result, null, 2) + '\n', { flag: 'wx', mode: 0o600 });
+      if (result.status === 'inconclusive') process.exitCode = 2;
+    }
+  } catch (error) {
+    const reason =
+      error instanceof ShadowEvidenceError
+        ? error.code + ' (' + error.phase + ')'
+        : 'SHADOW_IO_OR_JSON';
+    process.stderr.write('Shadow evidence rejected: ' + reason + '; no raw data published\n');
     process.exitCode = 1;
   }
 }

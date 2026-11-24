@@ -511,6 +511,17 @@ and diagnostics are never uploaded. An absent report or an inconclusive
 run is not a successful comparison. The workflow is bounded to 15
 minutes and cleans up its named resources without a daemon-wide prune.
 
+The first hosted run with updated images (45501567658) completed the
+workloads but rejected the final evidence. The original generic error
+did not identify the violated contract, and no artifact was published.
+Phase progress and early per-sample validation now report only fixed
+stage and error codes, never raw labels, identities, sample values or
+diagnostics. A structural failure stops before the next workload;
+missing or stale data remains inconclusive. Final validation of the
+complete series history and sentinel check remains mandatory. This
+diagnostic change does not establish the root cause of the first
+rejection or authorize relaxing the privacy allowlist.
+
 A successful workflow run still means exploratory observations, not
 parity. Repeat at least three independent dispatches and separately
 exercise restart, recreate, throttling, PID, OOM, failure freshness and
