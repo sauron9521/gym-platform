@@ -84,8 +84,7 @@ export function resolveAuditRange(env = process.env, git = execFileSync) {
   const gitOptions = { cwd: repositoryRoot, encoding: 'utf8' };
   const mainHead = git('git', ['rev-parse', 'HEAD'], gitOptions).trim();
   const head = requestedHead || mainHead;
-  const base =
-    requestedBase || git('git', ['rev-parse', 'HEAD^1'], gitOptions).trim();
+  const base = requestedBase || git('git', ['rev-parse', 'HEAD^1'], gitOptions).trim();
 
   if (!commitSha.test(mainHead) || !commitSha.test(base) || !commitSha.test(head)) {
     throw new Error('Comparison requires full 40-character commit SHAs');
