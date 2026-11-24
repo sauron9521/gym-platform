@@ -18,12 +18,18 @@ export function canTransitionWorkout(from, to) {
  * at least one completed set, no remaining pending sets, and at least one set.
  * This is a pure precondition, NOT an authorization or server-side write guarantee.
  */
+export function workoutCompletionFailure(sets) {
+  if (sets.length === 0 || sets.some((set) => set.status === 'PENDING')) {
+    return 'UNPROCESSED_SETS';
+  }
+  if (!sets.some((set) => set.status === 'COMPLETED')) {
+    return 'NO_COMPLETED_SET';
+  }
+  return null;
+}
+
 export function canCompleteWorkout(sets) {
-  return (
-    sets.length > 0 &&
-    !sets.some((set) => set.status === 'PENDING') &&
-    sets.some((set) => set.status === 'COMPLETED')
-  );
+  return workoutCompletionFailure(sets) === null;
 }
 
 export function workoutSetProgress(sets) {

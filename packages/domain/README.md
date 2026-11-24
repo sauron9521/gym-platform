@@ -5,8 +5,9 @@ Expo or network dependencies. Read-only helpers can be used by Web, Mobile and A
 without exposing or importing a database model.
 
 - `canTransitionWorkout` provides UX-level allowed state transitions.
-- `canCompleteWorkout` mirrors the minimum set-completion invariant currently
-  enforced transactionally on the API. Clients must still handle HTTP 409.
+- `workoutCompletionFailure` identifies unprocessed sets before missing completed sets.
+- `canCompleteWorkout` delegates to that same rule. The API checks it again on
+  authoritative set statuses under the workout row lock. Clients must still handle HTTP 409.
 - `workoutSetProgress` reports completed, skipped and pending set counts.
 
 This package does **not** authorize transitions, mutate workout state or provide

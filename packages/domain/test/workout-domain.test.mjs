@@ -6,6 +6,7 @@ import {
   canCompleteWorkout,
   canTransitionWorkout,
   workoutSetProgress,
+  workoutCompletionFailure,
 } from '@gym/domain';
 
 test('only planned and in-progress workouts have valid outgoing transitions', () => {
@@ -28,6 +29,22 @@ test('completion requires an existing completed set and no pending sets', () => 
   assert.equal(canCompleteWorkout([{ status: 'COMPLETED' }, { status: 'PENDING' }]), false);
   assert.equal(canCompleteWorkout([{ status: 'COMPLETED' }]), true);
   assert.equal(canCompleteWorkout([{ status: 'COMPLETED' }, { status: 'SKIPPED' }]), true);
+});
+
+test('completion failures preserve precedence and match the boolean precondition', () => {
+  const cases = [
+    [[], 'UNPROCESSED_SETS'],
+    [[{ status: 'PENDING' }], 'UNPROCESSED_SETS'],
+    [[{ status: 'SKIPPED' }, { status: 'PENDING' }], 'UNPROCESSED_SETS'],
+    [[{ status: 'COMPLETED' }, { status: 'PENDING' }], 'UNPROCESSED_SETS'],
+    [[{ status: 'SKIPPED' }, { status: 'SKIPPED' }], 'NO_COMPLETED_SET'],
+    [[{ status: 'COMPLETED' }], null],
+    [[{ status: 'SKIPPED' }, { status: 'COMPLETED' }], null],
+  ];
+  for (const [sets, failure] of cases) {
+    assert.equal(workoutCompletionFailure(sets), failure);
+    assert.equal(canCompleteWorkout(sets), failure === null);
+  }
 });
 
 test('status progress includes skipped sets without counting them as completed', () => {

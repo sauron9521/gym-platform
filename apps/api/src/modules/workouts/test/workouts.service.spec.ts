@@ -1048,7 +1048,10 @@ describe('WorkoutsService', () => {
         status: 'IN_PROGRESS',
       });
 
-      await expect(service.complete('workout-1', athlete)).rejects.toThrow(BadRequestException);
+      await expect(service.complete('workout-1', athlete)).rejects.toThrow(
+        new BadRequestException('All workout sets must be completed or skipped'),
+      );
+      expect(repository.completeWorkout).not.toHaveBeenCalled();
 
       expect(repository.update).not.toHaveBeenCalled();
     });
@@ -1068,7 +1071,10 @@ describe('WorkoutsService', () => {
         ],
       });
 
-      await expect(service.complete('workout-1', athlete)).rejects.toThrow(BadRequestException);
+      await expect(service.complete('workout-1', athlete)).rejects.toThrow(
+        new BadRequestException('At least one set must be completed'),
+      );
+      expect(repository.completeWorkout).not.toHaveBeenCalled();
 
       expect(repository.update).not.toHaveBeenCalled();
     });
@@ -1080,8 +1086,23 @@ describe('WorkoutsService', () => {
         exercises: [],
       });
 
-      await expect(service.complete('workout-1', athlete)).rejects.toThrow(BadRequestException);
+      await expect(service.complete('workout-1', athlete)).rejects.toThrow(
+        new BadRequestException('All workout sets must be completed or skipped'),
+      );
+      expect(repository.completeWorkout).not.toHaveBeenCalled();
     });
+
+    it.each(['PLANNED', 'COMPLETED', 'CANCELLED'] as const)(
+      'rejects completion from %s before writing',
+      async (status) => {
+        repository.findById.mockResolvedValue({ ...plannedWorkout, status });
+
+        await expect(service.complete('workout-1', athlete)).rejects.toThrow(
+          new BadRequestException('Only in-progress workouts can be completed'),
+        );
+        expect(repository.completeWorkout).not.toHaveBeenCalled();
+      },
+    );
 
     it('should reject completion if set results changed after initial validation', async () => {
       repository.findById.mockResolvedValue({
