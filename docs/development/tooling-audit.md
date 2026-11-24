@@ -266,6 +266,39 @@ Do not remove these types or introduce artificial consumers to silence Knip.
 Recheck the findings in a fresh report before considering any narrowly
 scoped exception. No broad export exclusions are added.
 
+## Repeat audit after script consolidation (2026-11-24)
+
+A fresh isolated checkout of [main `599b030`](https://github.com/sauron9521/gym-platform/commit/599b0305c3272ae796fb6d33925bcc8196bb7b99)
+was scanned locally with Node 24.22.3, pinned pnpm 12.18.0 and Knip 6.48.0.
+Frozen installation and API Prisma Client generation succeeded. Both scans
+used `pnpm exec knip --no-exit-code --no-progress --reporter json` and exited
+zero. Counts are individual JSON findings, not grouped file entries.
+
+| Finding                     | Previous CI | Main | Candidate |
+| --------------------------- | ----------: | ---: | --------: |
+| Unused files                |           2 |    0 |         0 |
+| Unused runtime dependencies |           0 |    0 |         0 |
+| Unused devDependencies      |           4 |    0 |         0 |
+| Unlisted dependencies       |           5 |    1 |         1 |
+| Unused exports              |          37 |    0 |         0 |
+| Unused exported types       |          35 |    4 |         2 |
+| Total                       |          83 |    5 |         3 |
+
+No other issue categories were reported. Repository-wide reference search
+confirmed that `PublicationActor` and `PublicationProgramStatus` are used
+only within `publish-program.port.ts`. Make those aliases module-private;
+the exported command and port still use them and their structure is unchanged.
+API typecheck, all eight targeted publication use-case tests and
+`git diff --check` passed locally. The second scan reported only the two
+intentional Users public types and the outstanding `expo-system-ui` finding.
+
+Keep the Users public types as documented above. Keep the Mobile dependency
+finding visible under #742 pending the SDK-compatible installation and native
+verification. No dependency removals, new Knip exclusions, runtime changes or
+required CI changes are justified by this audit. These are local results on
+the stated checkout and candidate source, not a fresh GitHub Actions result.
+Full required CI and owner review remain necessary before merge.
+
 ## Next safe steps
 
 1. Review the Knip baseline by workspace, confirm real entrypoints and
