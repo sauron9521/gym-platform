@@ -4,7 +4,15 @@ import { test } from 'vitest';
 
 import { changedPathsBetween, compareAffectedPlans } from './ci-turbo-affected-shadow.mjs';
 
-const apps = ['@gym/admin', '@gym/api', '@gym/api-client', '@gym/landing', '@gym/mobile', '@gym/trainer', '@gym/web'];
+const apps = [
+  '@gym/admin',
+  '@gym/api',
+  '@gym/api-client',
+  '@gym/landing',
+  '@gym/mobile',
+  '@gym/trainer',
+  '@gym/web',
+];
 const changedCases = [
   ['API', ['apps/api/src/modules/users/users.service.ts'], ['@gym/api']],
   ['Web', ['apps/web/src/app/page.tsx'], ['@gym/web']],
@@ -57,13 +65,16 @@ function plan(packages) {
   };
 }
 
-test.each(changedCases)('%s: shadow comparator reflects conservative CI scopes', (_name, paths, expected) => {
-  const result = compareAffectedPlans(paths, plan(expected));
-  assert.deepEqual(result.requiredPackages, expected);
-  assert.deepEqual(result.missingFromTurbo, []);
-  assert.deepEqual(result.extraAppPackages, []);
-  assert.equal(result.status, 'no-missing-workspaces');
-});
+test.each(changedCases)(
+  '%s: shadow comparator reflects conservative CI scopes',
+  (_name, paths, expected) => {
+    const result = compareAffectedPlans(paths, plan(expected));
+    assert.deepEqual(result.requiredPackages, expected);
+    assert.deepEqual(result.missingFromTurbo, []);
+    assert.deepEqual(result.extraAppPackages, []);
+    assert.equal(result.status, 'no-missing-workspaces');
+  },
+);
 
 test('detects potential false negatives without suppressing or re-routing CI', () => {
   const result = compareAffectedPlans(
@@ -78,7 +89,10 @@ test('detects potential false negatives without suppressing or re-routing CI', (
 });
 
 test('keeps additional Turbo-selected applications visible rather than treating them as errors', () => {
-  const result = compareAffectedPlans(['apps/web/src/app/page.tsx'], plan(['@gym/web', '@gym/admin']));
+  const result = compareAffectedPlans(
+    ['apps/web/src/app/page.tsx'],
+    plan(['@gym/web', '@gym/admin']),
+  );
   assert.deepEqual(result.missingFromTurbo, []);
   assert.deepEqual(result.extraAppPackages, ['@gym/admin']);
   assert.equal(result.status, 'no-missing-workspaces');
@@ -105,10 +119,13 @@ test('uses explicit SHA ancestry and NUL-separated filenames to compare the same
     'apps/web/src/a weird file.tsx',
     'docs/README.md',
   ]);
-  assert.deepEqual(calls.map(({ args }) => args), [
-    ['merge-base', '--is-ancestor', base, head],
-    ['diff', '--name-only', '-z', '--no-renames', base + '...' + head],
-  ]);
+  assert.deepEqual(
+    calls.map(({ args }) => args),
+    [
+      ['merge-base', '--is-ancestor', base, head],
+      ['diff', '--name-only', '-z', '--no-renames', base + '...' + head],
+    ],
+  );
   assert.equal(calls[1].options.encoding, 'utf8');
 });
 
@@ -121,7 +138,10 @@ test('invalid revisions or Git history cannot produce a misleading parity report
 });
 
 test('on-demand audit is read-only and cannot override the required classifier', () => {
-  const workflow = readFileSync(new URL('../.github/workflows/tooling-audit.yml', import.meta.url), 'utf8');
+  const workflow = readFileSync(
+    new URL('../.github/workflows/tooling-audit.yml', import.meta.url),
+    'utf8',
+  );
   const ci = readFileSync(new URL('../.github/workflows/ci.yml', import.meta.url), 'utf8');
   assert.match(workflow, /^  workflow_dispatch:$/m);
   assert.match(workflow, /fetch-depth: 0/);
