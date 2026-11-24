@@ -153,11 +153,7 @@ test('parsed import graph avoids false positives from import-like string text', 
 test.each([
   ['spec file', 'apps/alpha/src/feature.spec.ts', "import '../../beta/src/missing.ts';\n"],
   ['test file', 'apps/alpha/src/feature.test.ts', "export * from '../../beta/src/missing';\n"],
-  [
-    'test directory',
-    'apps/alpha/src/test/case.ts',
-    "import '../../../beta/src/missing.ts';\n",
-  ],
+  ['test directory', 'apps/alpha/src/test/case.ts', "import '../../../beta/src/missing.ts';\n"],
   [
     'tests directory',
     'apps/alpha/src/tests/case.ts',
