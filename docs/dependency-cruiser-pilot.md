@@ -27,8 +27,12 @@ required gates. No new dependency or CI job name is needed for this cutover.
 - `pnpm architecture:cruise:relative`: inspect relative workspace imports.
 - `pnpm architecture:cruise`: dependency-cruiser's declarative rules for
   resolved cross-app, package and API feature dependencies.
-- The on-demand Tooling audit workflow runs these diagnostics alongside Knip
-  and a Turborepo dry run.
+- The on-demand Tooling audit workflow runs the combined
+  `architecture:cruise:boundaries` command **once** for both named and relative
+  imports, plus `architecture:cruise` for readable resolved-rule diagnostics.
+  It also includes Knip and a Turborepo dry run. Individual named/relative
+  commands remain available locally, but the workflow no longer invokes them
+  separately or uploads duplicate text reports.
 
 The combined gate is authoritative for workspace source imports. Standalone
 diagnostics are not a substitute for that required gate.
