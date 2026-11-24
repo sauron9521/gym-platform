@@ -1,0 +1,226 @@
+{
+  "schema": 1,
+  "status": "observed-not-parity",
+  "privacyCheck": "allowlisted-series-and-sentinel-check",
+  "observations": [
+    {
+      "phase": "idle",
+      "before": 1795560896,
+      "evaluatedAt": 1795560898,
+      "lastSeen": 1795560886,
+      "fresh": true,
+      "comparisons": [
+        {
+          "metric": "cpuPercent",
+          "reference": 0,
+          "candidate": 0.0026398151939091862,
+          "difference": 0.0026398151939091862
+        },
+        {
+          "metric": "memoryPercent",
+          "reference": 1,
+          "candidate": 0.998687744140625,
+          "difference": -0.001312255859375
+        },
+        {
+          "metric": "pids",
+          "reference": 8,
+          "candidate": 8,
+          "difference": 0
+        },
+        {
+          "metric": "cpuPeriods",
+          "reference": 11,
+          "candidate": 9,
+          "difference": -2
+        },
+        {
+          "metric": "throttledPeriods",
+          "reference": 0,
+          "candidate": 0,
+          "difference": 0
+        },
+        {
+          "metric": "throttledSeconds",
+          "reference": 0,
+          "candidate": 0,
+          "difference": 0
+        }
+      ],
+      "reference": {
+        "gym_api_docker_last_sample_timestamp_seconds": 1795560898,
+        "gym_api_docker_running": 1,
+        "gym_api_docker_cpu_percent": 0,
+        "gym_api_docker_memory_percent": 1,
+        "gym_api_docker_pids": 8,
+        "gym_api_docker_restart_count": 0,
+        "gym_api_docker_oom_killed": 0,
+        "gym_api_docker_signals_last_sample_timestamp_seconds": 1795560898,
+        "gym_api_docker_oom_events_window_10m": 0,
+        "gym_api_docker_cpu_periods_total": 11,
+        "gym_api_docker_cpu_throttled_periods_total": 0,
+        "gym_api_docker_cpu_throttled_seconds_total": 0
+      },
+      "candidate": {
+        "container_cpu_cfs_periods_total": 9,
+        "container_cpu_cfs_throttled_periods_total": 0,
+        "container_cpu_cfs_throttled_seconds_total": 0,
+        "container_cpu_usage_seconds_total": 0.069034,
+        "container_last_seen": 1795560886,
+        "container_memory_working_set_bytes": 10723328,
+        "container_oom_events_total": 0,
+        "container_spec_memory_limit_bytes": 1073741824,
+        "container_threads": 8,
+        "gym_shadow:memory_percent": 0.998687744140625,
+        "gym_shadow:cpu_percent": 0.0026398151939091862,
+        "gym_shadow:throttled_period_ratio": 0
+      }
+    },
+    {
+      "phase": "cpu",
+      "before": 1795560973,
+      "evaluatedAt": 1795560974,
+      "lastSeen": 1795560961,
+      "fresh": true,
+      "comparisons": [
+        {
+          "metric": "cpuPercent",
+          "reference": 100.44,
+          "candidate": 99.98479955332216,
+          "difference": -0.45520044667783566
+        },
+        {
+          "metric": "memoryPercent",
+          "reference": 2.38,
+          "candidate": 2.3181915283203125,
+          "difference": -0.06180847167968739
+        },
+        {
+          "metric": "pids",
+          "reference": 15,
+          "candidate": 15,
+          "difference": 0
+        },
+        {
+          "metric": "cpuPeriods",
+          "reference": 778,
+          "candidate": 643,
+          "difference": -135
+        },
+        {
+          "metric": "throttledPeriods",
+          "reference": 0,
+          "candidate": 0,
+          "difference": 0
+        },
+        {
+          "metric": "throttledSeconds",
+          "reference": 0,
+          "candidate": 0,
+          "difference": 0
+        }
+      ],
+      "reference": {
+        "gym_api_docker_last_sample_timestamp_seconds": 1795560974,
+        "gym_api_docker_running": 1,
+        "gym_api_docker_cpu_percent": 100.44,
+        "gym_api_docker_memory_percent": 2.38,
+        "gym_api_docker_pids": 15,
+        "gym_api_docker_restart_count": 0,
+        "gym_api_docker_oom_killed": 0,
+        "gym_api_docker_signals_last_sample_timestamp_seconds": 1795560974,
+        "gym_api_docker_oom_events_window_10m": 0,
+        "gym_api_docker_cpu_periods_total": 778,
+        "gym_api_docker_cpu_throttled_periods_total": 0,
+        "gym_api_docker_cpu_throttled_seconds_total": 0
+      },
+      "candidate": {
+        "container_cpu_cfs_periods_total": 643,
+        "container_cpu_cfs_throttled_periods_total": 0,
+        "container_cpu_cfs_throttled_seconds_total": 0,
+        "container_cpu_usage_seconds_total": 63.259376,
+        "container_last_seen": 1795560961,
+        "container_memory_working_set_bytes": 25165824,
+        "container_oom_events_total": 0,
+        "container_spec_memory_limit_bytes": 1073741824,
+        "container_threads": 15,
+        "gym_shadow:memory_percent": 2.3181915283203125,
+        "gym_shadow:cpu_percent": 99.98479955332216,
+        "gym_shadow:throttled_period_ratio": 0
+      }
+    },
+    {
+      "phase": "memory",
+      "before": 1795561168,
+      "evaluatedAt": 1795561170,
+      "lastSeen": 1795561156,
+      "fresh": true,
+      "comparisons": [
+        {
+          "metric": "cpuPercent",
+          "reference": 0,
+          "candidate": 0.003104925053532064,
+          "difference": 0.003104925053532064
+        },
+        {
+          "metric": "memoryPercent",
+          "reference": 26.98,
+          "candidate": 26.984024047851562,
+          "difference": 0.004024047851562074
+        },
+        {
+          "metric": "pids",
+          "reference": 15,
+          "candidate": 15,
+          "difference": 0
+        },
+        {
+          "metric": "cpuPeriods",
+          "reference": 1224,
+          "candidate": 1222,
+          "difference": -2
+        },
+        {
+          "metric": "throttledPeriods",
+          "reference": 0,
+          "candidate": 0,
+          "difference": 0
+        },
+        {
+          "metric": "throttledSeconds",
+          "reference": 0,
+          "candidate": 0,
+          "difference": 0
+        }
+      ],
+      "reference": {
+        "gym_api_docker_last_sample_timestamp_seconds": 1795561169,
+        "gym_api_docker_running": 1,
+        "gym_api_docker_cpu_percent": 0,
+        "gym_api_docker_memory_percent": 26.98,
+        "gym_api_docker_pids": 15,
+        "gym_api_docker_restart_count": 0,
+        "gym_api_docker_oom_killed": 0,
+        "gym_api_docker_signals_last_sample_timestamp_seconds": 1795561170,
+        "gym_api_docker_oom_events_window_10m": 0,
+        "gym_api_docker_cpu_periods_total": 1224,
+        "gym_api_docker_cpu_throttled_periods_total": 0,
+        "gym_api_docker_cpu_throttled_seconds_total": 0
+      },
+      "candidate": {
+        "container_cpu_cfs_periods_total": 1222,
+        "container_cpu_cfs_throttled_periods_total": 0,
+        "container_cpu_cfs_throttled_seconds_total": 0,
+        "container_cpu_usage_seconds_total": 120.317324,
+        "container_last_seen": 1795561156,
+        "container_memory_working_set_bytes": 289738752,
+        "container_oom_events_total": 0,
+        "container_spec_memory_limit_bytes": 1073741824,
+        "container_threads": 15,
+        "gym_shadow:memory_percent": 26.984024047851562,
+        "gym_shadow:cpu_percent": 0.003104925053532064,
+        "gym_shadow:throttled_period_ratio": 0
+      }
+    }
+  ]
+}

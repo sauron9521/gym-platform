@@ -530,12 +530,76 @@ and CPU filters, before the final label allowlist. The evidence validator
 and recording rules retain their original strict job contract. This
 does not admit additional container identities or metrics.
 
-A successful workflow run still means exploratory observations, not
-parity. Repeat at least three independent dispatches and separately
-exercise restart, recreate, throttling, PID, OOM, failure freshness and
-resource overhead before deciding on replacement. No OOM workload runs
-in this workflow. The first hosted run has not yet occurred at this
-checkpoint; review actual output and agree tolerances before cutover.
+### First successful hosted observation (2026-11-24 UTC)
+
+[Run 45504926927](https://github.com/sauron9521/gym-platform/actions/runs/45504926927)
+completed successfully on main commit
+`73c417ff2258e0ff331e3f3c0b4390bfbc728127` (PR #811).
+The artifact `resource-shadow-45504926927` (ID 14971978493) was
+downloaded and its ZIP SHA-256 matched GitHub's recorded digest:
+`6f158a102c9aebc81a8f3ab0dd5a3b9666e66063cea8a86089a86d2b0bbe0107`.
+The exact sanitized [JSON report](evidence/resource-shadow-45504926927.json)
+is retained here because the original artifact expires on December 1, 2026.
+Its SHA-256 is
+`0ee225eb14b7e295db0206659d2834aeadd078066d6b3c702d8030b56a244884`.
+No raw query, labels, container identity or logs are retained.
+
+Alloy 1.22.0, Prometheus 3.16.0 and Node 24 Alpine used the immutable
+pins in the workflow at that commit. The synthetic fixture limits were
+2 CPUs, 1 GiB RAM and 256 PIDs. Report schema 1 returned
+`observed-not-parity` with `allowlisted-series-and-sentinel-check`.
+All three paired observations were fresh.
+
+| Phase (UTC evaluation) | CPU ref / Alloy (%) | RAM ref / Alloy (%) | PIDs ref / Alloy | CFS periods ref / Alloy | Last-seen lag |
+| ---------------------- | ------------------: | ------------------: | ---------------: | ----------------------: | ------------: |
+| Idle 22:54:58          |        0 / 0.002640 |        1 / 0.998688 |            8 / 8 |                  11 / 9 |          12 s |
+| CPU 22:56:14           |  100.44 / 99.984800 |     2.38 / 2.318192 |          15 / 15 |               778 / 643 |          13 s |
+| Memory 22:59:30        |        0 / 0.003105 |   26.98 / 26.984024 |          15 / 15 |             1224 / 1222 |          14 s |
+
+The maximum absolute differences were 0.455201 percentage points
+(CPU, rounded upward to six decimals) and 0.061809 percentage points
+(RAM, rounded upward to six decimals); PID counts matched for these
+three observations only. Both CFS throttled periods/seconds and OOM
+counts were zero, so nonzero signals were not exercised. The reference
+CFS counters were ahead by 2, 135 and 2 periods respectively.
+The candidate last-seen lag and different measurement windows may
+contribute to the discrepancy; neither establishes counter parity.
+All numbers are observations, not approved tolerances.
+
+**Decision: GO for continued isolated evaluation; NO-GO for production
+replacement or script removal.** CPU, memory and PIDs are promising
+replacement candidates in `monitoring-docker-resources.mjs`.
+Keep restart count, running state, OOMKilled, rolling Docker OOM events,
+freshness, health, backup and log collection authoritative in the
+existing collectors. The successful report confirms the tested
+allowlist and sentinel checks, not general confidentiality or supply-chain
+security. Signature/provenance verification, transitive license review,
+residual vulnerability reachability and runtime privilege approval remain
+open.
+
+### Resume checkpoint
+
+Paused after one successful basic observation. The next implementation
+PR should be a separate opt-in bounded CPU quota/throttling scenario on
+the approved disposable hosted VM. Do not add an OOM workload to the
+basic workflow or run privileged collectors on the developer machine.
+
+- Measure sustained quota pressure with paired, time-aligned reference
+  and candidate CFS period and throttled-period deltas, throttled seconds
+  and the ratio. Require a nonzero denominator and nonzero throttling;
+  treat stale, absent, reset or misaligned samples as inconclusive.
+- Preserve exact fixture identity, metric/label allowlists, sanitized
+  numeric evidence, fixed diagnostic codes, bounded loads and cleanup.
+- Review tolerances before claiming equivalence; compare the existing
+  throttling alert behavior as well as raw signals.
+- After that, separately exercise stop/restart/recreate, PID/task
+  variation, controlled OOM, stale/missing data and failure handling.
+  Collect at least three independent successful basic observations,
+  overhead (CPU/RSS, samples, storage) and alert agreement before any
+  replacement proposal.
+
+No further workload or production change is part of this checkpoint.
+The existing monitoring scripts and alerts remain authoritative.
 
 ## Future steps
 
