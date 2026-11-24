@@ -69,12 +69,12 @@ task set. The following commands are illustrative dry-runs, not hook changes:
 pnpm exec turbo run '@gym/web#lint' '@gym/web#typecheck' --only --env-mode=loose --cache=local:,remote: --concurrency=1 --dry=json
 ```
 
-| Scope       | Current lint/typecheck commands | Explicit Turbo executable tasks |
-| ----------- | ------------------------------: | -----------------------------: |
-| Web         |                               2 |                              2 |
-| API         |                               2 |                              2 |
-| Shared UI   |                               8 |                              8 |
-| API client  |                               9 |                              9 |
+| Scope      | Current lint/typecheck commands | Explicit Turbo executable tasks |
+| ---------- | ------------------------------: | ------------------------------: |
+| Web        |                               2 |                               2 |
+| API        |                               2 |                               2 |
+| Shared UI  |                               8 |                               8 |
+| API client |                               9 |                               9 |
 
 The pre-push test suite now compares actual Turbo JSON plans against the
 existing classifier for these scopes plus Mobile and i18n. It uses the
