@@ -560,13 +560,9 @@ describe('TrainingProgramsService', () => {
         title: 'Updated Beginner Program',
       });
 
-      expect(repository.updateDraftVersion).toHaveBeenCalledWith(
-        'program-1',
-        'version-1',
-        {
-          title: 'Updated Beginner Program',
-        },
-      );
+      expect(repository.updateDraftVersion).toHaveBeenCalledWith('program-1', 'version-1', {
+        title: 'Updated Beginner Program',
+      });
 
       expect(result.title).toBe('Updated Beginner Program');
     });
