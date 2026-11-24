@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { test } from 'vitest';
@@ -101,4 +101,12 @@ test('dependency-cruiser ignores import-like text and allows named shared packag
       assert.deepEqual(result.violations, []);
     },
   );
+});
+
+test('required CI tooling gate enforces named application imports from parsed graph', () => {
+  const ci = readFileSync(new URL('../.github/workflows/ci.yml', import.meta.url), 'utf8');
+  const tooling = ci.split('  tooling-contracts:\n')[1]?.split('\n  prepush-windows:')[0];
+  assert.ok(tooling, 'Required tooling contracts job missing');
+  assert.match(tooling, /run: pnpm architecture:cruise:named/);
+  assert.match(ci, /tooling-contracts/);
 });
