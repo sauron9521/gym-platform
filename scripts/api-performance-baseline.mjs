@@ -1,11 +1,12 @@
 import { pathToFileURL } from 'node:url';
 import { performance } from 'node:perf_hooks';
+import { setTimeout as pause } from 'node:timers/promises';
 
 export const API_PERFORMANCE_ROUTES = Object.freeze([
-  { name: 'users-me', path: '/users/me' },
-  { name: 'workouts-summary', path: '/workouts?view=summary&limit=20' },
-  { name: 'training-programs', path: '/training-programs?limit=20' },
-  { name: 'exercises', path: '/exercises?limit=20' },
+  Object.freeze({ name: 'users-me', path: '/users/me' }),
+  Object.freeze({ name: 'workouts-summary', path: '/workouts?view=summary&limit=20' }),
+  Object.freeze({ name: 'training-programs', path: '/training-programs?limit=20' }),
+  Object.freeze({ name: 'exercises', path: '/exercises?limit=20' }),
 ]);
 
 function boundedInteger(value, fallback, key, min, max) {
@@ -37,12 +38,16 @@ export function validateBaseUrl(value) {
   return url.origin;
 }
 
-export function readBaselineConfig(env = process.env) {
-  const token = env.API_PERF_TOKEN;
-  if (!token || !token.trim()) {
+function validateToken(token) {
+  if (typeof token !== 'string' || !token.trim()) {
     throw new Error('API_PERF_TOKEN is required for authenticated API reads');
   }
   if (/[^\x21-\x7e]/.test(token)) throw new Error('API_PERF_TOKEN has invalid characters');
+  return token;
+}
+
+export function readBaselineConfig(env = process.env) {
+  const token = validateToken(env.API_PERF_TOKEN);
   const requested = env.API_PERF_ROUTES?.trim() ?? 'all';
   const names =
     requested === 'all' ? API_PERFORMANCE_ROUTES.map((route) => route.name) : requested.split(',');
@@ -51,7 +56,7 @@ export function readBaselineConfig(env = process.env) {
   }
   const routes = names.map((name) => {
     const route = API_PERFORMANCE_ROUTES.find((item) => item.name === name);
-    if (!route) throw new Error(`Unsupported API_PERF_ROUTES entry: ${name}`);
+    if (!route) throw new Error('Unsupported API_PERF_ROUTES entry');
     return route;
   });
 
@@ -65,25 +70,70 @@ export function readBaselineConfig(env = process.env) {
   };
 }
 
-export function nearestRank(values, percentile) {
-  if (!values.length) throw new Error('No samples to summarize');
-  if (percentile <= 0 || percentile > 100) throw new Error('Invalid percentile');
-  const sorted = [...values].sort((a, b) => a - b);
+function rankSorted(sorted, percentile) {
   return sorted[Math.ceil((percentile / 100) * sorted.length) - 1];
 }
 
+export function nearestRank(values, percentile) {
+  if (!values.length) throw new Error('No samples to summarize');
+  if (!Number.isFinite(percentile) || percentile <= 0 || percentile > 100) {
+    throw new Error('Invalid percentile');
+  }
+  return rankSorted(
+    [...values].sort((a, b) => a - b),
+    percentile,
+  );
+}
+
 function summarize(values) {
+  const sorted = [...values].sort((a, b) => a - b);
   return {
-    min: Math.min(...values),
-    p50: nearestRank(values, 50),
-    p95: nearestRank(values, 95),
-    max: Math.max(...values),
+    min: sorted[0],
+    p50: rankSorted(sorted, 50),
+    p95: rankSorted(sorted, 95),
+    max: sorted.at(-1),
   };
 }
 
-const pause = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+// Public runner callers must not bypass the CLI's loopback and sampling limits.
+function validateRunConfig(config) {
+  const baseUrl = validateBaseUrl(config.baseUrl);
+  const token = validateToken(config.token);
+  if (!Array.isArray(config.routes) || !config.routes.length) {
+    throw new Error('API_PERF_ROUTES must list unique supported route names');
+  }
+  const seen = new Set();
+  const routes = config.routes.map((entry) => {
+    const route = API_PERFORMANCE_ROUTES.find(
+      (item) => item.name === entry?.name && item.path === entry?.path,
+    );
+    if (!route || seen.has(route.name)) {
+      throw new Error('API_PERF_ROUTES must list unique supported routes');
+    }
+    seen.add(route.name);
+    return route;
+  });
+  for (const [key, value, min, max] of [
+    ['API_PERF_SAMPLES', config.samples, 1, 40],
+    ['API_PERF_WARMUP', config.warmup, 0, 5],
+    ['API_PERF_PAUSE_MS', config.pauseMs, 0, 5000],
+  ]) {
+    if (!Number.isSafeInteger(value) || value < min || value > max) {
+      throw new Error(`${key} must be an integer from ${min} to ${max}`);
+    }
+  }
+  return {
+    baseUrl,
+    token,
+    routes,
+    samples: config.samples,
+    warmup: config.warmup,
+    pauseMs: config.pauseMs,
+  };
+}
 
-export async function runBaseline(config, request = fetch) {
+export async function runBaseline(input, request = fetch) {
+  const config = validateRunConfig(input);
   const results = [];
   for (const route of config.routes) {
     const latencies = [];
@@ -91,14 +141,20 @@ export async function runBaseline(config, request = fetch) {
     for (let iteration = 0; iteration < config.warmup + config.samples; iteration++) {
       const start = performance.now();
       // No mutation methods, redirect following, user-controlled routes or response logging.
-      const response = await request(config.baseUrl + route.path, {
-        method: 'GET',
-        headers: { accept: 'application/json', authorization: `Bearer ${config.token}` },
-        redirect: 'manual',
-        cache: 'no-store',
-        signal: AbortSignal.timeout(10_000),
-      });
-      const body = await response.arrayBuffer();
+      let response;
+      let body;
+      try {
+        response = await request(config.baseUrl + route.path, {
+          method: 'GET',
+          headers: { accept: 'application/json', authorization: `Bearer ${config.token}` },
+          redirect: 'manual',
+          cache: 'no-store',
+          signal: AbortSignal.timeout(10_000),
+        });
+        body = await response.arrayBuffer();
+      } catch {
+        throw new Error(`${route.name}: request or response body read failed; details omitted`);
+      }
       const elapsedMs = performance.now() - start;
       if (response.status !== 200) {
         throw new Error(

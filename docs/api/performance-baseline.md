@@ -40,6 +40,8 @@ Optional `API_PERF_SAMPLES`, `API_PERF_WARMUP`, and
 `API_PERF_PAUSE_MS` control repetition and pacing. Non-200 HTTP responses,
 including rate-limit errors, cause the run to fail without logging response
 bodies. Only HTTP loopback origins are accepted; redirects are not followed.
+The same route allowlist and sampling limits apply to direct runner calls.
+Transport and body-read failures omit raw exception details.
 
 Record a repeatable **before** report at a fixed git SHA and dataset. Apply
 an optimization separately; collect an **after** report with the same token
@@ -53,6 +55,19 @@ Nearest-rank p95 uses the sorted sample at `ceil(0.95 * N)`; with only
 25 samples it is still a coarse tail estimate, so treat early results as
 exploratory rather than a statistically stable performance SLO.
 JSON output has no tokens, response bodies, arbitrary URLs or user labels.
+
+### Established load tools
+
+Retain the sequential baseline contract for now. [Autocannon](https://github.com/mcollina/autocannon)
+provides HTTP/1.1 load generation and histogram percentiles;
+[k6](https://grafana.com/docs/k6/latest/using-k6/metrics/reference/) provides
+request-duration trends and separate network data metrics. These are useful
+for a separate load-testing profile, but are not proven equivalent to the
+Node fetch wall-clock, nearest-rank and decoded-body metrics above. A
+replacement requires a controlled fixture comparison, identical pacing and
+warmup exclusion, status and redirect handling, decoded byte counts and
+report compatibility. No new load-tool dependency or methodology change
+is introduced by this cleanup.
 
 ## Populated HTTP + Prisma query baseline (fifth slice)
 
