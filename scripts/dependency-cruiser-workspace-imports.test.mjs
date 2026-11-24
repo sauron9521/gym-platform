@@ -96,17 +96,14 @@ test('nonexistent apps root fails closed', () => {
 });
 
 test('native formatter prints resolved rule details from the already parsed graph', () => {
-  withFixture(
-    { 'apps/alpha/src/entry.js': "import '../../beta/src/index.js';\n" },
-    (root) => {
-      const result = inspectWorkspaceImports(root);
-      assert.ok(result.graphErrors > 0, 'Expected a resolved cross-app rule violation');
-      const details = formatResolvedCruiserViolations(result.graph);
-      assert.match(details, /no-cross-app-source-imports/);
-      assert.match(details, /apps\/alpha\/src\/entry\.js/);
-      assert.match(details, /apps\/beta\/src\/index\.js/);
-    },
-  );
+  withFixture({ 'apps/alpha/src/entry.js': "import '../../beta/src/index.js';\n" }, (root) => {
+    const result = inspectWorkspaceImports(root);
+    assert.ok(result.graphErrors > 0, 'Expected a resolved cross-app rule violation');
+    const details = formatResolvedCruiserViolations(result.graph);
+    assert.match(details, /no-cross-app-source-imports/);
+    assert.match(details, /apps\/alpha\/src\/entry\.js/);
+    assert.match(details, /apps\/beta\/src\/index\.js/);
+  });
 });
 
 test('native formatter rejects an invalid graph instead of hiding violations', () => {
