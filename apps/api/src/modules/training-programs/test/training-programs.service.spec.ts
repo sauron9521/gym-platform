@@ -5,6 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Prisma } from '#prisma/client';
+import { DraftVersionCreationConflict } from '../application/draft-version-creation.js';
 import { TrainingProgramsService } from '../services/training-programs.service.js';
 import type { TrainingProgramActor } from '../types/training-program.types.js';
 import { ExercisesService } from '#src/modules/exercises/services/exercises.service';
@@ -900,7 +901,7 @@ describe('TrainingProgramsService', () => {
     });
   });
 
-  describe('Prisma conflicts', () => {
+  describe('Draft creation conflicts', () => {
     it('should convert concurrent draft creation into ConflictException', async () => {
       repository.findProgramById.mockResolvedValue({
         ...program,
@@ -910,14 +911,11 @@ describe('TrainingProgramsService', () => {
       repository.findDraftVersion.mockResolvedValue(null);
 
       repository.createDraftFromLatestPublished.mockRejectedValue(
-        new Prisma.PrismaClientKnownRequestError('Unique constraint failed', {
-          code: 'P2002',
-          clientVersion: '7.10.1',
-        }),
+        new DraftVersionCreationConflict(),
       );
 
       await expect(service.createNextDraft('program-1', trainer)).rejects.toThrow(
-        ConflictException,
+        new ConflictException('A draft version already exists or was created concurrently'),
       );
     });
   });
