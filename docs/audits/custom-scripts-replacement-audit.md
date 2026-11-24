@@ -103,6 +103,130 @@ Use a disposable local test API/database and fixed synthetic actor, seed, schema
 
 No candidate binary was present on the checked local device; the local checkout also had unrelated changes and lagged remote main. No binary was installed and no real or synthetic load test was run. No dependency, lockfile, runtime, schema or CI change is authorized by this research. The next script-audit steps can proceed without waiting for a load-testing adoption decision; the empirical spike remains a separate follow-up under #711/#313.
 
+## Final consolidation checkpoint (2026-11-24)
+
+Reviewed [main `2fd97b8`](https://github.com/sauron9521/gym-platform/commit/2fd97b8f4429655ed932d7fe89287f907dd98ee8)
+after #798 and #801. This closes the current **audit pass**, not the
+implementation backlog, production readiness or #711. Preserve the earlier
+inventory as historical evidence.
+
+### Current inventory and caller verification
+
+A complete tracked-path listing and literal filename reference search in a
+fresh checkout found:
+
+- Root `scripts/`: 38 non-test-named JavaScript modules and 7 operational
+  shell scripts; 58 JavaScript test files and 3 shell test files. The 45
+  non-test-named files include `ci-tooling-guard.mjs`, a shared test helper,
+  rather than 45 independent operational commands. The new shadow comparator
+  `ci-turbo-affected-shadow.mjs` is called by `tooling-audit.yml`.
+- App and package `scripts/`: 18 non-test-named files (API 7, Mobile 5,
+  Web 2, Landing 1, i18n 2, design-tokens 1). All have a manifest, workflow,
+  module or documented operator reference.
+- 16 tracked workflow YAML files, two Husky hooks, operational systemd units
+  and shared Vitest helpers were also inspected for ownership and callers.
+  File counts do not establish workflow activation, live deployment or usage.
+
+Of the root modules, 41 have literal non-test code, manifest, workflow or
+service references. Four exceptions require explicit interpretation:
+
+- `check-workspace-boundaries.mjs` has architecture documentation and
+  parity-test callers. Preserve its remaining manifest policy; assess overlap
+  with the required dependency-cruiser graph gate before any retirement.
+- `ci-tooling-guard.mjs` is imported by eight root contract test files.
+  Keep it as a shared test helper, not an operator entrypoint.
+- `github-project-setup.mjs` has documented manual preview/apply commands
+  and tests; no automated caller was found. Retire only after the owner
+  confirms that project setup/replay is no longer needed.
+- `staging-readiness-inventory.mjs` has a documented manual evidence command
+  and tests. Retain; no scheduled caller is required.
+
+`roadmap-milestones.mjs` still has a tracked workflow caller. Do not delete
+it or infer that the workflow is enabled from its presence on disk. Literal
+reference search cannot prove absence of dynamic or external callers.
+
+### Final dispositions by ownership
+
+- **CI and hooks:** retain conservative `ci-select.mjs` and the Git-ref-aware
+  pre-push planner. Husky, lint-staged, Prettier and Turbo handle standard
+  orchestration; Turbo-only affected replacement remains NO-GO. Keep the
+  shadow comparator advisory and retain the required result gates.
+- **API boundaries:** keep the TypeScript AST parser for Nest-specific
+  provider, DI and module conventions. Use dependency-cruiser for generic
+  import graphs. Do not duplicate the parser or conflate the two rule sets.
+- **API coverage and migrations:** retain source inventory/coverage adapters
+  until native Vitest reports reproduce their missing-file and summary
+  semantics; Prisma migration history and baseline verification enforce
+  repository-specific invariants and should remain independent of the CLI.
+- **API performance:** retain all four existing evidence scripts. Defer
+  Autocannon; k6 is a distinct opt-in load-profile candidate, not a drop-in
+  replacement. Follow the evidence gate above and #313.
+- **Monitoring:** keep privileged collectors and sanitized output contracts
+  until a Vector/Fluent Bit/cAdvisor pilot proves parity, redaction, host
+  permissions and alert semantics. Preserve systemd ownership and backup
+  freshness checks. No production collector change was tested.
+- **Release, backup, staging:** retain all provenance, target, digest, restore,
+  rollback and human approval guards. Evaluate shared validation functions
+  only within a proven contract family. Do not unify distinct trust checks.
+- **App tooling:** retain Web real-API E2E shards/runner, Mobile export and
+  native preflight wrappers, Landing release preflight, i18n catalog checks
+  and design-token generation. They encode application-specific platform,
+  deployment or generated-artifact contracts. The shared Vitest Node and DOM
+  helpers have real workspace consumers; keep those centralized.
+- **Static checks:** actionlint, ShellCheck and zizmor already have an advisory
+  workflow. Markdownlint is now a standard documentation lint command.
+  Avoid adding a second equivalent scanner or promoting an advisory job
+  without its own evidence and approval.
+
+### Local verification
+
+On the pinned clean checkout, the frozen pnpm install succeeded and the
+following commands completed successfully:
+
+- `pnpm test:tooling`: 399 tests in 58 files (24.61 seconds reported by Vitest).
+- `pnpm --filter @gym/api test:architecture`: 101 tests in 3 files.
+- `pnpm --filter @gym/api test:coverage-tools`: 9 tests in 2 files.
+- `pnpm --filter @gym/api architecture:check` and `architecture:deps`.
+- `pnpm architecture:cruise:boundaries`.
+
+This is 509 JavaScript tests across three separate commands, plus three
+architecture checks. It is not a benchmark comparison or full CI run.
+The three standalone shell test scripts, native devices, live deployment,
+backup/restore and telemetry parity were not exercised by these commands.
+
+The [repeat Knip audit](../development/tooling-audit.md#repeat-audit-after-script-consolidation-2026-11-24)
+in #798 measured 5 findings before its changes and 3 afterward, versus the
+previous CI report's 83. Keep the two intentional Users public types and
+track the one missing Expo dependency in #742; do not claim zero findings.
+No additional Knip scan was run at this checkpoint.
+
+### Organization and remaining work
+
+Keep stable entrypoint paths for now. Root scripts are cross-workspace or
+operator contracts; application-owned scripts stay in their application;
+shared test/config adapters belong under `tooling/`; systemd and monitoring
+configuration belong under `ops/`. This is an ownership convention, not
+approval for a bulk move. A future move must update all callers, tests,
+workflow path filters, runbooks and installed service paths in the same
+reviewed migration.
+
+Prioritize only evidenced gaps:
+
+1. #742: SDK-compatible Expo SystemUI dependency and actual Android evidence.
+2. #711 / #313: separate opt-in k6 spike if load testing is needed; no
+   baseline cutover without measured parity.
+3. #711 / #351 / #352: isolated collector evaluation only when staging and
+   observability work is scheduled; preserve least privilege and privacy.
+4. #711: review the manual GitHub project setup lifecycle with the owner and
+   boundary/coverage adapter overlap if there is measurable maintenance cost.
+5. #335: measure real CI runtime separately; no timing savings are inferred
+   from code consolidation or a dry-run graph.
+
+No files are deleted, moved, installed or disabled by this checkpoint PR.
+Existing production and security gates remain unchanged. Further adoption,
+retirement, actual deployment and issue closure require their owning evidence
+and explicit review.
+
 ## Non-negotiable migration gates
 
 - The **required** `Tooling contracts`, `Quality / Node 24`, `API e2e / PostgreSQL 17`, Web integration and release-source checks must retain their protected semantics; a green advisory workflow is not proof of parity.
