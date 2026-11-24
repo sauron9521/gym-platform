@@ -293,6 +293,50 @@ describe('TrainingProgramAssignmentRepository eligibility (PostgreSQL)', () => {
     }
   });
 
+  it('allows only one concurrent cancellation and preserves the winning metadata', async () => {
+    const assignment = await createAssignment();
+    expect(assignment).not.toBeNull();
+
+    const assignmentId = assignment!.id;
+    const requests = [
+      { endedAt: new Date('2026-01-01T10:00:00Z'), reason: 'First request' },
+      { endedAt: new Date('2026-01-01T10:01:00Z'), reason: 'Second request' },
+    ];
+    const results = await Promise.all(
+      requests.map((request) =>
+        repository.cancelAssignmentIfTrainerEligible({ assignmentId, trainerId, ...request }),
+      ),
+    );
+
+    expect(results.filter((result) => result !== null)).toHaveLength(1);
+    expect(results.filter((result) => result === null)).toHaveLength(1);
+    const winner = requests[results.findIndex((result) => result !== null)]!;
+    const saved = await prisma.trainingProgramAssignment.findUniqueOrThrow({
+      where: { id: assignmentId },
+      select: { status: true, endedAt: true, endedById: true, endReason: true },
+    });
+    expect(saved).toEqual({
+      status: 'CANCELLED',
+      endedAt: winner.endedAt,
+      endedById: trainerId,
+      endReason: winner.reason,
+    });
+
+    const replay = await repository.cancelAssignmentIfTrainerEligible({
+      assignmentId,
+      trainerId,
+      endedAt: new Date('2026-01-01T10:02:00Z'),
+      reason: 'Repeated request',
+    });
+    expect(replay).toBeNull();
+    expect(
+      await prisma.trainingProgramAssignment.findUniqueOrThrow({
+        where: { id: assignmentId },
+        select: { status: true, endedAt: true, endedById: true, endReason: true },
+      }),
+    ).toEqual(saved);
+  });
+
   it('refuses cancellation after trainer revocation, even for the old TRAINER role', async () => {
     const assignment = await createAssignment();
     expect(assignment).not.toBeNull();
