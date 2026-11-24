@@ -64,8 +64,10 @@ export function findRelativeWorkspaceImports(graph, workspaces) {
       );
       if (foreign) {
         violations.add(
-          source + ': cross-workspace relative import ' + specifier +
-          ' (use public package exports)',
+          source +
+            ': cross-workspace relative import ' +
+            specifier +
+            ' (use public package exports)',
         );
       }
     }
@@ -92,10 +94,7 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
       console.log('Relative workspace imports: OK (dependency-cruiser JSON graph)');
     }
   } catch (error) {
-    console.error(
-      '[architecture:cruise:relative]',
-      error instanceof Error ? error.message : error,
-    );
+    console.error('[architecture:cruise:relative]', error instanceof Error ? error.message : error);
     process.exitCode = 1;
   }
 }
