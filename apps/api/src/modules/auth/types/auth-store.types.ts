@@ -1,9 +1,6 @@
 import type { Prisma } from '#prisma/client';
 import type { authSessionSelect } from '../selects/auth-session.select.js';
-import type {
-  authRefreshTokenSelect,
-  authPendingEmailTokenCutoffSelect,
-} from '../selects/auth-token.select.js';
+import type { authRefreshTokenSelect } from '../selects/auth-token.select.js';
 
 export type AuthSessionRow = Prisma.SessionGetPayload<{
   select: typeof authSessionSelect;
@@ -11,10 +8,6 @@ export type AuthSessionRow = Prisma.SessionGetPayload<{
 
 export type AuthRefreshTokenRow = Prisma.RefreshTokenGetPayload<{
   select: typeof authRefreshTokenSelect;
-}>;
-
-export type AuthPendingEmailTokenCutoffRow = Prisma.EmailTokenGetPayload<{
-  select: typeof authPendingEmailTokenCutoffSelect;
 }>;
 
 /** The SQL DELETE ... RETURNING contract, with database snake_case aliased. */
