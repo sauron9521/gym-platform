@@ -236,6 +236,23 @@ path fails closed. The Mobile native renderer, test discovery, DOM environments
 and production imports remain unchanged. Confirm the four component suites,
 Mobile tests and the next Knip report before claiming the finding resolved.
 
+## Expo native configuration findings
+
+The manual audit reported `expo-updates` and `expo-system-ui` from Mobile
+app config. These findings require different decisions. The approved native
+[release channel policy](../apps/mobile/docs/release-channels.md) does not
+enable OTA; EAS channel names alone do not require an update runtime.
+Ignore only `expo-updates` in the Mobile Knip workspace until a reviewed OTA
+implementation requires it. Do not install or enable OTA to satisfy Knip.
+
+`expo-system-ui` is a real missing native dependency because `app.json`
+sets `userInterfaceStyle` to `automatic`. Expo documents the requirement
+for Android appearance. Track the SDK-compatible installation, actual
+lockfile generation and Android verification in
+[issue #742](https://github.com/sauron9521/gym-platform/issues/742).
+Keep this finding visible until it is resolved. Do not hand-author new
+native package resolutions or claim real-device verification from CI alone.
+
 ## Next safe steps
 
 1. Review the Knip baseline by workspace, confirm real entrypoints and

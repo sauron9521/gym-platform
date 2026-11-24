@@ -164,3 +164,13 @@ test('DOM Vitest aliases and setup resolve the same app-owned renderer', () => {
   assert.match(setup, /isAbsolute\(rendererPath\)/);
   assert.doesNotMatch(setup, /resolve\('@testing-library\/react'\)/);
 });
+
+test('Knip excludes only the intentionally deferred Mobile OTA runtime', () => {
+  const config = JSON.parse(read('knip.json'));
+  const mobile = JSON.parse(read('apps/mobile/package.json'));
+  const app = JSON.parse(read('apps/mobile/app.json')).expo;
+  assert.deepEqual(config.workspaces['apps/mobile'].ignoreDependencies, ['expo-updates']);
+  assert.equal(mobile.dependencies['expo-updates'], undefined);
+  assert.equal(app.updates?.url, undefined);
+  assert.equal(app.userInterfaceStyle, 'automatic');
+});
