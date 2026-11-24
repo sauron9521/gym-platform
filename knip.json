@@ -22,15 +22,10 @@
       ]
     },
     "apps/api": {
-      "entry": [
-        "src/infra/openapi/export-openapi.ts",
-        "test/support/seed-admin-browser.ts"
-      ]
+      "entry": ["src/infra/openapi/export-openapi.ts", "test/support/seed-admin-browser.ts"]
     },
     "packages/api-client": {
-      "entry": [
-        "test/contract-types.test.ts"
-      ]
+      "entry": ["test/contract-types.test.ts"]
     }
   }
 }
