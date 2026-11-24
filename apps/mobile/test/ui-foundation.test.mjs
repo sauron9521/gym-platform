@@ -52,6 +52,8 @@ test('Expo uses its default Babel setup and TypeScript resolves aliases to src',
   const tsconfig = JSON.parse(read('../tsconfig.json'));
   assert.equal(existsSync(new URL('../babel.config.js', import.meta.url)), false);
   assert.deepEqual(tsconfig.compilerOptions.paths['@/*'], ['./src/*']);
+  const manifest = JSON.parse(read('../package.json'));
+  assert.equal(manifest.devDependencies['babel-plugin-module-resolver'], undefined);
 });
 
 test('Mobile uses OVRANTO v2 native semantic tokens through one shared adapter', () => {
