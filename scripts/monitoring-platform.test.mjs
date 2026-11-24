@@ -99,3 +99,23 @@ test('manual shadow collectors use compatible single-file Docker log rotation', 
     assert.match(line, /--log-opt compress=false(?:\s|$)/);
   }
 });
+
+test('shadow relabeling assigns a canonical job only after the fixture and metric filters', async () => {
+  const config = await read('ops/monitoring/shadow/config.alloy');
+  const relabel = config.slice(config.indexOf('prometheus.relabel "shadow" {'));
+  const normalize = relabel.indexOf('target_label = "job"');
+  assert.ok(normalize > 0);
+  for (const filter of [
+    'source_labels = ["container_label_gym_shadow_fixture", "name"]',
+    'source_labels = ["id"]',
+    'source_labels = ["__name__"]',
+    'source_labels = ["cpu"]',
+  ]) {
+    assert.ok(relabel.indexOf(filter) >= 0 && relabel.indexOf(filter) < normalize);
+  }
+  assert.match(
+    relabel,
+    /target_label = "job"\s+replacement = "gym-resource-shadow"\s+action = "replace"/,
+  );
+  assert.ok(relabel.indexOf('regex = "(__name__|id|cpu|job)"') > normalize);
+});

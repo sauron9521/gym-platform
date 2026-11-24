@@ -522,6 +522,14 @@ complete series history and sentinel check remains mandatory. This
 diagnostic change does not establish the root cause of the first
 rejection or authorize relaxing the privacy allowlist.
 
+The subsequent hosted run (45503665424) rejected the idle sample with
+`SHADOW_JOB_MISMATCH`. The scrape job name alone is not sufficient to
+override an exporter target's job label. The relabel stage now assigns
+the constant `gym-resource-shadow` job after the fixture identity, metric
+and CPU filters, before the final label allowlist. The evidence validator
+and recording rules retain their original strict job contract. This
+does not admit additional container identities or metrics.
+
 A successful workflow run still means exploratory observations, not
 parity. Repeat at least three independent dispatches and separately
 exercise restart, recreate, throttling, PID, OOM, failure freshness and
