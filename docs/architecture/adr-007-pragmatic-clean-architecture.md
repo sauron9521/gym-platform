@@ -150,3 +150,5 @@ Each PR starts from current main, preserves behavior, is independently reviewabl
 CA05 evidence and the explicit owner GO of 2026-11-24 are recorded in the [publication pilot evaluation](adr-007-pilot-evaluation.md). Limited expansion is approved under the stated safeguards; start CA06 only after the evaluation PR is manually merged and CA05 is verified. This is not release approval.
 
 The six selected CA06 Training Programs implementation slices are merged and verified; see [expansion evidence](adr-007-training-programs-expansion.md) for measured changes, regression evidence and deliberate deferrals. CA07 remains gated on the final evidence review, manual merge and #724 acceptance reconciliation.
+
+CA07 opts Workouts into the same inner-layer guard before extracting application contracts. Legacy services/repositories remain outside the inner-layer rules. The `@gym/domain` API dependency is a separate delivery gate: verify a Node-compatible package runtime export, frozen workspace install, API Docker context and deployed runtime import before adopting shared helpers. Until then, no new external inner-layer exceptions or duplicate domain helpers are permitted.

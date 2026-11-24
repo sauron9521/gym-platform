@@ -724,7 +724,13 @@ test('keeps legacy and non-opted-in feature paths outside the new inward rules',
       'policies/legacy.policy.ts',
       "import type { Prisma } from '#prisma/client';",
     );
-    source('workouts', 'domain/legacy.ts', "import { Injectable } from '@nestjs/common';");
+    module('other');
+    source('other', 'domain/legacy.ts', "import { Injectable } from '@nestjs/common';");
+    source(
+      'workouts',
+      'services/legacy.service.ts',
+      "import { Injectable } from '@nestjs/common';",
+    );
     source('training-programs', 'domain/policy.ts', 'export const rule = true;');
     source(
       'training-programs',
@@ -732,5 +738,48 @@ test('keeps legacy and non-opted-in feature paths outside the new inward rules',
       "import { rule } from '../domain/policy.js';",
     );
     assert.deepEqual(check(), []);
+  });
+});
+
+test('allows inward Workouts imports without migrating legacy services', () => {
+  fixture(({ module, source, check }) => {
+    module('workouts');
+    source('workouts', 'domain/model.ts', 'export type Model = string;');
+    source(
+      'workouts',
+      'application/complete.ts',
+      "import type { Model } from '#src/modules/workouts/domain/model';",
+    );
+    source(
+      'workouts',
+      'services/workouts.service.ts',
+      "import { Injectable } from '@nestjs/common';",
+    );
+    assert.deepEqual(check(), []);
+  });
+});
+
+test.each([
+  ['domain', "import type { Prisma } from '#prisma/client';"],
+  ['domain', "import { x } from '@gym/domain';"],
+  ['domain', "import type { X } from '../application/port.js';"],
+  ['application', "import { Injectable } from '@nestjs/common';"],
+  ['application', "export * from '../repositories/adapter.js';"],
+])('rejects outward Workouts %s imports: %s', (layer, statement) => {
+  fixture(({ module, source, check }) => {
+    module('workouts');
+    source('workouts', 'application/port.ts', 'export type X = string;');
+    source('workouts', 'repositories/adapter.ts', 'export {};');
+    source('workouts', layer + '/example.ts', statement);
+    assert.match(check().join('\n'), new RegExp('clean architecture ' + layer + ' import'));
+  });
+});
+
+test('rejects type-only cycles inside Workouts application', () => {
+  fixture(({ module, source, check }) => {
+    module('workouts');
+    source('workouts', 'application/a.ts', "import type { B } from './b.js';");
+    source('workouts', 'application/b.ts', "import type { A } from './a.js';");
+    assert.match(check().join('\n'), /workouts: clean architecture file dependency cycle/);
   });
 });
