@@ -30,6 +30,9 @@
       ],
       "ignoreDependencies": ["@prisma/client"]
     },
+    "apps/mobile": {
+      "ignoreDependencies": ["expo-updates"]
+    },
     "packages/api-client": {
       "entry": ["test/contract-types.test.ts"]
     }
