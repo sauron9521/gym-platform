@@ -64,6 +64,53 @@ describe('API performance baseline guardrails', () => {
     assert.equal(nearestRank([8, 3, 2, 1, 5], 50), 3);
     assert.equal(nearestRank([8, 3, 2, 1, 5], 95), 8);
     assert.throws(() => nearestRank([], 95), /No samples/);
+    assert.throws(() => nearestRank([1], Number.NaN), /Invalid percentile/);
+  });
+
+  it('validates direct runner input before making any request', async () => {
+    const valid = readBaselineConfig({ API_PERF_TOKEN: 'secret-token' });
+    const invalid = [
+      { baseUrl: 'http://example.com' },
+      { routes: [{ name: 'users-me', path: '/unknown' }] },
+      { routes: [valid.routes[0], valid.routes[0]] },
+      { routes: [] },
+      { samples: 41 },
+      { warmup: -1 },
+      { pauseMs: 5001 },
+      { token: 'invalid token' },
+    ];
+    let requests = 0;
+    for (const overrides of invalid) {
+      await assert.rejects(
+        runBaseline({ ...valid, ...overrides }, async () => {
+          requests++;
+          throw new Error('Unexpected request');
+        }),
+        /API_PERF_/,
+      );
+    }
+    assert.equal(requests, 0);
+    assert.ok(API_PERFORMANCE_ROUTES.every(Object.isFrozen));
+  });
+
+  it('omits raw transport and body-read errors', async () => {
+    const config = readBaselineConfig({
+      API_PERF_TOKEN: 'secret-token',
+      API_PERF_ROUTES: 'users-me',
+      API_PERF_SAMPLES: '1',
+      API_PERF_WARMUP: '0',
+      API_PERF_PAUSE_MS: '0',
+    });
+    const failure = () => {
+      throw new Error('private transport detail secret-token');
+    };
+    for (const request of [failure, async () => ({ status: 200, arrayBuffer: failure })]) {
+      await assert.rejects(runBaseline(config, request), (error) => {
+        assert.match(error.message, /details omitted/);
+        assert.doesNotMatch(error.message, /secret-token|private transport/);
+        return true;
+      });
+    }
   });
 
   it('samples only GET responses, drops warmups, reports body size and never emits tokens or body', async () => {
