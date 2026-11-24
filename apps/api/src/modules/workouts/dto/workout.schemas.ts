@@ -11,7 +11,7 @@ export type WorkoutExportQuery = z.infer<typeof workoutExportQuerySchema>;
 
 export const workoutStatusSchema = z.enum(['PLANNED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED']);
 
-export const workoutSetTypeSchema = z.enum(['WARMUP', 'WORKING', 'DROP_SET', 'AMRAP']);
+const workoutSetTypeSchema = z.enum(['WARMUP', 'WORKING', 'DROP_SET', 'AMRAP']);
 
 export const workoutSetUpdateStatusSchema = z.enum(['COMPLETED', 'SKIPPED']);
 
@@ -33,7 +33,7 @@ export const workoutRpeSchema = z.number().finite().min(1).max(10).multipleOf(0.
 
 export const workoutRirSchema = z.number().int().min(0).max(10);
 
-export const createWorkoutSetSchema = z.strictObject({
+const createWorkoutSetSchema = z.strictObject({
   setType: workoutSetTypeSchema.optional(),
 
   plannedReps: workoutRepsSchema.nullable().optional(),

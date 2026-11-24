@@ -6,7 +6,7 @@ import { hasAdminPermission } from '#src/common/rbac/admin-permissions';
 export const ACCOUNT_STATUSES = ['ACTIVE', 'SUSPENDED'] as const;
 export type AccountStatus = (typeof ACCOUNT_STATUSES)[number];
 
-export const ACCOUNT_STATUS_ACTIONS = ['SUSPEND', 'REACTIVATE'] as const;
+const ACCOUNT_STATUS_ACTIONS = ['SUSPEND', 'REACTIVATE'] as const;
 export type AccountStatusAction = (typeof ACCOUNT_STATUS_ACTIONS)[number];
 
 export type AccountStatusTransition = Readonly<{
