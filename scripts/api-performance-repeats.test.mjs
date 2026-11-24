@@ -147,7 +147,10 @@ describe('Repeated API performance A/B report', () => {
 
     const invalidCommit = trio();
     invalidCommit[0].comparisons[0].beforeCommit = [BASE];
-    assert.throws(() => summarizeRepeatedAB(invalidCommit), /Invalid or identical compared commits/);
+    assert.throws(
+      () => summarizeRepeatedAB(invalidCommit),
+      /Invalid or identical compared commits/,
+    );
 
     const sameCommit = trio();
     sameCommit.forEach((report) =>
