@@ -60,7 +60,7 @@ function firstCycle(graph) {
 }
 
 // Opt in per feature after review; legacy folders are deliberately not migrated.
-const cleanArchitectureFeatures = new Set(['training-programs', 'workouts']);
+const cleanArchitectureFeatures = new Set(['training-programs', 'workouts', 'trainer-athletes']);
 
 function cleanLayer(featureRoot, file) {
   if (outside(featureRoot, file)) return null;
