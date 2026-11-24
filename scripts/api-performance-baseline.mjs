@@ -79,7 +79,10 @@ export function nearestRank(values, percentile) {
   if (!Number.isFinite(percentile) || percentile <= 0 || percentile > 100) {
     throw new Error('Invalid percentile');
   }
-  return rankSorted([...values].sort((a, b) => a - b), percentile);
+  return rankSorted(
+    [...values].sort((a, b) => a - b),
+    percentile,
+  );
 }
 
 function summarize(values) {
