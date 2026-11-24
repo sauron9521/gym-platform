@@ -7,5 +7,3 @@ export const createWorkoutFromProgramSchema = z.strictObject({
   programWorkoutId: z.string().uuid(),
   scheduledAt: workoutDateSchema.nullable().optional(),
 });
-
-export type CreateWorkoutFromProgramDto = z.infer<typeof createWorkoutFromProgramSchema>;
