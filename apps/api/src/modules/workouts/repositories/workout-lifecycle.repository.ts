@@ -3,7 +3,10 @@ import { canCompleteWorkout } from '@gym/domain';
 
 import { Prisma } from '#prisma/client';
 import { PrismaService } from '#src/infra/database/index';
-import { WorkoutStartStateChanged, type StartWorkoutCommand } from '../application/workout-start.js';
+import {
+  WorkoutStartStateChanged,
+  type StartWorkoutCommand,
+} from '../application/workout-start.js';
 import {
   workoutSelect,
   workoutSetStatusSelect,
