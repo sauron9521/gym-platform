@@ -7,7 +7,8 @@
         "playwright.config.ts",
         "playwright.real-api.config.ts",
         "playwright.staging.config.mjs",
-        "e2e/**/*.spec.ts"
+        "e2e/**/*.spec.ts",
+        "e2e/support/mock-api.mjs"
       ]
     },
     "apps/web": {
@@ -16,8 +17,15 @@
         "playwright.config.ts",
         "playwright.integration.config.ts",
         "e2e/specs/**/*.spec.ts",
-        "e2e/integration/**/*.spec.ts"
+        "e2e/integration/**/*.spec.ts",
+        "e2e/support/mock-api.mjs"
       ]
+    },
+    "apps/api": {
+      "entry": ["src/infra/openapi/export-openapi.ts", "test/support/seed-admin-browser.ts"]
+    },
+    "packages/api-client": {
+      "entry": ["test/contract-types.test.ts"]
     }
   }
 }

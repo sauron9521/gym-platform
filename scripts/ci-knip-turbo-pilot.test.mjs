@@ -25,6 +25,7 @@ test('Knip preserves both Web Playwright suites as static entrypoints', () => {
     'playwright.integration.config.ts',
     'e2e/specs/**/*.spec.ts',
     'e2e/integration/**/*.spec.ts',
+    'e2e/support/mock-api.mjs',
   ]);
   assert.equal(pkg.scripts['test:e2e'], 'playwright test');
   assert.equal(pkg.scripts['test:e2e:integration'], 'node scripts/run-real-api-e2e.mjs');
@@ -32,6 +33,29 @@ test('Knip preserves both Web Playwright suites as static entrypoints', () => {
   assert.match(realConfig, /TEST_DATABASE_URL/);
   assert.match(realConfig, /database !== process.env.DATABASE_URL/);
   assert.match(realConfig, /testDir: '\.\/e2e\/integration'/);
+});
+
+test('Knip recognizes explicitly invoked CLI and compile-time entrypoints', () => {
+  const { workspaces } = JSON.parse(read('knip.json'));
+  const api = JSON.parse(read('apps/api/package.json'));
+  assert.equal(
+    api.scripts['docs:openapi'],
+    'nest build && node dist/infra/openapi/export-openapi.js',
+  );
+  assert.deepEqual(workspaces['apps/api'].entry, [
+    'src/infra/openapi/export-openapi.ts',
+    'test/support/seed-admin-browser.ts',
+  ]);
+  assert.match(read('.github/workflows/ci.yml'), /exec tsx test\/support\/seed-admin-browser\.ts/);
+  for (const app of ['admin', 'web']) {
+    assert.ok(workspaces['apps/' + app].entry.includes('e2e/support/mock-api.mjs'));
+    assert.match(read('apps/' + app + '/playwright.config.ts'), /node e2e\/support\/mock-api\.mjs/);
+  }
+  assert.deepEqual(workspaces['packages/api-client'].entry, ['test/contract-types.test.ts']);
+  const tsconfig = JSON.parse(read('packages/api-client/tsconfig.json'));
+  assert.ok(tsconfig.include.includes('test/**/*.ts'));
+  assert.equal(tsconfig.compilerOptions.noEmit, true);
+  assert.doesNotMatch(read('packages/api-client/vitest.config.mts'), /contract-types/);
 });
 
 test('Vitest discovers real design-token spec.mts and Web mutation .test.ts suites', () => {
