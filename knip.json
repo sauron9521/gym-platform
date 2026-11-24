@@ -1,5 +1,6 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
+  "ignoreFiles": ["tooling/vitest/node.d.mts"],
   "workspaces": {
     "apps/admin": {
       "playwright": false,
@@ -22,7 +23,11 @@
       ]
     },
     "apps/api": {
-      "entry": ["src/infra/openapi/export-openapi.ts", "test/support/seed-admin-browser.ts"],
+      "entry": [
+        "src/main.ts",
+        "src/infra/openapi/export-openapi.ts",
+        "test/support/seed-admin-browser.ts"
+      ],
       "ignoreDependencies": ["@prisma/client"]
     },
     "packages/api-client": {
