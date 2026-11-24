@@ -11,6 +11,12 @@ This is the canonical navigation for repository development and quality checks. 
 | [Build-time environment](turbo-build-environment.md)         | Turborepo cache inputs and environment boundaries                      |
 | [Tooling diagnostic guide](tooling-audit.md)                 | Knip, Turbo and dependency-cruiser diagnostics and recorded findings   |
 
+## Frontend and delivery
+
+- [Frontend FSD boundaries](frontend-fsd-boundaries.md)
+- [GitHub Project delivery setup](github-project-delivery.md)
+- [GitHub roadmap milestones](github-roadmap-milestones.md)
+
 ## Evidence and follow-up
 
 - [Custom script replacement audit](../audits/custom-scripts-replacement-audit.md)
