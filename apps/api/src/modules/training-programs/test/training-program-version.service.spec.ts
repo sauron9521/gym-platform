@@ -313,6 +313,28 @@ describe('TrainingProgramVersionService', () => {
     await expect(service.publishVersion(...ids, trainer)).rejects.toBeInstanceOf(ConflictException);
   });
 
+  it('rechecks access before reading a version and does not publish after revocation', async () => {
+    crud.findOne
+      .mockResolvedValueOnce({ id: ids[0], status: 'DRAFT' })
+      .mockRejectedValueOnce(new ForbiddenException());
+    await expect(service.publishVersion(...ids, trainer)).rejects.toBeInstanceOf(
+      ForbiddenException,
+    );
+    expect(repository.findVersionById).not.toHaveBeenCalled();
+    expect(repository.publishVersion).not.toHaveBeenCalled();
+  });
+
+  it('preserves the scoped version not-found response', async () => {
+    repository.findVersionById.mockResolvedValue(null);
+    await expect(service.publishVersion(...ids, trainer)).rejects.toThrow(
+      new NotFoundException('Training program version not found'),
+    );
+    expect(repository.findVersionById).toHaveBeenCalledExactlyOnceWith(ids[1], {
+      programId: ids[0],
+    });
+    expect(repository.publishVersion).not.toHaveBeenCalled();
+  });
+
   it('does not allow an unauthorized trainer to publish any version', async () => {
     crud.findOne.mockRejectedValue(new NotFoundException());
     await expect(service.publishVersion(...ids, athlete)).rejects.toBeInstanceOf(NotFoundException);
