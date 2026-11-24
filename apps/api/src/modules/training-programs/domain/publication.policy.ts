@@ -14,10 +14,6 @@ export class ProgramPublicationError extends Error {
   }
 }
 
-/**
- * A published program must be executable and internally consistent.
- * Call this inside the publication transaction, after locking the draft row.
- */
 export type PublishableVersion = {
   durationWeeks: number | null;
   workouts: ReadonlyArray<{
@@ -26,6 +22,10 @@ export type PublishableVersion = {
   }>;
 };
 
+/**
+ * A published program must be executable and internally consistent.
+ * Call this inside the publication transaction, after locking the draft row.
+ */
 export function assertPublishableVersion(version: PublishableVersion): void {
   if (version.workouts.length === 0) {
     throw new ProgramPublicationError('EMPTY_PROGRAM');
