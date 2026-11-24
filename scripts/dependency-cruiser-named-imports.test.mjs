@@ -124,3 +124,19 @@ test('type-only TypeScript imports are present in the parsed graph', () => {
     },
   );
 });
+
+test.each([
+  ['spec file', 'apps/alpha/src/feature.spec.ts'],
+  ['test file', 'apps/alpha/src/feature.test.ts'],
+  ['test directory', 'apps/alpha/src/test/feature.ts'],
+  ['tests directory', 'apps/alpha/src/tests/feature.ts'],
+  ['e2e directory', 'apps/alpha/src/e2e/feature.ts'],
+])('named application import in %s is checked', (_name, path) => {
+  withFixture({ [path]: "import type { Example } from '@gym/beta';\n" }, (root) => {
+    const result = inspectNamedApplicationImports(root);
+    assert.ok(
+      result.violations.includes(path + ': import of application @gym/beta'),
+      result.violations.join('\n'),
+    );
+  });
+});
