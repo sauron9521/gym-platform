@@ -767,16 +767,22 @@ describe('WorkoutsService', () => {
       expect(repository.update).not.toHaveBeenCalled();
     });
 
-    it('should reject starting an already started workout', async () => {
-      repository.findById.mockResolvedValue({
-        ...plannedWorkout,
-        status: 'IN_PROGRESS',
-      });
+    it.each(['IN_PROGRESS', 'COMPLETED', 'CANCELLED'] as const)(
+      'rejects starting a %s workout without writing',
+      async (status) => {
+        repository.findById.mockResolvedValue({
+          ...plannedWorkout,
+          status,
+        });
 
-      await expect(service.start('workout-1', athlete)).rejects.toThrow(BadRequestException);
+        await expect(service.start('workout-1', athlete)).rejects.toThrow(
+          new BadRequestException('Only planned workouts can be started'),
+        );
 
-      expect(repository.update).not.toHaveBeenCalled();
-    });
+        expect(repository.startWorkout).not.toHaveBeenCalled();
+        expect(repository.update).not.toHaveBeenCalled();
+      },
+    );
   });
 
   describe('updateSet', () => {
