@@ -27,11 +27,25 @@ pnpm --silent turbo:plan > turbo-plan.json
   checking all runtime imports, manifests, platform-specific entrypoints,
   generated source and real E2E usage.
 
-The Knip config disables only the **Admin Playwright plugin** because its
-real-API and staging config files require protected runtime environment
-variables at import time. Those configuration files and E2E specs are still
-listed as **static entrypoints** for analysis. Actual browser tests and
-protected staging smoke are unaffected.
+The Knip config disables automatic Playwright config loading in **Admin
+and Web** because their real-API/staging/integration configs require protected
+runtime environment variables or a disposable test database at import time.
+Their Playwright configs and E2E specs are listed as **static entrypoints**:
+Web includes both `e2e/specs/**/*.spec.ts` and
+`e2e/integration/**/*.spec.ts`. This lets Knip follow imports from real
+browser tests without executing database guards during the audit. Ordinary
+Web/API/browser tests and protected staging smoke are unaffected.
+
+The [first manual audit](https://github.com/sauron9521/gym-platform/actions/runs/45363672094)
+reported **35 potentially unused files**; 19 were real Web integration
+`*.spec.ts` files, with supporting fixtures and the integration Playwright
+config also flagged. A temporary full Knip check in
+[PR #706 CI](https://github.com/sauron9521/gym-platform/actions/runs/45368694507)
+confirmed **14 unused-file findings** after the Web entrypoint configuration,
+with none of those integration suites, fixtures or config among the findings.
+The temporary diagnostic test is removed from the final PR; this is
+**false-positive triage**, not proof that the remaining 14 files are dead
+or permission to delete dependencies or enable blocking Knip rules.
 
 ## Observed starting point (main, November 2026)
 

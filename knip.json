@@ -9,6 +9,15 @@
         "playwright.staging.config.mjs",
         "e2e/**/*.spec.ts"
       ]
+    },
+    "apps/web": {
+      "playwright": false,
+      "entry": [
+        "playwright.config.ts",
+        "playwright.integration.config.ts",
+        "e2e/specs/**/*.spec.ts",
+        "e2e/integration/**/*.spec.ts"
+      ]
     }
   }
 }

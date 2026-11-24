@@ -15,6 +15,25 @@ test('Knip is report-only, with unsafe dynamic staging config loading disabled',
   assert.ok(config.workspaces['apps/admin'].entry.includes('e2e/**/*.spec.ts'));
 });
 
+test('Knip preserves both Web Playwright suites as static entrypoints', () => {
+  const config = JSON.parse(read('knip.json'));
+  const web = config.workspaces['apps/web'];
+  const pkg = JSON.parse(read('apps/web/package.json'));
+  assert.equal(web.playwright, false);
+  assert.deepEqual(web.entry, [
+    'playwright.config.ts',
+    'playwright.integration.config.ts',
+    'e2e/specs/**/*.spec.ts',
+    'e2e/integration/**/*.spec.ts',
+  ]);
+  assert.equal(pkg.scripts['test:e2e'], 'playwright test');
+  assert.equal(pkg.scripts['test:e2e:integration'], 'node scripts/run-real-api-e2e.mjs');
+  const realConfig = read('apps/web/playwright.integration.config.ts');
+  assert.match(realConfig, /TEST_DATABASE_URL/);
+  assert.match(realConfig, /database !== process.env.DATABASE_URL/);
+  assert.match(realConfig, /testDir: '\.\/e2e\/integration'/);
+});
+
 test('manual hygiene workflow never replaces required CI gates or performs writes', () => {
   const audit = read('.github/workflows/tooling-audit.yml');
   assert.match(audit, /^  workflow_dispatch:$/m);
