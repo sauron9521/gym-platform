@@ -61,13 +61,10 @@ test('JSON graph rejects exact named application imports including type-only imp
       },
     ],
   };
-  assert.deepEqual(
-    findNamedApplicationImports(graph, new Set(['@gym/alpha', '@gym/beta'])),
-    [
-      'apps/alpha/src/index.ts: import of application @gym/beta',
-      'packages/shared/src/index.ts: import of application @gym/alpha',
-    ],
-  );
+  assert.deepEqual(findNamedApplicationImports(graph, new Set(['@gym/alpha', '@gym/beta'])), [
+    'apps/alpha/src/index.ts: import of application @gym/beta',
+    'packages/shared/src/index.ts: import of application @gym/alpha',
+  ]);
 });
 
 test('malformed graph fails closed instead of silently accepting imports', () => {
@@ -97,8 +94,7 @@ test('real dependency-cruiser graph retains unresolved named app imports', () =>
 test('dependency-cruiser ignores import-like text and allows named shared packages', () => {
   withFixture(
     {
-      'apps/alpha/src/index.js':
-        'const example = "import \'@gym/beta\'";\nimport "@gym/shared";\n',
+      'apps/alpha/src/index.js': 'const example = "import \'@gym/beta\'";\nimport "@gym/shared";\n',
     },
     (root) => {
       const result = inspectNamedApplicationImports(root);
