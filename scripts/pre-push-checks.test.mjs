@@ -3,6 +3,7 @@ import { execFileSync } from 'node:child_process';
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { test } from 'vitest';
 
 import {
@@ -412,4 +413,45 @@ test('runner preserves literal filenames and fails closed on subprocess errors',
       spawn: () => ({ error: new Error('ENOENT'), status: null }),
     }),
   );
+});
+
+/** Report-only parity probe: never execute lint/typecheck or replace the hook. */
+test.each([
+  ['Web', 'apps/web/src/app/page.tsx'],
+  ['API', 'apps/api/src/main.ts'],
+  ['Mobile', 'apps/mobile/app/index.tsx'],
+  ['shared UI', 'packages/ui-web/src/index.ts'],
+  ['API client', 'packages/api-client/src/generated/schema.d.ts'],
+  ['i18n', 'packages/i18n/src/index.ts'],
+])('Turbo explicit task dry-run preserves %s scoped validation', (_label, path) => {
+  const plan = createPrePushPlan({ full: false, files: [path] });
+  assert.equal(plan.scopes.full, false);
+  const tasks = plan.commands
+    .filter((command) => command[1] === '--filter' && ['lint', 'typecheck'].includes(command[3]))
+    .map((command) => command[2] + '#' + command[3])
+    .sort();
+  assert.ok(tasks.length > 0);
+
+  const root = fileURLToPath(new URL('../', import.meta.url));
+  const turbo = fileURLToPath(new URL('../node_modules/turbo/bin/turbo', import.meta.url));
+  const output = execFileSync(
+    process.execPath,
+    [
+      turbo,
+      'run',
+      ...tasks,
+      '--only',
+      '--env-mode=loose',
+      '--cache=local:,remote:',
+      '--concurrency=1',
+      '--dry=json',
+    ],
+    { cwd: root, encoding: 'utf8', maxBuffer: 10 * 1024 * 1024 },
+  );
+  const report = JSON.parse(output);
+  assert.equal(report.envMode, 'loose');
+  assert.deepEqual(report.tasks.map((task) => task.taskId).sort(), tasks);
+  for (const task of report.tasks) {
+    assert.ok(task.command && task.command !== '<NONEXISTENT>', task.taskId);
+  }
 });
