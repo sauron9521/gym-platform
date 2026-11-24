@@ -5,6 +5,7 @@ import { ConfigModule } from '@nestjs/config';
 import { Test } from '@nestjs/testing';
 
 import { PrismaModule, PrismaService } from '../../../src/infra/database/index.js';
+import { DraftVersionStateChanged } from '../../../src/modules/training-programs/application/draft-version-update.js';
 import { TrainingProgramVersionRepository } from '../../../src/modules/training-programs/repositories/training-program-version.repository.js';
 import { useTestDatabase } from '../../utility/test-db-helper.js';
 
@@ -319,10 +320,7 @@ describe('TrainingProgramVersionRepository integration (e2e)', () => {
       await addPublishableWorkout(versionId, 5);
 
       await expect(
-        repository.updateVersion(
-          { id: versionId, programId, status: 'DRAFT' },
-          { durationWeeks: 4 },
-        ),
+        repository.updateDraftVersion(program.id, versionId, { durationWeeks: 4 }),
       ).rejects.toThrow('A workout week cannot exceed the program duration');
 
       const saved = await prisma.trainingProgramVersion.findUniqueOrThrow({
@@ -384,10 +382,7 @@ describe('TrainingProgramVersionRepository integration (e2e)', () => {
           expect(holder).toBeDefined();
 
           shrink = repository
-            .updateVersion(
-              { id: versionId, programId: program.id, status: 'DRAFT' },
-              { durationWeeks: 4 },
-            )
+            .updateDraftVersion(program.id, versionId, { durationWeeks: 4 })
             .then(
               () => null,
               (error: unknown) => error,
@@ -442,6 +437,56 @@ describe('TrainingProgramVersionRepository integration (e2e)', () => {
       await prisma.user.delete({ where: { id: trainer.id } });
     }
   }, 20_000);
+
+  it('rejects a stale draft update after publication without changing the snapshot', async () => {
+    const trainer = await prisma.user.create({
+      data: {
+        email: `stale-draft-${randomUUID()}@example.com`,
+        passwordHash: 'test-password-hash',
+        role: 'TRAINER',
+      },
+      select: { id: true },
+    });
+    let programId: string | undefined;
+
+    try {
+      const program = await prisma.trainingProgram.create({
+        data: {
+          trainerId: trainer.id,
+          versions: {
+            create: {
+              version: 1,
+              title: 'Immutable Snapshot',
+              durationWeeks: 6,
+              status: 'DRAFT',
+            },
+          },
+        },
+        select: { id: true, versions: { select: { id: true } } },
+      });
+      programId = program.id;
+      const versionId = program.versions[0]!.id;
+      await addPublishableWorkout(versionId);
+
+      const published = await repository.publishVersion(program.id, versionId);
+      expect(published?.status).toBe('PUBLISHED');
+      await expect(
+        repository.updateDraftVersion(program.id, versionId, { title: 'Stale Edit' }),
+      ).rejects.toBeInstanceOf(DraftVersionStateChanged);
+
+      const saved = await prisma.trainingProgramVersion.findUniqueOrThrow({
+        where: { id: versionId },
+        select: { title: true, status: true },
+      });
+      expect(saved).toEqual({ title: 'Immutable Snapshot', status: 'PUBLISHED' });
+    } finally {
+      if (programId) {
+        await prisma.trainingProgramVersion.deleteMany({ where: { programId } });
+        await prisma.trainingProgram.delete({ where: { id: programId } });
+      }
+      await prisma.user.delete({ where: { id: trainer.id } });
+    }
+  });
 
   it('creates a draft with independent copies of workouts, exercises and sets', async () => {
     let trainerId: string | undefined;
