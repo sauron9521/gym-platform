@@ -1,5 +1,4 @@
 import { useInfiniteQuery } from '@tanstack/react-query';
-import type { paths } from '@gym/api-client';
 
 import { useAuth } from '@/features/auth/model/auth-context';
 import { hasTrainerAccess } from '@/features/auth/model/account-capabilities';
@@ -10,9 +9,6 @@ import {
   shouldRetryMobileRead,
 } from '@/shared/api/api-error-policy';
 import { accountQueryKeys } from '@/shared/api/query-client';
-
-export type TrainerAthletesPage =
-  paths['/trainer-athletes']['get']['responses'][200]['content']['application/json'];
 
 /** Trainer-only active relationships, scoped to the currently authenticated account. */
 export function useTrainerAthletes() {

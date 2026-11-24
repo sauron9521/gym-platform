@@ -2,7 +2,7 @@
  * Safety gate for a future persisted workout draft. Does not store data or send requests.
  * This policy is intentionally fail-closed until the API exposes conflict revisions.
  */
-export type OfflineDraftBlockReason =
+type OfflineDraftBlockReason =
   | 'unverified-session'
   | 'wrong-account'
   | 'offline'

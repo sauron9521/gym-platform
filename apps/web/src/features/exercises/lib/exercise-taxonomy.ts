@@ -1,6 +1,6 @@
 import type { operations } from '@gym/api-client';
 
-export type ExerciseTaxonomyItem =
+type ExerciseTaxonomyItem =
   operations['ExercisesController_listMuscleGroups']['responses'][200]['content']['application/json'][number];
 
 export type ExerciseTaxonomyState =

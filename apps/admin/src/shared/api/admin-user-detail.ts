@@ -1,7 +1,7 @@
 import { getAdminApiOrigin } from './upstream.mjs';
 import type { DirectoryRow } from './admin-directory';
 
-export type AdminUserDetail = DirectoryRow & {
+type AdminUserDetail = DirectoryRow & {
   emailVerified: boolean;
   updatedAt: string;
 };

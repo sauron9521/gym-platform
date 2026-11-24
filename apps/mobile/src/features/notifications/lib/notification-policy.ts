@@ -10,7 +10,7 @@ export const notificationPreferencesSchema = z.strictObject({
   marketing: z.boolean().default(false),
 });
 
-export type NotificationPreferences = z.infer<typeof notificationPreferencesSchema>;
+type NotificationPreferences = z.infer<typeof notificationPreferencesSchema>;
 
 type PushRegistrationContext = {
   userId: string | null;
