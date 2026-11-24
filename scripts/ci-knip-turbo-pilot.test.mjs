@@ -43,6 +43,7 @@ test('Knip recognizes explicitly invoked CLI and compile-time entrypoints', () =
     'nest build && node dist/infra/openapi/export-openapi.js',
   );
   assert.deepEqual(workspaces['apps/api'].entry, [
+    'src/main.ts',
     'src/infra/openapi/export-openapi.ts',
     'test/support/seed-admin-browser.ts',
   ]);
@@ -66,6 +67,17 @@ test('Knip preserves the Prisma generated client runtime dependency in API only'
   assert.equal(api.imports['#prisma/*'].types, './src/infra/database/generated/prisma/*.ts');
   assert.match(read('apps/api/prisma/schemas/schema.prisma'), /provider\s*=\s*"prisma-client"/);
   assert.match(read('apps/api/src/infra/database/prisma.service.ts'), /from '#prisma\/client'/);
+});
+
+test('Knip recognizes the API bootstrap and retains the Vitest declaration companion', () => {
+  const config = JSON.parse(read('knip.json'));
+  const api = JSON.parse(read('apps/api/package.json'));
+  assert.equal(api.scripts['start:prod'], 'node dist/main.js');
+  assert.ok(config.workspaces['apps/api'].entry.includes('src/main.ts'));
+  assert.deepEqual(config.ignoreFiles, ['tooling/vitest/node.d.mts']);
+  assert.match(read('tooling/vitest/node.d.mts'), /export function nodeTestConfig/);
+  assert.match(read('tooling/vitest/node.mjs'), /export function nodeTestConfig/);
+  assert.match(read('apps/web/vitest.config.mts'), /tooling\/vitest\/node\.mjs/);
 });
 
 test('Vitest discovers real design-token spec.mts and Web mutation .test.ts suites', () => {
