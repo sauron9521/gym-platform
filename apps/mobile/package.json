@@ -19,7 +19,6 @@
     "test:unit": "vitest run --config vitest.config.mts"
   },
   "dependencies": {
-    "@expo/html-elements": "^58.0.3",
     "@gluestack-ui/core": "^5.0.15",
     "@gluestack-ui/utils": "^5.0.6",
     "@gym/api-client": "workspace:*",
