@@ -10,7 +10,7 @@ import {
 
 /** Hard limits applied both before and during decoding. */
 export const MAX_AVATAR_PIXELS = 4096 * 4096;
-export const MAX_AVATAR_DIMENSION = 4096;
+const MAX_AVATAR_DIMENSION = 4096;
 export const OUTPUT_AVATAR_DIMENSION = 512;
 
 export type ProcessedAvatar = {

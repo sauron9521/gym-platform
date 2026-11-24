@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-export const workoutAnalyticsRangeSchema = z.enum(['7d', '30d', '90d']);
+const workoutAnalyticsRangeSchema = z.enum(['7d', '30d', '90d']);
 export type WorkoutAnalyticsRange = z.infer<typeof workoutAnalyticsRangeSchema>;
 
 export const workoutAnalyticsQuerySchema = z.strictObject({
