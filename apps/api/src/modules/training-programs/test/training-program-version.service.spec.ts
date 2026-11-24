@@ -119,6 +119,15 @@ describe('TrainingProgramVersionService', () => {
     expect(repository.createDraftFromLatestPublished).toHaveBeenCalledExactlyOnceWith(ids[0]);
   });
 
+  it('does not read or clone drafts when access is denied', async () => {
+    const denied = new ForbiddenException();
+    crud.findOne.mockRejectedValue(denied);
+
+    await expect(service.createNextDraft(ids[0], athlete)).rejects.toBe(denied);
+    expect(repository.findDraftVersion).not.toHaveBeenCalled();
+    expect(repository.createDraftFromLatestPublished).not.toHaveBeenCalled();
+  });
+
   it('refuses to clone an archived program', async () => {
     crud.findOne.mockResolvedValue({ id: ids[0], status: 'ARCHIVED' });
     await expect(service.createNextDraft(ids[0], trainer)).rejects.toBeInstanceOf(
