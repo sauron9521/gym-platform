@@ -87,20 +87,15 @@ test('invalid graph fails closed', () => {
   assert.throws(() => findRelativeWorkspaceImports({ modules: [] }, ['']), /Invalid/);
   assert.throws(
     () =>
-      findRelativeWorkspaceImports(
-        { modules: [{ source: 'apps/alpha/src/index.ts' }] },
-        ['apps/alpha'],
-      ),
+      findRelativeWorkspaceImports({ modules: [{ source: 'apps/alpha/src/index.ts' }] }, [
+        'apps/alpha',
+      ]),
     /Invalid dependency list/,
   );
 });
 
 test.each([
-  [
-    'app to app (unresolved)',
-    'apps/alpha/src/index.js',
-    "import '../../beta/src/missing.js';\n",
-  ],
+  ['app to app (unresolved)', 'apps/alpha/src/index.js', "import '../../beta/src/missing.js';\n"],
   [
     'app to package (unresolved)',
     'apps/alpha/src/index.js',
