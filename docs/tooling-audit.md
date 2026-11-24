@@ -52,21 +52,31 @@ permissions, generates only a local Prisma Client, creates Knip, dependency
 boundary and Turbo diagnostic artifacts, prints a summary and retains evidence
 for seven days. It is not a deployment or production-readiness approval.
 
-The additional **Turbo affected shadow comparison** checks the latest commit
-against its first parent (`HEAD^1...HEAD`) using the **same** SHA range for
-`ci-select.mjs` and `turbo run lint typecheck build --affected --dry=json`.
-This requires full Git history and uses `TURBO_SCM_BASE` and `TURBO_SCM_HEAD`
-explicitly. It writes `turbo-affected-plan.json` and
-`turbo-affected-comparison.json` as artifacts and summarizes missing
-application/client packages in the workflow summary. It runs **no build,
-lint or test tasks** and never changes CI outputs or branch protection.
+The additional **Turbo affected shadow comparison** accepts optional
+`base_sha` and `head_sha` inputs on the manual workflow. Leave **both empty**
+to compare the latest checked-out `main` commit against its first parent
+(`HEAD^1...HEAD`), or supply **both full 40-character commit SHAs** to
+compare an earlier, nonempty range from the checked-out `main` history.
+Git ancestry and reachability from the checked-out commit are validated before
+running Turbo; shallow, unrelated, partial or identical ranges fail closed.
+Run the workflow from the **main** branch, not an arbitrary unreviewed ref.
+
+Both comparators use the exact same SHA range through `TURBO_SCM_BASE` and
+`TURBO_SCM_HEAD`. The workflow fetches full Git history and writes
+`turbo-affected-plan.json` and `turbo-affected-comparison.json` as artifacts,
+with missing application/client packages in its summary. This runs **no
+build, lint or test tasks** and never changes required CI routing, outputs or
+branch protection.
 
 The JSON plan describes lint/typecheck/build task selection, **not** API
 integration tests, release security checks or actual required-job scheduling.
 Extra/missing packages indicate a difference to review, not proof that either
-selector can safely replace the other. One commit does not prove parity across
-all PR classes; collect examples for API, Web, Mobile, OpenAPI, shared packages,
-lockfiles, docs-only and mixed changes before deciding on a migration.
+selector can safely replace the other. Historical ranges use the **current
+checkout's** workspace configuration for the dry-run graph, not a rebuild of
+the historical repository state. Treat old-range comparisons as exploratory
+and use recent main commits when assessing parity. One run does not prove
+parity across all PR classes; collect examples for API, Web, Mobile, OpenAPI,
+shared packages, lockfiles, docs-only and mixed changes before a migration.
 
 For a complete inventory of the current top-level `scripts/` modules, their
 replacement candidates and safety gates, see the [custom script replacement
