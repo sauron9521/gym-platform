@@ -47,8 +47,9 @@ module.exports = {
     // Analyze type-only imports before TypeScript compilation removes them.
     tsPreCompilationDeps: true,
     doNotFollow: { path: 'node_modules' },
+    // Source tests remain in scope: the legacy boundary guard scans them too.
     exclude: {
-      path: '(^|/)(?:node_modules|\\.next|\\.expo|dist|build|coverage|generated|test|tests|e2e)(/|$)|\\.(?:spec|test)\\.[cm]?[jt]sx?$',
+      path: '(^|/)(?:node_modules|\\.next|\\.expo|dist|build|coverage|generated)(/|$)',
     },
   },
 };
