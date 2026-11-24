@@ -317,6 +317,155 @@ for the actual pilot and block outbound traffic. The version pins are
 reproducibility anchors, not a completed supply-chain or license approval.
 Do not install a service or open a listener based on this checkpoint alone.
 
+### Fixture and comparison procedure
+
+The opt-in [fixture Compose file](../../ops/monitoring/shadow/fixture.compose.yml)
+contains only two synthetic Node containers, not a collector. Both use a
+digest-pinned image, 2 CPUs, 1 GiB RAM with no extra swap allowance, 256 PIDs,
+a non-root user, read-only filesystem, dropped capabilities and no network
+or host mounts. The decoy deliberately shares the fixture selection label
+but has a different name. All private label/environment values are fake
+sentinels. No production data or secrets are required.
+
+**Runtime gate:** execute the following procedure only in an owner-approved
+disposable Linux VM with a fresh local Docker daemon, cgroup v2, sufficient
+capacity, no unrelated containers, no host sharing or real credentials,
+reviewed collector privileges and image/license/security review. Check
+the Docker context and daemon identity explicitly; a VM detection check
+alone is insufficient. Preload reviewed image digests before blocking
+outbound traffic. Do not use an SSH or remote production Docker context.
+The developer machine is not an approved VM.
+
+#### Fixture preparation and validation
+
+From the repository root:
+
+```sh
+fixture=ops/monitoring/shadow/fixture.compose.yml
+docker compose -f "$fixture" --profile resource-shadow config --quiet
+docker compose -f "$fixture" --profile resource-shadow config --format json
+```
+
+The second command exposes only synthetic configuration. Review both
+containers, resource limits, absence of mounts/ports/network and image
+digest. This command needs no fixture startup and is suitable for offline
+validation. On the approved VM only, with both names unused:
+
+```sh
+docker compose -f "$fixture" --profile resource-shadow up -d --pull never
+docker compose -f "$fixture" --profile resource-shadow ps
+```
+
+Use a separate local Prometheus instance with the pinned binary/config
+from the preceding checkpoint, `--web.listen-address=127.0.0.1:19090`,
+`--web.enable-remote-write-receiver`, a new private TSDB directory
+(`--storage.tsdb.path`) and bounded retention
+(`--storage.tsdb.retention.time=1d`). Start Alloy with its pinned binary,
+`run --disable-reporting --server.http.listen-addr=127.0.0.1:12345`,
+a fresh private `--storage.path` and the shadow config. The exact native
+runtime permissions/installation method must pass the VM review before
+starting; do not weaken the API or monitor service permissions to run it.
+No systemd installation, production scrape target or external remote
+write receiver is part of the experiment. Check loopback bindings and
+keep outbound traffic blocked.
+
+#### Paired observations
+
+Create a new private evidence directory for each independent run:
+
+```sh
+umask 077
+evidence=$(mktemp -d)
+date -u +%FT%TZ > "$evidence/start.txt"
+uname -r > "$evidence/kernel.txt"
+docker version --format '{{.Server.Version}}' > "$evidence/docker.txt"
+docker inspect --format '{{.Id}}' gym-resource-shadow-fixture \
+  > "$evidence/fixture-id.txt"
+```
+
+After at least two minutes of warmup, record a timestamp immediately before
+and after each paired observation. Use a new subdirectory per observation
+so the one-shot collectors never overwrite prior evidence:
+
+```sh
+sample=$(mktemp -d "$evidence/sample.XXXXXX")
+date -u +%FT%TZ > "$sample/before.txt"
+RESOURCE_CONTAINER=gym-resource-shadow-fixture \
+  RESOURCE_TEXTFILE_PATH="$sample/gym_api_docker.prom" \
+  node scripts/monitoring-docker-resources.mjs
+SIGNALS_CONTAINER=gym-resource-shadow-fixture \
+  SIGNALS_TEXTFILE_PATH="$sample/gym_api_docker_signals.prom" \
+  node scripts/monitoring-docker-signals.mjs
+date -u +%FT%TZ > "$sample/after.txt"
+```
+
+Run the reference commands with the reviewed host permissions. Use
+the recorded UTC timestamp and the exact fixture cgroup ID to query the
+private Prometheus API (`/api/v1/query` with explicit `time`, and
+`/api/v1/query_range` for the aligned observation window). Retain the raw
+allowlisted native metrics, the three shadow rule values, sample timestamps
+and `container_last_seen`. A successful query or fresh recording rule alone
+does not prove fresh exporter samples. Compare the fixture ID with the
+allowed cgroup ID form, never combine old and recreated container series.
+Check `/api/v1/series` for all retained labels/series, the decoy ID and
+fake private sentinels; inspect the local agent diagnostics separately.
+Keep captures private and never upload raw responses or logs.
+
+Use a foreground terminal for a bounded workload while taking samples in
+another terminal. These example loads run for 90 seconds and terminate:
+
+```sh
+# One busy CPU thread.
+docker exec gym-resource-shadow-fixture node -e \
+  'const end=Date.now()+90000; while(Date.now()<end) {}'
+# Touch 256 MiB; the Node process also has its own runtime overhead.
+docker exec gym-resource-shadow-fixture node -e \
+  'const b=Buffer.alloc(256*1024*1024,1); setTimeout(()=>console.log(b[0]),90000)'
+```
+
+Collect idle, CPU and memory observations separately, with recovery
+windows between loads. Sample raw CPU counters and align the candidate
+rate window with reference timing; do not assume one-shot Docker stats
+and a one-minute Prometheus rate are identical. For memory, compare
+working set/cache subtraction and configured limit, not the workload
+allocation size alone. Record PID/task differences, CFS counts and units,
+missing data, stop/restart/recreate identity, counter resets and stale
+collection. Stop and restart only the named synthetic fixture; use Compose
+`up --force-recreate` for a new fixture identity. Quota pressure,
+controlled multi-thread and OOM cases remain separate bounded experiments
+on the approved disposable VM. Do not perform OOM testing on a shared host.
+
+#### Evidence and cleanup
+
+Repeat the sequence at least three independent times. For every observation,
+record fixture state/ID, time interval, reference and candidate values,
+candidate last-seen time, difference or unsupported/missing reason, and
+whether the corresponding existing alert would agree. Record agent CPU/RSS,
+series count and TSDB disk usage separately. Mark comparison as
+inconclusive if data are absent, stale, misaligned or of differing units.
+A documented observed difference is not a failure tolerance. Do not claim
+parity or remove a script until the evidence and numerical tolerances
+are reviewed. Use the evidence cases listed above, including the decoy
+privacy check, before a replacement decision.
+
+Stop only the explicitly started pilot processes, then remove only the
+fixture project with:
+
+```sh
+docker compose -f "$fixture" --profile resource-shadow down
+```
+
+Retain sanitized evidence for owner review; dispose of the VM and its
+private TSDB/Alloy storage afterward. Do not run Docker-wide prune, modify
+existing services or stop unrelated containers.
+
+This checkpoint was validated with Docker Compose configuration rendering
+and assertions for the two services, names, limits, digest and absence of
+host access. No fixture, workload or live telemetry process was started;
+the attached developer host is bare metal and no disposable VM was
+confirmed. Actual paired observations and the runtime approval remain
+blocked. The current monitoring scripts and alerts remain authoritative.
+
 ## Future steps
 
 Staging verification, access-controlled HTTP metrics, multi-instance
