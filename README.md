@@ -63,7 +63,7 @@ Shared Node test defaults live in `tooling/vitest/node.mjs`. Their individual
 Vitest configs scope test discovery to each workspace. CI runs root tooling
 contracts **once** in the required `Tooling contracts / Vitest Node 24` job,
 while retaining specialized integration, Docker, Windows, database and browser
-gates. See [testing conventions](docs/testing.md).
+gates. See [testing conventions](docs/development/testing.md).
 
 ## Contribution workflow
 
