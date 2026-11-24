@@ -1,9 +1,8 @@
-# Gym Platform Admin — cookie-session sign-in foundation
+# OVRANTO Admin — protected read-only operator workspace
 
 The Next.js Admin app uses port 3003 locally. Browser requests to
 `/backend/*` are rewritten by Next.js to the server-configured NestJS API.
-The browser session cookie therefore remains host-only on the Admin origin
-rather than sharing credentials with the Web site.
+Admin uses a dedicated admin-purpose cookie and session verification, independent of ordinary browser login. Host-only cookie isolation requires distinct hostnames; different localhost ports alone are not a cookie isolation boundary.
 
 ## Local configuration
 
@@ -12,8 +11,18 @@ rather than sharing credentials with the Web site.
 2. Set `ADMIN_APP_URL=http://localhost:3003` in the **API** environment,
    then restart the Admin and API processes. Production requires HTTPS.
 3. Open `http://localhost:3003/sign-in` and sign in with an existing
-   administrator account. The client verifies `GET /users/me`, and the
-   Admin home page checks role and session **again on the server**.
+   administrator account. The client posts to `POST /auth/admin-login` and verifies `GET /auth/admin-session`; the Admin home page verifies the dedicated session **again on the server**. Pending MFA is denied rather than treated as authorized.
+
+## Current routes
+
+| Route         | Scope                                  |
+| ------------- | -------------------------------------- |
+| `/sign-in`    | Dedicated Admin authentication         |
+| `/`           | Protected overview with live readiness |
+| `/users`      | Allowlisted operator account directory |
+| `/users/[id]` | Allowlisted read-only account detail   |
+
+Backend moderation APIs and internal account-status primitives do not imply corresponding Admin UI functionality. See [Admin permissions](../../docs/api/admin-permissions.md) for server-side authorization and the manual staging checks below before release.
 
 ## OVRANTO read-only workspace shell (#387)
 
@@ -44,7 +53,7 @@ Email search (2–100 chars), role filter and 20-row pagination are implemented 
 standard GET forms/links and **server-side API queries**, not filtering a single
 page client-side. The API's fixed newest-first order is shown explicitly; no
 unsupported email sorting or `SUSPENDED` filter is offered, because the API
-has a persisted read-only status but no suspension/re-activation operation yet. Counts come from backend `meta.total`, not fixtures.
+has persisted account status, but the directory does not expose a status filter or suspension/reactivation mutation. Internal status primitives are not public UI operations. Counts come from backend `meta.total`, not fixtures.
 `force-dynamic`, uncached upstream fetch and no-store response headers protect
 against shared HTML caching. The response is checked against an exact PII-minimal
 schema before rendering. 401/403/invalid/unavailable all fail closed with

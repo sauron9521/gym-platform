@@ -2,6 +2,12 @@
 
 Next.js App Router + TypeScript + Tailwind CSS 4 + shadcn/ui, managed by pnpm Workspaces and Turborepo.
 
+## Current product scope
+
+Athlete Web owns the athlete-facing experience. Current routes include `/dashboard`, `/workouts`, `/workouts/new`, `/workouts/[id]`, `/workouts/calendar`, `/exercises`, `/exercises/new`, `/exercises/[id]`, `/profile`, `/athlete/trainers` and `/athlete/programs`, plus public authentication and recovery routes.
+
+The existing `/trainer/athletes` and `/trainer/programs` route family still provides capability-gated legacy trainer workflows, including draft editing. The independent [Trainer Web](../trainer/README.md) already handles dashboard/client reads and published-version assignment. These are distinct implementation surfaces; ADR-005 governs incremental migration. Do not infer that all legacy Trainer routes have moved or that the new builder is released.
+
 ## Start
 
 From the monorepo root:
@@ -224,7 +230,7 @@ custom exercise. Global exercises are not editable by ordinary athletes, and
 private exercises remain invisible to unrelated users. These permissions are
 validated by NestJS, not merely by hidden Web controls.
 
-## Trainer–athlete relationships and training programs
+## Relationships, athlete assignments and legacy trainer program editing
 
 `/trainer/athletes` and `/athlete/trainers` provide role-specific relationship
 lists with invitations, status filters and available relationship actions. Both
@@ -331,8 +337,7 @@ The browser+real API tests check both directions, preservation after reload,
 ownership, and invalid permutations.
 
 The Web still shows only the **latest version**, not the full version history.
-Editing/removing/reordering individual exercises, publishing versions and
-assigning programs are separate future features.
+Editing/removing/reordering individual exercises and publishing versions are not documented as implemented by this legacy editor. The separate Trainer Web already supports assigning a published version to an active owned client. See its guide for that flow and remaining migration boundaries.
 
 ## Browser E2E (Playwright + Chromium)
 
