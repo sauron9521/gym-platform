@@ -3,7 +3,7 @@ import { z } from 'zod';
 const twoDecimals = (min: number, max: number) =>
   z.number().finite().min(min).max(max).multipleOf(0.01).nullable().optional();
 
-export const measurementFields = {
+const measurementFields = {
   weightKg: twoDecimals(1, 600),
   bodyFatPct: twoDecimals(0, 100),
   chestCm: twoDecimals(1, 400),

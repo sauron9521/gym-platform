@@ -3,10 +3,10 @@ import { z } from 'zod';
 import { metricKeys } from './body-measurement.schemas.js';
 
 /** An explicit metric ensures missing values do not distort trends. */
-export const bodyMeasurementMetricSchema = z.enum(metricKeys);
+const bodyMeasurementMetricSchema = z.enum(metricKeys);
 export type BodyMeasurementMetric = z.infer<typeof bodyMeasurementMetricSchema>;
 
-export const statisticsRangeSchema = z.enum(['7d', '30d', '90d']);
+const statisticsRangeSchema = z.enum(['7d', '30d', '90d']);
 export type StatisticsRange = z.infer<typeof statisticsRangeSchema>;
 
 export const bodyMeasurementStatisticsQuerySchema = z.strictObject({
