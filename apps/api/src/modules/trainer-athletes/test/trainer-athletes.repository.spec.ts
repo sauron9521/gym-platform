@@ -3,8 +3,8 @@ import { ConflictException } from '@nestjs/common';
 import { PrismaService } from '#src/infra/database/index';
 import { Prisma } from '#prisma/client';
 
-import { InvitationAcceptanceConflict } from '../application/accept-invitation.js';
 import { InvitationAlreadyExists } from '../application/create-invitation.js';
+import { PendingInvitationConflict } from '../application/pending-invitation-transition.js';
 import { TrainerAthletesRepository } from '../repositories/trainer-athletes.repository.js';
 import { fullRelationshipReadWhere } from '../policies/trainer-athlete-read.policy.js';
 import {
@@ -548,7 +548,7 @@ describe('TrainerAthletesRepository', () => {
       );
 
       await expect(repository.acceptPendingInvitation(command)).rejects.toBeInstanceOf(
-        InvitationAcceptanceConflict,
+        PendingInvitationConflict,
       );
     });
 
@@ -563,44 +563,55 @@ describe('TrainerAthletesRepository', () => {
     });
   });
 
-  describe('update', () => {
-    it('should update relationship using conditional where', async () => {
-      const where = {
-        id: 'relationship-1',
-        status: 'PENDING',
-      } satisfies Prisma.TrainerAthleteWhereUniqueInput;
+  describe('closePendingInvitation', () => {
+    const relationshipId = 'relationship-1';
+    const timestamp = new Date('2026-11-01T10:00:00.000Z');
 
-      const data = {
-        status: 'ACTIVE',
-        respondedAt: new Date('2026-11-01T10:00:00.000Z'),
-      } satisfies Prisma.TrainerAthleteUpdateInput;
+    it('records a decline response on a pending invitation with the athlete projection', async () => {
+      const declined = { id: relationshipId, status: 'DECLINED' };
+      prisma.trainerAthlete.update.mockResolvedValueOnce(declined);
 
-      const relationship = {
-        id: 'relationship-1',
-        status: 'ACTIVE',
-      };
+      await expect(
+        repository.closePendingInvitation({
+          relationshipId,
+          status: 'DECLINED',
+          respondedAt: timestamp,
+          redactForTrainer: false,
+        }),
+      ).resolves.toBe(declined);
 
-      prisma.trainerAthlete.update.mockResolvedValue(relationship);
-
-      const result = await repository.update(where, data);
-
-      expect(prisma.trainerAthlete.update).toHaveBeenCalledWith({
-        where,
-        data,
+      expect(prisma.trainerAthlete.update).toHaveBeenCalledExactlyOnceWith({
+        where: { id: relationshipId, status: 'PENDING' },
+        data: { status: 'DECLINED', respondedAt: timestamp },
         select: trainerAthleteSelect,
       });
-
-      expect(result).toEqual(relationship);
     });
 
-    it('should propagate database errors', async () => {
-      const error = new Error('Update failed');
+    it('records cancellation on a pending invitation with the restricted trainer projection', async () => {
+      const cancelled = { id: relationshipId, status: 'CANCELLED' };
+      prisma.trainerAthlete.update.mockResolvedValueOnce(cancelled);
 
-      prisma.trainerAthlete.update.mockRejectedValue(error);
+      await expect(
+        repository.closePendingInvitation({
+          relationshipId,
+          status: 'CANCELLED',
+          endedAt: timestamp,
+          endedById: 'trainer-1',
+          endReason: 'Changed my plans',
+          redactForTrainer: true,
+        }),
+      ).resolves.toBe(cancelled);
 
-      await expect(repository.update({ id: 'relationship-1' }, { status: 'ACTIVE' })).rejects.toBe(
-        error,
-      );
+      expect(prisma.trainerAthlete.update).toHaveBeenCalledExactlyOnceWith({
+        where: { id: relationshipId, status: 'PENDING' },
+        data: {
+          status: 'CANCELLED',
+          endedAt: timestamp,
+          endedBy: { connect: { id: 'trainer-1' } },
+          endReason: 'Changed my plans',
+        },
+        select: trainerAthleteHistoricalSelect,
+      });
     });
   });
 
