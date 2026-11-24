@@ -1,5 +1,5 @@
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
-import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
+import { dirname, extname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import {
@@ -74,6 +74,13 @@ function resolveCleanImport(sourceRoot, file, specifier, files) {
     target = resolve(sourceRoot, specifier.slice('#src/'.length));
   } else if (specifier.startsWith('./') || specifier.startsWith('../')) {
     target = resolve(dirname(file), specifier);
+    const extension = extname(specifier);
+    if (extension === '.mjs' || extension === '.cjs') {
+      const base = target.slice(0, -extension.length);
+      const sourceExtension = extension.replace('js', 'ts');
+      const candidates = [base + sourceExtension, base + '.d' + sourceExtension];
+      return candidates.find((candidate) => files.has(candidate)) ?? null;
+    }
   } else {
     return null;
   }
@@ -148,7 +155,7 @@ export function checkFeatureDependencies(repositoryRoot) {
   for (const name of modules) {
     const files = walk(join(modulesRoot, name)).filter(
       (file) =>
-        file.endsWith('.ts') &&
+        /\.[mc]?ts$/.test(file) &&
         !relative(join(modulesRoot, name), file).split(sep).includes('test'),
     );
     const featureRoot = join(modulesRoot, name);
