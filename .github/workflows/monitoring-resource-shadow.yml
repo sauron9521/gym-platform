@@ -87,10 +87,12 @@ jobs:
             /shadow/config.alloy >/dev/null
           docker inspect --format '{{.Id}}' gym-resource-shadow-fixture > "$private/id"
           date +%s > "$private/start"
+          echo "Shadow: containers launched; warming up for 120s"
           sleep 120
           sample() {
             local phase="$1" at
             local dir="$private/$phase"
+            echo "Shadow: collecting $phase reference and candidate"
             mkdir "$dir"
             date +%s > "$dir/before"
             RESOURCE_CONTAINER=gym-resource-shadow-fixture \
@@ -106,21 +108,26 @@ jobs:
             docker exec gym-shadow-prometheus wget -T 10 -qO- \
               "http://127.0.0.1:19090/api/v1/query?query=%7B__name__%3D~%22.%2B%22%7D&time=$at" \
               > "$dir/query.json"
+            node scripts/monitoring-shadow-evidence.mjs --check-sample "$private/id" "$phase" "$dir"
           }
           sample idle
+          echo "Shadow: CPU workload started (120s)"
           docker exec gym-resource-shadow-fixture node -e \
             'const end=Date.now()+120000; while(Date.now()<end) {}' >/dev/null &
           load=$!
           sleep 75
           sample cpu
           wait "$load"
+          echo "Shadow: CPU recovery (75s)"
           sleep 75
+          echo "Shadow: memory workload started (120s)"
           docker exec gym-resource-shadow-fixture node -e \
             'const b=Buffer.alloc(256*1024*1024,1); setTimeout(()=>console.log(b[0]),120000)' >/dev/null &
           load=$!
           sleep 75
           sample memory
           wait "$load"
+          echo "Shadow: validating series history and private diagnostics"
           end=$(date +%s)
           start=$(cat "$private/start")
           docker exec gym-shadow-prometheus wget -T 10 -qO- \
@@ -151,6 +158,7 @@ jobs:
           };
           writeFileSync(dir + '/input.json', JSON.stringify(evidence), { mode: 0o600 });
           NODE
+          echo "Shadow: generating sanitized report"
           node scripts/monitoring-shadow-evidence.mjs "$private/input.json" "$RUNNER_TEMP/shadow-report.json"
       - name: Upload sanitized numeric observations
         if: always() && steps.observe.outcome != 'skipped'
