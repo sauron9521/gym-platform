@@ -4,7 +4,11 @@ import ts from 'typescript';
  * Read module specifiers from the TypeScript AST instead of matching source text.
  * Only literal dynamic imports can be safely added to a dependency graph.
  */
-export function parseModuleImports(source, filename = 'source.ts') {
+export function parseModuleImports(
+  source,
+  filename = 'source.ts',
+  { checkComputedRequire = false } = {},
+) {
   const parsed = ts.createSourceFile(
     filename,
     source,
@@ -88,6 +92,8 @@ export function parseModuleImports(source, filename = 'source.ts') {
           append(node, argument, false, dynamicImport ? 'dynamic-import' : 'require');
         } else if (dynamicImport) {
           append(node, null, false, 'dynamic-unresolved');
+        } else if (checkComputedRequire) {
+          append(node, null, false, 'require-unresolved');
         }
       }
     }
