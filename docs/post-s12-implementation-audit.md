@@ -51,7 +51,7 @@ All **93 currently open** issues labelled with active M01–M07 phase are assign
 
 ## 4. CI versus staging/production evidence
 
-The current \`main\` commit is green for CI and Web integration, including checks such as formatting, API e2e and Tooling Vitest. However [production-readiness-review.md](production-readiness-review.md), [staging-live-smoke.md](staging-live-smoke.md), [staging-readiness-inventory.md](staging-readiness-inventory.md) and [native-testing.md](mobile/native-testing.md) explicitly require additional operator-controlled evidence.
+The current \`main\` commit is green for CI and Web integration, including checks such as formatting, API e2e and Tooling Vitest. However [production-readiness-review.md](operations/production-readiness-review.md), [staging-live-smoke.md](operations/staging-live-smoke.md), [staging-readiness-inventory.md](operations/staging-readiness-inventory.md) and [native-testing.md](mobile/native-testing.md) explicitly require additional operator-controlled evidence.
 
 At audit time, the available repository Actions history reported **five** \`workflow_dispatch\` runs: three related to the Roadmap milestone sync (two successful, one canceled) and two successful visual-review runs on **2026-11-19**. No manually dispatched **staging live smoke, signed GHCR release/two-release rollback, production evidence review or device-level native acceptance workflow** appeared in this retrieved history. This is **not** proof that no out-of-band local device test ever occurred; it means no qualifying GitHub evidence was verified.
 

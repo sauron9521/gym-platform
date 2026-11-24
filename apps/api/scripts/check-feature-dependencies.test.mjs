@@ -631,6 +631,56 @@ test('allows pilot inner dependencies through aliases and NodeNext relative impo
 });
 
 test.each([
+  ['mts', 'mjs'],
+  ['cts', 'cjs'],
+  ['d.mts', 'mjs'],
+  ['d.cts', 'cjs'],
+])('resolves .%s files through relative .%s imports', (sourceExtension, outputExtension) => {
+  fixture(({ module, source, check }) => {
+    module('training-programs');
+    source('training-programs', `domain/model.${sourceExtension}`, 'export type Model = string;');
+    source(
+      'training-programs',
+      'application/publish.ts',
+      `import type { Model } from '../domain/model.${outputExtension}';`,
+    );
+    assert.deepEqual(check(), []);
+  });
+});
+
+test.each([
+  ['mts', 'mjs'],
+  ['cts', 'cjs'],
+])('rejects outward .%s imports through relative .%s paths', (sourceExtension, outputExtension) => {
+  fixture(({ module, source, check }) => {
+    module('training-programs');
+    source(
+      'training-programs',
+      `application/port.${sourceExtension}`,
+      'export type Port = string;',
+    );
+    source(
+      'training-programs',
+      `domain/policy.${sourceExtension}`,
+      `import type { Port } from '../application/port.${outputExtension}';`,
+    );
+    assert.deepEqual(check(), [
+      `src/modules/training-programs/domain/policy.${sourceExtension}: clean architecture domain import '../application/port.${outputExtension}' must resolve within its allowed inner layers`,
+    ]);
+  });
+});
+
+test('rejects mismatched NodeNext relative extensions', () => {
+  fixture(({ module, source, check }) => {
+    module('training-programs');
+    source('training-programs', 'domain/model.cts', 'export type Model = string;');
+    source('training-programs', 'domain/model.mjs.ts', 'export type Model = string;');
+    source('training-programs', 'domain/policy.ts', "import type { Model } from './model.mjs';");
+    assert.match(check().join('\n'), /clean architecture domain import '\.\/model\.mjs'/);
+  });
+});
+
+test.each([
   ['domain', "import { Injectable } from '@nestjs/common';"],
   ['domain', "import type { Prisma } from '#prisma/client';"],
   ['domain', "import type { Port } from '../application/port.js';"],
@@ -706,6 +756,31 @@ test('rejects cycles across type-only, alias and barrel edges in migrated code',
     assert.match(
       check().join('\n'),
       /clean architecture file dependency cycle: application\/self.ts -> application\/self.ts/,
+    );
+  });
+});
+
+test('rejects cycles through .ts, .mts and .cts files', () => {
+  fixture(({ module, source, check }) => {
+    module('training-programs');
+    source(
+      'training-programs',
+      'domain/a.ts',
+      "import type { B } from './b.mjs'; export type A = B;",
+    );
+    source(
+      'training-programs',
+      'domain/b.mts',
+      "import type { C } from './c.cjs'; export type B = C;",
+    );
+    source(
+      'training-programs',
+      'domain/c.cts',
+      `import type { A } from './a.js' with { 'resolution-mode': 'import' }; export type C = { model: A };`,
+    );
+    assert.match(
+      check().join('\n'),
+      /clean architecture file dependency cycle: domain\/a.ts -> domain\/b.mts -> domain\/c.cts -> domain\/a.ts/,
     );
   });
 });

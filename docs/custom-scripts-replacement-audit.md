@@ -117,5 +117,5 @@ No candidate binary was present on the checked local device; the local checkout 
 - [CI affected-workspace matrix](development/ci-affected-workspaces.md)
 - [Selective pre-push behavior](development/pre-push-checks.md)
 - [Dependency-cruiser boundary enforcement](development/dependency-cruiser-pilot.md)
-- [Opt-in production observability](production-observability.md)
-- [Release and staging controls](release-ghcr.md)
+- [Opt-in production observability](operations/production-observability.md)
+- [Release and staging controls](operations/release-ghcr.md)

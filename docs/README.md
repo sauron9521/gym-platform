@@ -36,20 +36,8 @@ This index groups developer-facing API documentation and operational runbooks. P
 - [Migration audit and cutover gates](api-migration-audit.md)
 - [Migration quality gates](migration-quality-gates.md)
 
-## Releases and staging
+## Operations and release preparation
 
-- [Signed release and GHCR](release-ghcr.md)
-- [Single-release staging rehearsal](staging-ghcr-monorepo.md)
-- [Two-release upgrade/rollback rehearsal](staging-two-release-rollback.md)
-
-## Production preparation (read-only/operator-driven)
-
-- [Production readiness review](production-readiness-review.md)
-- [Immutable digest preflight](production-digest-preflight.md)
-- [Production host preflight](production-host-preflight.md)
-- [Backup/restore operations](backup-restore-operations.md)
-- [Observability](production-observability.md)
-
-Operational documents retain their existing locations until the reference updates are made and tested in a separate change.
+- [Operations runbook index](operations/README.md) — signed GHCR releases, staging, rollback, production preflight, backup and observability
 
 - [Fresh Prisma database baseline and reset policy](database-baseline-reset.md)
