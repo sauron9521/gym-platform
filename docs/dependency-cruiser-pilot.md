@@ -21,3 +21,20 @@ The workspace guard now checks all three pnpm workspace roots: `apps/`, `package
 The parity tests run both import checkers against the same temporary source fixtures. These tests cover representative resolved imports; the legacy manifest and Nest DI guards remain required.
 
 A future PR may remove the regex import extraction from the legacy checker after separately verifying named-package imports, unresolved paths and CI behavior across the whole codebase. This PR does not remove it.
+
+## Named imports of application workspaces
+
+The manual audit also runs `pnpm architecture:cruise:named` to detect imports such as
+`import '@gym/api'` from application or shared-package source files. It reads the
+literal `module` names from dependency-cruiser's machine-readable JSON graph and
+looks up application package names from `apps/*/package.json`.
+
+This deliberately **does not re-parse TypeScript source with a regular expression**.
+In particular, unresolved imports remain observable in the JSON graph; filtering
+it to resolved source targets alone would silently discard those edges. The rule
+matches exact workspace application package names (the legacy contract); shared
+packages remain legal. Import-like text in comments or strings is not an import.
+
+The existing workspace guard stays active for named imports and manifest checks
+until parity tests and the required CI demonstrate safe replacement. The new check
+runs on demand through the Tooling audit workflow and is not a release gate yet.
