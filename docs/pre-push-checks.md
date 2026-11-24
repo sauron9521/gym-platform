@@ -126,3 +126,42 @@ workspaces. Multi-workspace timings, warm generated-output behavior,
 failure propagation and actual Windows execution remain unverified.
 Keep the current hook until these gates are satisfied. Do not enable
 Turbo caching or change CI selection based on this experiment.
+
+## Multi-workspace runtime benchmark (2026-11-24)
+
+Used an isolated archive of main `8e58422c6e6512311eaf23ba2e6f2791ebffb957`
+(merged #785), with a frozen-lockfile install on the same Linux machine.
+The initial direct pnpm attempt failed during Admin Next type generation:
+`GYM_API_INTERNAL_URL` was missing. It is excluded from the timings.
+Repeated both variants with the CI loopback URL
+`http://127.0.0.1:3001`, `CI=true`, and telemetry disabled.
+
+Compared four direct pnpm commands (Landing lint/typecheck, then Admin
+lint/typecheck) with one Turbo invocation containing the same four task IDs,
+`--only --env-mode=loose --cache=local:,remote: --concurrency=1`.
+For each variant, cleared both apps' `.next` directories and top-level
+TypeScript build info before the first sample; retained generated files for
+the second sample. OS caches were not cleared. All measured runs exited zero.
+
+| Generated output | pnpm (s) | Turbo (s) |
+| ---------------- | -------: | --------: |
+| Cleared          |   16.744 |    15.440 |
+| Retained         |   11.575 |    12.048 |
+
+Turbo reduced the cleared-output sample by 7.8% but was 4.1% slower
+with retained output. One sample per condition is not enough to infer
+a reliable speedup. A deliberate Landing lint failure in the temporary
+archive returned exit code 7 from Turbo, with three of four tasks successful.
+The real task order differed from the direct pnpm sequence, so task ordering
+must not be assumed equivalent.
+
+The pre-push suite also exercises actual Turbo execution with a temporary
+two-package fixture: an inherited environment variable must reach both
+tasks and a controlled task failure must propagate exit code 7. The
+fixture never runs real application checks or modifies the working tree.
+
+**Decision:** retain direct pnpm pre-push commands for now. The multi-workspace
+results are mixed, and actual Windows application execution has not been
+verified. Do not enable caching or change CI routing. The synthetic
+runtime test is a cross-platform contract probe, not proof of equivalent
+application behavior or faster hooks.
