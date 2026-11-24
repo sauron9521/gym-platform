@@ -1,4 +1,5 @@
 import { Prisma } from '#prisma/client';
+import { DraftVersionCreationConflict } from '../application/draft-version-creation.js';
 import { DraftVersionStateChanged } from '../application/draft-version-update.js';
 import { TrainingProgramVersionRepository } from '../repositories/training-program-version.repository.js';
 import { trainingProgramVersionSelect } from '../selects/training-program-version.select.js';
@@ -213,6 +214,29 @@ describe('TrainingProgramVersionRepository', () => {
   });
 
   describe('createDraftFromLatestPublished', () => {
+    it('maps a cloning uniqueness violation to the typed application conflict', async () => {
+      const error = new Prisma.PrismaClientKnownRequestError('Unique constraint', {
+        code: 'P2002',
+        clientVersion: '7.0.0',
+      });
+      models.$transaction.mockRejectedValue(error);
+
+      await expect(repository.createDraftFromLatestPublished('program-1')).rejects.toBeInstanceOf(
+        DraftVersionCreationConflict,
+      );
+    });
+
+    it('preserves unrelated persistence errors during cloning', async () => {
+      const error = new Prisma.PrismaClientKnownRequestError('Transaction conflict', {
+        code: 'P2034',
+        clientVersion: '7.0.0',
+      });
+      models.$transaction.mockRejectedValue(error);
+
+      await expect(repository.createDraftFromLatestPublished('program-1')).rejects.toBe(error);
+    });
+
+
     it('copies workouts, exercises and sets into a new draft', async () => {
       const source = {
         id: 'version-2',
