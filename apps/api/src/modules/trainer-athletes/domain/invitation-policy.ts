@@ -10,9 +10,7 @@ export type InvitationPair = {
 };
 
 export type InvitationDirection =
-  | { status: 'ALLOWED'; pair: InvitationPair }
-  | { status: 'AMBIGUOUS' }
-  | { status: 'INELIGIBLE' };
+  { status: 'ALLOWED'; pair: InvitationPair } | { status: 'AMBIGUOUS' } | { status: 'INELIGIBLE' };
 
 export function isSelfInvitation(actorId: string, targetId: string): boolean {
   return actorId === targetId;
