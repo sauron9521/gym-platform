@@ -14,3 +14,5 @@ persistent data. The NestJS service/repository remains authoritative and keeps
 row-locking, permissions and concurrency control.
 
 Run with Node.js 24: `pnpm --filter @gym/domain test`.
+
+The public export is native ESM JavaScript with TypeScript declarations. It runs directly in Node 24, including a pnpm-deployed API image, without stripping TypeScript from dependencies or introducing a package build step. The package has no runtime dependencies. API and Mobile consume the same export; the server still checks authorization and authoritative database state.

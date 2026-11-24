@@ -1,26 +1,24 @@
 /** Pure cross-platform workout rules. API remains authoritative for all transitions. */
-export const workoutStatuses = ['PLANNED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'] as const;
-export type WorkoutStatus = (typeof workoutStatuses)[number];
-export const workoutSetStatuses = ['PENDING', 'COMPLETED', 'SKIPPED'] as const;
-export type WorkoutSetStatus = (typeof workoutSetStatuses)[number];
+export const workoutStatuses = ['PLANNED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'];
+export const workoutSetStatuses = ['PENDING', 'COMPLETED', 'SKIPPED'];
 
-const transitions: Record<WorkoutStatus, readonly WorkoutStatus[]> = {
+const transitions = {
   PLANNED: ['IN_PROGRESS', 'CANCELLED'],
   IN_PROGRESS: ['COMPLETED', 'CANCELLED'],
   COMPLETED: [],
   CANCELLED: [],
 };
 
-export function canTransitionWorkout(from: WorkoutStatus, to: WorkoutStatus): boolean {
+export function canTransitionWorkout(from, to) {
   return transitions[from].includes(to);
 }
 
 /**
  * Match the API's terminal workout invariant:
  * at least one completed set, no remaining pending sets, and at least one set.
- * This is a UI precondition, NOT an authorization or server-side write guarantee.
+ * This is a pure precondition, NOT an authorization or server-side write guarantee.
  */
-export function canCompleteWorkout(sets: ReadonlyArray<{ status: WorkoutSetStatus }>): boolean {
+export function canCompleteWorkout(sets) {
   return (
     sets.length > 0 &&
     !sets.some((set) => set.status === 'PENDING') &&
@@ -28,7 +26,7 @@ export function canCompleteWorkout(sets: ReadonlyArray<{ status: WorkoutSetStatu
   );
 }
 
-export function workoutSetProgress(sets: ReadonlyArray<{ status: WorkoutSetStatus }>) {
+export function workoutSetProgress(sets) {
   const completed = sets.filter((set) => set.status === 'COMPLETED').length;
   const skipped = sets.filter((set) => set.status === 'SKIPPED').length;
   return { completed, skipped, pending: sets.length - completed - skipped, total: sets.length };

@@ -27,6 +27,9 @@ RUN echo 'Docker context: API Prisma config' \
     && test -f apps/web/package.json \
     && echo 'Docker context: i18n workspace manifest' \
     && test -f packages/i18n/package.json \
+    && echo 'Docker context: domain runtime and types' \
+    && test -f packages/domain/src/index.js \
+    && test -f packages/domain/src/index.d.ts \
     && echo 'Docker context: Web src excluded' \
     && test ! -e apps/web/src \
     && echo 'Docker context: Mobile src excluded' \

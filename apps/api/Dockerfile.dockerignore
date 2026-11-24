@@ -15,6 +15,10 @@ apps/*/**
 !packages/*
 packages/*/**
 !packages/*/package.json
+# Only the pure domain package is an API runtime dependency.
+!packages/domain/src/
+!packages/domain/src/index.js
+!packages/domain/src/index.d.ts
 !tooling
 !tooling/*
 tooling/*/**

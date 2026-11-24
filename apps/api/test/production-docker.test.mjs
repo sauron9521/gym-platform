@@ -79,6 +79,9 @@ test('API Dockerfile-specific ignore only includes required API sources and mani
     '!packages',
     '!packages/*',
     '!packages/*/package.json',
+    '!packages/domain/src/',
+    '!packages/domain/src/index.js',
+    '!packages/domain/src/index.d.ts',
     '!tooling',
     '!tooling/*',
     '!tooling/*/package.json',
@@ -116,6 +119,8 @@ test('API Dockerfile-specific ignore only includes required API sources and mani
   assert.ok(docker.includes('test -d apps/api/prisma/migrations'));
   assert.ok(docker.includes('test -f apps/web/package.json'));
   assert.ok(docker.includes('test -f packages/i18n/package.json'));
+  assert.ok(docker.includes('test -f packages/domain/src/index.js'));
+  assert.ok(docker.includes('test -f packages/domain/src/index.d.ts'));
   assert.ok(docker.includes('test ! -e apps/web/src'));
   assert.ok(docker.includes('test ! -e apps/mobile/src'));
   assert.ok(docker.includes('test ! -e packages/i18n/src'));
