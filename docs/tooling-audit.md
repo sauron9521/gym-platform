@@ -68,6 +68,23 @@ with missing application/client packages in its summary. This runs **no
 build, lint or test tasks** and never changes required CI routing, outputs or
 branch protection.
 
+For broader evidence from **one manual run**, set `history_samples` to 1–8
+(default: `0`, disabled). The report-only comparison scans at most 80 recent
+first-parent commits in the checked-out `main` history and selects up to the
+requested number of **distinct change categories** (API, Web, Mobile, shared
+packages, OpenAPI, docs, lockfile, cross-cutting or mixed changes).
+Each selected commit is compared with its first parent using the existing
+`ci-select.mjs` classifier and a separate `turbo --affected --dry=json`
+plan. It writes `turbo-affected-history.json` and a summary of potential
+missing application/client packages. Every comparison is bounded and performs
+**no lint, typecheck or build work**. If Git history is insufficient or a
+Turbo invocation fails, the diagnostic job fails rather than claiming parity.
+
+A category appearing in the historical report is **not** proof of CI routing
+parity for all PRs in that category. Current Turbo workspace definitions are
+used for all historical ranges. Carefully inspect discrepancies and compare
+with independent CI/E2E requirements before making any routing changes.
+
 The JSON plan describes lint/typecheck/build task selection, **not** API
 integration tests, release security checks or actual required-job scheduling.
 Extra/missing packages indicate a difference to review, not proof that either

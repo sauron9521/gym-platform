@@ -5,6 +5,9 @@ import { test } from 'vitest';
 import {
   changedPathsBetween,
   compareAffectedPlans,
+  chooseHistorySamples,
+  historyChangeCategory,
+  inspectHistoricalAffected,
   resolveAuditRange,
 } from './ci-turbo-affected-shadow.mjs';
 
@@ -245,4 +248,131 @@ test('workflow sanitizes optional inputs in environment variables without shell 
   assert.doesNotMatch(workflow, /base="\$\(\s*git rev-parse HEAD\^1\s*\)"/);
   const ci = readFileSync(new URL('../.github/workflows/ci.yml', import.meta.url), 'utf8');
   assert.doesNotMatch(ci, /comparison-range|AUDIT_BASE_SHA|resolveAuditRange/);
+});
+
+test('historical samples represent distinct concrete change categories', () => {
+  const c = (number) => number.toString(16).padStart(40, '0');
+  const candidate = (number, paths) => ({
+    base: c(number - 1),
+    head: c(number),
+    paths,
+  });
+  const selected = chooseHistorySamples(
+    [
+      candidate(10, ['scripts/check-workspace-boundaries.mjs']),
+      candidate(9, ['apps/web/src/index.tsx']),
+      candidate(8, ['apps/web/src/second.tsx']),
+      candidate(7, ['docs/README.md']),
+      candidate(6, ['apps/api/openapi/openapi.json']),
+      candidate(5, ['packages/ui-web/src/index.ts', 'apps/mobile/src/index.ts']),
+    ],
+    5,
+  );
+  assert.deepEqual(
+    selected.map(({ category }) => category),
+    ['cross-cutting', 'web', 'docs', 'openapi', 'mixed'],
+  );
+  assert.deepEqual(
+    selected.map(({ head }) => head),
+    [10, 9, 7, 6, 5].map(c),
+  );
+  assert.equal(historyChangeCategory(['pnpm-lock.yaml']), 'lockfile');
+  assert.equal(historyChangeCategory(['packages/i18n/src/messages/uk.json']), 'i18n');
+  assert.equal(historyChangeCategory([]), 'empty');
+});
+
+test('historical sampling rejects invalid limits and malformed candidate revisions', () => {
+  for (const count of [0, 9, -1, 1.5, '2']) {
+    assert.throws(() => chooseHistorySamples([], count), /limit/);
+  }
+  assert.throws(() => chooseHistorySamples([{}], 1), /historical commit/);
+  assert.throws(() => historyChangeCategory([null]), /historical path/);
+});
+
+test('historical shadow analysis runs only bounded Turbo dry plans on main', () => {
+  const current = 'c'.repeat(40);
+  const middle = 'b'.repeat(40);
+  const older = 'a'.repeat(40);
+  const calls = [];
+  const execute = (cmd, args, options) => {
+    calls.push({ cmd, args, options });
+    if (cmd === 'pnpm') {
+      assert.deepEqual(args, [
+        'exec',
+        'turbo',
+        'run',
+        'lint',
+        'typecheck',
+        'build',
+        '--affected',
+        '--dry=json',
+      ]);
+      const name = options.env.TURBO_SCM_HEAD === current ? '@gym/web' : '@gym/api';
+      return JSON.stringify(plan([name]));
+    }
+    if (args[0] === 'rev-parse') return current + '\n';
+    if (args[0] === 'rev-list') return [current, middle, older].join('\n') + '\n';
+    if (args[0] === 'merge-base') return '';
+    if (args[0] === 'diff') {
+      return args[args.length - 1] === middle + '...' + current
+        ? 'apps/web/src/page.tsx\0'
+        : 'apps/api/src/main.ts\0';
+    }
+    throw new Error('unexpected command');
+  };
+  const report = inspectHistoricalAffected(2, execute, { GITHUB_REF: 'refs/heads/main' });
+  assert.equal(report.mainHead, current);
+  assert.equal(report.examinedFirstParentCommits, 2);
+  assert.deepEqual(
+    report.samples.map((x) => x.category),
+    ['web', 'api'],
+  );
+  assert.deepEqual(
+    report.samples.map((x) => x.missingFromTurbo),
+    [[], []],
+  );
+  const turbo = calls.filter((call) => call.cmd === 'pnpm');
+  assert.equal(turbo.length, 2);
+  assert.deepEqual(
+    turbo.map((call) => [call.options.env.TURBO_SCM_BASE, call.options.env.TURBO_SCM_HEAD]),
+    [
+      [middle, current],
+      [older, middle],
+    ],
+  );
+  assert.ok(report.note.includes('Advisory only'));
+});
+
+test('historical sampling refuses unsafe CLI input, non-main refs and untrusted history', () => {
+  const git = () => 'a'.repeat(40) + '\n';
+  for (const value of [0, 9, '0', '2; echo unsafe', 'NaN']) {
+    assert.throws(
+      () => inspectHistoricalAffected(value, git, { GITHUB_REF: 'refs/heads/main' }),
+      /HISTORY_SAMPLES/,
+    );
+  }
+  assert.throws(
+    () => inspectHistoricalAffected(1, git, { GITHUB_REF: 'refs/heads/feature' }),
+    /main branch/,
+  );
+  assert.throws(
+    () => inspectHistoricalAffected(1, git, { GITHUB_REF: 'refs/heads/main' }),
+    /first-parent main history/,
+  );
+});
+
+test('manual history sampling is opt-in and cannot replace required CI gates', () => {
+  const workflow = readFileSync(
+    new URL('../.github/workflows/tooling-audit.yml', import.meta.url),
+    'utf8',
+  );
+  const ci = readFileSync(new URL('../.github/workflows/ci.yml', import.meta.url), 'utf8');
+  assert.match(workflow, /history_samples:/);
+  assert.match(workflow, /default: 0/);
+  assert.match(workflow, /if: \$\{\{ inputs\.history_samples > 0 \}\}/);
+  assert.match(workflow, /HISTORY_SAMPLES: \$\{\{ inputs\.history_samples \}\}/);
+  assert.match(workflow, /--history --count "\$HISTORY_SAMPLES"/);
+  assert.match(workflow, /turbo-affected-history\.json/);
+  assert.doesNotMatch(ci, /history_samples|turbo-affected-history/);
+  assert.match(ci, /node scripts\/ci-select\.mjs --github-output/);
 });
