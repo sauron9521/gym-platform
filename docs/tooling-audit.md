@@ -181,6 +181,19 @@ See the [evidence, exact SHA ranges, limitations and follow-up gates](turbo-affe
 A successful manual diagnostic does not imply scope parity or authorize any
 change to required CI.
 
+## Prisma generated runtime dependency
+
+Keep `@prisma/client` in the API production dependencies. The `prisma-client`
+generator writes TypeScript into `src/infra/database/generated/prisma`, and
+application code imports the generated client through `#prisma/client`.
+Prisma 7 requires the runtime package even though Knip's source analysis may
+report it as unused. The API workspace has one explicit `ignoreDependencies`
+entry for this package; do not broaden it to Prisma packages or other workspaces.
+The production build, Prisma generation and database integration tests remain
+required. Revisit this exception if the generator or Prisma runtime changes.
+See the [Prisma 7 upgrade guide](https://www.prisma.io/docs/guides/upgrade-prisma-orm/v7).
+A new manual audit is needed to confirm the corrected finding count.
+
 ## Next safe steps
 
 1. Review the Knip baseline by workspace, confirm real entrypoints and

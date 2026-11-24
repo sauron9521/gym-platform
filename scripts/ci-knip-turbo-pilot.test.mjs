@@ -58,6 +58,16 @@ test('Knip recognizes explicitly invoked CLI and compile-time entrypoints', () =
   assert.doesNotMatch(read('packages/api-client/vitest.config.mts'), /contract-types/);
 });
 
+test('Knip preserves the Prisma generated client runtime dependency in API only', () => {
+  const config = JSON.parse(read('knip.json'));
+  const api = JSON.parse(read('apps/api/package.json'));
+  assert.deepEqual(config.workspaces['apps/api'].ignoreDependencies, ['@prisma/client']);
+  assert.ok(api.dependencies['@prisma/client']);
+  assert.equal(api.imports['#prisma/*'].types, './src/infra/database/generated/prisma/*.ts');
+  assert.match(read('apps/api/prisma/schemas/schema.prisma'), /provider\s*=\s*"prisma-client"/);
+  assert.match(read('apps/api/src/infra/database/prisma.service.ts'), /from '#prisma\/client'/);
+});
+
 test('Vitest discovers real design-token spec.mts and Web mutation .test.ts suites', () => {
   const tokens = read('packages/design-tokens/vitest.config.mts');
   assert.match(tokens, /test\/\*\*\/\*\.test\.mjs/);
