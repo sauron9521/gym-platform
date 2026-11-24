@@ -41,6 +41,12 @@ prometheus.relabel "shadow" {
     regex = "(total|)"
     action = "keep"
   }
+  // Normalize the job after fixture filtering; exporter target labels may override job_name.
+  rule {
+    target_label = "job"
+    replacement = "gym-resource-shadow"
+    action = "replace"
+  }
   rule {
     regex = "(__name__|id|cpu|job)"
     action = "labelkeep"
