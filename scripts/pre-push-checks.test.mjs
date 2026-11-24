@@ -96,8 +96,16 @@ test('an unreadable ref or absent remote main fails closed to full checks', () =
 });
 
 test('ref deletion or unchanged tip does not require source verification', () => {
-  assert.deepEqual(findPushedPaths(line(oldSha, zeroSha)), { full: false, files: [], deletedFiles: [] });
-  assert.deepEqual(findPushedPaths(line(oldSha, oldSha)), { full: false, files: [], deletedFiles: [] });
+  assert.deepEqual(findPushedPaths(line(oldSha, zeroSha)), {
+    full: false,
+    files: [],
+    deletedFiles: [],
+  });
+  assert.deepEqual(findPushedPaths(line(oldSha, oldSha)), {
+    full: false,
+    files: [],
+    deletedFiles: [],
+  });
 });
 
 test('deleted source files select workspaces without passing absent paths to Prettier', () => {
@@ -139,8 +147,7 @@ test('malformed diff output or conflicting multi-ref path states fail closed', (
     assert.equal(findPushedPaths(line(oldSha), { git: () => diff }).full, true);
   }
   const conflict = findPushedPaths(line(oldSha) + line(oldSha, 'e'.repeat(40)), {
-    git: (args) =>
-      args.includes(headSha) ? 'D\0apps/web/a.ts\0' : 'M\0apps/web/a.ts\0',
+    git: (args) => (args.includes(headSha) ? 'D\0apps/web/a.ts\0' : 'M\0apps/web/a.ts\0'),
   });
   assert.equal(conflict.full, true);
 });
@@ -148,7 +155,11 @@ test('malformed diff output or conflicting multi-ref path states fail closed', (
 test('real Git diff detects deletion and cross-workspace move as separate paths', () => {
   const directory = mkdtempSync(join(tmpdir(), 'gym-pre-push-'));
   const git = (args) =>
-    execFileSync('git', args, { cwd: directory, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
+    execFileSync('git', args, {
+      cwd: directory,
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
   try {
     git(['init', '-q']);
     git(['config', 'user.name', 'Pre-push test']);
