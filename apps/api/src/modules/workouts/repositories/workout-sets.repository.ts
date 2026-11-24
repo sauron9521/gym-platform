@@ -2,7 +2,17 @@ import { Injectable } from '@nestjs/common';
 
 import { Prisma } from '#prisma/client';
 import { PrismaService } from '#src/infra/database/index';
+import {
+  WorkoutSetStateChanged,
+  type WorkoutSetResultChanges,
+} from '../application/workout-set-result.js';
 import { workoutSetSelect } from '../selects/workout.select.js';
+
+type SetWriteContext = {
+  workoutId: string;
+  athleteId: string;
+  authorize: (tx: Prisma.TransactionClient) => Promise<void>;
+};
 
 /** Set writes lock the current account, then the parent workout through commit. */
 @Injectable()
@@ -11,12 +21,23 @@ export class WorkoutSetsRepository {
 
   async updateSet(
     id: string,
-    data: Prisma.WorkoutSetUpdateInput,
-    context: {
-      workoutId: string;
-      athleteId: string;
-      authorize: (tx: Prisma.TransactionClient) => Promise<void>;
-    },
+    data: WorkoutSetResultChanges,
+    context: SetWriteContext,
+  ) {
+    try {
+      return await this.updateSetAtomically(id, data, context);
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+        throw new WorkoutSetStateChanged();
+      }
+      throw error;
+    }
+  }
+
+  private async updateSetAtomically(
+    id: string,
+    data: WorkoutSetResultChanges,
+    context: SetWriteContext,
   ) {
     return this.prisma.$transaction(async (tx) => {
       // Moderation and set writes serialize on the account privilege lock.

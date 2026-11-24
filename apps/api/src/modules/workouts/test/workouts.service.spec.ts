@@ -10,6 +10,7 @@ import { Prisma } from '#prisma/client';
 import { ExercisesService } from '#src/modules/exercises/services/exercises.service';
 import { UsersService } from '#src/modules/users/services/users.service';
 import { WorkoutCompletionStateChanged } from '../application/workout-completion.js';
+import { WorkoutSetStateChanged } from '../application/workout-set-result.js';
 import { WorkoutStartStateChanged } from '../application/workout-start.js';
 import { WorkoutsRepository } from '../repositories/workouts.repository.js';
 import { WorkoutsService } from '../services/workouts.service.js';
@@ -1367,17 +1368,12 @@ describe('WorkoutsService', () => {
       );
     });
 
-    it('converts a stale set update P2025 into conflict', async () => {
+    it('maps a typed stale set update into the existing conflict', async () => {
       repository.findById.mockResolvedValueOnce({
         ...plannedWorkout,
         status: 'IN_PROGRESS',
       });
-      repository.updateSet.mockRejectedValueOnce(
-        new Prisma.PrismaClientKnownRequestError('Record changed', {
-          code: 'P2025',
-          clientVersion: '7.10.1',
-        }),
-      );
+      repository.updateSet.mockRejectedValueOnce(new WorkoutSetStateChanged());
 
       await expect(
         service.updateSet(plannedWorkout.id, 'set-1', athlete, {

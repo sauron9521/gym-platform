@@ -5,6 +5,7 @@ import type {
   workoutSetSelect,
 } from '../selects/workout.select.js';
 
+import type { WorkoutSetResultInput } from '../application/workout-set-result.js';
 import type { ExerciseActor } from '#src/modules/exercises/types/exercise.types';
 
 export type WorkoutActor = ExerciseActor;
@@ -41,20 +42,7 @@ export type UpdateWorkoutInput = {
   scheduledAt?: Date | null;
 };
 
-export type UpdateWorkoutSetInput = {
-  status: 'COMPLETED' | 'SKIPPED';
-
-  actualReps?: number | null;
-  actualWeightKg?: number | null;
-  actualDurationSeconds?: number | null;
-  actualDistanceMeters?: number | null;
-
-  restSeconds?: number | null;
-  rpe?: number | null;
-  rir?: number | null;
-
-  notes?: string | null;
-};
+export type UpdateWorkoutSetInput = WorkoutSetResultInput;
 
 export type WorkoutListQuery = {
   page: number;

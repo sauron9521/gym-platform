@@ -3,6 +3,7 @@ import { Injectable } from '@nestjs/common';
 import { Prisma } from '#prisma/client';
 import { PrismaService } from '#src/infra/database/index';
 import type { CompleteWorkoutCommand } from '../application/workout-completion.js';
+import type { WorkoutSetResultChanges } from '../application/workout-set-result.js';
 import type { StartWorkoutCommand } from '../application/workout-start.js';
 import { workoutSelect } from '../selects/workout.select.js';
 import { WorkoutQueriesRepository } from './workout-queries.repository.js';
@@ -53,7 +54,7 @@ export class WorkoutsRepository extends WorkoutQueriesRepository {
 
   updateSet(
     id: string,
-    data: Prisma.WorkoutSetUpdateInput,
+    data: WorkoutSetResultChanges,
     context: Parameters<WorkoutSetsRepository['updateSet']>[2],
   ) {
     return this.setsRepository.updateSet(id, data, context);
