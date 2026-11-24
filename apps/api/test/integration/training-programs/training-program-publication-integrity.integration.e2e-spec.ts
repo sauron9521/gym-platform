@@ -189,6 +189,30 @@ describe('Published training program integrity (PostgreSQL)', () => {
     }
   }, 20_000);
 
+  it('rejects invalid locked draft content without publishing either row', async () => {
+    const data = await fixture();
+    await prisma.trainingProgramSet.deleteMany({
+      where: { programExerciseId: data.programExerciseId },
+    });
+
+    await expect(versions.publishVersion(data.programId, data.versionId)).rejects.toThrow(
+      new BadRequestException('Every program exercise must contain at least one set'),
+    );
+
+    const [version, program] = await Promise.all([
+      prisma.trainingProgramVersion.findUniqueOrThrow({
+        where: { id: data.versionId },
+        select: { status: true, publishedAt: true },
+      }),
+      prisma.trainingProgram.findUniqueOrThrow({
+        where: { id: data.programId },
+        select: { status: true },
+      }),
+    ]);
+    expect(version).toEqual({ status: 'DRAFT', publishedAt: null });
+    expect(program).toEqual({ status: 'DRAFT' });
+  });
+
   it('rejects an already archived source without publishing any part of the version', async () => {
     const data = await fixture();
     await prisma.exercise.update({
