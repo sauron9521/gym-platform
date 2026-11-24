@@ -1379,7 +1379,9 @@ describe('WorkoutsService', () => {
         service.updateSet(plannedWorkout.id, 'set-1', athlete, {
           status: 'COMPLETED',
         }),
-      ).rejects.toThrow(ConflictException);
+      ).rejects.toThrow(
+        new ConflictException('Workout set state has changed. Reload and try again.'),
+      );
     });
 
     it('rejects a completion after the state changes while acquiring its lock', async () => {
