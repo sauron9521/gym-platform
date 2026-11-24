@@ -9,8 +9,8 @@ import { fileURLToPath } from 'node:url';
 // supposedly complete five-minute count unreliable.
 export const WINDOW_MS = 5 * 60 * 1000;
 export const MAX_FILE_BYTES = 64 * 1024 * 1024;
-export const MAX_LINE_BYTES = 64 * 1024;
-export const MAX_SOURCE_AGE_MS = 150 * 1000;
+const MAX_LINE_BYTES = 64 * 1024;
+const MAX_SOURCE_AGE_MS = 150 * 1000;
 
 export function parseLogFileArg(args) {
   if (

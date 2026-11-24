@@ -2,9 +2,9 @@ import { spawnSync } from 'node:child_process';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-export const OWNER = 'sauron9521';
-export const REPO = 'sauron9521/gym-platform';
-export const PROJECT_TITLE = 'Gym Platform Delivery';
+const OWNER = 'sauron9521';
+const REPO = 'sauron9521/gym-platform';
+const PROJECT_TITLE = 'Gym Platform Delivery';
 export const STAGES = [
   ['Backlog', 'GRAY', 'Not yet scheduled'],
   ['Ready', 'BLUE', 'Requirements and dependencies checked'],
@@ -13,7 +13,7 @@ export const STAGES = [
   ['Blocked', 'RED', 'Needs a dependency or decision'],
   ['Done', 'GREEN', 'Verified and merged or closed'],
 ];
-export const VIEWS = [
+const VIEWS = [
   ['Delivery Board', 'BOARD'],
   ['Milestones', 'TABLE'],
   ['Priority', 'TABLE'],
@@ -155,7 +155,7 @@ function createViews(project) {
   }
 }
 
-export function run(args = process.argv.slice(2)) {
+function run(args = process.argv.slice(2)) {
   const mode = args[0] ?? 'preview';
   if (!['preview', 'apply'].includes(mode)) throw new Error('Expected preview or apply');
   if (mode === 'apply' && args[1] !== 'APPLY_PROJECT') {
