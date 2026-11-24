@@ -57,7 +57,7 @@ must be addressed as part of the future sensitive-mutation hardening.
 That earlier slice introduced no Prisma migration or separate cookie realm; the later
 Admin-cookie realm cutover is documented below.
 
-### Admin-only Origin boundary (#289)
+## Admin-only Origin boundary (#289)
 
 The explicit Admin login, live Admin session check, scoped Admin revocation,
 privileged Admin users reads and trainer moderation operations now require an
@@ -73,7 +73,7 @@ the exact public Admin Web origin on deployments with a separate Admin site.
 This is defense in depth, not a substitute for the library's CSRF checks,
 MFA/step-up, or a dedicated Admin cookie realm.
 
-### Separate Admin-cookie realm (#289)
+## Separate Admin-cookie realm (#289)
 
 Admin browser sessions now use an independent, host-prefixed, Secure, HttpOnly
 cookie named `__Host-admin-sid` (Path=/, SameSite=Lax). Regular Web
