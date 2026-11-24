@@ -89,5 +89,40 @@ the direct pnpm checks until representative cold/warm timing, failure
 propagation, inherited environment, Next type generation and Linux/Windows
 execution are verified. The probe disables cache reads and writes to avoid
 claiming safety for cached typechecks with generated output or incomplete
-dependency hashes under `--only`. No speed improvement has been measured.
-Do not use this result to replace the CI affected selector.
+dependency hashes under `--only`. Do not use this result to replace the CI affected selector.
+
+## Landing runtime benchmark (2026-11-24)
+
+Measured the actual lint and typecheck commands on Linux against main
+`649f7efe65e8927d8e2938c86facfd7c574b7008` (merged PR #782). The isolated
+Git archive used a successful frozen-lockfile install with supply-chain
+checks enabled, Node 24.22.3, pnpm 12.18.0 and Turbo 2.11.11, on a machine
+with four logical CPUs and 11 GiB reported RAM. The initial offline
+install lacked registry metadata; the normal frozen install succeeded.
+Installation time is excluded.
+
+Compared two sequential pnpm commands with a single explicit Turbo
+invocation:
+
+```sh
+pnpm --filter @gym/landing lint && pnpm --filter @gym/landing typecheck
+pnpm exec turbo run '@gym/landing#lint' '@gym/landing#typecheck' --only --env-mode=loose --cache=local:,remote: --concurrency=1
+```
+
+The execution order was pnpm, Turbo, Turbo, pnpm. Before each sample,
+the isolated Landing `.next` directory and top-level TypeScript build
+info files were removed. The same installed dependencies and CI
+environment were used. Turbo cache reads and writes were disabled.
+OS filesystem caches were not cleared. All four samples exited zero.
+
+- pnpm: 11.406 s and 9.904 s; mean 10.655 s.
+- Turbo: 8.320 s and 7.982 s; mean 8.151 s.
+- Observed reduction in mean wall-clock time: 23.5% (2.504 s).
+
+**Decision:** positive preliminary evidence for a cache-disabled Landing
+pilot; no general runtime cutover or speed guarantee. Two samples per
+variant on a single Linux machine are not a robust benchmark of all
+workspaces. Multi-workspace timings, warm generated-output behavior,
+failure propagation and actual Windows execution remain unverified.
+Keep the current hook until these gates are satisfied. Do not enable
+Turbo caching or change CI selection based on this experiment.
