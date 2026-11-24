@@ -41,6 +41,10 @@ jobs:
         run: |
           set -euo pipefail
           pnpm architecture:cruise:named 2>&1 | tee "$RUNNER_TEMP/architecture-named-imports.txt"
+      - name: Compare relative workspace imports from dependency-cruiser graph
+        run: |
+          set -euo pipefail
+          pnpm architecture:cruise:relative 2>&1 | tee "$RUNNER_TEMP/architecture-relative-imports.txt"
       - name: Preview Turborepo graph without running tasks
         run: |
           set -euo pipefail
@@ -56,7 +60,8 @@ jobs:
             '### Advisory Knip / dependency-cruiser / Turborepo baseline',
             '',
             'Knip findings are diagnostic and are **not** automatically removed.',
-            'Dependency-cruiser boundary rules run only in this manual audit workflow.',
+            'Resolved dependency-cruiser source rules and relative-import parity are manual.',
+            'Exact named app imports remain enforced by the required Tooling contracts gate.',
             'Turborepo was run with `--dry=json`; **no lint, test or build tasks executed**.',
             '',
             'Total planned Turbo tasks: ' + tasks.length,
@@ -73,6 +78,7 @@ jobs:
             ${{ runner.temp }}/knip.txt
             ${{ runner.temp }}/architecture-cruise.txt
             ${{ runner.temp }}/architecture-named-imports.txt
+            ${{ runner.temp }}/architecture-relative-imports.txt
             ${{ runner.temp }}/turbo-plan.json
           if-no-files-found: error
           retention-days: 7

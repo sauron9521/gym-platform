@@ -56,7 +56,7 @@ export function findNamedApplicationImports(report, appNames) {
   return [...messages].sort();
 }
 
-export function inspectNamedApplicationImports(root = repositoryRoot) {
+export function inspectDependencyCruiserGraph(root = repositoryRoot) {
   const bin = resolve(repositoryRoot, 'node_modules/dependency-cruiser/bin/dependency-cruiser.mjs');
   const configuration = resolve(repositoryRoot, '.dependency-cruiser.cjs');
   // Fixture repositories may have no tooling directory. Analyze existing roots only.
@@ -86,11 +86,16 @@ export function inspectNamedApplicationImports(root = repositoryRoot) {
     throw new Error('dependency-cruiser did not return a valid JSON graph');
   }
 
-  const violations = findNamedApplicationImports(graph, applicationPackageNames(root));
   const graphErrors = graph.summary?.error;
   if (!Number.isInteger(graphErrors) || graphErrors < 0) {
     throw new Error('dependency-cruiser JSON graph is missing its error count');
   }
+  return { graph, graphErrors };
+}
+
+export function inspectNamedApplicationImports(root = repositoryRoot) {
+  const { graph, graphErrors } = inspectDependencyCruiserGraph(root);
+  const violations = findNamedApplicationImports(graph, applicationPackageNames(root));
   return { violations, graphErrors };
 }
 
