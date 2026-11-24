@@ -12,19 +12,12 @@ Only remove an old script after migrating every required invariant, proving equi
 
 ## Workspace-boundary parity and legacy coverage
 
-The workspace policy now includes **all pnpm workspace locations**: apps/*, packages/*, and tooling/*. The legacy workspace checker keeps ownership of manifest-only invariants; dependency-cruiser tests the source import graph:
+The workspace guard now checks all three pnpm workspace roots: `apps/`, `packages/`, and `tooling/`. Dependency-cruiser is still a manual diagnostic.
 
-| Invariant                                                | Legacy workspace checker | dependency-cruiser |
-| -------------------------------------------------------- | ------------------------ | ------------------ |
-| Cross-app source imports                                 | Enforced                 | Enforced           |
-| Relative imports across app, package, tooling            | Enforced                 | Enforced           |
-| Imported app by workspace package name                   | Enforced                 | Not yet covered    |
-| Direct workspace manifest dependency on an app           | Enforced                 | Not covered        |
-| Duplicate or unnamed workspace package                   | Enforced                 | Not covered        |
-| Cyclic shared dependency declarations, including tooling | Enforced                 | Not covered        |
-| Nest DI provider exports / feature contracts             | Separate API guard       | Not covered        |
-| Arbitrary computed imports                               | Separate API guard       | Not covered        |
+- **Both checkers:** cross-app source imports and relative cross-workspace source imports, including tooling packages.
+- **Legacy checker only:** named app imports, manifest dependencies on apps, duplicate or missing workspace names, and shared dependency cycles.
+- **API-specific guards:** Nest DI/provider exports, feature contract rules, and computed dynamic imports.
 
-pnpm test:tooling runs source-boundary parity fixtures against both checkers, in addition to the existing manifest tests. This comparison checks only *resolved* imports in representative fixtures; the legacy manifest and DI guards remain required, and the new analyzer is still manual-only.
+The parity tests run both import checkers against the same temporary source fixtures. These tests cover representative resolved imports; the legacy manifest and Nest DI guards remain required.
 
-A later PR can consider removing the regex import extraction from the legacy workspace checker only after verifying named-package imports, unresolved path cases, and the behavior on CI against the complete source graph. This PR does **not** remove that extraction.
+A future PR may remove the regex import extraction from the legacy checker after separately verifying named-package imports, unresolved paths and CI behavior across the whole codebase. This PR does not remove it.
