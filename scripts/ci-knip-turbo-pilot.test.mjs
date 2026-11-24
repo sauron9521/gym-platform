@@ -10,7 +10,7 @@ test('Knip is report-only, with unsafe dynamic staging config loading disabled',
   assert.ok(pkg.devDependencies.knip);
   assert.equal(pkg.scripts.knip, 'knip');
   assert.match(pkg.scripts['knip:report'], /--no-exit-code/);
-  assert.doesNotMatch(pkg.scripts['knip:report'], /--fix|--allow-remove-files/);
+  assert.doesNotMatch(pkg.scripts['knip:report'], /--fix|--allow-remove-files|--max-show-issues/);
   assert.equal(config.workspaces['apps/admin'].playwright, false);
   assert.ok(config.workspaces['apps/admin'].entry.includes('e2e/**/*.spec.ts'));
 });
@@ -60,7 +60,9 @@ test('manual hygiene workflow never replaces required CI gates or performs write
   assert.match(audit, /persist-credentials: false/);
   assert.match(audit, /pnpm install --frozen-lockfile/);
   assert.match(audit, /pnpm --filter @gym\/api db:generate/);
-  assert.match(audit, /pnpm knip:report/);
+  assert.match(audit, /pnpm knip:report --reporter json --output-file/);
+  assert.match(audit, /json=\$RUNNER_TEMP\/knip\.json/);
+  assert.match(audit, /\$\{\{ runner\.temp \}\}\/knip\.json/);
   assert.match(audit, /--dry=json/);
   assert.doesNotMatch(audit, /continue-on-error: true|pnpm knip --fix/);
 
