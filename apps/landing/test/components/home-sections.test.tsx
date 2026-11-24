@@ -73,6 +73,11 @@ test('English homepage uses translated headings, CTAs, cards, milestones and ARI
   expect(athleteDarkPreview.getAttribute('src')).toContain('athlete-workouts-dark.webp');
   expect(coachDarkPreview.getAttribute('src')).toContain('coach-workspace-dark.webp');
   expect(athleteDarkPreview.getAttribute('loading')).toBe('lazy');
+  // The potential LCP card receives a hint, while secondary Coach images do not compete.
+  expect(athletePreview.getAttribute('fetchpriority')).toBe('high');
+  expect(athleteDarkPreview.getAttribute('fetchpriority')).toBe('high');
+  expect(coachPreview.getAttribute('fetchpriority')).toBe('auto');
+  expect(coachDarkPreview.getAttribute('fetchpriority')).toBe('auto');
   expect(coachDarkPreview.getAttribute('loading')).toBe('lazy');
   expect(screen.getAllByText(/records and metrics are synthetic/)).toHaveLength(2);
   expect(screen.getByRole('heading', { name: 'OVRANTO Athlete' })).toBeTruthy();
