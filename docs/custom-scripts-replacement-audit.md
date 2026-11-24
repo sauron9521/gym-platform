@@ -48,7 +48,7 @@ Each item below is classified as **Candidate**, **Retain**, or **Review**. "Cand
 - **Retain:** `release-bundle.mjs` — bundle integrity and verification; compare attestations/standard OCI distribution separately before changing its trust model.
 - **Retain:** `release-ci-gate.mjs`, `release-supply-chain.mjs` — exact workflow/job and supply-chain evidence.
 - **Retain:** `backup-production.sh`, `restore-drill.sh`, `verify-backup-freshness.sh` — operational database backup and restore safety; do not confuse pg_dump tooling with orchestration and validation.
-  
+
 ### E. Staging, migrations and smoke checks (8 JavaScript; 1 shell)
 
 - **Retain:** `admin-staging-preflight.mjs`, `admin-staging-target.mjs` — target validation and protection against live/incorrect environments.
@@ -56,7 +56,7 @@ Each item below is classified as **Candidate**, **Retain**, or **Review**. "Cand
 - **Review, not replace yet:** `staging-functional-smoke.mjs`, `staging-live-smoke.mjs`, `staging-smoke.mjs` — compare with existing Playwright/API test infrastructure, but preserve real target assertions, explicit opt-in and read-only checks where required.
 - **Retain:** `staging-readiness-inventory.mjs` — staging evidence inventory.
 - **Retain:** `staging-upgrade-rollback.mjs`, `staging-upgrade-run.sh` — release/rollback state transitions and guardrails.
-  
+
 ### F. GitHub roadmap and project setup (2 JavaScript)
 
 - **Review for one-time retirement:** `github-project-setup.mjs` — GitHub CLI/Projects setup. Verify actual callers and that setup is complete; manual project templates/actions may cover one-time configuration. Do not delete while replay/synchronization is required.
