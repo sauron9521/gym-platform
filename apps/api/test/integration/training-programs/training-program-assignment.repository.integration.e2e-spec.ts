@@ -1575,9 +1575,11 @@ describe('TrainingProgramAssignmentRepository integration (e2e)', () => {
       expect(first).not.toBeNull();
       expect(first?.status).toBe('ACTIVE');
 
-      // Second active assignment must violate uniqueness.
+      // The repository translates the actual database uniqueness violation.
       await expect(createAssignment()).rejects.toMatchObject({
-        code: 'P2002',
+        name: 'AssignmentCreationError',
+        code: 'ALREADY_EXISTS',
+        message: 'This program assignment already exists.',
       });
 
       const activeAssignments = await prisma.trainingProgramAssignment.findMany({

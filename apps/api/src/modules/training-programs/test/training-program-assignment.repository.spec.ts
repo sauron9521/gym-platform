@@ -1,3 +1,5 @@
+import { Prisma } from '#prisma/client';
+import { AssignmentCreationError } from '../application/assignment-creation.js';
 import { TrainingProgramAssignmentRepository } from '../repositories/training-program-assignment.repository.js';
 
 import {
@@ -171,6 +173,34 @@ describe('TrainingProgramAssignmentRepository', () => {
       trainerId: 'trainer-1',
       athleteId: 'athlete-1',
     };
+
+    it.each([
+      ['P2002', 'ALREADY_EXISTS'],
+      ['P2025', 'STATE_CHANGED'],
+      ['P2003', 'REFERENCE_MISSING'],
+    ] as const)('translates persistence error %s to %s', async (code, expected) => {
+      const error = new Prisma.PrismaClientKnownRequestError('Assignment write failed', {
+        code,
+        clientVersion: '7.0.0',
+      });
+      models.$transaction.mockRejectedValue(error);
+
+      await expect(repository.createAssignmentForActiveRelationship(input)).rejects.toMatchObject({
+        name: 'AssignmentCreationError',
+        code: expected,
+        message: new AssignmentCreationError(expected).message,
+      });
+    });
+
+    it('propagates unrelated assignment persistence failures unchanged', async () => {
+      const error = new Prisma.PrismaClientKnownRequestError('Transaction conflict', {
+        code: 'P2034',
+        clientVersion: '7.0.0',
+      });
+      models.$transaction.mockRejectedValue(error);
+
+      await expect(repository.createAssignmentForActiveRelationship(input)).rejects.toBe(error);
+    });
 
     const source = { workouts: [{ exercises: [] as Array<{ exerciseId: string }> }] };
 

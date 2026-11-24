@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 
 import { Prisma } from '#prisma/client';
+import { AssignmentCreationError } from '../application/assignment-creation.js';
 
 import { TrainerAthletesService } from '#src/modules/trainer-athletes/services/trainer-athletes.service';
 
@@ -80,16 +81,11 @@ export class TrainingProgramAssignmentService {
         athleteId: relationship.athleteId,
       });
     } catch (error) {
-      if (this.isPrismaError(error, 'P2002')) {
-        throw new ConflictException('This program assignment already exists.');
-      }
-
-      if (this.isPrismaError(error, 'P2025')) {
-        throw new ConflictException('The program or relationship state has changed.');
-      }
-
-      if (this.isPrismaError(error, 'P2003')) {
-        throw new NotFoundException('One of the assignment references no longer exists.');
+      if (error instanceof AssignmentCreationError) {
+        if (error.code === 'REFERENCE_MISSING') {
+          throw new NotFoundException(error.message);
+        }
+        throw new ConflictException(error.message);
       }
 
       throw error;

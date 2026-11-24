@@ -5,6 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Prisma } from '#prisma/client';
+import { AssignmentCreationError } from '../application/assignment-creation.js';
 import { TrainingProgramAssignmentService } from '../services/training-program-assignment.service.js';
 import {
   assignmentFullReadWhere,
@@ -150,11 +151,13 @@ describe('TrainingProgramAssignmentService', () => {
   });
 
   it.each([
-    { code: 'P2002', expected: ConflictException },
-    { code: 'P2025', expected: ConflictException },
-    { code: 'P2003', expected: NotFoundException },
-  ])('maps a concurrent assignment $code to $expected.name', async ({ code, expected }) => {
-    repository.createAssignmentForActiveRelationship.mockRejectedValue(prismaError(code));
+    { code: 'ALREADY_EXISTS', expected: ConflictException },
+    { code: 'STATE_CHANGED', expected: ConflictException },
+    { code: 'REFERENCE_MISSING', expected: NotFoundException },
+  ] as const)('maps assignment creation $code to $expected.name', async ({ code, expected }) => {
+    repository.createAssignmentForActiveRelationship.mockRejectedValue(
+      new AssignmentCreationError(code),
+    );
     await expect(
       service.assignVersionToAthlete(trainer, programId, versionId, assignmentInput),
     ).rejects.toBeInstanceOf(expected);
