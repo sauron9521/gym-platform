@@ -148,3 +148,5 @@ Coordinate with [#650](https://github.com/sauron9521/gym-platform/issues/650) fo
 Each PR starts from current main, preserves behavior, is independently reviewable and has appropriate regression evidence. Never auto-merge. Do not close issues before verified acceptance. At CA05 compare actual dependency edges, abstraction/file count, test isolation and reproducible test duration, alongside access/transaction evidence. Stop or revise if the added complexity outweighs the benefit. No blanket migration or release approval is implied.
 
 CA05 evidence and the explicit owner GO of 2026-11-24 are recorded in the [publication pilot evaluation](adr-007-pilot-evaluation.md). Limited expansion is approved under the stated safeguards; start CA06 only after the evaluation PR is manually merged and CA05 is verified. This is not release approval.
+
+The six selected CA06 Training Programs implementation slices are merged and verified; see [expansion evidence](adr-007-training-programs-expansion.md) for measured changes, regression evidence and deliberate deferrals. CA07 remains gated on the final evidence review, manual merge and #724 acceptance reconciliation.
