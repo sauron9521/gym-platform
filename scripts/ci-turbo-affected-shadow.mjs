@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { readFileSync, writeFileSync } from 'node:fs';
+import { appendFileSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -69,6 +69,35 @@ export function compareAffectedPlans(paths, plan) {
   };
 }
 
+/**
+ * Validate read-only manual comparison ranges before giving them to Turbo.
+ * By default compare HEAD^1..HEAD; optional SHAs must form a nonempty range
+ * reachable from the checked-out main commit, never an untrusted branch.
+ */
+export function resolveAuditRange(env = process.env, git = execFileSync) {
+  const requestedBase = (env.AUDIT_BASE_SHA ?? '').trim();
+  const requestedHead = (env.AUDIT_HEAD_SHA ?? '').trim();
+  if (Boolean(requestedBase) !== Boolean(requestedHead)) {
+    throw new Error('Supply both AUDIT_BASE_SHA and AUDIT_HEAD_SHA, or neither');
+  }
+
+  const gitOptions = { cwd: repositoryRoot, encoding: 'utf8' };
+  const mainHead = git('git', ['rev-parse', 'HEAD'], gitOptions).trim();
+  const head = requestedHead || mainHead;
+  const base =
+    requestedBase || git('git', ['rev-parse', 'HEAD^1'], gitOptions).trim();
+
+  if (!commitSha.test(mainHead) || !commitSha.test(base) || !commitSha.test(head)) {
+    throw new Error('Comparison requires full 40-character commit SHAs');
+  }
+  if (base === head) throw new Error('Comparison range must contain at least one commit');
+
+  git('git', ['merge-base', '--is-ancestor', base, head], gitOptions);
+  git('git', ['merge-base', '--is-ancestor', head, mainHead], gitOptions);
+
+  return { base, head, mode: requestedBase ? 'explicit-main-history' : 'latest-main-commit' };
+}
+
 export function changedPathsBetween(base, head, git = execFileSync) {
   if (!commitSha.test(base) || !commitSha.test(head)) {
     throw new Error('Expected full hexadecimal base/head Git SHAs');
@@ -87,6 +116,19 @@ export function changedPathsBetween(base, head, git = execFileSync) {
 }
 
 function main(args = process.argv.slice(2)) {
+  if (args[0] === '--resolve-range') {
+    if (args.length !== 3 || args[1] !== '--github-output' || !args[2]) {
+      throw new Error('Usage: --resolve-range --github-output GITHUB_OUTPUT');
+    }
+    const range = resolveAuditRange();
+    appendFileSync(
+      args[2],
+      'base=' + range.base + '\\n' + 'head=' + range.head + '\\n' + 'mode=' + range.mode + '\\n',
+    );
+    console.log('Validated read-only Turbo comparison range:', JSON.stringify(range));
+    return;
+  }
+
   if (
     args.length !== 8 ||
     args[0] !== '--base' ||
