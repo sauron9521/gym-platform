@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { assertPublishableVersion, ProgramPublicationError } from '../domain/publication.policy.js';
+import { isWorkoutOutsideDuration } from '../domain/duration.policy.js';
 import { PrismaService } from '#src/infra/database/index';
 import { trainingProgramVersionSelect } from '../selects/training-program-version.select.js';
 import { trainingProgramDraftAccessSelect } from '../selects/training-program-access.select.js';
@@ -135,7 +136,7 @@ export class TrainingProgramVersionRepository {
         select: { weekNumber: true },
       });
 
-      if (latestWorkout && latestWorkout.weekNumber > requestedWeeks) {
+      if (latestWorkout && isWorkoutOutsideDuration(latestWorkout.weekNumber, requestedWeeks)) {
         throw new BadRequestException('A workout week cannot exceed the program duration');
       }
 
