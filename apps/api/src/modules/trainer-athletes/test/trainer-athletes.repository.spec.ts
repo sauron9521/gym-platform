@@ -3,6 +3,7 @@ import { ConflictException } from '@nestjs/common';
 import { PrismaService } from '#src/infra/database/index';
 import { Prisma } from '#prisma/client';
 
+import { InvitationAcceptanceConflict } from '../application/accept-invitation.js';
 import { InvitationAlreadyExists } from '../application/create-invitation.js';
 import { TrainerAthletesRepository } from '../repositories/trainer-athletes.repository.js';
 import { fullRelationshipReadWhere } from '../policies/trainer-athlete-read.policy.js';
@@ -502,6 +503,63 @@ describe('TrainerAthletesRepository', () => {
         repository.createWithCurrentCapabilities({ ...invitation, initiatedById: 'outsider' }),
       ).rejects.toThrow(ConflictException);
       expect(prisma.$transaction).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('acceptPendingInvitation', () => {
+    const command = {
+      relationshipId: 'relationship-1',
+      respondedAt: new Date('2026-11-01T10:00:00.000Z'),
+    };
+
+    it('requires a pending invitation and current participant eligibility in the update', async () => {
+      const accepted = { id: command.relationshipId, status: 'ACTIVE' };
+      prisma.trainerAthlete.update.mockResolvedValueOnce(accepted);
+
+      await expect(repository.acceptPendingInvitation(command)).resolves.toBe(accepted);
+
+      expect(prisma.trainerAthlete.update).toHaveBeenCalledExactlyOnceWith({
+        where: {
+          id: command.relationshipId,
+          status: 'PENDING',
+          trainer: {
+            is: {
+              deletedAt: null,
+              role: { not: 'ADMIN' },
+              OR: [
+                { trainerProfile: { is: { isActive: true } } },
+                { role: 'TRAINER', trainerProfile: { is: null } },
+              ],
+            },
+          },
+          athlete: { is: { deletedAt: null, role: { not: 'ADMIN' } } },
+        },
+        data: { status: 'ACTIVE', respondedAt: command.respondedAt },
+        select: trainerAthleteSelect,
+      });
+    });
+
+    it('translates a failed conditional write to an acceptance conflict', async () => {
+      prisma.trainerAthlete.update.mockRejectedValueOnce(
+        new Prisma.PrismaClientKnownRequestError('Record not found', {
+          code: 'P2025',
+          clientVersion: '7.10.1',
+        }),
+      );
+
+      await expect(repository.acceptPendingInvitation(command)).rejects.toBeInstanceOf(
+        InvitationAcceptanceConflict,
+      );
+    });
+
+    it('preserves unrelated Prisma failures', async () => {
+      const error = new Prisma.PrismaClientKnownRequestError('Transaction conflict', {
+        code: 'P2034',
+        clientVersion: '7.10.1',
+      });
+      prisma.trainerAthlete.update.mockRejectedValueOnce(error);
+
+      await expect(repository.acceptPendingInvitation(command)).rejects.toBe(error);
     });
   });
 

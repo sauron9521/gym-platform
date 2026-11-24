@@ -8,6 +8,7 @@ import {
 import { Prisma } from '#prisma/client';
 
 import { UsersService } from '#src/modules/users/services/users.service';
+import { InvitationAcceptanceConflict } from '../application/accept-invitation.js';
 import { InvitationAlreadyExists } from '../application/create-invitation.js';
 import { TrainerAthletesRepository } from '../repositories/trainer-athletes.repository.js';
 import { fullRelationshipReadWhere } from '../policies/trainer-athlete-read.policy.js';
@@ -20,6 +21,7 @@ describe('TrainerAthletesService', () => {
   let service: TrainerAthletesService;
 
   const repository = {
+    acceptPendingInvitation: vi.fn(),
     createWithCurrentCapabilities: vi.fn(),
     findMany: vi.fn(),
     findManyForParticipant: vi.fn(),
@@ -671,7 +673,7 @@ describe('TrainerAthletesService', () => {
       await expect(service.accept(pendingRelationship.id, athlete)).rejects.toThrow(
         ConflictException,
       );
-      expect(repository.update).not.toHaveBeenCalled();
+      expect(repository.acceptPendingInvitation).not.toHaveBeenCalled();
     });
 
     it('allows an approved ATHLETE-role trainer to accept an athlete invitation', async () => {
@@ -679,13 +681,13 @@ describe('TrainerAthletesService', () => {
         ...pendingRelationship,
         initiatedById: athlete.id,
       });
-      repository.update.mockResolvedValue(activeRelationship);
+      repository.acceptPendingInvitation.mockResolvedValue(activeRelationship);
       const approvedTrainer: TrainerAthleteActor = { id: trainer.id, role: 'ATHLETE' };
 
       await expect(service.accept(pendingRelationship.id, approvedTrainer)).resolves.toEqual(
         activeRelationship,
       );
-      expect(repository.update).toHaveBeenCalledOnce();
+      expect(repository.acceptPendingInvitation).toHaveBeenCalledOnce();
     });
 
     it('rejects activation after an actor is promoted to admin', async () => {
@@ -699,7 +701,7 @@ describe('TrainerAthletesService', () => {
       await expect(service.accept(pendingRelationship.id, athlete)).rejects.toThrow(
         ForbiddenException,
       );
-      expect(repository.update).not.toHaveBeenCalled();
+      expect(repository.acceptPendingInvitation).not.toHaveBeenCalled();
     });
 
     it('rejects acceptance when the athlete account is not eligible', async () => {
@@ -716,7 +718,7 @@ describe('TrainerAthletesService', () => {
       await expect(service.accept(pendingRelationship.id, trainer)).rejects.toThrow(
         ConflictException,
       );
-      expect(repository.update).not.toHaveBeenCalled();
+      expect(repository.acceptPendingInvitation).not.toHaveBeenCalled();
     });
 
     it('does not activate a pending relationship when capability lookup fails', async () => {
@@ -726,39 +728,21 @@ describe('TrainerAthletesService', () => {
       await expect(service.accept(pendingRelationship.id, athlete)).rejects.toThrow(
         'Database unavailable',
       );
-      expect(repository.update).not.toHaveBeenCalled();
+      expect(repository.acceptPendingInvitation).not.toHaveBeenCalled();
     });
 
     it('should allow the recipient to accept a request', async () => {
       repository.findById.mockResolvedValue(pendingRelationship);
-      repository.update.mockResolvedValue(activeRelationship);
+      repository.acceptPendingInvitation.mockResolvedValue(activeRelationship);
 
       const result = await service.accept(pendingRelationship.id, athlete);
 
       expect(result).toEqual(activeRelationship);
 
-      expect(repository.update).toHaveBeenCalledWith(
-        expect.objectContaining({
-          id: pendingRelationship.id,
-          status: 'PENDING',
-          trainer: {
-            is: {
-              deletedAt: null,
-              role: { not: 'ADMIN' },
-              OR: [
-                { trainerProfile: { is: { isActive: true } } },
-                { role: 'TRAINER', trainerProfile: { is: null } },
-              ],
-            },
-          },
-          athlete: { is: { deletedAt: null, role: { not: 'ADMIN' } } },
-        }),
-        expect.objectContaining({
-          status: 'ACTIVE',
-          respondedAt: expect.any(Date),
-        }),
-        false,
-      );
+      expect(repository.acceptPendingInvitation).toHaveBeenCalledExactlyOnceWith({
+        relationshipId: pendingRelationship.id,
+        respondedAt: expect.any(Date),
+      });
     });
 
     it('should reject acceptance by the initiator', async () => {
@@ -768,7 +752,7 @@ describe('TrainerAthletesService', () => {
         ForbiddenException,
       );
 
-      expect(repository.update).not.toHaveBeenCalled();
+      expect(repository.acceptPendingInvitation).not.toHaveBeenCalled();
     });
 
     it('should reject accepting a non-pending relationship', async () => {
@@ -778,7 +762,25 @@ describe('TrainerAthletesService', () => {
         ConflictException,
       );
 
-      expect(repository.update).not.toHaveBeenCalled();
+      expect(repository.acceptPendingInvitation).not.toHaveBeenCalled();
+    });
+
+    it('preserves the HTTP conflict when the conditional acceptance loses', async () => {
+      repository.findById.mockResolvedValue(pendingRelationship);
+      repository.acceptPendingInvitation.mockRejectedValue(new InvitationAcceptanceConflict());
+
+      await expect(service.accept(pendingRelationship.id, athlete)).rejects.toMatchObject({
+        status: 409,
+        message: 'Relationship state has changed. Reload and try again.',
+      });
+    });
+
+    it('propagates unexpected acceptance errors', async () => {
+      const error = new Error('Database unavailable');
+      repository.findById.mockResolvedValue(pendingRelationship);
+      repository.acceptPendingInvitation.mockRejectedValue(error);
+
+      await expect(service.accept(pendingRelationship.id, athlete)).rejects.toBe(error);
     });
   });
 
@@ -1139,7 +1141,7 @@ describe('TrainerAthletesService', () => {
   });
 
   describe('concurrent updates', () => {
-    it('should convert Prisma P2025 into ConflictException', async () => {
+    it('should convert Prisma P2025 into ConflictException on decline', async () => {
       repository.findById.mockResolvedValue(pendingRelationship);
 
       repository.update.mockRejectedValue(
@@ -1149,7 +1151,7 @@ describe('TrainerAthletesService', () => {
         }),
       );
 
-      await expect(service.accept(pendingRelationship.id, athlete)).rejects.toThrow(
+      await expect(service.decline(pendingRelationship.id, athlete)).rejects.toThrow(
         ConflictException,
       );
     });

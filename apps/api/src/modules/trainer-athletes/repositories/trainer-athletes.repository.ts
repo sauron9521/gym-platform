@@ -3,6 +3,10 @@ import { ConflictException, Injectable } from '@nestjs/common';
 import { PrismaService } from '#src/infra/database/index';
 import { deriveAccountCapabilities } from '#src/modules/users/public-api';
 import {
+  InvitationAcceptanceConflict,
+  type AcceptInvitationCommand,
+} from '../application/accept-invitation.js';
+import {
   InvitationAlreadyExists,
   type CreateInvitationCommand,
 } from '../application/create-invitation.js';
@@ -157,6 +161,35 @@ export class TrainerAthletesRepository {
         select: trainerAthleteSelect,
       });
     });
+  }
+
+  async acceptPendingInvitation({ relationshipId, respondedAt }: AcceptInvitationCommand) {
+    try {
+      return await this.update(
+        {
+          id: relationshipId,
+          status: 'PENDING',
+          // Recheck eligibility in the write after the service capability lookup.
+          trainer: {
+            is: {
+              deletedAt: null,
+              role: { not: 'ADMIN' },
+              OR: [
+                { trainerProfile: { is: { isActive: true } } },
+                { role: 'TRAINER', trainerProfile: { is: null } },
+              ],
+            },
+          },
+          athlete: { is: { deletedAt: null, role: { not: 'ADMIN' } } },
+        },
+        { status: 'ACTIVE', respondedAt },
+      );
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+        throw new InvitationAcceptanceConflict();
+      }
+      throw error;
+    }
   }
 
   // UPDATE
