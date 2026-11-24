@@ -19,11 +19,7 @@ type SetWriteContext = {
 export class WorkoutSetsRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  async updateSet(
-    id: string,
-    data: WorkoutSetResultChanges,
-    context: SetWriteContext,
-  ) {
+  async updateSet(id: string, data: WorkoutSetResultChanges, context: SetWriteContext) {
     try {
       return await this.updateSetAtomically(id, data, context);
     } catch (error) {
