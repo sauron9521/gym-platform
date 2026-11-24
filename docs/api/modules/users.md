@@ -11,27 +11,14 @@ The current-user endpoints are authenticated. Public avatar serving is intention
 | GET    | `/users/me/account-deletion-request` | Read the current user's deletion request receipt |
 | POST   | `/users/me/account-deletion-request` | Submit a confirmed account deletion request      |
 | PATCH  | `/users/me`                          | Update own profile                               |
+| PATCH  | `/users/me/preferences`              | Update own account preferences                   |
 | POST   | `/users/me/avatar`                   | Upload/replace avatar                            |
 | DELETE | `/users/me/avatar`                   | Remove avatar                                    |
 | GET    | `/avatars/:key`                      | Public avatar retrieval                          |
 
 ## Account deletion request intake (#297)
 
-`GET /users/me/account-deletion-request` returns `{ "request": null }` until
-the current user submits a request. A submitted request returns an opaque
-receipt ID, the `REQUESTED` state and the original UTC submission time.
-
-`POST /users/me/account-deletion-request` requires explicit confirmation
-(`confirm: true`) and the current password. Accounts enrolled in MFA also
-provide a fresh authenticator code. Both endpoints use the existing session
-or access token and are served with `Cache-Control: no-store`. The submission
-has the existing auth rate limit per IP and per account.
-
-Submission records the request for review. The user can keep the receipt and
-track it through the existing account. A confirmed retry returns the same
-receipt. Only the receipt, account reference and submission time are
-persisted. The Privacy Center, review, data removal and its verification
-depend on the subsequent implementation of the S03 data lifecycle.
+These routes use the `/users/me` URL namespace but belong to the separate [Account deletion requests module](account-deletion-requests.md). See that guide for confirmation, idempotency, security boundaries and remaining data-lifecycle work.
 
 ## Current capabilities (migration slice #291)
 
@@ -42,7 +29,7 @@ depend on the subsequent implementation of the S03 data lifecycle.
 - `ADMIN` remains isolated from athlete/trainer capability; the admin flag is informational, **not** an admin authorization token. Existing server-side operator permission checks remain required.
 - Public `/users/me` and the legacy `role` field are unchanged. No role mutation, new RBAC table, public grant endpoint, or Prisma migration is needed for this slice (TrainerProfile is supplied by #309).
 
-**Important:** These values allow UIs to explain access. They do not, by themselves, authorize protected trainer operations. Migrate server-side trainer and athlete resource policies under #291 and verify cross-product E2E in #361 **before** enabling Trainer Web routes (#363).
+**Important:** These values allow UIs to explain access. They do not, by themselves, authorize protected trainer operations. Trainer Web routes now exist. Server-side resource policies and cross-product regressions remain mandatory; the capability response never substitutes for per-operation authorization.
 
 ## Internal capability contract (Issue #360)
 
