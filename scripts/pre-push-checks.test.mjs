@@ -153,9 +153,7 @@ test('shared UI changes check every web consumer without running API checks', ()
   for (const workspace of ['@gym/web', '@gym/admin', '@gym/trainer', '@gym/landing']) {
     for (const task of ['lint', 'typecheck']) {
       assert.ok(
-        plan.commands.some(
-          (cmd) => cmd[2] === workspace && cmd[3] === task,
-        ),
+        plan.commands.some((cmd) => cmd[2] === workspace && cmd[3] === task),
         `Expected ${task} for ${workspace}`,
       );
     }
