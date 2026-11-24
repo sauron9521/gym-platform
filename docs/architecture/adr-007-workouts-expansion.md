@@ -1,6 +1,6 @@
 # ADR-007 expansion evidence — Workouts (CA07)
 
-- **Status:** Eight implementation slices merged and verified; final evidence review and documentation merge pending.
+- **Status:** Eight implementation slices and final evidence [#762](https://github.com/sauron9521/gym-platform/pull/762) merged and verified; CA07 #725 closed.
 - **Date:** 2026-11-24.
 - **Gate:** [CA07 #725](https://github.com/sauron9521/gym-platform/issues/725), [Epic #718](https://github.com/sauron9521/gym-platform/issues/718).
 - **Decision:** [ADR-007](adr-007-pragmatic-clean-architecture.md) and [CA05 owner GO](adr-007-pilot-evaluation.md).

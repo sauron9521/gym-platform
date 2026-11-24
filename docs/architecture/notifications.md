@@ -1,7 +1,8 @@
-# ADR-006 — Unified Notifications architecture
+# ADR-008 — Unified Notifications architecture
 
 - **Status:** Accepted target architecture; **not implemented** by this document
 - **Decision date:** 2026-11-21
+- **Identifier note:** Originally labeled ADR-006; renumbered to ADR-008 on 2026-11-24 to resolve the collision with Shared Package Boundaries. The decision, approval date and document path are unchanged.
 - **Scope:** cross-app technical Epic [#563](https://github.com/sauron9521/gym-platform/issues/563), first docs slice [#564](https://github.com/sauron9521/gym-platform/issues/564)
 - **Master roadmap:** [#353](https://github.com/sauron9521/gym-platform/issues/353)
 - **Related:** [event taxonomy](notification-events.md) · [delivery and failure policy](notification-delivery.md)

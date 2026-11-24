@@ -1,6 +1,6 @@
 # ADR-007 expansion evidence — Training Programs (CA06)
 
-- **Status:** Six implementation slices merged and verified; final evidence review and documentation merge pending.
+- **Status:** Six implementation slices and final evidence [#752](https://github.com/sauron9521/gym-platform/pull/752) merged and verified; CA06 #724 closed.
 - **Date:** 2026-11-24.
 - **Gate:** [CA06 #724](https://github.com/sauron9521/gym-platform/issues/724), [Epic #718](https://github.com/sauron9521/gym-platform/issues/718).
 - **Decision:** [ADR-007](adr-007-pragmatic-clean-architecture.md) and [CA05 owner GO](adr-007-pilot-evaluation.md).
