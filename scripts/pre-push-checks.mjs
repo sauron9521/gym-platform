@@ -71,9 +71,11 @@ export function findPushedPaths(
   const updates = parsePushRefs(stdin);
   // Missing input, unknown refs or failed Git lookups must not skip checks.
   if (!updates || !/^[a-zA-Z0-9_][a-zA-Z0-9_.-]*$/.test(remote)) {
-    return { full: true, files: [] };
+    return { full: true, files: [], deletedFiles: [] };
   }
   const files = new Set();
+  const deletedFiles = new Set();
+  const presentFiles = new Set();
   try {
     for (const update of updates) {
       if (zero.test(update.localSha)) {
@@ -93,23 +95,40 @@ export function findPushedPaths(
 
       const changed = git([
         'diff',
-        '--name-only',
+        '--name-status',
         '-z',
         '--no-renames',
-        '--diff-filter=ACMRT',
         base,
         update.localSha,
         '--',
       ]);
-      for (const path of changed.split('\0').filter(Boolean)) files.add(path);
+      // With --no-renames, Git emits NUL-separated status/path pairs.
+      // Preserve deletions for scope selection, but never format deleted paths.
+      if (!changed) continue;
+      if (!changed.endsWith('\0')) throw new Error('Incomplete Git diff');
+      const entries = changed.slice(0, -1).split('\0');
+      if (entries.length % 2 !== 0) throw new Error('Malformed Git diff');
+      for (let index = 0; index < entries.length; index += 2) {
+        const status = entries[index];
+        const path = entries[index + 1];
+        if (!/^[AMDT]$/.test(status) || !path) throw new Error('Unexpected Git diff entry');
+        files.add(path);
+        if (status === 'D') deletedFiles.add(path);
+        else presentFiles.add(path);
+      }
     }
   } catch {
-    return { full: true, files: [] };
+    return { full: true, files: [], deletedFiles: [] };
   }
-  return { full: false, files: [...files].sort() };
+  // Conflicting path states across pushed refs have no unambiguous scoped
+  // formatting target in a single working tree. Use the conservative full plan.
+  if ([...deletedFiles].some((path) => presentFiles.has(path))) {
+    return { full: true, files: [], deletedFiles: [] };
+  }
+  return { full: false, files: [...files].sort(), deletedFiles: [...deletedFiles].sort() };
 }
 
-export function createPrePushPlan({ full, files }) {
+export function createPrePushPlan({ full, files, deletedFiles = [] }) {
   // Valid Git ref updates with no net file changes, or only ref deletions,
   // publish no modified source and require no local checks.
   if (!full && files.length === 0) {
@@ -144,7 +163,8 @@ export function createPrePushPlan({ full, files }) {
     };
   }
 
-  const formatted = files.filter((path) => formatExtension.test(path));
+  const deleted = new Set(deletedFiles);
+  const formatted = files.filter((path) => !deleted.has(path) && formatExtension.test(path));
   if (formatted.length) {
     // Avoid OS argument-size limits for exceptionally large pushes.
     if (formatted.length > 100) {
@@ -260,10 +280,10 @@ export function runPrePushChecks(
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   try {
     const stdin = readFileSync(0, 'utf8');
-    const { full, files } = findPushedPaths(stdin, {
+    const changes = findPushedPaths(stdin, {
       remote: process.argv[2] || 'origin',
     });
-    runPrePushChecks(createPrePushPlan({ full, files }));
+    runPrePushChecks(createPrePushPlan(changes));
   } catch (error) {
     console.error('[pre-push]', error instanceof Error ? error.message : String(error));
     process.exitCode = 1;
