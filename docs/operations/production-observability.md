@@ -144,6 +144,104 @@ approval before any service installation or cutover.
 No candidate agent was installed or exercised in this refactor; no measured
 collector parity or production readiness is claimed.
 
+## Resource collector shadow pilot design (2026-11-24)
+
+Reviewed main [`26f3d63`](https://github.com/sauron9521/gym-platform/commit/26f3d63d06edb3b682f09a8ab521447dfd40ece1)
+after #803. This is a design/evidence gate under #711, not an installation
+or cutover. The production Compose contract currently limits the API to
+2 CPUs, 1 GiB memory and 256 PIDs.
+
+Prefer evaluating Alloy's embedded cAdvisor first, rather than deploying
+two permanent agents. Standalone cAdvisor is a fallback if Alloy's
+integration cannot satisfy the boundary or resource budget. Consult the
+[cAdvisor metric catalog](https://github.com/google/cadvisor/blob/master/docs/storage/prometheus.md)
+and [Alloy exporter reference](https://grafana.com/docs/alloy/latest/reference/components/prometheus/prometheus.exporter.cadvisor/).
+These are upstream capabilities, not evidence from a running candidate.
+
+### Exact mapping and non-equivalences
+
+| Existing series suffix (prefix `gym_api_docker_`)           | Candidate cAdvisor source                                                    | Acceptance decision                                                                                                        |
+| ----------------------------------------------------------- | ---------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `cpu_percent`                                               | `container_cpu_usage_seconds_total` rate multiplied by 100                   | Compare CPU cores, not percentage of quota; align the observation windows; avoid double-counting total and per-core series |
+| `memory_percent`                                            | `container_memory_working_set_bytes` and `container_spec_memory_limit_bytes` | Compare Docker CLI cache subtraction on cgroup v2; require a positive finite known limit                                   |
+| `pids`                                                      | `container_threads` or cgroup PID count                                      | Unproven; processes alone are not PIDs/tasks; retain Docker stats until proven                                             |
+| `cpu_periods_total`                                         | `container_cpu_cfs_periods_total`                                            | Compare against the exact container's cgroup counter                                                                       |
+| `cpu_throttled_periods_total`                               | `container_cpu_cfs_throttled_periods_total`                                  | Compare raw counts and reset behavior                                                                                      |
+| `cpu_throttled_seconds_total`                               | `container_cpu_cfs_throttled_seconds_total`                                  | Compare seconds, not microseconds                                                                                          |
+| `oom_events_window_10m`                                     | `container_oom_events_total`                                                 | Not equivalent to Docker's bounded event history; retain existing sampler                                                  |
+| `running`, `signals_running`, `restart_count`, `oom_killed` | No proven equivalent                                                         | Keep Docker inspect; absent cAdvisor series do not establish stopped/OOM state                                             |
+| Both `last_sample_timestamp_seconds` series                 | Scrape status and sample timestamp                                           | Retain current freshness contract; successful scrape is not fresh per-container data                                       |
+
+The existing alerts use CPU >=180%, memory >=90%, PID >=230,
+three restarts in ten minutes and a throttled-period ratio >=20%.
+These are current rules, not new pilot thresholds. Keep them unchanged.
+A stopped container currently emits -1 resource gauges and no CPU
+counters; missing candidate data must never be synthesized as healthy zero.
+
+### Isolated pilot sequence and privacy gate
+
+1. Provision a disposable Linux cgroup v2 VM with its own Docker daemon,
+   no production credentials, no real user data and no unrelated workloads.
+   Pin an audited Alloy release and image digest, record kernel, engine
+   and cgroup versions, and keep the candidate listener local/private.
+   The current developer device has Docker 29.10.0 and cgroup v2, but is
+   not established as a disposable host.
+2. Start one synthetic container and one decoy container with a distinct
+   identity and fake sensitive labels. Apply equivalent CPU, memory and
+   PID limits to the fixture. Do not reuse the production Compose project
+   or mount its configuration/data. No live OOM test on a shared host.
+3. Use only Alloy's cAdvisor component for the first pilot. Configure
+   `docker_only = true`, `disable_root_cgroup_stats = true`,
+   `store_container_labels = false` and an explicit minimal label
+   allowlist for fixture selection; leave the environment allowlist
+   empty. Restrict metric kinds to CPU, memory and the specific additional
+   kinds needed by the experiment. These are design requirements, not
+   an executable configuration. Verify the selected version supports them.
+   The agent still has host-sensitive privileges: never mount its Docker
+   socket into the API or gym-monitor, or treat a read-only socket mount
+   as an authorization boundary.
+4. Use a separate Prometheus instance/TSDB and job for shadow samples.
+   Filter by the exact fixture identity before retaining data, allowlist
+   metric names, retain only bounded fixture identity labels needed for
+   distinguishing counter resets, and exclude image names, host paths,
+   environment metadata, arbitrary labels and decoy series. Never forward
+   the raw exporter to a remote sink. Check actual emitted labels and
+   diagnostic logs for fake sensitive values. No Loki/log pipeline in
+   this first resource pilot.
+5. Initially use a fixed 15-second housekeeping and scrape interval, and
+   sample existing one-shot collectors once per minute in isolated output
+   directories. These are proposed exploratory settings, not approved
+   production intervals. Compare aligned samples rather than treating
+   different windows as interchangeable.
+
+### Evidence to collect before a replacement PR
+
+| Fixture case                            | Required evidence                                                         |
+| --------------------------------------- | ------------------------------------------------------------------------- |
+| Idle and bounded CPU activity           | CPU units, time windows, per-core labels and observed differences         |
+| Bounded memory activity                 | Cache accounting, configured memory limit and percentage differences      |
+| Controlled thread/process activity      | PID/task equivalence or explicit unsupported result                       |
+| CPU quota pressure                      | CFS counters, throttling ratio and existing alert decision                |
+| Stop, restart and recreate              | Missing versus zero, per-container identity and resets, no false recovery |
+| OOM on disposable fixture only          | OOM counter behavior; do not replace Docker event history without proof   |
+| Failed scrape or stale collection       | Missing/stale remains unknown; prior snapshots and alarms remain valid    |
+| Decoy container and fake private labels | No unrelated samples or private fields in retained data                   |
+
+Capture at least three independent runs with timestamps, pinned versions,
+fixture limits and identity, reference/candidate samples, differences,
+missing series, resource overhead (agent CPU/RSS, scrape samples and storage)
+and alert agreement. Agree numerical tolerances and resource budgets after
+initial observations and before any cutover claim. Keep raw captures local
+to the disposable fixture and publish only sanitized summaries. Document
+unsupported metrics explicitly; do not relabel new metric types as old ones.
+
+A first implementation PR may add a pinned isolated pilot configuration
+and offline Prometheus fixture tests only. A subsequent actual pilot must
+produce the above evidence. Keep old services, alerts and dashboards
+active/unchanged; rollback is simply removal of the isolated pilot.
+No agent is installed, started or configured by this design PR. There is
+no measured parity, host privilege review or production approval.
+
 ## Future steps
 
 Staging verification, access-controlled HTTP metrics, multi-instance
