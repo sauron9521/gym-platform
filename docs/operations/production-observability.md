@@ -466,6 +466,45 @@ the attached developer host is bare metal and no disposable VM was
 confirmed. Actual paired observations and the runtime approval remain
 blocked. The current monitoring scripts and alerts remain authoritative.
 
+### Manual hosted-VM observation
+
+The [manual resource shadow workflow](../../.github/workflows/monitoring-resource-shadow.yml)
+is an advisory, opt-in experiment, not a PR check or a deployment. It runs
+only from main on a GitHub-hosted Ubuntu 24.04 runner and requires the
+explicit `APPROVE_DISPOSABLE_RESOURCE_SHADOW` choice (default is
+`DO_NOT_RUN`). Before approval, review the pinned image versions, licenses,
+vulnerabilities and privileged access described above. No repository or
+production secrets are provided, checkout credentials are not persisted,
+and the job rejects a remote Docker context or a nonempty daemon.
+
+The workflow preloads the pinned images, then starts the synthetic fixture
+and decoy, an isolated Prometheus receiver and Alloy in the receiver's
+network namespace. Neither exposes a host port; ordinary container network
+traffic has no external route. Alloy nevertheless has privileged host
+access, including the Docker socket and read-only host mounts, so this is
+not a security sandbox for an untrusted agent. This is acceptable only
+on the disposable hosted VM after explicit approval. Usage reporting is
+disabled. No existing production services, gates or alerts are changed.
+
+One dispatch attempts three paired observations (idle, CPU, memory).
+The [evidence sanitizer](../../scripts/monitoring-shadow-evidence.mjs)
+rejects unexpected series, container identities, labels and nonfinite
+values, and refuses to report differences for missing or stale candidate
+data. It checks the fixture ID, bounded observation interval and exact
+query evaluation time. A separate diagnostic sentinel check is required.
+Only fixed metric names, numeric measurements and phase/status metadata
+are uploaded for seven days; raw queries, labels, container identities
+and diagnostics are never uploaded. An absent report or an inconclusive
+run is not a successful comparison. The workflow is bounded to 15
+minutes and cleans up its named resources without a daemon-wide prune.
+
+A successful workflow run still means exploratory observations, not
+parity. Repeat at least three independent dispatches and separately
+exercise restart, recreate, throttling, PID, OOM, failure freshness and
+resource overhead before deciding on replacement. No OOM workload runs
+in this workflow. The first hosted run has not yet occurred at this
+checkpoint; review actual output and agree tolerances before cutover.
+
 ## Future steps
 
 Staging verification, access-controlled HTTP metrics, multi-instance
