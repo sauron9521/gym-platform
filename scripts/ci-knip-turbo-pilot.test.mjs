@@ -141,3 +141,26 @@ test('root owns shared Next ESLint preset while apps retain local lint CLI', () 
     assert.match(read('apps/' + app + '/eslint.config.mjs'), /tooling\/config\/eslint-next\.mjs/);
   }
 });
+
+test('DOM Vitest aliases and setup resolve the same app-owned renderer', () => {
+  for (const app of ['admin', 'landing', 'trainer', 'web']) {
+    const manifest = JSON.parse(read('apps/' + app + '/package.json'));
+    const suffix = app === 'trainer' ? '' : '.components';
+    const config = read('apps/' + app + '/vitest' + suffix + '.config.mts');
+    assert.ok(manifest.devDependencies['@testing-library/react']);
+    assert.match(
+      config,
+      /createRequire\(import\.meta\.url\)\.resolve\('@testing-library\/react'\)/,
+    );
+    assert.match(config, /reactDomTestAliases\(rendererPath\)/);
+    assert.match(config, /env: \{ GYM_VITEST_DOM_RENDERER: rendererPath \}/);
+    assert.match(config, /tooling\/vitest\/react-dom\.setup\.mjs/);
+  }
+  const aliases = read('tooling/vitest/react-dom.mjs');
+  const setup = read('tooling/vitest/react-dom.setup.mjs');
+  assert.match(aliases, /createRequire\(rendererPath\)/);
+  assert.match(setup, /process\.env\.GYM_VITEST_DOM_RENDERER/);
+  assert.match(setup, /createRequire\(rendererPath\)/);
+  assert.match(setup, /isAbsolute\(rendererPath\)/);
+  assert.doesNotMatch(setup, /resolve\('@testing-library\/react'\)/);
+});
