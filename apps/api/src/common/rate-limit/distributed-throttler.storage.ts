@@ -22,7 +22,7 @@ type ThrottlerStorageRecord = Awaited<ReturnType<ThrottlerStorage['increment']>>
  * KEYS[1] count, KEYS[2] block
  * ARGV: TTL(ms), limit, blockDuration(ms)
  */
-export const RATE_LIMIT_LUA = `
+const RATE_LIMIT_LUA = `
 local blocked = redis.call('PTTL', KEYS[2])
 if blocked > 0 then
   local window = redis.call('PTTL', KEYS[1])

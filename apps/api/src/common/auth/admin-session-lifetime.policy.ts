@@ -8,7 +8,7 @@ export const ADMIN_SESSION_IDLE_TTL_MS = 15 * 60 * 1000;
 
 type LifetimeFields = Pick<SessionRecord, 'createdAt' | 'expiresAt' | 'lastActiveAt' | 'metadata'>;
 
-export function isAdminPurposeSession(record: Pick<SessionRecord, 'metadata'>): boolean {
+function isAdminPurposeSession(record: Pick<SessionRecord, 'metadata'>): boolean {
   return record.metadata?.purpose === ADMIN_SESSION_PURPOSE;
 }
 
