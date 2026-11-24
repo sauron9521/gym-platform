@@ -4,7 +4,7 @@ export const exerciseTypeSchema = z.enum(['STRENGTH', 'CARDIO', 'MOBILITY', 'PLY
 
 export const exerciseVisibilitySchema = z.enum(['PRIVATE', 'SELECTED_TRAINERS']);
 
-export const muscleRoleSchema = z.enum(['PRIMARY', 'SECONDARY']);
+const muscleRoleSchema = z.enum(['PRIMARY', 'SECONDARY']);
 
 export const exerciseMuscleGroupSchema = z.strictObject({
   slug: z.string().trim().min(1).max(80),

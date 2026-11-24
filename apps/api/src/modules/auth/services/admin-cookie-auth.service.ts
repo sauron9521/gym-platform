@@ -14,7 +14,7 @@ import type { Request, Response } from 'express';
 import type { AppConfigService } from '#src/common/config/app-config.types';
 import { ADMIN_SESSION_PURPOSE } from '#src/common/auth/admin-session-purpose.guard';
 
-export const ADMIN_SESSION_COOKIE_NAME = '__Host-admin-sid';
+const ADMIN_SESSION_COOKIE_NAME = '__Host-admin-sid';
 type BrowserRequest = Pick<Request, 'headers' | 'method'>;
 
 /**
