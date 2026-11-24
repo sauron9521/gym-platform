@@ -8,8 +8,6 @@ export const trainingProgramSetIdSchema = z.string().uuid();
 
 export const trainingProgramStatusSchema = z.enum(['DRAFT', 'PUBLISHED', 'ARCHIVED']);
 
-export const trainingProgramVersionStatusSchema = z.enum(['DRAFT', 'PUBLISHED']);
-
 export const trainingProgramSetTypeSchema = z.enum(['WARMUP', 'WORKING', 'DROP_SET', 'AMRAP']);
 
 export const trainingProgramTitleSchema = z.string().trim().min(2).max(120);
