@@ -13,8 +13,6 @@ export const mobileWorkoutFormSchema = z.object({
     ),
 });
 
-export type MobileWorkoutForm = z.infer<typeof mobileWorkoutFormSchema>;
-
 export type CreateWorkoutBody =
   operations['WorkoutsController_create']['requestBody']['content']['application/json'];
 

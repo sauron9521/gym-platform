@@ -1,5 +1,4 @@
 import { useInfiniteQuery } from '@tanstack/react-query';
-import type { paths } from '@gym/api-client';
 
 import { useAuth } from '@/features/auth/model/auth-context';
 import {
@@ -12,9 +11,6 @@ import { accountQueryKeys } from '@/shared/api/query-client';
 import { nextWorkoutPage } from '../lib/workouts-pagination';
 
 export type WorkoutFilter = 'PLANNED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | undefined;
-
-export type WorkoutsPage =
-  paths['/workouts']['get']['responses'][200]['content']['application/json'];
 
 /** Paginated results are scoped by authenticated account and selected status. */
 export function useWorkoutsQuery(status?: WorkoutFilter) {

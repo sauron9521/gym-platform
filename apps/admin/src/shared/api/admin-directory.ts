@@ -13,7 +13,7 @@ export type DirectoryRow = {
   status: 'ACTIVE' | 'SUSPENDED';
   createdAt: string;
 };
-export type DirectoryMeta = {
+type DirectoryMeta = {
   total: number;
   skip: number;
   take: number;
