@@ -140,6 +140,41 @@ describe('Repeated API performance A/B report', () => {
     assert.throws(() => summarizeRepeatedAB(fixture), /fixture fingerprints/);
   });
 
+  it('rejects non-string provenance and case-only commit differences', () => {
+    const invalidHash = trio();
+    invalidHash[0].fixtureFingerprint = [FINGERPRINT];
+    assert.throws(() => summarizeRepeatedAB(invalidHash), /fixture fingerprint/);
+
+    const invalidCommit = trio();
+    invalidCommit[0].comparisons[0].beforeCommit = [BASE];
+    assert.throws(
+      () => summarizeRepeatedAB(invalidCommit),
+      /Invalid or identical compared commits/,
+    );
+
+    const sameCommit = trio();
+    sameCommit.forEach((report) =>
+      report.comparisons.forEach((source) => {
+        source.afterCommit = BASE.toUpperCase();
+      }),
+    );
+    assert.throws(() => summarizeRepeatedAB(sameCommit), /Invalid or identical compared commits/);
+  });
+
+  it('rejects overflowing percentage claims and keeps large finite medians representable', () => {
+    const invalid = trio();
+    invalid[0].comparisons[0].metrics[0] = measure('users-me', 'latency-p50-ms', 1e-300, 1e100);
+    assert.throws(() => summarizeRepeatedAB(invalid), /Inconsistent comparison percentage/);
+
+    const large = [capture(1), capture(2), capture(3), capture(4)];
+    for (const report of large) {
+      report.comparisons[0].metrics[0] = measure('users-me', 'latency-p50-ms', 1e308, 1e308);
+    }
+    const result = summarizeRepeatedAB(large);
+    assert.equal(result.routes[0].latencyP50.beforeMedian, 1e308);
+    assert.equal(result.routes[0].latencyP50.afterMedian, 1e308);
+  });
+
   it('rejects altered bytes within and across runs, without revealing user data', () => {
     const altered = trio();
     const item = altered[1].comparisons[0].metrics.find((m) => m.metric === 'decoded-bytes-p95');
