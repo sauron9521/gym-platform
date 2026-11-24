@@ -19,7 +19,6 @@ const auditInputSchema = z.strictObject({
 });
 
 export type AdminAuditInput = z.infer<typeof auditInputSchema>;
-export type AdminAuditOutcome = AdminAuditInput['outcome'];
 
 function pseudonymize(kind: 'actor' | 'target', value: string): string {
   // Domain-separated hashes prevent actor/target hashes from being identical
