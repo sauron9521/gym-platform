@@ -1,6 +1,10 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { assertPublishableVersion, ProgramPublicationError } from '../domain/publication.policy.js';
 import { isWorkoutOutsideDuration } from '../domain/duration.policy.js';
+import {
+  DraftVersionStateChanged,
+  type DraftVersionChanges,
+} from '../application/draft-version-update.js';
 import { PrismaService } from '#src/infra/database/index';
 import { trainingProgramVersionSelect } from '../selects/training-program-version.select.js';
 import { trainingProgramDraftAccessSelect } from '../selects/training-program-access.select.js';
@@ -93,6 +97,21 @@ export class TrainingProgramVersionRepository {
       data,
       select: trainingProgramVersionSelect,
     });
+  }
+
+  async updateDraftVersion(
+    programId: string,
+    versionId: string,
+    changes: DraftVersionChanges,
+  ): Promise<TrainingProgramVersionPayload> {
+    try {
+      return await this.updateVersion({ id: versionId, programId, status: 'DRAFT' }, changes);
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+        throw new DraftVersionStateChanged();
+      }
+      throw error;
+    }
   }
 
   async updateVersion(
