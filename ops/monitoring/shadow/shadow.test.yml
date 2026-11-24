@@ -1,0 +1,61 @@
+fuzzy_compare: true
+rule_files:
+  - shadow.rules.yml
+evaluation_interval: 15s
+tests:
+  - interval: 15s
+    input_series:
+      - series: 'container_cpu_usage_seconds_total{job="gym-resource-shadow",id="fixture",cpu="total"}'
+        values: '0+15x8'
+      - series: 'container_cpu_usage_seconds_total{job="gym-resource-shadow",id="fixture",cpu="cpu00"}'
+        values: '0+15x8'
+      - series: 'container_memory_working_set_bytes{job="gym-resource-shadow",id="fixture"}'
+        values: '536870912+0x8'
+      - series: 'container_spec_memory_limit_bytes{job="gym-resource-shadow",id="fixture"}'
+        values: '1073741824+0x8'
+      - series: 'container_cpu_cfs_periods_total{job="gym-resource-shadow",id="fixture"}'
+        values: '0+100x8'
+      - series: 'container_cpu_cfs_throttled_periods_total{job="gym-resource-shadow",id="fixture"}'
+        values: '0+25x8'
+      - series: 'container_memory_working_set_bytes{job="gym-resource-shadow",id="zero-limit"}'
+        values: '100+0x8'
+      - series: 'container_spec_memory_limit_bytes{job="gym-resource-shadow",id="zero-limit"}'
+        values: '0+0x8'
+      - series: 'container_memory_working_set_bytes{job="other",id="decoy"}'
+        values: '100+0x8'
+      - series: 'container_spec_memory_limit_bytes{job="other",id="decoy"}'
+        values: '200+0x8'
+      - series: 'container_cpu_cfs_periods_total{job="gym-resource-shadow",id="idle"}'
+        values: '0+0x8'
+      - series: 'container_cpu_cfs_throttled_periods_total{job="gym-resource-shadow",id="idle"}'
+        values: '0+0x8'
+    promql_expr_test:
+      - expr: gym_shadow:cpu_percent
+        eval_time: 2m
+        exp_samples:
+          - labels: 'gym_shadow:cpu_percent{job="gym-resource-shadow",id="fixture",cpu="total"}'
+            value: 100
+      - expr: gym_shadow:memory_percent
+        eval_time: 2m
+        exp_samples:
+          - labels: 'gym_shadow:memory_percent{job="gym-resource-shadow",id="fixture"}'
+            value: 50
+      - expr: gym_shadow:throttled_period_ratio
+        eval_time: 2m
+        exp_samples:
+          - labels: 'gym_shadow:throttled_period_ratio{job="gym-resource-shadow",id="fixture"}'
+            value: 0.25
+  - interval: 15s
+    input_series:
+      - series: 'container_memory_working_set_bytes{job="gym-resource-shadow",id="fixture"}'
+        values: '100 stale _ _ _ _ _ _ _'
+    promql_expr_test:
+      - expr: gym_shadow:memory_percent
+        eval_time: 2m
+        exp_samples: []
+      - expr: gym_shadow:cpu_percent
+        eval_time: 2m
+        exp_samples: []
+      - expr: gym_shadow:throttled_period_ratio
+        eval_time: 2m
+        exp_samples: []

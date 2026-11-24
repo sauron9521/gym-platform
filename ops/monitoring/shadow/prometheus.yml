@@ -1,0 +1,7 @@
+# Separate disposable TSDB. No production targets or alert receivers.
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+rule_files:
+  - shadow.rules.yml
+scrape_configs: []
