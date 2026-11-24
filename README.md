@@ -85,20 +85,20 @@ Production API Docker images may be packaged and signed by the manual
 `release-artifacts.yml` workflow, then independently verified before an
 explicit GHCR publication in `publish-ghcr.yml`. Neither workflow deploys
 to production or runs database migrations.
-See [release and GHCR procedures](docs/release-ghcr.md).
+See [release and GHCR procedures](docs/operations/release-ghcr.md).
 
 ## API backup and recovery toolkit
 
 The monorepo includes opt-in PostgreSQL/avatar backup, guarded restore rehearsal,
 and backup-health alert templates. These are not enabled on merge and require
 operator-controlled credentials, storage and independent off-host replication.
-See [backup, restore and monitoring](docs/backup-restore-operations.md).
+See [backup, restore and monitoring](docs/operations/backup-restore-operations.md).
 
 ## Opt-in API observability
 
 The API includes optional host collectors for sanitized HTTP/Redis logs,
 Docker container resources, readiness and provisional Prometheus SLI views.
-These do not start automatically. See [observability operator guide](docs/production-observability.md)
+These do not start automatically. See [observability operator guide](docs/operations/production-observability.md)
 for host privileges, environment templates, alerts and manual activation.
 
 ## API source migration audit and cutover
@@ -110,13 +110,13 @@ See [API migration audit and cutover criteria](docs/api-migration-audit.md).
 
 ## Signed two-release API rollback rehearsal
 
-Manual, runner-only [two-release upgrade and rollback](docs/staging-two-release-rollback.md)
+Manual, runner-only [two-release upgrade and rollback](docs/operations/staging-two-release-rollback.md)
 checks signed GHCR runtime compatibility after forward Prisma migrations.
 Repository CI validates safety contracts only; production cutover stays NO-GO.
 
 ## Independent production release-evidence review
 
-Manual, read-only [release readiness review](docs/production-readiness-review.md)
+Manual, read-only [release readiness review](docs/operations/production-readiness-review.md)
 checks exact signed GHCR digest publication, main source CI and successful
 seven-stage two-release rehearsal. Even when evidence is verified, the
 review reports **production NO-GO**; it never deploys or replaces the
@@ -124,7 +124,7 @@ standalone API without separately approved host operations.
 
 ## Immutable production digest preflight (read-only)
 
-The [digest-only Compose policy](docs/production-digest-preflight.md) adds
+The [digest-only Compose policy](docs/operations/production-digest-preflight.md) adds
 strict offline checks for signed GHCR image references, build-free Docker
 Compose overrides and the existing runtime identity. The checks **never
 start or update production services**. A separate operator-approved
@@ -132,7 +132,7 @@ release rollout and real staging evidence are still required.
 
 ## Operator-only production host preflight
 
-The [read-only host preflight](docs/production-host-preflight.md) verifies
+The [read-only host preflight](docs/operations/production-host-preflight.md) verifies
 trusted signed GHCR images, exact deployed image identity, private backup
 archive hashes and the original GitHub Actions release-evidence artifact
 for an explicitly supplied successful review run ID. It never runs a migration,
