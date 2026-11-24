@@ -1,4 +1,4 @@
-export type PaginationMeta = {
+type PaginationMeta = {
   total: number;
   skip: number;
   take: number;

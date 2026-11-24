@@ -24,5 +24,3 @@ export const adminAccountStatusCommandSchema = z.strictObject({
       'Reason must not contain control characters',
     ),
 });
-
-export type AdminAccountStatusCommand = z.infer<typeof adminAccountStatusCommandSchema>;
