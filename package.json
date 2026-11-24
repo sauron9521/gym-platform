@@ -31,7 +31,8 @@
     "knip": "knip",
     "knip:report": "knip --no-exit-code --no-progress --reporter compact --max-show-issues 12",
     "turbo:plan": "turbo run lint typecheck build --dry=json",
-    "architecture:cruise": "depcruise --config .dependency-cruiser.cjs --include-only \"^(apps|packages|tooling)/[^/]+/src/\" --output-type err apps packages tooling"
+    "architecture:cruise": "depcruise --config .dependency-cruiser.cjs --include-only \"^(apps|packages|tooling)/[^/]+/src/\" --output-type err apps packages tooling",
+    "architecture:cruise:named": "node scripts/dependency-cruiser-named-imports.mjs"
   },
   "devDependencies": {
     "dependency-cruiser": "18.9.0",
