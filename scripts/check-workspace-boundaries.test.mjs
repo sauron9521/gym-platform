@@ -64,7 +64,10 @@ test('require dependency-cruiser for named imports while keeping relative-path p
     const messages = checkWorkspaceBoundaries(root);
     assert.ok(messages.some((message) => message.includes('cross-workspace relative import')));
     const named = inspectNamedApplicationImports(root);
-    assert.ok(named.violations.some((message) => message.includes('import of application @gym/api')));
+    assert.ok(!messages.some((message) => message.includes('import of application')));
+    assert.ok(
+      named.violations.some((message) => message.includes('import of application @gym/api')),
+    );
   });
 });
 
