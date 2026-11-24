@@ -34,7 +34,7 @@ export function canRegisterPushToken(context: PushRegistrationContext): boolean 
 }
 
 /** Only an opaque notification ID can cross the push transport boundary. */
-export const pushEnvelopeSchema = z.strictObject({
+const pushEnvelopeSchema = z.strictObject({
   notificationId: z.uuid(),
 });
 
