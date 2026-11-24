@@ -1,11 +1,20 @@
 import { Injectable } from '@nestjs/common';
 
+import type { Prisma } from '#prisma/client';
 import { PrismaService } from '#src/infra/database/index';
+import type {
+  RelationshipTerminationResult,
+  TerminateRelationshipCommand,
+} from '../application/terminate-relationship.js';
 import { TrainerAthleteExerciseCopyService } from './trainer-athlete-exercise-copy.service.js';
 import {
   trainerAthleteHistoricalSelect,
   trainerAthleteSelect,
 } from '../selects/trainer-athlete.select.js';
+
+type RelationshipProjection =
+  | Prisma.TrainerAthleteGetPayload<{ select: typeof trainerAthleteSelect }>
+  | Prisma.TrainerAthleteGetPayload<{ select: typeof trainerAthleteHistoricalSelect }>;
 
 /**
  * Coordinates relationship termination, copies, assignment termination and
@@ -18,12 +27,9 @@ export class TrainerAthleteTerminationService {
     private readonly exerciseCopyService: TrainerAthleteExerciseCopyService,
   ) {}
 
-  async terminateWithExerciseCopies(input: {
-    id: string;
-    actorId: string;
-    reason?: string | null;
-    redactForTrainer: boolean;
-  }) {
+  async terminateWithExerciseCopies(
+    input: TerminateRelationshipCommand,
+  ): Promise<RelationshipTerminationResult<RelationshipProjection>> {
     const endedAt = new Date();
 
     return this.prisma.$transaction(async (tx) => {
@@ -45,7 +51,7 @@ export class TrainerAthleteTerminationService {
       });
 
       if (!relationship) {
-        return null;
+        return { status: 'STATE_CHANGED' };
       }
 
       // 2. Claim the transition. Only one concurrent request can win.
@@ -64,7 +70,7 @@ export class TrainerAthleteTerminationService {
       });
 
       if (transition.count !== 1) {
-        return null;
+        return { status: 'STATE_CHANGED' };
       }
 
       // 3. Collect exercises from active training program assignments.
@@ -155,12 +161,15 @@ export class TrainerAthleteTerminationService {
       });
 
       // 8. Return the terminated relationship.
-      return tx.trainerAthlete.findUnique({
+      const terminated = await tx.trainerAthlete.findUnique({
         where: {
           id: relationship.id,
         },
         select: input.redactForTrainer ? trainerAthleteHistoricalSelect : trainerAthleteSelect,
       });
+      return terminated
+        ? { status: 'TERMINATED', relationship: terminated }
+        : { status: 'STATE_CHANGED' };
     });
   }
 }

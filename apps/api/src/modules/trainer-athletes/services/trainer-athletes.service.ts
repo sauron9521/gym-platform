@@ -220,18 +220,18 @@ export class TrainerAthletesService {
     // A revoked trainer must still be able to end a collaboration safely.
     await this.assertCurrentParticipant(actor);
 
-    const terminated = await this.terminationService.terminateWithExerciseCopies({
+    const result = await this.terminationService.terminateWithExerciseCopies({
       id,
       actorId: actor.id,
       reason: input.reason,
       redactForTrainer: relationship.trainerId === actor.id,
     });
 
-    if (!terminated) {
+    if (result.status === 'STATE_CHANGED') {
       throw new ConflictException('Relationship state has changed. Reload and try again.');
     }
 
-    return terminated;
+    return result.relationship;
   }
 
   // EXERCISE ACCESS CONTEXT
