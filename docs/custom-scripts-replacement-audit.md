@@ -86,9 +86,9 @@ Each item below is classified as **Candidate**, **Retain**, or **Review**. "Cand
 
 ## Related references
 
-- [Knip and Turborepo audit](tooling-audit.md)
-- [CI affected-workspace matrix](ci-affected-workspaces.md)
-- [Selective pre-push behavior](pre-push-checks.md)
-- [Dependency-cruiser boundary enforcement](dependency-cruiser-pilot.md)
+- [Knip and Turborepo audit](development/tooling-audit.md)
+- [CI affected-workspace matrix](development/ci-affected-workspaces.md)
+- [Selective pre-push behavior](development/pre-push-checks.md)
+- [Dependency-cruiser boundary enforcement](development/dependency-cruiser-pilot.md)
 - [Opt-in production observability](production-observability.md)
 - [Release and staging controls](release-ghcr.md)
