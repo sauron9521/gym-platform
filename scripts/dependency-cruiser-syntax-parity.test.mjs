@@ -53,8 +53,14 @@ test('parser and legacy detect unresolved relative imports across common syntax 
 
     for (const [name] of cases) {
       const expected = 'apps/alpha/src/' + name + suffix;
-      assert.ok(legacy.some((message) => message.startsWith(expected)), name + ': legacy');
-      assert.ok(cruiser.relative.some((message) => message.startsWith(expected)), name + ': graph');
+      assert.ok(
+        legacy.some((message) => message.startsWith(expected)),
+        name + ': legacy',
+      );
+      assert.ok(
+        cruiser.relative.some((message) => message.startsWith(expected)),
+        name + ': graph',
+      );
     }
   });
 });
