@@ -1,6 +1,6 @@
 # ADR-007 — Pragmatic Clean Architecture for the API
 
-- **Status:** Accepted target direction (owner decision 2026-11-24); ADR merged in PR #729; implementation in progress.
+- **Status:** Accepted target direction (owner decision 2026-11-24); ADR merged in PR #729; CA05 limited GO recorded, CA06–CA08 completed, CA09 guidance merged with final issue acceptance pending.
 - **Scope:** API modular monolith; [Epic #718](https://github.com/sauron9521/gym-platform/issues/718), [CA01 #719](https://github.com/sauron9521/gym-platform/issues/719).
 - **Baseline:** [main 4407a2c](https://github.com/sauron9521/gym-platform/commit/4407a2cdeaddaa158c538a06cb584cd67753074d); file and test inventory, not a measured coverage or performance result.
 - **Roadmaps:** [master #353](https://github.com/sauron9521/gym-platform/issues/353), [architecture #380](https://github.com/sauron9521/gym-platform/issues/380), [E14 #354](https://github.com/sauron9521/gym-platform/issues/354).
@@ -147,7 +147,7 @@ Coordinate with [#650](https://github.com/sauron9521/gym-platform/issues/650) fo
 
 Each PR starts from current main, preserves behavior, is independently reviewable and has appropriate regression evidence. Never auto-merge. Do not close issues before verified acceptance. At CA05 compare actual dependency edges, abstraction/file count, test isolation and reproducible test duration, alongside access/transaction evidence. Stop or revise if the added complexity outweighs the benefit. No blanket migration or release approval is implied.
 
-CA05 evidence and the explicit owner GO of 2026-11-24 are recorded in the [publication pilot evaluation](adr-007-pilot-evaluation.md). Limited expansion is approved under the stated safeguards; start CA06 only after the evaluation PR is manually merged and CA05 is verified. This is not release approval.
+CA05 evidence and the explicit owner GO of 2026-11-24 are recorded in the [publication pilot evaluation](adr-007-pilot-evaluation.md). Limited expansion was approved under the stated safeguards; the evaluation was merged and CA05 verified before CA06. This is not release approval.
 
 CA06 and CA07 are complete. See the [Training Programs evidence](adr-007-training-programs-expansion.md) and [Workouts evidence](adr-007-workouts-expansion.md) for the selected boundaries, PostgreSQL regressions and deferred work. CA07 enabled the existing inner-layer guard for Workouts and verified the `@gym/domain` native ESM runtime in the API Docker image before adopting shared workout rules.
 

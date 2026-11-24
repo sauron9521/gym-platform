@@ -1,6 +1,7 @@
 # ADR-007 adoption checklist — CA09
 
 - **Date:** 2026-11-24.
+- **Status:** Guidance merged in [#789](https://github.com/sauron9521/gym-platform/pull/789); final CA09 and epic acceptance remain subject to issue reconciliation.
 - **Review:** [CA09 #727](https://github.com/sauron9521/gym-platform/issues/727) and [Epic #718](https://github.com/sauron9521/gym-platform/issues/718).
 - **Authority:** [ADR-007](adr-007-pragmatic-clean-architecture.md) and its [limited owner GO](adr-007-pilot-evaluation.md). Product approval and release decisions follow the gates in [the master roadmap #353](https://github.com/sauron9521/gym-platform/issues/353).
 

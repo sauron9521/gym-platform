@@ -1,12 +1,12 @@
 # ADR-005 — Product ownership and Trainer Web route migration
 
-- **Status:** Accepted target architecture; migration NOT yet implemented
+- **Status:** Accepted target architecture; partial implementation, legacy cutover pending
 - **Scope:** M05 / E14 / Issue [#359](https://github.com/sauron9521/gym-platform/issues/359)
 - **Decision date:** 2026-11-19
 - **Source of truth:** [master roadmap #353](https://github.com/sauron9521/gym-platform/issues/353), [product boundary roadmap #380](https://github.com/sauron9521/gym-platform/issues/380), [E14 #354](https://github.com/sauron9521/gym-platform/issues/354), [E15 #355](https://github.com/sauron9521/gym-platform/issues/355)
 - **Implementation owner (DRI):** each owning product app; cross-product authorization and resource ownership are enforced by `apps/api`
 
-## Context and decision
+## Context and decision (original baseline, 2026-11-19)
 
 The monorepo already has a single NestJS API, shared identity, Athlete Web, Athlete Mobile, Admin, and Landing. Trainer pages currently live in Athlete Web; Expo also exposes a trainer-athletes route. Moving these routes before the separate Trainer app, capability model and authentication are ready risks breaking active sessions, old links, and trainer/athlete dual use.
 
@@ -14,16 +14,16 @@ The monorepo already has a single NestJS API, shared identity, Athlete Web, Athl
 
 - **Athlete Web** — owner: `apps/web`; responsibility: Athlete dashboard, workouts, exercise library, athlete programs, personal profile and sign-in.
 - **Athlete Mobile** — owner: `apps/mobile`; responsibility: Native athlete sessions, history, programs, profile and progress; trainer-only legacy screen is an audit/cutover item.
-- **Trainer Web** — owner: **future** `apps/trainer`; responsibility: Trainer clients, programs, templates, builder, assignments, feedback and trainer dashboard.
+- **Trainer Web** — owner: `apps/trainer`; responsibility: Trainer clients, programs, templates, builder, assignments, feedback and trainer dashboard.
 - **Admin Web** — owner: `apps/admin`; responsibility: Privileged admin review, roles, audit and operations.
 - **Marketing** — owner: `apps/landing`; responsibility: Public OVRANTO product pages and links; no authenticated data.
 - **Backend** — owner: `apps/api`; responsibility: Auth, ownership, policies, domain services, data persistence and public API contracts.
 
 Trainer capability is additive to an athlete account; a trainer keeps the ability to track their own workouts. The server, never client navigation or a UI role check alone, determines authorization. Admin privileged session policy is separate. No second `User`, auth database, trainer API service, microservice, or automatic role self-grant.
 
-## Verified route inventory in `main` (2026-11-19)
+## Historical route inventory (2026-11-19)
 
-These are **current file-backed routes**, not promises that the future Trainer app already implements them.
+These were file-backed routes at the original decision date; consult the current implementation update below before planning cutover.
 
 - **`/dashboard`** — current: `apps/web/src/app/(protected)/dashboard/page.tsx`; target: Athlete Web; cutover: Retain.
 - **`/workouts`, `/workouts/new`, `/workouts/[id]`** — current: `apps/web/src/app/(protected)/workouts/`; target: Athlete Web; cutover: Retain.
@@ -40,7 +40,15 @@ Other verified Expo routes under `apps/mobile/src/app/` include `(tabs)`, `exerc
 
 The current Web protected layout is visual only and explicitly says each protected page verifies its own server session. Trainer Web must retain this guarantee rather than relying on layout caching or client-side role hiding.
 
-## Migration contract and dependency order
+## Implementation update (2026-11-24)
+
+- Trainer onboarding, review, persisted capabilities and independent Trainer authentication are implemented. Trainer Web owns `/login`, `/workspace`, `/workspace/clients/[relationId]` and `/workspace/clients/[relationId]/select-program`, including scoped dashboard/client reads and explicit assignment of published versions. See the [Trainer README](../../apps/trainer/README.md).
+- Legacy `/trainer/*` pages remain in Athlete Web; the new builder and complete cutover are not established. Mobile uses live account capabilities, while its trainer relationship route remains present. See the [Web](../../apps/web/README.md) and [Mobile](../../apps/mobile/README.md) guides.
+- Admin now has dedicated admin-purpose session endpoints and protected read-only operator pages. Distinct hostnames are required for host-only cookie isolation; localhost ports alone do not isolate cookies.
+- Earlier PRs #271 and #275 are superseded reference material, not pending merge dependencies. Preserve behavior requirements in focused feature work rather than reopening old stacks automatically.
+- No production deployment, redirect or legacy route removal is approved by this update.
+
+## Migration contract and dependency order (original plan)
 
 - **1** — **#359 (this ADR)**; proof: Owners, route inventory, compatibility contract and ordered plan.
 - **2** — #360, #288, #291; proof: Audit API module boundaries and role/capability policies; no direct repository leaks.
@@ -66,10 +74,10 @@ The precise order inside dependent groups can be refined when testable contracts
 6. On disabled/revoked Trainer capability, block Trainer access at the API and refresh/revoke relevant session permissions per #291/#311/#361. A trainer must still access their athlete data.
 7. Keep shared `@gym/api-client`, `@gym/i18n`, `@gym/design-tokens`, `@gym/ui-web` and `@gym/domain` as appropriate. App-specific navigation, cookies and route shells stay within their owning apps.
 
-## Existing PR overlap — preserve, do not duplicate
+## Historical PR overlap — preserve requirements, do not duplicate
 
-- [#271](https://github.com/sauron9521/gym-platform/pull/271): localized **existing Web** trainer program list; it is stacked on another i18n PR. Review and merge in base order, then reuse translations in Trainer migration.
-- [#275](https://github.com/sauron9521/gym-platform/pull/275): existing Web program-builder week filter; keep feature behavior, migrate only after review/merge.
+- [#271](https://github.com/sauron9521/gym-platform/pull/271): localized **existing Web** trainer program list; it is stacked on another i18n PR. Closed/superseded; reuse relevant localization requirements in Trainer migration.
+- [#275](https://github.com/sauron9521/gym-platform/pull/275): existing Web program-builder week filter; Closed/superseded; preserve relevant week-filter behavior in the focused builder review.
 - Shared i18n/UI PR stack and OVRANTO system (E19/E20) are independent dependencies. Avoid copying legacy Athlete Web CSS as the final Trainer shell.
 - #320/#336–339 own **builder functionality**, #355/#365–366 own **UI relocation**, #381/#386 own **approved UX**, and #389 owns **manual visual/a11y acceptance**.
 
