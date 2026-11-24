@@ -951,8 +951,8 @@ describe('TrainerAthletesService', () => {
         admin: false,
       });
       terminationService.terminateWithExerciseCopies.mockResolvedValue({
-        ...activeRelationship,
         status: 'TERMINATED',
+        relationship: { ...activeRelationship, status: 'TERMINATED' },
       });
 
       await service.terminate(activeRelationship.id, trainer, {});
@@ -984,15 +984,15 @@ describe('TrainerAthletesService', () => {
       });
 
       terminationService.terminateWithExerciseCopies.mockResolvedValue({
-        id: 'relationship-1',
         status: 'TERMINATED',
+        relationship: { id: 'relationship-1', status: 'TERMINATED' },
       });
 
       const result = await service.terminate('relationship-1', trainer, {
         reason: 'Cooperation ended',
       });
 
-      expect(result.status).toBe('TERMINATED');
+      expect(result).toEqual({ id: 'relationship-1', status: 'TERMINATED' });
 
       expect(terminationService.terminateWithExerciseCopies).toHaveBeenCalledWith({
         id: 'relationship-1',
@@ -1012,15 +1012,15 @@ describe('TrainerAthletesService', () => {
       });
 
       terminationService.terminateWithExerciseCopies.mockResolvedValue({
-        id: 'relationship-1',
         status: 'TERMINATED',
+        relationship: { id: 'relationship-1', status: 'TERMINATED' },
       });
 
       const result = await service.terminate('relationship-1', athlete, {
         reason: 'Cooperation ended by athlete',
       });
 
-      expect(result.status).toBe('TERMINATED');
+      expect(result).toEqual({ id: 'relationship-1', status: 'TERMINATED' });
 
       expect(terminationService.terminateWithExerciseCopies).toHaveBeenCalledWith({
         id: 'relationship-1',
@@ -1034,8 +1034,8 @@ describe('TrainerAthletesService', () => {
       const approvedTrainer: TrainerAthleteActor = { id: trainer.id, role: 'ATHLETE' };
       repository.findById.mockResolvedValue(activeRelationship);
       terminationService.terminateWithExerciseCopies.mockResolvedValue({
-        ...activeRelationship,
         status: 'TERMINATED',
+        relationship: { ...activeRelationship, status: 'TERMINATED' },
       });
 
       await service.terminate(activeRelationship.id, approvedTrainer, {});
@@ -1057,6 +1057,16 @@ describe('TrainerAthletesService', () => {
 
       expect(terminationService.terminateWithExerciseCopies).not.toHaveBeenCalled();
       expect(repository.closePendingInvitation).not.toHaveBeenCalled();
+    });
+
+    it('preserves the HTTP conflict when the termination transaction loses the claim', async () => {
+      repository.findById.mockResolvedValue(activeRelationship);
+      terminationService.terminateWithExerciseCopies.mockResolvedValue({ status: 'STATE_CHANGED' });
+
+      await expect(service.terminate(activeRelationship.id, athlete, {})).rejects.toMatchObject({
+        status: 409,
+        message: 'Relationship state has changed. Reload and try again.',
+      });
     });
   });
 
