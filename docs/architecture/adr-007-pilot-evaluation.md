@@ -1,6 +1,6 @@
 # ADR-007 pilot evaluation — training program publication (CA05)
 
-- **Status:** Owner-approved GO for limited expansion (2026-11-24); documentation merge pending.
+- **Status:** Owner-approved GO for limited expansion (2026-11-24); merged in PR #738 and CA05 verified.
 - **Date:** 2026-11-24.
 - **Gate:** [CA05 #723](https://github.com/sauron9521/gym-platform/issues/723), [Epic #718](https://github.com/sauron9521/gym-platform/issues/718).
 - **Decision standard:** [ADR-007](adr-007-pragmatic-clean-architecture.md).
@@ -105,3 +105,5 @@ Each selected operation requires a small PR, a measured before/after inventory, 
 - **Decision:** GO — explicitly approved by the owner on 2026-11-24 (15:07 Europe/Kyiv): limited, incremental scaling of Pragmatic Clean Architecture.
 - **Scope:** CA06–CA09 only as described above; one justified complex write operation per PR, preserve simple CRUD and read projections, stop or revise if overhead exceeds benefit.
 - **Gate:** Record the decision in #723 and PR #738. Begin CA06 only after the documentation PR has passed CI, been manually merged by the owner and CA05 completion is verified. No implementation expansion or release authorization in this PR.
+
+The subsequent [CA06 expansion evidence](adr-007-training-programs-expansion.md) records the six selected implementation slices and remaining limits; the pilot measurements above remain historical.
