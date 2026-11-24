@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
-import { execFileSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { execFileSync, spawnSync } from 'node:child_process';
+import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -455,3 +455,87 @@ test.each([
     assert.ok(task.command && task.command !== '<NONEXISTENT>', task.taskId);
   }
 });
+
+test('Turbo runtime preserves the environment and propagates task failures', () => {
+  const directory = mkdtempSync(join(tmpdir(), 'gym-turbo-runtime-'));
+  const turbo = fileURLToPath(new URL('../node_modules/turbo/bin/turbo', import.meta.url));
+  const rootManifest = JSON.parse(
+    readFileSync(new URL('../package.json', import.meta.url), 'utf8'),
+  );
+  try {
+    writeFileSync(
+      join(directory, 'package.json'),
+      JSON.stringify({
+        name: 'gym-turbo-runtime-fixture',
+        private: true,
+        packageManager: rootManifest.packageManager,
+      }),
+    );
+    writeFileSync(join(directory, 'pnpm-workspace.yaml'), 'packages:\n  - apps/*\n');
+    writeFileSync(
+      join(directory, 'turbo.json'),
+      JSON.stringify({ tasks: { lint: {}, typecheck: {} } }),
+    );
+    for (const [name, task] of [
+      ['first', 'lint'],
+      ['second', 'typecheck'],
+    ]) {
+      const app = join(directory, 'apps', name);
+      mkdirSync(app, { recursive: true });
+      writeFileSync(
+        join(app, 'package.json'),
+        JSON.stringify({ name: '@fixture/' + name, scripts: { [task]: 'node probe.cjs' } }),
+      );
+      writeFileSync(
+        join(app, 'probe.cjs'),
+        [
+          "const fs = require('node:fs');",
+          "if (process.env.GYM_TURBO_TEST_ENV !== 'runtime-probe') process.exit(9);",
+          "fs.writeFileSync('result.txt', process.env.GYM_TURBO_TEST_ENV);",
+          "if (process.env.GYM_TURBO_TEST_FAIL === 'yes' && " +
+            JSON.stringify(name) +
+            " === 'first') process.exit(7);",
+        ].join('\n'),
+      );
+    }
+    const run = (fail) =>
+      spawnSync(
+        process.execPath,
+        [
+          turbo,
+          'run',
+          '@fixture/first#lint',
+          '@fixture/second#typecheck',
+          '--only',
+          '--env-mode=loose',
+          '--cache=local:,remote:',
+          '--concurrency=1',
+        ],
+        {
+          cwd: directory,
+          encoding: 'utf8',
+          env: {
+            ...process.env,
+            TURBO_TELEMETRY_DISABLED: '1',
+            GYM_TURBO_TEST_ENV: 'runtime-probe',
+            GYM_TURBO_TEST_FAIL: fail,
+          },
+          timeout: 15000,
+        },
+      );
+    const success = run('no');
+    assert.ifError(success.error);
+    assert.equal(success.status, 0, success.stdout + success.stderr);
+    for (const name of ['first', 'second']) {
+      assert.equal(
+        readFileSync(join(directory, 'apps', name, 'result.txt'), 'utf8'),
+        'runtime-probe',
+      );
+    }
+    const failed = run('yes');
+    assert.ifError(failed.error);
+    assert.equal(failed.status, 7, failed.stdout + failed.stderr);
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
+}, 30000);
