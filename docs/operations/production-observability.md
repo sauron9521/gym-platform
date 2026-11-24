@@ -252,11 +252,24 @@ The isolated resource pilot now has an executable configuration in
 No service unit, production Compose file, workflow or existing alert is
 changed. Do not start the collector on a shared developer or production host.
 
-The reviewed validator image references are immutable:
+The reviewed validator image references are immutable. The November 25
+2026 security scan (Trivy 0.69.3, linux/amd64, vulnerability database
+updated November 24 at 19:04 UTC) compared the previous pins with the
+new ones. Alloy 1.22.0 reduced Critical/High findings from 5 to 0;
+Prometheus 3.16.0 reduced them from 110 to 2 (one distinct High finding,
+CVE-2026-78661 in x/net, reported in both binaries). Node 24 Alpine
+remains pinned, with six High findings in brace-expansion and undici;
+the Debian slim alternative had 56 High findings. Counts are scanner
+findings, not evidence of exploitability. The updated Prometheus pin is
+also used for the existing offline CI rule checks. Native validation
+passed for the shadow configuration and all four rule suites. No live
+collector ran. Signature/provenance, transitive licenses, residual
+vulnerability reachability and privileged runtime review still require
+approval before a dispatch. These pins are not production approval.
 
-- Alloy: `grafana/alloy:v1.21.0@sha256:9726bfba078de9bc2212c60c6e643238c700b4fe0868ea78cbe03163d03d95bf`.
+- Alloy: `grafana/alloy:v1.22.0@sha256:9acc2529bc1edb7f5b2bd801dd8334ebc80c158e3a9e5526ecd7c9a273d43189`.
 - Prometheus: the same digest already used by the repository's API
-  Observability CI, `prom/prometheus@sha256:23031bfe0e74a13004252caaa74eccd0d62b6c6e7a04711d5b8bf5b7e113adc7`.
+  Observability CI, `prom/prometheus:v3.16.0@sha256:e04987641b57704f408e31f6373ba4138ecf27cb4a165d24aabb6c38fddd0f06`.
 
 The Alloy pipeline restricts input to a synthetic fixture with Docker label
 `gym_shadow_fixture=resource-v1` and exact container name
@@ -272,18 +285,18 @@ aliases or alerts; normal Prometheus lookback can retain a previous value.
 Per-container freshness, runtime label redaction, cardinality, resets and
 alert equivalence still need live fixture evidence.
 
-The scrape interval is 15 seconds. The pinned Alloy validator rejected the
+The scrape interval is 15 seconds. The previous Alloy 1.21.0 validator rejected the
 newer documentation's `housekeeping_interval` and
 `allow_dynamic_housekeeping` arguments, so the configuration deliberately
-uses the pinned version's internal defaults. Measure actual collection
+keeps the internal housekeeping defaults across the update. Measure actual collection
 timestamps in the live pilot rather than assuming 15-second housekeeping.
 
 Validate from the repository root, using containers without runtime host
 mounts, Docker socket or network:
 
 ```sh
-alloy=grafana/alloy:v1.21.0@sha256:9726bfba078de9bc2212c60c6e643238c700b4fe0868ea78cbe03163d03d95bf
-prom=prom/prometheus@sha256:23031bfe0e74a13004252caaa74eccd0d62b6c6e7a04711d5b8bf5b7e113adc7
+alloy=grafana/alloy:v1.22.0@sha256:9acc2529bc1edb7f5b2bd801dd8334ebc80c158e3a9e5526ecd7c9a273d43189
+prom=prom/prometheus:v3.16.0@sha256:e04987641b57704f408e31f6373ba4138ecf27cb4a165d24aabb6c38fddd0f06
 
 docker run --rm --network none --cap-drop ALL \
   --security-opt no-new-privileges --read-only \

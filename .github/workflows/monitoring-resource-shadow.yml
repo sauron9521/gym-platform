@@ -25,8 +25,8 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     env:
-      ALLOY_IMAGE: grafana/alloy:v1.21.0@sha256:9726bfba078de9bc2212c60c6e643238c700b4fe0868ea78cbe03163d03d95bf
-      PROM_IMAGE: prom/prometheus@sha256:23031bfe0e74a13004252caaa74eccd0d62b6c6e7a04711d5b8bf5b7e113adc7
+      ALLOY_IMAGE: grafana/alloy:v1.22.0@sha256:9acc2529bc1edb7f5b2bd801dd8334ebc80c158e3a9e5526ecd7c9a273d43189
+      PROM_IMAGE: prom/prometheus:v3.16.0@sha256:e04987641b57704f408e31f6373ba4138ecf27cb4a165d24aabb6c38fddd0f06
       FIXTURE_IMAGE: node:24-alpine@sha256:116b800c3754b440ee0aa3ed2f20f5bf3d99a554bfd9adeea09ea8017f6e85f5
     steps:
       - name: Checkout reviewed main
