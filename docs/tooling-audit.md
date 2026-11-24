@@ -66,6 +66,14 @@ permissions, generates only a local Prisma Client, creates Knip, dependency
 boundary and Turbo diagnostic artifacts, prints a summary and retains evidence
 for seven days. It is not a deployment or production-readiness approval.
 
+The Knip report is no longer capped at 12 findings per issue type. The
+manual workflow uses the native compact and JSON reporters in a single Knip
+invocation: `knip.txt` is human-readable and `knip.json` is the machine-readable
+artifact for complete per-workspace triage. No custom report parser or second
+Knip scan is required. Findings remain advisory; configuration or internal
+errors still fail the diagnostic. Use the full artifact from a fresh run
+before claiming an updated unused-file count.
+
 The additional **Turbo affected shadow comparison** accepts optional
 `base_sha` and `head_sha` inputs on the manual workflow. Leave **both empty**
 to compare the latest checked-out `main` commit against its first parent
