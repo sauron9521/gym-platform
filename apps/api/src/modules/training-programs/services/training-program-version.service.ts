@@ -11,6 +11,10 @@ import { Prisma } from '#prisma/client';
 import { TrainingProgramVersionRepository } from '../repositories/training-program-version.repository.js';
 import type { PublishProgramUseCase } from '../application/publish-program.use-case.js';
 import { isWorkoutOutsideDuration } from '../domain/duration.policy.js';
+import {
+  DraftVersionStateChanged,
+  normalizeDraftVersionChanges,
+} from '../application/draft-version-update.js';
 import { rethrowPublicationHttpError } from '../policies/training-program-publication.policy.js';
 import { PUBLISH_PROGRAM_USE_CASE } from '../publication.provider.js';
 import type { TrainingProgramVersionPayload } from '../types/training-program-payload.types.js';
@@ -146,32 +150,13 @@ export class TrainingProgramVersionService {
       throw new BadRequestException('A workout week cannot exceed the program duration');
     }
 
-    const data: Prisma.TrainingProgramVersionUpdateInput = {};
-
-    if (input.title !== undefined) {
-      data.title = input.title.trim();
-    }
-
-    if (input.description !== undefined) {
-      data.description = input.description?.trim() || null;
-    }
-
-    if (input.durationWeeks !== undefined) {
-      data.durationWeeks = input.durationWeeks;
-    }
+    const changes = normalizeDraftVersionChanges(input);
 
     try {
-      return await this.repository.updateVersion(
-        {
-          id: versionId,
-          programId,
-          status: 'DRAFT',
-        },
-        data,
-      );
+      return await this.repository.updateDraftVersion(programId, versionId, changes);
     } catch (error) {
-      if (this.isPrismaError(error, 'P2025')) {
-        throw new ConflictException('Version state has changed. Reload and try again.');
+      if (error instanceof DraftVersionStateChanged) {
+        throw new ConflictException(error.message);
       }
 
       throw error;

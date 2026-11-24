@@ -5,6 +5,8 @@ import type {
   WorkoutSetType,
 } from '#prisma/client';
 
+import type { DraftVersionChanges } from '../application/draft-version-update.js';
+
 export type TrainingProgramActor = {
   id: string;
   role: Role;
@@ -16,11 +18,7 @@ export type CreateTrainingProgramInput = {
   durationWeeks?: number | null;
 };
 
-export type UpdateTrainingProgramDraftInput = {
-  title?: string;
-  description?: string | null;
-  durationWeeks?: number | null;
-};
+export type UpdateTrainingProgramDraftInput = DraftVersionChanges;
 
 export type TrainingProgramListQuery = {
   page: number;

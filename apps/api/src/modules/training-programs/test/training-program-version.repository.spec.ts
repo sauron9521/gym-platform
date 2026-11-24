@@ -1,3 +1,5 @@
+import { Prisma } from '#prisma/client';
+import { DraftVersionStateChanged } from '../application/draft-version-update.js';
 import { TrainingProgramVersionRepository } from '../repositories/training-program-version.repository.js';
 import { trainingProgramVersionSelect } from '../selects/training-program-version.select.js';
 import { trainingProgramDraftAccessSelect } from '../selects/training-program-access.select.js';
@@ -726,6 +728,46 @@ describe('TrainingProgramVersionRepository', () => {
     });
   });
 
+  describe('draft update boundary', () => {
+    it('scopes the write to the requested program and draft version', async () => {
+      const updated = { id: 'version-1', title: 'Updated' };
+      models.trainingProgramVersion.update.mockResolvedValue(updated);
+
+      await expect(
+        repository.updateDraftVersion('program-1', 'version-1', { title: 'Updated' }),
+      ).resolves.toBe(updated);
+      expect(models.trainingProgramVersion.update).toHaveBeenCalledExactlyOnceWith({
+        where: { id: 'version-1', programId: 'program-1', status: 'DRAFT' },
+        data: { title: 'Updated' },
+        select: trainingProgramVersionSelect,
+      });
+    });
+
+    it('translates a missing conditional update to a typed stale-state error', async () => {
+      const error = new Prisma.PrismaClientKnownRequestError('Record not found', {
+        code: 'P2025',
+        clientVersion: '7.0.0',
+      });
+      models.trainingProgramVersion.update.mockRejectedValue(error);
+
+      await expect(
+        repository.updateDraftVersion('program-1', 'version-1', { title: 'Updated' }),
+      ).rejects.toBeInstanceOf(DraftVersionStateChanged);
+    });
+
+    it('preserves unexpected Prisma errors without remapping them', async () => {
+      const error = new Prisma.PrismaClientKnownRequestError('Transaction conflict', {
+        code: 'P2034',
+        clientVersion: '7.0.0',
+      });
+      models.trainingProgramVersion.update.mockRejectedValue(error);
+
+      await expect(
+        repository.updateDraftVersion('program-1', 'version-1', { title: 'Updated' }),
+      ).rejects.toBe(error);
+    });
+  });
+
   describe('durationWeeks updates', () => {
     it('rejects shrinking below an existing workout week under a row lock', async () => {
       const tx = {
@@ -739,10 +781,7 @@ describe('TrainingProgramVersionRepository', () => {
         (callback: (transaction: typeof tx) => Promise<unknown>) => callback(tx),
       );
       await expect(
-        repository.updateVersion(
-          { id: 'version-1', programId: 'program-1', status: 'DRAFT' },
-          { durationWeeks: 4 },
-        ),
+        repository.updateDraftVersion('program-1', 'version-1', { durationWeeks: 4 }),
       ).rejects.toThrow('A workout week cannot exceed the program duration');
       expect(tx.trainingProgramVersion.update).not.toHaveBeenCalled();
     });
