@@ -148,7 +148,10 @@ test('DOM Vitest aliases and setup resolve the same app-owned renderer', () => {
     const suffix = app === 'trainer' ? '' : '.components';
     const config = read('apps/' + app + '/vitest' + suffix + '.config.mts');
     assert.ok(manifest.devDependencies['@testing-library/react']);
-    assert.match(config, /createRequire\(import\.meta\.url\)\.resolve\('@testing-library\/react'\)/);
+    assert.match(
+      config,
+      /createRequire\(import\.meta\.url\)\.resolve\('@testing-library\/react'\)/,
+    );
     assert.match(config, /reactDomTestAliases\(rendererPath\)/);
     assert.match(config, /env: \{ GYM_VITEST_DOM_RENDERER: rendererPath \}/);
     assert.match(config, /tooling\/vitest\/react-dom\.setup\.mjs/);
