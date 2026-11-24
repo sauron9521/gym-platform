@@ -34,6 +34,24 @@ test('Knip preserves both Web Playwright suites as static entrypoints', () => {
   assert.match(realConfig, /testDir: '\.\/e2e\/integration'/);
 });
 
+test('Vitest discovers real design-token spec.mts and Web mutation .test.ts suites', () => {
+  const tokens = read('packages/design-tokens/vitest.config.mts');
+  assert.match(tokens, /test\/\*\*\/\*\.test\.mjs/);
+  assert.match(tokens, /test\/\*\*\/\*\.spec\.mts/);
+  const web = read('apps/web/vitest.components.config.mts');
+  assert.match(web, /test\/components\/\*\*\/\*\.test\.tsx/);
+  assert.match(web, /test\/components\/\*\*\/\*\.test\.ts/);
+  assert.match(read('packages/design-tokens/test/ovranto-theme.spec.mts'), /WCAG AA/);
+  assert.match(
+    read('packages/design-tokens/test/theme-parity.spec.mts'),
+    /generates the checked-in/,
+  );
+  assert.match(
+    read('apps/web/test/components/workout-set-mutation-feedback.test.ts'),
+    /persisted matching set response/,
+  );
+});
+
 test('manual hygiene workflow never replaces required CI gates or performs writes', () => {
   const audit = read('.github/workflows/tooling-audit.yml');
   assert.match(audit, /^  workflow_dispatch:$/m);

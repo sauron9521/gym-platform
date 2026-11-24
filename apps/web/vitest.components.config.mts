@@ -14,7 +14,7 @@ export default defineConfig({
   test: {
     environment: 'happy-dom',
     server: { deps: { inline: true } },
-    include: ['test/components/**/*.test.tsx'],
+    include: ['test/components/**/*.test.tsx', 'test/components/**/*.test.ts'],
     clearMocks: true,
     setupFiles: ['../../tooling/vitest/react-dom.setup.mjs'],
   },
