@@ -6,11 +6,14 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 
-import { Prisma } from '#prisma/client';
+import type { Prisma } from '#prisma/client';
 
 import { UsersService } from '#src/modules/users/services/users.service';
-import { InvitationAcceptanceConflict } from '../application/accept-invitation.js';
 import { InvitationAlreadyExists } from '../application/create-invitation.js';
+import {
+  PendingInvitationConflict,
+  type ClosePendingInvitationCommand,
+} from '../application/pending-invitation-transition.js';
 import {
   canInitiateInvitation,
   isSelfInvitation,
@@ -165,7 +168,7 @@ export class TrainerAthletesService {
         respondedAt: new Date(),
       });
     } catch (error) {
-      if (error instanceof InvitationAcceptanceConflict) {
+      if (error instanceof PendingInvitationConflict) {
         throw new ConflictException(error.message);
       }
       throw error;
@@ -180,17 +183,12 @@ export class TrainerAthletesService {
     this.assertStatus(relationship.status, 'PENDING');
     await this.assertCurrentParticipant(actor);
 
-    return this.updateWithConflictHandling(
-      {
-        id,
-        status: 'PENDING',
-      },
-      {
-        status: 'DECLINED',
-        respondedAt: new Date(),
-      },
-      relationship.trainerId === actor.id,
-    );
+    return this.closePendingInvitation({
+      relationshipId: id,
+      status: 'DECLINED',
+      respondedAt: new Date(),
+      redactForTrainer: relationship.trainerId === actor.id,
+    });
   }
 
   // CANCEL REQUEST
@@ -204,21 +202,14 @@ export class TrainerAthletesService {
     this.assertStatus(relationship.status, 'PENDING');
     await this.assertCurrentParticipant(actor);
 
-    return this.updateWithConflictHandling(
-      {
-        id,
-        status: 'PENDING',
-      },
-      {
-        status: 'CANCELLED',
-        endedAt: new Date(),
-        endedBy: {
-          connect: { id: actor.id },
-        },
-        endReason: input.reason ?? null,
-      },
-      relationship.trainerId === actor.id,
-    );
+    return this.closePendingInvitation({
+      relationshipId: id,
+      status: 'CANCELLED',
+      endedAt: new Date(),
+      endedById: actor.id,
+      endReason: input.reason ?? null,
+      redactForTrainer: relationship.trainerId === actor.id,
+    });
   }
 
   // TERMINATE ACTIVE RELATIONSHIP
@@ -318,23 +309,15 @@ export class TrainerAthletesService {
     }
   }
 
-  private async updateWithConflictHandling(
-    where: Prisma.TrainerAthleteWhereUniqueInput,
-    data: Prisma.TrainerAthleteUpdateInput,
-    redactForTrainer = false,
-  ) {
+  private async closePendingInvitation(command: ClosePendingInvitationCommand) {
     try {
-      return await this.trainerAthletesRepository.update(where, data, redactForTrainer);
+      return await this.trainerAthletesRepository.closePendingInvitation(command);
     } catch (error) {
-      if (this.isPrismaError(error, 'P2025')) {
-        throw new ConflictException('Relationship state has changed. Reload and try again.');
+      if (error instanceof PendingInvitationConflict) {
+        throw new ConflictException(error.message);
       }
 
       throw error;
     }
-  }
-
-  private isPrismaError(error: unknown, code: string): boolean {
-    return error instanceof Prisma.PrismaClientKnownRequestError && error.code === code;
   }
 }

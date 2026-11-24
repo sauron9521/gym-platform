@@ -1626,6 +1626,56 @@ describe('TrainerAthletes (HTTP + PostgreSQL)', () => {
   });
 
   describe('Cancel pending requests', () => {
+    it('preserves the winning cancellation when a decline reaches the same pending write', async () => {
+      const athlete = await createUser(`close-invitation-${randomUUID()}@example.com`, 'ATHLETE');
+      const athleteCookie = await login(athlete.email);
+      const invitation = await request(app!.getHttpServer())
+        .post('/trainer-athletes')
+        .set('Cookie', trainerOneCookie)
+        .send({ userId: athlete.id })
+        .expect(201);
+      const id = invitation.body.id as string;
+
+      const repository = app!.get(TrainerAthletesRepository);
+      const close = repository.closePendingInvitation.bind(repository);
+      const write = vi
+        .spyOn(repository, 'closePendingInvitation')
+        .mockImplementationOnce(async (command) => {
+          // Let cancellation commit after decline preflight and before its conditional write.
+          const cancelled = await request(app!.getHttpServer())
+            .post(`/trainer-athletes/${id}/cancel`)
+            .set('Cookie', trainerOneCookie)
+            .send({ reason: 'Plans changed' })
+            .expect(200);
+          expect(cancelled.body).toMatchObject({ status: 'CANCELLED', endedById: trainerOne.id });
+          expect(JSON.stringify(cancelled.body)).not.toContain(athlete.email);
+          return close(command);
+        });
+
+      try {
+        const declined = await request(app!.getHttpServer())
+          .post(`/trainer-athletes/${id}/decline`)
+          .set('Cookie', athleteCookie)
+          .expect(409);
+        expect(declined.body).toMatchObject({
+          code: 'CONFLICT',
+          message: 'Relationship state has changed. Reload and try again.',
+        });
+        expect(write).toHaveBeenCalledTimes(2);
+        await expect(
+          prisma.trainerAthlete.findUniqueOrThrow({ where: { id } }),
+        ).resolves.toMatchObject({
+          status: 'CANCELLED',
+          respondedAt: null,
+          endedAt: expect.any(Date),
+          endedById: trainerOne.id,
+          endReason: 'Plans changed',
+        });
+      } finally {
+        write.mockRestore();
+      }
+    });
+
     it('should reject cancellation by the request recipient', async () => {
       const response = await request(app!.getHttpServer())
         .post(`/trainer-athletes/${athleteInitiatedRelationshipId}/cancel`)

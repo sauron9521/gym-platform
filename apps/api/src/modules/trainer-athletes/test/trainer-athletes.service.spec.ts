@@ -5,11 +5,9 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 
-import { Prisma } from '#prisma/client';
-
 import { UsersService } from '#src/modules/users/services/users.service';
-import { InvitationAcceptanceConflict } from '../application/accept-invitation.js';
 import { InvitationAlreadyExists } from '../application/create-invitation.js';
+import { PendingInvitationConflict } from '../application/pending-invitation-transition.js';
 import { TrainerAthletesRepository } from '../repositories/trainer-athletes.repository.js';
 import { fullRelationshipReadWhere } from '../policies/trainer-athlete-read.policy.js';
 import { TrainerAthletesService } from '../services/trainer-athletes.service.js';
@@ -28,7 +26,7 @@ describe('TrainerAthletesService', () => {
     findById: vi.fn(),
     findRestrictedById: vi.fn(),
     findOpenByPair: vi.fn(),
-    update: vi.fn(),
+    closePendingInvitation: vi.fn(),
     findActiveTrainerIdsForAthlete: vi.fn(),
     findActiveAthleteIdsForTrainer: vi.fn(),
   };
@@ -767,7 +765,7 @@ describe('TrainerAthletesService', () => {
 
     it('preserves the HTTP conflict when the conditional acceptance loses', async () => {
       repository.findById.mockResolvedValue(pendingRelationship);
-      repository.acceptPendingInvitation.mockRejectedValue(new InvitationAcceptanceConflict());
+      repository.acceptPendingInvitation.mockRejectedValue(new PendingInvitationConflict());
 
       await expect(service.accept(pendingRelationship.id, athlete)).rejects.toMatchObject({
         status: 409,
@@ -795,11 +793,14 @@ describe('TrainerAthletesService', () => {
         trainer: false,
         admin: false,
       }));
-      repository.update.mockResolvedValue({ ...pendingRelationship, status: 'DECLINED' });
+      repository.closePendingInvitation.mockResolvedValue({
+        ...pendingRelationship,
+        status: 'DECLINED',
+      });
 
       await service.decline(pendingRelationship.id, trainer);
 
-      expect(repository.update).toHaveBeenCalledOnce();
+      expect(repository.closePendingInvitation).toHaveBeenCalledOnce();
     });
 
     it('denies a stale session when the participant becomes admin', async () => {
@@ -813,13 +814,13 @@ describe('TrainerAthletesService', () => {
       await expect(service.decline(pendingRelationship.id, athlete)).rejects.toThrow(
         ForbiddenException,
       );
-      expect(repository.update).not.toHaveBeenCalled();
+      expect(repository.closePendingInvitation).not.toHaveBeenCalled();
     });
 
     it('should allow the recipient to decline a request', async () => {
       repository.findById.mockResolvedValue(pendingRelationship);
 
-      repository.update.mockResolvedValue({
+      repository.closePendingInvitation.mockResolvedValue({
         ...pendingRelationship,
         status: 'DECLINED',
       });
@@ -828,17 +829,12 @@ describe('TrainerAthletesService', () => {
 
       expect(result.status).toBe('DECLINED');
 
-      expect(repository.update).toHaveBeenCalledWith(
-        {
-          id: pendingRelationship.id,
-          status: 'PENDING',
-        },
-        expect.objectContaining({
-          status: 'DECLINED',
-          respondedAt: expect.any(Date),
-        }),
-        false,
-      );
+      expect(repository.closePendingInvitation).toHaveBeenCalledExactlyOnceWith({
+        relationshipId: pendingRelationship.id,
+        status: 'DECLINED',
+        respondedAt: expect.any(Date),
+        redactForTrainer: false,
+      });
     });
 
     it('redacts decline responses for approved ATHLETE-role trainers', async () => {
@@ -847,15 +843,19 @@ describe('TrainerAthletesService', () => {
         ...pendingRelationship,
         initiatedById: athlete.id,
       });
-      repository.update.mockResolvedValue({ ...pendingRelationship, status: 'DECLINED' });
+      repository.closePendingInvitation.mockResolvedValue({
+        ...pendingRelationship,
+        status: 'DECLINED',
+      });
 
       await service.decline(pendingRelationship.id, approvedTrainer);
 
-      expect(repository.update).toHaveBeenCalledWith(
-        { id: pendingRelationship.id, status: 'PENDING' },
-        expect.objectContaining({ status: 'DECLINED' }),
-        true,
-      );
+      expect(repository.closePendingInvitation).toHaveBeenCalledExactlyOnceWith({
+        relationshipId: pendingRelationship.id,
+        status: 'DECLINED',
+        respondedAt: expect.any(Date),
+        redactForTrainer: true,
+      });
     });
 
     it('should reject decline by the initiator', async () => {
@@ -865,7 +865,7 @@ describe('TrainerAthletesService', () => {
         ForbiddenException,
       );
 
-      expect(repository.update).not.toHaveBeenCalled();
+      expect(repository.closePendingInvitation).not.toHaveBeenCalled();
     });
   });
 
@@ -877,17 +877,20 @@ describe('TrainerAthletesService', () => {
         trainer: false,
         admin: false,
       });
-      repository.update.mockResolvedValue({ ...pendingRelationship, status: 'CANCELLED' });
+      repository.closePendingInvitation.mockResolvedValue({
+        ...pendingRelationship,
+        status: 'CANCELLED',
+      });
 
       await service.cancel(pendingRelationship.id, trainer);
 
-      expect(repository.update).toHaveBeenCalledOnce();
+      expect(repository.closePendingInvitation).toHaveBeenCalledOnce();
     });
 
     it('should allow the initiator to cancel a pending request', async () => {
       repository.findById.mockResolvedValue(pendingRelationship);
 
-      repository.update.mockResolvedValue({
+      repository.closePendingInvitation.mockResolvedValue({
         ...pendingRelationship,
         status: 'CANCELLED',
       });
@@ -898,35 +901,34 @@ describe('TrainerAthletesService', () => {
 
       expect(result.status).toBe('CANCELLED');
 
-      expect(repository.update).toHaveBeenCalledWith(
-        {
-          id: pendingRelationship.id,
-          status: 'PENDING',
-        },
-        expect.objectContaining({
-          status: 'CANCELLED',
-          endedAt: expect.any(Date),
-          endedBy: {
-            connect: { id: trainer.id },
-          },
-          endReason: 'Changed my plans',
-        }),
-        true,
-      );
+      expect(repository.closePendingInvitation).toHaveBeenCalledExactlyOnceWith({
+        relationshipId: pendingRelationship.id,
+        status: 'CANCELLED',
+        endedAt: expect.any(Date),
+        endedById: trainer.id,
+        endReason: 'Changed my plans',
+        redactForTrainer: true,
+      });
     });
 
     it('redacts cancellation responses for approved ATHLETE-role trainers', async () => {
       const approvedTrainer: TrainerAthleteActor = { id: trainer.id, role: 'ATHLETE' };
       repository.findById.mockResolvedValue(pendingRelationship);
-      repository.update.mockResolvedValue({ ...pendingRelationship, status: 'CANCELLED' });
+      repository.closePendingInvitation.mockResolvedValue({
+        ...pendingRelationship,
+        status: 'CANCELLED',
+      });
 
       await service.cancel(pendingRelationship.id, approvedTrainer, {});
 
-      expect(repository.update).toHaveBeenCalledWith(
-        { id: pendingRelationship.id, status: 'PENDING' },
-        expect.objectContaining({ status: 'CANCELLED' }),
-        true,
-      );
+      expect(repository.closePendingInvitation).toHaveBeenCalledExactlyOnceWith({
+        relationshipId: pendingRelationship.id,
+        status: 'CANCELLED',
+        endedAt: expect.any(Date),
+        endedById: trainer.id,
+        endReason: null,
+        redactForTrainer: true,
+      });
     });
 
     it('should reject cancellation by the recipient', async () => {
@@ -936,7 +938,7 @@ describe('TrainerAthletesService', () => {
         ForbiddenException,
       );
 
-      expect(repository.update).not.toHaveBeenCalled();
+      expect(repository.closePendingInvitation).not.toHaveBeenCalled();
     });
   });
 
@@ -1054,7 +1056,7 @@ describe('TrainerAthletesService', () => {
       );
 
       expect(terminationService.terminateWithExerciseCopies).not.toHaveBeenCalled();
-      expect(repository.update).not.toHaveBeenCalled();
+      expect(repository.closePendingInvitation).not.toHaveBeenCalled();
     });
   });
 
@@ -1141,19 +1143,22 @@ describe('TrainerAthletesService', () => {
   });
 
   describe('concurrent updates', () => {
-    it('should convert Prisma P2025 into ConflictException on decline', async () => {
+    it('preserves the HTTP conflict when decline loses the conditional write', async () => {
       repository.findById.mockResolvedValue(pendingRelationship);
+      repository.closePendingInvitation.mockRejectedValue(new PendingInvitationConflict());
 
-      repository.update.mockRejectedValue(
-        new Prisma.PrismaClientKnownRequestError('Record not found', {
-          code: 'P2025',
-          clientVersion: '7.10.1',
-        }),
-      );
+      await expect(service.decline(pendingRelationship.id, athlete)).rejects.toMatchObject({
+        status: 409,
+        message: 'Relationship state has changed. Reload and try again.',
+      });
+    });
 
-      await expect(service.decline(pendingRelationship.id, athlete)).rejects.toThrow(
-        ConflictException,
-      );
+    it('propagates unexpected closure errors', async () => {
+      const error = new Error('Database unavailable');
+      repository.findById.mockResolvedValue(pendingRelationship);
+      repository.closePendingInvitation.mockRejectedValue(error);
+
+      await expect(service.cancel(pendingRelationship.id, trainer)).rejects.toBe(error);
     });
   });
 });
