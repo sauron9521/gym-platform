@@ -1,4 +1,8 @@
 import assert from 'node:assert/strict';
+import { execFileSync } from 'node:child_process';
+import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { test } from 'vitest';
 
 import {
@@ -35,21 +39,16 @@ test('existing branch checks only the exact pushed diff and supports filenames w
   const result = findPushedPaths(line(oldSha), {
     git: (args) => {
       seen.push(args);
-      return 'apps/web/app/page.tsx\0docs/a file.md\0';
+      return 'M\0apps/web/app/page.tsx\0A\0docs/a file.md\0';
     },
   });
   assert.deepEqual(result, {
     full: false,
     files: ['apps/web/app/page.tsx', 'docs/a file.md'],
+    deletedFiles: [],
   });
-  assert.deepEqual(seen[0].slice(0, 5), [
-    'diff',
-    '--name-only',
-    '-z',
-    '--no-renames',
-    '--diff-filter=ACMRT',
-  ]);
-  assert.deepEqual(seen[0].slice(5, 7), [oldSha, headSha]);
+  assert.deepEqual(seen[0].slice(0, 4), ['diff', '--name-status', '-z', '--no-renames']);
+  assert.deepEqual(seen[0].slice(4, 6), [oldSha, headSha]);
 });
 
 test('new branch compares against remote main merge-base', () => {
@@ -59,12 +58,12 @@ test('new branch compares against remote main merge-base', () => {
       calls.push(args);
       if (args[0] === 'rev-parse') return mainSha + '\n';
       if (args[0] === 'merge-base') return mergeBase + '\n';
-      return 'apps/api/src/main.ts\0';
+      return 'M\0apps/api/src/main.ts\0';
     },
   });
   assert.deepEqual(calls[0], ['rev-parse', '--verify', 'refs/remotes/origin/main']);
   assert.deepEqual(calls[1], ['merge-base', mainSha, headSha]);
-  assert.deepEqual(calls[2].slice(5, 7), [mergeBase, headSha]);
+  assert.deepEqual(calls[2].slice(4, 6), [mergeBase, headSha]);
   assert.deepEqual(result.files, ['apps/api/src/main.ts']);
 });
 
@@ -72,14 +71,15 @@ test('multiple refs union changed files and deduplicate work', () => {
   const result = findPushedPaths(line(oldSha) + line(oldSha, 'e'.repeat(40)), {
     git: (args) =>
       args.includes(headSha)
-        ? 'apps/web/src/index.ts\0docs/README.md\0'
-        : 'apps/mobile/app/index.tsx\0apps/web/src/index.ts\0',
+        ? 'M\0apps/web/src/index.ts\0D\0docs/README.md\0'
+        : 'A\0apps/mobile/app/index.tsx\0M\0apps/web/src/index.ts\0',
   });
   assert.deepEqual(result.files, [
     'apps/mobile/app/index.tsx',
     'apps/web/src/index.ts',
     'docs/README.md',
   ]);
+  assert.deepEqual(result.deletedFiles, ['docs/README.md']);
 });
 
 test('an unreadable ref or absent remote main fails closed to full checks', () => {
@@ -96,8 +96,98 @@ test('an unreadable ref or absent remote main fails closed to full checks', () =
 });
 
 test('ref deletion or unchanged tip does not require source verification', () => {
-  assert.deepEqual(findPushedPaths(line(oldSha, zeroSha)), { full: false, files: [] });
-  assert.deepEqual(findPushedPaths(line(oldSha, oldSha)), { full: false, files: [] });
+  assert.deepEqual(findPushedPaths(line(oldSha, zeroSha)), {
+    full: false,
+    files: [],
+    deletedFiles: [],
+  });
+  assert.deepEqual(findPushedPaths(line(oldSha, oldSha)), {
+    full: false,
+    files: [],
+    deletedFiles: [],
+  });
+});
+
+test('deleted source files select workspaces without passing absent paths to Prettier', () => {
+  const result = findPushedPaths(line(oldSha), {
+    git: () => 'D\0apps/web/src/deleted.ts\0M\0docs/changed.md\0',
+  });
+  assert.deepEqual(result.deletedFiles, ['apps/web/src/deleted.ts']);
+  const plan = createPrePushPlan(result);
+  assert.equal(plan.scopes.web, true);
+  assert.equal(plan.scopes.api, false);
+  assert.deepEqual(plan.commands[0].slice(6), ['docs/changed.md']);
+  assert.ok(plan.commands.some((command) => command.includes('@gym/web')));
+  assert.ok(!plan.commands.flat().includes('apps/web/src/deleted.ts'));
+});
+
+test('deletion-only shared and root changes retain conservative checks', () => {
+  const shared = createPrePushPlan(
+    findPushedPaths(line(oldSha), { git: () => 'D\0packages/ui-web/src/button.tsx\0' }),
+  );
+  for (const scope of ['web', 'admin', 'trainer', 'landing']) {
+    assert.equal(shared.scopes[scope], true);
+  }
+  assert.ok(!shared.commands.some((command) => command.includes('prettier')));
+
+  const root = createPrePushPlan(
+    findPushedPaths(line(oldSha), { git: () => 'D\0pnpm-lock.yaml\0' }),
+  );
+  assert.equal(root.scopes.full, true);
+  assert.ok(root.commands.some((command) => command.includes('format:check')));
+
+  const docs = createPrePushPlan(
+    findPushedPaths(line(oldSha), { git: () => 'D\0docs/deleted.md\0' }),
+  );
+  assert.deepEqual(docs.commands, []);
+});
+
+test('malformed diff output or conflicting multi-ref path states fail closed', () => {
+  for (const diff of ['D\0', 'M\0apps/web/a.ts', 'U\0apps/web/a.ts\0']) {
+    assert.equal(findPushedPaths(line(oldSha), { git: () => diff }).full, true);
+  }
+  const conflict = findPushedPaths(line(oldSha) + line(oldSha, 'e'.repeat(40)), {
+    git: (args) => (args.includes(headSha) ? 'D\0apps/web/a.ts\0' : 'M\0apps/web/a.ts\0'),
+  });
+  assert.equal(conflict.full, true);
+});
+
+test('real Git diff detects deletion and cross-workspace move as separate paths', () => {
+  const directory = mkdtempSync(join(tmpdir(), 'gym-pre-push-'));
+  const git = (args) =>
+    execFileSync('git', args, {
+      cwd: directory,
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+  try {
+    git(['init', '-q']);
+    git(['config', 'user.name', 'Pre-push test']);
+    git(['config', 'user.email', 'pre-push@example.test']);
+    git(['config', 'commit.gpgsign', 'false']);
+    git(['config', 'core.hooksPath', join(directory, 'no-hooks')]);
+    mkdirSync(join(directory, 'apps/web/src'), { recursive: true });
+    mkdirSync(join(directory, 'apps/mobile/src'), { recursive: true });
+    writeFileSync(join(directory, 'apps/web/src/old file.ts'), 'export const value = 1;\n');
+    git(['add', '.']);
+    git(['commit', '-qm', 'base']);
+    const base = git(['rev-parse', 'HEAD']).trim();
+    git(['mv', 'apps/web/src/old file.ts', 'apps/mobile/src/new file.ts']);
+    git(['commit', '-qm', 'move']);
+    const head = git(['rev-parse', 'HEAD']).trim();
+    const result = findPushedPaths(line(base, head), { git });
+    assert.deepEqual(result, {
+      full: false,
+      files: ['apps/mobile/src/new file.ts', 'apps/web/src/old file.ts'],
+      deletedFiles: ['apps/web/src/old file.ts'],
+    });
+    const plan = createPrePushPlan(result);
+    assert.equal(plan.scopes.web, true);
+    assert.equal(plan.scopes.mobile, true);
+    assert.deepEqual(plan.commands[0].slice(6), ['apps/mobile/src/new file.ts']);
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
 });
 
 test('web-only push skips API and Mobile checks', () => {

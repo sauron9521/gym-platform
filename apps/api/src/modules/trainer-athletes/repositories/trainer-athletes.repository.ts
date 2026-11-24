@@ -3,13 +3,14 @@ import { ConflictException, Injectable } from '@nestjs/common';
 import { PrismaService } from '#src/infra/database/index';
 import { deriveAccountCapabilities } from '#src/modules/users/public-api';
 import {
-  InvitationAcceptanceConflict,
-  type AcceptInvitationCommand,
-} from '../application/accept-invitation.js';
-import {
   InvitationAlreadyExists,
   type CreateInvitationCommand,
 } from '../application/create-invitation.js';
+import {
+  PendingInvitationConflict,
+  type AcceptInvitationCommand,
+  type ClosePendingInvitationCommand,
+} from '../application/pending-invitation-transition.js';
 import { fullRelationshipReadWhere } from '../policies/trainer-athlete-read.policy.js';
 import { Prisma } from '#prisma/client';
 import {
@@ -164,45 +165,62 @@ export class TrainerAthletesRepository {
   }
 
   async acceptPendingInvitation({ relationshipId, respondedAt }: AcceptInvitationCommand) {
-    try {
-      return await this.update(
-        {
-          id: relationshipId,
-          status: 'PENDING',
-          // Recheck eligibility in the write after the service capability lookup.
-          trainer: {
-            is: {
-              deletedAt: null,
-              role: { not: 'ADMIN' },
-              OR: [
-                { trainerProfile: { is: { isActive: true } } },
-                { role: 'TRAINER', trainerProfile: { is: null } },
-              ],
-            },
+    return this.updatePendingInvitation(
+      {
+        id: relationshipId,
+        status: 'PENDING',
+        // Recheck eligibility in the write after the service capability lookup.
+        trainer: {
+          is: {
+            deletedAt: null,
+            role: { not: 'ADMIN' },
+            OR: [
+              { trainerProfile: { is: { isActive: true } } },
+              { role: 'TRAINER', trainerProfile: { is: null } },
+            ],
           },
-          athlete: { is: { deletedAt: null, role: { not: 'ADMIN' } } },
         },
-        { status: 'ACTIVE', respondedAt },
-      );
-    } catch (error) {
-      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
-        throw new InvitationAcceptanceConflict();
-      }
-      throw error;
-    }
+        athlete: { is: { deletedAt: null, role: { not: 'ADMIN' } } },
+      },
+      { status: 'ACTIVE', respondedAt },
+    );
   }
 
-  // UPDATE
-  async update(
-    where: Prisma.TrainerAthleteWhereUniqueInput,
+  async closePendingInvitation(command: ClosePendingInvitationCommand) {
+    const data =
+      command.status === 'DECLINED'
+        ? { status: command.status, respondedAt: command.respondedAt }
+        : {
+            status: command.status,
+            endedAt: command.endedAt,
+            endedBy: { connect: { id: command.endedById } },
+            endReason: command.endReason,
+          };
+
+    return this.updatePendingInvitation(
+      { id: command.relationshipId, status: 'PENDING' },
+      data,
+      command.redactForTrainer,
+    );
+  }
+
+  private async updatePendingInvitation(
+    where: Prisma.TrainerAthleteWhereUniqueInput & { status: 'PENDING' },
     data: Prisma.TrainerAthleteUpdateInput,
     redactForTrainer = false,
   ) {
-    return this.prisma.trainerAthlete.update({
-      where,
-      data,
-      select: redactForTrainer ? trainerAthleteHistoricalSelect : trainerAthleteSelect,
-    });
+    try {
+      return await this.prisma.trainerAthlete.update({
+        where,
+        data,
+        select: redactForTrainer ? trainerAthleteHistoricalSelect : trainerAthleteSelect,
+      });
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+        throw new PendingInvitationConflict();
+      }
+      throw error;
+    }
   }
 
   // ACTIVE TRAINERS FOR ATHLETE
