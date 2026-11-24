@@ -183,7 +183,8 @@ test('relative parser remains advisory and old required checks stay in CI', () =
   const ci = readFileSync(new URL('../.github/workflows/ci.yml', import.meta.url), 'utf8');
   assert.match(pkg.scripts['architecture:cruise:relative'], /dependency-cruiser-relative-imports/);
   assert.match(workflow, /pnpm architecture:cruise:relative/);
-  assert.match(ci, /pnpm architecture:cruise:named/);
+  assert.match(ci, /pnpm architecture:cruise:boundaries/);
   assert.match(ci, /pnpm test:tooling/);
   assert.doesNotMatch(ci, /run: pnpm architecture:cruise:relative/);
+  assert.match(pkg.scripts['architecture:cruise:boundaries'], /dependency-cruiser-workspace-imports/);
 });
