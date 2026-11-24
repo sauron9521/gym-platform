@@ -3,11 +3,11 @@
 ## Source of truth
 
 Landing uses the approved OVRANTO design system and **exactly the same semantic CSS palette** as
-Web/Admin: @gym/design-tokens/ovranto.css. The legacy Dark Performance stylesheet must not
+Athlete Web, Trainer Web and Admin: `@gym/design-tokens/ovranto.css`. The legacy Dark Performance stylesheet must not
 be imported in Landing. Tailwind v4 utilities map to the CSS semantic variables, rather than
 independently hard-coding brand colors or light/dark surfaces.
 
-- Light (default): warm ivory background, charcoal text, Deep Teal primary and Terracotta accent.
+- Light (CSS fallback; System follows the OS): warm ivory background, charcoal text, Deep Teal primary and Terracotta accent.
 - Dark: the same semantic variables honor operating-system dark preference and
   explicit .dark / data-theme=dark overrides. Semantic primary, foreground,
   card, secondary, border and muted variables carry the contrast.
@@ -23,7 +23,7 @@ independently hard-coding brand colors or light/dark surfaces.
 - All visual charts and counts on the homepage are **concept art**, clearly labeled
   and never passed off as real performance data.
 
-## Athlete / Coach discovery (Issue #388)
+## Athlete / Coach discovery (Issue #388; initial slice)
 
 The homepage product-discovery section has exactly two **descriptive** OVRANTO
 surfaces: Athlete and Coach. These are marketing cards, not real app screenshots,
@@ -35,8 +35,7 @@ host, TLS and product deployment requirements in #393.
 
 The product-specific layout lives in `apps/landing/src/widgets/home/ui/`
 rather than generic `@gym/ui-web`. The final `/apps` catalogue CTA remains
-available below the workflow section. No new imagery or unsupported feature
-claims were introduced; add genuine approved screenshots in a separate slice.
+available below the workflow section. The initial slice did not introduce imagery. Later slices added genuine fixture-backed screenshots as documented below; keep availability claims gated.
 
 ## Product preview asset provenance (#388)
 
@@ -58,7 +57,7 @@ contact details, customer metrics or third-party photography are included.
 **The visible workouts and Coach zero counts are test fixtures**, not results
 from real people. An adjacent UK/EN caption says so for each preview. The
 images have descriptive localized alt text, declared dimensions for stable
-layout and lazy loading to protect the hero's LCP. A future refresh must verify
+layout and lazy loading with the priority policy documented below. A future refresh must verify
 the current UI, image authenticity/privacy, live feature truthfulness, contrast,
 mobile layout, and relevant licenses/permissions before replacing these files.
 Screenshots are not evidence of Coach deployment or domain readiness (#393).

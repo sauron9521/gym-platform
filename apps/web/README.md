@@ -488,8 +488,6 @@ Set it to the private, trusted API HTTP(S) origin for both **build and runtime**
 CI uses a loopback fixture origin only during build; it is never a deployment value.
 Development without the variable retains the `http://localhost:3001` default.
 
-## Shared Dark Performance theme
+## Shared OVRANTO theme
 
-Web and Landing import `@gym/design-tokens/dark.css` as the canonical semantic palette.
-Do not duplicate `--background`, `--primary`, `--card` or other semantic token values
-in Web's `globals.css`. The theme is dark by default, as on Landing.
+Athlete Web imports `@gym/design-tokens/ovranto.css`, the same canonical palette as Trainer, Admin and Landing. Use semantic utilities instead of duplicating surface, text or primary values in `globals.css`. System follows the OS preference; explicit Light/Dark choices are persisted in the host-only `ovranto-theme` cookie. The server root layout applies the initial class before hydration. See the [shared design tokens guide](../../packages/design-tokens/README.md).
