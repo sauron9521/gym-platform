@@ -1,6 +1,4 @@
-import { BadRequestException } from '@nestjs/common';
-
-import { assertPublishableVersion } from '../policies/training-program-publication.policy.js';
+import { assertPublishableVersion, ProgramPublicationError } from '../domain/publication.policy.js';
 
 describe('assertPublishableVersion', () => {
   const validVersion = () => ({
@@ -11,6 +9,22 @@ describe('assertPublishableVersion', () => {
         exercises: [{ sets: [{ setNumber: 1 }] }],
       },
     ],
+  });
+
+  it('exposes stable domain failure codes without HTTP dependencies', () => {
+    const cases = [
+      ['EMPTY_PROGRAM', 'A program must contain at least one workout'],
+      ['WORKOUT_OUTSIDE_DURATION', 'A workout week cannot exceed the program duration'],
+      ['EMPTY_WORKOUT', 'Every program workout must contain at least one exercise'],
+      ['EMPTY_EXERCISE', 'Every program exercise must contain at least one set'],
+    ] as const;
+
+    for (const [code, message] of cases) {
+      const error = new ProgramPublicationError(code);
+      expect(error).toBeInstanceOf(Error);
+      expect(error.code).toBe(code);
+      expect(error.message).toBe(message);
+    }
   });
 
   it('accepts a program with one executable workout and exercise set', () => {
@@ -51,7 +65,7 @@ describe('assertPublishableVersion', () => {
         durationWeeks: 4,
         workouts: [],
       }),
-    ).toThrow(new BadRequestException('A program must contain at least one workout'));
+    ).toThrow(new ProgramPublicationError('EMPTY_PROGRAM'));
   });
 
   it('rejects a workout beyond the configured duration', () => {
@@ -59,7 +73,7 @@ describe('assertPublishableVersion', () => {
     version.workouts[0].weekNumber = 5;
 
     expect(() => assertPublishableVersion(version)).toThrow(
-      new BadRequestException('A workout week cannot exceed the program duration'),
+      new ProgramPublicationError('WORKOUT_OUTSIDE_DURATION'),
     );
   });
 
@@ -68,7 +82,7 @@ describe('assertPublishableVersion', () => {
     version.workouts[0].exercises = [];
 
     expect(() => assertPublishableVersion(version)).toThrow(
-      new BadRequestException('Every program workout must contain at least one exercise'),
+      new ProgramPublicationError('EMPTY_WORKOUT'),
     );
   });
 
@@ -77,7 +91,7 @@ describe('assertPublishableVersion', () => {
     version.workouts[0].exercises[0].sets = [];
 
     expect(() => assertPublishableVersion(version)).toThrow(
-      new BadRequestException('Every program exercise must contain at least one set'),
+      new ProgramPublicationError('EMPTY_EXERCISE'),
     );
   });
 
@@ -91,7 +105,7 @@ describe('assertPublishableVersion', () => {
     };
 
     expect(() => assertPublishableVersion(version)).toThrow(
-      new BadRequestException('Every program exercise must contain at least one set'),
+      new ProgramPublicationError('EMPTY_EXERCISE'),
     );
   });
 
@@ -102,7 +116,7 @@ describe('assertPublishableVersion', () => {
     };
 
     expect(() => assertPublishableVersion(version)).toThrow(
-      new BadRequestException('Every program exercise must contain at least one set'),
+      new ProgramPublicationError('EMPTY_EXERCISE'),
     );
   });
 });

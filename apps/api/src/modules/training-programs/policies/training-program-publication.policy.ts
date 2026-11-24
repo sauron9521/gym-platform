@@ -1,33 +1,22 @@
 import { BadRequestException } from '@nestjs/common';
 
+import {
+  assertPublishableVersion as assertDomainPublishableVersion,
+  ProgramPublicationError,
+  type PublishableVersion,
+} from '../domain/publication.policy.js';
+
 /**
- * A published program must be executable and internally consistent.
- * Call this inside the publication transaction, after locking the draft row.
+ * Compatibility adapter for the legacy service and locked repository call sites.
+ * Keep the existing HTTP exception until the publication use case is migrated.
  */
-export function assertPublishableVersion(version: {
-  durationWeeks: number | null;
-  workouts: ReadonlyArray<{
-    weekNumber: number;
-    exercises: ReadonlyArray<{ sets: ReadonlyArray<unknown> }>;
-  }>;
-}): void {
-  if (version.workouts.length === 0) {
-    throw new BadRequestException('A program must contain at least one workout');
-  }
-
-  for (const workout of version.workouts) {
-    if (version.durationWeeks !== null && workout.weekNumber > version.durationWeeks) {
-      throw new BadRequestException('A workout week cannot exceed the program duration');
+export function assertPublishableVersion(version: PublishableVersion): void {
+  try {
+    assertDomainPublishableVersion(version);
+  } catch (error) {
+    if (error instanceof ProgramPublicationError) {
+      throw new BadRequestException(error.message);
     }
-
-    if (workout.exercises.length === 0) {
-      throw new BadRequestException('Every program workout must contain at least one exercise');
-    }
-
-    for (const exercise of workout.exercises) {
-      if (exercise.sets.length === 0) {
-        throw new BadRequestException('Every program exercise must contain at least one set');
-      }
-    }
+    throw error;
   }
 }
