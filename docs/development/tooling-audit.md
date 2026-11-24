@@ -119,7 +119,7 @@ shared packages, lockfiles, docs-only and mixed changes before a migration.
 
 For a complete inventory of the current top-level `scripts/` modules, their
 replacement candidates and safety gates, see the [custom script replacement
-audit](../custom-scripts-replacement-audit.md).
+audit](../audits/custom-scripts-replacement-audit.md).
 
 ## Knip follow-up: restore missing Vitest coverage
 
@@ -177,7 +177,7 @@ historical categories were available in the last 80 commits; API, Landing,
 docs and one mixed/manifest category had no missing application/client
 packages. **Full replacement of `ci-select.mjs` by Turbo affected is NO-GO.**
 
-See the [evidence, exact SHA ranges, limitations and follow-up gates](../turbo-affected-shadow-evidence-2026-11-24.md).
+See the [evidence, exact SHA ranges, limitations and follow-up gates](../audits/turbo-affected-shadow-evidence-2026-11-24.md).
 A successful manual diagnostic does not imply scope parity or authorize any
 change to required CI.
 

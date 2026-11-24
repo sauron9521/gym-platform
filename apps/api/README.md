@@ -71,7 +71,7 @@ the original schema and historical migration hashes are archived in
 migration provenance metadata. The frozen initial baseline and subsequent forward-only migrations are active;
 legacy SQL migration files must **not** be applied to a new database.
 Modified source/test blobs still require staging review.
-The read-only [cutover audit](../../docs/api-migration-audit.md) explicitly
+The read-only [cutover audit](../../docs/audits/api-migration-audit.md) explicitly
 lists remaining staging/rollback/approval blockers. **Production NO-GO:**
 merging the repository audit does not transfer operational ownership.
 

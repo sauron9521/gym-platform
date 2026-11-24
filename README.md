@@ -106,7 +106,7 @@ for host privileges, environment templates, alerts and manual activation.
 The imported API has a frozen legacy source/test inventory and a CI-backed,
 read-only cutover audit. **Production remains NO-GO** until signed GHCR images,
 staging, two-release rollback and external operator approvals are verified.
-See [API migration audit and cutover criteria](docs/api-migration-audit.md).
+See [API migration audit and cutover criteria](docs/audits/api-migration-audit.md).
 
 ## Signed two-release API rollback rehearsal
 

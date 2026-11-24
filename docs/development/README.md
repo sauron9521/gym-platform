@@ -13,7 +13,7 @@ This is the canonical navigation for repository development and quality checks. 
 
 ## Evidence and follow-up
 
-- [Custom script replacement audit](../custom-scripts-replacement-audit.md)
-- [Turbo affected shadow evidence (2026-11-24)](../turbo-affected-shadow-evidence-2026-11-24.md)
+- [Custom script replacement audit](../audits/custom-scripts-replacement-audit.md)
+- [Turbo affected shadow evidence (2026-11-24)](../audits/turbo-affected-shadow-evidence-2026-11-24.md)
 
 The existing CI selector and branch protection remain authoritative. A diagnostic result or this directory move is not release approval. Old root-level guide paths retain link-only migration notices for historical GitHub references; update new links to the canonical pages above.
