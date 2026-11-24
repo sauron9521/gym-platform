@@ -459,7 +459,9 @@ test.each([
 test('Turbo runtime preserves the environment and propagates task failures', () => {
   const directory = mkdtempSync(join(tmpdir(), 'gym-turbo-runtime-'));
   const turbo = fileURLToPath(new URL('../node_modules/turbo/bin/turbo', import.meta.url));
-  const rootManifest = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
+  const rootManifest = JSON.parse(
+    readFileSync(new URL('../package.json', import.meta.url), 'utf8'),
+  );
   try {
     writeFileSync(
       join(directory, 'package.json'),
@@ -490,7 +492,9 @@ test('Turbo runtime preserves the environment and propagates task failures', () 
           "const fs = require('node:fs');",
           "if (process.env.GYM_TURBO_TEST_ENV !== 'runtime-probe') process.exit(9);",
           "fs.writeFileSync('result.txt', process.env.GYM_TURBO_TEST_ENV);",
-          "if (process.env.GYM_TURBO_TEST_FAIL === 'yes' && " + JSON.stringify(name) + " === 'first') process.exit(7);",
+          "if (process.env.GYM_TURBO_TEST_FAIL === 'yes' && " +
+            JSON.stringify(name) +
+            " === 'first') process.exit(7);",
         ].join('\n'),
       );
     }
@@ -523,7 +527,10 @@ test('Turbo runtime preserves the environment and propagates task failures', () 
     assert.ifError(success.error);
     assert.equal(success.status, 0, success.stdout + success.stderr);
     for (const name of ['first', 'second']) {
-      assert.equal(readFileSync(join(directory, 'apps', name, 'result.txt'), 'utf8'), 'runtime-probe');
+      assert.equal(
+        readFileSync(join(directory, 'apps', name, 'result.txt'), 'utf8'),
+        'runtime-probe',
+      );
     }
     const failed = run('yes');
     assert.ifError(failed.error);
