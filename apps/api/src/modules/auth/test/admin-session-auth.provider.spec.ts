@@ -57,4 +57,15 @@ describe('AdminSessionAuth', () => {
     await expect(provider.authenticate(context)).resolves.toBeNull();
     expect(users.findUserById).not.toHaveBeenCalled();
   });
+
+  it.each(['invalid', '', null, true])(
+    'rejects malformed persisted MFA state (%s)',
+    async (mfa) => {
+      const { provider, sessions, reflector, users, context } = setup();
+      reflector.getAllAndOverride.mockReturnValue(true);
+      sessions.validate.mockResolvedValue({ userId: 'user', metadata: { purpose: 'admin' }, mfa });
+      await expect(provider.authenticate(context)).resolves.toBeNull();
+      expect(users.findUserById).not.toHaveBeenCalled();
+    },
+  );
 });

@@ -95,7 +95,7 @@ describe('separate Admin cookie realm', () => {
 
     rotate.mockClear();
     mfa.verifyTotp.mockResolvedValue(false);
-    expect(await service.completeMfa(request, response as never, { code: 'wrong' })).toBeNull();
+    expect(await service.completeMfa(request, response as never, { code: '654321' })).toBeNull();
     expect(rotate).not.toHaveBeenCalled();
   });
 
@@ -107,6 +107,40 @@ describe('separate Admin cookie realm', () => {
     expect(await service.completeMfa(request, response as never, { code: '123456' })).toBeNull();
     expect(rotate).not.toHaveBeenCalled();
     expect(mfa.verifyTotp).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    { code: '123456', recoveryCode: 'ABCDE-FGHIJ' },
+    {},
+    { code: 'invalid' },
+    { recoveryCode: 'invalid' },
+  ])(
+    'rejects missing, ambiguous or malformed proof before reading the cookie',
+    async (challenge) => {
+      const { service, mfa, request, response } = setup();
+      const validate = vi.spyOn(service.sessions, 'validate');
+      await expect(service.completeMfa(request, response as never, challenge)).resolves.toBeNull();
+      expect(validate).not.toHaveBeenCalled();
+      expect(mfa.verifyTotp).not.toHaveBeenCalled();
+      expect(mfa.verifyRecoveryCode).not.toHaveBeenCalled();
+      expect(response.append).not.toHaveBeenCalled();
+    },
+  );
+
+  it('rejects foreign-origin and non-POST challenges before verifying a factor', async () => {
+    const { service, mfa, response } = setup();
+    const validate = vi.spyOn(service.sessions, 'validate');
+    for (const request of [
+      { method: 'POST', headers: { origin: 'https://app.example.test' } },
+      { method: 'GET', headers: {} },
+    ]) {
+      await expect(
+        service.completeMfa(request as never, response as never, { code: '123456' }),
+      ).rejects.toThrow(ForbiddenException);
+    }
+    expect(validate).not.toHaveBeenCalled();
+    expect(mfa.verifyTotp).not.toHaveBeenCalled();
+    expect(response.append).not.toHaveBeenCalled();
   });
 
   it('ends only the Admin cookie with hashed token revocation, retaining normal cookies', async () => {

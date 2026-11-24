@@ -6,7 +6,8 @@ export const ADMIN_SESSION_PURPOSE = 'admin' as const;
 /**
  * Enforce an explicit, server-issued admin browser session after authentication.
  * The cookie-only authentication provider must run BEFORE this route-level guard.
- * Ordinary /auth/login cookies, bearer JWTs and revoked ADMIN roles cannot pass.
+ * Ordinary cookies, bearer JWTs, mismatched principals and pending or malformed MFA states cannot pass.
+ * Undefined MFA remains a transitional legacy state until enrollment is available.
  */
 @Injectable()
 export class AdminSessionPurposeGuard implements CanActivate {
@@ -18,7 +19,9 @@ export class AdminSessionPurposeGuard implements CanActivate {
     if (
       !request.user?.id ||
       request.user.role !== 'ADMIN' ||
-      request.session?.metadata?.purpose !== ADMIN_SESSION_PURPOSE
+      request.session?.metadata?.purpose !== ADMIN_SESSION_PURPOSE ||
+      request.session.userId !== request.user.id ||
+      (request.session.mfa !== undefined && request.session.mfa !== 'verified')
     ) {
       throw new ForbiddenException('Administrative session required');
     }
