@@ -54,7 +54,7 @@ function workspacesUnder(root, kind) {
 export function checkWorkspaceBoundaries(repositoryRoot) {
   const root = resolve(repositoryRoot);
   const errors = [];
-  const workspaces = [...workspacesUnder(root, 'apps'), ...workspacesUnder(root, 'packages')];
+  const workspaces = ['apps', 'packages', 'tooling'].flatMap((kind) => workspacesUnder(root, kind));
   const byName = new Map();
   for (const workspace of workspaces) {
     if (!workspace.name) {
@@ -67,7 +67,7 @@ export function checkWorkspaceBoundaries(repositoryRoot) {
   }
 
   const sharedGraph = new Map(
-    workspaces.filter((w) => w.kind === 'packages').map((w) => [w.name, new Set()]),
+    workspaces.filter((w) => w.kind !== 'apps').map((w) => [w.name, new Set()]),
   );
 
   for (const workspace of workspaces) {
@@ -79,7 +79,7 @@ export function checkWorkspaceBoundaries(repositoryRoot) {
           errors.push(
             workspace.name + ': must not depend on app ' + dependency + ' (' + field + ')',
           );
-        } else if (workspace.kind === 'packages') {
+        } else if (workspace.kind !== 'apps') {
           sharedGraph.get(workspace.name).add(dependency);
         }
       }
@@ -99,7 +99,7 @@ export function checkWorkspaceBoundaries(repositoryRoot) {
         const foreign = workspaces.find(
           (candidate) => candidate !== workspace && within(candidate.directory, absoluteTarget),
         );
-        if (foreign?.kind === 'apps' || (workspace.kind === 'packages' && foreign)) {
+        if (foreign) {
           errors.push(
             relative(root, file) +
               ': cross-workspace relative import ' +
