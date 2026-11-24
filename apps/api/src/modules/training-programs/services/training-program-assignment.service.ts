@@ -6,7 +6,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 
-import { Prisma } from '#prisma/client';
+import { AssignmentCancellationStateChanged } from '../application/assignment-cancellation.js';
 import { AssignmentCreationError } from '../application/assignment-creation.js';
 
 import { TrainerAthletesService } from '#src/modules/trainer-athletes/services/trainer-athletes.service';
@@ -270,8 +270,8 @@ export class TrainingProgramAssignmentService {
       }
       return cancelled;
     } catch (error) {
-      if (this.isPrismaError(error, 'P2025')) {
-        throw new ConflictException('Assignment state has changed. Reload and try again.');
+      if (error instanceof AssignmentCancellationStateChanged) {
+        throw new ConflictException(error.message);
       }
       throw error;
     }
@@ -287,9 +287,5 @@ export class TrainingProgramAssignmentService {
     ) {
       throw new BadRequestException('Invalid pagination parameters.');
     }
-  }
-
-  private isPrismaError(error: unknown, code: string): boolean {
-    return error instanceof Prisma.PrismaClientKnownRequestError && error.code === code;
   }
 }
