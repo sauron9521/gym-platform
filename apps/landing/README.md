@@ -1,8 +1,6 @@
 # Gym Platform Landing
 
-Публічний презентаційний сайт Gym Platform у Turborepo. Дизайн-напрямок: **Dark Performance** —
-темний графітовий фон, лаймові акценти, контрастні заголовки. Тема вмикається
-за замовчуванням; перемикач світлої теми наразі не планується.
+Публічний презентаційний сайт OVRANTO у Turborepo. Дизайн-напрямок: **Premium Athletic Minimal** — спільні семантичні токени OVRANTO v2, Deep Teal, Terracotta, теплі світлі та темні поверхні. Підтримуються System / Light / Dark; початкова тема читається із локального cookie на сервері. Деталі: [візуальна ідентичність](../../docs/landing/visual-identity.md) та [Design Tokens](../../packages/design-tokens/README.md).
 
 ## Стек
 
@@ -39,15 +37,13 @@ pnpm --filter @gym/landing build
 - `src/shared/lib/seo.ts` — метадані й налаштування публічного походження;
 - `src/shared/ui` — shadcn/ui, `src/app/globals.css` — колірні токени.
 
-Наразі розділи містять короткі вступи й повідомлення про розробку. Остаточні
-тексти, скриншоти, посилання на застосунки та інтерактивні можливості
-додаватимуться окремими PR.
+Головна містить продуктові прев’ю Athlete і Coach у двох темах, сценарії використання та CTA. Прев’ю є знімками інтерфейсів із синтетичними даними, а не доказом публічного запуску. Зовнішні посилання на застосунки залежать від підтвердження доступності та release gates. Див. [локалізацію](../../docs/landing/localization.md) та [готовність до запуску](../../docs/landing/production-readiness.md).
 
 ## SEO та домен
 
 Без `LANDING_SITE_URL` сайт **не індексується**, `robots.txt` забороняє
 обхід, `sitemap.xml` порожній, а canonical URL не генеруються.
-Для індексації потрібен підтверджений публічний HTTPS-домен, наприклад:
+Для індексації потрібні підтверджений публічний HTTPS-домен і окремий явний дозвіл `LANDING_ALLOW_INDEXING=true` після перевірки release gates. Приклад конфігурації домену (сам по собі не вмикає індексацію):
 
 ```dotenv
 LANDING_SITE_URL=https://your-domain.example
@@ -69,19 +65,14 @@ LANDING_SITE_URL=https://your-domain.example
 - `FeatureCard` — картка продуктового сценарію з доступним внутрішнім посиланням.
 - `CallToAction` — готовий CTA-блок з основним та необов’язковим додатковим посиланням.
 
-У `HomeScreen` вже використовуються `Container`, `MarketingSection`,
-`SectionHeading` і `FeatureCard`. Повноцінний редизайн головної сторінки
-та розширення контенту заплановані окремим PR. Для анімацій поки достатньо
-CSS; повага до `prefers-reduced-motion` залишатиметься обов'язковою
-для майбутніх інтерактивних ефектів.
+`HomeScreen` використовує маркетингові примітиви, окремі секції hero, product discovery, workflow та фінальний CTA. CSS-анімації та scroll enhancement мають статичний fallback і враховують `prefers-reduced-motion`; деталі та обмеження описані у [візуальному посібнику](../../docs/landing/visual-identity.md).
 
 Компонентні перевірки: `pnpm --filter @gym/landing test:components`.
 
 ## Smoke tests
 
 Run `pnpm --filter @gym/landing test` to validate public navigation routes,
-SEO origin rules and metadata before building. The Landing build runs these
-regressions first, while the existing Next.js build validates compilation.
+SEO origin rules and metadata before building. Run these tests explicitly: the Landing build script runs `next build` and validates compilation.
 The tests deliberately require no domain, browser, credentials or network.
 
 ## Real-browser smoke checks

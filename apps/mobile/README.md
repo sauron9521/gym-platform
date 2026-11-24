@@ -288,6 +288,10 @@ The required `Mobile iOS Dev / Windows Metro` CI job now requests an actual
 production `expo export --platform ios` alone does **not** test Fast Refresh
 HMR or SHA-1 file-map resolution on Windows.
 
+## OVRANTO design tokens
+
+The existing native StyleSheet adapter in `src/shared/config/theme.ts` consumes `ovrantoNativePalette.dark` from `@gym/design-tokens/ovranto-native`. UniWind's `global.css` defines both OVRANTO Light and Dark semantic palettes. This does not mean all native screens already support switching between Light, Dark and System: the current StyleSheet adapter remains dark. Keep native channel mappings synchronized with the [shared design tokens guide](../../packages/design-tokens/README.md).
+
 ## Expo Web / React 19 theme initialization
 
 The generated gluestack-ui v5 web provider originally rendered an executable
