@@ -2,6 +2,7 @@ import { readFile } from 'node:fs/promises';
 import { pathToFileURL } from 'node:url';
 
 import { API_PERFORMANCE_ROUTES } from './api-performance-baseline.mjs';
+import { calculatePerformanceDelta } from './api-performance-compare.mjs';
 
 const SHA = /^[a-f0-9]{40}$/i;
 const FINGERPRINT = /^[a-f0-9]{64}$/i;
@@ -44,7 +45,7 @@ function count(value, description) {
 function median(values) {
   const sorted = [...values].sort((a, b) => a - b);
   const mid = Math.floor(sorted.length / 2);
-  return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+  return sorted.length % 2 ? sorted[mid] : sorted[mid - 1] / 2 + sorted[mid] / 2;
 }
 
 function round(value, places = 3) {
@@ -57,7 +58,10 @@ function normalizeReport(report) {
     report.schemaVersion === 1 && report.mode === 'A/B exploratory comparison',
     'Repeated analysis requires genuine A/B reports, not A/A smoke',
   );
-  check(FINGERPRINT.test(report.fixtureFingerprint), 'Missing persisted fixture fingerprint');
+  check(
+    typeof report.fixtureFingerprint === 'string' && FINGERPRINT.test(report.fixtureFingerprint),
+    'Missing persisted fixture fingerprint',
+  );
   const run = object(report.run, 'independent GitHub Actions attempt');
   check(
     typeof run.githubRunId === 'string' &&
@@ -84,9 +88,11 @@ function normalizeReport(report) {
       'Unknown or repeated comparison source',
     );
     check(
-      SHA.test(sourceReport.beforeCommit) &&
+      typeof sourceReport.beforeCommit === 'string' &&
+        typeof sourceReport.afterCommit === 'string' &&
+        SHA.test(sourceReport.beforeCommit) &&
         SHA.test(sourceReport.afterCommit) &&
-        sourceReport.beforeCommit !== sourceReport.afterCommit,
+        sourceReport.beforeCommit.toLowerCase() !== sourceReport.afterCommit.toLowerCase(),
       'Invalid or identical compared commits',
     );
 
@@ -116,18 +122,21 @@ function normalizeReport(report) {
       const before = finite(entry.before, 'before measurement');
       const after = finite(entry.after, 'after measurement');
       const delta = entry.delta;
+      const expected = calculatePerformanceDelta(before, after);
       check(
         typeof delta === 'number' &&
           Number.isFinite(delta) &&
-          Math.abs(delta - round(after - before)) <= 0.0011,
+          Number.isFinite(expected.delta) &&
+          Math.abs(delta - expected.delta) <= 0.0011,
         'Inconsistent comparison delta',
       );
 
-      const expectedPercent = before === 0 ? null : round(((after - before) / before) * 100, 2);
+      const expectedPercent = expected.percentDelta;
       check(
         expectedPercent === null
           ? entry.percentDelta === null
-          : typeof entry.percentDelta === 'number' &&
+          : Number.isFinite(expectedPercent) &&
+              typeof entry.percentDelta === 'number' &&
               Number.isFinite(entry.percentDelta) &&
               Math.abs(entry.percentDelta - expectedPercent) <= 0.011,
         'Inconsistent comparison percentage',

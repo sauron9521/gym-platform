@@ -39,7 +39,10 @@ function wholeNumber(value, name) {
 
 function checkContext(context, name) {
   object(context, `${name}.context`);
-  requireValue(SHA.test(context.commit), `Invalid ${name}.context.commit`);
+  requireValue(
+    typeof context.commit === 'string' && SHA.test(context.commit),
+    `Invalid ${name}.context.commit`,
+  );
   for (const key of CONTEXT_KEYS) {
     requireValue(
       typeof context[key] === 'string' && SAFE_LABEL.test(context[key]),
@@ -105,20 +108,30 @@ function sameNumber(a, b, field, source) {
   requireValue(left === right, `Incompatible ${source} capture: ${field}`);
 }
 
+/** Shared arithmetic for validated, nonnegative finite measurements. */
+export function calculatePerformanceDelta(before, after) {
+  const delta = Number((after - before).toFixed(3));
+  // A zero baseline has no mathematically meaningful percentage change.
+  const percentDelta = before === 0 ? null : Number((((after - before) / before) * 100).toFixed(2));
+  return { delta, percentDelta };
+}
+
 function measureChange(route, metric, beforeValue, afterValue) {
   const oldValue = finiteNumber(beforeValue, `${route}.${metric}.before`);
   const newValue = finiteNumber(afterValue, `${route}.${metric}.after`);
-  const delta = Number((newValue - oldValue).toFixed(3));
-  // A zero baseline has no mathematically meaningful percentage change.
-  const percentDelta =
-    oldValue === 0 ? null : Number((((newValue - oldValue) / oldValue) * 100).toFixed(2));
-  return { route, metric, before: oldValue, after: newValue, delta, percentDelta };
+  const change = calculatePerformanceDelta(oldValue, newValue);
+  requireValue(
+    Number.isFinite(change.delta) &&
+      (change.percentDelta === null || Number.isFinite(change.percentDelta)),
+    'Non-finite comparison delta or percentage',
+  );
+  return { route, metric, before: oldValue, after: newValue, ...change };
 }
 
-function metricGroup(item, name, source) {
+function metricGroup(item, name, source, validate = finiteNumber) {
   const group = object(item[name], `${source}.${name}`);
   for (const metric of ['min', 'p50', 'p95', 'max'])
-    finiteNumber(group[metric], `${source}.${name}.${metric}`);
+    validate(group[metric], `${source}.${name}.${metric}`);
   requireValue(
     group.min <= group.p50 && group.p50 <= group.p95 && group.p95 <= group.max,
     `Inconsistent ${source}.${name} percentiles`,
@@ -167,8 +180,8 @@ function compareHttp(left, right) {
     );
     const latA = metricGroup(a, 'latencyMs', 'http');
     const latB = metricGroup(b, 'latencyMs', 'http');
-    const bytesA = metricGroup(a, 'decodedResponseBytes', 'http');
-    const bytesB = metricGroup(b, 'decodedResponseBytes', 'http');
+    const bytesA = metricGroup(a, 'decodedResponseBytes', 'http', wholeNumber);
+    const bytesB = metricGroup(b, 'decodedResponseBytes', 'http', wholeNumber);
     for (const [metric, first, second] of [
       ['latency-p50-ms', latA.p50, latB.p50],
       ['latency-p95-ms', latA.p95, latB.p95],
@@ -196,8 +209,8 @@ function compareSql(left, right) {
     const b = after.get(route);
     sameNumber(a.samples, b.samples, `${route}.samples`, 'sql');
     requireValue(a.samples > 0, 'SQL reports must include recorded samples');
-    const queryA = metricGroup(a, 'queryCount', 'sql');
-    const queryB = metricGroup(b, 'queryCount', 'sql');
+    const queryA = metricGroup(a, 'queryCount', 'sql', wholeNumber);
+    const queryB = metricGroup(b, 'queryCount', 'sql', wholeNumber);
     for (const [metric, first, second] of [
       ['queries-p50', queryA.p50, queryB.p50],
       ['queries-p95', queryA.p95, queryB.p95],

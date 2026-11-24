@@ -244,6 +244,27 @@ describe('API performance comparison guardrails', () => {
     assert.throws(() => compareApiPerformance(before, after), /Invalid/);
   });
 
+  it('rejects fractional counts, non-string commit IDs and overflowing percentages', () => {
+    for (const [source, group] of [
+      ['http', 'decodedResponseBytes'],
+      ['sql', 'queryCount'],
+    ]) {
+      const before = bundle(INITIAL);
+      const after = bundle(UPDATED);
+      after.sources[source].report.results[0][group].min += 0.5;
+      assert.throws(() => compareApiPerformance(before, after), /Invalid/);
+    }
+    const before = bundle(INITIAL);
+    const after = bundle(UPDATED);
+    after.sources.http.context.commit = [UPDATED];
+    assert.throws(() => compareApiPerformance(before, after), /context.commit/);
+
+    after.sources.http.context.commit = UPDATED;
+    before.sources.http.report.results[0].latencyMs = sampleStats(1e-300, 1e-300);
+    after.sources.http.report.results[0].latencyMs = sampleStats(1e100, 1e100);
+    assert.throws(() => compareApiPerformance(before, after), /Non-finite comparison/);
+  });
+
   it('treats percentage change from a zero baseline as undefined, not infinity', () => {
     const before = bundle(INITIAL);
     const after = bundle(UPDATED);
