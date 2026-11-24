@@ -37,12 +37,15 @@ browser tests without executing database guards during the audit. Ordinary
 Web/API/browser tests and protected staging smoke are unaffected.
 
 The [first manual audit](https://github.com/sauron9521/gym-platform/actions/runs/45363672094)
-reported 35 potentially unused files; 19 were real Web integration
+reported **35 potentially unused files**; 19 were real Web integration
 `*.spec.ts` files, with supporting fixtures and the integration Playwright
-config also flagged. This is a **false-positive triage**, not permission to
-delete files or to enable blocking Knip rules. Re-run the manual report and
-compare the unused-file section before declaring the integration findings
-resolved.
+config also flagged. A temporary full Knip check in
+[PR #706 CI](https://github.com/sauron9521/gym-platform/actions/runs/45368694507)
+confirmed **14 unused-file findings** after the Web entrypoint configuration,
+with none of those integration suites, fixtures or config among the findings.
+The temporary diagnostic test is removed from the final PR; this is
+**false-positive triage**, not proof that the remaining 14 files are dead
+or permission to delete dependencies or enable blocking Knip rules.
 
 ## Observed starting point (main, November 2026)
 
