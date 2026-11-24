@@ -272,9 +272,6 @@ importers:
       '@nestjs/authentication':
         specifier: ^0.1.6
         version: 0.1.6(@nestjs/common@12.6.0(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@10.2.2))(@nestjs/core@12.6.0)(reflect-metadata@0.2.2)(rxjs@7.8.2)
-      '@nestjs/authorization':
-        specifier: ^0.1.4
-        version: 0.1.4(@nestjs/authentication@0.1.6(@nestjs/common@12.6.0(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@10.2.2))(@nestjs/core@12.6.0)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/common@12.6.0(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@10.2.2))(@nestjs/core@12.6.0)(reflect-metadata@0.2.2)(rxjs@7.8.2)
       '@nestjs/common':
         specifier: ^12.6.0
         version: 12.6.0(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@10.2.2)
@@ -2228,25 +2225,6 @@ packages:
       reflect-metadata: ^0.1.13 || ^0.2.0
       rxjs: ^7.1.0
     peerDependenciesMeta:
-      '@nestjs/microservices':
-        optional: true
-      '@nestjs/websockets':
-        optional: true
-
-  '@nestjs/authorization@0.1.4':
-    resolution: {integrity: sha512-rA79qYNut3PoS8/+fQkMXhN/o0HApNIw3MyhPDqRoBOUqbKfoDNM2QjLMSeuuLFKPpx92/NIlS3aKab9zgXgNA==}
-    engines: {node: '>=20.19.0'}
-    peerDependencies:
-      '@nestjs/authentication': '>=0.1.0'
-      '@nestjs/common': ^12.0.0
-      '@nestjs/core': ^12.0.0
-      '@nestjs/microservices': ^12.0.0
-      '@nestjs/websockets': ^12.0.0
-      reflect-metadata: ^0.1.13 || ^0.2.0
-      rxjs: ^7.1.0
-    peerDependenciesMeta:
-      '@nestjs/authentication':
-        optional: true
       '@nestjs/microservices':
         optional: true
       '@nestjs/websockets':
@@ -10534,15 +10512,6 @@ snapshots:
       '@nestjs/core': 12.6.0(@nestjs/common@12.6.0(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@10.2.2))(@nestjs/platform-express@12.6.0)(reflect-metadata@0.2.2)(rxjs@7.8.2)
       reflect-metadata: 0.2.2
       rxjs: 7.8.2
-
-  '@nestjs/authorization@0.1.4(@nestjs/authentication@0.1.6(@nestjs/common@12.6.0(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@10.2.2))(@nestjs/core@12.6.0)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/common@12.6.0(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@10.2.2))(@nestjs/core@12.6.0)(reflect-metadata@0.2.2)(rxjs@7.8.2)':
-    dependencies:
-      '@nestjs/common': 12.6.0(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@10.2.2)
-      '@nestjs/core': 12.6.0(@nestjs/common@12.6.0(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@10.2.2))(@nestjs/platform-express@12.6.0)(reflect-metadata@0.2.2)(rxjs@7.8.2)
-      reflect-metadata: 0.2.2
-      rxjs: 7.8.2
-    optionalDependencies:
-      '@nestjs/authentication': 0.1.6(@nestjs/common@12.6.0(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@10.2.2))(@nestjs/core@12.6.0)(reflect-metadata@0.2.2)(rxjs@7.8.2)
 
   '@nestjs/cli@12.0.13(@swc/core@1.16.22(@swc/helpers@0.5.23))(@types/node@26.6.6)(prettier@3.10.1)(tsconfig-paths-webpack-plugin@4.2.0)':
     dependencies:
