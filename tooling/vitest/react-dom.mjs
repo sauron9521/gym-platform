@@ -6,9 +6,8 @@ import { dirname } from 'node:path';
  * Expo Mobile pins the SDK-tested React version independently from Next apps,
  * so pnpm may hoist another React instance at the workspace root.
  */
-export function reactDomTestAliases(importerUrl) {
-  const appRequire = createRequire(importerUrl);
-  const rendererRequire = createRequire(appRequire.resolve('@testing-library/react'));
+export function reactDomTestAliases(rendererPath) {
+  const rendererRequire = createRequire(rendererPath);
 
   return {
     react: dirname(rendererRequire.resolve('react/package.json')),

@@ -224,6 +224,18 @@ The dependency-cruiser graph gate passed. Turbo planned 33 tasks, but the
 shadow comparison again missed all seven required application/client
 workspaces on the tooling-only change. Replacing CI selection remains NO-GO.
 
+## Shared Vitest DOM renderer ownership
+
+Admin, Landing, Trainer and Web each declare their own Testing Library and
+React dependencies. Their Vitest configuration resolves the renderer from
+the owning application, then passes the same absolute path to the shared
+Vite alias helper and test-only CommonJS setup via `GYM_VITEST_DOM_RENDERER`.
+This removes the shared setup's implicit dependency on root hoisting without
+adding a second React ownership policy. A missing or nonabsolute renderer
+path fails closed. The Mobile native renderer, test discovery, DOM environments
+and production imports remain unchanged. Confirm the four component suites,
+Mobile tests and the next Knip report before claiming the finding resolved.
+
 ## Next safe steps
 
 1. Review the Knip baseline by workspace, confirm real entrypoints and
