@@ -26,7 +26,6 @@ export function inspectWorkspaceImports(root = repositoryRoot) {
   return { named, relative, graphErrors, graph };
 }
 
-
 /**
  * Reuse the parsed graph for dependency-cruiser's native err-long report.
  * Running depcruise-fmt does not traverse the source tree a second time.
