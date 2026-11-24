@@ -55,9 +55,8 @@ describe('normalizeWorkoutSetResult', () => {
     'rpe',
     'rir',
   ] as const)('rejects a non-null %s even when it is zero', (field) => {
-    expect(() =>
-      normalizeWorkoutSetResult({ status: 'SKIPPED', [field]: 0 }, completedAt),
-    ).toThrow(SkippedSetPerformanceError);
+    const normalize = () => normalizeWorkoutSetResult({ status: 'SKIPPED', [field]: 0 }, completedAt);
+    expect(normalize).toThrow(SkippedSetPerformanceError);
   });
 
   it('accepts explicit null for skipped performance fields', () => {
