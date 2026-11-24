@@ -1,12 +1,12 @@
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
 import { test } from 'vitest';
 
 import { checkWorkspaceBoundaries } from './check-workspace-boundaries.mjs';
-import { inspectNamedApplicationImports } from './dependency-cruiser-named-imports.mjs';
+import { inspectWorkspaceImports } from './dependency-cruiser-workspace-imports.mjs';
 
 function workspace(root, kind, folder, name, dependencies = {}) {
   const directory = join(root, kind, folder);
@@ -30,7 +30,7 @@ function withFixture(run) {
   }
 }
 
-test('actual workspace dependency graph and app imports stay within boundaries', () => {
+test('actual workspace manifests and shared dependency graph stay within boundaries', () => {
   assert.deepEqual(checkWorkspaceBoundaries(fileURLToPath(new URL('../', import.meta.url))), []);
 });
 
@@ -55,19 +55,16 @@ test('reject direct workspace dependencies on another application', () => {
   });
 });
 
-test('require dependency-cruiser for named imports while keeping relative-path protection', () => {
+test('required dependency-cruiser graph owns named and relative import protection', () => {
   withFixture(({ root, web }) => {
     writeFileSync(
       join(web, 'src', 'page.ts'),
       "import type { X } from '@gym/api';\nexport * from '../../api/src/secret';\n",
     );
-    const messages = checkWorkspaceBoundaries(root);
-    assert.ok(messages.some((message) => message.includes('cross-workspace relative import')));
-    const named = inspectNamedApplicationImports(root);
-    assert.ok(!messages.some((message) => message.includes('import of application')));
-    assert.ok(
-      named.violations.some((message) => message.includes('import of application @gym/api')),
-    );
+    assert.deepEqual(checkWorkspaceBoundaries(root), []);
+    const { named, relative } = inspectWorkspaceImports(root);
+    assert.ok(named.some((message) => message.includes('import of application @gym/api')));
+    assert.ok(relative.some((message) => message.includes('cross-workspace relative import')));
   });
 });
 
@@ -77,8 +74,9 @@ test('reject package-to-app relative imports', () => {
       join(domain, 'src', 'index.ts'),
       "const source = import('../../../apps/web/src/index');\n",
     );
+    assert.deepEqual(checkWorkspaceBoundaries(root), []);
     assert.ok(
-      checkWorkspaceBoundaries(root).some((message) =>
+      inspectWorkspaceImports(root).relative.some((message) =>
         message.includes('cross-workspace relative import'),
       ),
     );
@@ -144,10 +142,42 @@ test.each([
   withFixture(({ root }) => {
     workspace(root, 'tooling', 'checks', '@gym/checks');
     writeFileSync(join(root, source, 'src', 'index.ts'), "import '" + imported + "';\n");
+    assert.deepEqual(checkWorkspaceBoundaries(root), []);
     assert.ok(
-      checkWorkspaceBoundaries(root).some((message) =>
+      inspectWorkspaceImports(root).relative.some((message) =>
         message.includes('cross-workspace relative import'),
       ),
     );
+  });
+});
+
+test('manifest guard has no source regex walker and CLI uses the required graph', () => {
+  const source = readFileSync(new URL('./check-workspace-boundaries.mjs', import.meta.url), 'utf8');
+  assert.match(source, /inspectWorkspaceImports\(root\)/);
+  assert.doesNotMatch(source, /importSpecifier|walkSources|matchAll\(/);
+});
+
+test('manifest guard retains missing names and application dependencies in every field', () => {
+  withFixture(({ root, web }) => {
+    writeFileSync(join(web, 'package.json'), JSON.stringify({ dependencies: {} }));
+    assert.ok(
+      checkWorkspaceBoundaries(root).some((message) => message.includes('missing package name')),
+    );
+
+    for (const field of [
+      'dependencies',
+      'devDependencies',
+      'peerDependencies',
+      'optionalDependencies',
+    ]) {
+      writeFileSync(
+        join(web, 'package.json'),
+        JSON.stringify({ name: '@gym/web', [field]: { '@gym/api': 'workspace:*' } }),
+      );
+      assert.ok(
+        checkWorkspaceBoundaries(root).some((message) => message.includes('(' + field + ')')),
+        field,
+      );
+    }
   });
 });

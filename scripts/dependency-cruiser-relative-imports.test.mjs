@@ -111,11 +111,10 @@ test.each([
     'tooling/checks/src/index.js',
     "const result = import('../../../apps/beta/src/missing.js');\n",
   ],
-])('legacy checker and cruiser graph agree on %s', (_name, file, source) => {
+])('required graph catches unresolved relative imports for %s', (_name, file, source) => {
   withFixture({ [file]: source }, (root) => {
-    const legacy = checkWorkspaceBoundaries(root);
+    assert.deepEqual(checkWorkspaceBoundaries(root), []);
     const cruiser = inspectRelativeWorkspaceImports(root);
-    assert.ok(legacy.some((message) => message.includes('cross-workspace relative import')));
     assert.ok(cruiser.violations.length, 'Missing unresolved edge in dependency-cruiser');
     assert.equal(cruiser.graphErrors >= 0, true);
   });
@@ -134,17 +133,13 @@ test('valid local and public-package imports are accepted by both checkers', () 
   );
 });
 
-test('parsed import graph avoids false positives from import-like string text', () => {
+test('parsed import graph ignores import-like text without regex false positives', () => {
   withFixture(
     {
       'apps/alpha/src/index.js': 'const example = "import \'../../beta/src/missing.js\'";\n',
     },
     (root) => {
-      assert.ok(
-        checkWorkspaceBoundaries(root).some((message) =>
-          message.includes('cross-workspace relative import'),
-        ),
-      );
+      assert.deepEqual(checkWorkspaceBoundaries(root), []);
       assert.deepEqual(inspectRelativeWorkspaceImports(root).violations, []);
     },
   );
@@ -164,17 +159,16 @@ test.each([
     'apps/alpha/src/e2e/case.ts',
     "const item = import('../../../beta/src/missing.ts');\n",
   ],
-])('cruiser and legacy protect relative imports in %s', (_name, file, source) => {
+])('parsed cruiser graph protects relative imports in %s', (_name, file, source) => {
   withFixture({ [file]: source }, (root) => {
-    const original = checkWorkspaceBoundaries(root);
+    assert.deepEqual(checkWorkspaceBoundaries(root), []);
     const graph = inspectRelativeWorkspaceImports(root);
     const expected = file + ': cross-workspace relative import ';
-    assert.ok(original.some((message) => message.startsWith(expected)));
     assert.ok(graph.violations.some((message) => message.startsWith(expected)));
   });
 });
 
-test('relative parser remains advisory and old required checks stay in CI', () => {
+test('standalone relative report and required combined gate remain available', () => {
   const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
   const workflow = readFileSync(
     new URL('../.github/workflows/tooling-audit.yml', import.meta.url),
