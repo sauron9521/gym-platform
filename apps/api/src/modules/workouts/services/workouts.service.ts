@@ -9,6 +9,11 @@ import { canTransitionWorkout, workoutCompletionFailure } from '@gym/domain';
 import { ExercisesService } from '#src/modules/exercises/services/exercises.service';
 import { UsersService } from '#src/modules/users/services/users.service';
 import { WorkoutCompletionStateChanged } from '../application/workout-completion.js';
+import {
+  normalizeWorkoutSetResult,
+  SkippedSetPerformanceError,
+  WorkoutSetStateChanged,
+} from '../application/workout-set-result.js';
 import { WorkoutStartStateChanged } from '../application/workout-start.js';
 import { WorkoutsRepository } from '../repositories/workouts.repository.js';
 import {
@@ -339,69 +344,8 @@ export class WorkoutsService {
       throw new NotFoundException('Workout set not found');
     }
 
-    const actualFields = [
-      input.actualReps,
-      input.actualWeightKg,
-      input.actualDurationSeconds,
-      input.actualDistanceMeters,
-      input.rpe,
-      input.rir,
-    ];
-
-    if (
-      input.status === 'SKIPPED' &&
-      actualFields.some((value) => value !== undefined && value !== null)
-    ) {
-      throw new BadRequestException('A skipped set cannot contain actual performance values');
-    }
-
-    const data: Prisma.WorkoutSetUpdateInput = {
-      status: input.status,
-      completedAt: new Date(),
-    };
-
-    if (input.status === 'SKIPPED') {
-      data.actualReps = null;
-      data.actualWeightKg = null;
-      data.actualDurationSeconds = null;
-      data.actualDistanceMeters = null;
-      data.rpe = null;
-      data.rir = null;
-    } else {
-      if (input.actualReps !== undefined) {
-        data.actualReps = input.actualReps;
-      }
-
-      if (input.actualWeightKg !== undefined) {
-        data.actualWeightKg = input.actualWeightKg;
-      }
-
-      if (input.actualDurationSeconds !== undefined) {
-        data.actualDurationSeconds = input.actualDurationSeconds;
-      }
-
-      if (input.actualDistanceMeters !== undefined) {
-        data.actualDistanceMeters = input.actualDistanceMeters;
-      }
-    }
-
-    if (input.restSeconds !== undefined) {
-      data.restSeconds = input.restSeconds;
-    }
-
-    if (input.rpe !== undefined) {
-      data.rpe = input.rpe;
-    }
-
-    if (input.rir !== undefined) {
-      data.rir = input.rir;
-    }
-
-    if (input.notes !== undefined) {
-      data.notes = input.notes;
-    }
-
     try {
+      const data = normalizeWorkoutSetResult(input, new Date());
       const updatedSet = await this.workoutsRepository.updateSet(setId, data, {
         workoutId,
         athleteId: actor.id,
@@ -416,8 +360,11 @@ export class WorkoutsService {
 
       return updatedSet;
     } catch (error) {
-      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
-        throw new ConflictException('Workout set state has changed. Reload and try again.');
+      if (error instanceof SkippedSetPerformanceError) {
+        throw new BadRequestException(error.message);
+      }
+      if (error instanceof WorkoutSetStateChanged) {
+        throw new ConflictException(error.message);
       }
 
       throw error;

@@ -192,7 +192,7 @@ describe('Workout set write authorization races (PostgreSQL)', () => {
       await expect(
         workoutRepository.updateSet(
           setId,
-          { status: 'COMPLETED' },
+          { status: 'COMPLETED', completedAt: new Date() },
           { ...scope, authorize: async () => {} },
         ),
       ).resolves.toBeNull();
@@ -214,7 +214,7 @@ describe('Workout set write authorization races (PostgreSQL)', () => {
     await expect(
       workoutRepository.updateSet(
         setId,
-        { status: 'COMPLETED' },
+        { status: 'COMPLETED', completedAt: new Date() },
         {
           workoutId,
           athleteId,

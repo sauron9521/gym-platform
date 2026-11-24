@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { Prisma } from '#prisma/client';
+import { WorkoutSetStateChanged } from '../application/workout-set-result.js';
 import { WorkoutCompletionStateChanged } from '../application/workout-completion.js';
 import { PrismaService } from '#src/infra/database/index';
 import { workoutSelect, workoutSetSelect } from '../selects/workout.select.js';
@@ -18,6 +19,10 @@ describe('Workout command repository transaction boundaries', () => {
   const lifecycleRepository = new WorkoutLifecycleRepository(prisma as unknown as PrismaService);
 
   const authorize = vi.fn(async () => {});
+  const setChanges = {
+    status: 'COMPLETED' as const,
+    completedAt: new Date('2030-01-01T10:00:00Z'),
+  };
 
   const context = {
     workoutId: 'workout-1',
@@ -35,7 +40,7 @@ describe('Workout command repository transaction boundaries', () => {
   it('locks the parent workout before updating an in-progress set', async () => {
     tx.$queryRaw.mockResolvedValue([{ id: 'workout-1', status: 'IN_PROGRESS' }]);
     tx.workoutSet.update.mockResolvedValue({ id: 'set-1', status: 'COMPLETED' });
-    const data = { status: 'COMPLETED' as const };
+    const data = setChanges;
 
     await expect(setsRepository.updateSet('set-1', data, context)).resolves.toEqual({
       id: 'set-1',
@@ -69,9 +74,7 @@ describe('Workout command repository transaction boundaries', () => {
     const denied = new Error('Athlete capability revoked');
     authorize.mockRejectedValueOnce(denied);
 
-    await expect(setsRepository.updateSet('set-1', { status: 'COMPLETED' }, context)).rejects.toBe(
-      denied,
-    );
+    await expect(setsRepository.updateSet('set-1', setChanges, context)).rejects.toBe(denied);
     expect(tx.$queryRaw).not.toHaveBeenCalled();
     expect(tx.workoutSet.update).not.toHaveBeenCalled();
   });
@@ -79,10 +82,32 @@ describe('Workout command repository transaction boundaries', () => {
   it('does not update sets when their parent is not in progress', async () => {
     tx.$queryRaw.mockResolvedValue([{ id: 'workout-1', status: 'COMPLETED' }]);
 
-    await expect(
-      setsRepository.updateSet('set-1', { status: 'COMPLETED' }, context),
-    ).resolves.toBeNull();
+    await expect(setsRepository.updateSet('set-1', setChanges, context)).resolves.toBeNull();
     expect(tx.workoutSet.update).not.toHaveBeenCalled();
+  });
+
+  it('translates a stale set write into a typed conflict', async () => {
+    tx.$queryRaw.mockResolvedValue([{ id: 'workout-1', status: 'IN_PROGRESS' }]);
+    tx.workoutSet.update.mockRejectedValueOnce(
+      new Prisma.PrismaClientKnownRequestError('Record missing', {
+        code: 'P2025',
+        clientVersion: '7.10.1',
+      }),
+    );
+
+    await expect(setsRepository.updateSet('set-1', setChanges, context)).rejects.toBeInstanceOf(
+      WorkoutSetStateChanged,
+    );
+  });
+
+  it('preserves unrelated set transaction errors', async () => {
+    const error = new Prisma.PrismaClientKnownRequestError('Transaction conflict', {
+      code: 'P2034',
+      clientVersion: '7.10.1',
+    });
+    prisma.$transaction.mockRejectedValueOnce(error);
+
+    await expect(setsRepository.updateSet('set-1', setChanges, context)).rejects.toBe(error);
   });
 
   it('translates a stale completion write into a typed conflict', async () => {
@@ -170,9 +195,7 @@ describe('Workout command repository transaction boundaries', () => {
   it('refuses set updates when the parent workout row no longer exists', async () => {
     tx.$queryRaw.mockResolvedValue([]);
 
-    await expect(
-      setsRepository.updateSet('set-1', { status: 'COMPLETED' }, context),
-    ).resolves.toBeNull();
+    await expect(setsRepository.updateSet('set-1', setChanges, context)).resolves.toBeNull();
 
     expect(tx.$queryRaw).toHaveBeenCalledOnce();
     expect(tx.workoutSet.update).not.toHaveBeenCalled();
