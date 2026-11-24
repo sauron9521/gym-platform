@@ -48,7 +48,7 @@ To start applications individually, use `pnpm dev:web`, `pnpm dev:landing`,
 
 ## Fresh database migration baseline
 
-On 14 November 2026, the pre-production Prisma history was squashed into a single initial baseline. It is for **fresh, empty databases only**; existing local/test/staging databases that used legacy migrations must be explicitly rebuilt. See [database baseline reset](docs/database-baseline-reset.md). No production database is modified automatically.
+On 14 November 2026, the pre-production Prisma history was consolidated into a frozen initial baseline. Subsequent schema changes use forward-only migrations. Apply the complete active chain to a fresh database or pending migrations to a compatible database. Legacy pre-reset databases require a separately reviewed plan; never reset a non-disposable database. See [migration history and baseline policy](docs/database-baseline-reset.md). No production database is modified automatically.
 
 ## Test runner and CI
 

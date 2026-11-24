@@ -4,17 +4,18 @@
 
 **Status: REPOSITORY IMPORT VERIFIED; PRODUCTION CUTOVER NO-GO.**
 
-Monorepo snapshot: `sauron9521/gym-platform` at commit
+Historical import snapshot (not the current main inventory): `sauron9521/gym-platform` at commit
 `98d5be4cea9fd6c454536c0ab764d64a55ce7925`.
 Operational legacy source: `sauron9521/gym-api-nestjs` at commit
 `79e53bc1b7a78bb3856ff2aeab2529559240521e`.
 
 The frozen audit inventory is `apps/api/migration-source-inventory.json`;
-historical Prisma SQL source hashes and the **new single active baseline** are tracked in
+historical Prisma SQL source hashes and the frozen initial baseline are tracked in
 `apps/api/migration-baseline.json`. Verify from repository root:
 
 ```sh
-node --test apps/api/test/migration-baseline.test.mjs scripts/api-migration-readiness.test.mjs
+pnpm --filter @gym/api test:contracts
+pnpm exec vitest run --config vitest.config.mts scripts/api-migration-readiness.test.mjs
 node scripts/api-migration-readiness.mjs --report
 ```
 
@@ -34,7 +35,7 @@ A green workflow never grants authorization to deploy.
 The comparison maps old paths to `apps/api/`. The snapshot records
 original file Git blob hashes, distinguishes unchanged versus adapted
 files and verifies each imported source/test path still exists.
-Prisma schema and the **current single baseline** integrity are verified independently. Historical migration hashes are retained as an audit artifact, not as active SQL files.
+The frozen baseline integrity and the complete active migration chain are verified independently. Historical migration hashes are retained as an audit artifact, not as active SQL files. See the [current migration policy](database-baseline-reset.md).
 
 **Presence is not behavioral parity.** In particular 216 adapted source
 files and 46 adapted test files differ from their old Git blobs, for

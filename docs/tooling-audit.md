@@ -253,6 +253,19 @@ lockfile generation and Android verification in
 Keep this finding visible until it is resolved. Do not hand-author new
 native package resolutions or claim real-device verification from CI alone.
 
+## Intentional Users public type exports
+
+Keep `AccountCapabilities` and `AccountCapabilitySnapshot` exported from
+`apps/api/src/modules/users/public-api.ts`. Issue #360 establishes this
+entrypoint as the stable cross-feature capability contract. The
+[Users module documentation](api/modules/users.md) explicitly directs
+consumers to import the snapshot and result types from this public boundary,
+not the private policy. Current callers use the function with inferred
+types; the absence of explicit type imports does not invalidate the contract.
+Do not remove these types or introduce artificial consumers to silence Knip.
+Recheck the findings in a fresh report before considering any narrowly
+scoped exception. No broad export exclusions are added.
+
 ## Next safe steps
 
 1. Review the Knip baseline by workspace, confirm real entrypoints and

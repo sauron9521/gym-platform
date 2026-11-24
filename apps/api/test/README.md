@@ -36,7 +36,7 @@ Run it only with the normal isolated API E2E environment and disposable
 After moving a test, update its relative imports and this map, then run:
 
 ```sh
-node --test scripts/api-migration-readiness.test.mjs
+pnpm exec vitest run --config vitest.config.mts scripts/api-migration-readiness.test.mjs
 pnpm --filter @gym/api typecheck:e2e
 pnpm --filter @gym/api test:e2e
 ```
