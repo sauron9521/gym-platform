@@ -1,0 +1,35 @@
+# Explicit disposable-VM pilot only. No host mounts, published ports or network.
+name: gym-resource-shadow
+x-fixture: &fixture
+  image: node:24-alpine@sha256:116b800c3754b440ee0aa3ed2f20f5bf3d99a554bfd9adeea09ea8017f6e85f5
+  profiles: [resource-shadow]
+  user: '1000:1000'
+  network_mode: none
+  read_only: true
+  cap_drop: [ALL]
+  security_opt: [no-new-privileges:true]
+  cpus: 2.0
+  mem_limit: 1g
+  memswap_limit: 1g
+  pids_limit: 256
+  restart: 'no'
+  init: true
+  command: ['node', '-e', 'setInterval(() => {}, 60000)']
+services:
+  fixture:
+    <<: *fixture
+    container_name: gym-resource-shadow-fixture
+    labels:
+      gym_shadow_fixture: resource-v1
+      gym_shadow_private: FAKE_PRIVATE_FIXTURE_LABEL
+    environment:
+      GYM_SHADOW_PRIVATE: FAKE_PRIVATE_FIXTURE_ENV
+  decoy:
+    <<: *fixture
+    container_name: gym-resource-shadow-decoy
+    # Deliberately reuse the selection label to test the exact-name filter.
+    labels:
+      gym_shadow_fixture: resource-v1
+      gym_shadow_private: FAKE_PRIVATE_DECOY_LABEL
+    environment:
+      GYM_SHADOW_PRIVATE: FAKE_PRIVATE_DECOY_ENV
