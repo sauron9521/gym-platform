@@ -236,7 +236,6 @@ describe('TrainingProgramVersionRepository', () => {
       await expect(repository.createDraftFromLatestPublished('program-1')).rejects.toBe(error);
     });
 
-
     it('copies workouts, exercises and sets into a new draft', async () => {
       const source = {
         id: 'version-2',
