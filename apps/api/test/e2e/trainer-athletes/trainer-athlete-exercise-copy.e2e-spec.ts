@@ -10,17 +10,18 @@ import { ThrottlerGuard } from '@nestjs/throttler';
 
 import request from 'supertest';
 
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { AppModule } from '../../../src/app.module.js';
 import { PrismaService } from '../../../src/infra/database/index.js';
 import { ExercisesService } from '../../../src/modules/exercises/services/exercises.service.js';
+import { TrainerAthleteExerciseCopyService } from '../../../src/modules/trainer-athletes/services/trainer-athlete-exercise-copy.service.js';
 import { useTestDatabase } from '../../utility/test-db-helper.js';
 
 describe('Trainer-athlete exercise copies (HTTP + PostgreSQL)', () => {
   let app: INestApplication | undefined;
   let prisma: PrismaService;
-  let passwordHasher: PasswordHasher;
+  let passwordHash: string;
 
   let trainerId: string;
   let athleteId: string;
@@ -34,13 +35,11 @@ describe('Trainer-athlete exercise copies (HTTP + PostgreSQL)', () => {
   let athleteSharedExerciseId: string;
 
   let workoutId: string;
+  let programId: string | undefined;
 
   const sourceExerciseIds: string[] = [];
 
   const password = 'StrongPassword123!';
-
-  const trainerEmail = `copy-trainer-${randomUUID()}@example.com`;
-  const athleteEmail = `copy-athlete-${randomUUID()}@example.com`;
 
   function extractSessionCookie(header: string | string[] | undefined): string {
     const cookies = Array.isArray(header) ? header : header ? [header] : [];
@@ -67,6 +66,82 @@ describe('Trainer-athlete exercise copies (HTTP + PostgreSQL)', () => {
     return extractSessionCookie(response.headers['set-cookie']);
   }
 
+  async function createActiveRelationship(): Promise<string> {
+    const invitation = await request(app!.getHttpServer())
+      .post('/trainer-athletes')
+      .set('Cookie', trainerCookie)
+      .send({ userId: athleteId })
+      .expect(201);
+    const id = invitation.body.id as string;
+
+    const accepted = await request(app!.getHttpServer())
+      .post(`/trainer-athletes/${id}/accept`)
+      .set('Cookie', athleteCookie)
+      .expect(200);
+    expect(accepted.body.status).toBe('ACTIVE');
+
+    return id;
+  }
+
+  async function createTerminationFixture() {
+    const relationshipId = await createActiveRelationship();
+    const program = await prisma.trainingProgram.create({
+      data: {
+        trainerId,
+        status: 'PUBLISHED',
+        versions: {
+          create: {
+            title: 'Termination test',
+            version: 1,
+            status: 'PUBLISHED',
+            publishedAt: new Date(),
+          },
+        },
+      },
+      include: { versions: true },
+    });
+    programId = program.id;
+    const assignment = await prisma.trainingProgramAssignment.create({
+      data: {
+        versionId: program.versions[0]!.id,
+        trainerAthleteId: relationshipId,
+        athleteId,
+        assignedById: trainerId,
+      },
+    });
+    await prisma.exerciseAthleteAssignment.create({
+      data: { exerciseId: assignedExerciseId, athleteId, assignedById: trainerId },
+    });
+
+    return { relationshipId, assignmentId: assignment.id };
+  }
+
+  async function readTerminationState({
+    relationshipId,
+    assignmentId,
+  }: {
+    relationshipId: string;
+    assignmentId: string;
+  }) {
+    const [relationship, programAssignment, exerciseAssignment, trainerAccess, copies] =
+      await Promise.all([
+        prisma.trainerAthlete.findUniqueOrThrow({ where: { id: relationshipId } }),
+        prisma.trainingProgramAssignment.findUniqueOrThrow({ where: { id: assignmentId } }),
+        prisma.exerciseAthleteAssignment.findUniqueOrThrow({
+          where: { exerciseId_athleteId: { exerciseId: assignedExerciseId, athleteId } },
+        }),
+        prisma.exerciseTrainerAccess.findUniqueOrThrow({
+          where: { exerciseId_trainerId: { exerciseId: athleteSharedExerciseId, trainerId } },
+        }),
+        prisma.exercise.findMany({
+          where: { createdById: athleteId, copiedFromExerciseId: { in: sourceExerciseIds } },
+          select: { copiedFromExerciseId: true },
+        }),
+      ]);
+
+    return { relationship, programAssignment, exerciseAssignment, trainerAccess, copies };
+  }
+
   beforeAll(async () => {
     useTestDatabase();
 
@@ -84,9 +159,17 @@ describe('Trainer-athlete exercise copies (HTTP + PostgreSQL)', () => {
     await app.init();
 
     prisma = app.get(PrismaService);
-    passwordHasher = app.get(PasswordHasher);
+    passwordHash = await app.get(PasswordHasher).hash(password);
+  }, 30_000);
 
-    const passwordHash = await passwordHasher.hash(password);
+  beforeEach(async () => {
+    const trainerEmail = `copy-trainer-${randomUUID()}@example.com`;
+    const athleteEmail = `copy-athlete-${randomUUID()}@example.com`;
+    trainerId = '';
+    athleteId = '';
+    athleteSharedExerciseId = '';
+    sourceExerciseIds.length = 0;
+    programId = undefined;
 
     const trainer = await prisma.user.create({
       data: {
@@ -201,87 +284,75 @@ describe('Trainer-athlete exercise copies (HTTP + PostgreSQL)', () => {
     athleteCookie = await login(athleteEmail);
   }, 30_000);
 
-  afterAll(async () => {
-    try {
-      if (prisma && trainerId && athleteId) {
-        await prisma.workout.deleteMany({
-          where: {
-            athleteId,
-          },
-        });
+  afterEach(async () => {
+    if (prisma && trainerId && athleteId) {
+      await prisma.workout.deleteMany({
+        where: {
+          athleteId,
+        },
+      });
 
-        await prisma.trainerAthlete.deleteMany({
-          where: {
-            OR: [{ trainerId }, { athleteId }],
-          },
-        });
+      if (programId) {
+        await prisma.trainingProgramAssignment.deleteMany({ where: { athleteId } });
+        await prisma.trainingProgramVersion.deleteMany({ where: { programId } });
+        await prisma.trainingProgram.delete({ where: { id: programId } });
+      }
 
-        await prisma.exerciseAthleteAssignment.deleteMany({
-          where: {
-            OR: [{ athleteId }, { assignedById: trainerId }],
-          },
-        });
+      await prisma.trainerAthlete.deleteMany({
+        where: {
+          OR: [{ trainerId }, { athleteId }],
+        },
+      });
 
-        await prisma.exerciseTrainerAccess.deleteMany({
-          where: {
-            trainerId,
-          },
-        });
+      await prisma.exerciseAthleteAssignment.deleteMany({
+        where: {
+          OR: [{ athleteId }, { assignedById: trainerId }],
+        },
+      });
 
-        // Delete copies before their originals because copiedFrom
-        // uses onDelete: Restrict.
-        if (sourceExerciseIds.length > 0) {
-          await prisma.exercise.deleteMany({
-            where: {
-              createdById: athleteId,
-              copiedFromExerciseId: {
-                in: sourceExerciseIds,
-              },
-            },
-          });
-        }
+      await prisma.exerciseTrainerAccess.deleteMany({
+        where: {
+          trainerId,
+        },
+      });
 
+      // Delete copies before their originals because copiedFrom
+      // uses onDelete: Restrict.
+      if (sourceExerciseIds.length > 0) {
         await prisma.exercise.deleteMany({
           where: {
-            id: {
-              in: [...sourceExerciseIds, athleteSharedExerciseId],
-            },
-          },
-        });
-
-        await prisma.user.deleteMany({
-          where: {
-            id: {
-              in: [trainerId, athleteId],
+            createdById: athleteId,
+            copiedFromExerciseId: {
+              in: sourceExerciseIds,
             },
           },
         });
       }
-    } finally {
-      await app?.close();
+
+      await prisma.exercise.deleteMany({
+        where: {
+          id: {
+            in: [...sourceExerciseIds, athleteSharedExerciseId],
+          },
+        },
+      });
+
+      await prisma.user.deleteMany({
+        where: {
+          id: {
+            in: [trainerId, athleteId],
+          },
+        },
+      });
     }
   }, 20_000);
 
+  afterAll(async () => {
+    await app?.close();
+  }, 20_000);
+
   it('should copy used and assigned trainer exercises when the relationship ends', async () => {
-    // 1. Trainer initiates a relationship.
-    const createRelationship = await request(app!.getHttpServer())
-      .post('/trainer-athletes')
-      .set('Cookie', trainerCookie)
-      .send({
-        userId: athleteId,
-      });
-
-    expect(createRelationship.status).toBe(201);
-
-    const relationshipId = createRelationship.body.id;
-
-    // 2. Athlete accepts it.
-    const acceptResponse = await request(app!.getHttpServer())
-      .post(`/trainer-athletes/${relationshipId}/accept`)
-      .set('Cookie', athleteCookie);
-
-    expect(acceptResponse.status).toBe(200);
-    expect(acceptResponse.body.status).toBe('ACTIVE');
+    const relationshipId = await createActiveRelationship();
 
     // Both directions are accessible during an ACTIVE collaboration.
     const trainerShared = await request(app!.getHttpServer())
@@ -595,4 +666,109 @@ describe('Trainer-athlete exercise copies (HTTP + PostgreSQL)', () => {
 
     expect(newWorkoutResponse.status).toBe(201);
   });
+
+  it('rolls back termination when copying fails after writing a personal copy', async () => {
+    const fixture = await createTerminationFixture();
+    const before = await readTerminationState(fixture);
+    const copyService = app!.get(TrainerAthleteExerciseCopyService);
+    const copyExercises = copyService.copyRelevantExercises.bind(copyService);
+    let copiesInsideTransaction = 0;
+    const copy = vi
+      .spyOn(copyService, 'copyRelevantExercises')
+      .mockImplementationOnce(async (tx, ...args) => {
+        await copyExercises(tx, ...args);
+        copiesInsideTransaction = await tx.exercise.count({
+          where: { createdById: athleteId, copiedFromExerciseId: assignedExerciseId },
+        });
+        throw new Error('Injected exercise copy failure');
+      });
+
+    try {
+      await request(app!.getHttpServer())
+        .post(`/trainer-athletes/${fixture.relationshipId}/terminate`)
+        .set('Cookie', athleteCookie)
+        .send({ reason: 'Failed termination' })
+        .expect(500);
+      expect(copiesInsideTransaction).toBe(1);
+      expect(await readTerminationState(fixture)).toEqual(before);
+    } finally {
+      copy.mockRestore();
+    }
+  });
+
+  it('allows exactly one concurrent termination to claim the relationship and copy exercises', async () => {
+    const fixture = await createTerminationFixture();
+    const terminate = (reason: string) =>
+      request(app!.getHttpServer())
+        .post(`/trainer-athletes/${fixture.relationshipId}/terminate`)
+        .set('Cookie', athleteCookie)
+        .send({ reason });
+
+    let pending: Promise<PromiseSettledResult<request.Response>[]> | undefined;
+    try {
+      await prisma.$transaction(
+        async (tx) => {
+          const [holder] = await tx.$queryRaw<Array<{ pid: number }>>`
+          SELECT pg_backend_pid()::integer AS pid
+          FROM "trainer_athletes"
+          WHERE "id" = ${fixture.relationshipId}
+          FOR UPDATE
+        `;
+          if (!holder) throw new Error('Could not lock the test relationship');
+
+          pending = Promise.allSettled([
+            terminate('First termination'),
+            terminate('Second termination'),
+          ]);
+
+          // Hold the row until both requests have passed preflight and reached the write.
+          await vi.waitFor(
+            async () => {
+              const [result] = await prisma.$queryRaw<Array<{ waiting: number }>>`
+                SELECT COUNT(*)::integer AS waiting
+                FROM pg_stat_activity AS activity
+                WHERE activity.datname = current_database()
+                  AND activity.query LIKE 'UPDATE %"trainer_athletes"%'
+                  AND cardinality(pg_blocking_pids(activity.pid)) > 0
+                HAVING bool_or(${holder.pid} = ANY(pg_blocking_pids(activity.pid)))
+              `;
+              expect(result?.waiting).toBe(2);
+            },
+            { timeout: 3_500, interval: 40 },
+          );
+        },
+        { timeout: 10_000 },
+      );
+    } finally {
+      await pending;
+    }
+
+    const responses = ((await pending) ?? []).map((result) => {
+      if (result.status === 'rejected') throw result.reason;
+      return result.value;
+    });
+    expect(responses.map(({ status }) => status).sort((left, right) => left - right)).toEqual([
+      200, 409,
+    ]);
+    const winner = responses.find(({ status }) => status === 200);
+    const loser = responses.find(({ status }) => status === 409);
+    expect(winner?.body).toMatchObject({ status: 'TERMINATED', endedById: athleteId });
+    expect(loser?.body).toMatchObject({
+      code: 'CONFLICT',
+      message: 'Relationship state has changed. Reload and try again.',
+    });
+
+    const persisted = await readTerminationState(fixture);
+    const { endedAt, endReason } = persisted.relationship;
+    expect(endedAt).toBeInstanceOf(Date);
+    expect(['First termination', 'Second termination']).toContain(endReason);
+    expect(endReason).toBe(winner?.body.endReason);
+    expect(persisted).toMatchObject({
+      relationship: { status: 'TERMINATED', endedById: athleteId },
+      programAssignment: { status: 'TERMINATED', endedById: athleteId, endedAt, endReason },
+      exerciseAssignment: { revokedAt: endedAt },
+      trainerAccess: { revokedAt: endedAt },
+      copies: [{ copiedFromExerciseId: assignedExerciseId }],
+    });
+  }, 15_000);
 });
