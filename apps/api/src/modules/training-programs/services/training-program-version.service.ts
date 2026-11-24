@@ -182,7 +182,7 @@ export class TrainingProgramVersionService {
     try {
       return await this.publication.execute({ programId, versionId, actor });
     } catch (error) {
-      rethrowPublicationHttpError(error);
+      return rethrowPublicationHttpError(error);
     }
   }
 
