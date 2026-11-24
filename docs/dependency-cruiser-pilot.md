@@ -100,6 +100,7 @@ graph does not. The tests record this difference rather than accepting the
 legacy false positive as an invariant.
 
 Retirement criteria for the legacy relative-path parser:
+
 1. Required combined graph gate remains green with source tests included.
 2. All literal import forms and unresolved cross-workspace paths are covered.
 3. The workspace-manifest, shared-dependency-cycle and Nest DI checks remain
