@@ -87,6 +87,6 @@ Run `pnpm --filter @gym/api architecture:deps` and
 - [Test and quality guide](testing.md)
 - [Read-only API performance baseline](performance-baseline.md)
 - [Local API setup](../../apps/api/README.md)
-- [Migration audit](../api-migration-audit.md) and [operational documentation index](../README.md)
+- [Migration audit](../audits/api-migration-audit.md) and [operational documentation index](../README.md)
 
 When adding a feature module, add a `modules/<name>.md` page and link it here. Prefer links to source and generated contracts over duplicating large DTO shapes that can drift.

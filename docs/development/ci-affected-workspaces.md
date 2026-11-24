@@ -96,4 +96,4 @@ This split does **not** skip tests or change release-source CI requirements.
 
 The current CI uses explicit Turbo filters chosen from the conservative selector, not `turbo --affected` as a replacement. Shared UI typecheck is included whenever Web scope is selected, and i18n is included for frontend scopes. The selector has policy obligations that a task graph alone cannot infer (security, database, operational and release checks).
 
-The [observed Turbo shadow audit](../turbo-affected-shadow-evidence-2026-11-24.md) found a cross-cutting change that selected zero Turbo packages while the policy required seven application/client workspaces. Direct replacement remains NO-GO. Use the [manual tooling audit](tooling-audit.md) for further diagnostic comparisons without changing protected checks.
+The [observed Turbo shadow audit](../audits/turbo-affected-shadow-evidence-2026-11-24.md) found a cross-cutting change that selected zero Turbo packages while the policy required seven application/client workspaces. Direct replacement remains NO-GO. Use the [manual tooling audit](tooling-audit.md) for further diagnostic comparisons without changing protected checks.

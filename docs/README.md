@@ -6,7 +6,7 @@ This index groups developer-facing API documentation and operational runbooks. P
 
 - [Owner-approved product strategy index](product-strategy/README.md) — **S01–S12 APPROVED + RECORDED** in `main`; strategy publication is not implementation, Beta, paid, health, AI or Marketplace GO
 - [Business governance](business-governance/README.md) — staff roles, approvals and operating policies
-- [Post-S12 implementation baseline audit](post-s12-implementation-audit.md) — evidence-based snapshot, Beta blockers, milestone assignment and proposed small-PR delivery order; **OWNER REVIEW**, not Beta/production GO
+- [Post-S12 implementation baseline audit](audits/post-s12-implementation-audit.md) — evidence-based snapshot, Beta blockers, milestone assignment and proposed small-PR delivery order; **OWNER REVIEW**, not Beta/production GO
 - [Closed Beta GO/NO-GO evidence matrix](beta-readiness-gates.md) — release-specific mandatory evidence, quantitative targets and explicit owner decision; **NO_GO** until independently verified
 
 ## Application development
@@ -31,9 +31,9 @@ This index groups developer-facing API documentation and operational runbooks. P
 
 ## Migration and quality
 
-- [Custom script replacement audit](custom-scripts-replacement-audit.md) — complete top-level scripts inventory, safe tool alternatives and one-PR migration order
+- [Audits and technical evidence](audits/README.md) — dated import, strategy, script replacement and Turbo shadow findings
 
-- [Migration audit and cutover gates](api-migration-audit.md)
+- [Migration audit and cutover gates](audits/api-migration-audit.md)
 - [Migration quality gates](migration-quality-gates.md)
 
 ## Security and trust
