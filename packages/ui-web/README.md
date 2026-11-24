@@ -12,6 +12,11 @@ workspace are retained. Native Expo UI remains separate.
 
 ## Shared primitives
 
+Use `cn` from `@gym/ui-web/utils` for class composition and Tailwind conflict
+resolution. This subpath has no client directive and is safe for server-side
+class composition. The Web app retains its local `@/shared/lib/utils` alias
+for shadcn generation as a re-export, not a second implementation.
+
 The package exports `Button`, `Input`, `Card` and its semantic slots.
 Use semantic design tokens from each consuming Next.js app instead of embedding palette values here.
 Keep business-specific forms, routing and API hooks inside their app; this package is UI-only.

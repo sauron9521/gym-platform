@@ -10,10 +10,17 @@ import {
   CardTitle,
   Input,
 } from '@gym/ui-web';
+import { cn as sharedCn } from '@gym/ui-web/utils';
+import { cn } from '@/shared/lib/utils';
 
 afterEach(cleanup);
 
 describe('shared UI primitives as real DOM components', () => {
+  test('shadcn utility alias reuses the shared class merger', () => {
+    expect(cn).toBe(sharedCn);
+    expect(cn('px-2', false, 'px-4', { 'font-bold': true })).toBe('px-4 font-bold');
+  });
+
   test('Button is an accessible native button and handles disabled state', () => {
     const onClick = vi.fn();
     const { rerender } = render(<Button onClick={onClick}>Створити</Button>);
