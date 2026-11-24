@@ -76,6 +76,33 @@ Each item below is classified as **Candidate**, **Retain**, or **Review**. "Cand
 4. **P2 — observability collector proof.** Evaluate vetted Docker/log/metrics collectors in a separate opt-in staging deployment with least-privilege review, whitelisted fields, redaction, freshness, no user identifiers and equivalent alerts. No production cutover in the audit PR.
 5. **P3 — one-off GitHub/roadmap cleanup.** Trace exact callers of `github-project-setup.mjs` and `roadmap-milestones.mjs`; retire only confirmed unused workflows and retain reversible manual procedures.
 
+## HTTP benchmarking tool evaluation (2026-11-24)
+
+Reviewed baseline: [`712aa62`](https://github.com/sauron9521/gym-platform/commit/712aa62e3ddd9210d03a19d9541c455fdb425e74) (includes #793). Coordinates with #711 and #313. This is a source/documentation evaluation, not measured benchmark parity.
+
+### Decision: retain baseline; prefer k6 for a future separate load profile
+
+- **Autocannon — defer adoption.** The [Node HTTP/1.1 benchmark](https://github.com/mcollina/autocannon) is MIT-licensed and supports fixed request counts, connection/pipeline limits, warmup and rate controls. It is suitable for quick throughput probes, but histogram percentiles and throughput bytes are not the current report contract. A rate cap is not the same as a fixed pause after every fully consumed body. Adding it alongside k6 would duplicate tooling without a proven need.
+- **k6 — preferred candidate for a separate opt-in load-testing spike.** [Scenarios](https://grafana.com/docs/k6/latest/using-k6/scenarios/) support fixed iterations and concurrent or arrival-rate workloads; [thresholds](https://grafana.com/docs/k6/latest/using-k6/thresholds/) provide nonzero exits and metrics can be exported for Grafana analysis. It is a separate executable, not a Node package. The [AGPL-3.0 license](https://github.com/grafana/k6) requires review of intended use/distribution before adoption.
+- **No direct replacement (both tools).** [k6 built-in metrics](https://grafana.com/docs/k6/latest/using-k6/metrics/reference/) distinguish connection/blocking phases from request duration; `data_received` is not a decoded per-response size distribution. Its default percentile methodology is not established as identical to our nearest-rank calculation. Neither tool's native report should be relabeled as baseline schema v1.
+
+### Preserve existing contracts
+
+Keep `perf:api:baseline`, `perf:api:compare`, `perf:api:repeats`, the A/B workflow and all corresponding tests. The baseline is a sequential read-only sampler, not a load generator. It measures four allowlisted authenticated GET routes with one in-flight request, 2 warmups and 25 samples by default, a 150 ms post-request pause, a 10-second timeout, full decoded body consumption and exact nearest-rank p50/p95. The existing runner enforces loopback-only HTTP, no redirects, exact HTTP 200, bounded sample/warmup counts and sanitized output.
+
+The compare, A/B and repeats scripts also validate project-specific provenance, persisted fixture fingerprints, response equivalence and independent attempts. Neither load tool replaces those responsibilities or the Prisma query/EXPLAIN evidence.
+
+### Evidence gate for any future replacement
+
+Use a disposable local test API/database and fixed synthetic actor, seed, schema, runtime and pinned API/tool versions. Do not benchmark real users, staging or production. Compare on the same host without competing workloads.
+
+1. First exercise a synthetic HTTP fixture with ASCII and Unicode JSON, compressed responses, non-200, redirects, timeout and transport failure. Verify exact request counts, route ordering, warmup exclusion, post-body pacing, decoded byte counts, fail-closed status and redacted errors. Never log bearer tokens, response bodies or raw error details.
+2. Then independently collect at least three paired runs for the four real allowlisted API routes with identical fixtures and options. Compare sample counts, nearest-rank percentiles computed from raw samples, timing boundaries, exact decoded bytes and observed overhead. Record versions, costs, variability and all mismatches. Do not invent a numerical tolerance or claim equivalence from a single run.
+3. If a thin adapter cannot preserve the methodology without reimplementing the existing sampler, retain it. Any intentionally different methodology needs its own report schema and explicit comparator rejection of cross-method inputs.
+4. For a separate k6 load profile, start with one VU and bounded iterations; extend concurrency only after an explicit test environment/rate-limit review. Disable redirects, require status 200, use fixed read-only routes, sanitize metrics/tags and keep thresholds exploratory until a measured service budget exists. Pin the executable/image, review the license/security and keep the job opt-in; do not add it to required PR checks or change API throttling.
+
+No candidate binary was present on the checked local device; the local checkout also had unrelated changes and lagged remote main. No binary was installed and no real or synthetic load test was run. No dependency, lockfile, runtime, schema or CI change is authorized by this research. The next script-audit steps can proceed without waiting for a load-testing adoption decision; the empirical spike remains a separate follow-up under #711/#313.
+
 ## Non-negotiable migration gates
 
 - The **required** `Tooling contracts`, `Quality / Node 24`, `API e2e / PostgreSQL 17`, Web integration and release-source checks must retain their protected semantics; a green advisory workflow is not proof of parity.
