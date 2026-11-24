@@ -3,6 +3,15 @@ name: Tooling / Knip, Turborepo, and dependency-cruiser (manual)
 # Explicit on-demand diagnostics; never a required PR gate or deployment.
 on:
   workflow_dispatch:
+    inputs:
+      base_sha:
+        description: 'Optional full base commit SHA on main; supply both SHAs'
+        required: false
+        type: string
+      head_sha:
+        description: 'Optional full head commit SHA on main; supply both SHAs'
+        required: false
+        type: string
 
 permissions:
   contents: read
@@ -18,6 +27,12 @@ jobs:
         with:
           persist-credentials: false
           fetch-depth: 0
+      - name: Validate optional main-history comparison range
+        id: comparison-range
+        env:
+          AUDIT_BASE_SHA: ${{ inputs.base_sha }}
+          AUDIT_HEAD_SHA: ${{ inputs.head_sha }}
+        run: node scripts/ci-turbo-affected-shadow.mjs --resolve-range --github-output "$GITHUB_OUTPUT"
       - name: Set up pnpm
         uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6
       - name: Set up Node.js 24
@@ -63,16 +78,17 @@ jobs:
           appendFileSync(process.env.GITHUB_STEP_SUMMARY, lines.join('\n') + '\n');
           console.log(lines.join('\n'));
           NODE
-      - name: Compare latest commit selection with Turborepo affected (advisory)
+      - name: Compare validated main commit range with Turborepo affected (advisory)
+        env:
+          TURBO_SCM_BASE: ${{ steps.comparison-range.outputs.base }}
+          TURBO_SCM_HEAD: ${{ steps.comparison-range.outputs.head }}
+          AUDIT_SELECTION_MODE: ${{ steps.comparison-range.outputs.mode }}
         run: |
           set -euo pipefail
-          base="$(git rev-parse HEAD^1)"
-          head="$(git rev-parse HEAD)"
-          TURBO_SCM_BASE="$base" TURBO_SCM_HEAD="$head" \
-            pnpm exec turbo run lint typecheck build --affected --dry=json \
+          pnpm exec turbo run lint typecheck build --affected --dry=json \
             > "$RUNNER_TEMP/turbo-affected-plan.json"
           node scripts/ci-turbo-affected-shadow.mjs \
-            --base "$base" --head "$head" \
+            --base "$TURBO_SCM_BASE" --head "$TURBO_SCM_HEAD" \
             --plan "$RUNNER_TEMP/turbo-affected-plan.json" \
             --output "$RUNNER_TEMP/turbo-affected-comparison.json"
           node --input-type=module <<'NODE'
@@ -82,7 +98,7 @@ jobs:
             readFileSync(process.env.RUNNER_TEMP + '/turbo-affected-comparison.json', 'utf8'),
           );
           const lines = [
-            '### Advisory Turbo affected vs ci-select (latest commit only)',
+            '### Advisory Turbo affected vs ci-select (' + process.env.AUDIT_SELECTION_MODE + ')',
             '',
             'This comparison does not change PR routing or release gates.',
             'Commit range: \`' + report.base.slice(0, 12) + '...'

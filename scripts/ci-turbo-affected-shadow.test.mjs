@@ -2,7 +2,11 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { test } from 'vitest';
 
-import { changedPathsBetween, compareAffectedPlans } from './ci-turbo-affected-shadow.mjs';
+import {
+  changedPathsBetween,
+  compareAffectedPlans,
+  resolveAuditRange,
+} from './ci-turbo-affected-shadow.mjs';
 
 const apps = [
   '@gym/admin',
@@ -152,4 +156,93 @@ test('on-demand audit is read-only and cannot override the required classifier',
   assert.match(workflow, /turbo-affected-comparison\.json/);
   assert.doesNotMatch(ci, /ci-turbo-affected-shadow|TURBO_SCM_BASE/);
   assert.match(ci, /node scripts\/ci-select\.mjs --github-output/);
+});
+
+test('manual audit defaults to the latest main commit when no SHA inputs are provided', () => {
+  const previous = 'a'.repeat(40);
+  const current = 'b'.repeat(40);
+  const calls = [];
+  const git = (_command, args) => {
+    calls.push(args);
+    return args[0] === 'rev-parse' ? (args[1] === 'HEAD' ? current + '\n' : previous + '\n') : '';
+  };
+  assert.deepEqual(resolveAuditRange({}, git), {
+    base: previous,
+    head: current,
+    mode: 'latest-main-commit',
+  });
+  assert.deepEqual(calls, [
+    ['rev-parse', 'HEAD'],
+    ['rev-parse', 'HEAD^1'],
+    ['merge-base', '--is-ancestor', previous, current],
+    ['merge-base', '--is-ancestor', current, current],
+  ]);
+});
+
+test('manual audit accepts full SHA pairs only on the checked-out main history', () => {
+  const base = 'a'.repeat(40);
+  const head = 'b'.repeat(40);
+  const main = 'c'.repeat(40);
+  const calls = [];
+  const git = (_command, args) => {
+    calls.push(args);
+    return args[0] === 'rev-parse' ? main + '\n' : '';
+  };
+  assert.deepEqual(resolveAuditRange({ AUDIT_BASE_SHA: base, AUDIT_HEAD_SHA: head }, git), {
+    base,
+    head,
+    mode: 'explicit-main-history',
+  });
+  assert.deepEqual(calls, [
+    ['rev-parse', 'HEAD'],
+    ['merge-base', '--is-ancestor', base, head],
+    ['merge-base', '--is-ancestor', head, main],
+  ]);
+});
+
+test('incomplete, malformed and empty history ranges fail before a Turbo plan can run', () => {
+  const base = 'a'.repeat(40);
+  const head = 'b'.repeat(40);
+  const main = 'c'.repeat(40);
+  const git = (_command, args) => (args[0] === 'rev-parse' ? main + '\n' : '');
+  assert.throws(() => resolveAuditRange({ AUDIT_BASE_SHA: base }, git), /both/);
+  assert.throws(() => resolveAuditRange({ AUDIT_HEAD_SHA: head }, git), /both/);
+  assert.throws(
+    () => resolveAuditRange({ AUDIT_BASE_SHA: 'HEAD~3', AUDIT_HEAD_SHA: head }, git),
+    /40-character/,
+  );
+  assert.throws(
+    () => resolveAuditRange({ AUDIT_BASE_SHA: head, AUDIT_HEAD_SHA: head }, git),
+    /at least one/,
+  );
+  assert.throws(
+    () => resolveAuditRange({ AUDIT_BASE_SHA: base, AUDIT_HEAD_SHA: 'a; rm -rf' }, git),
+    /40-character/,
+  );
+  const failsAncestry = (_command, args) => {
+    if (args[0] === 'merge-base') throw new Error('Not an ancestor of main');
+    return main + '\n';
+  };
+  assert.throws(
+    () => resolveAuditRange({ AUDIT_BASE_SHA: base, AUDIT_HEAD_SHA: head }, failsAncestry),
+    /ancestor/,
+  );
+  assert.throws(() => resolveAuditRange({}, () => 'broken'), /40-character/);
+});
+
+test('workflow sanitizes optional inputs in environment variables without shell interpolation', () => {
+  const workflow = readFileSync(
+    new URL('../.github/workflows/tooling-audit.yml', import.meta.url),
+    'utf8',
+  );
+  assert.match(workflow, /base_sha:/);
+  assert.match(workflow, /head_sha:/);
+  assert.match(workflow, /AUDIT_BASE_SHA: \$\{\{ inputs\.base_sha \}\}/);
+  assert.match(workflow, /AUDIT_HEAD_SHA: \$\{\{ inputs\.head_sha \}\}/);
+  assert.match(workflow, /--resolve-range --github-output "\$GITHUB_OUTPUT"/);
+  assert.match(workflow, /TURBO_SCM_BASE: \$\{\{ steps\.comparison-range\.outputs\.base \}\}/);
+  assert.match(workflow, /TURBO_SCM_HEAD: \$\{\{ steps\.comparison-range\.outputs\.head \}\}/);
+  assert.doesNotMatch(workflow, /base="\$\(\s*git rev-parse HEAD\^1\s*\)"/);
+  const ci = readFileSync(new URL('../.github/workflows/ci.yml', import.meta.url), 'utf8');
+  assert.doesNotMatch(ci, /comparison-range|AUDIT_BASE_SHA|resolveAuditRange/);
 });
