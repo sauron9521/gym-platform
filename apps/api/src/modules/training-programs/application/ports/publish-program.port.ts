@@ -1,6 +1,6 @@
 import type { PublishableVersion } from '../../domain/publication.policy.js';
 
-export type PublicationActor = {
+type PublicationActor = {
   id: string;
   role: 'ATHLETE' | 'TRAINER' | 'ADMIN';
 };
@@ -11,7 +11,7 @@ export type PublishProgramCommand = {
   actor: PublicationActor;
 };
 
-export type PublicationProgramStatus = 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
+type PublicationProgramStatus = 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
 export type PublicationDraft = PublishableVersion & { status: 'DRAFT' | 'PUBLISHED' };
 
 /**
