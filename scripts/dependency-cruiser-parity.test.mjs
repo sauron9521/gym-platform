@@ -34,7 +34,16 @@ function withWorkspaceFixture(imports, check) {
     const custom = checkWorkspaceBoundaries(directory);
     const cruiser = spawnSync(
       process.execPath,
-      [cruiserBin, '--config', cruiserConfig, '--output-type', 'err', 'apps', 'packages', 'tooling'],
+      [
+        cruiserBin,
+        '--config',
+        cruiserConfig,
+        '--output-type',
+        'err',
+        'apps',
+        'packages',
+        'tooling',
+      ],
       { cwd: directory, encoding: 'utf8', timeout: 20_000 },
     );
     assert.ifError(cruiser.error);
@@ -94,16 +103,13 @@ test.each([
     "import '../../../apps/alpha/src/index.js';",
     'no-app-source-in-shared-packages',
   ],
-])('both checkers reject illegal cross-workspace source imports: %s', (_name, source, importLine, rule) => {
-  withWorkspaceFixture(
-    { [source]: importLine + '\n' },
-    (custom, cruiser) => {
-      assert.ok(
-        custom.some((message) => message.includes('cross-workspace relative import')),
-        custom.join('\n'),
-      );
-      assert.notEqual(cruiser.status, 0, cruiser.stdout + cruiser.stderr);
-      assert.match(cruiser.stdout + cruiser.stderr, new RegExp(rule));
-    },
-  );
+])('both checkers reject: %s', (_name, source, importLine, rule) => {
+  withWorkspaceFixture({ [source]: importLine + '\n' }, (custom, cruiser) => {
+    assert.ok(
+      custom.some((message) => message.includes('cross-workspace relative import')),
+      custom.join('\n'),
+    );
+    assert.notEqual(cruiser.status, 0, cruiser.stdout + cruiser.stderr);
+    assert.match(cruiser.stdout + cruiser.stderr, new RegExp(rule));
+  });
 });
