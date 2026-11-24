@@ -186,7 +186,7 @@ export function inspectHistoricalAffected(count, run = execFileSync, env = proce
   )
     .trim()
     .split('\n');
-  if (commits[0] !== current || commits.some((sha) => !commitSha.test(sha))) {
+  if (commits.length < 2 || commits[0] !== current || commits.some((sha) => !commitSha.test(sha))) {
     throw new Error('Invalid first-parent main history');
   }
 
