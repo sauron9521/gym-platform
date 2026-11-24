@@ -5,6 +5,8 @@ import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { useState, type FormEvent } from 'react';
 
+import { LocaleSwitcher } from '@/shared/ui/locale-switcher';
+
 const api = createBrowserSessionClient({ baseUrl: '/backend' });
 
 export default function AdminSignInPage() {
@@ -56,7 +58,10 @@ export default function AdminSignInPage() {
   }
 
   return (
-    <main className="mx-auto max-w-md space-y-6 px-6 py-16">
+    <main id="main-content" className="mx-auto max-w-md space-y-6 px-6 py-16">
+      <div className="flex justify-end">
+        <LocaleSwitcher />
+      </div>
       <h1 className="text-3xl font-semibold">{admin('signInTitle')}</h1>
       <form onSubmit={handleSubmit} className="space-y-4">
         <label htmlFor="admin-email" className="block text-sm font-medium">
