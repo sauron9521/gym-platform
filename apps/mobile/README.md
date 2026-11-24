@@ -164,8 +164,10 @@ Commit the generated component and the updated `pnpm-lock.yaml`. Keep the
 `@/*` alias rooted at `src`; re-check `src/app/_layout.tsx` after running
 `init` because the generator does not handle Expo Router guarded routes.
 
-The home tab includes a gluestack-powered UI card and a button to the profile.
-The next PRs will introduce TanStack Query, React Hook Form and Zod.
+The app retains the Gluestack UI provider for overlay, toast and theme support.
+Screens use their current React Native UI implementations. Unused generated Box,
+Button and Text primitives are not kept as scaffolding; add a component when a
+feature actually needs it.
 
 ## Mobile TanStack Query v5
 
