@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { test } from 'vitest';
 
 import { checkWorkspaceBoundaries } from './check-workspace-boundaries.mjs';
+import { inspectWorkspaceImports } from './dependency-cruiser-workspace-imports.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const cruiserBin = resolve(root, 'node_modules/dependency-cruiser/bin/dependency-cruiser.mjs');
@@ -31,7 +32,8 @@ function withWorkspaceFixture(imports, check) {
       writeFileSync(fullPath, source);
     }
 
-    const custom = checkWorkspaceBoundaries(directory);
+    const manifests = checkWorkspaceBoundaries(directory);
+    const graph = inspectWorkspaceImports(directory);
     const cruiser = spawnSync(
       process.execPath,
       [
@@ -47,20 +49,21 @@ function withWorkspaceFixture(imports, check) {
       { cwd: directory, encoding: 'utf8', timeout: 20_000 },
     );
     assert.ifError(cruiser.error);
-    check(custom, cruiser);
+    check(manifests, graph, cruiser);
   } finally {
     rmSync(directory, { recursive: true, force: true });
   }
 }
 
-test('same-workspace imports are accepted by both architecture checkers', () => {
+test('same-workspace imports are accepted by parsed graph and resolved rules', () => {
   withWorkspaceFixture(
     {
       'apps/alpha/src/index.js': "import './local.js';\n",
       'apps/alpha/src/local.js': 'export const value = 1;\n',
     },
-    (custom, cruiser) => {
-      assert.deepEqual(custom, []);
+    (manifests, graph, cruiser) => {
+      assert.deepEqual(manifests, []);
+      assert.deepEqual(graph.relative, []);
       assert.equal(cruiser.status, 0, cruiser.stdout + cruiser.stderr);
     },
   );
@@ -103,11 +106,12 @@ test.each([
     "import '../../../apps/alpha/src/index.js';",
     'no-app-source-in-shared-packages',
   ],
-])('both checkers reject: %s', (_name, source, importLine, rule) => {
-  withWorkspaceFixture({ [source]: importLine + '\n' }, (custom, cruiser) => {
+])('parsed graph and resolved rules reject: %s', (_name, source, importLine, rule) => {
+  withWorkspaceFixture({ [source]: importLine + '\n' }, (manifests, graph, cruiser) => {
+    assert.deepEqual(manifests, []);
     assert.ok(
-      custom.some((message) => message.includes('cross-workspace relative import')),
-      custom.join('\n'),
+      graph.relative.some((message) => message.includes('cross-workspace relative import')),
+      graph.relative.join('\n'),
     );
     assert.notEqual(cruiser.status, 0, cruiser.stdout + cruiser.stderr);
     assert.match(cruiser.stdout + cruiser.stderr, new RegExp(rule));
