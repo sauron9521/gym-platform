@@ -1,7 +1,4 @@
-import {
-  assertPublishableVersion,
-  ProgramPublicationError,
-} from '../domain/publication.policy.js';
+import { assertPublishableVersion, ProgramPublicationError } from '../domain/publication.policy.js';
 
 describe('assertPublishableVersion', () => {
   const validVersion = () => ({
@@ -84,18 +81,14 @@ describe('assertPublishableVersion', () => {
     const version = validVersion();
     version.workouts[0].exercises = [];
 
-    expect(() => assertPublishableVersion(version)).toThrow(
-      new ProgramPublicationError('EMPTY_WORKOUT'),
-    );
+    expect(() => assertPublishableVersion(version)).toThrow(new ProgramPublicationError('EMPTY_WORKOUT'));
   });
 
   it('rejects exercises with no sets', () => {
     const version = validVersion();
     version.workouts[0].exercises[0].sets = [];
 
-    expect(() => assertPublishableVersion(version)).toThrow(
-      new ProgramPublicationError('EMPTY_EXERCISE'),
-    );
+    expect(() => assertPublishableVersion(version)).toThrow(new ProgramPublicationError('EMPTY_EXERCISE'));
   });
 
   it('checks later workouts rather than only the first', () => {
@@ -107,9 +100,7 @@ describe('assertPublishableVersion', () => {
       ],
     };
 
-    expect(() => assertPublishableVersion(version)).toThrow(
-      new ProgramPublicationError('EMPTY_EXERCISE'),
-    );
+    expect(() => assertPublishableVersion(version)).toThrow(new ProgramPublicationError('EMPTY_EXERCISE'));
   });
 
   it('checks later exercises rather than only the first', () => {
@@ -118,8 +109,6 @@ describe('assertPublishableVersion', () => {
       workouts: [{ weekNumber: 1, exercises: [{ sets: [{}] }, { sets: [] }] }],
     };
 
-    expect(() => assertPublishableVersion(version)).toThrow(
-      new ProgramPublicationError('EMPTY_EXERCISE'),
-    );
+    expect(() => assertPublishableVersion(version)).toThrow(new ProgramPublicationError('EMPTY_EXERCISE'));
   });
 });
