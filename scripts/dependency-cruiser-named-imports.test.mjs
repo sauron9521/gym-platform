@@ -103,11 +103,11 @@ test('dependency-cruiser ignores import-like text and allows named shared packag
   );
 });
 
-test('required CI tooling gate enforces named application imports from parsed graph', () => {
+test('required CI tooling gate enforces named and relative imports from parsed graph', () => {
   const ci = readFileSync(new URL('../.github/workflows/ci.yml', import.meta.url), 'utf8');
   const tooling = ci.split('  tooling-contracts:\n')[1]?.split('\n  prepush-windows:')[0];
   assert.ok(tooling, 'Required tooling contracts job missing');
-  assert.match(tooling, /run: pnpm architecture:cruise:named/);
+  assert.match(tooling, /run: pnpm architecture:cruise:boundaries/);
   assert.match(ci, /tooling-contracts/);
 });
 
