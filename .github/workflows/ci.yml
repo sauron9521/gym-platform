@@ -711,11 +711,11 @@ jobs:
         run: |
           docker run --rm --entrypoint /bin/promtool \
             -v "$PWD/ops/monitoring:/rules:ro" \
-            prom/prometheus@sha256:23031bfe0e74a13004252caaa74eccd0d62b6c6e7a04711d5b8bf5b7e113adc7 \
+            prom/prometheus:v3.16.0@sha256:e04987641b57704f408e31f6373ba4138ecf27cb4a165d24aabb6c38fddd0f06 \
             check rules /rules/backup-health.rules.yml
           docker run --rm --entrypoint /bin/promtool \
             -v "$PWD/ops/monitoring:/rules:ro" \
-            prom/prometheus@sha256:23031bfe0e74a13004252caaa74eccd0d62b6c6e7a04711d5b8bf5b7e113adc7 \
+            prom/prometheus:v3.16.0@sha256:e04987641b57704f408e31f6373ba4138ecf27cb4a165d24aabb6c38fddd0f06 \
             test rules /rules/backup-health.test.yml
 
   api-staging-contracts:
@@ -834,11 +834,11 @@ jobs:
         run: |
           docker run --rm --entrypoint /bin/promtool \
             -v "$PWD/ops/monitoring:/rules:ro" \
-            prom/prometheus@sha256:23031bfe0e74a13004252caaa74eccd0d62b6c6e7a04711d5b8bf5b7e113adc7 \
+            prom/prometheus:v3.16.0@sha256:e04987641b57704f408e31f6373ba4138ecf27cb4a165d24aabb6c38fddd0f06 \
             check rules /rules/alerts.rules.yml /rules/slo.rules.yml
           docker run --rm --entrypoint /bin/promtool \
             -v "$PWD/ops/monitoring:/rules:ro" \
-            prom/prometheus@sha256:23031bfe0e74a13004252caaa74eccd0d62b6c6e7a04711d5b8bf5b7e113adc7 \
+            prom/prometheus:v3.16.0@sha256:e04987641b57704f408e31f6373ba4138ecf27cb4a165d24aabb6c38fddd0f06 \
             test rules /rules/alerts.test.yml /rules/slo.test.yml
 
   api-docker:
