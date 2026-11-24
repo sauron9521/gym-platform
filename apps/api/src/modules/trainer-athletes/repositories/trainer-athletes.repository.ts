@@ -2,6 +2,10 @@ import { ConflictException, Injectable } from '@nestjs/common';
 
 import { PrismaService } from '#src/infra/database/index';
 import { deriveAccountCapabilities } from '#src/modules/users/public-api';
+import {
+  InvitationAlreadyExists,
+  type CreateInvitationCommand,
+} from '../application/create-invitation.js';
 import { fullRelationshipReadWhere } from '../policies/trainer-athlete-read.policy.js';
 import { Prisma } from '#prisma/client';
 import {
@@ -72,15 +76,22 @@ export class TrainerAthletesRepository {
   }
 
   // CREATE
-  async createWithCurrentCapabilities({
+  async createWithCurrentCapabilities(input: CreateInvitationCommand) {
+    try {
+      return await this.createInvitationAtomically(input);
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+        throw new InvitationAlreadyExists();
+      }
+      throw error;
+    }
+  }
+
+  private async createInvitationAtomically({
     trainerId,
     athleteId,
     initiatedById,
-  }: {
-    trainerId: string;
-    athleteId: string;
-    initiatedById: string;
-  }) {
+  }: CreateInvitationCommand) {
     // All validation below takes place while the same PostgreSQL transaction
     // holds locks protecting changes to the relevant account/profile rows.
     // This serializes profile revocation with invitation creation.

@@ -8,6 +8,7 @@ import {
 import { Prisma } from '#prisma/client';
 
 import { UsersService } from '#src/modules/users/services/users.service';
+import { InvitationAlreadyExists } from '../application/create-invitation.js';
 import { TrainerAthletesRepository } from '../repositories/trainer-athletes.repository.js';
 import { fullRelationshipReadWhere } from '../policies/trainer-athlete-read.policy.js';
 import { TrainerAthletesService } from '../services/trainer-athletes.service.js';
@@ -311,16 +312,20 @@ describe('TrainerAthletesService', () => {
     it('should handle a concurrent duplicate request', async () => {
       repository.findOpenByPair.mockResolvedValue(null);
 
-      repository.createWithCurrentCapabilities.mockRejectedValue(
-        new Prisma.PrismaClientKnownRequestError('Unique constraint failed', {
-          code: 'P2002',
-          clientVersion: '7.10.1',
-        }),
-      );
+      repository.createWithCurrentCapabilities.mockRejectedValue(new InvitationAlreadyExists());
 
       await expect(service.create(trainer, { userId: athlete.id })).rejects.toThrow(
-        ConflictException,
+        new ConflictException('An active or pending relationship already exists'),
       );
+      expect(repository.createWithCurrentCapabilities).toHaveBeenCalledOnce();
+    });
+
+    it('preserves unrelated invitation write failures', async () => {
+      repository.findOpenByPair.mockResolvedValue(null);
+      const error = new Error('Unexpected invitation failure');
+      repository.createWithCurrentCapabilities.mockRejectedValueOnce(error);
+
+      await expect(service.create(trainer, { userId: athlete.id })).rejects.toBe(error);
     });
   });
 

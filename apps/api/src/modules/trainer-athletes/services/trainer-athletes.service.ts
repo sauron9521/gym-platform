@@ -9,6 +9,7 @@ import {
 import { Prisma } from '#prisma/client';
 
 import { UsersService } from '#src/modules/users/services/users.service';
+import { InvitationAlreadyExists } from '../application/create-invitation.js';
 import {
   canInitiateInvitation,
   isSelfInvitation,
@@ -80,8 +81,8 @@ export class TrainerAthletesService {
         initiatedById: actor.id,
       });
     } catch (error) {
-      if (this.isPrismaError(error, 'P2002')) {
-        throw new ConflictException('An active or pending relationship already exists');
+      if (error instanceof InvitationAlreadyExists) {
+        throw new ConflictException(error.message);
       }
 
       throw error;
