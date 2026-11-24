@@ -123,7 +123,7 @@ function main(args = process.argv.slice(2)) {
     const range = resolveAuditRange();
     appendFileSync(
       args[2],
-      'base=' + range.base + '\\n' + 'head=' + range.head + '\\n' + 'mode=' + range.mode + '\\n',
+      ['base=' + range.base, 'head=' + range.head, 'mode=' + range.mode].join('\n') + '\n',
     );
     console.log('Validated read-only Turbo comparison range:', JSON.stringify(range));
     return;
