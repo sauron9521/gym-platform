@@ -4,7 +4,7 @@ NestJS 12 / Prisma 7 API, migrated from the existing standalone repository.
 
 ## Migration status
 
-- Prisma multi-file schemas are preserved. The **active** migration history is now one fresh initial baseline (`20261114000000_initial_baseline`); historical SQL migration hashes are retained as audit metadata, not executable migrations.
+- Prisma multi-file schemas are preserved. The active history starts with the frozen `20261114000000_initial_baseline` and includes subsequent forward-only migrations. Legacy SQL migration hashes are audit metadata, not executable migrations.
 - NestJS `src/`, unit tests, and e2e/integration test files have been imported.
 - API configuration, Prisma seed, ESM package aliases, and pnpm dependencies are restored.
 - The root monorepo CI generates Prisma, then runs format, lint, typecheck, unit tests and build.
@@ -31,8 +31,8 @@ PostgreSQL password aligned with `infra/docker/.env`. Development API uses port
 
 The `API e2e / PostgreSQL 17` required GitHub Actions gate verifies two
 PostgreSQL 17 test shards and API coverage. Test jobs use a disposable
-`gym_app_test` database, generate Prisma Client, apply the active initial
-baseline, seed exercise data, typecheck e2e sources and execute the suite.
+`gym_app_test` database, generate Prisma Client, apply the complete active
+migration chain, seed exercise data, typecheck e2e sources and execute the suite.
 
 To run the suite locally, start PostgreSQL and Redis and configure both
 `TEST_DATABASE_URL` and `DATABASE_URL` to point to the **same disposable
@@ -68,7 +68,7 @@ separately by `test/migration-baseline.test.mjs`.
 
 All 302 source and 48 test paths from the recorded legacy commit were imported;
 the original schema and historical migration hashes are archived in
-migration provenance metadata. Only the generated initial baseline is active;
+migration provenance metadata. The frozen initial baseline and subsequent forward-only migrations are active;
 legacy SQL migration files must **not** be applied to a new database.
 Modified source/test blobs still require staging review.
 The read-only [cutover audit](../../docs/api-migration-audit.md) explicitly
