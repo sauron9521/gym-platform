@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 
 import { PrismaService } from '#src/infra/database/index';
 
-export const exerciseTrainerAccessSelect = {
+const exerciseTrainerAccessSelect = {
   id: true,
   exerciseId: true,
   trainerId: true,
