@@ -1,6 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '#src/infra/database/index';
 import { Prisma } from '#prisma/client';
+import {
+  AssignmentCancellationStateChanged,
+  type CancelProgramAssignment,
+} from '../application/assignment-cancellation.js';
 import type {
   AssignmentCompletionResult,
   CompleteProgramAssignment,
@@ -384,12 +388,22 @@ export class TrainingProgramAssignmentRepository {
    * termination and trainer moderation; repeat every permission under DB locks
    * before updating the assignment, rather than trusting the prior GET.
    */
-  async cancelAssignmentIfTrainerEligible(input: {
-    assignmentId: string;
-    trainerId: string;
-    endedAt: Date;
-    reason: string | null;
-  }) {
+  async cancelAssignmentIfTrainerEligible(
+    input: CancelProgramAssignment,
+  ): Promise<TrainingProgramAssignmentPayload | null> {
+    try {
+      return await this.cancelAssignmentAtomically(input);
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+        throw new AssignmentCancellationStateChanged();
+      }
+      throw error;
+    }
+  }
+
+  private async cancelAssignmentAtomically(
+    input: CancelProgramAssignment,
+  ): Promise<TrainingProgramAssignmentPayload | null> {
     return this.prisma.$transaction(async (tx) => {
       const current = await tx.trainingProgramAssignment.findUnique({
         where: { id: input.assignmentId },
