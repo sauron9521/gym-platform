@@ -1438,22 +1438,45 @@ describe('TrainerAthletes (HTTP + PostgreSQL)', () => {
         expect(second.status).toBe(201);
         ids.push(second.body.id);
 
-        // The original session remains valid, but TrainerProfile is revoked.
-        await prisma.trainerProfile.update({
-          where: { userId: approved.id },
-          data: { isActive: false, revokedAt: new Date(), revokedById: trainerOne.id },
-        });
+        const repository = app!.get(TrainerAthletesRepository);
+        const acceptPending = repository.acceptPendingInvitation.bind(repository);
+        // Commit the revocation after preflight but before the real conditional update.
+        const accept = vi
+          .spyOn(repository, 'acceptPendingInvitation')
+          .mockImplementationOnce(async (command) => {
+            await prisma.trainerProfile.update({
+              where: { userId: approved.id },
+              data: { isActive: false, revokedAt: new Date(), revokedById: trainerOne.id },
+            });
+            return acceptPending(command);
+          });
 
+        try {
+          const conflict = await request(app!.getHttpServer())
+            .post(`/trainer-athletes/${second.body.id}/accept`)
+            .set('Cookie', trainerCookie)
+            .expect(409);
+          expect(accept).toHaveBeenCalledOnce();
+          expect(conflict.body).toMatchObject({
+            code: 'CONFLICT',
+            message: 'Relationship state has changed. Reload and try again.',
+          });
+        } finally {
+          accept.mockRestore();
+        }
+
+        // The original session still works, but subsequent requests fail preflight.
         const noActivation = await request(app!.getHttpServer())
           .post(`/trainer-athletes/${second.body.id}/accept`)
           .set('Cookie', trainerCookie);
         expect(noActivation.status).toBe(409);
+        expect(noActivation.body.message).toBe('Relationship participants are no longer eligible');
 
         const stillPending = await prisma.trainerAthlete.findUnique({
           where: { id: second.body.id },
-          select: { status: true },
+          select: { status: true, respondedAt: true },
         });
-        expect(stillPending?.status).toBe('PENDING');
+        expect(stillPending).toEqual({ status: 'PENDING', respondedAt: null });
 
         // Revoked trainers can exit an invitation and an active relationship.
         const declined = await request(app!.getHttpServer())
