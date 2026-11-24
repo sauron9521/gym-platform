@@ -1,0 +1,54 @@
+// Disposable Linux VM only. Never run on a shared or production Docker host.
+prometheus.exporter.cadvisor "shadow" {
+  docker_only = true
+  disable_root_cgroup_stats = true
+  store_container_labels = false
+  allowlisted_container_labels = ["gym_shadow_fixture"]
+  env_metadata_allowlist = []
+  enabled_metrics = ["cpu", "memory", "process", "oom_event"]
+}
+
+prometheus.scrape "shadow" {
+  targets = prometheus.exporter.cadvisor.shadow.targets
+  forward_to = [prometheus.relabel.shadow.receiver]
+  scrape_interval = "15s"
+  scrape_timeout = "10s"
+  job_name = "gym-resource-shadow"
+}
+
+prometheus.relabel "shadow" {
+  forward_to = [prometheus.remote_write.shadow.receiver]
+
+  rule {
+    source_labels = ["container_label_gym_shadow_fixture", "name"]
+    regex = "resource-v1;/?gym-resource-shadow-fixture"
+    action = "keep"
+  }
+  // Require a Docker cgroup identity; keep it to distinguish recreation.
+  rule {
+    source_labels = ["id"]
+    regex = "(/docker/[a-f0-9]{64}|/system.slice/docker-[a-f0-9]{64}[.]scope)"
+    action = "keep"
+  }
+  rule {
+    source_labels = ["__name__"]
+    regex = "container_(cpu_usage_seconds_total|cpu_cfs_periods_total|cpu_cfs_throttled_periods_total|cpu_cfs_throttled_seconds_total|memory_working_set_bytes|spec_memory_limit_bytes|threads|oom_events_total|last_seen)"
+    action = "keep"
+  }
+  // Never merge per-CPU counters into the total.
+  rule {
+    source_labels = ["cpu"]
+    regex = "(total|)"
+    action = "keep"
+  }
+  rule {
+    regex = "(__name__|id|cpu|job)"
+    action = "labelkeep"
+  }
+}
+
+prometheus.remote_write "shadow" {
+  endpoint {
+    url = "http://127.0.0.1:19090/api/v1/write"
+  }
+}

@@ -242,6 +242,81 @@ active/unchanged; rollback is simply removal of the isolated pilot.
 No agent is installed, started or configured by this design PR. There is
 no measured parity, host privilege review or production approval.
 
+### Offline configuration checkpoint
+
+The isolated resource pilot now has an executable configuration in
+[config.alloy](../../ops/monitoring/shadow/config.alloy), a separate
+[Prometheus configuration](../../ops/monitoring/shadow/prometheus.yml),
+[recording rules](../../ops/monitoring/shadow/shadow.rules.yml) and
+[synthetic rule tests](../../ops/monitoring/shadow/shadow.test.yml).
+No service unit, production Compose file, workflow or existing alert is
+changed. Do not start the collector on a shared developer or production host.
+
+The reviewed validator image references are immutable:
+
+- Alloy: `grafana/alloy:v1.21.0@sha256:9726bfba078de9bc2212c60c6e643238c700b4fe0868ea78cbe03163d03d95bf`.
+- Prometheus: the same digest already used by the repository's API
+  Observability CI, `prom/prometheus@sha256:23031bfe0e74a13004252caaa74eccd0d62b6c6e7a04711d5b8bf5b7e113adc7`.
+
+The Alloy pipeline restricts input to a synthetic fixture with Docker label
+`gym_shadow_fixture=resource-v1` and exact container name
+`gym-resource-shadow-fixture`. It requires a recognized Docker cgroup ID,
+keeps only the listed native series and total CPU (or an unlabeled total),
+and strips all other labels before remote write. The full synthetic cgroup
+identity is retained to distinguish recreation. Other cgroup layouts fail
+closed until explicitly reviewed. Only the local receiver
+`http://127.0.0.1:19090/api/v1/write` is configured. Prometheus has no scrape
+targets or notification receiver. The separate `gym_shadow:` recording
+rules are exploratory CPU, memory and throttling calculations, not production
+aliases or alerts; normal Prometheus lookback can retain a previous value.
+Per-container freshness, runtime label redaction, cardinality, resets and
+alert equivalence still need live fixture evidence.
+
+The scrape interval is 15 seconds. The pinned Alloy validator rejected the
+newer documentation's `housekeeping_interval` and
+`allow_dynamic_housekeeping` arguments, so the configuration deliberately
+uses the pinned version's internal defaults. Measure actual collection
+timestamps in the live pilot rather than assuming 15-second housekeeping.
+
+Validate from the repository root, using containers without runtime host
+mounts, Docker socket or network:
+
+```sh
+alloy=grafana/alloy:v1.21.0@sha256:9726bfba078de9bc2212c60c6e643238c700b4fe0868ea78cbe03163d03d95bf
+prom=prom/prometheus@sha256:23031bfe0e74a13004252caaa74eccd0d62b6c6e7a04711d5b8bf5b7e113adc7
+
+docker run --rm --network none --cap-drop ALL \
+  --security-opt no-new-privileges --read-only \
+  -v "$PWD/ops/monitoring/shadow:/shadow:ro" \
+  --entrypoint /bin/alloy "$alloy" validate /shadow/config.alloy
+
+docker run --rm --network none --cap-drop ALL \
+  --security-opt no-new-privileges --read-only \
+  -v "$PWD/ops/monitoring/shadow:/shadow:ro" \
+  --entrypoint /bin/promtool "$prom" check config /shadow/prometheus.yml
+
+docker run --rm --network none --cap-drop ALL \
+  --security-opt no-new-privileges --read-only \
+  --tmpfs /tmp:rw,noexec,nosuid,nodev,size=64m,mode=1777 \
+  -v "$PWD/ops/monitoring/shadow:/shadow:ro" \
+  --entrypoint /bin/promtool "$prom" test rules /shadow/shadow.test.yml
+```
+
+The temporary filesystem is needed for promtool's test TSDB. The synthetic
+tests cover 100% CPU (one core), 50% memory, a 25% throttling ratio,
+exclusion of per-core data and other jobs, missing data and zero
+denominators. Fuzzy comparison permits only last-bit floating-point
+differences in rule results; it is not a measured collector tolerance.
+
+These offline commands passed on the developer device; the two validator
+images were pulled, but no telemetry service ran. Live collection requires
+a separately approved disposable VM, a private receiver on
+`127.0.0.1:19090` with remote write enabled, isolated Alloy storage and TSDB
+directories and reviewed runtime privileges. Disable Alloy usage reporting
+for the actual pilot and block outbound traffic. The version pins are
+reproducibility anchors, not a completed supply-chain or license approval.
+Do not install a service or open a listener based on this checkpoint alone.
+
 ## Future steps
 
 Staging verification, access-controlled HTTP metrics, multi-instance

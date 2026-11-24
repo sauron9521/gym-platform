@@ -1,0 +1,14 @@
+groups:
+  - name: resource-shadow
+    interval: 15s
+    rules:
+      - record: gym_shadow:cpu_percent
+        expr: 100 * rate(container_cpu_usage_seconds_total{job="gym-resource-shadow",cpu=~"total|"}[1m])
+      - record: gym_shadow:memory_percent
+        expr: |
+          100 * container_memory_working_set_bytes{job="gym-resource-shadow"}
+          / (container_spec_memory_limit_bytes{job="gym-resource-shadow"} > 0)
+      - record: gym_shadow:throttled_period_ratio
+        expr: |
+          increase(container_cpu_cfs_throttled_periods_total{job="gym-resource-shadow"}[1m])
+          / (increase(container_cpu_cfs_periods_total{job="gym-resource-shadow"}[1m]) > 0)
