@@ -6,6 +6,7 @@ import { join } from 'node:path';
 import { test } from 'vitest';
 
 import { checkWorkspaceBoundaries } from './check-workspace-boundaries.mjs';
+import { inspectNamedApplicationImports } from './dependency-cruiser-named-imports.mjs';
 
 function workspace(root, kind, folder, name, dependencies = {}) {
   const directory = join(root, kind, folder);
@@ -54,15 +55,16 @@ test('reject direct workspace dependencies on another application', () => {
   });
 });
 
-test('reject named and relative app implementation imports', () => {
+test('require dependency-cruiser for named imports while keeping relative-path protection', () => {
   withFixture(({ root, web }) => {
     writeFileSync(
       join(web, 'src', 'page.ts'),
       "import type { X } from '@gym/api';\nexport * from '../../api/src/secret';\n",
     );
     const messages = checkWorkspaceBoundaries(root);
-    assert.ok(messages.some((message) => message.includes('import of application @gym/api')));
     assert.ok(messages.some((message) => message.includes('cross-workspace relative import')));
+    const named = inspectNamedApplicationImports(root);
+    assert.ok(named.violations.some((message) => message.includes('import of application @gym/api')));
   });
 });
 
