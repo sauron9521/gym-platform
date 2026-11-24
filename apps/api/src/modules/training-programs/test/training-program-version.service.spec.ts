@@ -200,18 +200,12 @@ describe('TrainingProgramVersionService', () => {
       updated,
     );
     await service.updateDraftVersion(...ids, trainer, { durationWeeks: null });
-    expect(repository.updateDraftVersion).toHaveBeenNthCalledWith(
-      1,
-      ids[0],
-      ids[1],
-      { durationWeeks: 3 },
-    );
-    expect(repository.updateDraftVersion).toHaveBeenNthCalledWith(
-      2,
-      ids[0],
-      ids[1],
-      { durationWeeks: null },
-    );
+    expect(repository.updateDraftVersion).toHaveBeenNthCalledWith(1, ids[0], ids[1], {
+      durationWeeks: 3,
+    });
+    expect(repository.updateDraftVersion).toHaveBeenNthCalledWith(2, ids[0], ids[1], {
+      durationWeeks: null,
+    });
   });
 
   it('trims titles, normalizes blank descriptions and keeps unrelated fields untouched', async () => {
@@ -219,11 +213,10 @@ describe('TrainingProgramVersionService', () => {
       title: '  Progressive overload  ',
       description: '   ',
     });
-    expect(repository.updateDraftVersion).toHaveBeenCalledExactlyOnceWith(
-      ids[0],
-      ids[1],
-      { title: 'Progressive overload', description: null },
-    );
+    expect(repository.updateDraftVersion).toHaveBeenCalledExactlyOnceWith(ids[0], ids[1], {
+      title: 'Progressive overload',
+      description: null,
+    });
   });
 
   it('normalizes a non-empty description and leaves other values unmodified', async () => {
@@ -231,11 +224,10 @@ describe('TrainingProgramVersionService', () => {
       description: '  Focus on technique  ',
       durationWeeks: 5,
     });
-    expect(repository.updateDraftVersion).toHaveBeenCalledExactlyOnceWith(
-      ids[0],
-      ids[1],
-      { description: 'Focus on technique', durationWeeks: 5 },
-    );
+    expect(repository.updateDraftVersion).toHaveBeenCalledExactlyOnceWith(ids[0], ids[1], {
+      description: 'Focus on technique',
+      durationWeeks: 5,
+    });
   });
 
   it('maps a concurrent draft publication during update to conflict', async () => {
