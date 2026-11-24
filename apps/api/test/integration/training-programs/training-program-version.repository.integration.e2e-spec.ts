@@ -341,6 +341,108 @@ describe('TrainingProgramVersionRepository integration (e2e)', () => {
     }
   });
 
+  it('rechecks duration after a competing workout edit commits under the version lock', async () => {
+    const trainer = await prisma.user.create({
+      data: {
+        email: `duration-race-${randomUUID()}@example.com`,
+        passwordHash: 'test-password-hash',
+        role: 'TRAINER',
+      },
+      select: { id: true },
+    });
+    let programId: string | undefined;
+
+    try {
+      const program = await prisma.trainingProgram.create({
+        data: {
+          trainerId: trainer.id,
+          versions: {
+            create: {
+              version: 1,
+              title: 'Duration Race',
+              durationWeeks: 6,
+              status: 'DRAFT',
+            },
+          },
+        },
+        select: { id: true, versions: { select: { id: true } } },
+      });
+      programId = program.id;
+      const versionId = program.versions[0]!.id;
+      const workout = await addPublishableWorkout(versionId, 3);
+      let shrink: Promise<unknown> | undefined;
+      let wasBlocked = false;
+
+      await prisma.$transaction(
+        async (tx) => {
+          const [holder] = await tx.$queryRaw<Array<{ pid: number }>>`
+            SELECT pg_backend_pid()::integer AS pid
+            FROM "training_program_versions"
+            WHERE "id" = ${versionId}
+            FOR UPDATE
+          `;
+          expect(holder).toBeDefined();
+
+          shrink = repository
+            .updateVersion(
+              { id: versionId, programId: program.id, status: 'DRAFT' },
+              { durationWeeks: 4 },
+            )
+            .then(
+              () => null,
+              (error: unknown) => error,
+            );
+
+          for (let attempt = 0; attempt < 60; attempt++) {
+            const [state] = await prisma.$queryRaw<Array<{ blocked: boolean }>>`
+              SELECT EXISTS (
+                SELECT 1 FROM pg_stat_activity AS activity
+                WHERE activity.datname = current_database()
+                  AND ${holder!.pid} = ANY(pg_blocking_pids(activity.pid))
+              ) AS blocked
+            `;
+            if (state?.blocked) {
+              wasBlocked = true;
+              break;
+            }
+            await new Promise<void>((resolve) => setTimeout(resolve, 50));
+          }
+
+          await tx.trainingProgramWorkout.update({
+            where: { id: workout.id },
+            data: { weekNumber: 5 },
+          });
+        },
+        { timeout: 15_000 },
+      );
+
+      const result = await shrink;
+      expect(wasBlocked).toBe(true);
+      expect(result).toBeInstanceOf(Error);
+      expect(result).toMatchObject({
+        message: 'A workout week cannot exceed the program duration',
+      });
+      expect(
+        await prisma.trainingProgramVersion.findUniqueOrThrow({
+          where: { id: versionId },
+          select: { durationWeeks: true, status: true },
+        }),
+      ).toEqual({ durationWeeks: 6, status: 'DRAFT' });
+      expect(
+        await prisma.trainingProgramWorkout.findUniqueOrThrow({
+          where: { id: workout.id },
+          select: { weekNumber: true },
+        }),
+      ).toEqual({ weekNumber: 5 });
+    } finally {
+      if (programId) {
+        await prisma.trainingProgramVersion.deleteMany({ where: { programId } });
+        await prisma.trainingProgram.delete({ where: { id: programId } });
+      }
+      await prisma.user.delete({ where: { id: trainer.id } });
+    }
+  }, 20_000);
+
   it('creates a draft with independent copies of workouts, exercises and sets', async () => {
     let trainerId: string | undefined;
     let programId: string | undefined;
