@@ -96,7 +96,7 @@ From the repo root on a Linux host with Node 24 and Docker:
 
 ```sh
 bash -n scripts/monitoring-forward.sh scripts/monitoring-collect.sh
-node --test scripts/monitoring-*.test.mjs
+pnpm test:tooling scripts/monitoring-
 ```
 
 The `API Observability` CI job validates monitoring and all four

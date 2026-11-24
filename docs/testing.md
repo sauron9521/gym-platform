@@ -3,7 +3,7 @@
 ## Test runner
 
 - Vitest 5 is the unit and contract test runner for API, Web, Landing, Admin,
-  Mobile, shared packages and root `scripts/*.test.mjs`.
+  Trainer, Mobile, shared packages and root `scripts/*.test.mjs`.
 - Node-only contracts share `tooling/vitest/node.mjs` and use explicit include
   patterns in per-workspace config files. The mobile React Native component
   runner stays separate (`apps/mobile/vitest.config.mts` + `vitest-native`).
@@ -27,6 +27,8 @@ pnpm --filter @gym/domain test
 pnpm --filter @gym/web test
 pnpm --filter @gym/landing test
 pnpm --filter @gym/admin test
+pnpm --filter @gym/trainer test
+pnpm --filter @gym/i18n test
 pnpm --filter @gym/mobile test
 pnpm test
 ```
@@ -44,8 +46,8 @@ pnpm test
 - Turborepo filters restrict workspaces for affected PRs. API unit coverage,
   browser integration, Mobile Metro and device-level checks remain separate
   where their environments or required gates differ.
-- GitHub branch protection must continue requiring both CI/Quality and Web
-  integration aggregate checks where applicable. No job here deploys to prod.
+- GitHub branch protection must continue requiring the stable `Quality / Node 24`, `API e2e / PostgreSQL 17` and
+  `Web / Real API and PostgreSQL` result gates, including intentional skips. No job here deploys to prod.
 
 ## Full CI test-script inventory
 

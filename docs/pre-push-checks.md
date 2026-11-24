@@ -7,13 +7,15 @@ the merge-base with `origin/main`, instead of checking every historical commit.
 - Web-only: Prettier for changed supported files, Web lint and typecheck.
 - Mobile-only: Prettier, Mobile lint and typecheck.
 - API-only: Prettier, generate Prisma client, API lint and typecheck.
-- Shared API client: shared typecheck plus Web and Mobile lint and typecheck.
-- Documentation-only: Prettier for changed supported files; no workspace lint.
+- Landing, Admin or Trainer-only: Prettier and that workspace lint/typecheck.
+- Shared API client: client typecheck plus Web, Admin, Trainer and Mobile lint/typecheck.
+- Shared UI, design tokens, i18n and tooling config: consumer scopes follow the [CI routing policy](ci-affected-workspaces.md); API scope also generates Prisma.
+- Exempt documentation-only paths: Prettier for changed supported files; no workspace lint. Other Markdown uses the same conservative path rules as CI.
 - Root dependencies, CI, tooling or unknown paths: full Prettier, workspace
   lint and typecheck, with Prisma client generation first.
 
 For multiple refs in one push, the script checks the union of their changes.
-Deleted refs publish no new code. Deleted files still select affected
+Deleted refs or valid ref updates with no net file changes require no local checks. Deleted files still select affected
 workspaces, but are excluded from scoped formatting. A move between workspaces
 is treated as a deletion plus an addition. If the same path is deleted in one
 ref and present in another, the hook falls back to the full check plan.
@@ -21,7 +23,7 @@ Git failures, malformed diff output, invalid ref input or a missing
 `origin/main` fall back to whole-repository checks: **never silently skip
 source verification**.
 
-The hook does not run expensive E2E or Docker jobs. GitHub Actions remains the
+The hook uses explicit pnpm workspace commands, not a Turbo affected replacement. Scoped formatting falls back to full formatting above 100 supported paths. It does not run expensive E2E or Docker jobs. GitHub Actions remains the
 source of truth for mandatory PR checks and main branch protection.
 
 To verify the selection logic, run:
