@@ -40,4 +40,4 @@ A database already initialized with the frozen baseline can receive pending forw
 
 ## Release compatibility
 
-Two-release staging upgrade/rollback evidence must use compatible post-reset releases and preserve data through forward migrations. Runtime-only rollback must be rehearsed against the newer schema; never blindly reverse SQL migrations. Production cutover remains NO-GO until the independent [release evidence review](production-readiness-review.md) and operator approvals are satisfied.
+Two-release staging upgrade/rollback evidence must use compatible post-reset releases and preserve data through forward migrations. Runtime-only rollback must be rehearsed against the newer schema; never blindly reverse SQL migrations. Production cutover remains NO-GO until the independent [release evidence review](operations/production-readiness-review.md) and operator approvals are satisfied.

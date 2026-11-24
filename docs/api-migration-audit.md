@@ -76,14 +76,14 @@ deliberately replaced by Gym Platform equivalents.
    two separately published and verified Gym Platform releases** remains
    mandatory. Demonstrate that the old runtime remains functional after
    forward migrations and safe runtime-only rollback preserving data.
-   See [two-release staging guide](staging-two-release-rollback.md).
+   See [two-release staging guide](operations/staging-two-release-rollback.md).
 3. **Independent production evidence review:** `.github/workflows/production-readiness.yml`
    and its offline contract tests are now included (PR #22). A **real
    manually triggered** read-only review must still verify the published
    signed digests, source commit's nine green CI jobs, successful
    two-release staging receipts and publisher signer identity. The
    review always returns **production NO-GO** until independent human
-   host evidence and approval. See [release evidence review](production-readiness-review.md).
+   host evidence and approval. See [release evidence review](operations/production-readiness-review.md).
 4. **Human approval:** secure off-host backup plus full database and
    avatar restore, TLS/proxy, session cookies and CSRF, secrets, SMTP,
    Redis failure handling, alert delivery, staff/on-call, authorized
@@ -153,7 +153,7 @@ workflows before a production handover is considered.
 
 ## Digest-only production Compose preflight (PR #23)
 
-The [offline digest guard](production-digest-preflight.md) validates a
+The [offline digest guard](operations/production-digest-preflight.md) validates a
 build-free override for both signed GHCR images, the original Compose
 hardening and expected current runtime identity. No automatic deployment,
 migration or host contact is added. Production cutover is still **NO-GO**
@@ -161,7 +161,7 @@ until real signed staging, off-host restore and human approval are proven.
 
 ## Operator-host read-only checks (PR #24)
 
-The [operator-only host preflight](production-host-preflight.md) validates
+The [operator-only host preflight](operations/production-host-preflight.md) validates
 real local backup archive hashes, a private release receipt, signed GHCR
 attestations, cached Docker image identity and the existing API container
 in the exact Compose project. It **does not perform a full restore** or
