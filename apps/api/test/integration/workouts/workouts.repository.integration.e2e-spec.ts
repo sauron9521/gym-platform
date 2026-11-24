@@ -11,6 +11,7 @@ import { useTestDatabase } from '../../utility/test-db-helper.js';
 import { TrainingProgramsModule } from '../../../src/modules/training-programs/training-programs.module.js';
 import { PrismaModule, PrismaService } from '../../../src/infra/database/index.js';
 import { WorkoutsModule } from '../../../src/modules/workouts/workouts.module.js';
+import { WorkoutStartStateChanged } from '../../../src/modules/workouts/application/workout-start.js';
 import { WorkoutsRepository } from '../../../src/modules/workouts/repositories/workouts.repository.js';
 import { TrainingProgramAssignmentRepository } from '../../../src/modules/training-programs/repositories/training-program-assignment.repository.js';
 
@@ -1535,6 +1536,80 @@ describe('WorkoutsRepository.createFromProgram integration (e2e)', () => {
       startedAt: null,
       exercises: [{ exerciseNameSnapshot: 'Archived during concurrent start' }],
     });
+  }, 20_000);
+
+  it('rolls back the assignment start timestamp when a competing cancellation wins', async () => {
+    const fixture = await createFixture();
+    const workout = await repository.createFromProgram({
+      athleteId: fixture.athleteId,
+      assignmentId: fixture.assignmentId,
+      programWorkoutId: fixture.programWorkoutId,
+    });
+    expect(workout).not.toBeNull();
+
+    let startOutcome: Promise<unknown> | undefined;
+    let observedBlocking = false;
+
+    await prisma.$transaction(
+      async (tx) => {
+        const [holder] = await tx.$queryRaw<Array<{ pid: number }>>`
+          SELECT pg_backend_pid()::integer AS pid
+          FROM "exercises"
+          WHERE "id" = ${fixture.exerciseId}
+          FOR UPDATE
+        `;
+        expect(holder).toBeDefined();
+
+        startOutcome = repository
+          .startWorkout({
+            id: workout!.id,
+            athleteId: fixture.athleteId,
+            startedAt: new Date('2030-01-15T10:00:00Z'),
+          })
+          .then(
+            (result) => result,
+            (error: unknown) => error,
+          );
+
+        for (let attempt = 0; attempt < 60; attempt++) {
+          const [state] = await prisma.$queryRaw<Array<{ blocked: boolean }>>`
+            SELECT EXISTS (
+              SELECT 1 FROM pg_stat_activity AS activity
+              WHERE activity.datname = current_database()
+                AND ${holder!.pid} = ANY(pg_blocking_pids(activity.pid))
+            ) AS blocked
+          `;
+          if (state?.blocked) {
+            observedBlocking = true;
+            break;
+          }
+          await new Promise<void>((resolve) => setTimeout(resolve, 50));
+        }
+
+        await tx.workout.update({
+          where: { id: workout!.id, status: 'PLANNED' },
+          data: { status: 'CANCELLED' },
+        });
+      },
+      { timeout: 15_000 },
+    );
+
+    const outcome = await startOutcome;
+    expect(observedBlocking).toBe(true);
+    expect(outcome).toBeInstanceOf(WorkoutStartStateChanged);
+
+    const [stored, assignment] = await Promise.all([
+      prisma.workout.findUniqueOrThrow({
+        where: { id: workout!.id },
+        select: { status: true, startedAt: true },
+      }),
+      prisma.trainingProgramAssignment.findUniqueOrThrow({
+        where: { id: fixture.assignmentId },
+        select: { status: true, startedAt: true },
+      }),
+    ]);
+    expect(stored).toEqual({ status: 'CANCELLED', startedAt: null });
+    expect(assignment).toEqual({ status: 'ACTIVE', startedAt: null });
   }, 20_000);
 
   // PR #67: both ways of creating a workout must synchronize with archival,

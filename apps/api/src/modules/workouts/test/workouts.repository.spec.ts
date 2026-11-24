@@ -1,6 +1,7 @@
 import { PrismaService } from '#src/infra/database/index';
 import { Prisma } from '#prisma/client';
 
+import { WorkoutStartStateChanged } from '../application/workout-start.js';
 import { WorkoutsRepository } from '../repositories/workouts.repository.js';
 import { WorkoutCreationRepository } from '../repositories/workout-creation.repository.js';
 import { WorkoutLifecycleRepository } from '../repositories/workout-lifecycle.repository.js';
@@ -570,6 +571,38 @@ describe('WorkoutsRepository', () => {
         status: 'IN_PROGRESS',
       });
       prisma.$queryRaw.mockResolvedValue([globalExercise]);
+    });
+
+    it('translates a failed conditional start write to a typed conflict', async () => {
+      const error = new Prisma.PrismaClientKnownRequestError('Record not found', {
+        code: 'P2025',
+        clientVersion: '7.10.1',
+      });
+      prisma.workout.update.mockRejectedValueOnce(error);
+
+      await expect(
+        repository.startWorkout({
+          id: 'workout-1',
+          athleteId: 'athlete-1',
+          startedAt: new Date('2030-01-01T10:00:00Z'),
+        }),
+      ).rejects.toBeInstanceOf(WorkoutStartStateChanged);
+    });
+
+    it('preserves unrelated persistence errors from the start transaction', async () => {
+      const error = new Prisma.PrismaClientKnownRequestError('Transaction conflict', {
+        code: 'P2034',
+        clientVersion: '7.10.1',
+      });
+      prisma.$transaction.mockRejectedValueOnce(error);
+
+      await expect(
+        repository.startWorkout({
+          id: 'workout-1',
+          athleteId: 'athlete-1',
+          startedAt: new Date('2030-01-01T10:00:00Z'),
+        }),
+      ).rejects.toBe(error);
     });
 
     it('locks even global exercise references before allowing a start', async () => {
