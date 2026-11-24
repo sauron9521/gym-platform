@@ -57,8 +57,8 @@ export function findNamedApplicationImports(report, appNames) {
 }
 
 export function inspectNamedApplicationImports(root = repositoryRoot) {
-  const bin = resolve(root, 'node_modules/dependency-cruiser/bin/dependency-cruiser.mjs');
-  const configuration = resolve(root, '.dependency-cruiser.cjs');
+  const bin = resolve(repositoryRoot, 'node_modules/dependency-cruiser/bin/dependency-cruiser.mjs');
+  const configuration = resolve(repositoryRoot, '.dependency-cruiser.cjs');
   const result = spawnSync(
     process.execPath,
     [
