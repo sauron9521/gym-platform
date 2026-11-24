@@ -10,12 +10,12 @@
 
 ## Delivered and verified
 
-| Stage | Merged PR | Evidence |
-| --- | --- | --- |
-| CA01 | [#729](https://github.com/sauron9521/gym-platform/pull/729) | [CI](https://github.com/sauron9521/gym-platform/actions/runs/45386395551) |
-| CA02 | [#731](https://github.com/sauron9521/gym-platform/pull/731) | [CI](https://github.com/sauron9521/gym-platform/actions/runs/45388589008) |
-| CA03 | [#733](https://github.com/sauron9521/gym-platform/pull/733) | [CI](https://github.com/sauron9521/gym-platform/actions/runs/45393199997) |
-| CA04 | [#736](https://github.com/sauron9521/gym-platform/pull/736) | [CI](https://github.com/sauron9521/gym-platform/actions/runs/45396151160), [Web integration](https://github.com/sauron9521/gym-platform/actions/runs/45396151287) |
+| Stage | Merged PR                                                   | Evidence                                                                                                                                                          |
+| ----- | ----------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| CA01  | [#729](https://github.com/sauron9521/gym-platform/pull/729) | [CI](https://github.com/sauron9521/gym-platform/actions/runs/45386395551)                                                                                         |
+| CA02  | [#731](https://github.com/sauron9521/gym-platform/pull/731) | [CI](https://github.com/sauron9521/gym-platform/actions/runs/45388589008)                                                                                         |
+| CA03  | [#733](https://github.com/sauron9521/gym-platform/pull/733) | [CI](https://github.com/sauron9521/gym-platform/actions/runs/45393199997)                                                                                         |
+| CA04  | [#736](https://github.com/sauron9521/gym-platform/pull/736) | [CI](https://github.com/sauron9521/gym-platform/actions/runs/45396151160), [Web integration](https://github.com/sauron9521/gym-platform/actions/runs/45396151287) |
 
 The final CA04 run passed architecture, formatting, lint, typecheck, build, coverage, both PostgreSQL API shards, generated OpenAPI verification, Docker and the aggregate required gates. All four Web real-API integration shards passed. Unselected browser/mobile/admin/landing and vulnerability-audit jobs were skipped, not independently tested by this run. This is not a staging, Beta or production release approval.
 
@@ -23,20 +23,20 @@ The final CA04 run passed architecture, formatting, lint, typecheck, build, cove
 
 Counts below are physical source lines (including comments and blank lines, excluding trailing blank lines) of four original production files and the four additional pilot files, at the pinned revisions. They are not whole-module LOC or a cyclomatic complexity benchmark.
 
-| File or measure | Baseline | Pilot |
-| --- | ---: | ---: |
-| Legacy publication policy / HTTP mapper | 33 | 15 |
-| Version service (whole file) | 205 | 195 |
-| Version repository (whole file) | 375 | 378 |
-| Feature module | 61 | 67 |
-| Pure domain policy and error | 0 | 50 |
-| Application use case | 0 | 41 |
-| Application port | 0 | 25 |
-| Composition provider | 0 | 33 |
-| Total physical lines | 674 | 804 |
-| Production files in measured set | 4 | 8 |
-| Service publication method (included above) | 23 | 7 |
-| Repository publication method (included above) | 124 | 124 |
+| File or measure                                | Baseline | Pilot |
+| ---------------------------------------------- | -------: | ----: |
+| Legacy publication policy / HTTP mapper        |       33 |    15 |
+| Version service (whole file)                   |      205 |   195 |
+| Version repository (whole file)                |      375 |   378 |
+| Feature module                                 |       61 |    67 |
+| Pure domain policy and error                   |        0 |    50 |
+| Application use case                           |        0 |    41 |
+| Application port                               |        0 |    25 |
+| Composition provider                           |        0 |    33 |
+| Total physical lines                           |      674 |   804 |
+| Production files in measured set               |        4 |     8 |
+| Service publication method (included above)    |       23 |     7 |
+| Repository publication method (included above) |      124 |   124 |
 
 The measured source set grew by 130 lines (19.3%) and four files. The service method shrank by 16 lines, but the extracted application decisions still exist. This is an explicit boundary/testability tradeoff, not a code-size or total-complexity reduction. CA04's entire PR also includes documentation and tests (15 files, +422/-52); that diff is not directly comparable to the pinned production subset.
 
@@ -48,18 +48,18 @@ The application port has three operations, not generic CRUD. Its generic result 
 
 Measured from the final [API coverage job](https://github.com/sauron9521/gym-platform/actions/runs/45396151160/job/138452650731) and [API shard 1](https://github.com/sauron9521/gym-platform/actions/runs/45396151160/job/138452650831), [API shard 2](https://github.com/sauron9521/gym-platform/actions/runs/45396151160/job/138452650819).
 
-| Evidence | Passed tests | Reported duration |
-| --- | ---: | ---: |
-| API coverage suite | 1684 (160 files) | 22.65 s |
-| Pure publication use case | 8 | 11 ms |
-| Pure publication policy | 11 | 7 ms |
-| HTTP error mapping | 5 | 9 ms |
-| Version service | 31 | 14 ms |
-| Publication integrity (real PostgreSQL) | 8 | 515 ms |
-| Version repository (real PostgreSQL) | 10 | 794 ms |
-| Published versions (HTTP/PostgreSQL) | 6 | 2014 ms |
-| API E2E shard 1 | 256 (35 files) | 80.03 s |
-| API E2E shard 2 | 266 (35 files) | 82.23 s |
+| Evidence                                |     Passed tests | Reported duration |
+| --------------------------------------- | ---------------: | ----------------: |
+| API coverage suite                      | 1684 (160 files) |           22.65 s |
+| Pure publication use case               |                8 |             11 ms |
+| Pure publication policy                 |               11 |              7 ms |
+| HTTP error mapping                      |                5 |              9 ms |
+| Version service                         |               31 |             14 ms |
+| Publication integrity (real PostgreSQL) |                8 |            515 ms |
+| Version repository (real PostgreSQL)    |               10 |            794 ms |
+| Published versions (HTTP/PostgreSQL)    |                6 |           2014 ms |
+| API E2E shard 1                         |   256 (35 files) |           80.03 s |
+| API E2E shard 2                         |   266 (35 files) |           82.23 s |
 
 The use-case test imports only inner code and uses a typed fake port, with no Nest container, database or Prisma dependency. It checks access failure, repeat access denial, archive/non-draft rejection, content validity, stale state, atomic invocation order, unchanged result identity and unexpected error propagation.
 
