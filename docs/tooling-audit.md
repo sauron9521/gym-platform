@@ -46,11 +46,27 @@ runtime cost or a measurement of affected-only CI.
 
 ## Manual GitHub workflow
 
-Run **Tooling / Knip and Turborepo baseline (manual)** from the Actions tab
-on a reviewed `main` commit. It uses read-only GitHub permissions, generates
-only a local Prisma Client, creates Knip and Turbo diagnostic artifacts,
-prints a summary and retains evidence for seven days. It is not a deployment
-or production-readiness approval.
+Run **Tooling / Knip, Turborepo, and dependency-cruiser (manual)** from the
+Actions tab on a reviewed `main` commit. It uses read-only GitHub
+permissions, generates only a local Prisma Client, creates Knip, dependency
+boundary and Turbo diagnostic artifacts, prints a summary and retains evidence
+for seven days. It is not a deployment or production-readiness approval.
+
+The additional **Turbo affected shadow comparison** checks the latest commit
+against its first parent (`HEAD^1...HEAD`) using the **same** SHA range for
+`ci-select.mjs` and `turbo run lint typecheck build --affected --dry=json`.
+This requires full Git history and uses `TURBO_SCM_BASE` and `TURBO_SCM_HEAD`
+explicitly. It writes `turbo-affected-plan.json` and
+`turbo-affected-comparison.json` as artifacts and summarizes missing
+application/client packages in the workflow summary. It runs **no build,
+lint or test tasks** and never changes CI outputs or branch protection.
+
+The JSON plan describes lint/typecheck/build task selection, **not** API
+integration tests, release security checks or actual required-job scheduling.
+Extra/missing packages indicate a difference to review, not proof that either
+selector can safely replace the other. One commit does not prove parity across
+all PR classes; collect examples for API, Web, Mobile, OpenAPI, shared packages,
+lockfiles, docs-only and mixed changes before deciding on a migration.
 
 For a complete inventory of the current top-level `scripts/` modules, their
 replacement candidates and safety gates, see the [custom script replacement
