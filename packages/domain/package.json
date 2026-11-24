@@ -4,7 +4,10 @@
   "private": true,
   "type": "module",
   "sideEffects": false,
-  "files": ["src/index.js", "src/index.d.ts"],
+  "files": [
+    "src/index.js",
+    "src/index.d.ts"
+  ],
   "exports": {
     ".": {
       "types": "./src/index.d.ts",
