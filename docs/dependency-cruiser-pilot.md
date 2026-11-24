@@ -40,3 +40,24 @@ The named-import check is now enforced by the required Tooling contracts job in 
 The workspace guard retains manifest checks and unresolved relative-path protection;
 its CLI also runs the named-import checker. The regex parser is retained only for
 relative-path protection until a separate parity-tested migration.
+
+## Unresolved relative imports: parity pilot
+
+Run `pnpm architecture:cruise:relative` to inspect original relative import
+specifiers from the dependency-cruiser JSON graph. The checker reconstructs
+the source-relative destination, then checks whether that destination belongs
+to a different manifest-backed workspace under `apps/`, `packages/` or
+`tooling/`. It detects imports into another workspace even when the
+destination file is missing or its import cannot be resolved.
+
+The regression suite compares the graph result with the existing
+`check-workspace-boundaries.mjs` for unresolved cross-app, app-to-package,
+package-to-tooling, and tooling-to-app imports. It also tests permitted
+same-workspace and public-package imports.
+
+**Deliberately report-only:** the dependency-cruiser pilot currently excludes
+test, e2e and generated source paths; the existing relative-path guard still
+scans relevant source tests. A regression fixture demonstrates this gap.
+Until source inclusion and parser coverage have full parity, **do not remove**
+the legacy relative-path scanner or enable the new report as a required gate.
+The named-import CI gate and manifest/cycle checks remain unchanged.
