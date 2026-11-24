@@ -144,6 +144,29 @@ remains a compile-time contract included in that package's `tsconfig.json`,
 not a Vitest runtime test. Remaining unused-file findings require separate
 review and should not be mass-deleted.
 
+## Verified full report after PR #708 (2026-11-24)
+
+[Manual run #45375253633](https://github.com/sauron9521/gym-platform/actions/runs/45375253633)
+on main commit `178bb675b97d7098b1b4a8afcb41295687afd555` succeeded and
+published both compact and JSON Knip reports. The unused-file count fell
+from 35 to 14 after the Web integration entrypoints and to **11** after
+restoring Vitest discovery in PR #707.
+
+Five findings are confirmed non-import entrypoints: the Admin and Web
+Playwright mock servers (launched by their respective webServer commands),
+the API OpenAPI exporter (compiled then executed by docs:openapi), the
+disposable Admin browser database seed (explicit CI tsx command), and
+the API-client compile-time contract (included in tsc, not runtime Vitest).
+List these exact paths as static Knip entrypoints rather than suppressing
+whole directories or executing protected configuration. The existing
+disposable database guard remains unchanged.
+
+A subsequent manual audit must confirm the new count. The other six
+unused-file candidates, dependency and export findings remain unverified;
+do not remove them based solely on this report. Turbo again selected zero
+task packages for a tooling-only change where conservative CI required
+seven application/client workspaces.
+
 ## Verified manual pilot result (2026-11-24)
 
 [Manual run #45363672094](https://github.com/sauron9521/gym-platform/actions/runs/45363672094)
