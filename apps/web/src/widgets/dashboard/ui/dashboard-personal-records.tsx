@@ -19,7 +19,7 @@ export class PersonalRecordsRequestError extends Error {
   }
 }
 
-export function personalRecordsQueryOptions() {
+function personalRecordsQueryOptions() {
   return {
     queryKey: ['workout-analytics', 'personal-records'] as const,
     queryFn: async ({ signal }: { signal: AbortSignal }) => {

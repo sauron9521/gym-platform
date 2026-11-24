@@ -33,7 +33,7 @@ function numericText(min: number, max: number, decimals: number, integer = false
 
 export const workoutSetTypes = ['WARMUP', 'WORKING', 'DROP_SET', 'AMRAP'] as const;
 
-export const createWorkoutSetFormSchema = z.object({
+const createWorkoutSetFormSchema = z.object({
   setType: z.enum(workoutSetTypes),
   plannedReps: numericText(1, 1000, 0, true),
   plannedWeightKg: numericText(0, 999999.99, 2),

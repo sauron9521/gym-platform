@@ -6,7 +6,7 @@ import type { AuthFailureListener } from '@gym/api-client';
  * Requests use the same-origin /backend rewrite. Server Components must use
  * server-session.ts and explicitly forward the incoming request cookies.
  */
-export function createWebSessionApi(onAuthFailure?: AuthFailureListener) {
+function createWebSessionApi(onAuthFailure?: AuthFailureListener) {
   return createBrowserSessionClient({
     baseUrl: '/backend',
     onAuthFailure,
