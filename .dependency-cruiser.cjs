@@ -44,6 +44,8 @@ module.exports = {
     },
   ],
   options: {
+    // Analyze type-only imports before TypeScript compilation removes them.
+    tsPreCompilationDeps: true,
     doNotFollow: { path: 'node_modules' },
     exclude: {
       path: '(^|/)(?:node_modules|\\.next|\\.expo|dist|build|coverage|generated|test|tests|e2e)(/|$)|\\.(?:spec|test)\\.[cm]?[jt]sx?$',

@@ -77,6 +77,9 @@ jobs:
       - name: Validate root CI, security and operations contracts
         run: pnpm test:tooling
 
+      - name: Enforce named application imports via dependency-cruiser
+        run: pnpm architecture:cruise:named
+
   prepush-windows:
     name: Pre-push / Windows Node 24
     needs: changes

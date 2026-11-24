@@ -15,7 +15,8 @@ Only remove an old script after migrating every required invariant, proving equi
 The workspace guard now checks all three pnpm workspace roots: `apps/`, `packages/`, and `tooling/`. Dependency-cruiser is still a manual diagnostic.
 
 - **Both checkers:** cross-app source imports and relative cross-workspace source imports, including tooling packages.
-- **Legacy checker only:** named app imports, manifest dependencies on apps, duplicate or missing workspace names, and shared dependency cycles.
+- **Required dependency-cruiser check:** exact named application package imports.
+- **Legacy checker only:** unresolved relative cross-workspace imports, manifest dependencies on apps, duplicate or missing workspace names, and shared dependency cycles.
 - **API-specific guards:** Nest DI/provider exports, feature contract rules, and computed dynamic imports.
 
 The parity tests run both import checkers against the same temporary source fixtures. These tests cover representative resolved imports; the legacy manifest and Nest DI guards remain required.
@@ -35,6 +36,7 @@ it to resolved source targets alone would silently discard those edges. The rule
 matches exact workspace application package names (the legacy contract); shared
 packages remain legal. Import-like text in comments or strings is not an import.
 
-The existing workspace guard stays active for named imports and manifest checks
-until parity tests and the required CI demonstrate safe replacement. The new check
-runs on demand through the Tooling audit workflow and is not a release gate yet.
+The named-import check is now enforced by the required Tooling contracts job in CI.
+The workspace guard retains manifest checks and unresolved relative-path protection;
+its CLI also runs the named-import checker. The regex parser is retained only for
+relative-path protection until a separate parity-tested migration.

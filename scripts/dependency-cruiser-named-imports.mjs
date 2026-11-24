@@ -59,9 +59,12 @@ export function findNamedApplicationImports(report, appNames) {
 export function inspectNamedApplicationImports(root = repositoryRoot) {
   const bin = resolve(repositoryRoot, 'node_modules/dependency-cruiser/bin/dependency-cruiser.mjs');
   const configuration = resolve(repositoryRoot, '.dependency-cruiser.cjs');
+  // Fixture repositories may have no tooling directory. Analyze existing roots only.
+  const roots = ['apps', 'packages', 'tooling'].filter((name) => existsSync(join(root, name)));
+  if (!roots.includes('apps')) throw new Error('Missing apps workspace directory');
   const result = spawnSync(
     process.execPath,
-    [bin, '--config', configuration, '--output-type', 'json', 'apps', 'packages', 'tooling'],
+    [bin, '--config', configuration, '--output-type', 'json', ...roots],
     {
       cwd: root,
       encoding: 'utf8',

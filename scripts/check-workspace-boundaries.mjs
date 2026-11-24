@@ -2,6 +2,8 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { inspectNamedApplicationImports } from './dependency-cruiser-named-imports.mjs';
+
 const dependencyFields = [
   'dependencies',
   'devDependencies',
@@ -89,11 +91,8 @@ export function checkWorkspaceBoundaries(repositoryRoot) {
       const source = readFileSync(file, 'utf8');
       for (const match of source.matchAll(importSpecifier)) {
         const specifier = match[1];
-        const namedTarget = byName.get(specifier);
-        if (namedTarget?.kind === 'apps') {
-          errors.push(relative(root, file) + ': import of application ' + specifier);
-          continue;
-        }
+        // Named imports are checked by dependency-cruiser's parsed graph.
+        // Keep the local relative-path check for targets that may not resolve.
         if (!specifier.startsWith('.')) continue;
         const absoluteTarget = resolve(dirname(file), specifier);
         const foreign = workspaces.find(
@@ -132,6 +131,10 @@ export function checkWorkspaceBoundaries(repositoryRoot) {
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const root = fileURLToPath(new URL('../', import.meta.url));
   const errors = checkWorkspaceBoundaries(root);
+  // Both checks are required: manifest / unresolved relative paths and named imports.
+  const { violations, graphErrors } = inspectNamedApplicationImports(root);
+  errors.push(...violations);
+  if (graphErrors) errors.push('dependency-cruiser graph violations: ' + graphErrors);
   if (errors.length) {
     console.error(errors.join('\n'));
     process.exitCode = 1;
