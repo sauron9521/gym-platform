@@ -17,7 +17,7 @@ Each item below is classified as **Candidate**, **Retain**, or **Review**. "Cand
 
 ### A. CI, boundaries and local hooks (7 JavaScript)
 
-- **Candidate:** `ci-select.mjs` — custom Git diff and fail-closed workspace scope classifier; compare to `turbo --affected --dry=json` and `dorny/paths-filter`. Keep the classifier required while comparing live PRs.
+- **Retain (direct replacement NO-GO):** `ci-select.mjs` — the [observed 2026-11-24 manual Turbo shadow audit](turbo-affected-shadow-evidence-2026-11-24.md) found that workflow/tooling-only changes require seven workspaces under our fail-closed policy but select none in Turbo's task graph. Consider only a policy-preserving hybrid after additional parity evidence; do not replace the required selector with `turbo --affected` alone.
 - **Candidate:** `pre-push-checks.mjs` — ref parsing, path union and a command allowlist; current Husky and lint-staged already handle pre-commit formatting, while Turbo can run scoped workspace tasks. Do not replace Git ref semantics with staged-file semantics.
 - **Retain:** `check-workspace-boundaries.mjs` — manifest names, forbidden application dependencies and shared-package cycles; the source import regex has already been removed.
 - **Retain:** `ci-tooling-guard.mjs` — small safety contract for required GitHub status/result gates, not a generalized task runner.

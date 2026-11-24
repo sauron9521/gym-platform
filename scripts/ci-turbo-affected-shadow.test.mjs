@@ -95,6 +95,19 @@ test('detects potential false negatives without suppressing or re-routing CI', (
   assert.ok(result.limitation.includes('Informational only'));
 });
 
+test('workflow-only changes cannot rely on an empty Turbo graph to skip required CI', () => {
+  const report = compareAffectedPlans(
+    ['.github/workflows/tooling-audit.yml', 'scripts/ci-turbo-affected-shadow.mjs'],
+    plan([]),
+  );
+  assert.equal(report.ciSelection.full, true);
+  assert.equal(report.ciSelection.deps, true);
+  assert.deepEqual(report.requiredPackages, apps);
+  assert.deepEqual(report.turboPackages, []);
+  assert.deepEqual(report.missingFromTurbo, apps);
+  assert.equal(report.status, 'review-required');
+});
+
 test('keeps additional Turbo-selected applications visible rather than treating them as errors', () => {
   const result = compareAffectedPlans(
     ['apps/web/src/app/page.tsx'],
