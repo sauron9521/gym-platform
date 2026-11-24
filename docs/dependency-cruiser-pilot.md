@@ -65,3 +65,21 @@ from the legacy regular expression (e.g. import-like text inside strings).
 **Do not remove** the required relative-path scanner or promote the parity
 pilot to a required gate until these differences are reviewed.
 The named-import CI gate and manifest/cycle checks remain unchanged.
+
+## Combined required workspace-import graph gate
+
+`pnpm architecture:cruise:boundaries` runs dependency-cruiser **once** to check
+both exact application package imports and cross-workspace relative imports,
+including unresolved import targets and test source. The existing required
+`Tooling contracts` job uses this combined command instead of invoking the
+named-app-only command. The standalone `architecture:cruise:named` and
+`architecture:cruise:relative` commands remain available for diagnosis.
+
+The legacy workspace checker still enforces manifest dependencies, duplicate
+and missing package names, shared-package cycles, and its conservative regex
+relative-import check in the required tooling tests. This deliberate overlap
+prevents regressions while we validate syntax coverage and differences between
+the parser-based and regex-based scanners. The combined graph gate is **not**
+proof that the legacy parser can now be deleted: import-like strings can cause
+false positives in the legacy script, and the computed dynamic-import/Nest
+architecture guards remain separate.
