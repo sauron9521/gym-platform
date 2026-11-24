@@ -9,6 +9,7 @@ import {
 import { Prisma } from '#prisma/client';
 
 import { UsersService } from '#src/modules/users/services/users.service';
+import { InvitationAcceptanceConflict } from '../application/accept-invitation.js';
 import { InvitationAlreadyExists } from '../application/create-invitation.js';
 import {
   canInitiateInvitation,
@@ -158,31 +159,17 @@ export class TrainerAthletesService {
     this.assertStatus(relationship.status, 'PENDING');
     await this.assertCanAccept(actor, relationship);
 
-    return this.updateWithConflictHandling(
-      {
-        id,
-        status: 'PENDING',
-        // Fail closed if moderation revokes TrainerProfile between the
-        // capability lookup and the conditional PostgreSQL update.
-        trainer: {
-          is: {
-            deletedAt: null,
-            role: { not: 'ADMIN' },
-            OR: [
-              { trainerProfile: { is: { isActive: true } } },
-              { role: 'TRAINER', trainerProfile: { is: null } },
-            ],
-          },
-        },
-        athlete: {
-          is: { deletedAt: null, role: { not: 'ADMIN' } },
-        },
-      },
-      {
-        status: 'ACTIVE',
+    try {
+      return await this.trainerAthletesRepository.acceptPendingInvitation({
+        relationshipId: id,
         respondedAt: new Date(),
-      },
-    );
+      });
+    } catch (error) {
+      if (error instanceof InvitationAcceptanceConflict) {
+        throw new ConflictException(error.message);
+      }
+      throw error;
+    }
   }
 
   // DECLINE REQUEST
