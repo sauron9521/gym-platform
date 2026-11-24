@@ -47,7 +47,7 @@ export function renderBackupHealthMetrics(healthy, timestamp) {
   ].join('\n');
 }
 
-export function verifyBackup(root, ageHours) {
+function verifyBackup(root, ageHours) {
   try {
     const result = spawnSync('bash', [script, root], {
       env: { ...process.env, BACKUP_MAX_AGE_HOURS: ageHours },
