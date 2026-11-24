@@ -1,6 +1,18 @@
 # OVRANTO Trainer Web
 
-Independent **Trainer** Next.js 16 + React 19 application in the existing pnpm/Turborepo workspace. This is the M05/#362 **bootstrap**, not the finished trainer product.
+Independent **Trainer** Next.js 16 + React 19 application in the existing pnpm/Turborepo workspace. The M05 workspace now includes protected sign-in, live dashboard/client progress, published-version selection and explicit single-attempt assignment. It is not the finished trainer product or a production release.
+
+## Current routes
+
+| Route                                            | Scope                                                             |
+| ------------------------------------------------ | ----------------------------------------------------------------- |
+| `/`                                              | Public product status and login link                              |
+| `/login`                                         | Browser-session sign-in with live trainer capability verification |
+| `/workspace`                                     | Protected dashboard, client list and recent owned programs        |
+| `/workspace/clients/[relationId]`                | Scoped client progress and assigned-program summaries             |
+| `/workspace/clients/[relationId]/select-program` | Published version selection and explicit assignment               |
+
+The full three-pane builder and broader coaching workflows are not exposed by these routes. Legacy trainer program editing still resides in [Athlete Web](../web/README.md); follow the controlled migration in ADR-005 rather than copying implementation.
 
 ## Local development
 
@@ -232,6 +244,6 @@ in the browser-regression trigger.
 - **No private-data authorization happens in client code.** `/workspace` rechecks live server grants and the Nest API enforces active-relationship row visibility at query time. The new `scope=trainer` list filter scopes SQL counts/pagination to collaborations where the signed-in identity is the trainer (not athlete-side relationships). No extra passwords, new JWTs, or migrations.
 - The shared `gym-locale` cookie controls uk/en with Accept-Language fallback, and `ovranto-theme` follows OS Light/Dark by default with manual override. Cookie values never confer privileges.
 - This app has `robots: noindex` until a controlled release and verified auth. No production domain or deployment is enabled here.
-- Subsequent work: #364 detailed athlete progress/tasks and program lists, #365 focused 3-pane Program Builder, #366 assignments/feedback, #369 browser E2E/CI release gating.
+- Related milestones: #364 dashboard/client read models, #365 focused three-pane Program Builder, #366 assignment and feedback scope, #369 browser E2E/release gates. The implemented client progress, assignment reads and single-attempt assignment above are not evidence that all work in those milestones is complete.
 
 Architecture: [ADR-005](../../docs/architecture/adr-005-product-ownership-trainer-migration.md). Visual design: OVRANTO Premium Athletic Minimal, full Light/Dark, responsive sidebar; builder remains a separate step.

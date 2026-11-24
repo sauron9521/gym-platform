@@ -27,6 +27,10 @@ pnpm --filter @gym/landing typecheck
 pnpm --filter @gym/landing build
 ```
 
+## Публічні маршрути
+
+`/`, `/features`, `/for-athletes`, `/for-trainers`, `/apps`, `/apps/web`, `/apps/mobile`, `/about`. Локалізовані маршрути `/uk` та `/en` керуються налаштуванням публікації та готовністю перекладів; див. [політику локалізації](../../docs/landing/localization.md). Наявність сторінки не підтверджує публічну доступність продукту чи дозвіл на індексацію.
+
 ## Структура
 
 - `src/app` — маршрути Next.js, metadata, robots і sitemap;
