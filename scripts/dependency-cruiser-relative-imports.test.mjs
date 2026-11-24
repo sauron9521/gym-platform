@@ -150,18 +150,28 @@ test('parsed import graph avoids false positives from import-like string text', 
   );
 });
 
-test('test-source exclusion prevents premature removal of the legacy path scanner', () => {
-  withFixture(
-    { 'apps/alpha/src/feature.spec.ts': "import '../../beta/src/missing.js';\n" },
-    (root) => {
-      assert.ok(
-        checkWorkspaceBoundaries(root).some((message) =>
-          message.includes('cross-workspace relative import'),
-        ),
-      );
-      assert.deepEqual(inspectRelativeWorkspaceImports(root).violations, []);
-    },
-  );
+test.each([
+  ['spec file', 'apps/alpha/src/feature.spec.ts', "import '../../beta/src/missing.ts';\n"],
+  ['test file', 'apps/alpha/src/feature.test.ts', "export * from '../../beta/src/missing';\n"],
+  ['test directory', 'apps/alpha/src/test/case.ts', "import '../../../beta/src/missing.ts';\n"],
+  [
+    'tests directory',
+    'apps/alpha/src/tests/case.ts',
+    "import type { Example } from '../../../beta/src/missing';\n",
+  ],
+  [
+    'e2e directory',
+    'apps/alpha/src/e2e/case.ts',
+    "const item = import('../../../beta/src/missing.ts');\n",
+  ],
+])('cruiser and legacy protect relative imports in %s', (_name, file, source) => {
+  withFixture({ [file]: source }, (root) => {
+    const original = checkWorkspaceBoundaries(root);
+    const graph = inspectRelativeWorkspaceImports(root);
+    const expected = file + ': cross-workspace relative import ';
+    assert.ok(original.some((message) => message.startsWith(expected)));
+    assert.ok(graph.violations.some((message) => message.startsWith(expected)));
+  });
 });
 
 test('relative parser remains advisory and old required checks stay in CI', () => {

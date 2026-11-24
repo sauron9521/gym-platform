@@ -4,7 +4,7 @@ Run pnpm architecture:cruise to inspect application and package source files. It
 
 This is a **manual pilot**, available locally and through the on-demand Tooling audit GitHub Actions workflow. It is not a replacement for required CI checks. Compare its results with the API architecture:check, architecture:deps and workspace-boundaries contract tests.
 
-Rules live in .dependency-cruiser.cjs. Dependency-cruiser resolves import targets instead of matching import-like strings. Generated code, tests and E2E sources are excluded. The pilot **does not** yet replace package manifest rules, Nest DI/provider registration, API public contract checks, alias conventions, or computed dynamic import guards. Existing scripts still enforce those invariants.
+Rules live in .dependency-cruiser.cjs. Dependency-cruiser resolves import targets instead of matching import-like strings. Generated code and build outputs remain excluded; test files and E2E folders within workspace source trees are now included. The pilot **does not** yet replace package manifest rules, Nest DI/provider registration, API public contract checks, alias conventions, or computed dynamic import guards. Existing scripts still enforce those invariants.
 
 Regression tests create temporary fixtures to show that invalid dependencies are rejected and same-workspace imports are accepted. These tests run with pnpm test:tooling.
 
@@ -55,9 +55,13 @@ The regression suite compares the graph result with the existing
 package-to-tooling, and tooling-to-app imports. It also tests permitted
 same-workspace and public-package imports.
 
-**Deliberately report-only:** the dependency-cruiser pilot currently excludes
-test, e2e and generated source paths; the existing relative-path guard still
-scans relevant source tests. A regression fixture demonstrates this gap.
-Until source inclusion and parser coverage have full parity, **do not remove**
-the legacy relative-path scanner or enable the new report as a required gate.
+**Deliberately report-only:** dependency-cruiser now parses `*.spec.ts`,
+`*.test.ts`, and files in workspace `src/test`, `src/tests` and
+`src/e2e` directories. Regression fixtures confirm both literal named
+application imports and unresolved cross-workspace relative imports in these
+paths. The report-only comparison still does **not** establish full parity for
+all syntax forms, generated code, computed dynamic imports, or false positives
+from the legacy regular expression (e.g. import-like text inside strings).
+**Do not remove** the required relative-path scanner or promote the parity
+pilot to a required gate until these differences are reviewed.
 The named-import CI gate and manifest/cycle checks remain unchanged.
