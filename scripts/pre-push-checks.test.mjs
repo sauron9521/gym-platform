@@ -116,6 +116,50 @@ test('landing-only push runs lint and typecheck', () => {
   assert.ok(plan.commands.some((cmd) => cmd.includes('@gym/landing') && cmd.includes('typecheck')));
 });
 
+test.each([
+  ['admin', '@gym/admin'],
+  ['trainer', '@gym/trainer'],
+])('%s-only push runs scoped lint and typecheck on Linux and Windows', (scope, workspace) => {
+  const plan = createPrePushPlan({
+    full: false,
+    files: [`apps/${scope}/src/app/page.tsx`],
+  });
+
+  assert.equal(plan.scopes[scope], true);
+  assert.deepEqual(
+    plan.commands.filter((command) => command[1] === '--filter'),
+    [
+      ['pnpm', '--filter', workspace, 'lint'],
+      ['pnpm', '--filter', workspace, 'typecheck'],
+    ],
+  );
+
+  for (const command of plan.commands.filter((entry) => entry[1] === '--filter')) {
+    for (const platform of ['linux', 'win32']) {
+      const invocation = resolvePrePushCommand(command, { platform });
+      assert.equal(invocation.executable, 'pnpm');
+      assert.equal(invocation.shell, platform === 'win32');
+      assert.deepEqual(invocation.args, command.slice(1));
+    }
+  }
+});
+
+test('shared UI changes check every web consumer without running API checks', () => {
+  const plan = createPrePushPlan({
+    full: false,
+    files: ['packages/ui-web/src/index.ts'],
+  });
+  assert.equal(plan.scopes.api, false);
+  for (const workspace of ['@gym/web', '@gym/admin', '@gym/trainer', '@gym/landing']) {
+    for (const task of ['lint', 'typecheck']) {
+      assert.ok(
+        plan.commands.some((cmd) => cmd[2] === workspace && cmd[3] === task),
+        `Expected ${task} for ${workspace}`,
+      );
+    }
+  }
+});
+
 test('mobile-only push checks only Mobile and selected formatting', () => {
   const plan = createPrePushPlan({ full: false, files: ['apps/mobile/app/index.tsx'] });
   assert.deepEqual(
@@ -138,13 +182,13 @@ test('API-only push generates Prisma client before lint and typecheck', () => {
   assert.ok(!commands.some((cmd) => cmd.includes('@gym/web')));
 });
 
-test('API client changes check Web, Mobile and shared types', () => {
+test('API client changes check all consumers and shared types', () => {
   const plan = createPrePushPlan({
     full: false,
     files: ['packages/api-client/src/generated/schema.d.ts'],
   });
   assert.equal(plan.scopes.api, false);
-  for (const name of ['@gym/api-client', '@gym/web', '@gym/mobile']) {
+  for (const name of ['@gym/api-client', '@gym/web', '@gym/admin', '@gym/trainer', '@gym/mobile']) {
     assert.ok(plan.commands.some((cmd) => cmd.includes(name)));
   }
 });
@@ -174,6 +218,8 @@ test('root, unknown, and failed diff fallback to whole-repo validation', () => {
 test('pre-push never rewrites committed source files', () => {
   const scenarios = [
     ['apps/web/src/app/page.tsx'],
+    ['apps/admin/src/app/page.tsx'],
+    ['apps/trainer/src/app/page.tsx'],
     ['apps/api/src/main.ts'],
     ['apps/mobile/app/index.tsx'],
     ['apps/landing/src/app/page.tsx'],

@@ -29,6 +29,10 @@ const trustedPnpmCommands = new Set(
     ['pnpm', '--filter', '@gym/web', 'typecheck'],
     ['pnpm', '--filter', '@gym/landing', 'lint'],
     ['pnpm', '--filter', '@gym/landing', 'typecheck'],
+    ['pnpm', '--filter', '@gym/admin', 'lint'],
+    ['pnpm', '--filter', '@gym/admin', 'typecheck'],
+    ['pnpm', '--filter', '@gym/trainer', 'lint'],
+    ['pnpm', '--filter', '@gym/trainer', 'typecheck'],
     ['pnpm', '--filter', '@gym/mobile', 'lint'],
     ['pnpm', '--filter', '@gym/mobile', 'typecheck'],
   ].map((args) => JSON.stringify(args)),
@@ -115,6 +119,8 @@ export function createPrePushPlan({ full, files }) {
         api: false,
         web: false,
         landing: false,
+        admin: false,
+        trainer: false,
         mobile: false,
         client: false,
         deps: false,
@@ -169,6 +175,14 @@ export function createPrePushPlan({ full, files }) {
   if (scopes.landing) {
     commands.push(['pnpm', '--filter', '@gym/landing', 'lint']);
     commands.push(['pnpm', '--filter', '@gym/landing', 'typecheck']);
+  }
+  if (scopes.admin) {
+    commands.push(['pnpm', '--filter', '@gym/admin', 'lint']);
+    commands.push(['pnpm', '--filter', '@gym/admin', 'typecheck']);
+  }
+  if (scopes.trainer) {
+    commands.push(['pnpm', '--filter', '@gym/trainer', 'lint']);
+    commands.push(['pnpm', '--filter', '@gym/trainer', 'typecheck']);
   }
   if (scopes.mobile) {
     commands.push(['pnpm', '--filter', '@gym/mobile', 'lint']);
