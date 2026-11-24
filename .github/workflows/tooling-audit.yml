@@ -53,7 +53,7 @@ jobs:
       - name: Report Knip findings without blocking on existing lint issues
         run: |
           set -euo pipefail
-          pnpm knip:report 2>&1 | tee "$RUNNER_TEMP/knip.txt"
+          pnpm knip:report --reporter json --output-file "json=$RUNNER_TEMP/knip.json" 2>&1 | tee "$RUNNER_TEMP/knip.txt"
       - name: Check workspace imports and resolved rules using one graph
         run: |
           set -euo pipefail
@@ -135,6 +135,7 @@ jobs:
           name: tooling-audit-${{ github.run_id }}
           path: |
             ${{ runner.temp }}/knip.txt
+            ${{ runner.temp }}/knip.json
             ${{ runner.temp }}/architecture-workspace-imports.txt
             ${{ runner.temp }}/turbo-plan.json
             ${{ runner.temp }}/turbo-affected-plan.json
