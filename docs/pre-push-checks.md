@@ -13,9 +13,13 @@ the merge-base with `origin/main`, instead of checking every historical commit.
   lint and typecheck, with Prisma client generation first.
 
 For multiple refs in one push, the script checks the union of their changes.
-Deleted refs publish no new code. Deleted files are excluded from formatting.
-Git failures, invalid ref input or a missing `origin/main` fall back to the
-whole-repository checks: **never silently skip source verification**.
+Deleted refs publish no new code. Deleted files still select affected
+workspaces, but are excluded from scoped formatting. A move between workspaces
+is treated as a deletion plus an addition. If the same path is deleted in one
+ref and present in another, the hook falls back to the full check plan.
+Git failures, malformed diff output, invalid ref input or a missing
+`origin/main` fall back to whole-repository checks: **never silently skip
+source verification**.
 
 The hook does not run expensive E2E or Docker jobs. GitHub Actions remains the
 source of truth for mandatory PR checks and main branch protection.
@@ -23,7 +27,7 @@ source of truth for mandatory PR checks and main branch protection.
 To verify the selection logic, run:
 
 ```sh
-node --test scripts/pre-push-checks.test.mjs
+pnpm test:tooling scripts/pre-push-checks.test.mjs
 ```
 
 To bypass a hook intentionally for a local one-off diagnostic, set
