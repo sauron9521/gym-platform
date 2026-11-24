@@ -6,7 +6,7 @@ import {
   canCompleteWorkout,
   canTransitionWorkout,
   workoutSetProgress,
-} from '../src/index.ts';
+} from '@gym/domain';
 
 test('only planned and in-progress workouts have valid outgoing transitions', () => {
   assert.deepEqual(workoutStatuses, ['PLANNED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED']);

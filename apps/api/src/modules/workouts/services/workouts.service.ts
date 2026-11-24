@@ -5,6 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Prisma } from '#prisma/client';
+import { canTransitionWorkout } from '@gym/domain';
 import { ExercisesService } from '#src/modules/exercises/services/exercises.service';
 import { UsersService } from '#src/modules/users/services/users.service';
 import { WorkoutsRepository } from '../repositories/workouts.repository.js';
@@ -288,7 +289,7 @@ export class WorkoutsService {
   async start(id: string, actor: WorkoutActor) {
     const workout = await this.findOne(id, actor);
 
-    if (workout.status !== 'PLANNED') {
+    if (!canTransitionWorkout(workout.status, 'IN_PROGRESS')) {
       throw new BadRequestException('Only planned workouts can be started');
     }
 

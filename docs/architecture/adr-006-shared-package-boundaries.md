@@ -22,8 +22,8 @@ Promote code only when two real consumers share the same stable behavior **or** 
 **`@gym/domain`**
 
 - **Owns:** Pure workout status and transition preconditions, plus set-progress calculations.
-- **Declared consumers:** `mobile` **only** today.
-- **Runtime boundary:** No framework dependencies; API owns authorization and writes. Keep this limited cross-runtime contract small until a second real consumer adopts it.
+- **Declared consumers:** `mobile`, `api` (API adoption via #329).
+- **Runtime boundary:** No framework dependencies; API owns authorization and writes. Keep this limited cross-runtime contract small; native ESM and TypeScript declarations support the Node runtime and Mobile.
 
 **`@gym/i18n`**
 
@@ -43,7 +43,7 @@ Promote code only when two real consumers share the same stable behavior **or** 
 - **Declared consumers:** `web`, `trainer`, `admin`, `landing`.
 - **Runtime boundary:** Browser/Next only; **forbidden in Expo**. No business forms, routing or network hooks.
 
-The API does not declare a direct dependency on any of these five packages in its manifest. `scripts/ci-select.mjs` conservatively includes API checks for i18n catalog edits because of transactional email concerns; **CI selection is not equivalent to a package import**.
+The API declares only the pure `@gym/domain` package as a direct shared runtime dependency. `scripts/ci-select.mjs` conservatively includes API checks for i18n catalog edits because of transactional email concerns; **CI selection is not equivalent to a package import**.
 
 ### Declared workspace dependency graph
 
@@ -60,7 +60,7 @@ apps/landing ───────┘
 
 apps/mobile ───────────> @gym/i18n, @gym/design-tokens, @gym/domain
 
-apps/api ──────────────> (no declared @gym shared-package dependency)
+apps/api ──────────────> @gym/domain
 
 @ gym shared packages ─> (no declared intra-workspace package edges at baseline)
 ```

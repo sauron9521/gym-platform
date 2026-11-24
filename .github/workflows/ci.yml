@@ -882,6 +882,9 @@ jobs:
       - name: Build one-shot migration image (no migration execution)
         run: docker build -f apps/api/Dockerfile --target migrate -t gym-platform-api:migrate-ci .
 
+      - name: Verify deployed domain package on Node 24
+        run: |
+          docker run --rm --entrypoint node gym-platform-api:runtime-ci --input-type=module -e 'import assert from "node:assert/strict"; import { canTransitionWorkout, canCompleteWorkout } from "@gym/domain"; assert.equal(canTransitionWorkout("PLANNED", "IN_PROGRESS"), true); assert.equal(canTransitionWorkout("COMPLETED", "IN_PROGRESS"), false); assert.equal(canCompleteWorkout([{status:"COMPLETED"}]), true);'
       - name: Check image contents and non-root runtime
         run: |
           docker run --rm --entrypoint sh gym-platform-api:runtime-ci -ec '

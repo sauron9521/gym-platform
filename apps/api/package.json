@@ -31,6 +31,7 @@
     "test:contracts": "vitest run --config ./vitest.config.tools.ts test/migration-baseline.test.mjs test/production-docker.test.mjs"
   },
   "dependencies": {
+    "@gym/domain": "workspace:*",
     "@nestjs/authentication": "^0.1.6",
     "@nestjs/common": "^12.6.0",
     "@nestjs/config": "^12.1.1",
