@@ -12,16 +12,14 @@
 
 All eight selected implementation PRs are owner-merged, with successful final CI and Web integration workflows.
 
-| PR | Verified implementation | Final CI | Web |
-| --- | --- | --- | --- |
-| [#754](https://github.com/sauron9521/gym-platform/pull/754) | Workouts inner-layer import guard and seven regressions | [CI](https://github.com/sauron9521/gym-platform/actions/runs/45422894133) | [Web](https://github.com/sauron9521/gym-platform/actions/runs/45422894172) |
-| [#755](https://github.com/sauron9521/gym-platform/pull/755) | Native ESM shared domain runtime, API consumer and Docker import | [CI](https://github.com/sauron9521/gym-platform/actions/runs/45425212609) | [Web](https://github.com/sauron9521/gym-platform/actions/runs/45425212516) |
-| [#756](https://github.com/sauron9521/gym-platform/pull/756) | Canonical completion failure and locked set recheck | [CI](https://github.com/sauron9521/gym-platform/actions/runs/45426505265) | [Web](https://github.com/sauron9521/gym-platform/actions/runs/45426505138) |
-| [#757](https://github.com/sauron9521/gym-platform/pull/757) | Canonical cancellation preflight, all four states | [CI](https://github.com/sauron9521/gym-platform/actions/runs/45428978559) | [Web](https://github.com/sauron9521/gym-platform/actions/runs/45428977584) |
-| [#758](https://github.com/sauron9521/gym-platform/pull/758) | Start command and typed persistence conflict; rollback regression | [CI](https://github.com/sauron9521/gym-platform/actions/runs/45431731198) | [Web](https://github.com/sauron9521/gym-platform/actions/runs/45431731237) |
-| [#759](https://github.com/sauron9521/gym-platform/pull/759) | Completion command/result and typed conflict; concurrent completion | [CI](https://github.com/sauron9521/gym-platform/actions/runs/45433100839) | [Web](https://github.com/sauron9521/gym-platform/actions/runs/45433100578) |
-| [#760](https://github.com/sauron9521/gym-platform/pull/760) | Pure set normalization, narrow write data and typed conflict | [CI](https://github.com/sauron9521/gym-platform/actions/runs/45434971710) | [Web](https://github.com/sauron9521/gym-platform/actions/runs/45434970471) |
-| [#761](https://github.com/sauron9521/gym-platform/pull/761) | Keyed creation conflict boundary and scoped replay | [CI](https://github.com/sauron9521/gym-platform/actions/runs/45436671882) | [Web](https://github.com/sauron9521/gym-platform/actions/runs/45436671673) |
+- [#754](https://github.com/sauron9521/gym-platform/pull/754): Workouts inner-layer import guard and seven regressions. [CI](https://github.com/sauron9521/gym-platform/actions/runs/45422894133), [Web](https://github.com/sauron9521/gym-platform/actions/runs/45422894172).
+- [#755](https://github.com/sauron9521/gym-platform/pull/755): Native ESM shared domain runtime, API consumer and Docker import. [CI](https://github.com/sauron9521/gym-platform/actions/runs/45425212609), [Web](https://github.com/sauron9521/gym-platform/actions/runs/45425212516).
+- [#756](https://github.com/sauron9521/gym-platform/pull/756): Canonical completion failure and locked set recheck. [CI](https://github.com/sauron9521/gym-platform/actions/runs/45426505265), [Web](https://github.com/sauron9521/gym-platform/actions/runs/45426505138).
+- [#757](https://github.com/sauron9521/gym-platform/pull/757): Canonical cancellation preflight, all four states. [CI](https://github.com/sauron9521/gym-platform/actions/runs/45428978559), [Web](https://github.com/sauron9521/gym-platform/actions/runs/45428977584).
+- [#758](https://github.com/sauron9521/gym-platform/pull/758): Start command and typed persistence conflict; rollback regression. [CI](https://github.com/sauron9521/gym-platform/actions/runs/45431731198), [Web](https://github.com/sauron9521/gym-platform/actions/runs/45431731237).
+- [#759](https://github.com/sauron9521/gym-platform/pull/759): Completion command/result and typed conflict; concurrent completion. [CI](https://github.com/sauron9521/gym-platform/actions/runs/45433100839), [Web](https://github.com/sauron9521/gym-platform/actions/runs/45433100578).
+- [#760](https://github.com/sauron9521/gym-platform/pull/760): Pure set normalization, narrow write data and typed conflict. [CI](https://github.com/sauron9521/gym-platform/actions/runs/45434971710), [Web](https://github.com/sauron9521/gym-platform/actions/runs/45434970471).
+- [#761](https://github.com/sauron9521/gym-platform/pull/761): Keyed creation conflict boundary and scoped replay. [CI](https://github.com/sauron9521/gym-platform/actions/runs/45436671882), [Web](https://github.com/sauron9521/gym-platform/actions/runs/45436671673).
 
 ## Structural inventory and tradeoff
 
