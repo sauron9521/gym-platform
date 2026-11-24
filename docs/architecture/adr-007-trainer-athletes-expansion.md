@@ -1,6 +1,6 @@
 # ADR-007 expansion evidence — Trainer–Athletes (CA08)
 
-- **Status:** Seven selected PRs merged and verified. Evidence review and merge pending.
+- **Status:** Seven selected PRs and the [final evidence #784](https://github.com/sauron9521/gym-platform/pull/784) merged and verified. CA08 #726 is complete.
 - **Date:** 2026-11-24.
 - **Gate:** [CA08 #726](https://github.com/sauron9521/gym-platform/issues/726), [Epic #718](https://github.com/sauron9521/gym-platform/issues/718).
 - **Decision:** [ADR-007](adr-007-pragmatic-clean-architecture.md) and [CA05 owner GO](adr-007-pilot-evaluation.md).
@@ -46,4 +46,4 @@ Count production `.ts` files under `apps/api/src/modules/trainer-athletes/`, exc
 
 - Keep existing Prisma projections, simple reads and the concrete transaction owner in the outer layers. The explicit termination contract covers the current call boundary, and one transaction still owns the database side effects.
 - Continue event and outbox work through [#563](https://github.com/sauron9521/gym-platform/issues/563) and [#568](https://github.com/sauron9521/gym-platform/issues/568). Keep staging and release readiness under their existing gates.
-- Review and merge this evidence before reconciling the CA08 checklist in #726. [CA09 #727](https://github.com/sauron9521/gym-platform/issues/727) records future adoption and explicit deferrals after the CA08 evidence gate.
+- The completed CA08 checklist is recorded in [#726](https://github.com/sauron9521/gym-platform/issues/726). The [CA09 adoption checklist](adr-007-future-module-adoption.md) links future work to existing feature owners.

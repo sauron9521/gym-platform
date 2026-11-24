@@ -151,4 +151,6 @@ CA05 evidence and the explicit owner GO of 2026-11-24 are recorded in the [publi
 
 CA06 and CA07 are complete. See the [Training Programs evidence](adr-007-training-programs-expansion.md) and [Workouts evidence](adr-007-workouts-expansion.md) for the selected boundaries, PostgreSQL regressions and deferred work. CA07 enabled the existing inner-layer guard for Workouts and verified the `@gym/domain` native ESM runtime in the API Docker image before adopting shared workout rules.
 
-CA08 applies the same guard to Trainer–Athletes. The [Trainer–Athletes evidence](adr-007-trainer-athletes-expansion.md) records the merged invitation and termination boundaries, PostgreSQL concurrency and rollback checks, and the final evidence review gate for #726. Future adoption guidance is tracked in CA09 #727.
+CA08 applies the same guard to Trainer–Athletes. The [Trainer–Athletes evidence](adr-007-trainer-athletes-expansion.md) records the verified invitation and termination boundaries, PostgreSQL concurrency and rollback checks, and completion of [#726](https://github.com/sauron9521/gym-platform/issues/726).
+
+The [CA09 adoption checklist](adr-007-future-module-adoption.md) applies the standard to individual operations in future feature issues and links the implementation evidence to the existing roadmaps.
