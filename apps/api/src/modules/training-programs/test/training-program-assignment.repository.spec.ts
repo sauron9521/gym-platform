@@ -1,4 +1,5 @@
 import { Prisma } from '#prisma/client';
+import { AssignmentCancellationStateChanged } from '../application/assignment-cancellation.js';
 import { AssignmentCreationError } from '../application/assignment-creation.js';
 import { TrainingProgramAssignmentRepository } from '../repositories/training-program-assignment.repository.js';
 
@@ -27,6 +28,37 @@ describe('TrainingProgramAssignmentRepository', () => {
     vi.resetAllMocks();
 
     repository = new TrainingProgramAssignmentRepository(models as never);
+  });
+
+  describe('assignment cancellation boundary', () => {
+    const input = {
+      assignmentId: 'assignment-1',
+      trainerId: 'trainer-1',
+      endedAt: new Date('2026-01-01T10:00:00Z'),
+      reason: null,
+    };
+
+    it('translates P2025 to a typed cancellation conflict', async () => {
+      const error = new Prisma.PrismaClientKnownRequestError('Record not found', {
+        code: 'P2025',
+        clientVersion: '7.0.0',
+      });
+      models.$transaction.mockRejectedValue(error);
+
+      await expect(repository.cancelAssignmentIfTrainerEligible(input)).rejects.toBeInstanceOf(
+        AssignmentCancellationStateChanged,
+      );
+    });
+
+    it('propagates unrelated cancellation persistence errors', async () => {
+      const error = new Prisma.PrismaClientKnownRequestError('Transaction conflict', {
+        code: 'P2034',
+        clientVersion: '7.0.0',
+      });
+      models.$transaction.mockRejectedValue(error);
+
+      await expect(repository.cancelAssignmentIfTrainerEligible(input)).rejects.toBe(error);
+    });
   });
 
   describe('assignments', () => {
