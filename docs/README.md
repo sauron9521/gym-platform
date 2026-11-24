@@ -36,6 +36,10 @@ This index groups developer-facing API documentation and operational runbooks. P
 - [Migration audit and cutover gates](api-migration-audit.md)
 - [Migration quality gates](migration-quality-gates.md)
 
+## Security and trust
+
+- [Security documentation index](security/README.md) — authentication, permissions, Admin sessions, revocation, audit and dependency security
+
 ## Operations and release preparation
 
 - [Operations runbook index](operations/README.md) — signed GHCR releases, staging, rollback, production preflight, backup and observability

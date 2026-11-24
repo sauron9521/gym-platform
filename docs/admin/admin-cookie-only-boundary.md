@@ -1,9 +1,8 @@
 # Admin API cookie-only authentication boundary (#289)
 
-**Status: dedicated admin-purpose login/scope implemented; bounded lifetime and separate revocation remain open.**
+**Status: dedicated Admin cookie realm, bounded lifetime and scoped revocation implemented. Staging lifecycle verification and step-up remain separate gates.**
 
-The existing privileged routes now require an authenticated, persisted,
-server-side cookie session via `@Authenticate({ providers: [SessionCookieProvider] })`:
+The existing privileged routes require an authenticated, persisted, admin-purpose server-side cookie session via `@Authenticate({ providers: [AdminSessionCookieProvider] })`:
 
 - `GET /admin/users` and `GET /admin/users/:userId`
 - `GET /admin/trainer-applications`
@@ -49,10 +48,7 @@ subsequent requests return 401. It is intentionally different from the
 existing `/auth/sign-out-everywhere`, which revokes every session and refresh
 token family for the user.
 
-**Still NO-GO:** The admin-purpose session shares the ordinary cookie name
-and session table, even though expiry and purpose-scoped revocation now differ.
-Finish #289 with origin/lifecycle hardening, including cross-origin session
-boundaries and admin UX. A separate Admin cookie realm is introduced below. Complete #290 for
+**Historical intermediate state:** Admin-purpose sessions initially shared the ordinary cookie name and session table. The separate cookie realm and origin hardening described below supersede that intermediate state. Staging lifecycle verification remains necessary. Complete #290 for
 recent proof of password/MFA, step-up expiry and safe recovery before enabling
 account suspension/reactivation or role/price privilege changes. The current
 trainer-review write endpoints already exist but remain without step-up, which
