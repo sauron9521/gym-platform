@@ -23,6 +23,8 @@ This index groups developer-facing API documentation and operational runbooks. P
 
 ## Migration and quality
 
+- [Custom script replacement audit](custom-scripts-replacement-audit.md) — complete top-level scripts inventory, safe tool alternatives and one-PR migration order
+
 - [Migration audit and cutover gates](api-migration-audit.md)
 - [Migration quality gates](migration-quality-gates.md)
 
