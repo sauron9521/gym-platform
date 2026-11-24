@@ -473,7 +473,7 @@ export class WorkoutsService {
   async cancel(id: string, actor: WorkoutActor) {
     const workout = await this.findOne(id, actor);
 
-    if (workout.status !== 'PLANNED' && workout.status !== 'IN_PROGRESS') {
+    if (!canTransitionWorkout(workout.status, 'CANCELLED')) {
       throw new BadRequestException('This workout cannot be cancelled');
     }
 

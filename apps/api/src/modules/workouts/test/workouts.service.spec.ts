@@ -1134,8 +1134,8 @@ describe('WorkoutsService', () => {
   });
 
   describe('cancel', () => {
-    it('should cancel a planned workout', async () => {
-      repository.findById.mockResolvedValue(plannedWorkout);
+    it.each(['PLANNED', 'IN_PROGRESS'] as const)('cancels a %s workout', async (status) => {
+      repository.findById.mockResolvedValue({ ...plannedWorkout, status });
       repository.update.mockResolvedValue({
         ...plannedWorkout,
         status: 'CANCELLED',
@@ -1149,7 +1149,7 @@ describe('WorkoutsService', () => {
         {
           id: 'workout-1',
           athleteId: athlete.id,
-          status: 'PLANNED',
+          status,
         },
         { status: 'CANCELLED' },
         expect.any(Function),
@@ -1168,16 +1168,17 @@ describe('WorkoutsService', () => {
       await expect(authorize({})).rejects.toThrow(ForbiddenException);
     });
 
-    it('should reject cancelling a completed workout', async () => {
-      repository.findById.mockResolvedValue({
-        ...plannedWorkout,
-        status: 'COMPLETED',
-      });
+    it.each(['COMPLETED', 'CANCELLED'] as const)(
+      'rejects cancelling a %s workout without writing',
+      async (status) => {
+        repository.findById.mockResolvedValue({ ...plannedWorkout, status });
 
-      await expect(service.cancel('workout-1', athlete)).rejects.toThrow(BadRequestException);
-
-      expect(repository.update).not.toHaveBeenCalled();
-    });
+        await expect(service.cancel('workout-1', athlete)).rejects.toThrow(
+          new BadRequestException('This workout cannot be cancelled'),
+        );
+        expect(repository.update).not.toHaveBeenCalled();
+      },
+    );
   });
 
   describe('concurrent updates', () => {
