@@ -1344,6 +1344,62 @@ describe('WorkoutsRepository.createFromProgram integration (e2e)', () => {
     });
   }
 
+  it('allows only one concurrent workout completion and retains the winning timestamp', async () => {
+    const fixture = await createFixture();
+    const workout = await createPlannedSnapshotWorkout(
+      fixture.athleteId,
+      fixture.exerciseId,
+      'Concurrent workout completion',
+    );
+    const started = await repository.startWorkout({
+      id: workout.id,
+      athleteId: fixture.athleteId,
+      startedAt: new Date('2030-01-15T10:00:00Z'),
+    });
+    expect(started?.status).toBe('IN_PROGRESS');
+    const set = started!.exercises[0]!.sets[0]!;
+    await prisma.workoutSet.update({
+      where: { id: set.id },
+      data: {
+        status: 'COMPLETED',
+        actualReps: 8,
+        completedAt: new Date('2030-01-15T10:30:00Z'),
+      },
+    });
+
+    const timestamps = [new Date('2030-01-15T11:00:00Z'), new Date('2030-01-15T11:01:00Z')];
+    const results = await Promise.all(
+      timestamps.map((completedAt) =>
+        repository.completeWorkout({
+          id: workout.id,
+          athleteId: fixture.athleteId,
+          completedAt,
+        }),
+      ),
+    );
+
+    expect(results.map((result) => result.status).sort()).toEqual(['COMPLETED', 'NOT_IN_PROGRESS']);
+    const winner = timestamps[results.findIndex((result) => result.status === 'COMPLETED')];
+    const stored = await prisma.workout.findUniqueOrThrow({
+      where: { id: workout.id },
+      select: { status: true, completedAt: true },
+    });
+    expect(stored).toEqual({ status: 'COMPLETED', completedAt: winner });
+
+    const replay = await repository.completeWorkout({
+      id: workout.id,
+      athleteId: fixture.athleteId,
+      completedAt: new Date('2030-01-15T11:02:00Z'),
+    });
+    expect(replay).toEqual({ status: 'NOT_IN_PROGRESS' });
+    expect(
+      await prisma.workout.findUniqueOrThrow({
+        where: { id: workout.id },
+        select: { status: true, completedAt: true },
+      }),
+    ).toEqual(stored);
+  });
+
   it.each(['GLOBAL', 'ATHLETE_CUSTOM', 'TRAINER_CUSTOM'] as const)(
     'does not start a planned manual workout with an archived %s exercise',
     async (source) => {

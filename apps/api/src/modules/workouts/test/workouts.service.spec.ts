@@ -9,6 +9,7 @@ import { Prisma } from '#prisma/client';
 
 import { ExercisesService } from '#src/modules/exercises/services/exercises.service';
 import { UsersService } from '#src/modules/users/services/users.service';
+import { WorkoutCompletionStateChanged } from '../application/workout-completion.js';
 import { WorkoutStartStateChanged } from '../application/workout-start.js';
 import { WorkoutsRepository } from '../repositories/workouts.repository.js';
 import { WorkoutsService } from '../services/workouts.service.js';
@@ -1124,7 +1125,9 @@ describe('WorkoutsService', () => {
         status: 'INVALID_SETS',
       });
 
-      await expect(service.complete('workout-1', athlete)).rejects.toThrow(ConflictException);
+      await expect(service.complete('workout-1', athlete)).rejects.toThrow(
+        new ConflictException('Workout sets have changed. Reload and try again.'),
+      );
 
       expect(repository.completeWorkout).toHaveBeenCalledWith({
         id: 'workout-1',
@@ -1393,14 +1396,19 @@ describe('WorkoutsService', () => {
 
     it('converts a deleted workout during completion into conflict', async () => {
       repository.findById.mockResolvedValueOnce(completedSetsWorkout);
-      repository.completeWorkout.mockRejectedValueOnce(
-        new Prisma.PrismaClientKnownRequestError('Record missing', {
-          code: 'P2025',
-          clientVersion: '7.10.1',
-        }),
-      );
+      repository.completeWorkout.mockRejectedValueOnce(new WorkoutCompletionStateChanged());
 
-      await expect(service.complete(plannedWorkout.id, athlete)).rejects.toThrow(ConflictException);
+      await expect(service.complete(plannedWorkout.id, athlete)).rejects.toThrow(
+        new ConflictException('Workout state has changed. Reload and try again.'),
+      );
+    });
+
+    it('preserves unexpected completion errors', async () => {
+      repository.findById.mockResolvedValueOnce(completedSetsWorkout);
+      const error = new Error('Unexpected completion failure');
+      repository.completeWorkout.mockRejectedValueOnce(error);
+
+      await expect(service.complete(plannedWorkout.id, athlete)).rejects.toBe(error);
     });
 
     it('permits cancelling an active workout using its exact previous status', async () => {
