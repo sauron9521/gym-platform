@@ -371,11 +371,12 @@ describe('Published training program integrity (PostgreSQL)', () => {
         expect(holder).toBeDefined();
 
         publication = versions.publishVersion(data.programId, data.versionId).then(
-          (result) => (result?.status === 'PUBLISHED' ? 'PUBLISHED' : 'OTHER'),
+          (result) =>
+            result?.status === 'PUBLISHED' ? ('PUBLISHED' as const) : ('OTHER' as const),
           (error: unknown) =>
             error instanceof ProgramPublicationError && error.code === 'EMPTY_EXERCISE'
-              ? 'DENIED'
-              : 'OTHER',
+              ? ('DENIED' as const)
+              : ('OTHER' as const),
         );
 
         for (let attempt = 0; attempt < 60; attempt++) {
