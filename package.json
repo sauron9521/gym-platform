@@ -33,7 +33,8 @@
     "turbo:plan": "turbo run lint typecheck build --dry=json",
     "architecture:cruise": "depcruise --config .dependency-cruiser.cjs --include-only \"^(apps|packages|tooling)/[^/]+/src/\" --output-type err apps packages tooling",
     "architecture:cruise:named": "node scripts/dependency-cruiser-named-imports.mjs",
-    "architecture:cruise:relative": "node scripts/dependency-cruiser-relative-imports.mjs"
+    "architecture:cruise:relative": "node scripts/dependency-cruiser-relative-imports.mjs",
+    "architecture:cruise:boundaries": "node scripts/dependency-cruiser-workspace-imports.mjs"
   },
   "devDependencies": {
     "dependency-cruiser": "18.9.0",
