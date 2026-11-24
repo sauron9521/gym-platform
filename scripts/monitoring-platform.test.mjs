@@ -88,3 +88,14 @@ test('CI only validates monitoring offline and never enables privileged monitori
   assert.match(ci, /promtool/);
   assert.doesNotMatch(ci, /systemctl enable|systemctl start|docker compose up.*production/);
 });
+
+test('manual shadow collectors use compatible single-file Docker log rotation', async () => {
+  const workflow = await read('.github/workflows/monitoring-resource-shadow.yml');
+  const logOptions = workflow.split('\n').filter((line) => line.includes('--log-driver local'));
+  assert.equal(logOptions.length, 2);
+  for (const line of logOptions) {
+    assert.match(line, /--log-opt max-size=5m(?:\s|$)/);
+    assert.match(line, /--log-opt max-file=1(?:\s|$)/);
+    assert.match(line, /--log-opt compress=false(?:\s|$)/);
+  }
+});
