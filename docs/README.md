@@ -25,6 +25,10 @@ This index groups developer-facing API documentation and operational runbooks. P
 - [Generated API client](../packages/api-client/README.md) — OpenAPI-to-TypeScript generation
 - [Local development setup (Linux/macOS and Windows)](../infra/docker/README.md)
 
+## Development and quality
+
+- [Development and CI guides](development/README.md) — testing, affected workspaces, pre-push, dependency boundaries and build environment
+
 ## Migration and quality
 
 - [Custom script replacement audit](custom-scripts-replacement-audit.md) — complete top-level scripts inventory, safe tool alternatives and one-PR migration order

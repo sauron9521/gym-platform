@@ -95,7 +95,7 @@ The initial precheck may provide fast feedback, but cannot replace the locked re
 
 ## Guardrails and testing baseline
 
-Reuse current scripts; [Dependency Cruiser integration](../dependency-cruiser-pilot.md) explains the workspace graph gate.
+Reuse current scripts; [Dependency Cruiser integration](../development/dependency-cruiser-pilot.md) explains the workspace graph gate.
 
 - `pnpm --filter @gym/api architecture:check`: existing structural/controller registration conventions.
 - `pnpm --filter @gym/api architecture:deps`: feature import, Nest module and runtime/provider dependency checks.
