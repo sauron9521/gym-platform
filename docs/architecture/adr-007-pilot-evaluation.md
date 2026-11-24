@@ -1,6 +1,6 @@
 # ADR-007 pilot evaluation — training program publication (CA05)
 
-- **Status:** Evidence recorded; recommendation GO for limited expansion; explicit owner decision pending.
+- **Status:** Owner-approved GO for limited expansion (2026-11-24); documentation merge pending.
 - **Date:** 2026-11-24.
 - **Gate:** [CA05 #723](https://github.com/sauron9521/gym-platform/issues/723), [Epic #718](https://github.com/sauron9521/gym-platform/issues/718).
 - **Decision standard:** [ADR-007](adr-007-pragmatic-clean-architecture.md).
@@ -80,7 +80,7 @@ Compared the full repository publication method at the pinned baseline and merge
 
 ## Recommendation and limits
 
-**Recommend GO for limited, incremental expansion, subject to explicit owner approval.** Independent business logic and typed tests justify the boundary in this complex write scenario. The extra four files, +130 source lines and factory/mapper composition are material overhead; do not reproduce them for trivial CRUD, read projections or mechanical folder migration.
+**Owner-approved GO for limited, incremental expansion (2026-11-24).** Independent business logic and typed tests justify the boundary in this complex write scenario. The extra four files, +130 source lines and factory/mapper composition are material overhead; do not reproduce them for trivial CRUD, read projections or mechanical folder migration.
 
 Remaining debt and safeguards:
 
@@ -91,7 +91,7 @@ Remaining debt and safeguards:
 - Retain targeted error mapping; do not catch all Prisma errors and relabel them conflicts.
 - No new libraries, generic repository, global UoW, blanket CQRS or microservices. Existing product/release gates retain priority.
 
-## Proposed expansion (not authorized yet)
+## Approved expansion (start after CA05 documentation merge)
 
 1. [CA06 #724](https://github.com/sauron9521/gym-platform/issues/724): inventory remaining Training Programs version/assignment paths. Start with draft duration/update only if the invariant and concurrency/error boundary justify it; retain simple reads and small CRUD. Coordinate #366, #563 and #568.
 2. [CA07 #725](https://github.com/sauron9521/gym-platform/issues/725): prioritize workout state transitions and set concurrency, reuse #329 and coordinate #344, #650 and #324. Do not duplicate existing mobile/revision or read-contract work.
@@ -102,7 +102,6 @@ Each selected operation requires a small PR, a measured before/after inventory, 
 
 ## Owner decision gate
 
-- **Decision:** PENDING — no authorization to start CA06–CA09.
-- **Suggested decision:** GO with the limits above.
-- Alternatives: REVISE the pilot before expansion; NO-GO (retain useful pure policy/guardrails, defer wider work).
-- Record the owner's explicit decision in this evaluation and #723, then verify the documentation PR and close #723 only after the gate is satisfied. A documentation merge by itself is not an explicit GO.
+- **Decision:** GO — explicitly approved by the owner on 2026-11-24 (15:07 Europe/Kyiv): limited, incremental scaling of Pragmatic Clean Architecture.
+- **Scope:** CA06–CA09 only as described above; one justified complex write operation per PR, preserve simple CRUD and read projections, stop or revise if overhead exceeds benefit.
+- **Gate:** Record the decision in #723 and PR #738. Begin CA06 only after the documentation PR has passed CI, been manually merged by the owner and CA05 completion is verified. No implementation expansion or release authorization in this PR.
