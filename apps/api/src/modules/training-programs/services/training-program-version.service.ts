@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   ConflictException,
+  Inject,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -8,7 +9,10 @@ import {
 import { Prisma } from '#prisma/client';
 
 import { TrainingProgramVersionRepository } from '../repositories/training-program-version.repository.js';
-import { assertPublishableVersion } from '../policies/training-program-publication.policy.js';
+import type { PublishProgramUseCase } from '../application/publish-program.use-case.js';
+import { rethrowPublicationHttpError } from '../policies/training-program-publication.policy.js';
+import { PUBLISH_PROGRAM_USE_CASE } from '../publication.provider.js';
+import type { TrainingProgramVersionPayload } from '../types/training-program-payload.types.js';
 import { TrainingProgramCrudService } from './training-program-crud.service.js';
 
 import type {
@@ -22,6 +26,8 @@ export class TrainingProgramVersionService {
   constructor(
     private readonly repository: TrainingProgramVersionRepository,
     private readonly crudService: TrainingProgramCrudService,
+    @Inject(PUBLISH_PROGRAM_USE_CASE)
+    private readonly publication: PublishProgramUseCase<TrainingProgramVersionPayload>,
   ) {}
 
   // ===========================================================================
@@ -173,27 +179,11 @@ export class TrainingProgramVersionService {
   // PUBLISH VERSION
   // ===========================================================================
   async publishVersion(programId: string, versionId: string, actor: TrainingProgramActor) {
-    const program = await this.crudService.findOne(programId, actor);
-
-    if (program.status === 'ARCHIVED') {
-      throw new ConflictException('An archived program cannot be published');
+    try {
+      return await this.publication.execute({ programId, versionId, actor });
+    } catch (error) {
+      return rethrowPublicationHttpError(error);
     }
-
-    const version = await this.findVersion(programId, versionId, actor);
-
-    if (version.status !== 'DRAFT') {
-      throw new ConflictException('Only draft versions can be published');
-    }
-
-    assertPublishableVersion(version);
-
-    const published = await this.repository.publishVersion(programId, versionId);
-
-    if (!published) {
-      throw new ConflictException('Version state has changed. Reload and try again.');
-    }
-
-    return published;
   }
 
   // ===========================================================================

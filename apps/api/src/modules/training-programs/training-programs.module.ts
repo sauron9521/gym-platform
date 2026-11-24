@@ -11,6 +11,7 @@ import { TrainingProgramWorkoutsController } from './controllers/training-progra
 import { TrainingProgramExercisesController } from './controllers/training-program-exercises.controller.js';
 import { TrainingProgramSetsController } from './controllers/training-program-sets.controller.js';
 import { TrainingProgramsService } from './services/training-programs.service.js';
+import { createPublishProgramUseCase, PUBLISH_PROGRAM_USE_CASE } from './publication.provider.js';
 
 import { TrainingProgramCrudRepository } from './repositories/training-program-crud.repository.js';
 import { TrainingProgramVersionRepository } from './repositories/training-program-version.repository.js';
@@ -48,6 +49,11 @@ import { TrainingProgramAssignmentService } from './services/training-program-as
     TrainingProgramSetService,
     TrainingProgramCrudService,
     TrainingProgramVersionService,
+    {
+      provide: PUBLISH_PROGRAM_USE_CASE,
+      useFactory: createPublishProgramUseCase,
+      inject: [TrainingProgramVersionRepository, TrainingProgramCrudService],
+    },
     TrainingProgramAssignmentService,
 
     TrainingProgramCrudRepository,

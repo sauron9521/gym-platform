@@ -1,7 +1,15 @@
 import { BadRequestException } from '@nestjs/common';
 
-import type { PublishableVersion } from '../domain/publication.policy.js';
-import { assertPublishableVersion } from '../policies/training-program-publication.policy.js';
+import { assertPublishableVersion, type PublishableVersion } from '../domain/publication.policy.js';
+import { rethrowPublicationHttpError } from '../policies/training-program-publication.policy.js';
+
+function assertHttpPublishableVersion(version: PublishableVersion): void {
+  try {
+    assertPublishableVersion(version);
+  } catch (error) {
+    rethrowPublicationHttpError(error);
+  }
+}
 
 const cases: Array<{ version: PublishableVersion; message: string }> = [
   {
@@ -31,7 +39,7 @@ const cases: Array<{ version: PublishableVersion; message: string }> = [
 describe('Publication policy HTTP compatibility', () => {
   it.each(cases)('preserves the 400 response for $message', ({ version, message }) => {
     try {
-      assertPublishableVersion(version);
+      assertHttpPublishableVersion(version);
       throw new Error('Expected publication to fail');
     } catch (error) {
       expect(error).toBeInstanceOf(BadRequestException);
@@ -52,6 +60,6 @@ describe('Publication policy HTTP compatibility', () => {
         throw unexpected;
       },
     };
-    expect(() => assertPublishableVersion(version)).toThrow(unexpected);
+    expect(() => assertHttpPublishableVersion(version)).toThrow(unexpected);
   });
 });

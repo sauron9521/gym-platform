@@ -5,6 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Prisma } from '#prisma/client';
+import { createPublishProgramUseCase } from '../publication.provider.js';
 import { TrainingProgramVersionService } from '../services/training-program-version.service.js';
 import type { TrainingProgramActor } from '../types/training-program.types.js';
 
@@ -43,7 +44,11 @@ describe('TrainingProgramVersionService', () => {
 
   beforeEach(() => {
     vi.resetAllMocks();
-    service = new TrainingProgramVersionService(repository as never, crud as never);
+    service = new TrainingProgramVersionService(
+      repository as never,
+      crud as never,
+      createPublishProgramUseCase(repository as never, crud as never),
+    );
     crud.findOne.mockResolvedValue({ id: ids[0], status: 'DRAFT' });
     repository.findVersionById.mockResolvedValue(draft());
   });
@@ -306,6 +311,28 @@ describe('TrainingProgramVersionService', () => {
   it('maps an obsolete draft discovered during the publishing transaction to conflict', async () => {
     repository.publishVersion.mockResolvedValue(null);
     await expect(service.publishVersion(...ids, trainer)).rejects.toBeInstanceOf(ConflictException);
+  });
+
+  it('rechecks access before reading a version and does not publish after revocation', async () => {
+    crud.findOne
+      .mockResolvedValueOnce({ id: ids[0], status: 'DRAFT' })
+      .mockRejectedValueOnce(new ForbiddenException());
+    await expect(service.publishVersion(...ids, trainer)).rejects.toBeInstanceOf(
+      ForbiddenException,
+    );
+    expect(repository.findVersionById).not.toHaveBeenCalled();
+    expect(repository.publishVersion).not.toHaveBeenCalled();
+  });
+
+  it('preserves the scoped version not-found response', async () => {
+    repository.findVersionById.mockResolvedValue(null);
+    await expect(service.publishVersion(...ids, trainer)).rejects.toThrow(
+      new NotFoundException('Training program version not found'),
+    );
+    expect(repository.findVersionById).toHaveBeenCalledExactlyOnceWith(ids[1], {
+      programId: ids[0],
+    });
+    expect(repository.publishVersion).not.toHaveBeenCalled();
   });
 
   it('does not allow an unauthorized trainer to publish any version', async () => {
