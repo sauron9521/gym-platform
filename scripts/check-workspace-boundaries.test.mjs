@@ -97,3 +97,52 @@ test('reject shared package dependency cycles', () => {
     );
   });
 });
+
+test('tooling workspaces participate in manifest dependency and duplicate-name checks', () => {
+  withFixture(({ root }) => {
+    const tools = workspace(root, 'tooling', 'checks', '@gym/checks', {
+      '@gym/api': 'workspace:*',
+    });
+    const errors = checkWorkspaceBoundaries(root);
+    assert.ok(errors.some((message) => message.includes('must not depend on app @gym/api')));
+
+    writeFileSync(join(tools, 'package.json'), JSON.stringify({ name: '@gym/domain' }));
+    assert.ok(
+      checkWorkspaceBoundaries(root).some((message) =>
+        message.includes('duplicate workspace package name'),
+      ),
+    );
+  });
+});
+
+test('tooling packages participate in shared dependency cycle detection', () => {
+  withFixture(({ root, domain }) => {
+    workspace(root, 'tooling', 'checks', '@gym/checks', { '@gym/domain': 'workspace:*' });
+    writeFileSync(
+      join(domain, 'package.json'),
+      JSON.stringify({ name: '@gym/domain', dependencies: { '@gym/checks': 'workspace:*' } }),
+    );
+    assert.ok(
+      checkWorkspaceBoundaries(root).some((message) =>
+        message.includes('Shared package dependency cycle'),
+      ),
+    );
+  });
+});
+
+test.each([
+  ['app to shared package', 'apps/web', '../../../packages/domain/src/index'],
+  ['package to tooling', 'packages/domain', '../../../tooling/checks/src/index'],
+  ['tooling to package', 'tooling/checks', '../../../packages/domain/src/index'],
+  ['tooling to app', 'tooling/checks', '../../../apps/web/src/index'],
+])('reject cross-workspace relative import: %s', (_name, source, imported) => {
+  withFixture(({ root }) => {
+    workspace(root, 'tooling', 'checks', '@gym/checks');
+    writeFileSync(join(root, source, 'src', 'index.ts'), "import '" + imported + "';\n");
+    assert.ok(
+      checkWorkspaceBoundaries(root).some((message) =>
+        message.includes('cross-workspace relative import'),
+      ),
+    );
+  });
+});
