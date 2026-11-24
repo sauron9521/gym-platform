@@ -83,7 +83,7 @@ The manual-only `staging-ghcr.yml` workflow verifies published runtime and
 Prisma migration image digests, exercises health/auth/profile HTTP flows
 against disposable PostgreSQL 17 and Redis 7, and tests migration replay
 and same-digest restart. It does **not** deploy or approve production.
-See [staging operator guide](../../docs/staging-ghcr-monorepo.md).
+See [staging operator guide](../../docs/operations/staging-ghcr-monorepo.md).
 
 ## Module documentation
 

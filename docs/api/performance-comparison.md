@@ -113,8 +113,12 @@ numeric before/after values, absolute deltas and percentage changes.
 Negative deltas mean the measured value became lower, which is not always
 an improvement (for example, smaller responses can indicate missing data).
 If the before value is zero, the percent change is `null` rather than
-an invented percentage. No fixture labels, SQL text or response bodies are
-copied to the result.
+an invented percentage. A non-finite calculated change is rejected instead
+of silently becoming JSON `null`. Decoded byte and SQL query counts must
+be nonnegative safe integers; commit IDs and fixture fingerprints must be
+strings. Comparison and repeated A/B validation share the same delta
+arithmetic and retain the existing rounding precision. No fixture labels,
+SQL text or response bodies are copied to the result.
 
 Only the following metrics are compared:
 
