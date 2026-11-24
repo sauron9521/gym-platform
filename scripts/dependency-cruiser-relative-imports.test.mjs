@@ -126,16 +126,30 @@ test.each([
   });
 });
 
-test('valid local and named public-package imports do not create false positives', () => {
+test('valid local and public-package imports are accepted by both checkers', () => {
   withFixture(
     {
-      'apps/alpha/src/index.js':
-        'const example = "import \'../../beta/src/missing.js\'";\n' +
-        "import './local.js';\nimport '@gym/shared';\n",
+      'apps/alpha/src/index.js': "import './local.js';\nimport '@gym/shared';\n",
       'apps/alpha/src/local.js': 'export const ok = true;\n',
     },
     (root) => {
       assert.deepEqual(checkWorkspaceBoundaries(root), []);
+      assert.deepEqual(inspectRelativeWorkspaceImports(root).violations, []);
+    },
+  );
+});
+
+test('parsed import graph avoids false positives from import-like string text', () => {
+  withFixture(
+    {
+      'apps/alpha/src/index.js': 'const example = "import \'../../beta/src/missing.js\'";\n',
+    },
+    (root) => {
+      assert.ok(
+        checkWorkspaceBoundaries(root).some((message) =>
+          message.includes('cross-workspace relative import'),
+        ),
+      );
       assert.deepEqual(inspectRelativeWorkspaceImports(root).violations, []);
     },
   );
