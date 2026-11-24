@@ -42,7 +42,10 @@ test('Vitest discovers real design-token spec.mts and Web mutation .test.ts suit
   assert.match(web, /test\/components\/\*\*\/\*\.test\.tsx/);
   assert.match(web, /test\/components\/\*\*\/\*\.test\.ts/);
   assert.match(read('packages/design-tokens/test/ovranto-theme.spec.mts'), /WCAG AA/);
-  assert.match(read('packages/design-tokens/test/theme-parity.spec.mts'), /generates the checked-in/);
+  assert.match(
+    read('packages/design-tokens/test/theme-parity.spec.mts'),
+    /generates the checked-in/,
+  );
   assert.match(
     read('apps/web/test/components/workout-set-mutation-feedback.test.ts'),
     /persisted matching set response/,
