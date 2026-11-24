@@ -4,18 +4,18 @@ The API lives in `apps/api` and uses NestJS 12 (ESM), Prisma 7/PostgreSQL, Redis
 
 ## Feature modules
 
-| Module                                            | Responsibilities                                                                  |
-| ------------------------------------------------- | --------------------------------------------------------------------------------- |
-| [Authentication](modules/auth.md)                 | Registration, sign-in, sessions, tokens, email verification and password recovery |
-| [Users](modules/users.md)                         | Current-user profile and avatar endpoints                                         |
-| [Exercises](modules/exercises.md)                 | Exercise library, private exercises and trainer access                            |
-| [Body measurements](modules/body-measurements.md) | Measurements and statistics                                                       |
-| [Workouts](modules/workouts.md)                   | Workout lifecycle, sets and workout creation from programs                        |
-| [Workout analytics](modules/workout-analytics.md) | Progress summary and per-exercise analytics                                       |
-| [Trainer–athletes](modules/trainer-athletes.md)   | Trainer/athlete relationships and termination                                     |
-| [Training programs](modules/training-programs.md) | Programs, versions, workouts, exercises, sets and assignments                     |
-
-See [Trainer onboarding persistence](modules/trainer-onboarding.md) for the M05/#309 schema-only foundation (no HTTP routes yet).
+| Module                                                            | Responsibilities                                                                  |
+| ----------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| [Authentication](modules/auth.md)                                 | Registration, sign-in, sessions, tokens, email verification and password recovery |
+| [Users](modules/users.md)                                         | Current-user profile, preferences, capabilities, avatars and Admin account reads  |
+| [Exercises](modules/exercises.md)                                 | Exercise library, private exercises and trainer access                            |
+| [Body measurements](modules/body-measurements.md)                 | Measurements and statistics                                                       |
+| [Workouts](modules/workouts.md)                                   | Workout lifecycle, sets and workout creation from programs                        |
+| [Workout analytics](modules/workout-analytics.md)                 | Progress summary and per-exercise analytics                                       |
+| [Trainer–athletes](modules/trainer-athletes.md)                   | Trainer/athlete relationships and termination                                     |
+| [Training programs](modules/training-programs.md)                 | Programs, versions, workouts, exercises, sets and assignments                     |
+| [Trainer onboarding](modules/trainer-onboarding.md)               | Applicant submissions, operator review and TrainerProfile lifecycle               |
+| [Account deletion requests](modules/account-deletion-requests.md) | Authenticated, confirmed deletion request intake and receipt; not actual deletion |
 
 Infrastructure includes `src/infra/database` (Prisma), `src/infra/health`, `src/infra/openapi` and common cross-cutting HTTP/config components. These are **not** user-facing feature modules.
 
@@ -29,7 +29,7 @@ Infrastructure includes `src/infra/database` (Prisma), `src/infra/health`, `src/
 
 ## Nest feature dependency boundaries (E14 / #654)
 
-The nine API feature modules form an acyclic `@Module.imports` graph; the
+The API feature modules form an acyclic `@Module.imports` graph; the
 `apps/api/scripts/check-feature-dependencies.mjs` AST guard also rejects
 cross-feature access to private repositories, policies, controllers and selects.
 Pure functions/types exposed through a feature's explicit `public-api.ts`
