@@ -1,6 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '#src/infra/database/index';
 import { Prisma } from '#prisma/client';
+import type {
+  AssignmentCompletionResult,
+  CompleteProgramAssignment,
+} from '../application/assignment-completion.js';
 import {
   AssignmentCreationError,
   type CreateProgramAssignment,
@@ -459,11 +463,9 @@ export class TrainingProgramAssignmentRepository {
     });
   }
 
-  async completeAssignmentIfNoUnfinishedWorkouts(input: {
-    assignmentId: string;
-    athleteId: string;
-    completedAt: Date;
-  }) {
+  async completeAssignmentIfNoUnfinishedWorkouts(
+    input: CompleteProgramAssignment,
+  ): Promise<AssignmentCompletionResult<TrainingProgramAssignmentPayload>> {
     return this.prisma.$transaction(async (tx) => {
       // Lock the assignment and the actual athlete account together.
       // An admin promotion/deletion cannot race completion after this check.

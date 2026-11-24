@@ -226,6 +226,44 @@ describe('TrainingProgramAssignmentRepository eligibility (PostgreSQL)', () => {
     }
   });
 
+  it('allows only one concurrent completion and retains the winning timestamp', async () => {
+    const assignment = await createAssignment();
+    expect(assignment).not.toBeNull();
+
+    const assignmentId = assignment!.id;
+    const timestamps = [new Date('2026-01-01T10:00:00Z'), new Date('2026-01-01T10:01:00Z')];
+    const results = await Promise.all(
+      timestamps.map((completedAt) =>
+        repository.completeAssignmentIfNoUnfinishedWorkouts({
+          assignmentId,
+          athleteId,
+          completedAt,
+        }),
+      ),
+    );
+
+    expect(results.map((result) => result.status).sort()).toEqual(['COMPLETED', 'NOT_ACTIVE']);
+    const winner = results.findIndex((result) => result.status === 'COMPLETED');
+    const saved = await prisma.trainingProgramAssignment.findUniqueOrThrow({
+      where: { id: assignmentId },
+      select: { status: true, completedAt: true },
+    });
+    expect(saved).toEqual({ status: 'COMPLETED', completedAt: timestamps[winner] });
+
+    const replay = await repository.completeAssignmentIfNoUnfinishedWorkouts({
+      assignmentId,
+      athleteId,
+      completedAt: new Date('2026-01-01T10:02:00Z'),
+    });
+    expect(replay).toEqual({ status: 'NOT_ACTIVE' });
+    expect(
+      await prisma.trainingProgramAssignment.findUniqueOrThrow({
+        where: { id: assignmentId },
+        select: { status: true, completedAt: true },
+      }),
+    ).toEqual(saved);
+  });
+
   it('allows a newly approved ATHLETE-role trainer to cancel a current assignment', async () => {
     const assignment = await createAssignment();
     expect(assignment).not.toBeNull();
