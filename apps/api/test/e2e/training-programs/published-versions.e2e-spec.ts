@@ -183,6 +183,46 @@ describe('Published training program versions (HTTP + PostgreSQL)', () => {
     ).toEqual({ status: 'DRAFT', publishedAt: null });
   });
 
+  it('preserves authorization and archived-program publication responses', async () => {
+    const draft = await prisma.trainingProgramVersion.findFirstOrThrow({
+      where: { programId: emptyProgramId, status: 'DRAFT' },
+      select: { id: true },
+    });
+    const publishPath = `/training-programs/${emptyProgramId}/versions/${draft.id}/publish`;
+    const http = request(app!.getHttpServer());
+
+    await http.post(publishPath).expect(401);
+    await http.post(publishPath).set('Cookie', athleteCookie).expect(403);
+    await http.post(publishPath).set('Cookie', otherTrainerCookie).expect(404);
+
+    await prisma.trainingProgram.update({
+      where: { id: emptyProgramId },
+      data: { status: 'ARCHIVED' },
+    });
+    try {
+      const archived = await http.post(publishPath).set('Cookie', ownerCookie).expect(409);
+      expect(archived.body).toEqual({
+        statusCode: 409,
+        code: 'CONFLICT',
+        message: 'An archived program cannot be published',
+        error: 'Conflict',
+        requestId: expect.any(String),
+        timestamp: expect.any(String),
+      });
+      expect(
+        await prisma.trainingProgramVersion.findUniqueOrThrow({
+          where: { id: draft.id },
+          select: { status: true, publishedAt: true },
+        }),
+      ).toEqual({ status: 'DRAFT', publishedAt: null });
+    } finally {
+      await prisma.trainingProgram.update({
+        where: { id: emptyProgramId },
+        data: { status: 'DRAFT' },
+      });
+    }
+  });
+
   it('enforces trainer access and rejects invalid pagination input', async () => {
     const http = request(app!.getHttpServer());
     const path = publishedPath(largeProgramId);

@@ -14,6 +14,7 @@ import { TrainingProgramWorkoutService } from '../services/training-program-work
 import { TrainingProgramExerciseService } from '../services/training-program-exercise.service.js';
 import { TrainingProgramSetService } from '../services/training-program-set.service.js';
 import { TrainingProgramCrudService } from '../services/training-program-crud.service.js';
+import { createPublishProgramUseCase } from '../publication.provider.js';
 import { TrainingProgramVersionService } from '../services/training-program-version.service.js';
 import { TrainingProgramAssignmentService } from '../services/training-program-assignment.service.js';
 import {
@@ -223,7 +224,11 @@ describe('TrainingProgramsService', () => {
 
     const crudService = new TrainingProgramCrudService(crudRepositoryMock, accessService);
 
-    const versionService = new TrainingProgramVersionService(versionRepositoryMock, crudService);
+    const versionService = new TrainingProgramVersionService(
+      versionRepositoryMock,
+      crudService,
+      createPublishProgramUseCase(versionRepositoryMock, crudService),
+    );
 
     const exercisesService = exercisesServiceMock as unknown as ExercisesService;
 

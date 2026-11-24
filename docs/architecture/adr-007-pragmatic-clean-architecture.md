@@ -121,6 +121,12 @@ No external package or shared contract is approved for this pilot; any needed pu
 
 Legacy `services/`, `repositories/`, `policies/`, `types/`, `selects/`, `controllers/` and `dto/` paths, and other features, are not opted into the new inward-layer rule. Existing workspace/feature rules continue unchanged; there is no per-file bypass list. Expanding this scope requires a reviewed change to the explicit feature set. The new rules are exercised by existing `test:architecture` and `architecture:deps` CI steps; no additional checker or CI job is introduced.
 
+### CA04 publication composition
+
+The pilot uses the plain `PublishProgramUseCase<Result>` and operation-specific `PublishProgramPort<Result>`. The port carries actor and resource identifiers and exposes only two authorized reads and one atomic write. The factory in `publication.provider.ts` is registered with a symbol token in the existing Nest feature module; the existing version service delegates publication and maps typed conflicts/domain errors to the current HTTP exceptions. Both original live access checks remain in the adapter.
+
+The result type is opaque to the use case: the composition boundary supplies the existing repository projection unchanged, preserving Decimal, dates and response shape without a second persistence model. The repository retains the original row locks, locked domain validation, source checks, conditional updates and rollback. Known publication failures become typed domain errors or the existing stale/null outcome; unrelated or unexpected Prisma errors retain the established global error mapping rather than being mislabeled as publication conflicts. Other version operations remain legacy. No new schema, packages or global filter changes.
+
 ## Shared domain ownership
 
 [ADR-006](adr-006-shared-package-boundaries.md) and [domain package README](../../packages/domain/README.md) define `@gym/domain` as the framework-neutral home of existing workout transition/precondition and set-progress helpers. It is not a general shared server domain package. Keep publication rules API-local unless stable real cross-runtime consumers justify promotion. Reuse existing workout adoption issue [#329](https://github.com/sauron9521/gym-platform/issues/329); server access control, locking and writes remain authoritative.

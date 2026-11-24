@@ -3,6 +3,7 @@ const publicationMessages = {
   WORKOUT_OUTSIDE_DURATION: 'A workout week cannot exceed the program duration',
   EMPTY_WORKOUT: 'Every program workout must contain at least one exercise',
   EMPTY_EXERCISE: 'Every program exercise must contain at least one set',
+  UNAVAILABLE_EXERCISES: 'A program references unavailable exercises',
 } as const;
 
 export type ProgramPublicationErrorCode = keyof typeof publicationMessages;

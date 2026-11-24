@@ -1,11 +1,12 @@
 import { randomUUID } from 'node:crypto';
 
-import { BadRequestException, type INestApplication } from '@nestjs/common';
+import type { INestApplication } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { Test } from '@nestjs/testing';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { PrismaModule, PrismaService } from '../../../src/infra/database/index.js';
+import { ProgramPublicationError } from '../../../src/modules/training-programs/domain/publication.policy.js';
 import { TrainingProgramVersionRepository } from '../../../src/modules/training-programs/repositories/training-program-version.repository.js';
 import { TrainingProgramExerciseRepository } from '../../../src/modules/training-programs/repositories/training-program-exercise.repository.js';
 import { TrainingProgramAssignmentRepository } from '../../../src/modules/training-programs/repositories/training-program-assignment.repository.js';
@@ -196,7 +197,7 @@ describe('Published training program integrity (PostgreSQL)', () => {
     });
 
     await expect(versions.publishVersion(data.programId, data.versionId)).rejects.toThrow(
-      new BadRequestException('Every program exercise must contain at least one set'),
+      new ProgramPublicationError('EMPTY_EXERCISE'),
     );
 
     const [version, program] = await Promise.all([
@@ -338,6 +339,84 @@ describe('Published training program integrity (PostgreSQL)', () => {
     },
   );
 
+  it('serializes competing publications so only one can commit', async () => {
+    const data = await fixture();
+    const results = await Promise.all([
+      versions.publishVersion(data.programId, data.versionId),
+      versions.publishVersion(data.programId, data.versionId),
+    ]);
+    expect(results.filter((result) => result === null)).toHaveLength(1);
+    expect(results.filter((result) => result?.status === 'PUBLISHED')).toHaveLength(1);
+    expect(
+      await prisma.trainingProgramVersion.findUniqueOrThrow({
+        where: { id: data.versionId },
+        select: { status: true },
+      }),
+    ).toEqual({ status: 'PUBLISHED' });
+  }, 20_000);
+
+  it('rechecks draft content after a competing edit commits under the version lock', async () => {
+    const data = await fixture();
+    let publication: Promise<'PUBLISHED' | 'DENIED' | 'OTHER'> | undefined;
+    let wasBlocked = false;
+
+    await prisma.$transaction(
+      async (tx) => {
+        const [holder] = await tx.$queryRaw<Array<{ pid: number }>>`
+          SELECT pg_backend_pid()::integer AS pid
+          FROM "training_program_versions"
+          WHERE "id" = ${data.versionId}
+          FOR UPDATE
+        `;
+        expect(holder).toBeDefined();
+
+        publication = versions.publishVersion(data.programId, data.versionId).then(
+          (result) =>
+            result?.status === 'PUBLISHED' ? ('PUBLISHED' as const) : ('OTHER' as const),
+          (error: unknown) =>
+            error instanceof ProgramPublicationError && error.code === 'EMPTY_EXERCISE'
+              ? ('DENIED' as const)
+              : ('OTHER' as const),
+        );
+
+        for (let attempt = 0; attempt < 60; attempt++) {
+          const [state] = await prisma.$queryRaw<Array<{ blocked: boolean }>>`
+            SELECT EXISTS (
+              SELECT 1 FROM pg_stat_activity AS activity
+              WHERE activity.datname = current_database()
+                AND ${holder!.pid} = ANY(pg_blocking_pids(activity.pid))
+            ) AS blocked
+          `;
+          if (state?.blocked) {
+            wasBlocked = true;
+            break;
+          }
+          await new Promise<void>((resolve) => setTimeout(resolve, 50));
+        }
+
+        await tx.trainingProgramSet.deleteMany({
+          where: { programExerciseId: data.programExerciseId },
+        });
+      },
+      { timeout: 15_000 },
+    );
+
+    expect(wasBlocked).toBe(true);
+    expect(await publication).toBe('DENIED');
+    expect(
+      await prisma.trainingProgramVersion.findUniqueOrThrow({
+        where: { id: data.versionId },
+        select: { status: true, publishedAt: true },
+      }),
+    ).toEqual({ status: 'DRAFT', publishedAt: null });
+    expect(
+      await prisma.trainingProgram.findUniqueOrThrow({
+        where: { id: data.programId },
+        select: { status: true },
+      }),
+    ).toEqual({ status: 'DRAFT' });
+  }, 20_000);
+
   it('serializes publishing against an archive that commits first', async () => {
     const data = await fixture();
     let publishPromise: Promise<'PUBLISHED' | 'DENIED' | 'OTHER'> | undefined;
@@ -357,7 +436,9 @@ describe('Published training program integrity (PostgreSQL)', () => {
           (result) =>
             result?.status === 'PUBLISHED' ? ('PUBLISHED' as const) : ('OTHER' as const),
           (error: unknown) =>
-            error instanceof BadRequestException ? ('DENIED' as const) : ('OTHER' as const),
+            error instanceof ProgramPublicationError && error.code === 'UNAVAILABLE_EXERCISES'
+              ? ('DENIED' as const)
+              : ('OTHER' as const),
         );
 
         for (let attempt = 0; attempt < 60; attempt++) {

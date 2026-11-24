@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { assertPublishableVersion } from '../policies/training-program-publication.policy.js';
+import { assertPublishableVersion, ProgramPublicationError } from '../domain/publication.policy.js';
 import { PrismaService } from '#src/infra/database/index';
 import { trainingProgramVersionSelect } from '../selects/training-program-version.select.js';
 import { trainingProgramDraftAccessSelect } from '../selects/training-program-access.select.js';
@@ -7,6 +7,9 @@ import { trainingProgramVersionListSelect } from '../selects/training-program-qu
 import { Prisma } from '#prisma/client';
 import type { TrainingProgramVersionPayload } from '../types/training-program-payload.types.js';
 import type { PublishedTrainingProgramVersionsQuery } from '../types/training-program.types.js';
+
+// A failed parent update must roll back the version write before returning null.
+class PublicationRolledBack extends Error {}
 
 @Injectable()
 export class TrainingProgramVersionRepository {
@@ -326,7 +329,7 @@ export class TrainingProgramVersionRepository {
                   exercise.createdById !== program.trainerId)),
           )
         ) {
-          throw new BadRequestException('A program references unavailable exercises');
+          throw new ProgramPublicationError('UNAVAILABLE_EXERCISES');
         }
 
         const published = await tx.trainingProgramVersion.updateMany({
@@ -356,7 +359,7 @@ export class TrainingProgramVersionRepository {
         });
 
         if (programUpdate.count !== 1) {
-          throw new Error('PROGRAM_ARCHIVED');
+          throw new PublicationRolledBack();
         }
 
         return tx.trainingProgramVersion.findUnique({
@@ -365,7 +368,7 @@ export class TrainingProgramVersionRepository {
         });
       })
       .catch((error: unknown) => {
-        if (error instanceof Error && error.message === 'PROGRAM_ARCHIVED') {
+        if (error instanceof PublicationRolledBack) {
           return null;
         }
 
