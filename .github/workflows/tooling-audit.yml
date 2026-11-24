@@ -17,6 +17,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
+          fetch-depth: 0
       - name: Set up pnpm
         uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6
       - name: Set up Node.js 24
@@ -62,6 +63,42 @@ jobs:
           appendFileSync(process.env.GITHUB_STEP_SUMMARY, lines.join('\n') + '\n');
           console.log(lines.join('\n'));
           NODE
+      - name: Compare latest commit selection with Turborepo affected (advisory)
+        run: |
+          set -euo pipefail
+          base="$(git rev-parse HEAD^1)"
+          head="$(git rev-parse HEAD)"
+          TURBO_SCM_BASE="$base" TURBO_SCM_HEAD="$head" \
+            pnpm exec turbo run lint typecheck build --affected --dry=json \
+            > "$RUNNER_TEMP/turbo-affected-plan.json"
+          node scripts/ci-turbo-affected-shadow.mjs \
+            --base "$base" --head "$head" \
+            --plan "$RUNNER_TEMP/turbo-affected-plan.json" \
+            --output "$RUNNER_TEMP/turbo-affected-comparison.json"
+          node --input-type=module <<'NODE'
+          import { appendFileSync, readFileSync } from 'node:fs';
+
+          const report = JSON.parse(
+            readFileSync(process.env.RUNNER_TEMP + '/turbo-affected-comparison.json', 'utf8'),
+          );
+          const lines = [
+            '### Advisory Turbo affected vs ci-select (latest commit only)',
+            '',
+            'This comparison does not change PR routing or release gates.',
+            'Commit range: \`' + report.base.slice(0, 12) + '...'
+              + report.head.slice(0, 12) + '\`',
+            'Changed paths: ' + report.changedPaths.length,
+            'Selected application/client packages: ' + report.requiredPackages.length,
+            'Turbo task packages: ' + report.turboPackages.length,
+            'Potential missing packages in Turbo: '
+              + (report.missingFromTurbo.join(', ') || '(none)'),
+            'Extra application/client packages in Turbo: '
+              + (report.extraAppPackages.join(', ') || '(none)'),
+            '',
+            'Review the JSON artifact before considering any CI routing migration.',
+          ];
+          appendFileSync(process.env.GITHUB_STEP_SUMMARY, lines.join('\n') + '\n');
+          NODE
       - name: Upload bounded diagnostic artifacts
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
@@ -70,5 +107,7 @@ jobs:
             ${{ runner.temp }}/knip.txt
             ${{ runner.temp }}/architecture-workspace-imports.txt
             ${{ runner.temp }}/turbo-plan.json
+            ${{ runner.temp }}/turbo-affected-plan.json
+            ${{ runner.temp }}/turbo-affected-comparison.json
           if-no-files-found: error
           retention-days: 7
