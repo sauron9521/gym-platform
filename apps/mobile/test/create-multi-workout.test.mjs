@@ -43,6 +43,22 @@ describe('mobile multi-exercise workout builder', () => {
     });
   });
 
+  it('supports one exercise and one set through the active multi-workout path', () => {
+    const parsed = mobileMultiWorkoutFormSchema.parse({
+      title: '  Single exercise ',
+      exercises: [{ exerciseId: exercise1, sets: [{ reps: '12', weightKg: '' }] }],
+    });
+    expect(buildMobileMultiWorkoutBody(parsed)).toEqual({
+      title: 'Single exercise',
+      exercises: [
+        {
+          exerciseId: exercise1,
+          sets: [{ setType: 'WORKING', plannedReps: 12 }],
+        },
+      ],
+    });
+  });
+
   it('rejects missing exercises, empty sets, invalid reps and weights', () => {
     const invalid = [
       { ...form, exercises: [] },
