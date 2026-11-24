@@ -9,6 +9,7 @@ import { Prisma } from '#prisma/client';
 
 import { ExercisesService } from '#src/modules/exercises/services/exercises.service';
 import { UsersService } from '#src/modules/users/services/users.service';
+import { WorkoutStartStateChanged } from '../application/workout-start.js';
 import { WorkoutsRepository } from '../repositories/workouts.repository.js';
 import { WorkoutsService } from '../services/workouts.service.js';
 import { workoutIdempotency } from '../utils/workout-idempotency.js';
@@ -1182,17 +1183,21 @@ describe('WorkoutsService', () => {
   });
 
   describe('concurrent updates', () => {
-    it('should convert Prisma P2025 into ConflictException', async () => {
+    it('maps a typed start conflict to the existing HTTP message', async () => {
       repository.findById.mockResolvedValue(plannedWorkout);
+      repository.startWorkout.mockRejectedValue(new WorkoutStartStateChanged());
 
-      const prismaError = new Prisma.PrismaClientKnownRequestError('Record not found', {
-        code: 'P2025',
-        clientVersion: '7.10.1',
-      });
+      await expect(service.start('workout-1', athlete)).rejects.toThrow(
+        new ConflictException('Workout state has changed. Reload and try again.'),
+      );
+    });
 
-      repository.startWorkout.mockRejectedValue(prismaError);
+    it('preserves unexpected start failures', async () => {
+      repository.findById.mockResolvedValue(plannedWorkout);
+      const error = new Error('Unexpected start failure');
+      repository.startWorkout.mockRejectedValue(error);
 
-      await expect(service.start('workout-1', athlete)).rejects.toThrow(ConflictException);
+      await expect(service.start('workout-1', athlete)).rejects.toBe(error);
     });
   });
 
@@ -1314,7 +1319,11 @@ describe('WorkoutsService', () => {
       repository.findById.mockResolvedValueOnce(plannedWorkout);
       repository.startWorkout.mockResolvedValueOnce(null);
 
-      await expect(service.start(plannedWorkout.id, athlete)).rejects.toThrow(ConflictException);
+      await expect(service.start(plannedWorkout.id, athlete)).rejects.toThrow(
+        new ConflictException(
+          'Workout or training program assignment state has changed. Reload and try again.',
+        ),
+      );
       expect(repository.startWorkout).toHaveBeenCalledOnce();
     });
 

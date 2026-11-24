@@ -1,7 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { canCompleteWorkout } from '@gym/domain';
 
+import { Prisma } from '#prisma/client';
 import { PrismaService } from '#src/infra/database/index';
+import { WorkoutStartStateChanged, type StartWorkoutCommand } from '../application/workout-start.js';
 import {
   workoutSelect,
   workoutSetStatusSelect,
@@ -65,7 +67,18 @@ export class WorkoutLifecycleRepository {
     });
   }
 
-  async startWorkout(input: { id: string; athleteId: string; startedAt: Date }) {
+  async startWorkout(input: StartWorkoutCommand) {
+    try {
+      return await this.startWorkoutAtomically(input);
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+        throw new WorkoutStartStateChanged();
+      }
+      throw error;
+    }
+  }
+
+  private async startWorkoutAtomically(input: StartWorkoutCommand) {
     return this.prisma.$transaction(async (tx) => {
       const workout = await tx.workout.findFirst({
         where: {

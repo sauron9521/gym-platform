@@ -8,6 +8,7 @@ import { Prisma } from '#prisma/client';
 import { canTransitionWorkout, workoutCompletionFailure } from '@gym/domain';
 import { ExercisesService } from '#src/modules/exercises/services/exercises.service';
 import { UsersService } from '#src/modules/users/services/users.service';
+import { WorkoutStartStateChanged } from '../application/workout-start.js';
 import { WorkoutsRepository } from '../repositories/workouts.repository.js';
 import {
   assertWorkoutAthlete,
@@ -308,8 +309,8 @@ export class WorkoutsService {
 
       return result;
     } catch (error) {
-      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
-        throw new ConflictException('Workout state has changed. Reload and try again.');
+      if (error instanceof WorkoutStartStateChanged) {
+        throw new ConflictException(error.message);
       }
 
       throw error;

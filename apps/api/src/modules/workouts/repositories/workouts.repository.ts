@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 
 import { Prisma } from '#prisma/client';
 import { PrismaService } from '#src/infra/database/index';
+import type { StartWorkoutCommand } from '../application/workout-start.js';
 import { workoutSelect } from '../selects/workout.select.js';
 import { WorkoutQueriesRepository } from './workout-queries.repository.js';
 import { WorkoutCreationRepository } from './workout-creation.repository.js';
@@ -61,7 +62,7 @@ export class WorkoutsRepository extends WorkoutQueriesRepository {
     return this.lifecycleRepository.completeWorkout(input);
   }
 
-  startWorkout(input: Parameters<WorkoutLifecycleRepository['startWorkout']>[0]) {
+  startWorkout(input: StartWorkoutCommand) {
     return this.lifecycleRepository.startWorkout(input);
   }
 }
