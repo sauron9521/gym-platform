@@ -8,6 +8,7 @@ import { Prisma } from '#prisma/client';
 import { canTransitionWorkout, workoutCompletionFailure } from '@gym/domain';
 import { ExercisesService } from '#src/modules/exercises/services/exercises.service';
 import { UsersService } from '#src/modules/users/services/users.service';
+import { WorkoutCreationUniqueConflict } from '../application/workout-creation.js';
 import { WorkoutCompletionStateChanged } from '../application/workout-completion.js';
 import {
   normalizeWorkoutSetResult,
@@ -474,9 +475,11 @@ export class WorkoutsService {
     } catch (error) {
       // A second concurrent request can win the UNIQUE race. After the
       // failed insert/transaction rolled back, fetch the committed winner.
-      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+      if (error instanceof WorkoutCreationUniqueConflict) {
         const winner = await this.findIdempotentReplay(athleteId, idempotency);
         if (winner) return winner;
+        // A unique violation without a matching committed winner remains an error.
+        throw error.original;
       }
       throw error;
     }
