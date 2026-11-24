@@ -9,6 +9,7 @@ import { Prisma } from '#prisma/client';
 
 import { ExercisesService } from '#src/modules/exercises/services/exercises.service';
 import { UsersService } from '#src/modules/users/services/users.service';
+import { WorkoutCreationUniqueConflict } from '../application/workout-creation.js';
 import { WorkoutCompletionStateChanged } from '../application/workout-completion.js';
 import { WorkoutSetStateChanged } from '../application/workout-set-result.js';
 import { WorkoutStartStateChanged } from '../application/workout-start.js';
@@ -1256,15 +1257,12 @@ describe('WorkoutsService', () => {
 
     it('returns the committed winner when concurrent creation loses a unique-key race', async () => {
       const previous = workoutIdempotency(idempotencyKey, 'manual', createInput)!;
-      const uniqueError = new Prisma.PrismaClientKnownRequestError('Unique constraint failed', {
-        code: 'P2002',
-        clientVersion: '7.10.1',
-      });
+      const uniqueError = new Error('Unique constraint failed');
       repository.findByIdempotencyKey.mockResolvedValueOnce(null).mockResolvedValueOnce({
         id: plannedWorkout.id,
         idempotencyFingerprint: previous.fingerprint,
       });
-      repository.create.mockRejectedValueOnce(uniqueError);
+      repository.create.mockRejectedValueOnce(new WorkoutCreationUniqueConflict(uniqueError));
       repository.findById.mockResolvedValueOnce(plannedWorkout);
 
       const result = await service.create(athlete, createInput, idempotencyKey);
@@ -1275,15 +1273,59 @@ describe('WorkoutsService', () => {
     });
 
     it('propagates unique-key errors if no committed winner exists after a race', async () => {
-      const uniqueError = new Prisma.PrismaClientKnownRequestError('Unique constraint failed', {
-        code: 'P2002',
-        clientVersion: '7.10.1',
-      });
+      const uniqueError = new Error('Unique constraint failed');
       repository.findByIdempotencyKey.mockResolvedValue(null);
-      repository.create.mockRejectedValueOnce(uniqueError);
+      repository.create.mockRejectedValueOnce(new WorkoutCreationUniqueConflict(uniqueError));
 
       await expect(service.create(athlete, createInput, idempotencyKey)).rejects.toBe(uniqueError);
       expect(repository.findByIdempotencyKey).toHaveBeenCalledTimes(2);
+    });
+
+    it('reconciles a keyed program creation with its committed winner', async () => {
+      const input = { assignmentId: 'assignment-1', programWorkoutId: 'program-workout-1' };
+      const previous = workoutIdempotency(idempotencyKey, 'from-program', input)!;
+      repository.findByIdempotencyKey.mockResolvedValueOnce(null).mockResolvedValueOnce({
+        id: plannedWorkout.id,
+        idempotencyFingerprint: previous.fingerprint,
+      });
+      repository.createFromProgram.mockRejectedValueOnce(
+        new WorkoutCreationUniqueConflict(new Error('Unique constraint failed')),
+      );
+      repository.findById.mockResolvedValueOnce(plannedWorkout);
+
+      await expect(service.createFromProgram(athlete, input, idempotencyKey)).resolves.toBe(
+        plannedWorkout,
+      );
+      expect(repository.createFromProgram).toHaveBeenCalledOnce();
+      expect(repository.findByIdempotencyKey).toHaveBeenCalledTimes(2);
+      expect(repository.findById).toHaveBeenCalledWith(plannedWorkout.id, {
+        athleteId: athlete.id,
+      });
+    });
+
+    it('rejects a different fingerprint after a concurrent creation wins', async () => {
+      repository.findByIdempotencyKey.mockResolvedValueOnce(null).mockResolvedValueOnce({
+        id: plannedWorkout.id,
+        idempotencyFingerprint: 'another-request-fingerprint',
+      });
+      repository.create.mockRejectedValueOnce(
+        new WorkoutCreationUniqueConflict(new Error('Unique constraint failed')),
+      );
+
+      await expect(service.create(athlete, createInput, idempotencyKey)).rejects.toThrow(
+        new ConflictException('Idempotency-Key was already used for a different workout request.'),
+      );
+      expect(repository.findById).not.toHaveBeenCalled();
+      expect(repository.create).toHaveBeenCalledOnce();
+    });
+
+    it('does not reconcile an unrelated creation error', async () => {
+      const error = new Error('Unexpected creation failure');
+      repository.findByIdempotencyKey.mockResolvedValueOnce(null);
+      repository.create.mockRejectedValueOnce(error);
+
+      await expect(service.create(athlete, createInput, idempotencyKey)).rejects.toBe(error);
+      expect(repository.findByIdempotencyKey).toHaveBeenCalledOnce();
     });
 
     it('rejects unavailable exercise metadata before persisting a workout', async () => {

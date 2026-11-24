@@ -1,6 +1,7 @@
 import { PrismaService } from '#src/infra/database/index';
 import { Prisma } from '#prisma/client';
 
+import { WorkoutCreationUniqueConflict } from '../application/workout-creation.js';
 import { WorkoutStartStateChanged } from '../application/workout-start.js';
 import { WorkoutsRepository } from '../repositories/workouts.repository.js';
 import { WorkoutCreationRepository } from '../repositories/workout-creation.repository.js';
@@ -217,6 +218,75 @@ describe('WorkoutsRepository', () => {
       const result = await repository.findById('missing-id');
 
       expect(result).toBeNull();
+    });
+  });
+
+  describe('creation conflict boundary', () => {
+    const data = {
+      title: 'Workout',
+      athlete: { connect: { id: 'athlete-1' } },
+      createdBy: { connect: { id: 'athlete-1' } },
+    } satisfies Prisma.WorkoutCreateInput;
+    const input = {
+      athleteId: 'athlete-1',
+      assignmentId: 'assignment-1',
+      programWorkoutId: 'program-workout-1',
+    };
+    const idempotency = { key: 'workout-key', fingerprint: 'fingerprint' };
+    const authorize = async () => {};
+
+    it.each(['manual', 'from-program'] as const)(
+      'translates a keyed %s unique violation after rollback',
+      async (operation) => {
+        const error = new Prisma.PrismaClientKnownRequestError('Unique constraint failed', {
+          code: 'P2002',
+          clientVersion: '7.10.1',
+        });
+        prisma.$transaction.mockRejectedValueOnce(error);
+        const attempt =
+          operation === 'manual'
+            ? repository.create(
+                {
+                  ...data,
+                  idempotencyKey: idempotency.key,
+                  idempotencyFingerprint: idempotency.fingerprint,
+                },
+                'athlete-1',
+                [],
+                authorize,
+              )
+            : repository.createFromProgram({ ...input, idempotency });
+
+        await expect(attempt).rejects.toBeInstanceOf(WorkoutCreationUniqueConflict);
+        await expect(attempt).rejects.toMatchObject({ original: error });
+      },
+    );
+
+    it.each(['manual', 'from-program'] as const)(
+      'preserves an unkeyed %s unique violation',
+      async (operation) => {
+        const error = new Prisma.PrismaClientKnownRequestError('Unique constraint failed', {
+          code: 'P2002',
+          clientVersion: '7.10.1',
+        });
+        prisma.$transaction.mockRejectedValueOnce(error);
+        const attempt =
+          operation === 'manual'
+            ? repository.create(data, 'athlete-1', [], authorize)
+            : repository.createFromProgram(input);
+
+        await expect(attempt).rejects.toBe(error);
+      },
+    );
+
+    it('preserves unrelated keyed creation errors', async () => {
+      const error = new Prisma.PrismaClientKnownRequestError('Transaction conflict', {
+        code: 'P2034',
+        clientVersion: '7.10.1',
+      });
+      prisma.$transaction.mockRejectedValueOnce(error);
+
+      await expect(repository.createFromProgram({ ...input, idempotency })).rejects.toBe(error);
     });
   });
 
