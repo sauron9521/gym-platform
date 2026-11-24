@@ -38,7 +38,10 @@ test('Knip preserves both Web Playwright suites as static entrypoints', () => {
 test('Knip recognizes explicitly invoked CLI and compile-time entrypoints', () => {
   const { workspaces } = JSON.parse(read('knip.json'));
   const api = JSON.parse(read('apps/api/package.json'));
-  assert.equal(api.scripts['docs:openapi'], 'nest build && node dist/infra/openapi/export-openapi.js');
+  assert.equal(
+    api.scripts['docs:openapi'],
+    'nest build && node dist/infra/openapi/export-openapi.js',
+  );
   assert.deepEqual(workspaces['apps/api'].entry, [
     'src/infra/openapi/export-openapi.ts',
     'test/support/seed-admin-browser.ts',
