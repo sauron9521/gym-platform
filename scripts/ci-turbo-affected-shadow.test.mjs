@@ -164,11 +164,7 @@ test('manual audit defaults to the latest main commit when no SHA inputs are pro
   const calls = [];
   const git = (_command, args) => {
     calls.push(args);
-    return args[0] === 'rev-parse'
-      ? args[1] === 'HEAD'
-        ? current + '\n'
-        : previous + '\n'
-      : '';
+    return args[0] === 'rev-parse' ? (args[1] === 'HEAD' ? current + '\n' : previous + '\n') : '';
   };
   assert.deepEqual(resolveAuditRange({}, git), {
     base: previous,
@@ -192,10 +188,11 @@ test('manual audit accepts full SHA pairs only on the checked-out main history',
     calls.push(args);
     return args[0] === 'rev-parse' ? main + '\n' : '';
   };
-  assert.deepEqual(
-    resolveAuditRange({ AUDIT_BASE_SHA: base, AUDIT_HEAD_SHA: head }, git),
-    { base, head, mode: 'explicit-main-history' },
-  );
+  assert.deepEqual(resolveAuditRange({ AUDIT_BASE_SHA: base, AUDIT_HEAD_SHA: head }, git), {
+    base,
+    head,
+    mode: 'explicit-main-history',
+  });
   assert.deepEqual(calls, [
     ['rev-parse', 'HEAD'],
     ['merge-base', '--is-ancestor', base, head],
