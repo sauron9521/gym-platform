@@ -4,7 +4,7 @@ import {
   ForbiddenException,
   NotFoundException,
 } from '@nestjs/common';
-import { Prisma } from '#prisma/client';
+import { AssignmentCancellationStateChanged } from '../application/assignment-cancellation.js';
 import { AssignmentCreationError } from '../application/assignment-creation.js';
 import { TrainingProgramAssignmentService } from '../services/training-program-assignment.service.js';
 import {
@@ -50,11 +50,6 @@ describe('TrainingProgramAssignmentService', () => {
     trainerAthleteId: relationship.id,
     trainerAthlete: { trainerId: trainer.id, athleteId: athlete.id, status: 'ACTIVE' },
   };
-  const prismaError = (code: string) =>
-    new Prisma.PrismaClientKnownRequestError('Concurrent write', {
-      code,
-      clientVersion: '7.0.0',
-    });
   let service: TrainingProgramAssignmentService;
 
   beforeEach(() => {
@@ -599,9 +594,11 @@ describe('TrainingProgramAssignmentService', () => {
   });
 
   it('maps an already-ended concurrent cancellation to conflict', async () => {
-    repository.cancelAssignmentIfTrainerEligible.mockRejectedValue(prismaError('P2025'));
-    await expect(service.cancelAssignment(assignmentId, trainer)).rejects.toBeInstanceOf(
-      ConflictException,
+    repository.cancelAssignmentIfTrainerEligible.mockRejectedValue(
+      new AssignmentCancellationStateChanged(),
+    );
+    await expect(service.cancelAssignment(assignmentId, trainer)).rejects.toThrow(
+      new ConflictException('Assignment state has changed. Reload and try again.'),
     );
   });
 
