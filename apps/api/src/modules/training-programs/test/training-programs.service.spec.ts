@@ -5,6 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Prisma } from '#prisma/client';
+import { AssignmentCreationError } from '../application/assignment-creation.js';
 import { DraftVersionCreationConflict } from '../application/draft-version-creation.js';
 import { TrainingProgramsService } from '../services/training-programs.service.js';
 import type { TrainingProgramActor } from '../types/training-program.types.js';
@@ -889,10 +890,7 @@ describe('TrainingProgramsService', () => {
 
     it('should convert duplicate assignment conflict into ConflictException', async () => {
       repository.createAssignmentForActiveRelationship.mockRejectedValue(
-        new Prisma.PrismaClientKnownRequestError('Unique constraint failed', {
-          code: 'P2002',
-          clientVersion: '7.10.1',
-        }),
+        new AssignmentCreationError('ALREADY_EXISTS'),
       );
 
       await expect(
