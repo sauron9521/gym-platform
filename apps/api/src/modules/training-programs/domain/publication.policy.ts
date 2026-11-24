@@ -1,3 +1,5 @@
+import { isWorkoutOutsideDuration } from './duration.policy.js';
+
 const publicationMessages = {
   EMPTY_PROGRAM: 'A program must contain at least one workout',
   WORKOUT_OUTSIDE_DURATION: 'A workout week cannot exceed the program duration',
@@ -33,7 +35,7 @@ export function assertPublishableVersion(version: PublishableVersion): void {
   }
 
   for (const workout of version.workouts) {
-    if (version.durationWeeks !== null && workout.weekNumber > version.durationWeeks) {
+    if (isWorkoutOutsideDuration(workout.weekNumber, version.durationWeeks)) {
       throw new ProgramPublicationError('WORKOUT_OUTSIDE_DURATION');
     }
 
