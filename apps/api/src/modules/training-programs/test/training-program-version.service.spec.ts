@@ -5,6 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Prisma } from '#prisma/client';
+import { createPublishProgramUseCase } from '../publication.provider.js';
 import { TrainingProgramVersionService } from '../services/training-program-version.service.js';
 import type { TrainingProgramActor } from '../types/training-program.types.js';
 
@@ -43,7 +44,11 @@ describe('TrainingProgramVersionService', () => {
 
   beforeEach(() => {
     vi.resetAllMocks();
-    service = new TrainingProgramVersionService(repository as never, crud as never);
+    service = new TrainingProgramVersionService(
+      repository as never,
+      crud as never,
+      createPublishProgramUseCase(repository as never, crud as never),
+    );
     crud.findOne.mockResolvedValue({ id: ids[0], status: 'DRAFT' });
     repository.findVersionById.mockResolvedValue(draft());
   });
