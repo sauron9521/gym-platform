@@ -139,7 +139,9 @@ export class TrainingProgramVersionService {
     const requestedWeeks = input.durationWeeks;
     if (
       typeof requestedWeeks === 'number' &&
-      version.workouts.some((workout) => isWorkoutOutsideDuration(workout.weekNumber, requestedWeeks))
+      version.workouts.some((workout) =>
+        isWorkoutOutsideDuration(workout.weekNumber, requestedWeeks),
+      )
     ) {
       throw new BadRequestException('A workout week cannot exceed the program duration');
     }
