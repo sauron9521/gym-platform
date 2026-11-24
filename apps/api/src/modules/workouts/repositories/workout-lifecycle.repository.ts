@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { canCompleteWorkout } from '@gym/domain';
 
 import { PrismaService } from '#src/infra/database/index';
 import {
@@ -40,11 +41,7 @@ export class WorkoutLifecycleRepository {
         select: workoutSetStatusSelect,
       });
 
-      const hasPendingSets = sets.some((set) => set.status === 'PENDING');
-
-      const hasCompletedSet = sets.some((set) => set.status === 'COMPLETED');
-
-      if (sets.length === 0 || hasPendingSets || !hasCompletedSet) {
+      if (!canCompleteWorkout(sets)) {
         return { status: 'INVALID_SETS' as const };
       }
 

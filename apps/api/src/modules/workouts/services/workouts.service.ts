@@ -5,7 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Prisma } from '#prisma/client';
-import { canTransitionWorkout } from '@gym/domain';
+import { canTransitionWorkout, workoutCompletionFailure } from '@gym/domain';
 import { ExercisesService } from '#src/modules/exercises/services/exercises.service';
 import { UsersService } from '#src/modules/users/services/users.service';
 import { WorkoutsRepository } from '../repositories/workouts.repository.js';
@@ -427,17 +427,18 @@ export class WorkoutsService {
   async complete(id: string, actor: WorkoutActor) {
     const workout = await this.findOne(id, actor);
 
-    if (workout.status !== 'IN_PROGRESS') {
+    if (!canTransitionWorkout(workout.status, 'COMPLETED')) {
       throw new BadRequestException('Only in-progress workouts can be completed');
     }
 
     const sets = workout.exercises.flatMap((exercise) => exercise.sets);
+    const failure = workoutCompletionFailure(sets);
 
-    if (sets.length === 0 || sets.some((set) => set.status === 'PENDING')) {
+    if (failure === 'UNPROCESSED_SETS') {
       throw new BadRequestException('All workout sets must be completed or skipped');
     }
 
-    if (!sets.some((set) => set.status === 'COMPLETED')) {
+    if (failure === 'NO_COMPLETED_SET') {
       throw new BadRequestException('At least one set must be completed');
     }
 

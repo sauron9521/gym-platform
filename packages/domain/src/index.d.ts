@@ -4,6 +4,10 @@ export declare const workoutSetStatuses: readonly ['PENDING', 'COMPLETED', 'SKIP
 export type WorkoutSetStatus = (typeof workoutSetStatuses)[number];
 
 export declare function canTransitionWorkout(from: WorkoutStatus, to: WorkoutStatus): boolean;
+export type WorkoutCompletionFailure = 'UNPROCESSED_SETS' | 'NO_COMPLETED_SET';
+export declare function workoutCompletionFailure(
+  sets: ReadonlyArray<{ status: WorkoutSetStatus }>,
+): WorkoutCompletionFailure | null;
 export declare function canCompleteWorkout(
   sets: ReadonlyArray<{ status: WorkoutSetStatus }>,
 ): boolean;
