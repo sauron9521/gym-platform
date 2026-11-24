@@ -99,6 +99,20 @@ For a complete inventory of the current top-level `scripts/` modules, their
 replacement candidates and safety gates, see the [custom script replacement
 audit](custom-scripts-replacement-audit.md).
 
+## Verified manual pilot result (2026-11-24)
+
+[Manual run #45363672094](https://github.com/sauron9521/gym-platform/actions/runs/45363672094)
+completed successfully, but its Turbo shadow comparison found a **seven-workspace
+gap on workflow/tooling-only changes**: conservative CI correctly required a
+full scan, while Turbo's source task graph selected zero packages. Five distinct
+historical categories were available in the last 80 commits; API, Landing,
+docs and one mixed/manifest category had no missing application/client
+packages. **Full replacement of `ci-select.mjs` by Turbo affected is NO-GO.**
+
+See the [evidence, exact SHA ranges, limitations and follow-up gates](turbo-affected-shadow-evidence-2026-11-24.md).
+A successful manual diagnostic does not imply scope parity or authorize any
+change to required CI.
+
 ## Next safe steps
 
 1. Review the Knip baseline by workspace, confirm real entrypoints and
