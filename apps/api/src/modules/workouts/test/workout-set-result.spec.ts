@@ -47,16 +47,18 @@ describe('normalizeWorkoutSetResult', () => {
     });
   });
 
-  it.each([
+  const performanceFields = [
     'actualReps',
     'actualWeightKg',
     'actualDurationSeconds',
     'actualDistanceMeters',
     'rpe',
     'rir',
-  ] as const)('rejects a non-null %s even when it is zero', (field) => {
-    const normalize = () => normalizeWorkoutSetResult({ status: 'SKIPPED', [field]: 0 }, completedAt);
-    expect(normalize).toThrow(SkippedSetPerformanceError);
+  ] as const;
+
+  it.each(performanceFields)('rejects a non-null %s even when it is zero', (field) => {
+    const input = { status: 'SKIPPED' as const, [field]: 0 };
+    expect(() => normalizeWorkoutSetResult(input, completedAt)).toThrow(SkippedSetPerformanceError);
   });
 
   it('accepts explicit null for skipped performance fields', () => {
