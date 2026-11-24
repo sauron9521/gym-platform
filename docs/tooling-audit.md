@@ -201,15 +201,15 @@ on main `1b66a854806a3f1ad769c06a70b28f98e45c31a9` completed successfully.
 Counts below are individual findings from the JSON artifacts, not compact
 report file groups, compared with run #45375253633.
 
-| Finding | Previous | Current |
-| --- | ---: | ---: |
-| Unused files | 11 | 2 |
-| Unused runtime dependencies | 11 | 0 |
-| Unused devDependencies | 8 | 4 |
-| Unlisted dependencies | 5 | 5 |
-| Unused exports | 36 | 37 |
-| Unused exported types | 35 | 35 |
-| Total | 106 | 83 |
+| Finding                     | Previous | Current |
+| --------------------------- | -------: | ------: |
+| Unused files                |       11 |       2 |
+| Unused runtime dependencies |       11 |       0 |
+| Unused devDependencies      |        8 |       4 |
+| Unlisted dependencies       |        5 |       5 |
+| Unused exports              |       36 |      37 |
+| Unused exported types       |       35 |      35 |
+| Total                       |      106 |      83 |
 
 The two file findings are required: `apps/api/src/main.ts` is the Nest
 bootstrap compiled to `dist/main.js`, and `tooling/vitest/node.d.mts` is the
