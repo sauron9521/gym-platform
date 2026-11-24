@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
@@ -148,5 +148,36 @@ test.each([
         message.includes('cross-workspace relative import'),
       ),
     );
+  });
+});
+
+test('manifest guard has no source regex walker and CLI uses the required graph', () => {
+  const source = readFileSync(new URL('./check-workspace-boundaries.mjs', import.meta.url), 'utf8');
+  assert.match(source, /inspectWorkspaceImports\(root\)/);
+  assert.doesNotMatch(source, /importSpecifier|walkSources|matchAll\(/);
+});
+
+test('manifest guard retains missing names and application dependencies in every field', () => {
+  withFixture(({ root, web }) => {
+    writeFileSync(join(web, 'package.json'), JSON.stringify({ dependencies: {} }));
+    assert.ok(
+      checkWorkspaceBoundaries(root).some((message) => message.includes('missing package name')),
+    );
+
+    for (const field of [
+      'dependencies',
+      'devDependencies',
+      'peerDependencies',
+      'optionalDependencies',
+    ]) {
+      writeFileSync(
+        join(web, 'package.json'),
+        JSON.stringify({ name: '@gym/web', [field]: { '@gym/api': 'workspace:*' } }),
+      );
+      assert.ok(
+        checkWorkspaceBoundaries(root).some((message) => message.includes('(' + field + ')')),
+        field,
+      );
+    }
   });
 });
