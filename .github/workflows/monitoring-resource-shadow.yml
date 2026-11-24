@@ -67,7 +67,7 @@ jobs:
           trap cleanup EXIT
           docker compose -f "$fixture" --profile resource-shadow up -d --pull never
           docker run -d --pull never --name gym-shadow-prometheus --network none \
-            --log-driver local --log-opt max-size=5m --log-opt max-file=1 \
+            --log-driver local --log-opt max-size=5m --log-opt max-file=1 --log-opt compress=false \
             --cap-drop ALL --security-opt no-new-privileges \
             -v "$config:/shadow:ro" "$PROM_IMAGE" \
             --config.file=/shadow/prometheus.yml --web.listen-address=127.0.0.1:19090 \
@@ -77,7 +77,7 @@ jobs:
           # network namespace contains loopback; no published ports or egress.
           # Docker socket access remains equivalent to host-level trust.
           docker run -d --pull never --name gym-shadow-alloy \
-            --log-driver local --log-opt max-size=5m --log-opt max-file=1 \
+            --log-driver local --log-opt max-size=5m --log-opt max-file=1 --log-opt compress=false \
             --network container:gym-shadow-prometheus --pid host --cgroupns host --privileged \
             -v "$config:/shadow:ro" -v /:/rootfs:ro \
             -v /sys:/sys:ro -v /var/lib/docker:/var/lib/docker:ro \
