@@ -199,3 +199,19 @@ test('atomic metrics file survives unsafe destination or publication failures', 
     rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test('failed write preserves the prior metrics file and leaves no temporary file', async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'gym-monitor-write-'));
+  const output = join(dir, 'gym_api_docker_signals.prom');
+  try {
+    await publishSignals(output, 'prior\n');
+    const before = lstatSync(output);
+    await assert.rejects(publishSignals(output, null), /Docker signals publication failed/);
+    assert.equal(readFileSync(output, 'utf8'), 'prior\n');
+    assert.equal(lstatSync(output).mtimeMs, before.mtimeMs);
+    const { readdirSync } = await import('node:fs');
+    assert.deepEqual(readdirSync(dir), ['gym_api_docker_signals.prom']);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
