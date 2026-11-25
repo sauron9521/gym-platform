@@ -53,10 +53,7 @@ export class AdminMfaTransactionSessionStore implements SessionStore {
 
   async createSession(record: SessionRecord): Promise<void> {
     this.assertOwner(record.userId);
-    if (
-      record.metadata?.purpose !== ADMIN_SESSION_PURPOSE ||
-      record.mfa !== this.issuance.state
-    ) {
+    if (record.metadata?.purpose !== ADMIN_SESSION_PURPOSE || record.mfa !== this.issuance.state) {
       throw new Error('Admin MFA session state mismatch');
     }
     // Ignore inherited metadata: only the verified proof path supplies a method.

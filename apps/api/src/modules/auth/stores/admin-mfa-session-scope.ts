@@ -9,9 +9,7 @@ export const ADMIN_MFA_FLOW = 'challenge-v1';
 export const ADMIN_MFA_METADATA = { purpose: ADMIN_SESSION_PURPOSE, adminMfaFlow: ADMIN_MFA_FLOW };
 
 export type AdminMfaMethod = 'totp' | 'recovery';
-export type AdminMfaIssuance =
-  | { state: 'pending' }
-  | { state: 'verified'; method: AdminMfaMethod };
+export type AdminMfaIssuance = { state: 'pending' } | { state: 'verified'; method: AdminMfaMethod };
 
 /** Interpret only the server-owned persisted assurance, never client proof claims. */
 export function readAdminMfaAssurance(
