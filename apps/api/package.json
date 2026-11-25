@@ -61,7 +61,7 @@
     "@vitest/coverage-v8": "^5.1.1",
     "dotenv": "^18.0.9",
     "oxlint": "^1.94.0",
-    "oxlint-tsgolint": "^7.0.2001",
+    "oxlint-tsgolint": "^7.0.2008",
     "prisma": "^7.10.1",
     "supertest": "^7.0.0",
     "tsx": "^4.23.15",
