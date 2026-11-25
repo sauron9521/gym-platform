@@ -39,6 +39,8 @@ model MfaFailure {
 // Append-only lifecycle evidence, retained independently from account deletion.
 enum MfaLifecycleAction {
   FIRST_TOTP_CONFIRMED
+  ADMIN_TOTP_CHALLENGE_VERIFIED
+  ADMIN_RECOVERY_CHALLENGE_VERIFIED
 }
 
 model MfaLifecycleAudit {

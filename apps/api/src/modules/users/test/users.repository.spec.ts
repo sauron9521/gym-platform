@@ -1,5 +1,6 @@
 import { ConflictException } from '@nestjs/common';
 import { PrismaService } from '#src/infra/database/index';
+import { PASSWORD_ONLY_OWNER_FILTER } from '#src/common/auth/password-only-owner.filter';
 import { UsersRepository } from '../repositories/users.repository.js';
 import {
   userSelect,
@@ -332,6 +333,7 @@ describe('UsersRepository', () => {
           id: record.id,
           deletedAt: null,
           status: 'ACTIVE',
+          AND: [PASSWORD_ONLY_OWNER_FILTER],
           OR: [
             { authInvalidatedAt: null },
             { authInvalidatedAt: { lt: new Date(issuedAt * 1000) } },
@@ -352,6 +354,7 @@ describe('UsersRepository', () => {
             id: 'user-1',
             deletedAt: null,
             status: 'ACTIVE',
+            AND: [PASSWORD_ONLY_OWNER_FILTER],
             OR: [{ authInvalidatedAt: null }],
           },
           select: userSelect,

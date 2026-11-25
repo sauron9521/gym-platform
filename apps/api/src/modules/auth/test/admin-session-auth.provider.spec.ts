@@ -10,7 +10,7 @@ import { AdminSessionAuth } from '../providers/admin-session-auth.provider.js';
 function setup() {
   const users = { findUserById: vi.fn() };
   const sessions = { tokenFrom: vi.fn(), validate: vi.fn(), discard: vi.fn() };
-  const cookies = { sessions };
+  const cookies = { sessions, validateAdminSession: sessions.validate };
   const reflector = { getAllAndOverride: vi.fn() };
   const registry = { registerProvider: vi.fn() };
   const provider = new AdminSessionAuth(
@@ -41,7 +41,6 @@ describe('AdminSessionAuth', () => {
   it('validates only admin-purpose records on marked Admin routes', async () => {
     const { provider, sessions, reflector, users, context } = setup();
     reflector.getAllAndOverride.mockReturnValue(true);
-    sessions.tokenFrom.mockReturnValue('token');
     const session = { id: 'id', userId: 'user', mfa: undefined, metadata: { purpose: 'admin' } };
     sessions.validate.mockResolvedValue(session);
     const principal = { id: 'user', role: 'ADMIN' };
@@ -58,7 +57,35 @@ describe('AdminSessionAuth', () => {
     expect(users.findUserById).not.toHaveBeenCalled();
   });
 
-  it.each(['invalid', '', null, true])(
+  it('preserves legacy role denial in the route guard without deleting the session', async () => {
+    const { provider, sessions, reflector, users, context } = setup();
+    reflector.getAllAndOverride.mockReturnValue(true);
+    const session = { id: 'id', userId: 'user', metadata: { purpose: 'admin' } };
+    const principal = { id: 'user', role: 'ATHLETE' };
+    sessions.validate.mockResolvedValue(session);
+    users.findUserById.mockResolvedValue(principal);
+    await expect(provider.authenticate(context)).resolves.toMatchObject({
+      user: principal,
+      session,
+    });
+    expect(sessions.discard).not.toHaveBeenCalled();
+  });
+
+  it('refuses verified MFA if the role changes after the scoped session read', async () => {
+    const { provider, sessions, reflector, users, context } = setup();
+    reflector.getAllAndOverride.mockReturnValue(true);
+    sessions.validate.mockResolvedValue({
+      id: 'id',
+      userId: 'user',
+      metadata: { purpose: 'admin' },
+      mfa: 'verified',
+    });
+    users.findUserById.mockResolvedValue({ id: 'user', role: 'ATHLETE' });
+    await expect(provider.authenticate(context)).resolves.toBeNull();
+    expect(sessions.discard).not.toHaveBeenCalled();
+  });
+
+  it.each(['invalid', '', null, true, 'pending'])(
     'rejects malformed persisted MFA state (%s)',
     async (mfa) => {
       const { provider, sessions, reflector, users, context } = setup();

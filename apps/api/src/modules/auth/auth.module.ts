@@ -12,6 +12,8 @@ import { TokensController } from './controllers/tokens.controller.js';
 import { EmailVerificationMailer, PasswordResetMailer } from './mailers/index.js';
 import { JwtAuth, SessionAuth } from './providers/index.js';
 import { AdminSessionAuth } from './providers/admin-session-auth.provider.js';
+import { AdminMfaSessionReader } from './stores/admin-mfa-session-reader.js';
+import { AdminMfaChallengeService } from './services/admin-mfa-challenge.service.js';
 import { AdminMfaEnrollmentService } from './services/admin-mfa-enrollment.service.js';
 import { AdminCookieAuthService } from './services/admin-cookie-auth.service.js';
 import { AccountRecoveryRateLimitGuard } from './guards/account-recovery-rate-limit.guard.js';
@@ -39,6 +41,8 @@ import { PrismaMfaStore, PrismaSessionStore, PrismaTokenStore } from './stores/i
     SessionAuth,
     AdminCookieAuthService,
     AdminMfaEnrollmentService,
+    AdminMfaChallengeService,
+    AdminMfaSessionReader,
     AdminSessionAuth,
     CredentialsService,
     EmailVerificationMailer,

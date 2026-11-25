@@ -2,11 +2,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { AuthenticationStorage, MfaState } from '@nestjs/authentication';
 import { PrismaSessionStore } from '../stores/index.js';
 import { PrismaService } from '#src/infra/database/index';
+import { PASSWORD_ONLY_OWNER_FILTER } from '#src/common/auth/password-only-owner.filter';
 import { authSessionSelect } from '../selects/auth-session.select.js';
 
 describe('PrismaSessionStore', () => {
   const prisma = {
     user: { findUnique: vi.fn() },
+    mfaAuthenticator: { findUnique: vi.fn() },
     session: {
       findUnique: vi.fn(),
       create: vi.fn(),
@@ -38,6 +40,7 @@ describe('PrismaSessionStore', () => {
   beforeEach(() => {
     vi.clearAllMocks();
 
+    prisma.mfaAuthenticator.findUnique.mockResolvedValue(null);
     prisma.$transaction.mockImplementation(
       async (callback: (tx: typeof prisma) => Promise<unknown>) => callback(prisma),
     );
@@ -66,7 +69,10 @@ describe('PrismaSessionStore', () => {
 
     await expect(store.getSession(session.id)).resolves.toBeUndefined();
     expect(prisma.session.findUnique).toHaveBeenCalledWith({
-      where: { id: session.id, user: { deletedAt: null, status: 'ACTIVE' } },
+      where: {
+        id: session.id,
+        user: { deletedAt: null, status: 'ACTIVE', ...PASSWORD_ONLY_OWNER_FILTER },
+      },
       select: authSessionSelect,
     });
   });
@@ -179,6 +185,13 @@ describe('PrismaSessionStore', () => {
     expect(prisma.session.create).not.toHaveBeenCalled();
   });
 
+  it('refuses session issuance for a confirmed factor under the owner lock', async () => {
+    prisma.mfaAuthenticator.findUnique.mockResolvedValueOnce({ confirmed: true });
+    await expect(store.createSession(session)).rejects.toThrow('MFA authentication required');
+    expect(prisma.session.create).not.toHaveBeenCalled();
+    expect(prisma.$queryRaw).toHaveBeenCalledOnce();
+  });
+
   it('touches only when the new timestamp is later', async () => {
     const lastActiveAt = new Date('2026-10-01T11:00:00.000Z');
 
@@ -187,7 +200,7 @@ describe('PrismaSessionStore', () => {
     expect(prisma.session.updateMany).toHaveBeenCalledWith({
       where: {
         id: session.id,
-        user: { deletedAt: null, status: 'ACTIVE' },
+        user: { deletedAt: null, status: 'ACTIVE', ...PASSWORD_ONLY_OWNER_FILTER },
         lastActiveAt: { lt: lastActiveAt },
       },
       data: { lastActiveAt },
@@ -212,7 +225,10 @@ describe('PrismaSessionStore', () => {
     const result = await store.listUserSessions(session.userId);
 
     expect(prisma.session.findMany).toHaveBeenCalledWith({
-      where: { userId: session.userId, user: { deletedAt: null, status: 'ACTIVE' } },
+      where: {
+        userId: session.userId,
+        user: { deletedAt: null, status: 'ACTIVE', ...PASSWORD_ONLY_OWNER_FILTER },
+      },
       orderBy: { createdAt: 'desc' },
       select: authSessionSelect,
     });
@@ -288,7 +304,10 @@ describe('PrismaSessionStore', () => {
 
       await expect(store.getSession(session.id)).rejects.toBe(failure);
       expect(prisma.session.findUnique).toHaveBeenCalledExactlyOnceWith({
-        where: { id: session.id, user: { deletedAt: null, status: 'ACTIVE' } },
+        where: {
+          id: session.id,
+          user: { deletedAt: null, status: 'ACTIVE', ...PASSWORD_ONLY_OWNER_FILTER },
+        },
         select: authSessionSelect,
       });
     });
@@ -298,7 +317,10 @@ describe('PrismaSessionStore', () => {
 
       await expect(store.listUserSessions('deleted-user')).resolves.toEqual([]);
       expect(prisma.session.findMany).toHaveBeenCalledExactlyOnceWith({
-        where: { userId: 'deleted-user', user: { deletedAt: null, status: 'ACTIVE' } },
+        where: {
+          userId: 'deleted-user',
+          user: { deletedAt: null, status: 'ACTIVE', ...PASSWORD_ONLY_OWNER_FILTER },
+        },
         orderBy: { createdAt: 'desc' },
         select: authSessionSelect,
       });
@@ -321,7 +343,7 @@ describe('PrismaSessionStore', () => {
       expect(prisma.session.updateMany).toHaveBeenCalledExactlyOnceWith({
         where: {
           id: session.id,
-          user: { deletedAt: null, status: 'ACTIVE' },
+          user: { deletedAt: null, status: 'ACTIVE', ...PASSWORD_ONLY_OWNER_FILTER },
           lastActiveAt: { lt: earlier },
         },
         data: { lastActiveAt: earlier },
