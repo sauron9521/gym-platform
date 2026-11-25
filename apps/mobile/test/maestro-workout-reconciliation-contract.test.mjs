@@ -110,7 +110,9 @@ test('reconciliation flows are bound to real UI labels and cannot falsely pass a
     'Немає мережі. Підхід не надіслано.',
   );
   expect(row).toContain('Запис міг бути збережений.');
-  expect(row).toContain('Стан отримано із сервера.');
+  expect(read('../src/features/workouts/model/use-workout-set-row.ts')).toContain(
+    'Стан отримано із сервера.',
+  );
   expect(screen).toContain('canonicalReadVersion={details.canonicalReadVersion}');
   expect(lost).toMatch(/extendedWaitUntil:[\s\S]*?Стан отримано із сервера\.\*/);
   expect(lost).toContain('operator must independently verify exactly ONE PATCH');

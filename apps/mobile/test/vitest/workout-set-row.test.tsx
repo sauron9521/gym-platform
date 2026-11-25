@@ -352,4 +352,22 @@ describe('WorkoutSetRow (React Native)', () => {
     await waitFor(() => expect(onWriteSettled).toHaveBeenCalledWith(set.id, 6));
     expect(onNewCompletion).not.toHaveBeenCalled();
   });
+  it('cancels editing without a write and restores the acknowledged values on reopening', async () => {
+    const completed = {
+      ...set,
+      status: 'COMPLETED',
+      actualReps: 8,
+      actualWeightKg: '60',
+    } as typeof set;
+    const view = await render(<WorkoutSetRow workoutId="workout-1" set={completed} editable />);
+    await fireEvent.press(view.getByTestId('set-edit-set-1'));
+    await fireEvent.changeText(view.getByTestId('set-reps-set-1'), '12');
+    await fireEvent.changeText(view.getByTestId('set-weight-set-1'), '75');
+    await fireEvent.press(view.getByTestId('set-edit-cancel-set-1'));
+    expect(view.getByText('Результат: 8 повт. · 60 кг')).toBeTruthy();
+    expect(mutateAsync).not.toHaveBeenCalled();
+    await fireEvent.press(view.getByTestId('set-edit-set-1'));
+    expect(view.getByTestId('set-reps-set-1').props.value).toBe('8');
+    expect(view.getByTestId('set-weight-set-1').props.value).toBe('60');
+  });
 });
