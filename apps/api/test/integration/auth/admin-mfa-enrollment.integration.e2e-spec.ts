@@ -743,7 +743,9 @@ describe('Internal Admin MFA challenge (PostgreSQL)', () => {
     expect(await prisma.session.count({ where: { userId: other.userId } })).toBe(1);
     expect(await replacement.confirm(grant.token, password, code)).toBeNull();
     const audit = await prisma.mfaLifecycleAudit.findMany({ where: { userId: owner.userId } });
-    expect(audit.filter((row) => row.action === 'ADMIN_TOTP_REPLACEMENT_CONFIRMED')).toHaveLength(1);
+    expect(audit.filter((row) => row.action === 'ADMIN_TOTP_REPLACEMENT_CONFIRMED')).toHaveLength(
+      1,
+    );
     expect(JSON.stringify(audit)).not.toContain(staged.secret);
 
     const next = (await challenge.begin(owner.userId, password))!;
@@ -751,7 +753,9 @@ describe('Internal Admin MFA challenge (PostgreSQL)', () => {
       await challenge.complete(next.token, { recoveryCode: owner.recoveryCodes[1]! }),
     ).toBeNull();
     const nextCode = codeAt(staged.secret, updated.lastUsedStep! + 1);
-    expect((await challenge.complete(next.token, { code: nextCode }))?.session.mfa).toBe('verified');
+    expect((await challenge.complete(next.token, { code: nextCode }))?.session.mfa).toBe(
+      'verified',
+    );
   });
 
   it('does not activate an expired replacement or lose the original factor on failure', async () => {

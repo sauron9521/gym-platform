@@ -11,10 +11,7 @@ import { createMfaEncryptionOptions } from '#src/common/config/mfa-keyring.confi
 import { PrismaService } from '#src/infra/database/index';
 import { toSessionRecord } from '../mappers/auth-session.mapper.js';
 import { authSessionSelect } from '../selects/auth-session.select.js';
-import {
-  adminMfaSessionScope,
-  readAdminMfaAssurance,
-} from '../stores/admin-mfa-session-scope.js';
+import { adminMfaSessionScope, readAdminMfaAssurance } from '../stores/admin-mfa-session-scope.js';
 import { PrismaMfaStore } from '../stores/prisma-mfa.store.js';
 import {
   AUTH_ACCOUNT_THROTTLE_POLICIES,
