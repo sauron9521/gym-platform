@@ -9,7 +9,12 @@ export const ADMIN_MFA_FLOW = 'challenge-v1';
 export const ADMIN_MFA_METADATA = { purpose: ADMIN_SESSION_PURPOSE, adminMfaFlow: ADMIN_MFA_FLOW };
 
 export type AdminMfaMethod = 'totp' | 'recovery';
-export type AdminMfaIssuance = { state: 'pending' } | { state: 'verified'; method: AdminMfaMethod };
+export type AdminMfaIssuance =
+  | { state: 'pending' }
+  | { state: 'verified'; method: 'totp' }
+  | { state: 'verified'; method: 'recovery'; fence: Date };
+
+export const ADMIN_RECOVERY_TTL_MS = 10 * 60 * 1000;
 
 /** Interpret only the server-owned persisted assurance, never client proof claims. */
 export function readAdminMfaAssurance(
@@ -20,11 +25,32 @@ export function readAdminMfaAssurance(
     return null;
   }
   const method = metadata.adminMfaMethod;
-  if (record.mfa === 'pending' && method === undefined) return 'password';
-  if (record.mfa === 'verified' && (method === 'totp' || method === 'recovery')) {
-    return method;
+  const fence = metadata.adminRecoveryFence;
+  if (record.mfa === 'pending' && method === undefined && fence === undefined) {
+    return 'password';
+  }
+  if (record.mfa === 'verified' && method === 'totp' && fence === undefined) return 'totp';
+  if (record.mfa === 'verified' && method === 'recovery' && typeof fence === 'string') {
+    const time = new Date(fence);
+    if (Number.isFinite(time.getTime()) && time.toISOString() === fence) return 'recovery';
   }
   return null;
+}
+
+/** A recovery grant belongs to the exact revocation epoch that created it. */
+export function isCurrentRecoveryGrant(
+  record: SessionRecord,
+  fence: Date | null,
+  now: number,
+): boolean {
+  return (
+    readAdminMfaAssurance(record) === 'recovery' &&
+    fence !== null &&
+    record.metadata?.adminRecoveryFence === fence.toISOString() &&
+    record.createdAt.getTime() <= fence.getTime() &&
+    now >= fence.getTime() &&
+    now < record.createdAt.getTime() + ADMIN_RECOVERY_TTL_MS
+  );
 }
 
 export function adminMfaSessionScope(id: string): Prisma.SessionWhereInput {
