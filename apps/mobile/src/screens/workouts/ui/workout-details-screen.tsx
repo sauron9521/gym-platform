@@ -15,6 +15,7 @@ import {
 import { workoutTitleError } from '@/features/workouts/lib/workout-edit-policy';
 import { useCancelWorkout, useUpdateWorkoutTitle } from '@/features/workouts/model/workout-edit';
 import { workoutStatusLabel } from '@/features/workouts/lib/workout-presentation';
+import { useAppSettings } from '@/features/app-settings/model/app-settings-context';
 import { RestTimer, type RestStart } from '@/features/workouts/ui/rest-timer';
 import {
   useWorkoutDetailsQuery,
@@ -76,6 +77,7 @@ function WorkoutTitleEditor({ title, disabled, pending, failure, onSave }: Title
 // prettier-ignore
 export function WorkoutDetailsScreen({ id }: { id: string }) {
   const styles = useStyles();
+  const { shouldAutoStartRestTimer } = useAppSettings();
   const details = useWorkoutDetailsQuery(id);
   const transition = useWorkoutTransition(id);
   const titleUpdate = useUpdateWorkoutTitle(id);
@@ -112,6 +114,7 @@ export function WorkoutDetailsScreen({ id }: { id: string }) {
     setPendingSet(null);
   };
   const startRest = () => {
+    if (!shouldAutoStartRestTimer()) return;
     const startedAt = Date.now();
     setRestStart((previous) => ({ sequence: (previous?.sequence ?? 0) + 1, startedAt }));
   };
