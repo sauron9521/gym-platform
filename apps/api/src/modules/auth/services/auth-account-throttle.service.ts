@@ -19,6 +19,13 @@ export const AUTH_ACCOUNT_THROTTLE_POLICIES = {
     limit: 5,
     ttlMs: 60 * 60 * 1_000,
   },
+  adminMfaEnrollment: {
+    namespace: 'auth:admin:mfa:enrollment:v1\0',
+    keyPrefix: 'admin-mfa-enrollment',
+    throttlerName: 'admin-mfa-enrollment',
+    limit: 5,
+    ttlMs: 15 * 60 * 1_000,
+  },
   verificationResend: {
     namespace: 'auth:verification:resend:user:v1\0',
     keyPrefix: 'verification-resend',

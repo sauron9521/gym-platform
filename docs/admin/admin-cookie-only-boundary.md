@@ -180,3 +180,21 @@ installed, no rotation job is exposed, and no live factor was rewritten.
 Actual key provisioning, deployment wiring, lifecycle controls and
 retirement evidence remain separate gates. Do not activate MFA or close
 #290 on the basis of this configuration alone.
+
+### Internal first enrollment staging (#290, fourth slice)
+
+A dedicated internal service stages a first TOTP authenticator only after
+fresh password proof for an existing live Admin-purpose session. Account
+request throttling permits five attempts per 15 minutes. The final operation
+locks the active account and exact session, rechecks role, session expiry
+and the credential snapshot, and stages the encrypted secret and its
+session binding in one transaction. Enrollment expires within five minutes
+and cannot replace a confirmed factor or a live enrollment. Only the caller
+receives the plaintext provisioning secret; it must never be logged.
+
+This slice does not expose an HTTP endpoint, confirm factors, generate
+recovery codes, or enable MFA in the global authentication module. Keep the
+runtime keyring unset until a safe completion and login path is available.
+The next slice must bind confirmation to the same live session and expiry,
+serialize factor changes, issue recovery codes atomically and invalidate
+pre-enrollment credentials before enforcing MFA. No Security/Beta GO.

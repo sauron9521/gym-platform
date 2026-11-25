@@ -76,7 +76,7 @@ describe('AuthAccountThrottleService', () => {
         status: 429,
       });
     }
-    expect(increment).toHaveBeenCalledTimes(2);
+    expect(increment).toHaveBeenCalledTimes(Object.keys(AUTH_ACCOUNT_THROTTLE_POLICIES).length);
   });
 
   it('propagates configured Redis outages instead of silently allowing the request', async () => {
