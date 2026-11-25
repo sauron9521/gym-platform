@@ -34,6 +34,8 @@ export function AppSettingsProvider({ children }: PropsWithChildren) {
   const { account } = useAuth();
   const accountId = account?.id ?? null;
   const [state, setState] = useState(() => initial(accountId));
+  // Reset the render state on account changes before exposing a preference.
+  if (state.accountId !== accountId) setState(initial(accountId));
   const [revision, setRevision] = useState(0);
   const scopeRef = useRef<{ accountId: string; state: SettingsState } | null>(null);
   const pendingWrites = useRef(new Map<string, Promise<void>>());
@@ -43,7 +45,6 @@ export function AppSettingsProvider({ children }: PropsWithChildren) {
     const key = `gym-platform:app-settings:v1:${accountId}:auto-rest-timer`;
     const scope = { accountId, state: initial(accountId) };
     scopeRef.current = scope;
-    setState(scope.state);
     // A fast sign-out/sign-in must not read before an earlier save settles.
     const pendingWrite = pendingWrites.current.get(accountId);
     const read = pendingWrite
@@ -114,7 +115,10 @@ export function AppSettingsProvider({ children }: PropsWithChildren) {
       value={{
         settings,
         setAutoRestTimer,
-        reload: () => setRevision((value) => value + 1),
+        reload: () => {
+          setState(initial(accountId));
+          setRevision((value) => value + 1);
+        },
         shouldAutoStartRestTimer,
       }}
     >
