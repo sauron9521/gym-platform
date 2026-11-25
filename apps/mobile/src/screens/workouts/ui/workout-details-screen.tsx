@@ -21,7 +21,7 @@ import {
   useWorkoutTransition,
   type WorkoutTransition,
 } from '@/features/workouts/model/workout-details-query';
-import { palette } from '@/shared/config/theme';
+import { createThemedStyles } from '@/shared/config/theme-provider';
 import { WorkoutSetRow } from './workout-set-row';
 
 type TitleEditorProps = {
@@ -35,6 +35,7 @@ type TitleEditorProps = {
 /** Keyed by the server title, so successful PATCH resets the local input. */
 // prettier-ignore
 function WorkoutTitleEditor({ title, disabled, pending, failure, onSave }: TitleEditorProps) {
+  const styles = useStyles();
   const [editedTitle, setEditedTitle] = useState(title);
   const normalized = editedTitle.trim();
   const error = workoutTitleError(editedTitle);
@@ -74,6 +75,7 @@ function WorkoutTitleEditor({ title, disabled, pending, failure, onSave }: Title
 // Preserve the compact native status-action state machine for focused review.
 // prettier-ignore
 export function WorkoutDetailsScreen({ id }: { id: string }) {
+  const styles = useStyles();
   const details = useWorkoutDetailsQuery(id);
   const transition = useWorkoutTransition(id);
   const titleUpdate = useUpdateWorkoutTitle(id);
@@ -310,52 +312,54 @@ export function WorkoutDetailsScreen({ id }: { id: string }) {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: palette.background },
-  content: { paddingHorizontal: 20, paddingTop: 24, paddingBottom: 24, gap: 16 },
-  title: { fontSize: 26, fontWeight: '700', color: palette.text },
-  heading: { fontSize: 17, fontWeight: '600', color: palette.text },
-  muted: { fontSize: 14, color: palette.muted },
-  error: { fontSize: 14, color: '#b91c1c' },
-  progressTrack: {
-    height: 8,
-    backgroundColor: palette.border,
-    borderRadius: 4,
-    overflow: 'hidden',
-  },
-  progressFill: { height: '100%', backgroundColor: palette.primary, borderRadius: 4 },
-  editor: { gap: 10 },
-  titleInput: {
-    color: palette.text,
-    padding: 12,
-    borderRadius: 10,
-    borderColor: palette.border,
-    borderWidth: 1,
-    minHeight: 48,
-  },
-  cancelButton: {
-    borderColor: palette.border,
-    borderWidth: 1,
-    padding: 15,
-    borderRadius: 10,
-    alignItems: 'center',
-    minHeight: 48,
-  },
-  cancelText: { color: '#ff6460', fontWeight: '600' },
-  card: {
-    borderWidth: 1,
-    borderColor: palette.border,
-    backgroundColor: palette.surface,
-    borderRadius: 14,
-    padding: 18,
-    gap: 8,
-    minWidth: 0,
-  },
-  button: {
-    backgroundColor: palette.primary,
-    borderRadius: 12,
-    padding: 16,
-    alignItems: 'center',
-  },
-  buttonText: { fontWeight: '700', color: palette.surface },
-});
+const useStyles = createThemedStyles((palette) =>
+  StyleSheet.create({
+    container: { flex: 1, backgroundColor: palette.background },
+    content: { paddingHorizontal: 20, paddingTop: 24, paddingBottom: 24, gap: 16 },
+    title: { fontSize: 26, fontWeight: '700', color: palette.text },
+    heading: { fontSize: 17, fontWeight: '600', color: palette.text },
+    muted: { fontSize: 14, color: palette.muted },
+    error: { fontSize: 14, color: palette.error },
+    progressTrack: {
+      height: 8,
+      backgroundColor: palette.border,
+      borderRadius: 4,
+      overflow: 'hidden',
+    },
+    progressFill: { height: '100%', backgroundColor: palette.primary, borderRadius: 4 },
+    editor: { gap: 10 },
+    titleInput: {
+      color: palette.text,
+      padding: 12,
+      borderRadius: 10,
+      borderColor: palette.border,
+      borderWidth: 1,
+      minHeight: 48,
+    },
+    cancelButton: {
+      borderColor: palette.border,
+      borderWidth: 1,
+      padding: 15,
+      borderRadius: 10,
+      alignItems: 'center',
+      minHeight: 48,
+    },
+    cancelText: { color: palette.error, fontWeight: '600' },
+    card: {
+      borderWidth: 1,
+      borderColor: palette.border,
+      backgroundColor: palette.surface,
+      borderRadius: 14,
+      padding: 18,
+      gap: 8,
+      minWidth: 0,
+    },
+    button: {
+      backgroundColor: palette.primary,
+      borderRadius: 12,
+      padding: 16,
+      alignItems: 'center',
+    },
+    buttonText: { fontWeight: '700', color: palette.primaryForeground },
+  }),
+);

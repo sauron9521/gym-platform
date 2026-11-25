@@ -11,7 +11,7 @@ import { useWorkoutSummary } from '@/features/progress/model/workout-summary-que
 import { workoutStatusLabel } from '@/features/workouts/lib/workout-presentation';
 import { useWorkoutsQuery } from '@/features/workouts/model/workouts-query';
 import { accountQueryKeys } from '@/shared/api/query-client';
-import { palette } from '@/shared/config/theme';
+import { createThemedStyles } from '@/shared/config/theme-provider';
 import { AsyncResourceState } from '@/shared/ui/async-resource-state';
 
 /**
@@ -19,6 +19,7 @@ import { AsyncResourceState } from '@/shared/ui/async-resource-state';
  * only inside this component to avoid unauthorized trainer/admin requests.
  */
 function AthleteDashboard() {
+  const styles = useStyles();
   const router = useRouter();
   const workouts = useWorkoutsQuery();
   const programs = useProgramAssignments();
@@ -96,6 +97,7 @@ function AthleteDashboard() {
 }
 
 export function HomeScreen() {
+  const styles = useStyles();
   const router = useRouter();
   const { account, capabilities } = useAuth();
   const { data: accountData } = useAccountQuery();
@@ -229,47 +231,49 @@ export function HomeScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: palette.background },
-  content: { padding: 24, gap: 14, paddingBottom: 40 },
-  eyebrow: { color: palette.primary, fontWeight: '700', letterSpacing: 2, fontSize: 12 },
-  title: { color: palette.text, fontWeight: '700', fontSize: 27 },
-  heading: { color: palette.text, fontWeight: '700', fontSize: 19, marginTop: 10 },
-  subtitle: { color: palette.muted, fontSize: 14 },
-  summary: { flexDirection: 'row', gap: 12, marginVertical: 8 },
-  stat: {
-    flex: 1,
-    borderRadius: 12,
-    borderColor: palette.border,
-    borderWidth: 1,
-    padding: 14,
-    gap: 8,
-  },
-  statValue: { color: palette.primary, fontWeight: '700', fontSize: 26 },
-  action: {
-    borderWidth: 1,
-    borderColor: palette.border,
-    borderRadius: 12,
-    padding: 16,
-    gap: 5,
-    minHeight: 50,
-  },
-  actionText: { color: palette.text, fontWeight: '600' },
-  refreshButton: {
-    borderWidth: 1,
-    borderColor: palette.border,
-    borderRadius: 12,
-    padding: 12,
-    minHeight: 44,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  primary: {
-    backgroundColor: palette.primary,
-    borderRadius: 12,
-    padding: 16,
-    minHeight: 50,
-    justifyContent: 'center',
-  },
-  primaryText: { color: palette.background, fontWeight: '700' },
-});
+const useStyles = createThemedStyles((palette) =>
+  StyleSheet.create({
+    container: { flex: 1, backgroundColor: palette.background },
+    content: { padding: 24, gap: 14, paddingBottom: 40 },
+    eyebrow: { color: palette.primary, fontWeight: '700', letterSpacing: 2, fontSize: 12 },
+    title: { color: palette.text, fontWeight: '700', fontSize: 27 },
+    heading: { color: palette.text, fontWeight: '700', fontSize: 19, marginTop: 10 },
+    subtitle: { color: palette.muted, fontSize: 14 },
+    summary: { flexDirection: 'row', gap: 12, marginVertical: 8 },
+    stat: {
+      flex: 1,
+      borderRadius: 12,
+      borderColor: palette.border,
+      borderWidth: 1,
+      padding: 14,
+      gap: 8,
+    },
+    statValue: { color: palette.primary, fontWeight: '700', fontSize: 26 },
+    action: {
+      borderWidth: 1,
+      borderColor: palette.border,
+      borderRadius: 12,
+      padding: 16,
+      gap: 5,
+      minHeight: 50,
+    },
+    actionText: { color: palette.text, fontWeight: '600' },
+    refreshButton: {
+      borderWidth: 1,
+      borderColor: palette.border,
+      borderRadius: 12,
+      padding: 12,
+      minHeight: 44,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    primary: {
+      backgroundColor: palette.primary,
+      borderRadius: 12,
+      padding: 16,
+      minHeight: 50,
+      justifyContent: 'center',
+    },
+    primaryText: { color: palette.primaryForeground, fontWeight: '700' },
+  }),
+);

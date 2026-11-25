@@ -6,11 +6,12 @@ import { strengthVolumeHeights } from '@/features/progress/lib/chart';
 import { exercisePersonalBests } from '@/features/progress/lib/personal-bests';
 import { useExerciseProgress } from '@/features/progress/model/exercise-progress-query';
 import type { ProgressRange } from '@/features/progress/model/workout-summary-query';
-import { palette } from '@/shared/config/theme';
+import { createThemedStyles } from '@/shared/config/theme-provider';
 
 const periods: ProgressRange[] = ['7d', '30d', '90d'];
 
 export function ExerciseProgressScreen({ id }: { id: string }) {
+  const styles = useStyles();
   const intl = useIntl();
   const t = (key: string, values?: Record<string, string | number>) =>
     intl.formatMessage({ id: `mobile.exerciseRecords.${key}` }, values);
@@ -116,49 +117,51 @@ export function ExerciseProgressScreen({ id }: { id: string }) {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: palette.background },
-  content: { gap: 14, padding: 24 },
-  heading: { color: palette.text, fontWeight: '700', fontSize: 25 },
-  metric: { color: palette.text, fontSize: 17 },
-  highlightGroup: {
-    gap: 8,
-    padding: 14,
-    backgroundColor: palette.surface,
-    borderColor: palette.border,
-    borderWidth: 1,
-    borderRadius: 12,
-  },
-  highlightTitle: { color: palette.primary, fontSize: 17, fontWeight: '700' },
-  text: { color: palette.text },
-  muted: { color: palette.muted },
-  error: { color: '#ff6460' },
-  row: { flexDirection: 'row', gap: 8 },
-  chip: {
-    padding: 10,
-    borderColor: palette.border,
-    borderWidth: 1,
-    borderRadius: 10,
-    minHeight: 44,
-  },
-  selected: { borderColor: palette.primary, borderWidth: 2 },
-  errorGroup: { gap: 10 },
-  retry: {
-    padding: 12,
-    borderWidth: 1,
-    borderColor: palette.border,
-    borderRadius: 10,
-    minHeight: 44,
-  },
-  chart: {
-    height: 160,
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    backgroundColor: palette.surface,
-    gap: 3,
-    padding: 12,
-    borderRadius: 12,
-  },
-  day: { flex: 1, height: '100%', justifyContent: 'flex-end' },
-  bar: { backgroundColor: palette.primary, width: '100%' },
-});
+const useStyles = createThemedStyles((palette) =>
+  StyleSheet.create({
+    container: { flex: 1, backgroundColor: palette.background },
+    content: { gap: 14, padding: 24 },
+    heading: { color: palette.text, fontWeight: '700', fontSize: 25 },
+    metric: { color: palette.text, fontSize: 17 },
+    highlightGroup: {
+      gap: 8,
+      padding: 14,
+      backgroundColor: palette.surface,
+      borderColor: palette.border,
+      borderWidth: 1,
+      borderRadius: 12,
+    },
+    highlightTitle: { color: palette.primary, fontSize: 17, fontWeight: '700' },
+    text: { color: palette.text },
+    muted: { color: palette.muted },
+    error: { color: palette.error },
+    row: { flexDirection: 'row', gap: 8 },
+    chip: {
+      padding: 10,
+      borderColor: palette.border,
+      borderWidth: 1,
+      borderRadius: 10,
+      minHeight: 44,
+    },
+    selected: { borderColor: palette.primary, borderWidth: 2 },
+    errorGroup: { gap: 10 },
+    retry: {
+      padding: 12,
+      borderWidth: 1,
+      borderColor: palette.border,
+      borderRadius: 10,
+      minHeight: 44,
+    },
+    chart: {
+      height: 160,
+      flexDirection: 'row',
+      alignItems: 'flex-end',
+      backgroundColor: palette.surface,
+      gap: 3,
+      padding: 12,
+      borderRadius: 12,
+    },
+    day: { flex: 1, height: '100%', justifyContent: 'flex-end' },
+    bar: { backgroundColor: palette.primary, width: '100%' },
+  }),
+);

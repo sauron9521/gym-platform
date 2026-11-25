@@ -70,14 +70,14 @@ test('Mobile uses OVRANTO v2 native semantic tokens through one shared adapter',
   assert.ok(theme.includes('@gym/design-tokens/ovranto-native'));
   assert.equal(packageJson.dependencies['@gym/design-tokens'], 'workspace:*');
   for (const mapping of [
-    'background: dark.background',
-    'surface: dark.card',
-    'text: dark.foreground',
-    'muted: dark.mutedForeground',
-    'primary: dark.primary',
-    'primaryForeground: dark.primaryForeground',
-    'border: dark.border',
-    'error: dark.destructive',
+    'background: tokens.background',
+    'surface: tokens.card',
+    'text: tokens.foreground',
+    'muted: tokens.mutedForeground',
+    'primary: tokens.primary',
+    'primaryForeground: tokens.primaryForeground',
+    'border: tokens.border',
+    'error: tokens.destructive',
   ]) {
     assert.ok(theme.includes(mapping), mapping);
   }
@@ -108,6 +108,7 @@ test('UniWind light and dark channels match generated OVRANTO semantic tokens', 
       assert.ok(content.includes('--brand-' + key + ': ' + rgb(value) + ';'));
     }
   }
-  assert.ok(layout.includes('<GluestackUIProvider mode="dark">'));
-  assert.ok(layout.includes('<StatusBar style="light" />'));
+  assert.ok(layout.includes('<GluestackUIProvider mode={preference}>'));
+  assert.ok(layout.includes("<StatusBar style={mode === 'dark' ? 'light' : 'dark'} />"));
+  assert.ok(layout.includes('<MobileThemeProvider>'));
 });

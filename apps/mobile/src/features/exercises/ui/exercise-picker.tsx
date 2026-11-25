@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 
 import { useExercisesQuery } from '@/features/exercises/model/exercises-query';
-import { palette } from '@/shared/config/theme';
+import { createThemedStyles, useMobileTheme } from '@/shared/config/theme-provider';
 import { AsyncResourceState } from '@/shared/ui/async-resource-state';
 
 type Props = {
@@ -33,6 +33,8 @@ type RememberedSelection = {
  * The parent remains the source of truth for the selected exercise ID.
  */
 export function ExercisePicker({ selectedId, disabled = false, onSelect }: Props) {
+  const styles = useStyles();
+  const { palette } = useMobileTheme();
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState('');
   const [search, setSearch] = useState('');
@@ -221,97 +223,99 @@ export function ExercisePicker({ selectedId, disabled = false, onSelect }: Props
   );
 }
 
-const styles = StyleSheet.create({
-  container: { gap: 8 },
-  trigger: {
-    borderColor: palette.border,
-    borderWidth: 1,
-    borderRadius: 14,
-    backgroundColor: palette.surface,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    minHeight: 72,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 12,
-  },
-  selectedTrigger: { borderColor: palette.primary },
-  triggerCopy: { flex: 1, gap: 4 },
-  triggerCaption: { color: palette.muted, fontSize: 11, fontWeight: '700', letterSpacing: 1 },
-  text: { color: palette.text, fontSize: 16, fontWeight: '600' },
-  selectedText: { color: palette.primary, fontSize: 16, fontWeight: '700' },
-  hint: { color: palette.muted, fontSize: 13 },
-  chevron: { color: palette.primary, fontSize: 28 },
-  modal: { flex: 1, backgroundColor: palette.background, paddingTop: 20 },
-  headingRow: {
-    paddingHorizontal: 20,
-    paddingBottom: 18,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 12,
-  },
-  headingCopy: { flex: 1, gap: 5 },
-  eyebrow: { color: palette.primary, fontSize: 11, fontWeight: '700', letterSpacing: 1 },
-  heading: { fontSize: 24, fontWeight: '700', color: palette.text, flexShrink: 1 },
-  close: {
-    minHeight: 44,
-    paddingHorizontal: 12,
-    borderRadius: 12,
-    justifyContent: 'center',
-    backgroundColor: palette.surface,
-    borderWidth: 1,
-    borderColor: palette.border,
-  },
-  closeText: { color: palette.text, fontSize: 14, fontWeight: '600' },
-  input: {
-    color: palette.text,
-    borderColor: palette.border,
-    borderWidth: 1,
-    backgroundColor: palette.surface,
-    borderRadius: 14,
-    paddingHorizontal: 16,
-    minHeight: 50,
-    marginHorizontal: 20,
-    marginBottom: 14,
-  },
-  list: { flex: 1 },
-  listContent: { gap: 10, paddingHorizontal: 20, paddingBottom: 48, flexGrow: 1 },
-  feedback: { color: palette.muted, textAlign: 'center', paddingVertical: 20, fontSize: 14 },
-  exercise: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    borderWidth: 1,
-    borderColor: palette.border,
-    backgroundColor: palette.surface,
-    borderRadius: 14,
-    minHeight: 54,
-  },
-  selectedExercise: {
-    borderColor: palette.primary,
-    backgroundColor: palette.primary,
-  },
-  exerciseText: { color: palette.text, fontSize: 15, fontWeight: '600', flexShrink: 1 },
-  selectedExerciseText: {
-    color: palette.primaryForeground,
-    fontSize: 15,
-    fontWeight: '700',
-    flexShrink: 1,
-  },
-  checkmark: { color: palette.primaryForeground, fontSize: 18, fontWeight: '700' },
-  moreButton: {
-    minHeight: 48,
-    borderColor: palette.border,
-    borderWidth: 1,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 12,
-  },
-  moreText: { color: palette.primary, fontSize: 14, fontWeight: '700' },
-});
+const useStyles = createThemedStyles((palette) =>
+  StyleSheet.create({
+    container: { gap: 8 },
+    trigger: {
+      borderColor: palette.border,
+      borderWidth: 1,
+      borderRadius: 14,
+      backgroundColor: palette.surface,
+      paddingHorizontal: 16,
+      paddingVertical: 14,
+      minHeight: 72,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: 12,
+    },
+    selectedTrigger: { borderColor: palette.primary },
+    triggerCopy: { flex: 1, gap: 4 },
+    triggerCaption: { color: palette.muted, fontSize: 11, fontWeight: '700', letterSpacing: 1 },
+    text: { color: palette.text, fontSize: 16, fontWeight: '600' },
+    selectedText: { color: palette.primary, fontSize: 16, fontWeight: '700' },
+    hint: { color: palette.muted, fontSize: 13 },
+    chevron: { color: palette.primary, fontSize: 28 },
+    modal: { flex: 1, backgroundColor: palette.background, paddingTop: 20 },
+    headingRow: {
+      paddingHorizontal: 20,
+      paddingBottom: 18,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: 12,
+    },
+    headingCopy: { flex: 1, gap: 5 },
+    eyebrow: { color: palette.primary, fontSize: 11, fontWeight: '700', letterSpacing: 1 },
+    heading: { fontSize: 24, fontWeight: '700', color: palette.text, flexShrink: 1 },
+    close: {
+      minHeight: 44,
+      paddingHorizontal: 12,
+      borderRadius: 12,
+      justifyContent: 'center',
+      backgroundColor: palette.surface,
+      borderWidth: 1,
+      borderColor: palette.border,
+    },
+    closeText: { color: palette.text, fontSize: 14, fontWeight: '600' },
+    input: {
+      color: palette.text,
+      borderColor: palette.border,
+      borderWidth: 1,
+      backgroundColor: palette.surface,
+      borderRadius: 14,
+      paddingHorizontal: 16,
+      minHeight: 50,
+      marginHorizontal: 20,
+      marginBottom: 14,
+    },
+    list: { flex: 1 },
+    listContent: { gap: 10, paddingHorizontal: 20, paddingBottom: 48, flexGrow: 1 },
+    feedback: { color: palette.muted, textAlign: 'center', paddingVertical: 20, fontSize: 14 },
+    exercise: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: 12,
+      paddingHorizontal: 16,
+      paddingVertical: 14,
+      borderWidth: 1,
+      borderColor: palette.border,
+      backgroundColor: palette.surface,
+      borderRadius: 14,
+      minHeight: 54,
+    },
+    selectedExercise: {
+      borderColor: palette.primary,
+      backgroundColor: palette.primary,
+    },
+    exerciseText: { color: palette.text, fontSize: 15, fontWeight: '600', flexShrink: 1 },
+    selectedExerciseText: {
+      color: palette.primaryForeground,
+      fontSize: 15,
+      fontWeight: '700',
+      flexShrink: 1,
+    },
+    checkmark: { color: palette.primaryForeground, fontSize: 18, fontWeight: '700' },
+    moreButton: {
+      minHeight: 48,
+      borderColor: palette.border,
+      borderWidth: 1,
+      borderRadius: 14,
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: 12,
+    },
+    moreText: { color: palette.primary, fontSize: 14, fontWeight: '700' },
+  }),
+);

@@ -17,9 +17,11 @@ import {
 import { signInSchema, type SignInValues } from '@/features/auth/lib/login-flow';
 import { useAuth } from '@/features/auth/model/auth-context';
 import { getMobileAuthErrorMessageId } from '@/shared/i18n/mobile-messages';
-import { palette } from '@/shared/config/theme';
+import { createThemedStyles, useMobileTheme } from '@/shared/config/theme-provider';
 
 export function SignInScreen() {
+  const styles = useStyles();
+  const { palette } = useMobileTheme();
   const intl = useIntl();
   const t = useCallback(
     (key: string) => intl.formatMessage({ id: `mobile.signIn.${key}` }),
@@ -174,7 +176,10 @@ export function SignInScreen() {
             style={[styles.button, busy && styles.disabled]}
           >
             {isSubmitting ? (
-              <ActivityIndicator accessibilityLabel={t('signingIn')} color={palette.surface} />
+              <ActivityIndicator
+                accessibilityLabel={t('signingIn')}
+                color={palette.primaryForeground}
+              />
             ) : (
               <Text style={styles.buttonText}>{t('signIn')}</Text>
             )}
@@ -190,7 +195,7 @@ export function SignInScreen() {
             onPress={() => void recover()}
           >
             {recovering ? (
-              <ActivityIndicator accessible={false} color={palette.surface} />
+              <ActivityIndicator accessible={false} color={palette.primaryForeground} />
             ) : (
               <Text style={styles.buttonText}>{t('recover')}</Text>
             )}
@@ -202,36 +207,38 @@ export function SignInScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: palette.background },
-  content: { flexGrow: 1, justifyContent: 'center', padding: 24, gap: 12 },
-  eyebrow: { color: palette.primary, fontSize: 12, fontWeight: '700', letterSpacing: 2 },
-  heading: { color: palette.text, fontSize: 32, fontWeight: '700' },
-  description: { color: palette.muted, fontSize: 16, lineHeight: 24 },
-  form: { gap: 12, marginTop: 18 },
-  label: { color: palette.text, fontSize: 14, fontWeight: '600' },
-  input: {
-    backgroundColor: palette.surface,
-    borderWidth: 1,
-    borderColor: palette.border,
-    borderRadius: 12,
-    minHeight: 48,
-    paddingHorizontal: 14,
-    color: palette.text,
-    fontSize: 16,
-  },
-  inputError: { borderColor: '#b91c1c' },
-  error: { color: '#b91c1c', fontSize: 14 },
-  button: {
-    backgroundColor: palette.primary,
-    padding: 14,
-    borderRadius: 12,
-    minHeight: 50,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  disabled: { opacity: 0.65 },
-  buttonText: { color: palette.surface, fontSize: 16, fontWeight: '700' },
-  note: { color: palette.muted, fontSize: 13, lineHeight: 20, marginTop: 20 },
-});
+const useStyles = createThemedStyles((palette) =>
+  StyleSheet.create({
+    container: { flex: 1, backgroundColor: palette.background },
+    content: { flexGrow: 1, justifyContent: 'center', padding: 24, gap: 12 },
+    eyebrow: { color: palette.primary, fontSize: 12, fontWeight: '700', letterSpacing: 2 },
+    heading: { color: palette.text, fontSize: 32, fontWeight: '700' },
+    description: { color: palette.muted, fontSize: 16, lineHeight: 24 },
+    form: { gap: 12, marginTop: 18 },
+    label: { color: palette.text, fontSize: 14, fontWeight: '600' },
+    input: {
+      backgroundColor: palette.surface,
+      borderWidth: 1,
+      borderColor: palette.border,
+      borderRadius: 12,
+      minHeight: 48,
+      paddingHorizontal: 14,
+      color: palette.text,
+      fontSize: 16,
+    },
+    inputError: { borderColor: palette.error },
+    error: { color: palette.error, fontSize: 14 },
+    button: {
+      backgroundColor: palette.primary,
+      padding: 14,
+      borderRadius: 12,
+      minHeight: 50,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginTop: 8,
+    },
+    disabled: { opacity: 0.65 },
+    buttonText: { color: palette.primaryForeground, fontSize: 16, fontWeight: '700' },
+    note: { color: palette.muted, fontSize: 13, lineHeight: 20, marginTop: 20 },
+  }),
+);

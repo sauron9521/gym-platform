@@ -74,6 +74,10 @@ export function getMobileAuthErrorMessageId(code: string): string {
 }
 
 const navigationMessages = {
+  'mobile.theme.title': { uk: 'Тема оформлення', en: 'Appearance' },
+  'mobile.theme.system': { uk: 'Системна', en: 'System' },
+  'mobile.theme.light': { uk: 'Світла', en: 'Light' },
+  'mobile.theme.dark': { uk: 'Темна', en: 'Dark' },
   'mobile.tabs.progress': { uk: 'Прогрес', en: 'Progress' },
   'mobile.navigation.editProfile': { uk: 'Редагувати профіль', en: 'Edit profile' },
   'mobile.navigation.exercises': { uk: 'Вправи', en: 'Exercises' },

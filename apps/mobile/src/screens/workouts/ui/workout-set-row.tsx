@@ -22,7 +22,7 @@ import {
   WorkoutSetOutcomeUnknownError,
   useWorkoutSetMutation,
 } from '@/features/workouts/model/workout-set-mutation';
-import { palette } from '@/shared/config/theme';
+import { createThemedStyles } from '@/shared/config/theme-provider';
 
 type WorkoutSet = WorkoutDetails['exercises'][number]['sets'][number];
 
@@ -49,6 +49,7 @@ export function WorkoutSetRow({
   onWriteSettled?: (setId: string, requiredReadVersion: number | null) => void;
   onNewCompletion?: () => void;
 }) {
+  const styles = useStyles();
   const mutation = useWorkoutSetMutation(workoutId);
   const submitLock = useRef(false);
   const [editing, setEditing] = useState(false);
@@ -380,58 +381,60 @@ export function WorkoutSetRow({
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    gap: 8,
-    borderWidth: 1,
-    borderColor: palette.border,
-    borderRadius: 12,
-    padding: 12,
-    minWidth: 0,
-  },
-  activeContainer: { borderColor: palette.primary },
-  savedContainer: { backgroundColor: palette.background, padding: 10, gap: 4 },
-  disabled: { opacity: 0.5 },
-  title: { fontSize: 15, fontWeight: '600', color: palette.text },
-  headingRow: { flexDirection: 'row', justifyContent: 'space-between', flexWrap: 'wrap', gap: 6 },
-  saved: { fontSize: 13, color: '#86efac', fontWeight: '700' },
-  editButton: { alignSelf: 'flex-start', paddingVertical: 10, paddingHorizontal: 12 },
-  editText: { color: palette.primary, fontWeight: '600' },
-  caption: { fontSize: 13, color: palette.muted },
-  inputs: { flexDirection: 'row', gap: 12 },
-  field: { flex: 1, minWidth: 0, gap: 4 },
-  input: {
-    borderWidth: 1,
-    borderColor: palette.border,
-    borderRadius: 8,
-    backgroundColor: palette.background,
-    color: palette.text,
-    minHeight: 48,
-    paddingHorizontal: 10,
-  },
-  actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  button: {
-    flex: 1,
-    minWidth: 120,
-    padding: 8,
-    backgroundColor: palette.primary,
-    borderRadius: 10,
-    minHeight: 48,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  buttonText: { color: palette.primaryForeground, fontWeight: '700', textAlign: 'center' },
-  secondary: {
-    flex: 1,
-    minWidth: 100,
-    padding: 8,
-    borderWidth: 1,
-    borderColor: palette.border,
-    borderRadius: 10,
-    minHeight: 48,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  secondaryText: { color: palette.text, fontWeight: '600', textAlign: 'center' },
-  error: { color: '#ff6460', fontSize: 13 },
-});
+const useStyles = createThemedStyles((palette) =>
+  StyleSheet.create({
+    container: {
+      gap: 8,
+      borderWidth: 1,
+      borderColor: palette.border,
+      borderRadius: 12,
+      padding: 12,
+      minWidth: 0,
+    },
+    activeContainer: { borderColor: palette.primary },
+    savedContainer: { backgroundColor: palette.setCompleteBackground, padding: 10, gap: 4 },
+    disabled: { opacity: 0.5 },
+    title: { fontSize: 15, fontWeight: '600', color: palette.text },
+    headingRow: { flexDirection: 'row', justifyContent: 'space-between', flexWrap: 'wrap', gap: 6 },
+    saved: { fontSize: 13, color: palette.setCompleteForeground, fontWeight: '700' },
+    editButton: { alignSelf: 'flex-start', paddingVertical: 10, paddingHorizontal: 12 },
+    editText: { color: palette.primary, fontWeight: '600' },
+    caption: { fontSize: 13, color: palette.muted },
+    inputs: { flexDirection: 'row', gap: 12 },
+    field: { flex: 1, minWidth: 0, gap: 4 },
+    input: {
+      borderWidth: 1,
+      borderColor: palette.border,
+      borderRadius: 8,
+      backgroundColor: palette.background,
+      color: palette.text,
+      minHeight: 48,
+      paddingHorizontal: 10,
+    },
+    actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+    button: {
+      flex: 1,
+      minWidth: 120,
+      padding: 8,
+      backgroundColor: palette.primary,
+      borderRadius: 10,
+      minHeight: 48,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    buttonText: { color: palette.primaryForeground, fontWeight: '700', textAlign: 'center' },
+    secondary: {
+      flex: 1,
+      minWidth: 100,
+      padding: 8,
+      borderWidth: 1,
+      borderColor: palette.border,
+      borderRadius: 10,
+      minHeight: 48,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    secondaryText: { color: palette.text, fontWeight: '600', textAlign: 'center' },
+    error: { color: palette.error, fontSize: 13 },
+  }),
+);
