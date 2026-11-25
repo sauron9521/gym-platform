@@ -1,6 +1,7 @@
 import '../../global.css';
 
 import { Stack } from 'expo-router';
+import { useIntl } from 'react-intl';
 import { StatusBar } from 'expo-status-bar';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -22,6 +23,8 @@ import { AccountLocaleSync } from '@/features/profile/ui/account-locale-sync';
 
 function Navigation() {
   const { account, capabilities, restoring } = useAuth();
+  const intl = useIntl();
+  const t = (key: string) => intl.formatMessage({ id: `mobile.navigation.${key}` });
   return (
     <>
       <Stack
@@ -36,33 +39,39 @@ function Navigation() {
         }}
       >
         <Stack.Protected guard={Boolean(account && hasMobileAccess(capabilities))}>
-          <Stack.Screen name="(tabs)" options={{ title: 'Gym Platform' }} />
+          <Stack.Screen name="(tabs)" options={{ title: 'OVRANTO' }} />
           <Stack.Screen
             name="profile/edit"
-            options={{ headerShown: true, title: 'Редагувати профіль' }}
+            options={{ headerShown: true, title: t('editProfile') }}
           />
-          <Stack.Screen name="exercises/index" options={{ headerShown: true, title: 'Вправи' }} />
-          <Stack.Screen name="workouts/[id]" options={{ headerShown: true, title: 'Тренування' }} />
+          <Stack.Screen
+            name="exercises/index"
+            options={{ headerShown: true, title: t('exercises') }}
+          />
+          <Stack.Screen name="workouts/[id]" options={{ headerShown: true, title: t('workout') }} />
         </Stack.Protected>
         <Stack.Protected guard={hasAthleteAccess(capabilities)}>
           <Stack.Screen
-            name="progress/index"
-            options={{ headerShown: true, title: 'Мій прогрес' }}
+            name="programs/index"
+            options={{
+              headerShown: true,
+              title: intl.formatMessage({ id: 'mobile.tabs.myPrograms' }),
+            }}
           />
           <Stack.Screen
             name="progress/exercises/[id]"
-            options={{ headerShown: true, title: 'Прогрес вправи' }}
+            options={{ headerShown: true, title: t('exerciseProgress') }}
           />
-          <Stack.Screen name="programs/[id]" options={{ headerShown: true, title: 'Програма' }} />
+          <Stack.Screen name="programs/[id]" options={{ headerShown: true, title: t('program') }} />
           <Stack.Screen
             name="workouts/new"
-            options={{ headerShown: true, title: 'Нове тренування' }}
+            options={{ headerShown: true, title: t('newWorkout') }}
           />
         </Stack.Protected>
         <Stack.Protected guard={hasTrainerAccess(capabilities)}>
           <Stack.Screen
             name="trainer/athletes"
-            options={{ headerShown: true, title: 'Мої підопічні' }}
+            options={{ headerShown: true, title: t('athletes') }}
           />
         </Stack.Protected>
         <Stack.Protected guard={!account || !capabilities}>
@@ -72,7 +81,7 @@ function Navigation() {
       <StatusBar style="light" />
       <OfflineBanner />
       {restoring || (account && !capabilities) ? (
-        <View accessibilityLabel="Відновлення сесії" style={styles.loadingOverlay}>
+        <View accessibilityLabel={t('restoring')} style={styles.loadingOverlay}>
           <ActivityIndicator color={palette.primary} size="large" />
         </View>
       ) : null}

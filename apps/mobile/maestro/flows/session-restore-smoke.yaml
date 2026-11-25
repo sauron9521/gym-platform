@@ -11,13 +11,14 @@ appId: ${APP_ID}
     id: sign-in-password
 - inputText: ${E2E_PASSWORD}
 - tapOn: Увійти
-- assertVisible: Gym Platform
+- assertVisible: OVRANTO
 - stopApp
 - launchApp:
     clearState: false
-- assertVisible: Gym Platform
+- assertVisible: OVRANTO
 - assertNotVisible: З поверненням!
-- tapOn: Profile
+- tapOn:
+    id: mobile-tab-profile
 - assertVisible: Оновити профіль
 - tapOn: Вийти
 - assertVisible: З поверненням!

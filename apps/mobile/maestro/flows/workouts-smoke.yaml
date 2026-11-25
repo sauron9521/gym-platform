@@ -20,6 +20,7 @@ appId: ${APP_ID}
     id: workouts-refresh
 - assertVisible:
     id: workouts-refresh
-- tapOn: Profile
+- tapOn:
+    id: mobile-tab-profile
 - tapOn: Вийти
 - assertVisible: З поверненням!
