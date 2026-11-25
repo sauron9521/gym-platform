@@ -1,5 +1,6 @@
 import { act, cleanup, fireEvent, render, waitFor } from '@testing-library/react-native';
-import { getFlatMessages, type Locale } from '@gym/i18n';
+import type { Locale } from '@gym/i18n';
+import { getMobileMessages } from '@/shared/i18n/mobile-messages';
 import { IntlProvider } from 'react-intl';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -18,7 +19,7 @@ function renderScreen(locale: Locale, recoveryAvailable = false) {
     recoveryAvailable,
   } as unknown as ReturnType<typeof useAuth>);
   return render(
-    <IntlProvider locale={locale} defaultLocale="uk" messages={getFlatMessages(locale)}>
+    <IntlProvider locale={locale} defaultLocale="uk" messages={getMobileMessages(locale)}>
       <SignInScreen />
     </IntlProvider>,
   );
@@ -158,5 +159,37 @@ describe('native sign-in uk/en localization without changing auth behavior', () 
     });
     expect(view.queryByText('SECRET_RECOVERY_RESPONSE')).toBeNull();
     expect(signIn).not.toHaveBeenCalled();
+  });
+  it.each([
+    ['uk', 'Увійти', 'Невірна електронна адреса або пароль.'],
+    ['en', 'Sign in', 'Incorrect email address or password.'],
+  ] as const)('localizes credential failure in %s', async (locale, action, message) => {
+    signIn.mockResolvedValueOnce({ success: false, code: 'invalidCredentials' });
+    const view = await renderScreen(locale);
+    await fireEvent.changeText(view.getByTestId('sign-in-email'), 'athlete@example.test');
+    await fireEvent.changeText(view.getByTestId('sign-in-password'), 'secret');
+    await fireEvent.press(view.getByText(action));
+    await waitFor(() => expect(view.getByText(message)).toBeTruthy());
+    expect(signIn).toHaveBeenCalledTimes(1);
+  });
+
+  it.each([
+    ['uk', 'Повторити перевірку сесії', 'Сесія потребує повторного входу.'],
+    ['en', 'Retry session verification', 'Sign in again to restore your session.'],
+  ] as const)('localizes recovery failure in %s', async (locale, action, message) => {
+    retryVerification.mockResolvedValueOnce({ success: false, code: 'sessionExpired' });
+    const view = await renderScreen(locale, true);
+    await fireEvent.press(view.getByLabelText(action));
+    await waitFor(() => expect(view.getByText(message)).toBeTruthy());
+    expect(retryVerification).toHaveBeenCalledTimes(1);
+    expect(signIn).not.toHaveBeenCalled();
+  });
+
+  it('uses a safe generic message for an unexpected error code', async () => {
+    retryVerification.mockResolvedValueOnce({ success: false, code: 'SECRET_RESPONSE' });
+    const view = await renderScreen('en', true);
+    await fireEvent.press(view.getByLabelText('Retry session verification'));
+    await waitFor(() => expect(view.getByText('Could not sign in. Try again.')).toBeTruthy());
+    expect(view.queryByText('SECRET_RESPONSE')).toBeNull();
   });
 });
