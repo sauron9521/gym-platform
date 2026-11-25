@@ -38,15 +38,24 @@ updates:
         versions: ['19.3.1']
       - dependency-name: 'react-dom'
         versions: ['19.3.1']
-      # SDK 58 and Reanimated 4.7.x support Worklets 0.13.x.
-      # Upgrade the pair together in a reviewed Expo/native-build PR.
+      # The installed Expo SDK 58 recommends Reanimated 4.7.1, Worklets
+      # 0.13.0, SVG 15.16.0 and Async Storage 2.2.0. Independent updates
+      # were reviewed and deferred in #846, #850, #847 and #851.
+      # Revisit these temporary ceilings with Expo updates or relevant
+      # security advisories; keep CI vulnerability auditing enabled.
+      # Upgrade the native runtime together in a reviewed PR, with Expo
+      # dependency checks, native builds and persisted-data migration tests.
       - dependency-name: 'react-native-reanimated'
-        versions: ['>=4.8.0']
+        versions: ['>=4.7.2']
       - dependency-name: 'react-native-worklets'
-        versions: ['>=0.14.0']
+        versions: ['>=0.13.1']
+      - dependency-name: 'react-native-svg'
+        versions: ['>=15.16.1']
+      - dependency-name: '@react-native-async-storage/async-storage'
+        versions: ['>=3.0.0']
     # Group only dependencies that are reviewed and tested together.
     # Unmatched updates stay individual, including authentication, throttler,
-    # mail, react-intl, React Native and native modules such as react-native-svg.
+    # mail, react-intl, React Native and native modules within the compatibility guards.
     # Major updates and runtime minor updates remain individual.
     groups:
       dev-tooling:
