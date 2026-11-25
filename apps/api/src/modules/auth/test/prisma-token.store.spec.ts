@@ -446,7 +446,11 @@ describe('PrismaTokenStore security and persistence contracts', () => {
 
       await expect(store.markRefreshTokenUsed(refresh.id, now)).rejects.toBe(failure);
       expect(prisma.refreshToken.updateMany).toHaveBeenCalledExactlyOnceWith({
-        where: { id: refresh.id, usedAt: null, user: { deletedAt: null, status: 'ACTIVE', ...PASSWORD_ONLY_OWNER_FILTER } },
+        where: {
+          id: refresh.id,
+          usedAt: null,
+          user: { deletedAt: null, status: 'ACTIVE', ...PASSWORD_ONLY_OWNER_FILTER },
+        },
         data: { usedAt: now },
       });
     });

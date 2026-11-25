@@ -406,8 +406,9 @@ describe('Confirmed-factor password-only credential boundary (PostgreSQL)', () =
 
     // Unconfirmed enrollment must not block ordinary credentials.
     expect(await sessions.getSession(principal.sessionId)).toBeDefined();
-    expect(await users.findUserForJwtAuth(principal.userId, Math.floor(Date.now() / 1000)))
-      .not.toBeNull();
+    expect(
+      await users.findUserForJwtAuth(principal.userId, Math.floor(Date.now() / 1000)),
+    ).not.toBeNull();
     await tokens.saveRefreshToken(refresh);
     expect(await tokens.getRefreshToken(refresh.id)).toBeDefined();
 
@@ -439,7 +440,8 @@ describe('Confirmed-factor password-only credential boundary (PostgreSQL)', () =
       'MFA authentication required',
     );
     expect(await sessions.getSession(other.sessionId)).toBeDefined();
-    expect(await users.findUserForJwtAuth(other.userId, Math.floor(Date.now() / 1000)))
-      .not.toBeNull();
+    expect(
+      await users.findUserForJwtAuth(other.userId, Math.floor(Date.now() / 1000)),
+    ).not.toBeNull();
   });
 });
