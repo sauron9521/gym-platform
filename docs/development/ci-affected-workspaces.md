@@ -22,10 +22,13 @@ The table describes the explicit application/client scopes returned by the selec
 | `packages/i18n/**`                                                                 | All six apps (API uses mail translations) | Yes                         | On i18n manifest change                          |
 | `tooling/config/**`                                                                | Web, Admin, Trainer, Landing              | No                          | No, unless package manifest changes (full scope) |
 | `apps/api/openapi/**`                                                              | API, Client, Web, Admin, Trainer, Mobile  | Yes                         | No                                               |
+| `.github/dependabot.yml`                                                           | No application scopes                     | No                          | No                                               |
 | Known documentation paths (see below)                                              | No application scopes                     | No                          | No                                               |
 | Root lockfile, root config, CI, non-doc infra, `packages/domain/**`, unknown paths | Full                                      | Yes                         | Yes                                              |
 
 The explicitly listed monitoring shadow fixtures, evidence scripts and platform test use the required offline Alloy, Compose and Prometheus validation. A PR limited to those files and documentation skips application checks. The same validation runs for full main and manual CI, and for PRs changing the selector, the main CI workflow or the manual shadow workflow. Production monitoring, unknown paths and CI files still select full regression.
+
+Dependabot configuration-only changes run the required repository tooling, including a YAML contract for managed ecosystems, directories and version-update grouping. Manifest and lockfile changes still run the vulnerability audit even when the Dependabot configuration changes in the same PR.
 
 For mixed PRs, selected scopes are unioned. Landing is not an OpenAPI consumer. Empty diffs select full scope; invalid or unavailable base/head commits fail classification, and required result gates fail closed. Renames are compared as deletion and addition, so both old and new paths contribute to scope.
 
