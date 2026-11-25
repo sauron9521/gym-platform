@@ -198,3 +198,26 @@ runtime keyring unset until a safe completion and login path is available.
 The next slice must bind confirmation to the same live session and expiry,
 serialize factor changes, issue recovery codes atomically and invalidate
 pre-enrollment credentials before enforcing MFA. No Security/Beta GO.
+
+### Internal first enrollment confirmation (#290, fifth slice)
+
+Confirmation uses the exact live Admin session and its unexpired enrollment
+binding. The transaction-bound library verifier claims the TOTP step and
+persists failed attempts; a rejected proof returns without rolling back
+the attempt counter. A separate account limiter bounds confirmation to
+five requests per 15 minutes. Successful confirmation generates ten
+one-time recovery codes through the library, persists only their hashes,
+clears the enrollment binding, advances the identity JWT revocation fence,
+revokes existing sessions and refresh credentials, and writes a minimal
+durable lifecycle audit event. All of these writes commit together; no
+old session is elevated. Recovery codes are returned once after commit.
+A failed response after commit needs a protected recovery/regeneration
+path, not automatic replay of confirmation.
+
+This is internal infrastructure, not an activation or public HTTP route.
+Account-wide revocation is deliberate because factors belong to the shared
+identity. In-flight sign-ins, new credential issuance, ordinary auth
+paths and enrolled Admin authorization must be fenced before any public
+activation; the global MFA service still has no live configuration.
+Audit retention/access, lost-response recovery and key provisioning
+remain rollout gates. Do not populate live factors or close #290 yet.

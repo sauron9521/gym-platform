@@ -1,6 +1,6 @@
-import { createHash, randomUUID } from 'node:crypto';
+import { createHash, createHmac, randomUUID } from 'node:crypto';
 
-import { PasswordHasher } from '@nestjs/authentication';
+import { MfaService, PasswordHasher } from '@nestjs/authentication';
 import type { INestApplication } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Test } from '@nestjs/testing';
@@ -54,6 +54,13 @@ beforeAll(async () => {
 
 afterAll(async () => {
   try {
+    const users = await prisma?.user.findMany({
+      where: { email: { endsWith: `@${domain}` } },
+      select: { id: true },
+    });
+    await prisma?.mfaLifecycleAudit.deleteMany({
+      where: { userId: { in: users?.map((user) => user.id) ?? [] } },
+    });
     await prisma?.user.deleteMany({ where: { email: { endsWith: `@${domain}` } } });
   } finally {
     await app?.close();
@@ -193,6 +200,182 @@ describe('Admin first MFA enrollment (internal, PostgreSQL)', () => {
       expect(await prisma.mfaAuthenticator.count({ where: { userId: principal.userId } })).toBe(0);
     } finally {
       spy.mockRestore();
+    }
+  });
+});
+
+// Simulate an authenticator independently of the production library (RFC 6238).
+function codeAt(secret: string, step = Math.floor(Date.now() / 30_000)): string {
+  const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+  const bits = secret
+    .split('')
+    .map((character) => alphabet.indexOf(character).toString(2).padStart(5, '0'))
+    .join('');
+  const key = Buffer.from(
+    Array.from({ length: Math.floor(bits.length / 8) }, (_, i) =>
+      parseInt(bits.slice(i * 8, i * 8 + 8), 2),
+    ),
+  );
+  const counter = Buffer.alloc(8);
+  counter.writeBigUInt64BE(BigInt(step));
+  const digest = createHmac('sha1', key).update(counter).digest();
+  const offset = digest[digest.length - 1]! & 15;
+  return String((digest.readUInt32BE(offset) & 0x7fffffff) % 1_000_000).padStart(6, '0');
+}
+
+async function addSession(userId: string, purpose: string) {
+  const now = new Date();
+  const id = randomUUID();
+  await prisma.session.create({
+    data: {
+      id,
+      userId,
+      createdAt: now,
+      lastActiveAt: now,
+      expiresAt: new Date(now.getTime() + 3_600_000),
+      metadata: { purpose },
+    },
+  });
+  return id;
+}
+
+describe('Admin first MFA confirmation (internal, PostgreSQL)', () => {
+  it('atomically confirms, hashes recovery codes, audits, and invalidates prior credentials', async () => {
+    const principal = await seed();
+    const other = await seed();
+    await addSession(principal.userId, 'admin');
+    await addSession(principal.userId, 'web');
+    const now = new Date();
+    const expires = new Date(now.getTime() + 3_600_000);
+    const familyId = randomUUID();
+    await prisma.refreshTokenFamily.create({
+      data: { id: familyId, userId: principal.userId, familyExpiresAt: expires },
+    });
+    await prisma.refreshToken.create({
+      data: {
+        id: randomUUID(),
+        familyId,
+        userId: principal.userId,
+        createdAt: now,
+        expiresAt: expires,
+        familyExpiresAt: expires,
+      },
+    });
+
+    const enrollment = await service.begin(principal, password);
+    const code = codeAt(enrollment.secret);
+    const result = await service.confirm(principal, code);
+    expect(result?.recoveryCodes).toHaveLength(10);
+    const row = await prisma.mfaAuthenticator.findUniqueOrThrow({
+      where: { userId: principal.userId },
+    });
+    expect(row.confirmed).toBe(true);
+    expect(row.lastUsedStep).not.toBeNull();
+    expect(row.enrollmentSessionId).toBeNull();
+    expect(row.enrollmentExpiresAt).toBeNull();
+    const hashes = await prisma.mfaRecoveryCode.findMany({ where: { userId: principal.userId } });
+    expect(hashes).toHaveLength(10);
+    for (const entry of hashes) {
+      expect(entry.hash).toMatch(/^rc1\./);
+      expect(result?.recoveryCodes).not.toContain(entry.hash);
+    }
+    expect(await prisma.session.count({ where: { userId: principal.userId } })).toBe(0);
+    expect(await prisma.session.count({ where: { userId: other.userId } })).toBe(1);
+    expect(
+      (await prisma.user.findUniqueOrThrow({ where: { id: principal.userId } })).authInvalidatedAt,
+    ).not.toBeNull();
+    expect(
+      (await prisma.refreshTokenFamily.findUniqueOrThrow({ where: { id: familyId } })).revokedAt,
+    ).not.toBeNull();
+    expect(
+      await prisma.refreshToken.count({ where: { userId: principal.userId, revoked: false } }),
+    ).toBe(0);
+    const audit = await prisma.mfaLifecycleAudit.findMany({ where: { userId: principal.userId } });
+    expect(audit).toHaveLength(1);
+    expect(audit[0]?.action).toBe('FIRST_TOTP_CONFIRMED');
+    expect(JSON.stringify(audit)).not.toContain(enrollment.secret);
+    await expect(service.confirm(principal, code)).rejects.toMatchObject({ status: 403 });
+  });
+
+  it('refuses a different session, expired enrollment, or missing enrollment', async () => {
+    const principal = await seed();
+    await expect(service.confirm(principal, '123456')).rejects.toMatchObject({ status: 403 });
+    const enrollment = await service.begin(principal, password);
+    const second = await addSession(principal.userId, 'admin');
+    await expect(
+      service.confirm({ ...principal, sessionId: second }, codeAt(enrollment.secret)),
+    ).rejects.toMatchObject({ status: 403 });
+    await prisma.mfaAuthenticator.update({
+      where: { userId: principal.userId },
+      data: { enrollmentExpiresAt: new Date(0) },
+    });
+    await expect(service.confirm(principal, codeAt(enrollment.secret))).rejects.toMatchObject({
+      status: 403,
+    });
+    expect(await prisma.mfaLifecycleAudit.count({ where: { userId: principal.userId } })).toBe(0);
+  });
+
+  it('commits invalid-code attempt accounting without activation', async () => {
+    const principal = await seed();
+    const enrollment = await service.begin(principal, password);
+    const step = Math.floor(Date.now() / 30_000);
+    const valid = new Set(
+      [-2, -1, 0, 1, 2].map((offset) => codeAt(enrollment.secret, step + offset)),
+    );
+    const wrong = Array.from({ length: 10 }, (_, i) => String(i).padStart(6, '0')).find(
+      (code) => !valid.has(code),
+    )!;
+    for (let i = 0; i < 5; i += 1) {
+      expect(await service.confirm(principal, wrong)).toBeNull();
+    }
+    expect(await prisma.mfaFailure.count({ where: { userId: principal.userId } })).toBe(5);
+    await expect(service.confirm(principal, codeAt(enrollment.secret))).rejects.toMatchObject({
+      status: 429,
+    });
+    expect(
+      (await prisma.mfaAuthenticator.findUniqueOrThrow({ where: { userId: principal.userId } }))
+        .confirmed,
+    ).toBe(false);
+    expect(await prisma.mfaRecoveryCode.count({ where: { userId: principal.userId } })).toBe(0);
+    expect(await prisma.session.count({ where: { userId: principal.userId } })).toBe(1);
+  });
+
+  it('issues just one recovery batch and one audit on concurrent confirmation', async () => {
+    const principal = await seed();
+    const enrollment = await service.begin(principal, password);
+    const code = codeAt(enrollment.secret);
+    const results = await Promise.allSettled([
+      service.confirm(principal, code),
+      service.confirm(principal, code),
+    ]);
+    expect(
+      results.filter((r) => r.status === 'fulfilled' && r.value?.recoveryCodes.length === 10),
+    ).toHaveLength(1);
+    expect(await prisma.mfaLifecycleAudit.count({ where: { userId: principal.userId } })).toBe(1);
+    expect(await prisma.mfaRecoveryCode.count({ where: { userId: principal.userId } })).toBe(10);
+  });
+
+  it('rolls back confirmation and replay claim if recovery issuance fails', async () => {
+    const principal = await seed();
+    const enrollment = await service.begin(principal, password);
+    const failure = vi
+      .spyOn(MfaService.prototype, 'generateRecoveryCodes')
+      .mockRejectedValueOnce(new Error('test rollback'));
+    try {
+      await expect(service.confirm(principal, codeAt(enrollment.secret))).rejects.toThrow(
+        'test rollback',
+      );
+      const row = await prisma.mfaAuthenticator.findUniqueOrThrow({
+        where: { userId: principal.userId },
+      });
+      expect(row.confirmed).toBe(false);
+      expect(row.lastUsedStep).toBeNull();
+      expect(row.enrollmentSessionId).toBe(principal.sessionId);
+      expect(await prisma.mfaRecoveryCode.count({ where: { userId: principal.userId } })).toBe(0);
+      expect(await prisma.mfaLifecycleAudit.count({ where: { userId: principal.userId } })).toBe(0);
+      expect(await prisma.session.count({ where: { userId: principal.userId } })).toBe(1);
+    } finally {
+      failure.mockRestore();
     }
   });
 });
