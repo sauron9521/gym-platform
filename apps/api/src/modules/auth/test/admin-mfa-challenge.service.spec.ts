@@ -9,6 +9,7 @@ import {
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import type { Prisma } from '#prisma/client';
+import { ADMIN_MFA_METADATA, adminMfaSessionScope } from '../stores/admin-mfa-session-scope.js';
 import { AdminMfaChallengeService } from '../services/admin-mfa-challenge.service.js';
 import { AUTH_ACCOUNT_THROTTLE_POLICIES } from '../services/auth-account-throttle.service.js';
 
@@ -28,7 +29,7 @@ function setup() {
     lastActiveAt: now,
     expiresAt: new Date(now.getTime() + 300_000),
     mfa: 'pending',
-    metadata: { purpose: 'admin' },
+    metadata: { ...ADMIN_MFA_METADATA, purpose: String(ADMIN_MFA_METADATA.purpose) },
   };
   const user = { passwordHash: 'test-hash', authInvalidatedAt: null };
   const tx = {
@@ -118,7 +119,7 @@ describe('AdminMfaChallengeService', () => {
     expect(session.expiresAt.getTime() - session.createdAt.getTime()).toBe(300_000);
     expect(factors.withLockedOwner).toHaveBeenCalledTimes(1);
     expect(tx.session.create).toHaveBeenCalledWith({
-      data: expect.objectContaining({ userId, mfa: 'pending', metadata: { purpose: 'admin' } }),
+      data: expect.objectContaining({ userId, mfa: 'pending', metadata: ADMIN_MFA_METADATA }),
     });
   });
 
@@ -194,7 +195,7 @@ describe('AdminMfaChallengeService', () => {
     expect(totp).toHaveBeenCalledTimes(method === 'totp' ? 1 : 0);
     expect(recovery).toHaveBeenCalledTimes(method === 'recovery' ? 1 : 0);
     expect(tx.session.deleteMany).toHaveBeenCalledWith({
-      where: { id, userId, metadata: { path: ['purpose'], equals: 'admin' } },
+      where: { ...adminMfaSessionScope(id), userId },
     });
     const action =
       method === 'totp' ? 'ADMIN_TOTP_CHALLENGE_VERIFIED' : 'ADMIN_RECOVERY_CHALLENGE_VERIFIED';

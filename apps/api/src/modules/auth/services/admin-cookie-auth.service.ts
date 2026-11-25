@@ -15,6 +15,9 @@ import type { AppConfigService } from '#src/common/config/app-config.types';
 import { isAllowedAdminOrigin } from '#src/common/auth/admin-origin.guard';
 import { ADMIN_SESSION_PURPOSE } from '#src/common/auth/admin-session-purpose.guard';
 
+import { AdminMfaChallengeService } from './admin-mfa-challenge.service.js';
+import { AdminMfaSessionReader } from '../stores/admin-mfa-session-reader.js';
+
 const ADMIN_SESSION_COOKIE_NAME = '__Host-admin-sid';
 type BrowserRequest = Pick<Request, 'headers' | 'method'>;
 
@@ -33,6 +36,8 @@ export class AdminCookieAuthService {
     private readonly mfa: MfaService,
     private readonly events: AuthenticationEvents,
     @Inject(ConfigService) config: AppConfigService,
+    private readonly challengeService: AdminMfaChallengeService,
+    private readonly mfaSessions: AdminMfaSessionReader,
   ) {
     this.origin = new URL(config.get('ADMIN_APP_URL') ?? config.getOrThrow('APP_URL')).origin;
     this.sessions = new SessionService(
@@ -78,10 +83,23 @@ export class AdminCookieAuthService {
     return issued;
   }
 
-  /**
-   * Future step-up flow can rotate a pending Admin cookie without affecting
-   * regular sessions; the server never treats pending MFA as authorized.
-   */
+  /** Read only the Admin cookie; the global password-only fence stays intact. */
+  async validateAdminSession(request: BrowserRequest) {
+    const token = this.sessions.tokenFrom(request);
+    if (!token) return null;
+    const legacy = await this.sessions.validate(token);
+    if (
+      legacy?.metadata?.purpose === ADMIN_SESSION_PURPOSE &&
+      legacy.metadata.adminMfaFlow === undefined &&
+      legacy.mfa === undefined
+    ) {
+      return legacy;
+    }
+    // Only the scoped reader can return a trusted MFA session.
+    return this.mfaSessions.read(createHash('sha256').update(token).digest('base64url'));
+  }
+
+  /** Internal only: the public challenge endpoint is a separate rollout gate. */
   async completeMfa(
     request: BrowserRequest,
     response: Response,
@@ -106,15 +124,9 @@ export class AdminCookieAuthService {
     ) {
       return null;
     }
-    const record = await this.sessions.validate(this.sessions.tokenFrom(request));
-    if (record?.metadata?.purpose !== ADMIN_SESSION_PURPOSE || record.mfa !== 'pending')
-      return null;
-    const verified =
-      recoveryCode !== undefined
-        ? await this.mfa.verifyRecoveryCode(record.userId, recoveryCode)
-        : await this.mfa.verifyTotp(record.userId, code!);
-    if (!verified) return null;
-    const rotated = await this.sessions.rotate(record, { mfa: 'verified' });
+    const token = this.sessions.tokenFrom(request);
+    if (!token) return null;
+    const rotated = await this.challengeService.complete(token, challenge);
     if (rotated) response.append('Set-Cookie', rotated.cookie);
     return rotated;
   }
@@ -123,11 +135,13 @@ export class AdminCookieAuthService {
   async signOut(request: BrowserRequest, response: Response): Promise<boolean> {
     const token = this.sessions.tokenFrom(request);
     if (!token) return false;
-    const record = await this.sessions.validate(token);
+    const id = createHash('sha256').update(token).digest('base64url');
     response.append('Set-Cookie', this.sessions.clearCookie());
+    // An expired or invalidated MFA session may still be safely discarded.
+    if (await this.mfaSessions.discard(id)) return true;
+    const record = await this.sessions.validate(token);
     if (record?.metadata?.purpose !== ADMIN_SESSION_PURPOSE) return false;
-    // SessionService stores a SHA-256 base64url digest, never a raw token.
-    await this.sessions.discard(createHash('sha256').update(token).digest('base64url'));
+    await this.sessions.discard(id);
     this.events.emit({ type: 'sign-out', userId: record.userId, sessionId: record.id });
     return true;
   }

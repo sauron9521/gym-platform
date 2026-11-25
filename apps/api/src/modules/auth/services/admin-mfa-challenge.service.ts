@@ -24,6 +24,7 @@ import {
   ADMIN_MFA_PENDING_TTL_MS,
   AdminMfaTransactionSessionStore,
 } from '../stores/admin-mfa-transaction-session.store.js';
+import { ADMIN_MFA_METADATA, adminMfaSessionScope } from '../stores/admin-mfa-session-scope.js';
 import { PrismaMfaStore } from '../stores/prisma-mfa.store.js';
 import {
   AUTH_ACCOUNT_THROTTLE_POLICIES,
@@ -126,7 +127,7 @@ export class AdminMfaChallengeService {
       const { sessions } = this.sessions(tx, userId, 'pending', store);
       return sessions.create(userId, {
         mfa: 'pending',
-        metadata: { purpose: ADMIN_SESSION_PURPOSE },
+        metadata: ADMIN_MFA_METADATA,
       });
     });
   }
@@ -141,7 +142,7 @@ export class AdminMfaChallengeService {
     // Use an independent filtered read rather than findUnique's automatic
     // batching: simultaneous challenges must resolve their own exact cookie.
     const initial = await this.prisma.session.findFirst({
-      where: { id, mfa: 'pending', metadata: { path: ['purpose'], equals: ADMIN_SESSION_PURPOSE } },
+      where: { ...adminMfaSessionScope(id), mfa: 'pending' },
       select: { userId: true },
     });
     if (!initial) return null;
@@ -157,7 +158,7 @@ export class AdminMfaChallengeService {
       `;
       const user = await readEnrolledAdmin(tx, userId);
       const row = await tx.session.findFirst({
-        where: { id, userId, mfa: 'pending' },
+        where: { ...adminMfaSessionScope(id), userId, mfa: 'pending' },
         select: authSessionSelect,
       });
       if (!user || !row) return null;
@@ -165,6 +166,7 @@ export class AdminMfaChallengeService {
       const pendingDeadline = record.createdAt.getTime() + ADMIN_MFA_PENDING_TTL_MS;
       if (
         record.metadata?.purpose !== ADMIN_SESSION_PURPOSE ||
+        record.metadata.adminMfaFlow !== ADMIN_MFA_METADATA.adminMfaFlow ||
         isAdminSessionExpired(record, Date.now()) ||
         Date.now() >= pendingDeadline ||
         (user.authInvalidatedAt && record.createdAt <= user.authInvalidatedAt)
