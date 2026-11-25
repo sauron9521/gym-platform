@@ -363,3 +363,30 @@ lost response, browser/device and multi-replica tests. The original TOTP
 may still be used for a fresh login before replacement confirmation;
 containment of a known compromised old factor needs a separate policy.
 #289/#290 stay open. Audit enum migration is additive.
+
+### Transactional MFA security notices (#290, thirteenth slice)
+
+The accepted ADR-008 / #568 OutboxEvent contract gains its initial
+producer-side persistence. First TOTP confirmation, recovery-code
+sign-in, code regeneration and replacement staging/confirmation record
+an account.security.changed v1 event in the same transaction as the
+existing audit and lifecycle writes. Normal TOTP login remains audit-only;
+suspicious/new-device detection is not implemented here. The unique
+business event key derives from the persisted audit ID, not wall-clock
+time or client input. The payload contains only the aggregate reference,
+account ID and lifecycle action. No email address, raw token, OTP, secret
+or recovery codes. Transaction failure rolls back audit and event together.
+The database rejects duplicate keys; generic producer replay handling
+remains part of #568.
+
+The additive migration introduces the shared outbox (not a separate MFA
+queue) with initial PENDING state, availability/lease indexes and
+processing fields reserved for the dispatcher. Rollback application code
+before removing schema; retain queued rows and audit evidence rather
+than dropping the outbox after any event has committed. No SMTP or push
+send, no recipient resolver, dispatcher, Inbox, delivery attempt or
+retention worker is activated. PENDING means queued, not delivered or
+read. #568/#569/#572 and #290 remain open. Revalidate the current verified
+address and account eligibility before future delivery, follow the S05
+security-notice policy and use the existing auth mail transport. Review
+retention/access and missing-address fallback before release.

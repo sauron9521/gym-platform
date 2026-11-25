@@ -19,6 +19,7 @@ import type { AppConfigService } from '#src/common/config/app-config.types';
 import { createMfaEncryptionOptions } from '#src/common/config/mfa-keyring.config';
 import { PrismaService } from '#src/infra/database/index';
 import { toSessionRecord } from '../mappers/auth-session.mapper.js';
+import { recordMfaSecurityEvent } from './record-mfa-security-event.js';
 import { authSessionSelect } from '../selects/auth-session.select.js';
 import { PrismaMfaStore } from '../stores/prisma-mfa.store.js';
 import {
@@ -206,9 +207,7 @@ export class AdminMfaEnrollmentService {
         where: { userId: principal.userId, revoked: false },
         data: { revoked: true },
       });
-      await tx.mfaLifecycleAudit.create({
-        data: { userId: principal.userId, action: 'FIRST_TOTP_CONFIRMED' },
-      });
+      await recordMfaSecurityEvent(tx, principal.userId, 'FIRST_TOTP_CONFIRMED');
       return { recoveryCodes };
     });
   }

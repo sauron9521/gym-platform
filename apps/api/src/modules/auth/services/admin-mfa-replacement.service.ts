@@ -15,6 +15,7 @@ import type { AppConfigService } from '#src/common/config/app-config.types';
 import { createMfaEncryptionOptions } from '#src/common/config/mfa-keyring.config';
 import { PrismaService } from '#src/infra/database/index';
 import { toSessionRecord } from '../mappers/auth-session.mapper.js';
+import { recordMfaSecurityEvent } from './record-mfa-security-event.js';
 import { authSessionSelect } from '../selects/auth-session.select.js';
 import {
   ADMIN_RECOVERY_TTL_MS,
@@ -158,9 +159,7 @@ export class AdminMfaReplacementService {
         where: { userId },
         data: { enrollmentSessionId: id, enrollmentExpiresAt: expiresAt },
       });
-      await tx.mfaLifecycleAudit.create({
-        data: { userId, action: 'ADMIN_TOTP_REPLACEMENT_STAGED' },
-      });
+      await recordMfaSecurityEvent(tx, userId, 'ADMIN_TOTP_REPLACEMENT_STAGED');
       return { ...enrollment, expiresAt };
     });
   }
@@ -209,9 +208,7 @@ export class AdminMfaReplacementService {
         where: { userId, revoked: false },
         data: { revoked: true },
       });
-      await tx.mfaLifecycleAudit.create({
-        data: { userId, action: 'ADMIN_TOTP_REPLACEMENT_CONFIRMED' },
-      });
+      await recordMfaSecurityEvent(tx, userId, 'ADMIN_TOTP_REPLACEMENT_CONFIRMED');
       return { recoveryCodes };
     });
   }

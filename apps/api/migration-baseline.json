@@ -34,6 +34,7 @@
     "body-measurements.prisma",
     "exercises.prisma",
     "mfa.prisma",
+    "notifications.prisma",
     "profiles.prisma",
     "schema.prisma",
     "session.prisma",

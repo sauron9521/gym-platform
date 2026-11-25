@@ -10,6 +10,7 @@ import type { AppConfigService } from '#src/common/config/app-config.types';
 import { createMfaEncryptionOptions } from '#src/common/config/mfa-keyring.config';
 import { PrismaService } from '#src/infra/database/index';
 import { toSessionRecord } from '../mappers/auth-session.mapper.js';
+import { recordMfaSecurityEvent } from './record-mfa-security-event.js';
 import { authSessionSelect } from '../selects/auth-session.select.js';
 import {
   adminMfaSessionScope,
@@ -129,9 +130,7 @@ export class AdminMfaRecoveryService {
         where: { userId, revoked: false },
         data: { revoked: true },
       });
-      await tx.mfaLifecycleAudit.create({
-        data: { userId, action: 'ADMIN_RECOVERY_CODES_REGENERATED' },
-      });
+      await recordMfaSecurityEvent(tx, userId, 'ADMIN_RECOVERY_CODES_REGENERATED');
       return { recoveryCodes };
     });
   }

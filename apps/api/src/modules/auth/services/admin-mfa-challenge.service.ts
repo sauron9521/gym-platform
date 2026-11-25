@@ -18,6 +18,7 @@ import type { AppConfigService } from '#src/common/config/app-config.types';
 import { createMfaEncryptionOptions } from '#src/common/config/mfa-keyring.config';
 import { PrismaService } from '#src/infra/database/index';
 import { toSessionRecord } from '../mappers/auth-session.mapper.js';
+import { recordMfaSecurityEvent } from './record-mfa-security-event.js';
 import { authSessionSelect } from '../selects/auth-session.select.js';
 import {
   ADMIN_MFA_PENDING_TTL_MS,
@@ -222,15 +223,13 @@ export class AdminMfaChallengeService {
           data: { revoked: true },
         });
       }
-      await tx.mfaLifecycleAudit.create({
-        data: {
-          userId,
-          action:
-            proof.recoveryCode !== undefined
-              ? 'ADMIN_RECOVERY_CHALLENGE_VERIFIED'
-              : 'ADMIN_TOTP_CHALLENGE_VERIFIED',
-        },
-      });
+      if (method === 'recovery') {
+        await recordMfaSecurityEvent(tx, userId, 'ADMIN_RECOVERY_CHALLENGE_VERIFIED');
+      } else {
+        await tx.mfaLifecycleAudit.create({
+          data: { userId, action: 'ADMIN_TOTP_CHALLENGE_VERIFIED' },
+        });
+      }
       // Recovery consumption, replay claim, rotation and audit commit together.
       return rotated;
     });

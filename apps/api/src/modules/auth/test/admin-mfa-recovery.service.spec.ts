@@ -32,7 +32,10 @@ function setup() {
     user: { update: vi.fn().mockResolvedValue({}) },
     refreshTokenFamily: { updateMany: vi.fn().mockResolvedValue({ count: 1 }) },
     refreshToken: { updateMany: vi.fn().mockResolvedValue({ count: 1 }) },
-    mfaLifecycleAudit: { create: vi.fn().mockResolvedValue({}) },
+    mfaLifecycleAudit: {
+      create: vi.fn().mockResolvedValue({ id: 'audit-id', occurredAt: new Date() }),
+    },
+    outboxEvent: { create: vi.fn().mockResolvedValue({}) },
     $queryRaw: vi.fn().mockResolvedValue([{ id }]),
   };
   const store = new InMemoryMfaStore();
@@ -189,6 +192,14 @@ describe('AdminMfaRecoveryService', () => {
     });
     expect(tx.mfaLifecycleAudit.create).toHaveBeenCalledWith({
       data: { userId, action: 'ADMIN_RECOVERY_CODES_REGENERATED' },
+    });
+    expect(tx.outboxEvent.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        payload: {
+          aggregate: { kind: 'MfaLifecycleAudit', id: 'audit-id' },
+          context: { userId, action: 'ADMIN_RECOVERY_CODES_REGENERATED' },
+        },
+      }),
     });
   });
 

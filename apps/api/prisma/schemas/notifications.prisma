@@ -1,0 +1,29 @@
+// Shared notification outbox, ADR-008 / #568. No dispatcher is enabled yet.
+enum OutboxEventStatus {
+  PENDING
+  PROCESSING
+  PROCESSED
+  DEAD_LETTER
+}
+
+model OutboxEvent {
+  id String @id @default(uuid(4))
+  eventKey String @unique @map("event_key") @db.VarChar(200)
+  type String @db.VarChar(100)
+  schemaVersion Int @map("schema_version")
+  occurredAt DateTime @map("occurred_at") @db.Timestamptz(3)
+  actorUserId String? @map("actor_user_id")
+  payload Json
+  status OutboxEventStatus @default(PENDING)
+  availableAt DateTime @default(now()) @map("available_at") @db.Timestamptz(3)
+  leaseUntil DateTime? @map("lease_until") @db.Timestamptz(3)
+  attemptCount Int @default(0) @map("attempt_count")
+  lastAttemptAt DateTime? @map("last_attempt_at") @db.Timestamptz(3)
+  processedAt DateTime? @map("processed_at") @db.Timestamptz(3)
+  lastErrorCode String? @map("last_error_code") @db.VarChar(100)
+
+  @@index([status, availableAt])
+  @@index([status, leaseUntil])
+  @@index([actorUserId])
+  @@map("outbox_events")
+}
