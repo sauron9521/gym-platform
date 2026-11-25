@@ -582,6 +582,10 @@ test('PostgreSQL E2E is split across isolated runners and all shards remain requ
     suite,
     /run: pnpm --filter @gym\/api exec vitest run --config \.\/vitest\.config\.e2e\.ts --shard=\$\{\{ matrix\.shard \}\}\/2/,
   );
+  assert.match(
+    suite,
+    /name: Typecheck integration and HTTP e2e tests\n\s+if: matrix\.shard == 1\n\s+run: pnpm --filter @gym\/api typecheck:e2e/,
+  );
   assert.match(suite, /if: matrix\.shard == 1\n\s+run: pnpm api:contract:check/);
   assert.match(
     suite,
