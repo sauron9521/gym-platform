@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { fireEvent, render } from '@testing-library/react-native';
+import { act, fireEvent, render } from '@testing-library/react-native';
 import { Alert } from 'react-native';
 
 import {
@@ -7,6 +7,7 @@ import {
   useWorkoutTransition,
 } from '@/features/workouts/model/workout-details-query';
 import { useCancelWorkout, useUpdateWorkoutTitle } from '@/features/workouts/model/workout-edit';
+import { WorkoutSetRow } from '@/screens/workouts/ui/workout-set-row';
 import { WorkoutDetailsScreen } from '@/screens/workouts/ui/workout-details-screen';
 
 vi.mock('@/features/workouts/model/workout-details-query', () => ({
@@ -14,13 +15,14 @@ vi.mock('@/features/workouts/model/workout-details-query', () => ({
   useWorkoutTransition: vi.fn(),
 }));
 vi.mock('@/screens/workouts/ui/workout-set-row', () => ({
-  WorkoutSetRow: () => null,
+  WorkoutSetRow: vi.fn(() => null),
 }));
 vi.mock('@/features/workouts/model/workout-edit', () => ({
   useCancelWorkout: vi.fn(),
   useUpdateWorkoutTitle: vi.fn(),
 }));
 
+const refetch = vi.fn();
 const mutate = vi.fn();
 const mutateTitle = vi.fn();
 const mutateCancel = vi.fn();
@@ -48,6 +50,8 @@ function prepareWorkout(
     },
     isPending: false,
     isError: false,
+    canonicalReadVersion: 5,
+    refetch,
     error: null,
   } as unknown as ReturnType<typeof useWorkoutDetailsQuery>);
 
@@ -151,6 +155,45 @@ describe('WorkoutDetailsScreen (real React Native renderer)', () => {
       'complete',
       expect.objectContaining({ onSettled: expect.any(Function) }),
     );
+  });
+
+  it('blocks workout actions and other sets until the pending write settles and a newer canonical GET verifies uncertainty', async () => {
+    prepareWorkout('IN_PROGRESS', 'COMPLETED');
+    const view = await render(<WorkoutDetailsScreen id="workout-123" />);
+    expect(view.getByTestId('workout-set-progress').props.accessibilityValue.now).toBe(100);
+    const row = () => vi.mocked(WorkoutSetRow).mock.calls.at(-1)![0];
+
+    await act(async () => {
+      expect(row().onWriteStart?.('set-1')).toBe(true);
+      expect(row().onWriteStart?.('another')).toBe(false);
+    });
+    expect(view.getByTestId('workout-status-action').props.accessibilityState.disabled).toBe(true);
+    expect(view.getByTestId('workout-cancel').props.accessibilityState.disabled).toBe(true);
+    await fireEvent.press(view.getByTestId('workout-status-action'));
+    expect(mutate).not.toHaveBeenCalled();
+    await act(async () => row().onWriteSettled?.('set-1', 5));
+    expect(view.getByTestId('workout-status-action').props.accessibilityState.disabled).toBe(true);
+    expect(row().actionBlocked).toBe(true);
+    await fireEvent.press(view.getByTestId('workout-verify-sets'));
+    expect(refetch).toHaveBeenCalledOnce();
+
+    vi.mocked(useWorkoutDetailsQuery).mockReturnValue({
+      ...vi.mocked(useWorkoutDetailsQuery)('workout-123'),
+      canonicalReadVersion: 6,
+    });
+    await view.rerender(<WorkoutDetailsScreen id="workout-123" />);
+    expect(view.queryByTestId('workout-write-blocked')).toBeNull();
+    expect(view.getByTestId('workout-status-action').props.accessibilityState.disabled).toBe(false);
+  });
+
+  it('starts the rest timer on a new confirmed set event and leaves progress derived from server data', async () => {
+    prepareWorkout('IN_PROGRESS', 'PENDING');
+    const view = await render(<WorkoutDetailsScreen id="workout-123" />);
+    expect(view.getByTestId('workout-set-progress').props.accessibilityValue.now).toBe(0);
+    expect(view.getByRole('button', { name: 'Старт' })).toBeTruthy();
+    await act(async () => vi.mocked(WorkoutSetRow).mock.calls.at(-1)![0].onNewCompletion?.());
+    expect(view.getByRole('button', { name: 'Пауза' })).toBeTruthy();
+    expect(view.getByTestId('workout-set-progress').props.accessibilityValue.now).toBe(0);
   });
 
   it('completes an active workout and hides actions for completed workouts', async () => {

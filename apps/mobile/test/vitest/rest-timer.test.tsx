@@ -67,4 +67,19 @@ describe('RestTimer (native)', () => {
     });
     await waitFor(() => expect(view.getByText('00:45')).toBeTruthy());
   });
+  it('auto-starts selected preset only for a new confirmation event', async () => {
+    const clock = vi.spyOn(Date, 'now').mockReturnValue(100000);
+    const view = await render(<RestTimer />);
+    await fireEvent.press(view.getByRole('button', { name: '60 секунд' }));
+    await view.rerender(<RestTimer autoStart={{ sequence: 1, startedAt: 100000 }} />);
+    expect(view.getByRole('button', { name: 'Пауза' })).toBeTruthy();
+    clock.mockReturnValue(110000);
+    await fireEvent.press(view.getByRole('button', { name: 'Пауза' }));
+    expect(view.getByText('00:50')).toBeTruthy();
+    await view.rerender(<RestTimer autoStart={{ sequence: 1, startedAt: 100000 }} />);
+    expect(view.getByRole('button', { name: 'Продовжити' })).toBeTruthy();
+    await view.rerender(<RestTimer autoStart={{ sequence: 2, startedAt: 110000 }} />);
+    expect(view.getByText('01:00')).toBeTruthy();
+    expect(view.getByRole('button', { name: 'Пауза' })).toBeTruthy();
+  });
 });
