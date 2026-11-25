@@ -13,15 +13,24 @@ function context(user: unknown, session: unknown): ExecutionContext {
 describe('AdminSessionPurposeGuard', () => {
   const guard = new AdminSessionPurposeGuard();
   const operator = { id: 'operator', role: 'ADMIN' };
-  const purposeSession = { metadata: { purpose: ADMIN_SESSION_PURPOSE } };
+  const purposeSession = { userId: operator.id, metadata: { purpose: ADMIN_SESSION_PURPOSE } };
 
   it('permits a persisted ADMIN with an explicit server-issued purpose', () => {
     expect(guard.canActivate(context(operator, purposeSession))).toBe(true);
   });
 
+  it('permits an explicitly verified second factor for the same principal', () => {
+    expect(guard.canActivate(context(operator, { ...purposeSession, mfa: 'verified' }))).toBe(true);
+  });
+
   it.each([
     [null, purposeSession],
     [operator, null],
+    [operator, { ...purposeSession, userId: 'another-user' }],
+    [operator, { ...purposeSession, userId: undefined }],
+    [operator, { ...purposeSession, mfa: 'pending' }],
+    [operator, { ...purposeSession, mfa: 'unknown' }],
+    [operator, { ...purposeSession, mfa: null }],
     [operator, { metadata: null }],
     [operator, { metadata: {} }],
     [operator, { metadata: { purpose: 'web' } }],

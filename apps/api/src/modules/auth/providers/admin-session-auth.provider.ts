@@ -37,6 +37,11 @@ export class AdminSessionAuth extends AdminSessionCookieProvider {
     }>();
     const record = await this.cookies.sessions.validate(this.cookies.sessions.tokenFrom(request));
     if (record?.metadata?.purpose !== ADMIN_SESSION_PURPOSE) return null;
+    // The persisted string is not a trusted enum at runtime. The package
+    // rejects pending MFA, but an unknown value must not become ordinary auth.
+    if (record.mfa !== undefined && record.mfa !== 'pending' && record.mfa !== 'verified') {
+      return null;
+    }
 
     const user = await this.users.findUserById(record.userId);
     if (!user) {

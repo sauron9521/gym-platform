@@ -97,3 +97,22 @@ may be revoked globally by account-wide security actions. Dedicated Admin
 MFA enrollment, step-up challenges and privileged action re-auth remain
 scope of #290. Do not close #289 until operational session lifecycle and
 browser/proxy behavior are verified at staging.
+
+### MFA boundary hardening (first #290 slice)
+
+Admin route authorization rejects pending and unknown persisted MFA states,
+and binds the server-issued session owner to the authenticated principal.
+The internal completion helper accepts one well-formed factor only, on a
+POST from the trusted Admin origin. No new public challenge endpoint is
+enabled in this slice.
+
+The authentication package currently has no configured MFA options or
+registered durable MFA store in this application. A session with no MFA
+state remains a transitional legacy session; this is **not** S05 compliance.
+Do not enable mandatory enrollment or expose challenge completion before
+encrypted durable factor storage, atomic replay/recovery-code consumption
+and account-scoped throttling are available and tested. Follow S05: prefer
+WebAuthn, support TOTP and one-time recovery codes, and require a fresh
+session-bound factor for sensitive actions (maximum five minutes).
+Recovery and factor changes must be audited and revoke affected sessions.
+Do not close #290 or grant Security/Beta GO based on this hardening alone.

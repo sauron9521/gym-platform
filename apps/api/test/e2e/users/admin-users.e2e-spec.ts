@@ -702,6 +702,20 @@ describe('GET /admin/users (HTTP + PostgreSQL)', () => {
     ).toBe(200);
   });
 
+  it('fails closed on an unrecognized stored Admin MFA state without affecting regular auth', async () => {
+    const admin = await loginOperator('/auth/admin-login');
+    const regular = await loginOperator('/auth/login');
+    await prisma.session.update({ where: { id: admin.id }, data: { mfa: 'unexpected' } });
+    expect(
+      (await request(app.getHttpServer()).get('/auth/admin-session').set('Cookie', admin.cookie))
+        .status,
+    ).toBe(401);
+    expect((await list(admin.cookie)).status).toBe(401);
+    expect(
+      (await request(app.getHttpServer()).get('/users/me').set('Cookie', regular.cookie)).status,
+    ).toBe(200);
+  });
+
   it('revokes only caller admin sessions across devices, clears cookie and preserves all ordinary sessions', async () => {
     const actor = await seedAccount('revoke-actor', 'ADMIN');
     const first = cookies['revoke-actor']!;

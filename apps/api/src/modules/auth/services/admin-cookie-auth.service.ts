@@ -12,6 +12,7 @@ import { ConfigService } from '@nestjs/config';
 import type { Request, Response } from 'express';
 
 import type { AppConfigService } from '#src/common/config/app-config.types';
+import { isAllowedAdminOrigin } from '#src/common/auth/admin-origin.guard';
 import { ADMIN_SESSION_PURPOSE } from '#src/common/auth/admin-session-purpose.guard';
 
 const ADMIN_SESSION_COOKIE_NAME = '__Host-admin-sid';
@@ -25,6 +26,7 @@ type BrowserRequest = Pick<Request, 'headers' | 'method'>;
 @Injectable()
 export class AdminCookieAuthService {
   readonly sessions: SessionService;
+  private readonly origin: string;
 
   constructor(
     storage: AuthenticationStorage,
@@ -32,7 +34,7 @@ export class AdminCookieAuthService {
     private readonly events: AuthenticationEvents,
     @Inject(ConfigService) config: AppConfigService,
   ) {
-    const origin = new URL(config.get('ADMIN_APP_URL') ?? config.getOrThrow('APP_URL')).origin;
+    this.origin = new URL(config.get('ADMIN_APP_URL') ?? config.getOrThrow('APP_URL')).origin;
     this.sessions = new SessionService(
       storage,
       {
@@ -40,7 +42,7 @@ export class AdminCookieAuthService {
           cookieName: ADMIN_SESSION_COOKIE_NAME,
           absoluteTtl: '8h',
           idleTtl: '15m',
-          trustedOrigins: [origin],
+          trustedOrigins: [this.origin],
         },
       },
       events,
@@ -85,13 +87,32 @@ export class AdminCookieAuthService {
     response: Response,
     challenge: { code?: string; recoveryCode?: string },
   ): Promise<IssuedSession | null> {
-    if (!challenge.code && !challenge.recoveryCode) return null;
+    // A future public challenge route must not be the only CSRF boundary.
+    // Reject ambiguous proof before reading a cookie or spending a recovery code.
+    if (
+      request.method !== 'POST' ||
+      !isAllowedAdminOrigin(request.headers, this.origin) ||
+      this.sessions.isCrossOriginWrite(request)
+    ) {
+      throw new ForbiddenException('Administrative MFA request origin not trusted');
+    }
+    const { code, recoveryCode } = challenge;
+    if (
+      (code === undefined) === (recoveryCode === undefined) ||
+      (code !== undefined && (typeof code !== 'string' || !/^\d{6}$/.test(code))) ||
+      (recoveryCode !== undefined &&
+        (typeof recoveryCode !== 'string' ||
+          !/^[A-Za-z0-9]{5}-?[A-Za-z0-9]{5}$/.test(recoveryCode)))
+    ) {
+      return null;
+    }
     const record = await this.sessions.validate(this.sessions.tokenFrom(request));
     if (record?.metadata?.purpose !== ADMIN_SESSION_PURPOSE || record.mfa !== 'pending')
       return null;
-    const verified = challenge.recoveryCode
-      ? await this.mfa.verifyRecoveryCode(record.userId, challenge.recoveryCode)
-      : await this.mfa.verifyTotp(record.userId, challenge.code!);
+    const verified =
+      recoveryCode !== undefined
+        ? await this.mfa.verifyRecoveryCode(record.userId, recoveryCode)
+        : await this.mfa.verifyTotp(record.userId, code!);
     if (!verified) return null;
     const rotated = await this.sessions.rotate(record, { mfa: 'verified' });
     if (rotated) response.append('Set-Cookie', rotated.cookie);
