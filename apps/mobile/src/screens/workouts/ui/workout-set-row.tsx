@@ -1,7 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Controller, useForm } from 'react-hook-form';
-import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Keyboard,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 
 import {
   workoutSetFormSchema,
@@ -36,6 +44,7 @@ export function WorkoutSetRow({
   const mutation = useWorkoutSetMutation(workoutId);
   const submitLock = useRef(false);
   const [editing, setEditing] = useState(false);
+  const [submitting, setSubmitting] = useState<'complete' | 'skip' | null>(null);
   const [retryAt, setRetryAt] = useState<number | null>(null);
   // A lost response must not unlock another PATCH before a later canonical GET.
   const [unverifiedReadVersion, setUnverifiedReadVersion] = useState<number | null>(null);
@@ -105,8 +114,8 @@ export function WorkoutSetRow({
     }
   };
 
-  const saveCompleted = () => {
-    // A synchronous lock prevents two presses before isPending rerenders the row.
+  const saveCompleted = async () => {
+    // Lock immediately, before asynchronous validation or mutation state updates.
     if (
       submitLock.current ||
       mutation.isPending ||
@@ -117,80 +126,96 @@ export function WorkoutSetRow({
     )
       return;
     submitLock.current = true;
+    setSubmitting('complete');
     const before = canonicalReadVersion;
-    void handleSubmit(
-      async (values) => {
-        try {
-          const updated = await mutation.mutateAsync({
-            setId: set.id,
-            body: workoutSetPayload(values),
-          });
-          setConfirmedResult({
-            previousUpdatedAt: set.updatedAt,
-            snapshotAt: canonicalSnapshotAt,
-            set: updated,
-          });
-          setEditing(false);
-        } catch (error) {
-          captureWriteFailure(error, before);
-          throw error;
-        } finally {
-          submitLock.current = false;
-        }
-      },
-      () => {
-        submitLock.current = false;
-      },
-    )().catch(() => {
-      // React Query exposes the failure through mutation.error below.
-    });
-  };
-
-  const skipSet = () => {
-    if (
-      submitLock.current ||
-      mutation.isPending ||
-      !editable ||
-      !isEditing ||
-      limited ||
-      writingBlocked
-    )
-      return;
-    submitLock.current = true;
-    const before = canonicalReadVersion;
-    void mutation
-      .mutateAsync({ setId: set.id, body: { status: 'SKIPPED' } })
-      .then((updated) => {
+    try {
+      await handleSubmit(async (values) => {
+        Keyboard.dismiss();
+        const updated = await mutation.mutateAsync({
+          setId: set.id,
+          body: workoutSetPayload(values),
+        });
         setConfirmedResult({
           previousUpdatedAt: set.updatedAt,
           snapshotAt: canonicalSnapshotAt,
           set: updated,
         });
         setEditing(false);
-      })
-      .catch((error: unknown) => {
-        captureWriteFailure(error, before);
-      })
-      .finally(() => {
-        submitLock.current = false;
-      })
-      .catch(() => {
-        // The mutation error is shown to the user below.
-      });
+      })();
+    } catch (error) {
+      captureWriteFailure(error, before);
+    } finally {
+      submitLock.current = false;
+      setSubmitting(null);
+    }
   };
 
-  const savingDisabled =
-    !editable || mutation.isPending || isSubmitting || limited || writingBlocked;
+  const skipSet = async () => {
+    if (
+      submitLock.current ||
+      mutation.isPending ||
+      !editable ||
+      !isEditing ||
+      limited ||
+      writingBlocked
+    )
+      return;
+    submitLock.current = true;
+    setSubmitting('skip');
+    const before = canonicalReadVersion;
+    try {
+      Keyboard.dismiss();
+      const updated = await mutation.mutateAsync({ setId: set.id, body: { status: 'SKIPPED' } });
+      setConfirmedResult({
+        previousUpdatedAt: set.updatedAt,
+        snapshotAt: canonicalSnapshotAt,
+        set: updated,
+      });
+      setEditing(false);
+    } catch (error) {
+      captureWriteFailure(error, before);
+    } finally {
+      submitLock.current = false;
+      setSubmitting(null);
+    }
+  };
+
+  const saving = submitting !== null || mutation.isPending || isSubmitting;
+  const savingDisabled = !editable || saving || limited || writingBlocked;
   return (
-    <View style={styles.container}>
+    <View
+      style={[
+        styles.container,
+        editable && isEditing && styles.activeContainer,
+        isSaved && !isEditing && styles.savedContainer,
+      ]}
+    >
       <View style={styles.headingRow}>
         <Text style={styles.title}>Підхід {set.setNumber}</Text>
-        <Text style={isSaved ? styles.saved : styles.caption}>
-          {visibleSet.status === 'PENDING'
-            ? 'Очікує'
-            : visibleSet.status === 'COMPLETED'
-              ? '✓ Збережено'
-              : '✓ Пропущено'}
+        <Text
+          testID={`set-status-${set.id}`}
+          accessibilityLiveRegion="polite"
+          style={
+            saving || writingBlocked || limited
+              ? styles.caption
+              : isSaved
+                ? styles.saved
+                : styles.caption
+          }
+        >
+          {saving
+            ? 'Зберігаємо…'
+            : uncertainWriteUnverified
+              ? 'Потрібна перевірка'
+              : reconciling
+                ? 'Перевіряємо…'
+                : limited
+                  ? 'Зачекайте'
+                  : visibleSet.status === 'PENDING'
+                    ? 'Очікує'
+                    : visibleSet.status === 'COMPLETED'
+                      ? '✓ Збережено'
+                      : '✓ Пропущено'}
         </Text>
       </View>
       <Text style={styles.caption}>
@@ -235,7 +260,9 @@ export function WorkoutSetRow({
                 )}
               />
               {errors.actualReps?.message ? (
-                <Text style={styles.error}>{errors.actualReps.message}</Text>
+                <Text accessibilityRole="alert" style={styles.error}>
+                  {errors.actualReps.message}
+                </Text>
               ) : null}
             </View>
             <View style={styles.field}>
@@ -257,7 +284,9 @@ export function WorkoutSetRow({
                 )}
               />
               {errors.actualWeightKg?.message ? (
-                <Text style={styles.error}>{errors.actualWeightKg.message}</Text>
+                <Text accessibilityRole="alert" style={styles.error}>
+                  {errors.actualWeightKg.message}
+                </Text>
               ) : null}
             </View>
           </View>
@@ -266,23 +295,25 @@ export function WorkoutSetRow({
               testID={`set-complete-${set.id}`}
               accessibilityRole="button"
               disabled={savingDisabled}
-              accessibilityState={{ disabled: savingDisabled }}
-              style={styles.button}
-              onPress={saveCompleted}
+              accessibilityState={{ disabled: savingDisabled, busy: saving }}
+              style={[styles.button, savingDisabled && styles.disabled]}
+              onPress={() => void saveCompleted()}
             >
               <Text style={styles.buttonText}>
-                {mutation.isPending ? 'Зберігаємо…' : 'Підтвердити підхід'}
+                {submitting === 'complete' ? 'Підтверджуємо…' : 'Підтвердити підхід'}
               </Text>
             </Pressable>
             <Pressable
               testID={`set-skip-${set.id}`}
               accessibilityRole="button"
               disabled={savingDisabled}
-              accessibilityState={{ disabled: savingDisabled }}
-              style={styles.secondary}
-              onPress={skipSet}
+              accessibilityState={{ disabled: savingDisabled, busy: saving }}
+              style={[styles.secondary, savingDisabled && styles.disabled]}
+              onPress={() => void skipSet()}
             >
-              <Text style={styles.secondaryText}>Пропустити</Text>
+              <Text style={styles.secondaryText}>
+                {submitting === 'skip' ? 'Пропускаємо…' : 'Пропустити'}
+              </Text>
             </Pressable>
           </View>
           {isSaved ? (
@@ -315,7 +346,7 @@ export function WorkoutSetRow({
           Ліміт запитів вичерпано. Повторне збереження тимчасово заблоковано.
         </Text>
       ) : null}
-      {mutation.isPending ? <ActivityIndicator accessibilityLabel="Зберігаємо підхід" /> : null}
+      {saving ? <ActivityIndicator accessibilityLabel="Зберігаємо підхід" /> : null}
       {mutation.isError ? (
         <Text accessibilityRole="alert" style={styles.error}>
           {mutation.error instanceof WorkoutSetOutcomeUnknownError &&
@@ -330,7 +361,17 @@ export function WorkoutSetRow({
 }
 
 const styles = StyleSheet.create({
-  container: { gap: 8, borderTopWidth: 1, borderColor: palette.border, paddingTop: 12 },
+  container: {
+    gap: 8,
+    borderWidth: 1,
+    borderColor: palette.border,
+    borderRadius: 12,
+    padding: 12,
+    minWidth: 0,
+  },
+  activeContainer: { borderColor: palette.primary },
+  savedContainer: { backgroundColor: palette.background },
+  disabled: { opacity: 0.5 },
   title: { fontSize: 15, fontWeight: '600', color: palette.text },
   headingRow: { flexDirection: 'row', justifyContent: 'space-between', flexWrap: 'wrap', gap: 6 },
   saved: { fontSize: 13, color: '#86efac', fontWeight: '700' },
@@ -338,35 +379,39 @@ const styles = StyleSheet.create({
   editText: { color: palette.primary, fontWeight: '600' },
   caption: { fontSize: 13, color: palette.muted },
   inputs: { flexDirection: 'row', gap: 12 },
-  field: { flex: 1, gap: 4 },
+  field: { flex: 1, minWidth: 0, gap: 4 },
   input: {
     borderWidth: 1,
     borderColor: palette.border,
     borderRadius: 8,
     backgroundColor: palette.background,
     color: palette.text,
-    minHeight: 42,
+    minHeight: 48,
     paddingHorizontal: 10,
   },
-  actions: { flexDirection: 'row', gap: 10 },
+  actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   button: {
     flex: 1,
+    minWidth: 120,
+    padding: 8,
     backgroundColor: palette.primary,
     borderRadius: 10,
-    minHeight: 44,
+    minHeight: 48,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  buttonText: { color: palette.surface, fontWeight: '700' },
+  buttonText: { color: palette.primaryForeground, fontWeight: '700', textAlign: 'center' },
   secondary: {
     flex: 1,
+    minWidth: 100,
+    padding: 8,
     borderWidth: 1,
     borderColor: palette.border,
     borderRadius: 10,
-    minHeight: 44,
+    minHeight: 48,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  secondaryText: { color: palette.text, fontWeight: '600' },
+  secondaryText: { color: palette.text, fontWeight: '600', textAlign: 'center' },
   error: { color: '#ff6460', fontSize: 13 },
 });

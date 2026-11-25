@@ -33,7 +33,15 @@ test('native form scroll views preserve safe-area and keyboard behavior', () => 
     assert.ok(screen.includes('automaticallyAdjustKeyboardInsets'), id);
     assert.ok(screen.includes('keyboardShouldPersistTaps="handled"'), id);
     assert.ok(screen.includes('alwaysBounceVertical={false}'), id);
-    assert.match(screen, /paddingBottom: 64/, id);
+    if (id === 'workout-details-scroll') {
+      assert.match(screen, /paddingBottom: 24/, id);
+      assert.match(screen, /keyboardDismissMode=/, id);
+      const route = read('../src/app/workouts/[id].tsx');
+      assert.match(route, /<SafeAreaView/);
+      assert.ok(route.includes("edges={['left', 'right', 'bottom']}"));
+    } else {
+      assert.match(screen, /paddingBottom: 64/, id);
+    }
     assert.ok(!screen.includes('bounces={false}'), id);
   }
 });

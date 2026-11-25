@@ -4,6 +4,7 @@ import {
   ActivityIndicator,
   Alert,
   Pressable,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -132,6 +133,7 @@ export function WorkoutDetailsScreen({ id }: { id: string }) {
       contentInsetAdjustmentBehavior="automatic"
       automaticallyAdjustKeyboardInsets
       keyboardShouldPersistTaps="handled"
+      keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
       alwaysBounceVertical={false}
       testID="workout-details-scroll"
     >
@@ -245,7 +247,7 @@ export function WorkoutDetailsScreen({ id }: { id: string }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: palette.background },
-  content: { paddingHorizontal: 20, paddingTop: 24, paddingBottom: 64, gap: 16 },
+  content: { paddingHorizontal: 20, paddingTop: 24, paddingBottom: 24, gap: 16 },
   title: { fontSize: 26, fontWeight: '700', color: palette.text },
   heading: { fontSize: 17, fontWeight: '600', color: palette.text },
   muted: { fontSize: 14, color: palette.muted },
