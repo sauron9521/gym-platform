@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { fireEvent, render, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, render, waitFor } from '@testing-library/react-native';
 
 import {
   useWorkoutSetMutation,
@@ -256,6 +256,46 @@ describe('WorkoutSetRow (React Native)', () => {
     await fireEvent.press(view.getByTestId('set-complete-set-1'));
 
     await waitFor(() => expect(mutateAsync).toHaveBeenCalledTimes(1));
-    finish({ id: 'set-1' });
+    await act(async () => finish({ id: 'set-1' }));
+  });
+  it.each(['complete', 'skip'] as const)(
+    'shows immediate pending feedback and disables both actions during %s',
+    async (action) => {
+      let finish: (value: typeof set) => void = () => undefined;
+      mutateAsync.mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            finish = resolve;
+          }),
+      );
+      const view = await render(<WorkoutSetRow workoutId="workout-1" set={set} editable />);
+      await fireEvent.press(view.getByTestId(`set-${action}-set-1`));
+      await waitFor(() => expect(mutateAsync).toHaveBeenCalledTimes(1));
+      expect(view.getByTestId('set-status-set-1').props.children).toBe('Зберігаємо…');
+      expect(view.getByTestId('set-reps-set-1').props.editable).toBe(false);
+      expect(view.getByTestId('set-weight-set-1').props.editable).toBe(false);
+      expect(view.getByTestId('set-complete-set-1').props.accessibilityState.disabled).toBe(true);
+      expect(view.getByTestId('set-skip-set-1').props.accessibilityState.disabled).toBe(true);
+      await fireEvent.press(view.getByTestId('set-complete-set-1'));
+      await fireEvent.press(view.getByTestId('set-skip-set-1'));
+      expect(mutateAsync).toHaveBeenCalledTimes(1);
+      await act(async () =>
+        finish({ ...set, status: action === 'complete' ? 'COMPLETED' : 'SKIPPED' }),
+      );
+      await waitFor(() =>
+        expect(view.getByText(action === 'complete' ? '✓ Збережено' : '✓ Пропущено')).toBeTruthy(),
+      );
+    },
+  );
+
+  it('releases the local lock after invalid input without sending a write', async () => {
+    const view = await render(<WorkoutSetRow workoutId="workout-1" set={set} editable />);
+    await fireEvent.changeText(view.getByTestId('set-reps-set-1'), '0');
+    await fireEvent.press(view.getByTestId('set-complete-set-1'));
+    await waitFor(() => expect(view.getByTestId('set-reps-set-1').props.editable).toBe(true));
+    expect(mutateAsync).not.toHaveBeenCalled();
+    await fireEvent.changeText(view.getByTestId('set-reps-set-1'), '8');
+    await fireEvent.press(view.getByTestId('set-complete-set-1'));
+    await waitFor(() => expect(mutateAsync).toHaveBeenCalledTimes(1));
   });
 });
