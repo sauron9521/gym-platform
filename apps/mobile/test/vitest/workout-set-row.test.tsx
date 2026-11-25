@@ -298,4 +298,58 @@ describe('WorkoutSetRow (React Native)', () => {
     await fireEvent.press(view.getByTestId('set-complete-set-1'));
     await waitFor(() => expect(mutateAsync).toHaveBeenCalledTimes(1));
   });
+  it('emits rest only for a newly confirmed completion, not skip or an edited completed set', async () => {
+    const onNewCompletion = vi.fn();
+    const onWriteStart = vi.fn(() => true);
+    const onWriteSettled = vi.fn();
+    mutateAsync.mockResolvedValueOnce({ ...set, status: 'COMPLETED' });
+    const view = await render(
+      <WorkoutSetRow
+        workoutId="workout-1"
+        set={set}
+        editable
+        onNewCompletion={onNewCompletion}
+        onWriteStart={onWriteStart}
+        onWriteSettled={onWriteSettled}
+      />,
+    );
+    await fireEvent.press(view.getByTestId('set-complete-set-1'));
+    await waitFor(() => expect(onWriteSettled).toHaveBeenCalledWith(set.id, null));
+    expect(onNewCompletion).toHaveBeenCalledOnce();
+    await fireEvent.press(view.getByTestId('set-edit-set-1'));
+    mutateAsync.mockResolvedValueOnce({ ...set, status: 'COMPLETED' });
+    await fireEvent.press(view.getByTestId('set-complete-set-1'));
+    await waitFor(() => expect(onWriteSettled).toHaveBeenCalledTimes(2));
+    expect(onNewCompletion).toHaveBeenCalledOnce();
+    await view.unmount();
+    const skipped = await render(
+      <WorkoutSetRow workoutId="workout-1" set={set} editable onNewCompletion={onNewCompletion} />,
+    );
+    mutateAsync.mockResolvedValueOnce({ ...set, status: 'SKIPPED' });
+    await fireEvent.press(skipped.getByTestId('set-skip-set-1'));
+    await waitFor(() => expect(skipped.getByText('✓ Пропущено')).toBeTruthy());
+    expect(onNewCompletion).toHaveBeenCalledOnce();
+  });
+
+  it('reports a required canonical read after an ambiguous write and never starts rest', async () => {
+    const unknown = new WorkoutSetOutcomeUnknownError();
+    unknown.readVersionAtFailure = 6;
+    mutateAsync.mockRejectedValueOnce(unknown);
+    const onWriteSettled = vi.fn();
+    const onNewCompletion = vi.fn();
+    const view = await render(
+      <WorkoutSetRow
+        workoutId="workout-1"
+        set={set}
+        editable
+        canonicalReadVersion={5}
+        onWriteStart={() => true}
+        onWriteSettled={onWriteSettled}
+        onNewCompletion={onNewCompletion}
+      />,
+    );
+    await fireEvent.press(view.getByTestId('set-complete-set-1'));
+    await waitFor(() => expect(onWriteSettled).toHaveBeenCalledWith(set.id, 6));
+    expect(onNewCompletion).not.toHaveBeenCalled();
+  });
 });

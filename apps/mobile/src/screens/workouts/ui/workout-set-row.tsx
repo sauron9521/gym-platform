@@ -33,6 +33,10 @@ export function WorkoutSetRow({
   reconciling = false,
   canonicalSnapshotAt,
   canonicalReadVersion = 0,
+  actionBlocked = false,
+  onWriteStart,
+  onWriteSettled,
+  onNewCompletion,
 }: {
   workoutId: string;
   set: WorkoutSet;
@@ -40,6 +44,10 @@ export function WorkoutSetRow({
   reconciling?: boolean;
   canonicalSnapshotAt?: number;
   canonicalReadVersion?: number;
+  actionBlocked?: boolean;
+  onWriteStart?: (setId: string) => boolean;
+  onWriteSettled?: (setId: string, requiredReadVersion: number | null) => void;
+  onNewCompletion?: () => void;
 }) {
   const mutation = useWorkoutSetMutation(workoutId);
   const submitLock = useRef(false);
@@ -68,7 +76,7 @@ export function WorkoutSetRow({
   const limited = retryAt !== null;
   const uncertainWriteUnverified =
     unverifiedReadVersion !== null && canonicalReadVersion <= unverifiedReadVersion;
-  const writingBlocked = reconciling || uncertainWriteUnverified;
+  const writingBlocked = reconciling || uncertainWriteUnverified || actionBlocked;
   const {
     control,
     handleSubmit,
@@ -102,10 +110,13 @@ export function WorkoutSetRow({
   }, [retryAt]);
 
   const captureWriteFailure = (error: unknown, previousSnapshotAt: number) => {
-    if (error instanceof WorkoutSetOutcomeUnknownError && !error.canonicalStateVerified) {
-      setUnverifiedReadVersion(Math.max(previousSnapshotAt, error.readVersionAtFailure));
-    }
     captureRateLimit(error);
+    if (error instanceof WorkoutSetOutcomeUnknownError && !error.canonicalStateVerified) {
+      const required = Math.max(previousSnapshotAt, error.readVersionAtFailure);
+      setUnverifiedReadVersion(required);
+      return required;
+    }
+    return null;
   };
 
   const captureRateLimit = (error: unknown) => {
@@ -125,9 +136,11 @@ export function WorkoutSetRow({
       writingBlocked
     )
       return;
+    if (onWriteStart && !onWriteStart(set.id)) return;
     submitLock.current = true;
     setSubmitting('complete');
     const before = canonicalReadVersion;
+    let requiredReadVersion: number | null = null;
     try {
       await handleSubmit(async (values) => {
         Keyboard.dismiss();
@@ -141,12 +154,16 @@ export function WorkoutSetRow({
           set: updated,
         });
         setEditing(false);
+        if (visibleSet.status === 'PENDING' && updated.status === 'COMPLETED') {
+          onNewCompletion?.();
+        }
       })();
     } catch (error) {
-      captureWriteFailure(error, before);
+      requiredReadVersion = captureWriteFailure(error, before);
     } finally {
       submitLock.current = false;
       setSubmitting(null);
+      onWriteSettled?.(set.id, requiredReadVersion);
     }
   };
 
@@ -160,9 +177,11 @@ export function WorkoutSetRow({
       writingBlocked
     )
       return;
+    if (onWriteStart && !onWriteStart(set.id)) return;
     submitLock.current = true;
     setSubmitting('skip');
     const before = canonicalReadVersion;
+    let requiredReadVersion: number | null = null;
     try {
       Keyboard.dismiss();
       const updated = await mutation.mutateAsync({ setId: set.id, body: { status: 'SKIPPED' } });
@@ -173,10 +192,11 @@ export function WorkoutSetRow({
       });
       setEditing(false);
     } catch (error) {
-      captureWriteFailure(error, before);
+      requiredReadVersion = captureWriteFailure(error, before);
     } finally {
       submitLock.current = false;
       setSubmitting(null);
+      onWriteSettled?.(set.id, requiredReadVersion);
     }
   };
 
@@ -370,7 +390,7 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   activeContainer: { borderColor: palette.primary },
-  savedContainer: { backgroundColor: palette.background },
+  savedContainer: { backgroundColor: palette.background, padding: 10, gap: 4 },
   disabled: { opacity: 0.5 },
   title: { fontSize: 15, fontWeight: '600', color: palette.text },
   headingRow: { flexDirection: 'row', justifyContent: 'space-between', flexWrap: 'wrap', gap: 6 },

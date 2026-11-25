@@ -11,7 +11,7 @@ export default function WorkoutDetailsRoute() {
       edges={['left', 'right', 'bottom']}
       style={{ flex: 1, backgroundColor: palette.background }}
     >
-      <WorkoutDetailsScreen id={params.id} />
+      <WorkoutDetailsScreen key={params.id} id={params.id} />
     </SafeAreaView>
   );
 }

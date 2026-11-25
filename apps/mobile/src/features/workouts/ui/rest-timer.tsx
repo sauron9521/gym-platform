@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { palette } from '@/shared/config/theme';
@@ -18,13 +18,26 @@ const PRESETS = [60, 90, 120] as const;
  * React Native pauses JS intervals in the background. It is not persisted
  * across process termination and never writes to the API.
  */
-export function RestTimer() {
+export type RestStart = { sequence: number; startedAt: number };
+
+export function RestTimer({ autoStart }: { autoStart?: RestStart | null } = {}) {
   const [timer, setTimer] = useState<Countdown>({
     duration: 90,
     remaining: 90,
     deadline: null,
   });
   const [foreground, setForeground] = useState(true);
+  const consumed = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (!autoStart || consumed.current === autoStart.sequence) return;
+    consumed.current = autoStart.sequence;
+    setTimer((current) => {
+      const deadline = autoStart.startedAt + current.duration * 1000;
+      const remaining = secondsRemaining(deadline, Date.now());
+      return { ...current, remaining, deadline: remaining > 0 ? deadline : null };
+    });
+  }, [autoStart]);
 
   const refresh = useCallback(() => {
     setTimer((current) => {

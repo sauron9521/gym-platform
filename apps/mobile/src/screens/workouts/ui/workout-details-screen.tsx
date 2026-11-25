@@ -15,7 +15,7 @@ import {
 import { workoutTitleError } from '@/features/workouts/lib/workout-edit-policy';
 import { useCancelWorkout, useUpdateWorkoutTitle } from '@/features/workouts/model/workout-edit';
 import { workoutStatusLabel } from '@/features/workouts/lib/workout-presentation';
-import { RestTimer } from '@/features/workouts/ui/rest-timer';
+import { RestTimer, type RestStart } from '@/features/workouts/ui/rest-timer';
 import {
   useWorkoutDetailsQuery,
   useWorkoutTransition,
@@ -79,24 +79,57 @@ export function WorkoutDetailsScreen({ id }: { id: string }) {
   const titleUpdate = useUpdateWorkoutTitle(id);
   const cancellation = useCancelWorkout(id);
   const writeLock = useRef(false);
+  const setWriteLock = useRef<string | null>(null);
+  const requiredRead = useRef<number | null>(null);
+  const [pendingSet, setPendingSet] = useState<string | null>(null);
+  const [requiredReadVersion, setRequiredReadVersion] = useState<number | null>(null);
+  const [restStart, setRestStart] = useState<RestStart | null>(null);
+  const [actionLocked, setActionLocked] = useState(false);
   const workout = details.data;
   const allSets = workout?.exercises.flatMap((exercise) => exercise.sets) ?? [];
   const progress = workoutSetProgress(allSets);
   const completionAllowed = canCompleteWorkout(allSets);
   const reconciling = details.isFetching && !details.isPending;
-  const busy = transition.isPending || titleUpdate.isPending || cancellation.isPending || reconciling;
+  const readVersion = details.canonicalReadVersion ?? 0;
+  const uncertain = requiredReadVersion !== null && readVersion <= requiredReadVersion;
+  const actionBusy = transition.isPending || titleUpdate.isPending || cancellation.isPending || actionLocked || reconciling;
+  const busy = actionBusy || pendingSet !== null || uncertain;
+  const setWritesBlocked = () => setWriteLock.current !== null ||
+    (requiredRead.current !== null && readVersion <= requiredRead.current);
+  const beginSetWrite = (setId: string) => {
+    if (writeLock.current || actionBusy || setWritesBlocked() || workout?.status !== 'IN_PROGRESS') return false;
+    setWriteLock.current = setId;
+    setPendingSet(setId);
+    return true;
+  };
+  const settleSetWrite = (setId: string, required: number | null) => {
+    if (setWriteLock.current !== setId) return;
+    requiredRead.current = required;
+    setRequiredReadVersion(required);
+    setWriteLock.current = null;
+    setPendingSet(null);
+  };
+  const startRest = () => {
+    const startedAt = Date.now();
+    setRestStart((previous) => ({ sequence: (previous?.sequence ?? 0) + 1, startedAt }));
+  };
+  const total = allSets.length;
+  const processed = progress.completed + progress.skipped;
+  const percent = total ? Math.round(processed / total * 100) : 0;
   const cancellable = workout?.status === 'PLANNED' || workout?.status === 'IN_PROGRESS';
-  const releaseLock = () => { writeLock.current = false; };
+  const releaseLock = () => { writeLock.current = false; setActionLocked(false); };
 
   const saveTitle = (title: string) => {
-    if (writeLock.current || busy || workout?.status !== 'PLANNED') return;
+    if (writeLock.current || setWritesBlocked() || busy || workout?.status !== 'PLANNED') return;
     writeLock.current = true;
+    setActionLocked(true);
     titleUpdate.mutate(title, { onSettled: releaseLock });
   };
 
   const confirmCancellation = () => {
-    if (writeLock.current || busy || !cancellable) return;
+    if (writeLock.current || setWritesBlocked() || busy || !cancellable) return;
     writeLock.current = true;
+    setActionLocked(true);
     Alert.alert(
       'Скасувати тренування?',
       'Цю дію не можна скасувати.',
@@ -164,6 +197,46 @@ export function WorkoutDetailsScreen({ id }: { id: string }) {
               onSave={saveTitle}
             />
           ) : null}
+          {workout.status === 'IN_PROGRESS' ? (
+            <>
+              <Text accessibilityRole="summary" style={styles.muted}>
+                Підходи: {progress.completed} виконано, {progress.skipped} пропущено, {progress.pending} очікують
+              </Text>
+              <View
+                accessibilityRole="progressbar"
+                accessibilityLabel="Опрацьовано підходів"
+                accessibilityValue={{ min: 0, max: 100, now: percent }}
+                testID="workout-set-progress"
+                style={styles.progressTrack}
+              >
+                <View style={[styles.progressFill, { width: `${percent}%` }]} />
+              </View>
+              <Text style={styles.muted}>Опрацьовано: {processed} / {total} · {percent}%</Text>
+              {pendingSet !== null || uncertain ? (
+                <Text accessibilityLiveRegion="polite" testID="workout-write-blocked" style={styles.muted}>
+                  {uncertain ? 'Потрібна перевірка стану підходу із сервера.' : 'Дочекайтеся збереження підходу.'}
+                </Text>
+              ) : null}
+              {uncertain ? (
+                <Pressable
+                  accessibilityRole="button"
+                  testID="workout-verify-sets"
+                  disabled={reconciling}
+                  accessibilityState={{ disabled: reconciling, busy: reconciling }}
+                  onPress={() => void details.refetch()}
+                  style={styles.cancelButton}
+                >
+                  <Text style={styles.muted}>Перевірити стан із сервера</Text>
+                </Pressable>
+              ) : null}
+              {!completionAllowed ? (
+                <Text style={styles.muted}>
+                  Для завершення потрібен хоча б один виконаний підхід і жодного незавершеного.
+                </Text>
+              ) : null}
+              <RestTimer key={id} autoStart={restStart} />
+            </>
+          ) : null}
           {workout.exercises.map((exercise) => (
             <View key={exercise.id} style={styles.card}>
               <Text style={styles.heading}>{exercise.exerciseNameSnapshot}</Text>
@@ -175,25 +248,16 @@ export function WorkoutDetailsScreen({ id }: { id: string }) {
                   set={set}
                   editable={workout.status === 'IN_PROGRESS'}
                   reconciling={reconciling}
+                  actionBlocked={actionBusy || (pendingSet !== null && pendingSet !== set.id) || uncertain}
+                  onWriteStart={beginSetWrite}
+                  onWriteSettled={settleSetWrite}
+                  onNewCompletion={startRest}
                   canonicalSnapshotAt={details.dataUpdatedAt}
                   canonicalReadVersion={details.canonicalReadVersion}
                 />
               ))}
             </View>
           ))}
-          {workout.status === 'IN_PROGRESS' ? (
-            <>
-              <Text accessibilityRole="summary" style={styles.muted}>
-                Підходи: {progress.completed} виконано, {progress.skipped} пропущено, {progress.pending} очікують
-              </Text>
-              {!completionAllowed ? (
-                <Text style={styles.muted}>
-                  Для завершення потрібен хоча б один виконаний підхід і жодного незавершеного.
-                </Text>
-              ) : null}
-              <RestTimer key={id} />
-            </>
-          ) : null}
           {workout.status === 'PLANNED' || workout.status === 'IN_PROGRESS' ? (
             <Pressable
               accessibilityRole="button"
@@ -220,8 +284,9 @@ export function WorkoutDetailsScreen({ id }: { id: string }) {
               disabled={busy || (nextAction === 'complete' && !completionAllowed)}
               accessibilityState={{ disabled: busy || (nextAction === 'complete' && !completionAllowed) }}
               onPress={() => {
-                if (writeLock.current || busy || (nextAction === 'complete' && !completionAllowed)) return;
+                if (writeLock.current || setWritesBlocked() || busy || (nextAction === 'complete' && !completionAllowed)) return;
                 writeLock.current = true;
+                setActionLocked(true);
                 transition.mutate(nextAction, { onSettled: releaseLock });
               }}
             >
@@ -252,6 +317,13 @@ const styles = StyleSheet.create({
   heading: { fontSize: 17, fontWeight: '600', color: palette.text },
   muted: { fontSize: 14, color: palette.muted },
   error: { fontSize: 14, color: '#b91c1c' },
+  progressTrack: {
+    height: 8,
+    backgroundColor: palette.border,
+    borderRadius: 4,
+    overflow: 'hidden',
+  },
+  progressFill: { height: '100%', backgroundColor: palette.primary, borderRadius: 4 },
   editor: { gap: 10 },
   titleInput: {
     color: palette.text,
