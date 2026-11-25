@@ -1,4 +1,4 @@
-import { createHash, createHmac, randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 
 import { MfaService, PasswordHasher, SessionService } from '@nestjs/authentication';
 import type { INestApplication } from '@nestjs/common';
@@ -18,6 +18,7 @@ import {
 import { UsersAuthFacade } from '../../../src/modules/users/services/users-auth.facade.js';
 import { AuthAccountThrottleService } from '../../../src/modules/auth/services/auth-account-throttle.service.js';
 import { useTestDatabase } from '../../utility/test-db-helper.js';
+import { codeAt } from '../../utility/totp-code.js';
 
 const domain = `enrollment-${randomUUID()}.test`;
 const password = 'Test-only enrollment password';
@@ -212,24 +213,6 @@ describe('Admin first MFA enrollment (internal, PostgreSQL)', () => {
 });
 
 // Simulate an authenticator independently of the production library (RFC 6238).
-function codeAt(secret: string, step = Math.floor(Date.now() / 30_000)): string {
-  const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
-  const bits = secret
-    .split('')
-    .map((character) => alphabet.indexOf(character).toString(2).padStart(5, '0'))
-    .join('');
-  const key = Buffer.from(
-    Array.from({ length: Math.floor(bits.length / 8) }, (_, i) =>
-      parseInt(bits.slice(i * 8, i * 8 + 8), 2),
-    ),
-  );
-  const counter = Buffer.alloc(8);
-  counter.writeBigUInt64BE(BigInt(step));
-  const digest = createHmac('sha1', key).update(counter).digest();
-  const offset = digest[digest.length - 1]! & 15;
-  return String((digest.readUInt32BE(offset) & 0x7fffffff) % 1_000_000).padStart(6, '0');
-}
-
 async function addSession(userId: string, purpose: string) {
   const now = new Date();
   const id = randomUUID();
@@ -473,6 +456,11 @@ describe('Internal Admin MFA challenge (PostgreSQL)', () => {
 
     const verified = await challenge.complete(pending!.token, { code: codeAt(owner.secret) });
     expect(verified?.session.mfa).toBe('verified');
+    expect(verified?.session.metadata?.adminMfaMethod).toBe('totp');
+    const persisted = await prisma.session.findUniqueOrThrow({
+      where: { id: verified!.session.id },
+    });
+    expect(persisted.metadata).toMatchObject({ adminMfaMethod: 'totp' });
     expect(verified?.token).not.toBe(pending!.token);
     expect(verified?.session.createdAt).toEqual(pending!.session.createdAt);
     const verifiedSession = verified!.session;
@@ -495,6 +483,23 @@ describe('Internal Admin MFA challenge (PostgreSQL)', () => {
     const second = (await challenge.begin(owner.userId, password))!;
     const proof = { recoveryCode: owner.recoveryCodes[0]! };
     expect(first.session.id).not.toBe(second.session.id);
+    const other = await seed();
+    await addSession(owner.userId, 'web');
+    const expires = new Date(Date.now() + 3_600_000);
+    const familyId = randomUUID();
+    await prisma.refreshTokenFamily.create({
+      data: { id: familyId, userId: owner.userId, familyExpiresAt: expires },
+    });
+    await prisma.refreshToken.create({
+      data: {
+        id: randomUUID(),
+        familyId,
+        userId: owner.userId,
+        createdAt: new Date(),
+        expiresAt: expires,
+        familyExpiresAt: expires,
+      },
+    });
     expect(
       await prisma.session.count({
         where: { id: { in: [first.session.id, second.session.id] }, mfa: 'pending' },
@@ -507,8 +512,30 @@ describe('Internal Admin MFA challenge (PostgreSQL)', () => {
         challenge.complete(first.token, proof),
         challenge.complete(second.token, proof),
       ]);
-      expect(verifier).toHaveBeenCalledTimes(2);
+      expect(verifier).toHaveBeenCalledTimes(1);
       expect(results.filter(Boolean)).toHaveLength(1);
+      const winner = results.find(Boolean);
+      expect(winner?.session.metadata?.adminMfaMethod).toBe('recovery');
+      const persisted = await prisma.session.findUniqueOrThrow({
+        where: { id: winner!.session.id },
+      });
+      const account = await prisma.user.findUniqueOrThrow({
+        where: { id: owner.userId },
+      });
+      expect(persisted.metadata).toMatchObject({
+        adminMfaMethod: 'recovery',
+        adminRecoveryFence: account.authInvalidatedAt!.toISOString(),
+      });
+      expect(persisted.expiresAt.getTime() - persisted.createdAt.getTime()).toBe(600_000);
+      expect(await prisma.session.count({ where: { userId: owner.userId } })).toBe(1);
+      expect(await prisma.session.count({ where: { userId: other.userId } })).toBe(1);
+      const family = await prisma.refreshTokenFamily.findUniqueOrThrow({
+        where: { id: familyId },
+      });
+      expect(family.revokedAt).not.toBeNull();
+      expect(
+        await prisma.refreshToken.count({ where: { userId: owner.userId, revoked: false } }),
+      ).toBe(0);
     } finally {
       verifier.mockRestore();
     }
@@ -563,8 +590,7 @@ describe('Internal Admin MFA challenge (PostgreSQL)', () => {
     const challenge = app.get(AdminMfaChallengeService);
     const recovery = app.get(AdminMfaRecoveryService);
     const pending = (await challenge.begin(owner.userId, password))!;
-    const proof = { recoveryCode: owner.recoveryCodes[0]! };
-    const verified = (await challenge.complete(pending.token, proof))!;
+    const verified = (await challenge.complete(pending.token, { code: codeAt(owner.secret) }))!;
     await addSession(owner.userId, 'web');
     const oldHashes = await prisma.mfaRecoveryCode.findMany({
       where: { userId: owner.userId },
@@ -585,7 +611,10 @@ describe('Internal Admin MFA challenge (PostgreSQL)', () => {
         familyExpiresAt: expires,
       },
     });
-    const code = codeAt(owner.secret);
+    const factor = await prisma.mfaAuthenticator.findUniqueOrThrow({
+      where: { userId: owner.userId },
+    });
+    const code = codeAt(owner.secret, factor.lastUsedStep! + 1);
     expect(await recovery.regenerate(pending.token, password, code)).toBeNull();
     expect(await recovery.regenerate(verified.token, 'wrong', code)).toBeNull();
     const results = await Promise.all([
@@ -626,8 +655,7 @@ describe('Internal Admin MFA challenge (PostgreSQL)', () => {
     const challenge = app.get(AdminMfaChallengeService);
     const recovery = app.get(AdminMfaRecoveryService);
     const pending = (await challenge.begin(owner.userId, password))!;
-    const proof = { recoveryCode: owner.recoveryCodes[0]! };
-    const verified = (await challenge.complete(pending.token, proof))!;
+    const verified = (await challenge.complete(pending.token, { code: codeAt(owner.secret) }))!;
     const before = await prisma.mfaAuthenticator.findUniqueOrThrow({
       where: { userId: owner.userId },
     });
@@ -635,7 +663,7 @@ describe('Internal Admin MFA challenge (PostgreSQL)', () => {
     const failure = vi
       .spyOn(MfaService.prototype, 'generateRecoveryCodes')
       .mockRejectedValueOnce(new Error('injected generation failure'));
-    const code = codeAt(owner.secret);
+    const code = codeAt(owner.secret, before.lastUsedStep! + 1);
     try {
       await expect(recovery.regenerate(verified.token, password, code)).rejects.toThrow(
         'injected generation failure',

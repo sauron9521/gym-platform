@@ -7,7 +7,11 @@ import { PrismaService } from '#src/infra/database/index';
 import { toSessionRecord } from '../mappers/auth-session.mapper.js';
 import { authSessionSelect } from '../selects/auth-session.select.js';
 import { ADMIN_MFA_PENDING_TTL_MS } from './admin-mfa-transaction-session.store.js';
-import { adminMfaSessionScope } from './admin-mfa-session-scope.js';
+import {
+  adminMfaSessionScope,
+  isCurrentRecoveryGrant,
+  readAdminMfaAssurance,
+} from './admin-mfa-session-scope.js';
 
 const enrolledAdmin = {
   role: 'ADMIN',
@@ -35,8 +39,14 @@ export class AdminMfaSessionReader {
     const record = toSessionRecord(row);
     const now = Date.now();
     const fence = row.user.authInvalidatedAt;
+    const assurance = readAdminMfaAssurance(record);
+    if (!assurance || isAdminSessionExpired(record, now)) return null;
+    // Recovery is an isolated grant bound to its own revocation epoch.
+    // It is never accepted by the normal Admin authentication provider.
+    if (assurance === 'recovery') {
+      return isCurrentRecoveryGrant(record, fence, now) ? record : null;
+    }
     if (
-      isAdminSessionExpired(record, now) ||
       (fence && record.createdAt <= fence) ||
       (record.mfa === 'pending' && now >= record.createdAt.getTime() + ADMIN_MFA_PENDING_TTL_MS)
     ) {

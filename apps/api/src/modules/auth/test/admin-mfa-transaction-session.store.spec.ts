@@ -27,7 +27,7 @@ function setup(state: 'pending' | 'verified' = 'pending') {
   const store = new AdminMfaTransactionSessionStore(
     tx as unknown as Prisma.TransactionClient,
     record.userId,
-    state,
+    state === 'pending' ? { state } : { state, method: 'totp' },
   );
   return { store, tx, record };
 }
@@ -35,7 +35,9 @@ function setup(state: 'pending' | 'verified' = 'pending') {
 describe('AdminMfaTransactionSessionStore', () => {
   it('caps pending lifetime without extending a shorter expiry', async () => {
     const { store, tx, record } = setup();
+    record.metadata = { ...ADMIN_MFA_METADATA, adminMfaMethod: 'totp' };
     await store.createSession(record);
+    expect(record.metadata).toEqual(ADMIN_MFA_METADATA);
     expect(record.expiresAt.getTime() - record.createdAt.getTime()).toBe(300_000);
     const shorter = { ...record, expiresAt: new Date(record.createdAt.getTime() + 1000) };
     await store.createSession(shorter);
@@ -48,6 +50,10 @@ describe('AdminMfaTransactionSessionStore', () => {
     record.expiresAt = new Date(record.createdAt.getTime() + 1000);
     await store.createSession(record);
     expect(record.expiresAt.getTime() - record.createdAt.getTime()).toBe(1000);
+    expect(record.metadata).toEqual({ ...ADMIN_MFA_METADATA, adminMfaMethod: 'totp' });
+    expect(tx.session.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ metadata: record.metadata }),
+    });
     await expect(store.createSession({ ...record, userId: 'other' })).rejects.toThrow(
       'Admin MFA session owner mismatch',
     );

@@ -6,6 +6,7 @@ import { ADMIN_COOKIE_ROUTE } from '#src/common/auth/admin-cookie-route';
 import { AdminSessionCookieProvider } from '#src/common/auth/admin-session-cookie.provider';
 import { ADMIN_SESSION_PURPOSE } from '#src/common/auth/admin-session-purpose.guard';
 import { UsersAuthFacade } from '#src/modules/users/services/users-auth.facade';
+import { readAdminMfaAssurance } from '../stores/admin-mfa-session-scope.js';
 import { AdminCookieAuthService } from '../services/admin-cookie-auth.service.js';
 
 /**
@@ -45,6 +46,9 @@ export class AdminSessionAuth extends AdminSessionCookieProvider {
     if (record.mfa !== undefined && record.mfa !== 'verified') {
       return null;
     }
+
+    // Recovery grants are never principals on existing Admin routes.
+    if (record.mfa === 'verified' && readAdminMfaAssurance(record) !== 'totp') return null;
 
     const user = await this.users.findUserById(record.userId);
     if (!user) {

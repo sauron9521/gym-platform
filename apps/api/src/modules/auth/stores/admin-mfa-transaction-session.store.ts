@@ -9,7 +9,12 @@ import {
 import { toSessionRecord } from '../mappers/auth-session.mapper.js';
 import { authSessionSelect } from '../selects/auth-session.select.js';
 
-import { ADMIN_MFA_METADATA, adminMfaSessionScope } from './admin-mfa-session-scope.js';
+import {
+  ADMIN_MFA_METADATA,
+  ADMIN_RECOVERY_TTL_MS,
+  adminMfaSessionScope,
+  type AdminMfaIssuance,
+} from './admin-mfa-session-scope.js';
 
 export const ADMIN_MFA_PENDING_TTL_MS = 5 * 60 * 1000;
 
@@ -22,7 +27,7 @@ export class AdminMfaTransactionSessionStore implements SessionStore {
   constructor(
     private readonly tx: Prisma.TransactionClient,
     private readonly ownerId: string,
-    private readonly state: 'pending' | 'verified',
+    private readonly issuance: AdminMfaIssuance,
   ) {}
 
   private assertOwner(userId: string): void {
@@ -49,13 +54,25 @@ export class AdminMfaTransactionSessionStore implements SessionStore {
 
   async createSession(record: SessionRecord): Promise<void> {
     this.assertOwner(record.userId);
-    if (record.metadata?.purpose !== ADMIN_SESSION_PURPOSE || record.mfa !== this.state) {
+    if (record.metadata?.purpose !== ADMIN_SESSION_PURPOSE || record.mfa !== this.issuance.state) {
       throw new Error('Admin MFA session state mismatch');
     }
-    record.metadata = { ...ADMIN_MFA_METADATA };
+    // Ignore inherited metadata: only the verified proof path supplies a method.
+    const metadata =
+      this.issuance.state === 'verified'
+        ? { ...ADMIN_MFA_METADATA, adminMfaMethod: this.issuance.method }
+        : { ...ADMIN_MFA_METADATA };
+    record.metadata =
+      this.issuance.state === 'verified' && this.issuance.method === 'recovery'
+        ? { ...metadata, adminRecoveryFence: this.issuance.fence.toISOString() }
+        : metadata;
     capAdminSessionExpiry(record);
-    if (this.state === 'pending') {
+    if (this.issuance.state === 'pending') {
       const cap = record.createdAt.getTime() + ADMIN_MFA_PENDING_TTL_MS;
+      if (record.expiresAt.getTime() > cap) record.expiresAt = new Date(cap);
+    }
+    if (this.issuance.state === 'verified' && this.issuance.method === 'recovery') {
+      const cap = record.createdAt.getTime() + ADMIN_RECOVERY_TTL_MS;
       if (record.expiresAt.getTime() > cap) record.expiresAt = new Date(cap);
     }
     await this.tx.session.create({
@@ -66,7 +83,7 @@ export class AdminMfaTransactionSessionStore implements SessionStore {
         expiresAt: record.expiresAt,
         lastActiveAt: record.lastActiveAt,
         mfa: record.mfa,
-        metadata: ADMIN_MFA_METADATA,
+        metadata: record.metadata as Prisma.InputJsonValue,
       },
     });
   }
