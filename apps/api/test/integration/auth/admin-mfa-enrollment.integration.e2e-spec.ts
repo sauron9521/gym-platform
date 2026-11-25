@@ -1,12 +1,13 @@
 import { createHash, createHmac, randomUUID } from 'node:crypto';
 
-import { MfaService, PasswordHasher } from '@nestjs/authentication';
+import { MfaService, PasswordHasher, SessionService } from '@nestjs/authentication';
 import type { INestApplication } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Test } from '@nestjs/testing';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import { PrismaService } from '../../../src/infra/database/index.js';
+import { AdminMfaChallengeService } from '../../../src/modules/auth/services/admin-mfa-challenge.service.js';
 import { AdminMfaEnrollmentService } from '../../../src/modules/auth/services/admin-mfa-enrollment.service.js';
 import {
   PrismaMfaStore,
@@ -443,5 +444,115 @@ describe('Confirmed-factor password-only credential boundary (PostgreSQL)', () =
     expect(
       await users.findUserForJwtAuth(other.userId, Math.floor(Date.now() / 1000)),
     ).not.toBeNull();
+  });
+});
+
+describe('Internal Admin MFA challenge (PostgreSQL)', () => {
+  async function enrolled() {
+    const principal = await seed();
+    const enrollment = await service.begin(principal, password);
+    const confirmed = await service.confirm(
+      principal,
+      codeAt(enrollment.secret, Math.floor(Date.now() / 30_000) - 1),
+    );
+    if (!confirmed) throw new Error('Test enrollment failed');
+    return { ...principal, secret: enrollment.secret, recoveryCodes: confirmed.recoveryCodes };
+  }
+
+  it('issues a bounded pending session and rotates to a new verified Admin token', async () => {
+    const owner = await enrolled();
+    const challenge = app.get(AdminMfaChallengeService);
+    expect(await challenge.begin(owner.userId, 'incorrect')).toBeNull();
+    const pending = await challenge.begin(owner.userId, password);
+    expect(pending?.session.mfa).toBe('pending');
+    expect(pending?.cookie).toContain('__Host-admin-sid=');
+    const pendingTtl = pending!.session.expiresAt.getTime() - pending!.session.createdAt.getTime();
+    expect(pendingTtl).toBeLessThanOrEqual(300_000);
+    expect(await app.get(PrismaSessionStore).getSession(pending!.session.id)).toBeUndefined();
+
+    const verified = await challenge.complete(pending!.token, { code: codeAt(owner.secret) });
+    expect(verified?.session.mfa).toBe('verified');
+    expect(verified?.token).not.toBe(pending!.token);
+    expect(verified?.session.createdAt).toEqual(pending!.session.createdAt);
+    const verifiedSession = verified!.session;
+    const verifiedTtl = verifiedSession.expiresAt.getTime() - verifiedSession.createdAt.getTime();
+    expect(verifiedTtl).toBe(8 * 60 * 60 * 1000);
+    expect(await prisma.session.findUnique({ where: { id: pending!.session.id } })).toBeNull();
+    expect(await app.get(PrismaSessionStore).getSession(verified!.session.id)).toBeUndefined();
+    expect(await challenge.complete(pending!.token, { code: codeAt(owner.secret) })).toBeNull();
+    expect(
+      await prisma.mfaLifecycleAudit.count({
+        where: { userId: owner.userId, action: 'ADMIN_TOTP_CHALLENGE_VERIFIED' },
+      }),
+    ).toBe(1);
+  });
+
+  it('consumes a recovery code once across concurrent pending sessions', async () => {
+    const owner = await enrolled();
+    const challenge = app.get(AdminMfaChallengeService);
+    const first = (await challenge.begin(owner.userId, password))!;
+    const second = (await challenge.begin(owner.userId, password))!;
+    const proof = { recoveryCode: owner.recoveryCodes[0]! };
+    expect(first.session.id).not.toBe(second.session.id);
+    expect(
+      await prisma.session.count({
+        where: { id: { in: [first.session.id, second.session.id] }, mfa: 'pending' },
+      }),
+    ).toBe(2);
+    expect(await prisma.mfaRecoveryCode.count({ where: { userId: owner.userId } })).toBe(10);
+    const verifier = vi.spyOn(MfaService.prototype, 'verifyRecoveryCode');
+    try {
+      const results = await Promise.all([
+        challenge.complete(first.token, proof),
+        challenge.complete(second.token, proof),
+      ]);
+      expect(verifier).toHaveBeenCalledTimes(2);
+      expect(results.filter(Boolean)).toHaveLength(1);
+    } finally {
+      verifier.mockRestore();
+    }
+    expect(await prisma.mfaRecoveryCode.count({ where: { userId: owner.userId } })).toBe(9);
+    expect(
+      await prisma.mfaLifecycleAudit.count({
+        where: { userId: owner.userId, action: 'ADMIN_RECOVERY_CHALLENGE_VERIFIED' },
+      }),
+    ).toBe(1);
+  });
+
+  it('refuses expired, revoked, malformed and non-Admin challenges', async () => {
+    const owner = await enrolled();
+    const challenge = app.get(AdminMfaChallengeService);
+    const pending = (await challenge.begin(owner.userId, password))!;
+    const proof = { recoveryCode: owner.recoveryCodes[0]! };
+    expect(await challenge.complete(pending.token, { ...proof, code: '123456' })).toBeNull();
+    await prisma.session.update({
+      where: { id: pending.session.id },
+      data: { expiresAt: new Date(0) },
+    });
+    expect(await challenge.complete(pending.token, proof)).toBeNull();
+    await prisma.session.delete({ where: { id: pending.session.id } });
+    expect(await challenge.complete(pending.token, proof)).toBeNull();
+    await prisma.user.update({ where: { id: owner.userId }, data: { role: 'ATHLETE' } });
+    expect(await challenge.begin(owner.userId, password)).toBeNull();
+    expect(await prisma.mfaRecoveryCode.count({ where: { userId: owner.userId } })).toBe(10);
+  });
+
+  it('rolls back recovery consumption if verified session rotation fails', async () => {
+    const owner = await enrolled();
+    const challenge = app.get(AdminMfaChallengeService);
+    const pending = (await challenge.begin(owner.userId, password))!;
+    const proof = { recoveryCode: owner.recoveryCodes[0]! };
+    const failure = vi.spyOn(SessionService.prototype, 'rotate').mockResolvedValueOnce(null);
+    try {
+      await expect(challenge.complete(pending.token, proof)).rejects.toThrow(
+        'Administrative MFA session rotation failed',
+      );
+      expect(await prisma.mfaRecoveryCode.count({ where: { userId: owner.userId } })).toBe(10);
+      const unchanged = await prisma.session.findUnique({ where: { id: pending.session.id } });
+      expect(unchanged).toMatchObject({ mfa: 'pending' });
+    } finally {
+      failure.mockRestore();
+    }
+    expect((await challenge.complete(pending.token, proof))?.session.mfa).toBe('verified');
   });
 });

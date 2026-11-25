@@ -1,6 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto';
 
-import { PasswordHasher } from '@nestjs/authentication';
+import { AuthenticationStorage, MfaService, PasswordHasher } from '@nestjs/authentication';
 import type { INestApplication } from '@nestjs/common';
 import { StandardSchemaValidationPipe } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
@@ -11,6 +11,11 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { AppModule } from '../../../src/app.module.js';
 import { PrismaService } from '../../../src/infra/database/index.js';
+import { AdminMfaChallengeService } from '../../../src/modules/auth/services/admin-mfa-challenge.service.js';
+import { AdminMfaEnrollmentService } from '../../../src/modules/auth/services/admin-mfa-enrollment.service.js';
+import { AdminCookieAuthService } from '../../../src/modules/auth/services/admin-cookie-auth.service.js';
+import { PrismaMfaStore } from '../../../src/modules/auth/stores/index.js';
+import { createMfaEncryptionOptions } from '../../../src/common/config/mfa-keyring.config.js';
 import { useTestDatabase } from '../../utility/test-db-helper.js';
 
 describe('GET /admin/users (HTTP + PostgreSQL)', () => {
@@ -87,6 +92,7 @@ describe('GET /admin/users (HTTP + PostgreSQL)', () => {
   afterAll(async () => {
     try {
       if (prisma && ids.length) {
+        await prisma.mfaLifecycleAudit.deleteMany({ where: { userId: { in: ids } } });
         await prisma.user.deleteMany({ where: { id: { in: ids } } });
       }
     } finally {
@@ -788,5 +794,62 @@ describe('GET /admin/users (HTTP + PostgreSQL)', () => {
     expect(
       (await request(app.getHttpServer()).get('/users/me').set('Cookie', cookies.athlete!)).status,
     ).toBe(200);
+  });
+
+  it('accepts only transaction-issued verified MFA Admin cookies and revokes them on logout', async () => {
+    const owner = await seedAccount('mfa-boundary', 'ADMIN');
+    const legacy = cookies['mfa-boundary']!;
+    const legacyId = createHash('sha256').update(legacy.split('=', 2)[1]!).digest('base64url');
+    const config = app.get(ConfigService);
+    const previous = config.get('MFA_ENCRYPTION_KEYS');
+    const keyring = createHash('sha256').update('admin boundary test key').digest('base64url');
+    config.set('MFA_ENCRYPTION_KEYS', keyring);
+    try {
+      // Use the library to create a real factor and recovery batch, without
+      // exposing enrollment or challenge endpoints to the browser.
+      const enrollment = app.get(AdminMfaEnrollmentService);
+      await enrollment.begin({ userId: owner.id, sessionId: legacyId }, password);
+      const store = app.get(MfaService);
+      // Global MFA stays disabled; the challenge uses the isolated store.
+      expect(await store.isEnrolled(owner.id)).toBe(false);
+      const isolated = new AuthenticationStorage();
+      isolated.registerSource({ mfa: app.get(PrismaMfaStore) });
+      const encryption = createMfaEncryptionOptions(keyring, config.getOrThrow('JWT_SECRET'));
+      const mfa = new MfaService(isolated, { mfa: { encryption } });
+      const codes = await mfa.generateRecoveryCodes(owner.id);
+      await prisma.mfaAuthenticator.update({
+        where: { userId: owner.id },
+        data: { confirmed: true },
+      });
+      await prisma.session.update({ where: { id: legacyId }, data: { mfa: 'verified' } });
+      const probe = (cookie: string) =>
+        request(app.getHttpServer()).get('/auth/admin-session').set('Cookie', cookie);
+      expect((await probe(legacy)).status).toBe(401);
+
+      const challenge = app.get(AdminMfaChallengeService);
+      const pending = (await challenge.begin(owner.id, password))!;
+      const pendingCookie = pending.cookie.split(';', 1)[0]!;
+      expect((await probe(pendingCookie)).status).toBe(401);
+      const helper = app.get(AdminCookieAuthService);
+      const verified = await helper.completeMfa(
+        { headers: { cookie: pendingCookie }, method: 'POST' },
+        { append: () => undefined } as never,
+        { recoveryCode: codes[0]! },
+      );
+      expect(verified?.session.mfa).toBe('verified');
+      const cookie = verified!.cookie.split(';', 1)[0]!;
+      expect((await probe(cookie)).status).toBe(200);
+      expect((await probe(pendingCookie)).status).toBe(401);
+      const ordinary = cookie.replace('__Host-admin-sid=', '__Host-sid=');
+      const profile = await request(app.getHttpServer()).get('/users/me').set('Cookie', ordinary);
+      expect(profile.status).toBe(401);
+      const ended = await request(app.getHttpServer())
+        .post('/auth/admin-sign-out')
+        .set('Cookie', cookie);
+      expect(ended.status).toBe(204);
+      expect((await probe(cookie)).status).toBe(401);
+    } finally {
+      config.set('MFA_ENCRYPTION_KEYS', previous);
+    }
   });
 });

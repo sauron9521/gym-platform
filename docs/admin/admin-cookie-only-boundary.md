@@ -240,3 +240,46 @@ a bounded Admin pending-session and verified-session policy, challenge
 completion and protected recovery without weakening the shared-identity
 fence. Requests authorized before confirmation commits may still complete;
 sensitive action reauthorization is a separate gate.
+
+### Internal Admin challenge and atomic rotation (#290, seventh slice)
+
+The internal challenge service requires an active enrolled Admin and fresh
+password proof, rechecks the credential snapshot under the owner lock, and
+uses an isolated library session service to issue a pending Admin cookie
+with a five-minute absolute challenge deadline. Completion binds to the
+opaque Admin cookie digest and locks the owner and exact session before
+verifying TOTP or a single-use recovery code. Separate account limits
+bound password proof and challenge requests. Failed proof commits attempt
+accounting; successful proof rotates the session, consumes the factor proof,
+and writes a durable minimal audit event in one transaction. The verified
+session retains the original password-authentication time and the 8h/15m
+Admin lifetime policy. An expired or revoked pending session cannot rotate.
+
+The global password-only fence remains unchanged: both internal pending
+and verified sessions are still unusable for public authorization. Neither
+the login controller nor the existing cookie helper calls this service.
+Before exposure, wire the Admin cookie boundary to a dedicated validated
+pending/verified reader, enforce origin checks, handle sign-out and lost
+responses, provide protected recovery, verify key provisioning and complete
+browser and multi-replica security tests. No live enrollment or production
+activation; do not close #290. The audit enum extension is additive.
+
+### Scoped Admin MFA cookie reader (#290, eighth slice)
+
+Challenge-issued sessions carry server-written flow provenance in metadata.
+The scoped Admin reader accepts only that provenance, an active ADMIN owner,
+a confirmed factor, a configured keyring and a session newer than the
+credential invalidation fence. Pending sessions cannot authorize protected
+routes or extend their five-minute deadline; verified sessions keep the
+8h/15m policy. Legacy password-only Admin sessions remain available only
+through the existing fence; an unmarked stored verified state is insufficient.
+
+The internal cookie challenge helper delegates to the atomic coordinator
+instead of verifying a factor and rotating separately. Admin sign-out can
+discard the exact scoped MFA token, including expired rows, without touching
+ordinary credentials. If rotation already won, the old token cannot revoke
+the new token; handle lost responses and logout races in the HTTP rollout
+gate. Ordinary cookie and JWT stores remain unchanged. No public challenge
+or enrolled-user login endpoint is enabled. Existing unmarked internal
+challenge rows must be discarded and recreated before exposure. No schema
+change, no mandatory MFA activation, and #289/#290 remain open.
