@@ -80,6 +80,14 @@ export function ProfileScreen() {
       >
         <Text style={styles.secondaryText}>{t('mobile.profile.edit')}</Text>
       </Pressable>
+      <Pressable
+        accessibilityRole="button"
+        testID="profile-app-settings"
+        onPress={() => router.push('/profile/settings')}
+        style={styles.secondary}
+      >
+        <Text style={styles.secondaryText}>{t('mobile.navigation.appSettings')}</Text>
+      </Pressable>
       {hasTrainerAccess(capabilities) ? (
         <Pressable
           accessibilityRole="button"

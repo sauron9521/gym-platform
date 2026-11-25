@@ -19,6 +19,7 @@ import { palette } from '@/shared/config/theme';
 import { OfflineBanner } from '@/shared/ui/offline-banner';
 import { MobileErrorBoundary } from '@/shared/ui/mobile-error-boundary';
 import { LocaleProvider } from '@/shared/i18n/locale-provider';
+import { AppSettingsProvider } from '@/features/app-settings/model/app-settings-context';
 import { AccountLocaleSync } from '@/features/profile/ui/account-locale-sync';
 
 function Navigation() {
@@ -43,6 +44,10 @@ function Navigation() {
           <Stack.Screen
             name="profile/edit"
             options={{ headerShown: true, title: t('editProfile') }}
+          />
+          <Stack.Screen
+            name="profile/settings"
+            options={{ headerShown: true, title: t('appSettings') }}
           />
           <Stack.Screen
             name="exercises/index"
@@ -112,7 +117,9 @@ export default function RootLayout() {
               <MobileErrorBoundary>
                 <AuthProvider>
                   <AccountLocaleSync />
-                  <Navigation />
+                  <AppSettingsProvider>
+                    <Navigation />
+                  </AppSettingsProvider>
                 </AuthProvider>
               </MobileErrorBoundary>
             </MobileQueryProvider>

@@ -75,6 +75,23 @@ export function getMobileAuthErrorMessageId(code: string): string {
 
 const navigationMessages = {
   'mobile.tabs.progress': { uk: 'Прогрес', en: 'Progress' },
+  'mobile.navigation.appSettings': { uk: 'Налаштування застосунку', en: 'App settings' },
+  'mobile.settings.workouts': { uk: 'Тренування', en: 'Workouts' },
+  'mobile.settings.autoRestTimer': { uk: 'Автоматичний таймер', en: 'Automatic rest timer' },
+  'mobile.settings.autoRestTimerHint': {
+    uk: 'Запускати після завершення підходу. Ручний запуск завжди доступний.',
+    en: 'Start after completing a set. Manual start is always available.',
+  },
+  'mobile.settings.pending': { uk: 'Зачекайте…', en: 'Please wait…' },
+  'mobile.settings.storageError': {
+    uk: 'Не вдалося зберегти або прочитати налаштування. Спробуйте ще раз.',
+    en: 'Could not save or read settings. Please try again.',
+  },
+  'mobile.settings.retry': { uk: 'Повторити', en: 'Retry' },
+  'mobile.settings.deviceOnly': {
+    uk: 'Налаштування зберігаються для вашого акаунта на цьому пристрої.',
+    en: 'Settings are saved for your account on this device.',
+  },
   'mobile.navigation.editProfile': { uk: 'Редагувати профіль', en: 'Edit profile' },
   'mobile.navigation.exercises': { uk: 'Вправи', en: 'Exercises' },
   'mobile.navigation.workout': { uk: 'Тренування', en: 'Workout' },

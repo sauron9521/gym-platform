@@ -43,3 +43,16 @@ test('public route paths remain unchanged and program list is protected', () => 
     /router.push\('\/programs'\)/,
   );
 });
+
+test('app settings is reachable from profile and protected by mobile account access', () => {
+  const layout = read('../src/app/_layout.tsx');
+  const protectedRoutes = layout
+    .split('<Stack.Protected guard={Boolean(account && hasMobileAccess(capabilities))}>')[1]
+    .split('</Stack.Protected>')[0];
+  assert.ok(protectedRoutes.includes('name="profile/settings"'));
+  assert.match(read('../src/app/profile/settings.tsx'), /<AppSettingsScreen/);
+  assert.match(
+    read('../src/screens/profile/ui/profile-screen.tsx'),
+    /router.push\('\/profile\/settings'\)/,
+  );
+});
