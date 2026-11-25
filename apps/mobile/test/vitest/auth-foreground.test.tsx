@@ -179,4 +179,76 @@ describe('auth foreground account-cache lifecycle', () => {
       await h.dispose();
     }
   });
+  it('revokes local access when foreground grants explicitly deny mobile access', async () => {
+    const h = await harness();
+    try {
+      await h.emit('inactive');
+      mocks.get.mockResolvedValueOnce(ok({ athlete: false, trainer: false, admin: true }));
+      await h.emit('active');
+      await waitFor(() => expect(h.result.current.account).toBeNull());
+      expect(h.result.current.capabilities).toBeNull();
+      expect(h.result.current.recoveryAvailable).toBe(false);
+      expect(h.client.getQueryCache().getAll()).toHaveLength(0);
+      expect(mocks.remove).toHaveBeenCalled();
+    } finally {
+      await h.dispose();
+    }
+  });
+
+  it('keeps startup locked until live grants confirm access after token rotation', async () => {
+    mocks.read.mockResolvedValueOnce('stored-refresh');
+    const pending = deferred();
+    mocks.get.mockResolvedValueOnce(ok(account)).mockReturnValueOnce(pending.promise);
+    const client = createMobileQueryClient();
+    const wrapper = ({ children }: PropsWithChildren) => (
+      <QueryClientProvider client={client}>
+        <AuthProvider>{children}</AuthProvider>
+      </QueryClientProvider>
+    );
+    const hook = await renderHook(() => useAuth(), { wrapper });
+    try {
+      await waitFor(() => expect(mocks.get).toHaveBeenCalledWith('/users/me/capabilities'));
+      expect(hook.result.current.restoring).toBe(true);
+      expect(hook.result.current.account).toBeNull();
+      expect(hook.result.current.capabilities).toBeNull();
+      expect(client.getQueryData(accountQueryKeys.me(account.id))).toBeUndefined();
+      await act(async () => pending.resolve(ok(grants)));
+      await waitFor(() => expect(hook.result.current.restoring).toBe(false));
+      expect(hook.result.current.account).toEqual(account);
+      expect(hook.result.current.capabilities).toEqual(grants);
+      expect(client.getQueryData(accountQueryKeys.me(account.id))).toEqual(account);
+      expect(mocks.post.mock.calls.map(([path]) => path)).toEqual(['/auth/token/refresh']);
+    } finally {
+      await hook.unmount();
+      client.clear();
+    }
+  });
+
+  it('retries a transient startup verification failure without replaying refresh', async () => {
+    mocks.read.mockResolvedValueOnce('stored-refresh');
+    mocks.get.mockResolvedValueOnce({ response: { status: 503 } });
+    const client = createMobileQueryClient();
+    const wrapper = ({ children }: PropsWithChildren) => (
+      <QueryClientProvider client={client}>
+        <AuthProvider>{children}</AuthProvider>
+      </QueryClientProvider>
+    );
+    const hook = await renderHook(() => useAuth(), { wrapper });
+    try {
+      await waitFor(() => expect(hook.result.current.restoring).toBe(false));
+      expect(hook.result.current.recoveryAvailable).toBe(true);
+      expect(hook.result.current.account).toBeNull();
+      expect(hook.result.current.capabilities).toBeNull();
+      await act(async () => {
+        expect(await hook.result.current.retryVerification()).toEqual({ success: true });
+      });
+      expect(hook.result.current.account).toEqual(account);
+      expect(hook.result.current.capabilities).toEqual(grants);
+      expect(hook.result.current.recoveryAvailable).toBe(false);
+      expect(mocks.post.mock.calls.map(([path]) => path)).toEqual(['/auth/token/refresh']);
+    } finally {
+      await hook.unmount();
+      client.clear();
+    }
+  });
 });
