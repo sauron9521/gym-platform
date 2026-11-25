@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { test } from 'vitest';
 
 const targetWorkflows = [
-  ['ci.yml', 17],
+  ['ci.yml', 18],
   ['web-integration.yml', 2],
   ['dependency-audit.yml', 1],
   ['mobile-native-e2e.yml', 1],
