@@ -1,4 +1,4 @@
-import { useCallback, useRef } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { useIntl } from 'react-intl';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Controller, useForm } from 'react-hook-form';
@@ -26,6 +26,7 @@ export function SignInScreen() {
   );
   const { signIn, recoveryAvailable, retryVerification } = useAuth();
   const submitLock = useRef(false);
+  const [recovering, setRecovering] = useState(false);
   const {
     control,
     handleSubmit,
@@ -39,11 +40,10 @@ export function SignInScreen() {
     reValidateMode: 'onChange',
   });
 
+  const busy = isSubmitting || recovering;
+
   const onValidSubmit = useCallback(
     async ({ email, password }: SignInValues) => {
-      // React Hook Form validates first; this protects against concurrent API calls.
-      if (submitLock.current) return;
-      submitLock.current = true;
       clearErrors('root.server');
       try {
         const result = await signIn(email, password);
@@ -55,14 +55,41 @@ export function SignInScreen() {
           type: 'server',
           message: t('failed'),
         });
-      } finally {
-        submitLock.current = false;
       }
     },
     [clearErrors, setError, signIn, t],
   );
 
-  const submit = () => void handleSubmit(onValidSubmit)();
+  const submit = async () => {
+    // Acquire before asynchronous form validation, not only before the API call.
+    if (submitLock.current) return;
+    submitLock.current = true;
+    try {
+      await handleSubmit(onValidSubmit)();
+    } catch {
+      setError('root.server', { type: 'server', message: t('failed') });
+    } finally {
+      submitLock.current = false;
+    }
+  };
+
+  const recover = async () => {
+    if (submitLock.current || isSubmitting) return;
+    submitLock.current = true;
+    setRecovering(true);
+    clearErrors('root.server');
+    try {
+      const result = await retryVerification();
+      if (!result.success) {
+        setError('root.server', { type: 'server', message: result.message });
+      }
+    } catch {
+      setError('root.server', { type: 'server', message: t('failed') });
+    } finally {
+      submitLock.current = false;
+      setRecovering(false);
+    }
+  };
 
   return (
     <KeyboardAvoidingView
@@ -87,7 +114,7 @@ export function SignInScreen() {
                 autoCorrect={false}
                 keyboardType="email-address"
                 maxLength={254}
-                editable={!isSubmitting}
+                editable={!busy}
                 value={value}
                 onBlur={onBlur}
                 onChangeText={(nextValue) => {
@@ -115,7 +142,7 @@ export function SignInScreen() {
                 autoCapitalize="none"
                 autoComplete="current-password"
                 secureTextEntry
-                editable={!isSubmitting}
+                editable={!busy}
                 value={value}
                 onBlur={onBlur}
                 onChangeText={(nextValue) => {
@@ -140,9 +167,10 @@ export function SignInScreen() {
           ) : null}
           <Pressable
             accessibilityRole="button"
-            disabled={isSubmitting}
+            disabled={busy}
+            accessibilityState={{ disabled: busy, busy: isSubmitting }}
             onPress={() => void submit()}
-            style={[styles.button, isSubmitting && styles.disabled]}
+            style={[styles.button, busy && styles.disabled]}
           >
             {isSubmitting ? (
               <ActivityIndicator accessibilityLabel={t('signingIn')} color={palette.surface} />
@@ -155,24 +183,16 @@ export function SignInScreen() {
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={t('retryLabel')}
-            disabled={isSubmitting}
-            style={[styles.button, isSubmitting && styles.disabled]}
-            onPress={() => {
-              if (submitLock.current) return;
-              submitLock.current = true;
-              clearErrors('root.server');
-              void retryVerification()
-                .then((result) => {
-                  if (!result.success) {
-                    setError('root.server', { type: 'server', message: result.message });
-                  }
-                })
-                .finally(() => {
-                  submitLock.current = false;
-                });
-            }}
+            disabled={busy}
+            style={[styles.button, busy && styles.disabled]}
+            accessibilityState={{ disabled: busy, busy: recovering }}
+            onPress={() => void recover()}
           >
-            <Text style={styles.buttonText}>{t('recover')}</Text>
+            {recovering ? (
+              <ActivityIndicator accessible={false} color={palette.surface} />
+            ) : (
+              <Text style={styles.buttonText}>{t('recover')}</Text>
+            )}
           </Pressable>
         ) : null}
         <Text style={styles.note}>{t('note')}</Text>

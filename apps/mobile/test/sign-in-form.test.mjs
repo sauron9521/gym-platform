@@ -64,13 +64,14 @@ test('native TextInputs use RHF Controller with accessible field and server erro
   assert.match(form, /name="email"/);
   assert.match(form, /name="password"/);
   assert.match(form, /onChangeText=\{\(nextValue\) =>/);
-  assert.match(form, /submit = \(\) => void handleSubmit\(onValidSubmit\)\(\)/);
+  assert.match(form, /await handleSubmit\(onValidSubmit\)\(\)/);
   assert.match(form, /submitLock\.current/);
-  assert.match(form, /disabled=\{isSubmitting\}/);
+  assert.match(form, /const busy = isSubmitting \|\| recovering/);
+  assert.match(form, /disabled=\{busy\}/);
   assert.match(form, /errors\.root\.server\.message/);
   assert.match(form, /clearErrors\('root\.server'\)/);
   assert.match(form, /accessibilityRole="alert"/);
-  assert.doesNotMatch(form, /useState\(/);
+  assert.doesNotMatch(form, /useState\(.*(?:email|password)/i);
   assert.doesNotMatch(form, /console\.log|password\.trim\(/);
   assert.match(context, /validateMobileCredentials\(email, password\)/);
   assert.match(context, /guestApi\.POST\('\/auth\/token'/);

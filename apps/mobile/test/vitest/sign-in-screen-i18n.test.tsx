@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, waitFor } from '@testing-library/react-native';
+import { act, cleanup, fireEvent, render, waitFor } from '@testing-library/react-native';
 import { getFlatMessages, type Locale } from '@gym/i18n';
 import { IntlProvider } from 'react-intl';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -127,6 +127,36 @@ describe('native sign-in uk/en localization without changing auth behavior', () 
     const view = await renderScreen('en', true);
     await fireEvent.press(view.getByLabelText('Retry session verification'));
     await waitFor(() => expect(retryVerification).toHaveBeenCalledTimes(1));
+    expect(signIn).not.toHaveBeenCalled();
+  });
+  it('disables sign-in and recovery while checking a session, then handles rejection safely', async () => {
+    let rejectRecovery: (error: Error) => void = () => undefined;
+    retryVerification.mockImplementationOnce(
+      () =>
+        new Promise((_resolve, reject) => {
+          rejectRecovery = reject;
+        }),
+    );
+    const view = await renderScreen('en', true);
+    await fireEvent.press(view.getByLabelText('Retry session verification'));
+    await waitFor(() => {
+      expect(view.getByTestId('sign-in-email').props.editable).toBe(false);
+      expect(view.getByTestId('sign-in-password').props.editable).toBe(false);
+      expect(
+        view.getByRole('button', { name: 'Retry session verification' }).props.accessibilityState
+          .disabled,
+      ).toBe(true);
+    });
+    await fireEvent.press(view.getByRole('button', { name: 'Retry session verification' }));
+    await fireEvent.press(view.getByRole('button', { name: 'Sign in' }));
+    expect(retryVerification).toHaveBeenCalledTimes(1);
+    expect(signIn).not.toHaveBeenCalled();
+    await act(async () => rejectRecovery(new Error('SECRET_RECOVERY_RESPONSE')));
+    await waitFor(() => {
+      expect(view.getByText('Could not sign in. Try again.')).toBeTruthy();
+      expect(view.getByTestId('sign-in-email').props.editable).toBe(true);
+    });
+    expect(view.queryByText('SECRET_RECOVERY_RESPONSE')).toBeNull();
     expect(signIn).not.toHaveBeenCalled();
   });
 });

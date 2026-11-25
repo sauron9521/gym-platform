@@ -67,10 +67,12 @@ export function classifyChangedPaths(paths, { forceFull = false } = {}) {
       path.startsWith('docs/') ||
       /^[^/]+\.md$/.test(path) ||
       /^infra\/(?:[^/]+\/)*[^/]+\.md$/.test(path) ||
+      /^apps\/mobile\/docs\/(?:[^/]+\/)*[^/]+\.md$/.test(path) ||
       [
         'apps/api/README.md',
         'apps/api/test/README.md',
         'apps/web/README.md',
+        'apps/admin/README.md',
         'apps/trainer/README.md',
         'apps/landing/README.md',
         'apps/mobile/README.md',
