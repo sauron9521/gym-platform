@@ -77,12 +77,30 @@ describe('AdminSessionAuth', () => {
     sessions.validate.mockResolvedValue({
       id: 'id',
       userId: 'user',
-      metadata: { purpose: 'admin' },
+      metadata: { purpose: 'admin', adminMfaFlow: 'challenge-v1', adminMfaMethod: 'totp' },
       mfa: 'verified',
     });
     users.findUserById.mockResolvedValue({ id: 'user', role: 'ATHLETE' });
     await expect(provider.authenticate(context)).resolves.toBeNull();
     expect(sessions.discard).not.toHaveBeenCalled();
+  });
+
+  it('never authenticates recovery grants on existing Admin routes', async () => {
+    const { provider, sessions, reflector, users, context } = setup();
+    reflector.getAllAndOverride.mockReturnValue(true);
+    sessions.validate.mockResolvedValue({
+      id: 'id',
+      userId: 'user',
+      mfa: 'verified',
+      metadata: {
+        purpose: 'admin',
+        adminMfaFlow: 'challenge-v1',
+        adminMfaMethod: 'recovery',
+        adminRecoveryFence: new Date().toISOString(),
+      },
+    });
+    await expect(provider.authenticate(context)).resolves.toBeNull();
+    expect(users.findUserById).not.toHaveBeenCalled();
   });
 
   it.each(['invalid', '', null, true, 'pending'])(

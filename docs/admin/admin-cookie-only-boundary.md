@@ -300,3 +300,39 @@ The operation has no HTTP route. A separate lost-factor recovery procedure,
 recovery-code sign-in containment, security notices, safe lost-response
 handling and device/browser validation remain rollout gates. Never enable
 mandatory MFA or close #290 on the basis of this internal slice.
+
+### Admin MFA assurance context (#290, tenth slice)
+
+The transaction-bound issuer records the verified method as server-owned
+session metadata: TOTP or recovery code. Pending sessions carry no
+verified method; the scoped reader rejects inconsistent, missing or
+unknown assurance on verified sessions. Inherited metadata cannot select
+a proof method. Existing unmarked verified internal sessions must be
+discarded and recreated; no backfill can prove how they authenticated.
+WebAuthn is not an accepted method until a verified implementation exists.
+
+This slice records assurance, not recovery containment. Recovery sessions
+still follow the previous authorization policy; no public login or MFA
+challenge is exposed. The following slice must restrict recovery-issued
+sessions, check assurance at sensitive operations including regeneration,
+revoke prior credentials on recovery sign-in and test the restricted
+boundary before any HTTP rollout. No migration or new dependency.
+
+### Recovery sign-in containment (#290, eleventh slice)
+
+A successful recovery-code challenge rotates to a restricted grant and
+revokes all other identity sessions and refresh credentials in the same
+transaction as code consumption and the existing durable challenge audit.
+The grant is tied to the exact new account invalidation fence, not to a
+general exception for previously revoked credentials. It expires ten
+minutes after initial password authentication and cannot slide. All
+existing Admin routes, ordinary cookie/JWT routes and recovery-code
+regeneration deny recovery assurance. Sign-out remains available. No
+public recovery-specific endpoint exists yet; the grant is internal-only
+until a separately reviewed factor-replacement flow is ready.
+
+The earlier verified recovery sessions without the new fence marker are
+invalid. No new migration or dependency. A later factor change must
+revoke the grant and require fresh normal authentication. Notifications,
+lost-response handling, browser/device verification and mandatory MFA
+remain gated. #289/#290 stay open.

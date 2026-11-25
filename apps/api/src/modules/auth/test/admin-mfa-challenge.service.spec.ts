@@ -33,7 +33,12 @@ function setup() {
   };
   const user = { passwordHash: 'test-hash', authInvalidatedAt: null };
   const tx = {
-    user: { findUnique: vi.fn().mockResolvedValue(user) },
+    user: {
+      findUnique: vi.fn().mockResolvedValue(user),
+      update: vi.fn().mockResolvedValue({}),
+    },
+    refreshTokenFamily: { updateMany: vi.fn().mockResolvedValue({ count: 1 }) },
+    refreshToken: { updateMany: vi.fn().mockResolvedValue({ count: 1 }) },
     session: {
       findFirst: vi.fn().mockResolvedValue(row),
       create: vi.fn().mockResolvedValue({}),
@@ -190,6 +195,33 @@ describe('AdminMfaChallengeService', () => {
     const proof = method === 'totp' ? { code: '123456' } : { recoveryCode: 'ABCDE-FGHIJ' };
     const result = await service.complete(token, proof);
     expect(result?.session.mfa).toBe('verified');
+    const metadata = { ...ADMIN_MFA_METADATA, adminMfaMethod: method };
+    expect(result?.session.metadata).toMatchObject(metadata);
+    expect(tx.session.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ metadata: expect.objectContaining(metadata) }),
+    });
+    if (method === 'recovery') {
+      const fence = new Date(result!.session.metadata!.adminRecoveryFence as string);
+      expect(tx.user.update).toHaveBeenCalledWith({
+        where: { id: userId },
+        data: { authInvalidatedAt: fence },
+      });
+      expect(tx.session.deleteMany).toHaveBeenCalledWith({
+        where: { userId, id: { not: result!.session.id } },
+      });
+      expect(tx.refreshTokenFamily.updateMany).toHaveBeenCalledWith({
+        where: { userId, revokedAt: null },
+        data: { revokedAt: fence },
+      });
+      expect(tx.refreshToken.updateMany).toHaveBeenCalledWith({
+        where: { userId, revoked: false },
+        data: { revoked: true },
+      });
+      expect(result!.session.expiresAt.getTime() - row.createdAt.getTime()).toBe(600_000);
+    } else {
+      expect(tx.user.update).not.toHaveBeenCalled();
+      expect(tx.refreshTokenFamily.updateMany).not.toHaveBeenCalled();
+    }
     expect(result?.session.createdAt).toEqual(row.createdAt);
     expect(result?.session.id).not.toBe(id);
     expect(totp).toHaveBeenCalledTimes(method === 'totp' ? 1 : 0);
