@@ -21,7 +21,7 @@ function setup() {
     lastActiveAt: now,
     expiresAt: new Date(now.getTime() + 600_000),
     mfa: 'verified',
-    metadata: ADMIN_MFA_METADATA,
+    metadata: { ...ADMIN_MFA_METADATA, adminMfaMethod: 'totp' },
     user: { passwordHash: 'hash', authInvalidatedAt: null },
   };
   const tx = {
@@ -81,6 +81,20 @@ describe('AdminMfaRecoveryService', () => {
     tx.session.findFirst.mockResolvedValueOnce(null);
     expect(await service.regenerate(token, 'password', '123456')).toBeNull();
     expect(factors.withLockedOwner).not.toHaveBeenCalled();
+  });
+
+  it('rejects recovery assurance before verifying password or TOTP', async () => {
+    const { service, tx, row, passwords } = setup();
+    tx.session.findFirst.mockResolvedValueOnce({
+      ...row,
+      metadata: {
+        ...ADMIN_MFA_METADATA,
+        adminMfaMethod: 'recovery',
+        adminRecoveryFence: row.createdAt.toISOString(),
+      },
+    });
+    expect(await service.regenerate(token, 'password', '123456')).toBeNull();
+    expect(passwords.verify).not.toHaveBeenCalled();
   });
 
   it('requires password verification and a separate account limit', async () => {

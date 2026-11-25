@@ -11,6 +11,7 @@ import { authSessionSelect } from '../selects/auth-session.select.js';
 
 import {
   ADMIN_MFA_METADATA,
+  ADMIN_RECOVERY_TTL_MS,
   adminMfaSessionScope,
   type AdminMfaIssuance,
 } from './admin-mfa-session-scope.js';
@@ -64,10 +65,17 @@ export class AdminMfaTransactionSessionStore implements SessionStore {
       this.issuance.state === 'verified'
         ? { ...ADMIN_MFA_METADATA, adminMfaMethod: this.issuance.method }
         : { ...ADMIN_MFA_METADATA };
-    record.metadata = metadata;
+    record.metadata =
+      this.issuance.state === 'verified' && this.issuance.method === 'recovery'
+        ? { ...metadata, adminRecoveryFence: this.issuance.fence.toISOString() }
+        : metadata;
     capAdminSessionExpiry(record);
     if (this.issuance.state === 'pending') {
       const cap = record.createdAt.getTime() + ADMIN_MFA_PENDING_TTL_MS;
+      if (record.expiresAt.getTime() > cap) record.expiresAt = new Date(cap);
+    }
+    if (this.issuance.state === 'verified' && this.issuance.method === 'recovery') {
+      const cap = record.createdAt.getTime() + ADMIN_RECOVERY_TTL_MS;
       if (record.expiresAt.getTime() > cap) record.expiresAt = new Date(cap);
     }
     await this.tx.session.create({
@@ -78,7 +86,7 @@ export class AdminMfaTransactionSessionStore implements SessionStore {
         expiresAt: record.expiresAt,
         lastActiveAt: record.lastActiveAt,
         mfa: record.mfa,
-        metadata,
+        metadata: record.metadata as Prisma.InputJsonValue,
       },
     });
   }

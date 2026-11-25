@@ -796,7 +796,7 @@ describe('GET /admin/users (HTTP + PostgreSQL)', () => {
     ).toBe(200);
   });
 
-  it('accepts only transaction-issued verified MFA Admin cookies and revokes them on logout', async () => {
+  it('denies recovery grants on Admin routes and revokes them on logout', async () => {
     const owner = await seedAccount('mfa-boundary', 'ADMIN');
     const legacy = cookies['mfa-boundary']!;
     const legacyId = createHash('sha256').update(legacy.split('=', 2)[1]!).digest('base64url');
@@ -838,7 +838,15 @@ describe('GET /admin/users (HTTP + PostgreSQL)', () => {
       );
       expect(verified?.session.mfa).toBe('verified');
       const cookie = verified!.cookie.split(';', 1)[0]!;
-      expect((await probe(cookie)).status).toBe(200);
+      expect((await probe(cookie)).status).toBe(401);
+      expect((await list(cookie)).status).toBe(401);
+      expect(
+        (
+          await request(app.getHttpServer())
+            .post('/auth/admin-sessions/revoke-all')
+            .set('Cookie', cookie)
+        ).status,
+      ).toBe(401);
       expect((await probe(pendingCookie)).status).toBe(401);
       const ordinary = cookie.replace('__Host-admin-sid=', '__Host-sid=');
       const profile = await request(app.getHttpServer()).get('/users/me').set('Cookie', ordinary);

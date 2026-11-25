@@ -178,8 +178,8 @@ export class AdminMfaChallengeService {
       }
 
       const method = proof.recoveryCode !== undefined ? 'recovery' : 'totp';
-      const issuance = { state: 'verified', method } as const;
-      const { storage, sessions } = this.sessions(tx, userId, issuance, store);
+      const storage = new AuthenticationStorage();
+      storage.registerSource({ mfa: store });
       const mfa = new MfaService(storage, { mfa: { encryption, issuer: 'OVRANTO' } });
       const verified =
         proof.recoveryCode !== undefined
@@ -191,6 +191,12 @@ export class AdminMfaChallengeService {
         throw new Error('Administrative MFA challenge expired during verification');
       }
 
+      const fence = new Date();
+      const issuance: AdminMfaIssuance =
+        method === 'recovery'
+          ? { state: 'verified', method, fence }
+          : { state: 'verified', method };
+      const { sessions } = this.sessions(tx, userId, issuance, store);
       const rotated = await sessions.rotate(record, { mfa: 'verified' });
       if (
         !rotated ||
@@ -199,6 +205,22 @@ export class AdminMfaChallengeService {
         readAdminMfaAssurance(rotated.session) !== method
       ) {
         throw new Error('Administrative MFA session rotation failed');
+      }
+      if (method === 'recovery') {
+        // The sole exception to the new fence is this restricted grant.
+        // The owner lock serializes all other issuance and revocation.
+        await tx.user.update({ where: { id: userId }, data: { authInvalidatedAt: fence } });
+        await tx.session.deleteMany({
+          where: { userId, id: { not: rotated.session.id } },
+        });
+        await tx.refreshTokenFamily.updateMany({
+          where: { userId, revokedAt: null },
+          data: { revokedAt: fence },
+        });
+        await tx.refreshToken.updateMany({
+          where: { userId, revoked: false },
+          data: { revoked: true },
+        });
       }
       await tx.mfaLifecycleAudit.create({
         data: {

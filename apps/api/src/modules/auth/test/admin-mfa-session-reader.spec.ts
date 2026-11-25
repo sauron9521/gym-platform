@@ -120,13 +120,31 @@ describe('AdminMfaSessionReader', () => {
     const { reader, prisma, row } = setup();
     prisma.session.findFirst.mockResolvedValueOnce({ ...row, mfa: 'pending' });
     expect(await reader.read(row.id)).toBeNull();
-    prisma.session.findFirst.mockResolvedValueOnce({
+    const fence = new Date();
+    const recovery = {
       ...row,
-      metadata: { ...ADMIN_MFA_METADATA, adminMfaMethod: 'recovery' },
-    });
+      user: { authInvalidatedAt: fence },
+      metadata: {
+        ...ADMIN_MFA_METADATA,
+        adminMfaMethod: 'recovery',
+        adminRecoveryFence: fence.toISOString(),
+      },
+    };
+    prisma.session.findFirst.mockResolvedValueOnce(recovery);
     expect(await reader.read(row.id)).toMatchObject({
       metadata: { adminMfaMethod: 'recovery' },
     });
+    expect(prisma.session.updateMany).not.toHaveBeenCalled();
+    prisma.session.findFirst.mockResolvedValueOnce({
+      ...recovery,
+      user: { authInvalidatedAt: new Date(fence.getTime() + 1) },
+    });
+    expect(await reader.read(row.id)).toBeNull();
+    prisma.session.findFirst.mockResolvedValueOnce({
+      ...recovery,
+      createdAt: new Date(Date.now() - 601_000),
+    });
+    expect(await reader.read(row.id)).toBeNull();
   });
 
   it('fails closed when activity update loses a concurrent revocation', async () => {
