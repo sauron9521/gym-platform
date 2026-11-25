@@ -36,6 +36,9 @@ model User {
   refreshTokenFamilies RefreshTokenFamily[]
   emailTokens          EmailToken[]
   accountDeletionRequest AccountDeletionRequest?
+  mfaAuthenticator MfaAuthenticator?
+  mfaRecoveryCodes MfaRecoveryCode[]
+  mfaFailures MfaFailure[]
 
   // Exercises
   createdExercises            Exercise[]                  @relation("ExerciseCreator")

@@ -18,7 +18,7 @@ import { VerificationResendRateLimitGuard } from './guards/verification-resend-r
 import { CredentialsService, TokenCleanupService } from './services/index.js';
 import { AuthAccountThrottleService } from './services/auth-account-throttle.service.js';
 import { AuthCleanupLockService } from './services/auth-cleanup-lock.service.js';
-import { PrismaSessionStore, PrismaTokenStore } from './stores/index.js';
+import { PrismaMfaStore, PrismaSessionStore, PrismaTokenStore } from './stores/index.js';
 
 @Module({
   imports: [UsersModule, RateLimitStorageModule],
@@ -42,6 +42,7 @@ import { PrismaSessionStore, PrismaTokenStore } from './stores/index.js';
     EmailVerificationMailer,
     JwtAuth,
     PasswordResetMailer,
+    PrismaMfaStore,
     PrismaSessionStore,
     PrismaTokenStore,
     TokenCleanupService,
