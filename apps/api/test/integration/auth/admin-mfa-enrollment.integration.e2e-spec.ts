@@ -8,6 +8,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import { PrismaService } from '../../../src/infra/database/index.js';
 import { AdminMfaChallengeService } from '../../../src/modules/auth/services/admin-mfa-challenge.service.js';
+import { AdminMfaRecoveryService } from '../../../src/modules/auth/services/admin-mfa-recovery.service.js';
 import { AdminMfaEnrollmentService } from '../../../src/modules/auth/services/admin-mfa-enrollment.service.js';
 import {
   PrismaMfaStore,
@@ -554,5 +555,108 @@ describe('Internal Admin MFA challenge (PostgreSQL)', () => {
       failure.mockRestore();
     }
     expect((await challenge.complete(pending.token, proof))?.session.mfa).toBe('verified');
+  });
+
+  it('replaces recovery codes with fresh proof and revokes all credentials once', async () => {
+    const owner = await enrolled();
+    const other = await seed();
+    const challenge = app.get(AdminMfaChallengeService);
+    const recovery = app.get(AdminMfaRecoveryService);
+    const pending = (await challenge.begin(owner.userId, password))!;
+    const proof = { recoveryCode: owner.recoveryCodes[0]! };
+    const verified = (await challenge.complete(pending.token, proof))!;
+    await addSession(owner.userId, 'web');
+    const oldHashes = await prisma.mfaRecoveryCode.findMany({
+      where: { userId: owner.userId },
+    });
+    const now = new Date();
+    const expires = new Date(now.getTime() + 3_600_000);
+    const familyId = randomUUID();
+    await prisma.refreshTokenFamily.create({
+      data: { id: familyId, userId: owner.userId, familyExpiresAt: expires },
+    });
+    await prisma.refreshToken.create({
+      data: {
+        id: randomUUID(),
+        familyId,
+        userId: owner.userId,
+        createdAt: now,
+        expiresAt: expires,
+        familyExpiresAt: expires,
+      },
+    });
+    const code = codeAt(owner.secret);
+    expect(await recovery.regenerate(pending.token, password, code)).toBeNull();
+    expect(await recovery.regenerate(verified.token, 'wrong', code)).toBeNull();
+    const results = await Promise.all([
+      recovery.regenerate(verified.token, password, code),
+      recovery.regenerate(verified.token, password, code),
+    ]);
+    const successful = results.filter((result) => result !== null);
+    expect(successful).toHaveLength(1);
+    expect(successful[0]?.recoveryCodes).toHaveLength(10);
+    const hashes = await prisma.mfaRecoveryCode.findMany({ where: { userId: owner.userId } });
+    expect(hashes).toHaveLength(10);
+    expect(hashes.every((entry) => entry.hash.startsWith('rc1.'))).toBe(true);
+    expect(hashes.some((entry) => oldHashes.some((old) => old.hash === entry.hash))).toBe(false);
+    expect(await prisma.session.count({ where: { userId: owner.userId } })).toBe(0);
+    expect(await prisma.session.count({ where: { userId: other.userId } })).toBe(1);
+    const family = await prisma.refreshTokenFamily.findUniqueOrThrow({ where: { id: familyId } });
+    expect(family.revokedAt).not.toBeNull();
+    expect(
+      await prisma.refreshToken.count({ where: { userId: owner.userId, revoked: false } }),
+    ).toBe(0);
+    expect(
+      await prisma.mfaLifecycleAudit.count({
+        where: { userId: owner.userId, action: 'ADMIN_RECOVERY_CODES_REGENERATED' },
+      }),
+    ).toBe(1);
+    const next = (await challenge.begin(owner.userId, password))!;
+    expect(
+      await challenge.complete(next.token, { recoveryCode: owner.recoveryCodes[1]! }),
+    ).toBeNull();
+    expect(
+      (await challenge.complete(next.token, { recoveryCode: successful[0]!.recoveryCodes[0]! }))
+        ?.session.mfa,
+    ).toBe('verified');
+  });
+
+  it('rolls back the TOTP replay claim when replacement generation fails', async () => {
+    const owner = await enrolled();
+    const challenge = app.get(AdminMfaChallengeService);
+    const recovery = app.get(AdminMfaRecoveryService);
+    const pending = (await challenge.begin(owner.userId, password))!;
+    const proof = { recoveryCode: owner.recoveryCodes[0]! };
+    const verified = (await challenge.complete(pending.token, proof))!;
+    const before = await prisma.mfaAuthenticator.findUniqueOrThrow({
+      where: { userId: owner.userId },
+    });
+    const hashes = await prisma.mfaRecoveryCode.findMany({ where: { userId: owner.userId } });
+    const failure = vi
+      .spyOn(MfaService.prototype, 'generateRecoveryCodes')
+      .mockRejectedValueOnce(new Error('injected generation failure'));
+    const code = codeAt(owner.secret);
+    try {
+      await expect(recovery.regenerate(verified.token, password, code)).rejects.toThrow(
+        'injected generation failure',
+      );
+    } finally {
+      failure.mockRestore();
+    }
+    const after = await prisma.mfaAuthenticator.findUniqueOrThrow({
+      where: { userId: owner.userId },
+    });
+    expect(after.lastUsedStep).toBe(before.lastUsedStep);
+    expect(await prisma.mfaRecoveryCode.findMany({ where: { userId: owner.userId } })).toEqual(
+      hashes,
+    );
+    expect(await prisma.session.findUnique({ where: { id: verified.session.id } })).not.toBeNull();
+    expect(
+      await prisma.mfaLifecycleAudit.count({
+        where: { userId: owner.userId, action: 'ADMIN_RECOVERY_CODES_REGENERATED' },
+      }),
+    ).toBe(0);
+    const retried = await recovery.regenerate(verified.token, password, code);
+    expect(retried?.recoveryCodes).toHaveLength(10);
   });
 });

@@ -283,3 +283,20 @@ gate. Ordinary cookie and JWT stores remain unchanged. No public challenge
 or enrolled-user login endpoint is enabled. Existing unmarked internal
 challenge rows must be discarded and recreated before exposure. No schema
 change, no mandatory MFA activation, and #289/#290 remain open.
+
+### Recovery-code regeneration (#290, ninth slice)
+
+The internal self-service operation requires a live scoped verified Admin
+cookie, fresh password proof and a newly verified TOTP. A recovery code,
+password alone or an old step-up cannot regenerate the batch. The
+account-scoped limiter and library replay/attempt controls are retained.
+Under the owner and exact session locks, replacement hashes, credential
+invalidation, all identity sessions, refresh-family revocation and durable
+audit commit together. The original factor is retained. Plaintext codes
+return once after commit; all devices must reauthenticate. A failed proof
+commits failure accounting without changing codes.
+
+The operation has no HTTP route. A separate lost-factor recovery procedure,
+recovery-code sign-in containment, security notices, safe lost-response
+handling and device/browser validation remain rollout gates. Never enable
+mandatory MFA or close #290 on the basis of this internal slice.
