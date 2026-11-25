@@ -28,11 +28,30 @@ test('the four CI shards cover every spec exactly once', () => {
       covered.add(spec);
     }
 
-    const again = shards.selectRealApiSpecs(specs, { index, count: 4 });
-    assert.deepEqual(again, selected);
+    const reversed = shards.selectRealApiSpecs(specs.toReversed(), { index, count: 4 });
+    assert.deepEqual(reversed, selected.toReversed());
   }
   assert.equal(covered.size, specs.length);
   assert.ok(specs.length >= 4);
+});
+
+test('four-shard runs place expensive specs first and include newly added specs', () => {
+  const files = [
+    'real-api.spec.ts',
+    'trainer-web-auth.spec.ts',
+    'new-spec.spec.ts',
+    'exercise-privacy.spec.ts',
+    'workout-writes.spec.ts',
+  ];
+  const assigned = [1, 2, 3, 4].map((index) =>
+    shards.selectRealApiSpecs(files, { index, count: 4 }),
+  );
+  assert.deepEqual(assigned, [
+    ['trainer-web-auth.spec.ts'],
+    ['exercise-privacy.spec.ts'],
+    ['workout-writes.spec.ts'],
+    ['real-api.spec.ts', 'new-spec.spec.ts'],
+  ]);
 });
 
 test('invalid shard assignments fail closed', () => {
