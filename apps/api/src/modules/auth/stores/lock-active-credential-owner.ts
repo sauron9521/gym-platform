@@ -17,3 +17,18 @@ export async function lockActiveCredentialOwner(
   `;
   if (rows.length !== 1) throw new UnauthorizedException('Account unavailable');
 }
+
+/**
+ * Transitional issuance gate while no MFA challenge route is available.
+ * Call only AFTER acquiring the same owner lock used by factor confirmation.
+ */
+export async function assertPasswordOnlyCredentialOwner(
+  tx: Prisma.TransactionClient,
+  userId: string,
+): Promise<void> {
+  const factor = await tx.mfaAuthenticator.findUnique({
+    where: { userId },
+    select: { confirmed: true },
+  });
+  if (factor?.confirmed) throw new UnauthorizedException('MFA authentication required');
+}

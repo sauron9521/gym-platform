@@ -2,6 +2,7 @@ import { ConflictException, Injectable, NotFoundException } from '@nestjs/common
 import type { AdminUsersQuery } from '../dto/admin-users-query.dto.js';
 import { Prisma, type Role } from '#prisma/client';
 import { PrismaService } from '#src/infra/database/index';
+import { PASSWORD_ONLY_OWNER_FILTER } from '#src/common/auth/password-only-owner.filter';
 
 import {
   profileAvatarOwnerSelect,
@@ -275,6 +276,7 @@ export class UsersRepository {
         id,
         deletedAt: null,
         status: 'ACTIVE',
+        AND: [PASSWORD_ONLY_OWNER_FILTER],
         OR: validTime
           ? [{ authInvalidatedAt: null }, { authInvalidatedAt: { lt: new Date(issuedAt * 1000) } }]
           : [{ authInvalidatedAt: null }],

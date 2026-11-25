@@ -33,6 +33,20 @@ export const AUTH_ACCOUNT_THROTTLE_POLICIES = {
     limit: 5,
     ttlMs: 15 * 60 * 1_000,
   },
+  adminMfaSignIn: {
+    namespace: 'auth:admin:mfa:sign-in:v1\0',
+    keyPrefix: 'admin-mfa-sign-in',
+    throttlerName: 'admin-mfa-sign-in',
+    limit: 5,
+    ttlMs: 15 * 60 * 1_000,
+  },
+  adminMfaChallenge: {
+    namespace: 'auth:admin:mfa:challenge:v1\0',
+    keyPrefix: 'admin-mfa-challenge',
+    throttlerName: 'admin-mfa-challenge',
+    limit: 5,
+    ttlMs: 15 * 60 * 1_000,
+  },
   verificationResend: {
     namespace: 'auth:verification:resend:user:v1\0',
     keyPrefix: 'verification-resend',

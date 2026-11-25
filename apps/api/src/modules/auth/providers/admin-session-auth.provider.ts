@@ -35,11 +35,14 @@ export class AdminSessionAuth extends AdminSessionCookieProvider {
       headers: Record<string, string | string[] | undefined>;
       method?: string;
     }>();
-    const record = await this.cookies.sessions.validate(this.cookies.sessions.tokenFrom(request));
+    const record = await this.cookies.validateAdminSession({
+      headers: request.headers,
+      method: request.method ?? 'GET',
+    });
     if (record?.metadata?.purpose !== ADMIN_SESSION_PURPOSE) return null;
     // The persisted string is not a trusted enum at runtime. The package
     // rejects pending MFA, but an unknown value must not become ordinary auth.
-    if (record.mfa !== undefined && record.mfa !== 'pending' && record.mfa !== 'verified') {
+    if (record.mfa !== undefined && record.mfa !== 'verified') {
       return null;
     }
 
@@ -48,6 +51,10 @@ export class AdminSessionAuth extends AdminSessionCookieProvider {
       await this.cookies.sessions.discard(record.id);
       return null;
     }
+    // Preserve the legacy authentication/authorization split: the route
+    // guard returns 403 for a demoted password-only principal. A scoped MFA
+    // session additionally requires the current Admin role at this boundary.
+    if (record.mfa === 'verified' && user.role !== 'ADMIN') return null;
     return { user, session: record, mfa: record.mfa };
   }
 }
