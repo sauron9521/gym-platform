@@ -144,3 +144,39 @@ encrypted/hashed values with an explicitly configured test-only MFA service.
 This is not a live enrollment, recovery or mandatory-MFA rollout. Keep #290
 open. Next: protected encryption-key configuration, enrollment and lifecycle
 controls, then session-bound step-up and explicit rollout approval.
+
+### MFA encryption keyring preparation (#290, third slice)
+
+The API validates the optional `MFA_ENCRYPTION_KEYS` setting without
+activating the MFA service. Keep it unset during this preparatory slice.
+The parser accepts one to five distinct, canonical base64url encodings of
+32 random bytes, newest writer first. It rejects obvious repeated-byte
+material and reuse of the JWT key (including equivalent encoded material).
+Shape checks cannot establish entropy: generate independent keys with a
+cryptographically secure generator and store them only in the protected
+API secret manager. Never put keys in Git, browser/mobile builds, logs,
+database rows, or migration containers. The library receives binary keys;
+plaintext migration is explicitly disabled.
+
+Future operational rotation, once MFA is activated and lifecycle controls
+are in place:
+
+1. Back up the existing keys securely, generate a new key and distribute
+   the keyring to all replicas with the old writer first and the new
+   reader second. Verify all replicas can read both.
+2. Promote the new writer by putting it first, retaining the old reader.
+   Confirm fleet convergence before starting any re-encryption.
+3. Re-encrypt under the protected factor-lifecycle boundary. The current
+   library's re-encryption helper updates the active secret only, not a
+   staged replacement secret. Both representations must be inventoried
+   before retirement; concurrent enrollment/replacement must be controlled.
+4. Retire an old reader only after evidence shows no active or pending
+   ciphertext depends on it, and ensure retained backups can still be
+   restored using separately protected historical keys.
+
+Tests exercise the actual library cipher and demonstrate that a mixed
+writer fleet can reverse rotation. No production key was generated or
+installed, no rotation job is exposed, and no live factor was rewritten.
+Actual key provisioning, deployment wiring, lifecycle controls and
+retirement evidence remain separate gates. Do not activate MFA or close
+#290 on the basis of this configuration alone.
