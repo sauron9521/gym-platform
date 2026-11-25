@@ -6,7 +6,7 @@ model MfaAuthenticator {
   confirmed Boolean @default(false)
   pendingSecret String? @map("pending_secret") @db.Text
   lastUsedStep Int? @map("last_used_step")
-  // First enrollment is a short-lived challenge bound to one Admin session.
+  // Enrollment or replacement is a short-lived challenge bound to one Admin session.
   enrollmentSessionId String? @map("enrollment_session_id") @db.VarChar(64)
   enrollmentExpiresAt DateTime? @map("enrollment_expires_at") @db.Timestamptz(3)
 
@@ -42,6 +42,8 @@ enum MfaLifecycleAction {
   ADMIN_TOTP_CHALLENGE_VERIFIED
   ADMIN_RECOVERY_CHALLENGE_VERIFIED
   ADMIN_RECOVERY_CODES_REGENERATED
+  ADMIN_TOTP_REPLACEMENT_STAGED
+  ADMIN_TOTP_REPLACEMENT_CONFIRMED
 }
 
 model MfaLifecycleAudit {

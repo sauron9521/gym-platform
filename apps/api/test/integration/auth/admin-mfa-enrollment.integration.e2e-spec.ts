@@ -8,6 +8,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import { PrismaService } from '../../../src/infra/database/index.js';
 import { AdminMfaChallengeService } from '../../../src/modules/auth/services/admin-mfa-challenge.service.js';
+import { AdminMfaReplacementService } from '../../../src/modules/auth/services/admin-mfa-replacement.service.js';
 import { AdminMfaRecoveryService } from '../../../src/modules/auth/services/admin-mfa-recovery.service.js';
 import { AdminMfaEnrollmentService } from '../../../src/modules/auth/services/admin-mfa-enrollment.service.js';
 import {
@@ -686,5 +687,113 @@ describe('Internal Admin MFA challenge (PostgreSQL)', () => {
     ).toBe(0);
     const retried = await recovery.regenerate(verified.token, password, code);
     expect(retried?.recoveryCodes).toHaveLength(10);
+  });
+
+  it('replaces a lost TOTP only after confirming the bound candidate', async () => {
+    const owner = await enrolled();
+    const other = await seed();
+    const challenge = app.get(AdminMfaChallengeService);
+    const replacement = app.get(AdminMfaReplacementService);
+    const pending = (await challenge.begin(owner.userId, password))!;
+    const grant = (await challenge.complete(pending.token, {
+      recoveryCode: owner.recoveryCodes[0]!,
+    }))!;
+    const before = await prisma.mfaAuthenticator.findUniqueOrThrow({
+      where: { userId: owner.userId },
+    });
+    expect(await replacement.begin(pending.token, password)).toBeNull();
+    expect(await replacement.begin(grant.token, 'wrong')).toBeNull();
+    const staged = (await replacement.begin(grant.token, password))!;
+    expect(staged.uri).toMatch(/^otpauth:\/\/totp\//);
+    const candidate = await prisma.mfaAuthenticator.findUniqueOrThrow({
+      where: { userId: owner.userId },
+    });
+    expect(candidate.secret).toBe(before.secret);
+    expect(candidate.confirmed).toBe(true);
+    expect(candidate.pendingSecret).toMatch(/^v1\./);
+    expect(candidate.pendingSecret).not.toContain(staged.secret);
+    expect(candidate.enrollmentSessionId).toBe(grant.session.id);
+    expect(candidate.enrollmentExpiresAt).toEqual(staged.expiresAt);
+    expect(await replacement.begin(grant.token, password)).toBeNull();
+
+    const step = Math.floor(Date.now() / 30_000);
+    const candidateCodes = new Set([-2, -1, 0, 1, 2].map((n) => codeAt(staged.secret, step + n)));
+    const wrong = Array.from({ length: 10 }, (_, i) => String(i).padStart(6, '0')).find(
+      (code) => !candidateCodes.has(code),
+    )!;
+    expect(await replacement.confirm(grant.token, password, wrong)).toBeNull();
+    expect(await prisma.mfaFailure.count({ where: { userId: owner.userId } })).toBe(1);
+    const code = codeAt(staged.secret);
+    const results = await Promise.all([
+      replacement.confirm(grant.token, password, code),
+      replacement.confirm(grant.token, password, code),
+    ]);
+    const winner = results.find((result) => result !== null);
+    expect(results.filter(Boolean)).toHaveLength(1);
+    expect(winner?.recoveryCodes).toHaveLength(10);
+    const updated = await prisma.mfaAuthenticator.findUniqueOrThrow({
+      where: { userId: owner.userId },
+    });
+    expect(updated.secret).not.toBe(before.secret);
+    expect(updated.pendingSecret).toBeNull();
+    expect(updated.enrollmentSessionId).toBeNull();
+    expect(updated.enrollmentExpiresAt).toBeNull();
+    expect(updated.confirmed).toBe(true);
+    expect(await prisma.session.count({ where: { userId: owner.userId } })).toBe(0);
+    expect(await prisma.session.count({ where: { userId: other.userId } })).toBe(1);
+    expect(await replacement.confirm(grant.token, password, code)).toBeNull();
+    const audit = await prisma.mfaLifecycleAudit.findMany({ where: { userId: owner.userId } });
+    expect(audit.filter((row) => row.action === 'ADMIN_TOTP_REPLACEMENT_CONFIRMED')).toHaveLength(
+      1,
+    );
+    expect(JSON.stringify(audit)).not.toContain(staged.secret);
+
+    const next = (await challenge.begin(owner.userId, password))!;
+    expect(
+      await challenge.complete(next.token, { recoveryCode: owner.recoveryCodes[1]! }),
+    ).toBeNull();
+    const nextCode = codeAt(staged.secret, updated.lastUsedStep! + 1);
+    expect((await challenge.complete(next.token, { code: nextCode }))?.session.mfa).toBe(
+      'verified',
+    );
+  });
+
+  it('does not activate an expired replacement or lose the original factor on failure', async () => {
+    const owner = await enrolled();
+    const challenge = app.get(AdminMfaChallengeService);
+    const replacement = app.get(AdminMfaReplacementService);
+    const pending = (await challenge.begin(owner.userId, password))!;
+    const grant = (await challenge.complete(pending.token, {
+      recoveryCode: owner.recoveryCodes[0]!,
+    }))!;
+    const staged = (await replacement.begin(grant.token, password))!;
+    const before = await prisma.mfaAuthenticator.findUniqueOrThrow({
+      where: { userId: owner.userId },
+    });
+    const code = codeAt(staged.secret);
+    const failure = vi
+      .spyOn(MfaService.prototype, 'generateRecoveryCodes')
+      .mockRejectedValueOnce(new Error('injected replacement failure'));
+    try {
+      await expect(replacement.confirm(grant.token, password, code)).rejects.toThrow(
+        'injected replacement failure',
+      );
+    } finally {
+      failure.mockRestore();
+    }
+    const after = await prisma.mfaAuthenticator.findUniqueOrThrow({
+      where: { userId: owner.userId },
+    });
+    expect(after).toEqual(before);
+    await prisma.mfaAuthenticator.update({
+      where: { userId: owner.userId },
+      data: { enrollmentExpiresAt: new Date(0) },
+    });
+    expect(await replacement.confirm(grant.token, password, code)).toBeNull();
+    expect(
+      await prisma.mfaLifecycleAudit.count({
+        where: { userId: owner.userId, action: 'ADMIN_TOTP_REPLACEMENT_CONFIRMED' },
+      }),
+    ).toBe(0);
   });
 });

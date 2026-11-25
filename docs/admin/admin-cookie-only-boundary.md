@@ -336,3 +336,30 @@ invalid. No new migration or dependency. A later factor change must
 revoke the grant and require fresh normal authentication. Notifications,
 lost-response handling, browser/device verification and mandatory MFA
 remain gated. #289/#290 stay open.
+
+### Recovery-bound TOTP replacement (#290, twelfth slice)
+
+An internal restricted recovery grant plus fresh password verification
+can stage a library-generated encrypted replacement candidate. The old
+confirmed factor remains active until successful confirmation. Binding
+reuses the existing enrollment session/deadline fields, with a maximum
+five-minute candidate lifetime and the earlier recovery-grant deadline.
+Live candidates cannot be overwritten; expired candidates or candidates
+bound to a revoked grant may be replaced. Unbound candidates fail closed.
+The library's per-identity replay counter is retained across replacement.
+
+Confirmation requires the exact current recovery grant, fresh password
+and a new-factor TOTP. The owner and session locks serialize the flow.
+Activation, new recovery-code hashes, revocation of all identity
+credentials, binding removal and durable audit commit together. Failed
+proofs persist attempt counts, and failed writes roll back factor changes.
+The restricted grant cannot upgrade to a normal Admin session; fresh login
+is required. No public API, UI or production activation.
+
+Remaining gates: recovery policy/owner approval (password plus one-time
+recovery proof authorizes replacement), abandonment cleanup for staged
+candidates (including blocked regeneration), security notifications,
+lost response, browser/device and multi-replica tests. The original TOTP
+may still be used for a fresh login before replacement confirmation;
+containment of a known compromised old factor needs a separate policy.
+#289/#290 stay open. Audit enum migration is additive.
