@@ -77,6 +77,8 @@ describe('WorkoutsScreen native pagination and localized copy', () => {
 
     await fireEvent.press(view.getByTestId('workouts-create'));
     expect(push).toHaveBeenCalledWith('/workouts/new');
+    await fireEvent.press(view.getByTestId('workouts-programs'));
+    expect(push).toHaveBeenCalledWith('/programs');
 
     await fireEvent.press(view.getByTestId('workouts-filter-COMPLETED'));
     expect(useWorkoutsQuery).toHaveBeenCalledWith('COMPLETED');
@@ -90,6 +92,7 @@ describe('WorkoutsScreen native pagination and localized copy', () => {
     const view = await screenFor('uk');
 
     expect(view.queryByTestId('workouts-create')).toBeNull();
+    expect(view.queryByTestId('workouts-programs')).toBeNull();
     expect(view.getByText('Помилка завантаження. Спробувати ще')).toBeTruthy();
     expect(fetchNextPage).not.toHaveBeenCalled();
 

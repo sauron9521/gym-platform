@@ -62,7 +62,7 @@ test('auth bootstraps both account and live permissions before unlocking screens
   assert.ok(navigation.includes('guard={hasTrainerAccess(capabilities)}'));
   assert.ok(navigation.includes('guard={hasAthleteAccess(capabilities)}'));
   assert.ok(navigation.includes('guard={Boolean(account && hasMobileAccess(capabilities))}'));
-  assert.ok(tabs.includes('href: hasAthleteAccess(capabilities) ? undefined : null'));
+  assert.ok(tabs.includes('<Tabs.Protected guard={hasAthleteAccess(capabilities)}>'));
   for (const source of [auth, navigation, tabs]) {
     assert.doesNotMatch(source, /account\??\.role\s*===?\s*['"](?:ATHLETE|TRAINER)['"]/);
   }

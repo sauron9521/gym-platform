@@ -50,5 +50,6 @@ test('program navigation is protected without dropping athlete workout creation'
   assert.match(layout, /name="programs\/\[id\]"/);
   assert.match(layout, /name="workouts\/new"/);
   assert.match(layout, /mode="dark"/);
-  assert.match(tabs, /href: hasAthleteAccess\(capabilities\) \? undefined : null/);
+  assert.match(tabs, /<Tabs.Protected guard=\{hasAthleteAccess\(capabilities\)\}>/);
+  assert.match(layout, /name="programs\/index"/);
 });

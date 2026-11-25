@@ -1,9 +1,9 @@
 import { Tabs } from 'expo-router';
-import { Text } from 'react-native';
 import { useIntl } from 'react-intl';
 
 import { useAuth } from '@/features/auth/model/auth-context';
 import { hasAthleteAccess } from '@/features/auth/model/account-capabilities';
+import { TabIcon } from '@/shared/ui/tab-icon';
 import { palette } from '@/shared/config/theme';
 
 export default function TabsLayout() {
@@ -24,8 +24,9 @@ export default function TabsLayout() {
         name="index"
         options={{
           title: t('mobile.tabs.home'),
-          headerTitle: 'Gym Platform',
-          tabBarIcon: () => <Text accessible={false}>🏋️</Text>,
+          headerTitle: 'OVRANTO',
+          tabBarButtonTestID: 'mobile-tab-home',
+          tabBarIcon: ({ color, size }) => <TabIcon name="home" color={color} size={size} />,
         }}
       />
       <Tabs.Screen
@@ -34,24 +35,27 @@ export default function TabsLayout() {
           title: t('mobile.tabs.workouts'),
           tabBarButtonTestID: 'mobile-tab-workouts',
           headerTitle: t('mobile.tabs.myWorkouts'),
-          tabBarIcon: () => <Text accessible={false}>📋</Text>,
+          tabBarIcon: ({ color, size }) => <TabIcon name="workouts" color={color} size={size} />,
         }}
       />
-      <Tabs.Screen
-        name="programs"
-        options={{
-          title: t('mobile.tabs.programs'),
-          headerTitle: t('mobile.tabs.myPrograms'),
-          href: hasAthleteAccess(capabilities) ? undefined : null,
-          tabBarIcon: () => <Text accessible={false}>📅</Text>,
-        }}
-      />
+      <Tabs.Protected guard={hasAthleteAccess(capabilities)}>
+        <Tabs.Screen
+          name="progress"
+          options={{
+            title: t('mobile.tabs.progress'),
+            headerTitle: t('mobile.progressView.title'),
+            tabBarButtonTestID: 'mobile-tab-progress',
+            tabBarIcon: ({ color, size }) => <TabIcon name="progress" color={color} size={size} />,
+          }}
+        />
+      </Tabs.Protected>
       <Tabs.Screen
         name="profile"
         options={{
           title: t('mobile.tabs.profile'),
+          tabBarButtonTestID: 'mobile-tab-profile',
           headerTitle: t('mobile.tabs.myProfile'),
-          tabBarIcon: () => <Text accessible={false}>👤</Text>,
+          tabBarIcon: ({ color, size }) => <TabIcon name="profile" color={color} size={size} />,
         }}
       />
     </Tabs>

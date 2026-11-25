@@ -49,7 +49,9 @@ test('athlete-only analytics query uses typed endpoint and role guard', () => {
   assert.match(code, /SessionExpiredError/);
   assert.match(code, /AccessDeniedError/);
   assert.match(code, /'workout-summary', range/);
-  assert.match(layout, /name="progress\/index"/);
+  const tabs = readFileSync(new URL('../src/app/(tabs)/_layout.tsx', import.meta.url), 'utf8');
+  assert.match(tabs, /<Tabs.Protected guard=\{hasAthleteAccess\(capabilities\)\}>/);
+  assert.match(tabs, /name="progress"/);
   assert.match(layout, /guard=\{hasAthleteAccess\(capabilities\)\}/);
   assert.match(home, /hasAthleteAccess\(capabilities\)/);
   assert.match(home, /router\.push\('\/progress'\)/);

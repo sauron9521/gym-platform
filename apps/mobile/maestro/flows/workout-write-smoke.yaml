@@ -11,7 +11,7 @@ appId: ${APP_ID}
     id: sign-in-password
 - inputText: ${E2E_PASSWORD}
 - tapOn: Увійти
-- assertVisible: Gym Platform
+- assertVisible: OVRANTO
 - tapOn:
     id: mobile-tab-workouts
 - assertVisible: Мої тренування
