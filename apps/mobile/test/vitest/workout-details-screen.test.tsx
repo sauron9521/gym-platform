@@ -22,6 +22,11 @@ vi.mock('@/features/workouts/model/workout-edit', () => ({
   useUpdateWorkoutTitle: vi.fn(),
 }));
 
+const shouldAutoStartRestTimer = vi.hoisted(() => vi.fn(() => true));
+vi.mock('@/features/app-settings/model/app-settings-context', () => ({
+  useAppSettings: () => ({ shouldAutoStartRestTimer }),
+}));
+
 const refetch = vi.fn();
 const mutate = vi.fn();
 const mutateTitle = vi.fn();
@@ -194,6 +199,16 @@ describe('WorkoutDetailsScreen (real React Native renderer)', () => {
     await act(async () => vi.mocked(WorkoutSetRow).mock.calls.at(-1)![0].onNewCompletion?.());
     expect(view.getByRole('button', { name: 'Пауза' })).toBeTruthy();
     expect(view.getByTestId('workout-set-progress').props.accessibilityValue.now).toBe(0);
+  });
+
+  it('does not auto-start when disabled and keeps the manual timer available', async () => {
+    shouldAutoStartRestTimer.mockReturnValueOnce(false);
+    prepareWorkout('IN_PROGRESS', 'PENDING');
+    const view = await render(<WorkoutDetailsScreen id="workout-123" />);
+    await act(async () => vi.mocked(WorkoutSetRow).mock.calls.at(-1)![0].onNewCompletion?.());
+    expect(view.getByRole('button', { name: 'Старт' })).toBeTruthy();
+    await fireEvent.press(view.getByRole('button', { name: 'Старт' }));
+    expect(view.getByRole('button', { name: 'Пауза' })).toBeTruthy();
   });
 
   it('completes an active workout and hides actions for completed workouts', async () => {
