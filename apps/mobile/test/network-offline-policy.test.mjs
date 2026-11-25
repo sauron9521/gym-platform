@@ -2,7 +2,10 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { test } from 'vitest';
 
-import { isConnectionAvailable } from '../src/shared/api/network-state.ts';
+import {
+  isConnectionAvailable,
+  subscribeToConnectionState,
+} from '../src/shared/api/network-state.ts';
 
 test('network unknown does not falsely classify a connection as disconnected', () => {
   assert.equal(isConnectionAvailable({}), true);
@@ -29,4 +32,66 @@ test('native online manager pauses reads while mutations never replay after reco
     assert.match(source, /networkMode: 'always'/);
     assert.match(source, /!onlineManager\.isOnline\(\)/);
   }
+});
+
+test('a delayed initial snapshot cannot overwrite a newer offline event', async () => {
+  let resolveSnapshot;
+  let emit;
+  const updates = [];
+  let removed = false;
+  const stop = subscribeToConnectionState(
+    () =>
+      new Promise((resolve) => {
+        resolveSnapshot = resolve;
+      }),
+    (listener) => {
+      emit = listener;
+      return {
+        remove: () => {
+          removed = true;
+        },
+      };
+    },
+    (online) => updates.push(online),
+  );
+  emit({ isConnected: false });
+  resolveSnapshot({ isConnected: true });
+  await Promise.resolve();
+  assert.deepEqual(updates, [false]);
+  emit({ isConnected: true });
+  assert.deepEqual(updates, [false, true]);
+  stop();
+  emit({ isConnected: false });
+  assert.equal(removed, true);
+  assert.deepEqual(updates, [false, true]);
+});
+
+test('initial snapshot is used when there are no events, and ignored after cleanup', async () => {
+  const updates = [];
+  let resolveSnapshot;
+  const stop = subscribeToConnectionState(
+    () =>
+      new Promise((resolve) => {
+        resolveSnapshot = resolve;
+      }),
+    () => ({ remove() {} }),
+    (online) => updates.push(online),
+  );
+  resolveSnapshot({ isConnected: false });
+  await Promise.resolve();
+  assert.deepEqual(updates, [false]);
+  stop();
+
+  const stopSecond = subscribeToConnectionState(
+    () =>
+      new Promise((resolve) => {
+        resolveSnapshot = resolve;
+      }),
+    () => ({ remove() {} }),
+    (online) => updates.push(online),
+  );
+  stopSecond();
+  resolveSnapshot({ isConnected: true });
+  await Promise.resolve();
+  assert.deepEqual(updates, [false]);
 });
