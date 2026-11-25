@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, waitFor } from '@testing-library/react-native';
+import { act, cleanup, fireEvent, render, waitFor } from '@testing-library/react-native';
 import { getFlatMessages, type Locale } from '@gym/i18n';
 import { IntlProvider } from 'react-intl';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -147,8 +147,11 @@ describe('native sign-in uk/en localization without changing auth behavior', () 
           .disabled,
       ).toBe(true);
     });
+    await fireEvent.press(view.getByRole('button', { name: 'Retry session verification' }));
+    await fireEvent.press(view.getByRole('button', { name: 'Sign in' }));
     expect(retryVerification).toHaveBeenCalledTimes(1);
-    rejectRecovery(new Error('SECRET_RECOVERY_RESPONSE'));
+    expect(signIn).not.toHaveBeenCalled();
+    await act(async () => rejectRecovery(new Error('SECRET_RECOVERY_RESPONSE')));
     await waitFor(() => {
       expect(view.getByText('Could not sign in. Try again.')).toBeTruthy();
       expect(view.getByTestId('sign-in-email').props.editable).toBe(true);

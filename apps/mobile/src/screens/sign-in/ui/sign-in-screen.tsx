@@ -44,9 +44,6 @@ export function SignInScreen() {
 
   const onValidSubmit = useCallback(
     async ({ email, password }: SignInValues) => {
-      // React Hook Form validates first; this protects against concurrent API calls.
-      if (submitLock.current) return;
-      submitLock.current = true;
       clearErrors('root.server');
       try {
         const result = await signIn(email, password);
@@ -58,16 +55,22 @@ export function SignInScreen() {
           type: 'server',
           message: t('failed'),
         });
-      } finally {
-        submitLock.current = false;
       }
     },
     [clearErrors, setError, signIn, t],
   );
 
-  const submit = () => {
+  const submit = async () => {
+    // Acquire before asynchronous form validation, not only before the API call.
     if (submitLock.current) return;
-    void handleSubmit(onValidSubmit)();
+    submitLock.current = true;
+    try {
+      await handleSubmit(onValidSubmit)();
+    } catch {
+      setError('root.server', { type: 'server', message: t('failed') });
+    } finally {
+      submitLock.current = false;
+    }
   };
 
   const recover = async () => {
@@ -165,6 +168,7 @@ export function SignInScreen() {
           <Pressable
             accessibilityRole="button"
             disabled={busy}
+            accessibilityState={{ disabled: busy, busy: isSubmitting }}
             onPress={() => void submit()}
             style={[styles.button, busy && styles.disabled]}
           >
@@ -185,7 +189,7 @@ export function SignInScreen() {
             onPress={() => void recover()}
           >
             {recovering ? (
-              <ActivityIndicator accessibilityLabel={t('retryLabel')} color={palette.surface} />
+              <ActivityIndicator accessible={false} color={palette.surface} />
             ) : (
               <Text style={styles.buttonText}>{t('recover')}</Text>
             )}
