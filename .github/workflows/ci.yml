@@ -333,6 +333,7 @@ jobs:
       # across manifest, lockfile and Turborepo config changes.
       # Turbo hashes and Next.js internally validate cached build inputs.
       - name: Restore Turborepo and Next.js incremental build caches
+        if: needs.changes.outputs.workspaces == 'true'
         id: incremental-build-cache
         uses: actions/cache@v6
         with:
@@ -348,6 +349,7 @@ jobs:
             ${{ runner.os }}-node24-build-
 
       - name: Report incremental build cache restore
+        if: needs.changes.outputs.workspaces == 'true'
         env:
           CACHE_HIT: ${{ steps.incremental-build-cache.outputs.cache-hit }}
         run: |
