@@ -1,6 +1,6 @@
 import '../../global.css';
 
-import { Stack } from 'expo-router';
+import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import { useIntl } from 'react-intl';
 import { StatusBar } from 'expo-status-bar';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
@@ -15,13 +15,19 @@ import {
 } from '@/features/auth/model/account-capabilities';
 import { GluestackUIProvider } from '@/shared/ui/gluestack/gluestack-ui-provider';
 import { MobileQueryProvider } from '@/shared/api/query-provider';
-import { palette } from '@/shared/config/theme';
+import {
+  createThemedStyles,
+  MobileThemeProvider,
+  useMobileTheme,
+} from '@/shared/config/theme-provider';
 import { OfflineBanner } from '@/shared/ui/offline-banner';
 import { MobileErrorBoundary } from '@/shared/ui/mobile-error-boundary';
 import { LocaleProvider } from '@/shared/i18n/locale-provider';
 import { AccountLocaleSync } from '@/features/profile/ui/account-locale-sync';
 
 function Navigation() {
+  const styles = useStyles();
+  const { palette, mode } = useMobileTheme();
   const { account, capabilities, restoring } = useAuth();
   const intl = useIntl();
   const t = (key: string) => intl.formatMessage({ id: `mobile.navigation.${key}` });
@@ -78,7 +84,7 @@ function Navigation() {
           <Stack.Screen name="sign-in" />
         </Stack.Protected>
       </Stack>
-      <StatusBar style="light" />
+      <StatusBar style={mode === 'dark' ? 'light' : 'dark'} />
       <OfflineBanner />
       {restoring || (account && !capabilities) ? (
         <View accessibilityLabel={t('restoring')} style={styles.loadingOverlay}>
@@ -89,35 +95,62 @@ function Navigation() {
   );
 }
 
-const styles = StyleSheet.create({
-  loadingOverlay: {
-    position: 'absolute',
-    top: 0,
-    right: 0,
-    bottom: 0,
-    left: 0,
-    backgroundColor: palette.background,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
+const useStyles = createThemedStyles((palette) =>
+  StyleSheet.create({
+    loadingOverlay: {
+      position: 'absolute',
+      top: 0,
+      right: 0,
+      bottom: 0,
+      left: 0,
+      backgroundColor: palette.background,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+  }),
+);
+
+function ThemedApp() {
+  const { palette, preference, mode } = useMobileTheme();
+  const base = mode === 'dark' ? DarkTheme : DefaultTheme;
+  return (
+    <ThemeProvider
+      value={{
+        ...base,
+        colors: {
+          ...base.colors,
+          primary: palette.primary,
+          background: palette.background,
+          card: palette.surface,
+          text: palette.text,
+          border: palette.border,
+          notification: palette.error,
+        },
+      }}
+    >
+      <GluestackUIProvider mode={preference}>
+        <LocaleProvider>
+          <MobileQueryProvider>
+            <MobileErrorBoundary>
+              <AuthProvider>
+                <AccountLocaleSync />
+                <Navigation />
+              </AuthProvider>
+            </MobileErrorBoundary>
+          </MobileQueryProvider>
+        </LocaleProvider>
+      </GluestackUIProvider>
+    </ThemeProvider>
+  );
+}
 
 export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
-        <GluestackUIProvider mode="dark">
-          <LocaleProvider>
-            <MobileQueryProvider>
-              <MobileErrorBoundary>
-                <AuthProvider>
-                  <AccountLocaleSync />
-                  <Navigation />
-                </AuthProvider>
-              </MobileErrorBoundary>
-            </MobileQueryProvider>
-          </LocaleProvider>
-        </GluestackUIProvider>
+        <MobileThemeProvider>
+          <ThemedApp />
+        </MobileThemeProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );

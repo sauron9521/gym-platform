@@ -10,7 +10,7 @@ import {
 } from '@/features/profile/lib/edit-profile-schema';
 import { useEditProfile } from '@/features/profile/model/edit-profile-mutation';
 import { useAccountQuery } from '@/features/profile/model/account-query';
-import { palette } from '@/shared/config/theme';
+import { createThemedStyles } from '@/shared/config/theme-provider';
 
 const fields = [
   { name: 'displayName', label: 'Ім’я на екрані' },
@@ -21,6 +21,7 @@ const fields = [
 ] as const;
 
 export function EditProfileScreen() {
+  const styles = useStyles();
   const router = useRouter();
   const profile = useAccountQuery();
   const mutation = useEditProfile();
@@ -144,29 +145,31 @@ export function EditProfileScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: palette.background },
-  content: { paddingHorizontal: 20, paddingTop: 24, paddingBottom: 64, gap: 14 },
-  title: { color: palette.text, fontSize: 26, fontWeight: '700' },
-  field: { gap: 7 },
-  label: { color: palette.text, fontSize: 14, fontWeight: '600' },
-  input: {
-    minHeight: 48,
-    color: palette.text,
-    backgroundColor: palette.surface,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: palette.border,
-    paddingHorizontal: 12,
-  },
-  error: { color: '#ff6460', fontSize: 14 },
-  hint: { color: palette.muted, fontSize: 14 },
-  button: {
-    minHeight: 48,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: palette.primary,
-  },
-  buttonText: { color: palette.surface, fontWeight: '700' },
-});
+const useStyles = createThemedStyles((palette) =>
+  StyleSheet.create({
+    container: { flex: 1, backgroundColor: palette.background },
+    content: { paddingHorizontal: 20, paddingTop: 24, paddingBottom: 64, gap: 14 },
+    title: { color: palette.text, fontSize: 26, fontWeight: '700' },
+    field: { gap: 7 },
+    label: { color: palette.text, fontSize: 14, fontWeight: '600' },
+    input: {
+      minHeight: 48,
+      color: palette.text,
+      backgroundColor: palette.surface,
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: palette.border,
+      paddingHorizontal: 12,
+    },
+    error: { color: palette.error, fontSize: 14 },
+    hint: { color: palette.muted, fontSize: 14 },
+    button: {
+      minHeight: 48,
+      borderRadius: 10,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: palette.primary,
+    },
+    buttonText: { color: palette.primaryForeground, fontWeight: '700' },
+  }),
+);

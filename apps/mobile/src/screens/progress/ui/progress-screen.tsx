@@ -9,11 +9,12 @@ import {
   useWorkoutSummary,
   type ProgressRange,
 } from '@/features/progress/model/workout-summary-query';
-import { palette } from '@/shared/config/theme';
+import { createThemedStyles } from '@/shared/config/theme-provider';
 
 const periods: ProgressRange[] = ['7d', '30d', '90d'];
 
 export function ProgressScreen() {
+  const styles = useStyles();
   const intl = useIntl();
   const t = (key: string, values?: Record<string, string | number>) =>
     intl.formatMessage({ id: `mobile.progressView.${key}` }, values);
@@ -64,7 +65,7 @@ export function ProgressScreen() {
             onPress={() => setRange(period)}
             style={[styles.chip, period === range && styles.selected]}
           >
-            <Text style={styles.text}>{period}</Text>
+            <Text style={[styles.text, period === range && styles.selectedText]}>{period}</Text>
           </Pressable>
         ))}
       </View>
@@ -136,54 +137,57 @@ export function ProgressScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: palette.background },
-  content: { padding: 24, gap: 18 },
-  title: { fontSize: 27, fontWeight: '700', color: palette.text },
-  heading: { fontSize: 18, fontWeight: '600', color: palette.text },
-  subtitle: { color: palette.muted, fontSize: 13 },
-  metric: { fontSize: 25, fontWeight: '700', color: palette.primary },
-  text: { color: palette.text, fontWeight: '600' },
-  filters: { flexDirection: 'row', gap: 9 },
-  chip: {
-    borderWidth: 1,
-    borderColor: palette.border,
-    borderRadius: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-  },
-  selected: { backgroundColor: palette.primary },
-  tiles: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  tile: {
-    width: '47%',
-    borderWidth: 1,
-    borderColor: palette.border,
-    borderRadius: 12,
-    backgroundColor: palette.surface,
-    padding: 15,
-    gap: 5,
-  },
-  chart: {
-    minHeight: 170,
-    height: 170,
-    backgroundColor: palette.surface,
-    borderRadius: 12,
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    paddingHorizontal: 10,
-    paddingVertical: 12,
-    gap: 2,
-  },
-  barCell: { flex: 1, height: '100%', justifyContent: 'flex-end' },
-  bar: { width: '100%', backgroundColor: palette.primary, borderRadius: 2 },
-  error: { color: '#ff6460', fontSize: 14 },
-  errorGroup: { gap: 10 },
-  retryButton: {
-    borderWidth: 1,
-    borderColor: palette.border,
-    borderRadius: 10,
-    minHeight: 44,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
+const useStyles = createThemedStyles((palette) =>
+  StyleSheet.create({
+    container: { flex: 1, backgroundColor: palette.background },
+    content: { padding: 24, gap: 18 },
+    title: { fontSize: 27, fontWeight: '700', color: palette.text },
+    heading: { fontSize: 18, fontWeight: '600', color: palette.text },
+    subtitle: { color: palette.muted, fontSize: 13 },
+    metric: { fontSize: 25, fontWeight: '700', color: palette.primary },
+    text: { color: palette.text, fontWeight: '600' },
+    filters: { flexDirection: 'row', gap: 9 },
+    chip: {
+      borderWidth: 1,
+      borderColor: palette.border,
+      borderRadius: 16,
+      paddingHorizontal: 16,
+      paddingVertical: 10,
+    },
+    selected: { backgroundColor: palette.primary },
+    selectedText: { color: palette.primaryForeground },
+    tiles: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+    tile: {
+      width: '47%',
+      borderWidth: 1,
+      borderColor: palette.border,
+      borderRadius: 12,
+      backgroundColor: palette.surface,
+      padding: 15,
+      gap: 5,
+    },
+    chart: {
+      minHeight: 170,
+      height: 170,
+      backgroundColor: palette.surface,
+      borderRadius: 12,
+      flexDirection: 'row',
+      alignItems: 'flex-end',
+      paddingHorizontal: 10,
+      paddingVertical: 12,
+      gap: 2,
+    },
+    barCell: { flex: 1, height: '100%', justifyContent: 'flex-end' },
+    bar: { width: '100%', backgroundColor: palette.primary, borderRadius: 2 },
+    error: { color: palette.error, fontSize: 14 },
+    errorGroup: { gap: 10 },
+    retryButton: {
+      borderWidth: 1,
+      borderColor: palette.border,
+      borderRadius: 10,
+      minHeight: 44,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+  }),
+);

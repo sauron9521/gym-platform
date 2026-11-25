@@ -7,7 +7,7 @@ import { useAuth } from '@/features/auth/model/auth-context';
 import { hasAthleteAccess } from '@/features/auth/model/account-capabilities';
 import type { WorkoutState } from '@/features/workouts/lib/workout-presentation';
 import { useWorkoutsQuery, type WorkoutFilter } from '@/features/workouts/model/workouts-query';
-import { palette } from '@/shared/config/theme';
+import { createThemedStyles } from '@/shared/config/theme-provider';
 import {
   MobileAccessDeniedError,
   MobileReadHttpError,
@@ -15,6 +15,7 @@ import {
 } from '@/shared/api/api-error-policy';
 
 export function WorkoutsScreen() {
+  const styles = useStyles();
   const intl = useIntl();
   const t = (key: string, values?: Record<string, string>) =>
     intl.formatMessage({ id: `mobile.workoutList.${key}` }, values);
@@ -125,7 +126,9 @@ export function WorkoutsScreen() {
                 onPress={() => setFilter(choice.value)}
                 style={[styles.chip, choice.value === filter && styles.selectedChip]}
               >
-                <Text style={styles.chipText}>{choice.title}</Text>
+                <Text style={[styles.chipText, choice.value === filter && styles.selectedText]}>
+                  {choice.title}
+                </Text>
               </Pressable>
             ))}
           </View>
@@ -191,49 +194,52 @@ export function WorkoutsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: palette.background },
-  content: { padding: 24, gap: 16 },
-  heading: { gap: 12 },
-  title: { fontSize: 28, fontWeight: '700', color: palette.text },
-  subtitle: { fontSize: 15, color: palette.muted },
-  card: {
-    backgroundColor: palette.surface,
-    padding: 18,
-    borderRadius: 14,
-    borderColor: palette.border,
-    borderWidth: 1,
-    gap: 8,
-  },
-  cardTitle: { fontSize: 18, color: palette.text, fontWeight: '600' },
-  filters: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  chip: {
-    borderRadius: 16,
-    borderColor: palette.border,
-    borderWidth: 1,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-  },
-  selectedChip: { backgroundColor: palette.primary },
-  chipText: { color: palette.text, fontSize: 13 },
-  error: { color: '#ff6460', fontSize: 14 },
-  moreButton: {
-    minHeight: 44,
-    borderWidth: 1,
-    borderColor: palette.border,
-    borderRadius: 12,
-    padding: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  footer: { gap: 10 },
-  button: {
-    minHeight: 48,
-    borderRadius: 12,
-    backgroundColor: palette.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 12,
-  },
-  buttonText: { fontWeight: '700', color: palette.surface },
-});
+const useStyles = createThemedStyles((palette) =>
+  StyleSheet.create({
+    container: { flex: 1, backgroundColor: palette.background },
+    content: { padding: 24, gap: 16 },
+    heading: { gap: 12 },
+    title: { fontSize: 28, fontWeight: '700', color: palette.text },
+    subtitle: { fontSize: 15, color: palette.muted },
+    card: {
+      backgroundColor: palette.surface,
+      padding: 18,
+      borderRadius: 14,
+      borderColor: palette.border,
+      borderWidth: 1,
+      gap: 8,
+    },
+    cardTitle: { fontSize: 18, color: palette.text, fontWeight: '600' },
+    filters: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+    chip: {
+      borderRadius: 16,
+      borderColor: palette.border,
+      borderWidth: 1,
+      paddingVertical: 8,
+      paddingHorizontal: 12,
+    },
+    selectedChip: { backgroundColor: palette.primary },
+    selectedText: { color: palette.primaryForeground },
+    chipText: { color: palette.text, fontSize: 13 },
+    error: { color: palette.error, fontSize: 14 },
+    moreButton: {
+      minHeight: 44,
+      borderWidth: 1,
+      borderColor: palette.border,
+      borderRadius: 12,
+      padding: 12,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    footer: { gap: 10 },
+    button: {
+      minHeight: 48,
+      borderRadius: 12,
+      backgroundColor: palette.primary,
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: 12,
+    },
+    buttonText: { fontWeight: '700', color: palette.primaryForeground },
+  }),
+);

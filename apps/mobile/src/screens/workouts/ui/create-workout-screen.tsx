@@ -17,7 +17,7 @@ import {
   type MobileMultiWorkoutForm,
 } from '@/features/workouts/lib/create-workout-schema';
 import { useCreateMultiMobileWorkout } from '@/features/workouts/model/workout-create';
-import { palette } from '@/shared/config/theme';
+import { createThemedStyles, useMobileTheme } from '@/shared/config/theme-provider';
 
 type ExerciseFieldsProps = {
   index: number;
@@ -27,6 +27,8 @@ type ExerciseFieldsProps = {
 };
 
 function WorkoutExerciseFields({ index, disabled, canRemove, onRemove }: ExerciseFieldsProps) {
+  const styles = useStyles();
+  const { palette } = useMobileTheme();
   const {
     control,
     setValue,
@@ -146,6 +148,8 @@ function WorkoutExerciseFields({ index, disabled, canRemove, onRemove }: Exercis
 }
 
 export function CreateWorkoutScreen() {
+  const styles = useStyles();
+  const { palette } = useMobileTheme();
   const router = useRouter();
   const createWorkout = useCreateMultiMobileWorkout();
   const submitLock = useRef(false);
@@ -261,44 +265,46 @@ export function CreateWorkoutScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: palette.background },
-  content: { gap: 12, paddingHorizontal: 20, paddingTop: 24, paddingBottom: 64 },
-  heading: { fontSize: 25, fontWeight: '700', color: palette.text },
-  label: { fontSize: 14, fontWeight: '600', color: palette.text },
-  text: { color: palette.text, fontWeight: '600' },
-  error: { color: '#ff6460', fontSize: 14 },
-  input: {
-    minHeight: 48,
-    borderRadius: 12,
-    backgroundColor: palette.surface,
-    borderColor: palette.border,
-    borderWidth: 1,
-    paddingHorizontal: 14,
-    color: palette.text,
-  },
-  group: { gap: 12, padding: 14, borderColor: palette.border, borderWidth: 1, borderRadius: 12 },
-  set: { gap: 8, padding: 12, borderRadius: 10, backgroundColor: palette.surface },
-  row: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  secondary: {
-    padding: 14,
-    borderRadius: 12,
-    borderColor: palette.border,
-    borderWidth: 1,
-    minHeight: 44,
-  },
-  button: {
-    backgroundColor: palette.primary,
-    padding: 16,
-    borderRadius: 12,
-    marginTop: 8,
-    minHeight: 48,
-  },
-  buttonText: { color: palette.surface, textAlign: 'center', fontWeight: '700' },
-});
+const useStyles = createThemedStyles((palette) =>
+  StyleSheet.create({
+    container: { flex: 1, backgroundColor: palette.background },
+    content: { gap: 12, paddingHorizontal: 20, paddingTop: 24, paddingBottom: 64 },
+    heading: { fontSize: 25, fontWeight: '700', color: palette.text },
+    label: { fontSize: 14, fontWeight: '600', color: palette.text },
+    text: { color: palette.text, fontWeight: '600' },
+    error: { color: palette.error, fontSize: 14 },
+    input: {
+      minHeight: 48,
+      borderRadius: 12,
+      backgroundColor: palette.surface,
+      borderColor: palette.border,
+      borderWidth: 1,
+      paddingHorizontal: 14,
+      color: palette.text,
+    },
+    group: { gap: 12, padding: 14, borderColor: palette.border, borderWidth: 1, borderRadius: 12 },
+    set: { gap: 8, padding: 12, borderRadius: 10, backgroundColor: palette.surface },
+    row: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      flexWrap: 'wrap',
+      gap: 8,
+    },
+    secondary: {
+      padding: 14,
+      borderRadius: 12,
+      borderColor: palette.border,
+      borderWidth: 1,
+      minHeight: 44,
+    },
+    button: {
+      backgroundColor: palette.primary,
+      padding: 16,
+      borderRadius: 12,
+      marginTop: 8,
+      minHeight: 48,
+    },
+    buttonText: { color: palette.primaryForeground, textAlign: 'center', fontWeight: '700' },
+  }),
+);

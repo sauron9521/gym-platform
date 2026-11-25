@@ -4,9 +4,10 @@ import { useIntl } from 'react-intl';
 import { useAuth } from '@/features/auth/model/auth-context';
 import { hasAthleteAccess } from '@/features/auth/model/account-capabilities';
 import { TabIcon } from '@/shared/ui/tab-icon';
-import { palette } from '@/shared/config/theme';
+import { useMobileTheme } from '@/shared/config/theme-provider';
 
 export default function TabsLayout() {
+  const { palette } = useMobileTheme();
   const { capabilities } = useAuth();
   const intl = useIntl();
   const t = (id: string) => intl.formatMessage({ id });

@@ -49,7 +49,7 @@ test('program navigation is protected without dropping athlete workout creation'
   const tabs = readFileSync(new URL('../src/app/(tabs)/_layout.tsx', import.meta.url), 'utf8');
   assert.match(layout, /name="programs\/\[id\]"/);
   assert.match(layout, /name="workouts\/new"/);
-  assert.match(layout, /mode="dark"/);
+  assert.ok(layout.includes('mode={preference}'));
   assert.match(tabs, /<Tabs.Protected guard=\{hasAthleteAccess\(capabilities\)\}>/);
   assert.match(layout, /name="programs\/index"/);
 });

@@ -1,19 +1,36 @@
-import { ovrantoNativePalette } from '@gym/design-tokens/ovranto-native';
+import { ovrantoNativePalette, type OvrantoTheme } from '@gym/design-tokens/ovranto-native';
 
-/**
- * OVRANTO Design System v2 — native dark semantic palette.
- * Existing Mobile screens use the same theme adapter; never copy hex values here.
- * Light-mode switching is a separate UI/runtime migration.
- */
-const dark = ovrantoNativePalette.dark;
+export type ThemePreference = OvrantoTheme | 'system';
+export const themePreferences = ['system', 'light', 'dark'] as const;
 
-export const palette = {
-  background: dark.background,
-  surface: dark.card,
-  text: dark.foreground,
-  muted: dark.mutedForeground,
-  primary: dark.primary,
-  primaryForeground: dark.primaryForeground,
-  border: dark.border,
-  error: dark.destructive,
-} as const;
+export function isThemePreference(value: unknown): value is ThemePreference {
+  return themePreferences.some((preference) => preference === value);
+}
+
+export function resolveMobileTheme(
+  preference: ThemePreference,
+  system: string | null | undefined,
+): OvrantoTheme {
+  return preference === 'system' ? (system === 'dark' ? 'dark' : 'light') : preference;
+}
+
+export function mobilePalette(mode: OvrantoTheme) {
+  const tokens = ovrantoNativePalette[mode];
+  return {
+    background: tokens.background,
+    surface: tokens.card,
+    text: tokens.foreground,
+    muted: tokens.mutedForeground,
+    primary: tokens.primary,
+    primaryForeground: tokens.primaryForeground,
+    border: tokens.border,
+    error: tokens.destructive,
+    errorForeground: tokens.destructiveForeground,
+    success: tokens.success,
+    setCompleteBackground: tokens.setCompleteBackground,
+    setCompleteForeground: tokens.setCompleteForeground,
+  };
+}
+
+export type MobilePalette = ReturnType<typeof mobilePalette>;
+export const mobilePalettes = { light: mobilePalette('light'), dark: mobilePalette('dark') };

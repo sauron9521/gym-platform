@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState, Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { palette } from '@/shared/config/theme';
+import { createThemedStyles } from '@/shared/config/theme-provider';
 
 import { formatRestTime, secondsRemaining } from '../lib/rest-timer';
 
@@ -21,6 +21,7 @@ const PRESETS = [60, 90, 120] as const;
 export type RestStart = { sequence: number; startedAt: number };
 
 export function RestTimer({ autoStart }: { autoStart?: RestStart | null } = {}) {
+  const styles = useStyles();
   const [timer, setTimer] = useState<Countdown>({
     duration: 90,
     remaining: 90,
@@ -147,33 +148,35 @@ export function RestTimer({ autoStart }: { autoStart?: RestStart | null } = {}) 
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    backgroundColor: palette.surface,
-    borderRadius: 12,
-    borderColor: palette.border,
-    borderWidth: 1,
-    padding: 14,
-    gap: 10,
-  },
-  heading: { color: palette.text, fontWeight: '600' },
-  time: { color: palette.primary, fontSize: 30, fontWeight: '700' },
-  actions: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
-  choice: {
-    borderWidth: 1,
-    borderColor: palette.border,
-    padding: 10,
-    minHeight: 44,
-    justifyContent: 'center',
-    borderRadius: 8,
-  },
-  text: { color: palette.text },
-  button: {
-    backgroundColor: palette.primary,
-    padding: 10,
-    borderRadius: 8,
-    minHeight: 44,
-    justifyContent: 'center',
-  },
-  buttonText: { color: palette.background, fontWeight: '700' },
-});
+const useStyles = createThemedStyles((palette) =>
+  StyleSheet.create({
+    container: {
+      backgroundColor: palette.surface,
+      borderRadius: 12,
+      borderColor: palette.border,
+      borderWidth: 1,
+      padding: 14,
+      gap: 10,
+    },
+    heading: { color: palette.text, fontWeight: '600' },
+    time: { color: palette.primary, fontSize: 30, fontWeight: '700' },
+    actions: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
+    choice: {
+      borderWidth: 1,
+      borderColor: palette.border,
+      padding: 10,
+      minHeight: 44,
+      justifyContent: 'center',
+      borderRadius: 8,
+    },
+    text: { color: palette.text },
+    button: {
+      backgroundColor: palette.primary,
+      padding: 10,
+      borderRadius: 8,
+      minHeight: 44,
+      justifyContent: 'center',
+    },
+    buttonText: { color: palette.primaryForeground, fontWeight: '700' },
+  }),
+);
