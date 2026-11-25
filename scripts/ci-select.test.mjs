@@ -455,6 +455,24 @@ test('root dependencies and cross-cutting changes force full regression', () => 
   }
 });
 
+test('Dependabot config changes use required tooling without application or dependency checks', () => {
+  const config = '.github/dependabot.yml';
+  const docsOnly = classifyChangedPaths(['README.md']);
+  assert.deepEqual(classifyChangedPaths([config]), docsOnly);
+  assert.deepEqual(classifyChangedPaths([config, 'README.md']), docsOnly);
+
+  for (const path of [
+    'apps/mobile/package.json',
+    'pnpm-lock.yaml',
+    '.github/workflows/dependency-audit.yml',
+  ]) {
+    const expected = classifyChangedPaths([path]);
+    assert.equal(expected.deps, true, path);
+    assert.deepEqual(classifyChangedPaths([config, path]), expected, path);
+    assert.deepEqual(classifyChangedPaths([path, config]), expected, path);
+  }
+});
+
 test('known shadow fixtures and tooling activate offline monitoring without application checks', () => {
   for (const path of [
     'ops/monitoring/shadow/config.alloy',

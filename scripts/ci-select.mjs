@@ -106,6 +106,9 @@ export function classifyChangedPaths(paths, { forceFull = false } = {}) {
       continue;
     }
 
+    // Root tooling contracts validate this file; package changes still select the audit.
+    if (path === '.github/dependabot.yml') continue;
+
     // The isolated shadow pilot has its own offline validators.
     if (monitoringShadowPaths.has(path)) continue;
 
