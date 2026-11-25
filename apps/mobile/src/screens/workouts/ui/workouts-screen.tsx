@@ -103,6 +103,18 @@ export function WorkoutsScreen() {
               <Text style={styles.buttonText}>{t('create')}</Text>
             </Pressable>
           ) : null}
+          {hasAthleteAccess(capabilities) ? (
+            <Pressable
+              testID="workouts-programs"
+              accessibilityRole="button"
+              style={styles.moreButton}
+              onPress={() => router.push('/programs')}
+            >
+              <Text style={styles.subtitle}>
+                {intl.formatMessage({ id: 'mobile.tabs.myPrograms' })}
+              </Text>
+            </Pressable>
+          ) : null}
           <View style={styles.filters}>
             {filters.map((choice) => (
               <Pressable

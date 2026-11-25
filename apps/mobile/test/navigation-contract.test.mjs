@@ -1,0 +1,45 @@
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { test } from 'vitest';
+
+const read = (path) => readFileSync(new URL(path, import.meta.url), 'utf8');
+
+test('athlete tabs use approved order, vector icons and stable selectors', () => {
+  const tabs = read('../src/app/(tabs)/_layout.tsx');
+  assert.deepEqual(
+    [...tabs.matchAll(/<Tabs\.Screen\s+name="(index|workouts|progress|profile|programs)"/g)].map(
+      (m) => m[1],
+    ),
+    ['index', 'workouts', 'progress', 'profile'],
+  );
+  for (const tab of ['home', 'workouts', 'progress', 'profile']) {
+    assert.ok(tabs.includes(`tabBarButtonTestID: 'mobile-tab-${tab}'`));
+    assert.ok(tabs.includes(`<TabIcon name="${tab}"`));
+  }
+  assert.ok(tabs.includes("headerTitle: 'OVRANTO'"));
+  assert.match(
+    tabs,
+    /<Tabs.Protected guard=\{hasAthleteAccess\(capabilities\)\}>\s*<Tabs.Screen\s+name="progress"/,
+  );
+});
+
+test('public route paths remain unchanged and program list is protected', () => {
+  assert.match(read('../src/app/(tabs)/progress.tsx'), /<ProgressScreen/);
+  assert.match(read('../src/app/programs/index.tsx'), /<ProgramsScreen/);
+  const layout = read('../src/app/_layout.tsx');
+  const athlete = layout
+    .split('<Stack.Protected guard={hasAthleteAccess(capabilities)}>')[1]
+    .split('</Stack.Protected>')[0];
+  for (const route of [
+    'programs/index',
+    'programs/[id]',
+    'progress/exercises/[id]',
+    'workouts/new',
+  ]) {
+    assert.ok(athlete.includes(`name="${route}"`));
+  }
+  assert.match(
+    read('../src/screens/workouts/ui/workouts-screen.tsx'),
+    /router.push\('\/programs'\)/,
+  );
+});

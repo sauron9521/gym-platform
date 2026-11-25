@@ -73,9 +73,24 @@ export function getMobileAuthErrorMessageId(code: string): string {
   return `mobile.signIn.${known ? code : 'failed'}`;
 }
 
+const navigationMessages = {
+  'mobile.tabs.progress': { uk: 'Прогрес', en: 'Progress' },
+  'mobile.navigation.editProfile': { uk: 'Редагувати профіль', en: 'Edit profile' },
+  'mobile.navigation.exercises': { uk: 'Вправи', en: 'Exercises' },
+  'mobile.navigation.workout': { uk: 'Тренування', en: 'Workout' },
+  'mobile.navigation.exerciseProgress': { uk: 'Прогрес вправи', en: 'Exercise progress' },
+  'mobile.navigation.program': { uk: 'Програма', en: 'Program' },
+  'mobile.navigation.newWorkout': { uk: 'Нове тренування', en: 'New workout' },
+  'mobile.navigation.athletes': { uk: 'Мої підопічні', en: 'My athletes' },
+  'mobile.navigation.restoring': { uk: 'Відновлення сесії', en: 'Restoring session' },
+} satisfies Record<string, Record<Locale, string>>;
+
 export function getMobileMessages(locale: Locale): Record<string, string> {
   return {
     ...getFlatMessages(locale),
+    ...Object.fromEntries(
+      Object.entries(navigationMessages).map(([id, messages]) => [id, messages[locale]]),
+    ),
     ...Object.fromEntries(
       Object.entries(authErrors).map(([code, translations]) => [
         getMobileAuthErrorMessageId(code),
