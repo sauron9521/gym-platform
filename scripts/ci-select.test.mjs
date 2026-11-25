@@ -26,6 +26,7 @@ test('Web-only change skips API E2E, Docker and Mobile', () => {
     web: true,
     landing: false,
     admin: false,
+    adminBrowser: false,
     trainer: false,
     mobile: false,
     client: false,
@@ -42,6 +43,7 @@ test('Landing-only changes check landing without requiring API or Web browser su
     web: false,
     landing: true,
     admin: false,
+    adminBrowser: false,
     trainer: false,
     mobile: false,
     client: false,
@@ -59,6 +61,7 @@ test('Landing-only changes check landing without requiring API or Web browser su
 test('Admin-only changes select Admin without unrelated API E2E', () => {
   const selected = classifyChangedPaths(['apps/admin/src/app/page.tsx']);
   assert.equal(selected.admin, true);
+  assert.equal(selected.adminBrowser, true);
   assert.equal(selected.api, false);
   assert.equal(selected.web, false);
   assert.equal(selected.full, false);
@@ -84,12 +87,39 @@ test('Mobile-only change skips API E2E and Web', () => {
   assert.equal(actual.full, false);
 });
 
-test('API change triggers API verification but not Web or Mobile builds', () => {
-  const actual = classifyChangedPaths(['apps/api/src/modules/users/users.service.ts']);
+test('ordinary API changes use the existing API scope without the Admin browser smoke', () => {
+  const actual = classifyChangedPaths([
+    'apps/api/src/modules/exercises/services/exercises.service.ts',
+  ]);
+  assert.equal(actual.adminBrowser, false);
+  assert.equal(actual.admin, false);
   assert.equal(actual.api, true);
   assert.equal(actual.web, false);
   assert.equal(actual.mobile, false);
   assert.equal(actual.deps, false);
+});
+
+test('API auth and session changes require the Admin browser smoke without Admin workspace builds', () => {
+  for (const path of [
+    'apps/api/src/modules/auth/controllers/sessions.controller.ts',
+    'apps/api/src/modules/auth/services/admin-mfa-recovery.service.ts',
+    'apps/api/src/common/auth/admin-origin.guard.ts',
+    'apps/api/src/common/auth/admin-session-cookie.provider.ts',
+    'apps/api/src/app.module.ts',
+    'apps/api/src/main.ts',
+    'apps/api/src/common/config/env.schema.ts',
+    'apps/api/src/common/config/http.config.ts',
+    'apps/api/prisma/schemas/mfa.prisma',
+    'apps/api/prisma/schemas/session.prisma',
+    'apps/api/test/support/seed-admin-browser.ts',
+  ]) {
+    const selected = classifyChangedPaths([path, 'apps/admin/README.md']);
+    assert.equal(selected.api, true, path);
+    assert.equal(selected.adminBrowser, true, path);
+    assert.equal(selected.admin, false, path);
+    assert.equal(selected.web, false, path);
+    assert.equal(selected.full, false, path);
+  }
 });
 
 test('shared API client triggers both frontends without API E2E', () => {
@@ -109,6 +139,7 @@ test('OpenAPI changes check every typed API consumer without full scope', () => 
     web: true,
     landing: false,
     admin: true,
+    adminBrowser: true,
     trainer: true,
     mobile: true,
     client: true,
@@ -125,7 +156,7 @@ test('CI wires Admin and Trainer consumer checks to affected workspace scopes', 
   const admin = yaml.split('  admin-browser-e2e:\n')[1]?.split('\n  landing-browser-e2e:')[0];
   assert.ok(quality);
   assert.ok(admin);
-  assert.match(admin, /if: needs\.changes\.outputs\.admin == 'true'/);
+  assert.match(quality, /CI_ADMIN: \$\{\{ needs\.changes\.outputs\.admin \}\}/);
   assert.ok(quality.includes('filters+=(--filter=@gym/admin); fi'));
   assert.ok(quality.includes('filters+=(--filter=@gym/trainer); fi'));
   assert.ok(quality.includes('test_filters+=(--filter=@gym/admin); fi'));
@@ -152,6 +183,7 @@ test('known shared packages select consumers and avoid unrelated API E2E', () =>
       web: true,
       landing: true,
       admin: true,
+      adminBrowser: true,
       trainer: true,
       mobile,
       client: false,
@@ -171,6 +203,7 @@ test('shared locale changes select API mail and all UI consumers', () => {
       web: true,
       landing: true,
       admin: true,
+      adminBrowser: true,
       trainer: true,
       mobile: true,
       client: false,
@@ -297,6 +330,7 @@ test('application handbooks and nested infrastructure Markdown skip expensive PR
     web: false,
     landing: false,
     admin: false,
+    adminBrowser: false,
     trainer: false,
     mobile: false,
     client: false,
@@ -417,12 +451,15 @@ test('root dependencies and cross-cutting changes force full regression', () => 
 
 test('empty, malformed and escaped paths fail closed', () => {
   for (const files of [[], [''], ['../../foo'], ['/tmp/evil']]) {
-    assert.equal(classifyChangedPaths(files).full, true);
+    const selected = classifyChangedPaths(files);
+    assert.equal(selected.full, true);
+    assert.equal(selected.adminBrowser, true);
   }
 });
 
 test('main pushes and manual dispatch always use full regression', () => {
   const actual = selectFromGitHubEnvironment({ CI_FORCE_ALL: 'true' });
+  assert.equal(actual.adminBrowser, true);
   assert.equal(actual.full, true);
   assert.equal(actual.api, true);
   assert.equal(actual.web, true);
@@ -582,7 +619,8 @@ test('dependency-security job is an enforced prerequisite of the protected Quali
   );
   const admin = yaml.split('  admin-browser-e2e:\n')[1]?.split('\n  landing-browser-e2e:\n')[0];
   assert.ok(admin, 'Admin Chromium job must exist');
-  assert.match(admin, /if: needs\.changes\.outputs\.admin == 'true'/);
+  assert.match(admin, /if: needs\.changes\.outputs\.admin_browser == 'true'/);
+  assert.match(admin, /pnpm --filter @gym\/admin test:e2e:real-api/);
   assert.match(admin, /pnpm --filter @gym\/admin test:e2e/);
   assert.match(admin, /mcr\.microsoft\.com\/playwright:v1\.65\.1/);
   assert.match(quality, /test "\$ADMIN_E2E_RESULT" = success/);

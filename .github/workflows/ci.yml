@@ -28,6 +28,7 @@ jobs:
       web: ${{ steps.select.outputs.web }}
       landing: ${{ steps.select.outputs.landing }}
       admin: ${{ steps.select.outputs.admin }}
+      admin_browser: ${{ steps.select.outputs.adminBrowser }}
       trainer: ${{ steps.select.outputs.trainer }}
       mobile: ${{ steps.select.outputs.mobile }}
       client: ${{ steps.select.outputs.client }}
@@ -203,7 +204,7 @@ jobs:
   admin-browser-e2e:
     name: Admin / Browser Cookie & Proxy E2E (Chromium)
     needs: changes
-    if: needs.changes.outputs.admin == 'true'
+    if: needs.changes.outputs.admin_browser == 'true'
     runs-on: ubuntu-24.04
     container:
       # Reuse the version-pinned image used for existing browser tests.
@@ -485,7 +486,7 @@ jobs:
           CHANGE_DETECTION_RESULT: ${{ needs.changes.result }}
           FULL_SCOPE: ${{ needs.changes.outputs.full }}
           WEB_REQUIRED: ${{ needs.changes.outputs.web }}
-          ADMIN_REQUIRED: ${{ needs.changes.outputs.admin }}
+          ADMIN_REQUIRED: ${{ needs.changes.outputs.admin_browser }}
           ADMIN_E2E_RESULT: ${{ needs.admin-browser-e2e.result }}
           DEPS_REQUIRED: ${{ needs.changes.outputs.deps }}
           WINDOWS_RESULT: ${{ needs.prepush-windows.result }}

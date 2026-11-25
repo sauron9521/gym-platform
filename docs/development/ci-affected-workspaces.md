@@ -31,6 +31,8 @@ The documentation exemptions cover `docs/**`, root Markdown files, `infra/**/*.m
 
 The separate Web integration workflow runs four real-API browser shards when full, API, Web, Trainer or client scope is selected. Its stable result gate remains present even for intentional skips. Admin and Landing have separate browser checks inside CI; Mobile Metro and native manual testing remain distinct.
 
+The Admin browser job also runs when API changes touch `src/modules/auth/`, `src/common/auth/`, API bootstrap and HTTP/origin configuration, the session or MFA Prisma schemas, or the Admin browser seed fixture. These paths enable the Admin browser smoke with real PostgreSQL while workspace tasks keep the API scope. `Quality / Node 24` enforces the browser result using the same selector output.
+
 The selector and CI configuration are cross-cutting paths. The Redis upgrade rehearsal runs on PRs touching `infra/docker/compose.yaml`, `scripts/test-redis-upgrade.sh`, `scripts/ci-select.mjs` or `.github/workflows/ci.yml`; it is not an unconditional main-push job. Main pushes and manual dispatch retain full workspace and release-source verification.
 
 ## Required status checks and release safety
