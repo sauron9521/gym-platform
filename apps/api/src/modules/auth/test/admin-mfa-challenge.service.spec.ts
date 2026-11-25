@@ -190,6 +190,11 @@ describe('AdminMfaChallengeService', () => {
     const proof = method === 'totp' ? { code: '123456' } : { recoveryCode: 'ABCDE-FGHIJ' };
     const result = await service.complete(token, proof);
     expect(result?.session.mfa).toBe('verified');
+    const metadata = { ...ADMIN_MFA_METADATA, adminMfaMethod: method };
+    expect(result?.session.metadata).toEqual(metadata);
+    expect(tx.session.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ metadata }),
+    });
     expect(result?.session.createdAt).toEqual(row.createdAt);
     expect(result?.session.id).not.toBe(id);
     expect(totp).toHaveBeenCalledTimes(method === 'totp' ? 1 : 0);

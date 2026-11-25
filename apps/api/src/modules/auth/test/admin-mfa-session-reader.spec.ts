@@ -9,7 +9,7 @@ function setup() {
     id: 'session-id',
     userId: 'admin-id',
     mfa: 'verified',
-    metadata: ADMIN_MFA_METADATA,
+    metadata: { ...ADMIN_MFA_METADATA, adminMfaMethod: 'totp' },
     createdAt: new Date(now - 120_000),
     expiresAt: new Date(now + 60_000),
     lastActiveAt: new Date(now - 120_000),
@@ -66,7 +66,11 @@ describe('AdminMfaSessionReader', () => {
 
   it('does not slide pending sessions or recently touched verified sessions', async () => {
     const { reader, prisma, row } = setup();
-    row.mfa = 'pending';
+    prisma.session.findFirst.mockResolvedValueOnce({
+      ...row,
+      mfa: 'pending',
+      metadata: ADMIN_MFA_METADATA,
+    });
     expect(await reader.read(row.id)).toMatchObject({ mfa: 'pending' });
     row.mfa = 'verified';
     row.lastActiveAt = new Date();
@@ -87,13 +91,43 @@ describe('AdminMfaSessionReader', () => {
         });
       }
       if (kind === 'pending') {
-        row.mfa = 'pending';
-        row.createdAt = new Date(Date.now() - 301_000);
+        prisma.session.findFirst.mockResolvedValueOnce({
+          ...row,
+          mfa: 'pending',
+          metadata: ADMIN_MFA_METADATA,
+          createdAt: new Date(Date.now() - 301_000),
+        });
       }
       expect(await reader.read(row.id)).toBeNull();
       expect(prisma.session.updateMany).not.toHaveBeenCalled();
     },
   );
+
+  it.each([undefined, null, 'password', 'webauthn', 'unknown', true])(
+    'rejects a verified session with invalid method %s before touching activity',
+    async (method) => {
+      const { reader, prisma, row } = setup();
+      prisma.session.findFirst.mockResolvedValueOnce({
+        ...row,
+        metadata: { ...ADMIN_MFA_METADATA, adminMfaMethod: method },
+      });
+      expect(await reader.read(row.id)).toBeNull();
+      expect(prisma.session.updateMany).not.toHaveBeenCalled();
+    },
+  );
+
+  it('rejects pending rows with verified assurance and retains recovery provenance', async () => {
+    const { reader, prisma, row } = setup();
+    prisma.session.findFirst.mockResolvedValueOnce({ ...row, mfa: 'pending' });
+    expect(await reader.read(row.id)).toBeNull();
+    prisma.session.findFirst.mockResolvedValueOnce({
+      ...row,
+      metadata: { ...ADMIN_MFA_METADATA, adminMfaMethod: 'recovery' },
+    });
+    expect(await reader.read(row.id)).toMatchObject({
+      metadata: { adminMfaMethod: 'recovery' },
+    });
+  });
 
   it('fails closed when activity update loses a concurrent revocation', async () => {
     const { reader, prisma, row } = setup();

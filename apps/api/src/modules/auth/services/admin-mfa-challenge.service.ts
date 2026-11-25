@@ -13,7 +13,6 @@ import { Inject, Injectable, ServiceUnavailableException } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config';
 
 import type { Prisma } from '#prisma/client';
-import { ADMIN_SESSION_PURPOSE } from '#src/common/auth/admin-session-purpose.guard';
 import { isAdminSessionExpired } from '#src/common/auth/admin-session-lifetime.policy';
 import type { AppConfigService } from '#src/common/config/app-config.types';
 import { createMfaEncryptionOptions } from '#src/common/config/mfa-keyring.config';
@@ -24,7 +23,12 @@ import {
   ADMIN_MFA_PENDING_TTL_MS,
   AdminMfaTransactionSessionStore,
 } from '../stores/admin-mfa-transaction-session.store.js';
-import { ADMIN_MFA_METADATA, adminMfaSessionScope } from '../stores/admin-mfa-session-scope.js';
+import {
+  ADMIN_MFA_METADATA,
+  adminMfaSessionScope,
+  readAdminMfaAssurance,
+  type AdminMfaIssuance,
+} from '../stores/admin-mfa-session-scope.js';
 import { PrismaMfaStore } from '../stores/prisma-mfa.store.js';
 import {
   AUTH_ACCOUNT_THROTTLE_POLICIES,
@@ -80,13 +84,13 @@ export class AdminMfaChallengeService {
   private sessions(
     tx: Prisma.TransactionClient,
     userId: string,
-    state: 'pending' | 'verified',
+    issuance: AdminMfaIssuance,
     mfaStore: MfaStore,
   ) {
     const storage = new AuthenticationStorage();
     storage.registerSource({
       mfa: mfaStore,
-      sessions: new AdminMfaTransactionSessionStore(tx, userId, state),
+      sessions: new AdminMfaTransactionSessionStore(tx, userId, issuance),
     });
     const appUrl = this.config.get('ADMIN_APP_URL') ?? this.config.getOrThrow('APP_URL');
     const origin = new URL(appUrl).origin;
@@ -124,7 +128,7 @@ export class AdminMfaChallengeService {
       ) {
         return null;
       }
-      const { sessions } = this.sessions(tx, userId, 'pending', store);
+      const { sessions } = this.sessions(tx, userId, { state: 'pending' }, store);
       return sessions.create(userId, {
         mfa: 'pending',
         metadata: ADMIN_MFA_METADATA,
@@ -165,8 +169,7 @@ export class AdminMfaChallengeService {
       const record = toSessionRecord(row);
       const pendingDeadline = record.createdAt.getTime() + ADMIN_MFA_PENDING_TTL_MS;
       if (
-        record.metadata?.purpose !== ADMIN_SESSION_PURPOSE ||
-        record.metadata.adminMfaFlow !== ADMIN_MFA_METADATA.adminMfaFlow ||
+        readAdminMfaAssurance(record) !== 'password' ||
         isAdminSessionExpired(record, Date.now()) ||
         Date.now() >= pendingDeadline ||
         (user.authInvalidatedAt && record.createdAt <= user.authInvalidatedAt)
@@ -174,7 +177,9 @@ export class AdminMfaChallengeService {
         return null;
       }
 
-      const { storage, sessions } = this.sessions(tx, userId, 'verified', store);
+      const method = proof.recoveryCode !== undefined ? 'recovery' : 'totp';
+      const issuance = { state: 'verified', method } as const;
+      const { storage, sessions } = this.sessions(tx, userId, issuance, store);
       const mfa = new MfaService(storage, { mfa: { encryption, issuer: 'OVRANTO' } });
       const verified =
         proof.recoveryCode !== undefined
@@ -190,7 +195,8 @@ export class AdminMfaChallengeService {
       if (
         !rotated ||
         rotated.session.createdAt.getTime() !== record.createdAt.getTime() ||
-        rotated.session.id === id
+        rotated.session.id === id ||
+        readAdminMfaAssurance(rotated.session) !== method
       ) {
         throw new Error('Administrative MFA session rotation failed');
       }
