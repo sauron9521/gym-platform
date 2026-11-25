@@ -27,7 +27,7 @@ The table describes the explicit application/client scopes returned by the selec
 
 For mixed PRs, selected scopes are unioned. Landing is not an OpenAPI consumer. Empty diffs select full scope; invalid or unavailable base/head commits fail classification, and required result gates fail closed. Renames are compared as deletion and addition, so both old and new paths contribute to scope.
 
-The documentation exemptions are `docs/**`, root Markdown files, `infra/**/*.md`, the top-level README in API, Athlete Web, Trainer, Landing, Mobile and API Client, and `apps/api/test/README.md`. Admin README is not currently exempt. Other app-local Markdown selects that application; unknown package paths fall back to full checks. Exemptions are applied to each path, not the entire mixed PR.
+The documentation exemptions cover `docs/**`, root Markdown files, `infra/**/*.md`, `apps/mobile/docs/**/*.md`, `apps/api/test/README.md`, and the top-level README in API, Athlete Web, Admin, Trainer, Landing, Mobile and API Client. Other app-local Markdown selects its application. Unknown package paths fall back to full checks. In a mixed PR, each changed path is classified independently.
 
 The separate Web integration workflow runs four real-API browser shards when full, API, Web, Trainer or client scope is selected. Its stable result gate remains present even for intentional skips. Admin and Landing have separate browser checks inside CI; Mobile Metro and native manual testing remain distinct.
 
@@ -61,7 +61,7 @@ publishing. Deployment and release approval remain separate workflows.
 
 The `Quality workspaces / Node 24` job restores the Turborepo task cache
 (`.turbo/cache`) and Next.js incremental caches for Web, Landing, Admin and Trainer
-using `actions/cache@v6`. Keys are scoped to the operating system,
+using `actions/cache@v6` when the selector enables workspace checks. Documentation-only runs skip this build cache and still run tooling contracts, formatting and i18n catalog tests. Cache keys are scoped to the operating system,
 Node.js version, lockfile, workspace manifests, Turborepo configuration
 and commit SHA. Restore prefixes allow reuse within the same dependency configuration and then across older dependency configurations; Turbo and Next.js validate their own cache inputs. The existing
 `actions/setup-node@v7` pnpm-store cache remains in place.

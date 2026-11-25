@@ -279,9 +279,12 @@ test('application handbooks and nested infrastructure Markdown skip expensive PR
     'apps/api/README.md',
     'apps/api/test/README.md',
     'apps/web/README.md',
+    'apps/admin/README.md',
     'apps/trainer/README.md',
     'apps/landing/README.md',
     'apps/mobile/README.md',
+    'apps/mobile/docs/development-roadmap.md',
+    'apps/mobile/docs/guides/installation.md',
     'packages/api-client/README.md',
     'infra/docker/README.md',
     'infra/docker/production/README.md',
@@ -306,7 +309,13 @@ test('application handbooks and nested infrastructure Markdown skip expensive PR
 });
 
 test('documentation changes never override real affected workspace checks', () => {
-  const docs = ['apps/api/README.md', 'apps/web/README.md', 'infra/docker/README.md'];
+  const docs = [
+    'apps/api/README.md',
+    'apps/web/README.md',
+    'apps/admin/README.md',
+    'apps/mobile/docs/development-roadmap.md',
+    'infra/docker/README.md',
+  ];
 
   const api = classifyChangedPaths([...docs, 'apps/api/src/main.ts']);
   assert.equal(api.api, true);
@@ -319,12 +328,30 @@ test('documentation changes never override real affected workspace checks', () =
   assert.equal(web.web, true);
   assert.equal(web.full, false);
 
+  const mobile = classifyChangedPaths([...docs, 'apps/mobile/app/index.tsx']);
+  assert.equal(mobile.mobile, true);
+  assert.equal(mobile.workspaces, true);
+  assert.equal(mobile.full, false);
+
+  const admin = classifyChangedPaths([...docs, 'apps/admin/src/app/page.tsx']);
+  assert.equal(admin.admin, true);
+  assert.equal(admin.workspaces, true);
+  assert.equal(admin.full, false);
+
   const infra = classifyChangedPaths([...docs, 'infra/docker/compose.yaml']);
   assert.equal(infra.full, true);
   assert.equal(infra.api, true);
   assert.equal(infra.web, true);
   assert.equal(infra.deps, true);
   assert.equal(infra.redis, true);
+});
+
+test('mobile documentation exemption is limited to Markdown files under apps/mobile/docs', () => {
+  for (const path of ['apps/mobile/docs/example.ts', 'apps/mobile/docs-preview/README.md']) {
+    const actual = classifyChangedPaths([path]);
+    assert.equal(actual.mobile, true, path);
+    assert.equal(actual.workspaces, true, path);
+  }
 });
 
 test('non-Markdown infrastructure, manifests, CI and unknown Markdown fail closed', () => {
@@ -472,6 +499,11 @@ test('CI caches only reusable build artifacts and not test or secret outputs', (
     .split('      - name: Restore Turborepo and Next.js incremental build caches')[1]
     ?.split('      - name: Install dependencies')[0];
   assert.ok(cacheBlock);
+  assert.match(cacheBlock, /^\n        if: needs\.changes\.outputs\.workspaces == 'true'\n/);
+  assert.match(
+    cacheBlock,
+    /name: Report incremental build cache restore\n        if: needs\.changes\.outputs\.workspaces == 'true'/,
+  );
   assert.match(cacheBlock, /uses: actions\/cache@v6/);
   assert.match(cacheBlock, /\.turbo\/cache/);
   assert.match(cacheBlock, /apps\/web\/\.next\/cache/);
