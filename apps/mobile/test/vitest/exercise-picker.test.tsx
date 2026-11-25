@@ -164,4 +164,20 @@ describe('ExercisePicker (native)', () => {
     await fireEvent.press(view.getByTestId('workout-exercise-open'));
     expect(view.queryByTestId('workout-exercise-search')).toBeNull();
   });
+  it('hides stale choices and pagination while a new search is debouncing', async () => {
+    prepareQuery({ hasNextPage: true });
+    const onSelect = vi.fn();
+    const view = await render(<ExercisePicker selectedId="" onSelect={onSelect} />);
+    await fireEvent.press(view.getByTestId('workout-exercise-open'));
+    expect(view.getByRole('button', { name: 'Жим лежачи' })).toBeTruthy();
+    await fireEvent.changeText(view.getByTestId('workout-exercise-search'), 'присідання');
+    expect(view.getByText('Шукаємо вправи…')).toBeTruthy();
+    expect(view.queryByRole('button', { name: 'Жим лежачи' })).toBeNull();
+    expect(view.queryByTestId('workout-exercises-next')).toBeNull();
+    expect(onSelect).not.toHaveBeenCalled();
+    expect(fetchNextPage).not.toHaveBeenCalled();
+    await fireEvent.press(view.getByTestId('workout-exercise-close'));
+    await fireEvent.press(view.getByTestId('workout-exercise-open'));
+    expect(view.getByTestId('workout-exercise-search').props.value).toBe('');
+  });
 });
