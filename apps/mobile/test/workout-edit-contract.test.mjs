@@ -12,6 +12,11 @@ const screen = readFileSync(
   'utf8',
 );
 
+const controller = readFileSync(
+  new URL('../src/screens/workouts/model/use-workout-details.ts', import.meta.url),
+  'utf8',
+);
+
 describe('workout title edit and cancellation', () => {
   it('accepts only trimmed titles with 2–120 characters', () => {
     expect(workoutTitleError(' A ')).not.toBeNull();
@@ -35,7 +40,7 @@ describe('workout title edit and cancellation', () => {
   });
 
   it('confirms destructive cancellation and only edits planned workouts', () => {
-    expect(screen).toContain('Alert.alert(');
+    expect(controller).toContain('Alert.alert(');
     expect(screen).toContain('confirmCancellation');
     expect(screen).toContain("workout.status === 'PLANNED'");
     expect(screen).toContain('RestTimer key={id}');
