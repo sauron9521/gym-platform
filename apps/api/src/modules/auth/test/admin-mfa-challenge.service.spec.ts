@@ -29,7 +29,7 @@ function setup() {
     lastActiveAt: now,
     expiresAt: new Date(now.getTime() + 300_000),
     mfa: 'pending',
-    metadata: { ...ADMIN_MFA_METADATA },
+    metadata: { ...ADMIN_MFA_METADATA, purpose: String(ADMIN_MFA_METADATA.purpose) },
   };
   const user = { passwordHash: 'test-hash', authInvalidatedAt: null };
   const tx = {

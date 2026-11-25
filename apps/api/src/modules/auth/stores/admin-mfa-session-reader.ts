@@ -38,8 +38,7 @@ export class AdminMfaSessionReader {
     if (
       isAdminSessionExpired(record, now) ||
       (fence && record.createdAt <= fence) ||
-      (record.mfa === 'pending' &&
-        now >= record.createdAt.getTime() + ADMIN_MFA_PENDING_TTL_MS)
+      (record.mfa === 'pending' && now >= record.createdAt.getTime() + ADMIN_MFA_PENDING_TTL_MS)
     ) {
       return null;
     }
