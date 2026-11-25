@@ -958,6 +958,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 35
     # Independent runners provide separate PostgreSQL test databases.
+    # The Vitest E2E sequencer balances test durations across these two jobs.
     # Both shards must pass before the stable API e2e gate succeeds.
     strategy:
       fail-fast: false
@@ -1040,6 +1041,7 @@ jobs:
         run: pnpm --filter @gym/api db:generate
 
       - name: Typecheck integration and HTTP e2e tests
+        if: matrix.shard == 1
         run: pnpm --filter @gym/api typecheck:e2e
 
       - name: Apply test database migrations
