@@ -6,9 +6,10 @@ import {
   useCreateWorkoutFromProgram,
   useProgramAssignment,
 } from '@/features/programs/model/program-assignments-query';
-import { palette } from '@/shared/config/theme';
+import { createThemedStyles } from '@/shared/config/theme-provider';
 
 export function ProgramDetailsScreen({ id }: { id: string }) {
+  const styles = useStyles();
   const router = useRouter();
   const query = useProgramAssignment(id);
   const create = useCreateWorkoutFromProgram(id);
@@ -87,27 +88,29 @@ export function ProgramDetailsScreen({ id }: { id: string }) {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: palette.background },
-  content: { padding: 24, gap: 14 },
-  title: { fontSize: 26, fontWeight: '700', color: palette.text },
-  heading: { fontSize: 17, fontWeight: '600', color: palette.text },
-  muted: { color: palette.muted, fontSize: 14 },
-  error: { color: '#ff6460', fontSize: 14 },
-  card: {
-    backgroundColor: palette.surface,
-    borderWidth: 1,
-    borderColor: palette.border,
-    borderRadius: 12,
-    padding: 16,
-    gap: 10,
-  },
-  button: {
-    backgroundColor: palette.primary,
-    minHeight: 46,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  buttonText: { color: palette.surface, fontWeight: '700' },
-});
+const useStyles = createThemedStyles((palette) =>
+  StyleSheet.create({
+    container: { flex: 1, backgroundColor: palette.background },
+    content: { padding: 24, gap: 14 },
+    title: { fontSize: 26, fontWeight: '700', color: palette.text },
+    heading: { fontSize: 17, fontWeight: '600', color: palette.text },
+    muted: { color: palette.muted, fontSize: 14 },
+    error: { color: palette.error, fontSize: 14 },
+    card: {
+      backgroundColor: palette.surface,
+      borderWidth: 1,
+      borderColor: palette.border,
+      borderRadius: 12,
+      padding: 16,
+      gap: 10,
+    },
+    button: {
+      backgroundColor: palette.primary,
+      minHeight: 46,
+      borderRadius: 10,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    buttonText: { color: palette.primaryForeground, fontWeight: '700' },
+  }),
+);

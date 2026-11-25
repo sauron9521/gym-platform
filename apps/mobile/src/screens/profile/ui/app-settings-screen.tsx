@@ -2,9 +2,11 @@ import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-nat
 import { useIntl } from 'react-intl';
 
 import { useAppSettings } from '@/features/app-settings/model/app-settings-context';
-import { palette } from '@/shared/config/theme';
+import { createThemedStyles, useMobileTheme } from '@/shared/config/theme-provider';
 
 export function AppSettingsScreen() {
+  const styles = useStyles();
+  const { palette } = useMobileTheme();
   const intl = useIntl();
   const t = (key: string) => intl.formatMessage({ id: `mobile.settings.${key}` });
   const { settings, setAutoRestTimer, reload } = useAppSettings();
@@ -49,20 +51,22 @@ export function AppSettingsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: palette.background },
-  content: { padding: 24, gap: 16 },
-  heading: { fontSize: 20, fontWeight: '700', color: palette.text },
-  card: {
-    backgroundColor: palette.surface,
-    borderColor: palette.border,
-    borderWidth: 1,
-    borderRadius: 16,
-    padding: 16,
-    gap: 12,
-  },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  description: { flex: 1, gap: 6 },
-  label: { fontSize: 16, fontWeight: '600', color: palette.text },
-  hint: { fontSize: 14, color: palette.muted },
-});
+const useStyles = createThemedStyles((palette) =>
+  StyleSheet.create({
+    container: { flex: 1, backgroundColor: palette.background },
+    content: { padding: 24, gap: 16 },
+    heading: { fontSize: 20, fontWeight: '700', color: palette.text },
+    card: {
+      backgroundColor: palette.surface,
+      borderColor: palette.border,
+      borderWidth: 1,
+      borderRadius: 16,
+      padding: 16,
+      gap: 12,
+    },
+    row: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+    description: { flex: 1, gap: 6 },
+    label: { fontSize: 16, fontWeight: '600', color: palette.text },
+    hint: { fontSize: 14, color: palette.muted },
+  }),
+);

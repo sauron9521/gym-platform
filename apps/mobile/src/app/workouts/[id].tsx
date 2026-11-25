@@ -1,10 +1,11 @@
 import { useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { palette } from '@/shared/config/theme';
+import { useMobileTheme } from '@/shared/config/theme-provider';
 
 import { WorkoutDetailsScreen } from '@/screens/workouts/ui/workout-details-screen';
 
 export default function WorkoutDetailsRoute() {
+  const { palette } = useMobileTheme();
   const params = useLocalSearchParams<{ id: string }>();
   return (
     <SafeAreaView

@@ -2,7 +2,7 @@ import type { Locale } from '@gym/i18n';
 import { useIntl } from 'react-intl';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { palette } from '@/shared/config/theme';
+import { createThemedStyles } from '@/shared/config/theme-provider';
 import { useLocaleSelection } from './locale-provider';
 
 type Props = {
@@ -13,6 +13,7 @@ type Props = {
 
 /** Reusable UI: guests update local preference; authenticated persistence is injected by a feature. */
 export function LocalePicker({ disabled = false, error, onSelect }: Props) {
+  const styles = useStyles();
   const { locale, setLocale } = useLocaleSelection();
   const intl = useIntl();
 
@@ -56,8 +57,10 @@ export function LocalePicker({ disabled = false, error, onSelect }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  row: { flexDirection: 'row', gap: 12 },
-  button: { borderRadius: 12, borderWidth: 1, borderColor: palette.border, padding: 12 },
-  label: { color: palette.text },
-});
+const useStyles = createThemedStyles((palette) =>
+  StyleSheet.create({
+    row: { flexDirection: 'row', gap: 12 },
+    button: { borderRadius: 12, borderWidth: 1, borderColor: palette.border, padding: 12 },
+    label: { color: palette.text },
+  }),
+);

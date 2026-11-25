@@ -3,9 +3,10 @@ import { useIntl } from 'react-intl';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useTrainerAthletes } from '@/features/trainer-athletes/model/trainer-athletes-query';
-import { palette } from '@/shared/config/theme';
+import { createThemedStyles } from '@/shared/config/theme-provider';
 
 export function TrainerAthletesScreen() {
+  const styles = useStyles();
   const intl = useIntl();
   const t = (id: string) => intl.formatMessage({ id });
   const query = useTrainerAthletes();
@@ -105,27 +106,29 @@ export function TrainerAthletesScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { backgroundColor: palette.background, flex: 1 },
-  content: { gap: 12, padding: 24 },
-  group: { gap: 10 },
-  title: { fontSize: 26, fontWeight: '700', color: palette.text },
-  titleSmall: { fontSize: 16, fontWeight: '600', color: palette.text },
-  muted: { color: palette.muted },
-  error: { color: '#ff6460' },
-  card: {
-    padding: 16,
-    borderWidth: 1,
-    borderColor: palette.border,
-    borderRadius: 12,
-    gap: 8,
-  },
-  button: {
-    padding: 14,
-    minHeight: 44,
-    backgroundColor: palette.primary,
-    borderRadius: 12,
-    justifyContent: 'center',
-  },
-  buttonText: { color: palette.background, textAlign: 'center', fontWeight: '700' },
-});
+const useStyles = createThemedStyles((palette) =>
+  StyleSheet.create({
+    container: { backgroundColor: palette.background, flex: 1 },
+    content: { gap: 12, padding: 24 },
+    group: { gap: 10 },
+    title: { fontSize: 26, fontWeight: '700', color: palette.text },
+    titleSmall: { fontSize: 16, fontWeight: '600', color: palette.text },
+    muted: { color: palette.muted },
+    error: { color: palette.error },
+    card: {
+      padding: 16,
+      borderWidth: 1,
+      borderColor: palette.border,
+      borderRadius: 12,
+      gap: 8,
+    },
+    button: {
+      padding: 14,
+      minHeight: 44,
+      backgroundColor: palette.primary,
+      borderRadius: 12,
+      justifyContent: 'center',
+    },
+    buttonText: { color: palette.primaryForeground, textAlign: 'center', fontWeight: '700' },
+  }),
+);

@@ -5,10 +5,13 @@ import { useIntl } from 'react-intl';
 import { useAuth } from '@/features/auth/model/auth-context';
 import { hasTrainerAccess } from '@/features/auth/model/account-capabilities';
 import { useAccountQuery } from '@/features/profile/model/account-query';
-import { palette } from '@/shared/config/theme';
+import { createThemedStyles, useMobileTheme } from '@/shared/config/theme-provider';
+import { ThemePicker } from '@/shared/ui/theme-picker';
 import { AccountLocalePicker } from '@/features/profile/ui/account-locale-picker';
 
 export function ProfileScreen() {
+  const styles = useStyles();
+  const { palette } = useMobileTheme();
   const router = useRouter();
   const intl = useIntl();
   const t = (id: string) => intl.formatMessage({ id });
@@ -30,6 +33,7 @@ export function ProfileScreen() {
       <Text style={styles.heading}>{name}</Text>
       <Text style={styles.subheading}>{t('mobile.profile.apiData')}</Text>
       <AccountLocalePicker />
+      <ThemePicker />
       <View style={styles.card}>
         <Text style={styles.label}>{t('mobile.profile.email')}</Text>
         <Text style={styles.value}>{currentAccount.email}</Text>
@@ -68,7 +72,7 @@ export function ProfileScreen() {
         style={styles.button}
       >
         {isFetching ? (
-          <ActivityIndicator color={palette.surface} />
+          <ActivityIndicator color={palette.primaryForeground} />
         ) : (
           <Text style={styles.buttonText}>{t('mobile.profile.refresh')}</Text>
         )}
@@ -105,38 +109,40 @@ export function ProfileScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: palette.background },
-  content: { padding: 24, gap: 16 },
-  heading: { fontSize: 30, fontWeight: '700', color: palette.text },
-  subheading: { color: palette.muted, fontSize: 15 },
-  card: {
-    backgroundColor: palette.surface,
-    borderColor: palette.border,
-    borderWidth: 1,
-    borderRadius: 16,
-    padding: 22,
-    gap: 10,
-  },
-  label: { color: palette.muted, fontSize: 13 },
-  value: { color: palette.text, fontWeight: '600', fontSize: 16, marginBottom: 8 },
-  error: { color: '#b91c1c', fontSize: 14 },
-  button: {
-    minHeight: 48,
-    borderRadius: 12,
-    backgroundColor: palette.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 12,
-  },
-  buttonText: { color: palette.surface, fontWeight: '700', fontSize: 16 },
-  secondary: {
-    minHeight: 48,
-    borderRadius: 12,
-    borderColor: palette.border,
-    borderWidth: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  secondaryText: { color: palette.text, fontWeight: '600', fontSize: 16 },
-});
+const useStyles = createThemedStyles((palette) =>
+  StyleSheet.create({
+    container: { flex: 1, backgroundColor: palette.background },
+    content: { padding: 24, gap: 16 },
+    heading: { fontSize: 30, fontWeight: '700', color: palette.text },
+    subheading: { color: palette.muted, fontSize: 15 },
+    card: {
+      backgroundColor: palette.surface,
+      borderColor: palette.border,
+      borderWidth: 1,
+      borderRadius: 16,
+      padding: 22,
+      gap: 10,
+    },
+    label: { color: palette.muted, fontSize: 13 },
+    value: { color: palette.text, fontWeight: '600', fontSize: 16, marginBottom: 8 },
+    error: { color: palette.error, fontSize: 14 },
+    button: {
+      minHeight: 48,
+      borderRadius: 12,
+      backgroundColor: palette.primary,
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: 12,
+    },
+    buttonText: { color: palette.primaryForeground, fontWeight: '700', fontSize: 16 },
+    secondary: {
+      minHeight: 48,
+      borderRadius: 12,
+      borderColor: palette.border,
+      borderWidth: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    secondaryText: { color: palette.text, fontWeight: '600', fontSize: 16 },
+  }),
+);

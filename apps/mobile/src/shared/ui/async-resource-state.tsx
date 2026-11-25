@@ -1,6 +1,6 @@
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { palette } from '@/shared/config/theme';
+import { createThemedStyles } from '@/shared/config/theme-provider';
 
 type Props = {
   kind: 'loading' | 'error' | 'empty';
@@ -18,6 +18,7 @@ export function AsyncResourceState({
   retryLabel = 'Спробувати ще раз',
   retrying = false,
 }: Props) {
+  const styles = useStyles();
   return (
     <View style={styles.container} accessibilityLiveRegion="polite">
       {kind === 'loading' ? <ActivityIndicator accessibilityLabel={message} /> : null}
@@ -43,17 +44,19 @@ export function AsyncResourceState({
   );
 }
 
-const styles = StyleSheet.create({
-  container: { padding: 16, gap: 12, alignItems: 'center' },
-  message: { textAlign: 'center', color: palette.muted, fontSize: 14 },
-  error: { textAlign: 'center', color: '#ff6460', fontSize: 14 },
-  retry: {
-    minHeight: 44,
-    paddingHorizontal: 16,
-    justifyContent: 'center',
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: palette.border,
-  },
-  retryText: { color: palette.text, fontWeight: '600' },
-});
+const useStyles = createThemedStyles((palette) =>
+  StyleSheet.create({
+    container: { padding: 16, gap: 12, alignItems: 'center' },
+    message: { textAlign: 'center', color: palette.muted, fontSize: 14 },
+    error: { textAlign: 'center', color: palette.error, fontSize: 14 },
+    retry: {
+      minHeight: 44,
+      paddingHorizontal: 16,
+      justifyContent: 'center',
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: palette.border,
+    },
+    retryText: { color: palette.text, fontWeight: '600' },
+  }),
+);

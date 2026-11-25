@@ -1,9 +1,11 @@
 import { useNetworkState } from 'expo-network';
 import { StyleSheet, Text, View } from 'react-native';
 
+import { createThemedStyles } from '@/shared/config/theme-provider';
 import { isConnectionAvailable } from '@/shared/api/network-state';
 
 export function OfflineBanner() {
+  const styles = useStyles();
   const network = useNetworkState();
   if (isConnectionAvailable(network)) return null;
 
@@ -14,15 +16,17 @@ export function OfflineBanner() {
   );
 }
 
-const styles = StyleSheet.create({
-  banner: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: '#7f1d1d',
-    padding: 12,
-    zIndex: 30,
-  },
-  text: { fontSize: 13, color: '#ffffff', textAlign: 'center', fontWeight: '600' },
-});
+const useStyles = createThemedStyles((palette) =>
+  StyleSheet.create({
+    banner: {
+      position: 'absolute',
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: palette.error,
+      padding: 12,
+      zIndex: 30,
+    },
+    text: { fontSize: 13, color: palette.errorForeground, textAlign: 'center', fontWeight: '600' },
+  }),
+);

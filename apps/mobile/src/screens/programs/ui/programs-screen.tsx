@@ -5,7 +5,7 @@ import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { uniqueAssignments } from '@/features/programs/lib/assignment-pagination';
 import { useProgramAssignments } from '@/features/programs/model/program-assignments-query';
-import { palette } from '@/shared/config/theme';
+import { createThemedStyles } from '@/shared/config/theme-provider';
 import { AsyncResourceState } from '@/shared/ui/async-resource-state';
 
 function EmptyAssignedPrograms() {
@@ -19,6 +19,7 @@ function EmptyAssignedPrograms() {
 }
 
 export function ProgramsScreen() {
+  const styles = useStyles();
   const intl = useIntl();
   const t = (key: string, values?: Record<string, string | number>) =>
     intl.formatMessage({ id: `mobile.programList.${key}` }, values);
@@ -141,28 +142,30 @@ export function ProgramsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: palette.background },
-  content: { padding: 24, gap: 14 },
-  header: { gap: 12 },
-  footer: { gap: 10 },
-  title: { fontSize: 26, color: palette.text, fontWeight: '700' },
-  heading: { fontSize: 17, color: palette.text, fontWeight: '600' },
-  muted: { fontSize: 14, color: palette.muted },
-  card: {
-    backgroundColor: palette.surface,
-    borderWidth: 1,
-    borderColor: palette.border,
-    borderRadius: 12,
-    padding: 18,
-    gap: 8,
-  },
-  button: {
-    backgroundColor: palette.primary,
-    minHeight: 48,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  buttonText: { color: palette.surface, fontWeight: '700' },
-});
+const useStyles = createThemedStyles((palette) =>
+  StyleSheet.create({
+    container: { flex: 1, backgroundColor: palette.background },
+    content: { padding: 24, gap: 14 },
+    header: { gap: 12 },
+    footer: { gap: 10 },
+    title: { fontSize: 26, color: palette.text, fontWeight: '700' },
+    heading: { fontSize: 17, color: palette.text, fontWeight: '600' },
+    muted: { fontSize: 14, color: palette.muted },
+    card: {
+      backgroundColor: palette.surface,
+      borderWidth: 1,
+      borderColor: palette.border,
+      borderRadius: 12,
+      padding: 18,
+      gap: 8,
+    },
+    button: {
+      backgroundColor: palette.primary,
+      minHeight: 48,
+      borderRadius: 12,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    buttonText: { color: palette.primaryForeground, fontWeight: '700' },
+  }),
+);

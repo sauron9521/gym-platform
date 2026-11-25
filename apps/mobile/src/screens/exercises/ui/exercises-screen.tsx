@@ -3,9 +3,11 @@ import { useIntl } from 'react-intl';
 import { FlatList, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { useExerciseFilters, useExercisesQuery } from '@/features/exercises/model/exercises-query';
-import { palette } from '@/shared/config/theme';
+import { createThemedStyles, useMobileTheme } from '@/shared/config/theme-provider';
 
 export function ExercisesScreen() {
+  const styles = useStyles();
+  const { palette } = useMobileTheme();
   const intl = useIntl();
   const t = (key: string) => intl.formatMessage({ id: `mobile.exerciseCatalog.${key}` });
   const exerciseTypeKey = (type: string) => {
@@ -101,7 +103,9 @@ export function ExercisesScreen() {
               onPress={() => setMuscleGroup(undefined)}
               style={[styles.chip, muscleGroup === undefined && styles.selected]}
             >
-              <Text style={styles.chipText}>{t('allMuscles')}</Text>
+              <Text style={[styles.chipText, muscleGroup === undefined && styles.selectedText]}>
+                {t('allMuscles')}
+              </Text>
             </Pressable>
             {filters.muscleGroups.data?.map((group) => (
               <Pressable
@@ -112,7 +116,9 @@ export function ExercisesScreen() {
                 onPress={() => setMuscleGroup(group.slug)}
                 style={[styles.chip, muscleGroup === group.slug && styles.selected]}
               >
-                <Text style={styles.chipText}>{group.name}</Text>
+                <Text style={[styles.chipText, muscleGroup === group.slug && styles.selectedText]}>
+                  {group.name}
+                </Text>
               </Pressable>
             ))}
           </ScrollView>
@@ -129,7 +135,9 @@ export function ExercisesScreen() {
               onPress={() => setEquipment(undefined)}
               style={[styles.chip, equipment === undefined && styles.selected]}
             >
-              <Text style={styles.chipText}>{t('allEquipment')}</Text>
+              <Text style={[styles.chipText, equipment === undefined && styles.selectedText]}>
+                {t('allEquipment')}
+              </Text>
             </Pressable>
             {filters.equipment.data?.map((item) => (
               <Pressable
@@ -140,7 +148,9 @@ export function ExercisesScreen() {
                 onPress={() => setEquipment(item.slug)}
                 style={[styles.chip, equipment === item.slug && styles.selected]}
               >
-                <Text style={styles.chipText}>{item.name}</Text>
+                <Text style={[styles.chipText, equipment === item.slug && styles.selectedText]}>
+                  {item.name}
+                </Text>
               </Pressable>
             ))}
           </ScrollView>
@@ -233,45 +243,48 @@ export function ExercisesScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: palette.background },
-  content: { padding: 24, gap: 12 },
-  header: { gap: 12 },
-  title: { fontSize: 26, fontWeight: '700', color: palette.text },
-  heading: { fontSize: 17, fontWeight: '600', color: palette.text },
-  subtitle: { color: palette.muted, fontSize: 14 },
-  input: {
-    borderWidth: 1,
-    borderColor: palette.border,
-    color: palette.text,
-    backgroundColor: palette.surface,
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    minHeight: 46,
-  },
-  chips: { gap: 8, paddingVertical: 4 },
-  chip: { padding: 10, borderWidth: 1, borderColor: palette.border, borderRadius: 20 },
-  selected: { backgroundColor: palette.primary },
-  chipText: { color: palette.text, fontSize: 13 },
-  card: {
-    padding: 16,
-    backgroundColor: palette.surface,
-    borderWidth: 1,
-    borderColor: palette.border,
-    borderRadius: 12,
-    gap: 6,
-  },
-  error: { color: '#ff6460', fontSize: 14 },
-  errorGroup: { gap: 6 },
-  retryText: { color: palette.text, fontSize: 14, fontWeight: '600' },
-  footer: { gap: 10 },
-  moreButton: {
-    padding: 12,
-    minHeight: 44,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: palette.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
+const useStyles = createThemedStyles((palette) =>
+  StyleSheet.create({
+    container: { flex: 1, backgroundColor: palette.background },
+    content: { padding: 24, gap: 12 },
+    header: { gap: 12 },
+    title: { fontSize: 26, fontWeight: '700', color: palette.text },
+    heading: { fontSize: 17, fontWeight: '600', color: palette.text },
+    subtitle: { color: palette.muted, fontSize: 14 },
+    input: {
+      borderWidth: 1,
+      borderColor: palette.border,
+      color: palette.text,
+      backgroundColor: palette.surface,
+      borderRadius: 10,
+      paddingHorizontal: 12,
+      minHeight: 46,
+    },
+    chips: { gap: 8, paddingVertical: 4 },
+    chip: { padding: 10, borderWidth: 1, borderColor: palette.border, borderRadius: 20 },
+    selected: { backgroundColor: palette.primary },
+    selectedText: { color: palette.primaryForeground },
+    chipText: { color: palette.text, fontSize: 13 },
+    card: {
+      padding: 16,
+      backgroundColor: palette.surface,
+      borderWidth: 1,
+      borderColor: palette.border,
+      borderRadius: 12,
+      gap: 6,
+    },
+    error: { color: palette.error, fontSize: 14 },
+    errorGroup: { gap: 6 },
+    retryText: { color: palette.text, fontSize: 14, fontWeight: '600' },
+    footer: { gap: 10 },
+    moreButton: {
+      padding: 12,
+      minHeight: 44,
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: palette.border,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+  }),
+);
