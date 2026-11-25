@@ -13,6 +13,7 @@ function allScopes() {
     web: true,
     landing: true,
     admin: true,
+    adminBrowser: true,
     trainer: true,
     mobile: true,
     client: true,
@@ -33,6 +34,7 @@ export function classifyChangedPaths(paths, { forceFull = false } = {}) {
     web: false,
     landing: false,
     admin: false,
+    adminBrowser: false,
     trainer: false,
     mobile: false,
     client: false,
@@ -95,6 +97,19 @@ export function classifyChangedPaths(paths, { forceFull = false } = {}) {
 
     if (path.startsWith('apps/api/')) {
       selected.api = true;
+      // The Admin browser smoke exercises the API's cookie and session boundary.
+      selected.adminBrowser ||=
+        path.startsWith('apps/api/src/modules/auth/') ||
+        path.startsWith('apps/api/src/common/auth/') ||
+        [
+          'apps/api/src/app.module.ts',
+          'apps/api/src/main.ts',
+          'apps/api/src/common/config/env.schema.ts',
+          'apps/api/src/common/config/http.config.ts',
+          'apps/api/prisma/schemas/mfa.prisma',
+          'apps/api/prisma/schemas/session.prisma',
+          'apps/api/test/support/seed-admin-browser.ts',
+        ].includes(path);
       if (path === 'apps/api/package.json') selected.deps = true;
       continue;
     }
@@ -192,6 +207,7 @@ export function classifyChangedPaths(paths, { forceFull = false } = {}) {
     return { ...allScopes(), redis: selected.redis };
   }
 
+  selected.adminBrowser ||= selected.admin;
   selected.workspaces =
     selected.api ||
     selected.web ||

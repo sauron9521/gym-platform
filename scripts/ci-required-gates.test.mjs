@@ -3,6 +3,8 @@ import { spawnSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { test } from 'vitest';
 
+import { classifyChangedPaths } from './ci-select.mjs';
+
 const workflow = readFileSync(new URL('../.github/workflows/ci.yml', import.meta.url), 'utf8');
 const quality = workflow.split('  quality:\n')[1]?.split('\n  api-coverage:\n')[0];
 const apiJobs = [
@@ -20,7 +22,8 @@ test('required Quality gate waits for every API operational job without changing
   assert.match(quality, /if: always\(\)/);
   assert.match(quality, /API_REQUIRED: \$\{\{ needs\.changes\.outputs\.api \}\}/);
   assert.ok(quality.includes('      - admin-browser-e2e\n'));
-  assert.ok(quality.includes('ADMIN_REQUIRED: ' + '$' + '{{ needs.changes.outputs.admin }}'));
+  assert.match(workflow, /admin_browser: \$\{\{ steps\.select\.outputs\.adminBrowser \}\}/);
+  assert.match(quality, /ADMIN_REQUIRED: \$\{\{ needs\.changes\.outputs\.admin_browser \}\}/);
   assert.ok(quality.includes('ADMIN_E2E_RESULT: ' + '$' + '{{ needs.admin-browser-e2e.result }}'));
   for (const [job, status] of apiJobs) {
     assert.ok(quality.includes('      - ' + job + '\n'), job + ' must be a job dependency');
@@ -43,6 +46,15 @@ test('required Quality gate fails closed for API errors and checks expected skip
     .join('\n');
   assert.ok(script, 'Required Quality shell script missing');
 
+  const ordinaryApi = classifyChangedPaths([
+    'apps/api/src/modules/exercises/services/exercises.service.ts',
+  ]);
+  const authApi = classifyChangedPaths([
+    'apps/api/src/modules/auth/controllers/sessions.controller.ts',
+  ]);
+  assert.equal(ordinaryApi.adminBrowser, false);
+  assert.equal(authApi.adminBrowser, true);
+
   const baseline = {
     CHANGE_DETECTION_RESULT: 'success',
     QUALITY_WORKSPACES_RESULT: 'success',
@@ -51,7 +63,7 @@ test('required Quality gate fails closed for API errors and checks expected skip
     WINDOWS_RESULT: 'skipped',
     WEB_REQUIRED: 'false',
     WEB_E2E_RESULT: 'skipped',
-    ADMIN_REQUIRED: 'false',
+    ADMIN_REQUIRED: String(ordinaryApi.adminBrowser),
     ADMIN_E2E_RESULT: 'skipped',
     DEPS_REQUIRED: 'false',
     SECURITY_RESULT: 'skipped',
@@ -59,7 +71,7 @@ test('required Quality gate fails closed for API errors and checks expected skip
     LANDING_E2E_RESULT: 'skipped',
     MOBILE_REQUIRED: 'false',
     MOBILE_IOS_DEV_RESULT: 'skipped',
-    API_REQUIRED: 'true',
+    API_REQUIRED: String(ordinaryApi.api),
     ...Object.fromEntries(apiJobs.map(([, status]) => [status, 'success'])),
   };
   const exitStatus = (overrides = {}) => {
@@ -71,15 +83,19 @@ test('required Quality gate fails closed for API errors and checks expected skip
     return run.status;
   };
 
-  assert.equal(exitStatus(), 0, 'passing API jobs should allow merge');
+  assert.equal(exitStatus(), 0, 'ordinary API changes must allow the expected Admin skip');
+  const authScope = {
+    API_REQUIRED: String(authApi.api),
+    ADMIN_REQUIRED: String(authApi.adminBrowser),
+  };
   assert.equal(
-    exitStatus({ ADMIN_REQUIRED: 'true', ADMIN_E2E_RESULT: 'success' }),
+    exitStatus({ ...authScope, ADMIN_E2E_RESULT: 'success' }),
     0,
     'successful Admin Chromium job must allow merge',
   );
   for (const invalid of ['failure', 'cancelled', 'skipped', '']) {
     assert.notEqual(
-      exitStatus({ ADMIN_REQUIRED: 'true', ADMIN_E2E_RESULT: invalid }),
+      exitStatus({ ...authScope, ADMIN_E2E_RESULT: invalid }),
       0,
       'Admin browser gate must fail closed for ' + invalid,
     );
