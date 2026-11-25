@@ -129,4 +129,31 @@ describe('native sign-in uk/en localization without changing auth behavior', () 
     await waitFor(() => expect(retryVerification).toHaveBeenCalledTimes(1));
     expect(signIn).not.toHaveBeenCalled();
   });
+  it('disables sign-in and recovery while checking a session, then handles rejection safely', async () => {
+    let rejectRecovery: (error: Error) => void = () => undefined;
+    retryVerification.mockImplementationOnce(
+      () =>
+        new Promise((_resolve, reject) => {
+          rejectRecovery = reject;
+        }),
+    );
+    const view = await renderScreen('en', true);
+    await fireEvent.press(view.getByLabelText('Retry session verification'));
+    await waitFor(() => {
+      expect(view.getByTestId('sign-in-email').props.editable).toBe(false);
+      expect(view.getByTestId('sign-in-password').props.editable).toBe(false);
+      expect(
+        view.getByRole('button', { name: 'Retry session verification' }).props.accessibilityState
+          .disabled,
+      ).toBe(true);
+    });
+    expect(retryVerification).toHaveBeenCalledTimes(1);
+    rejectRecovery(new Error('SECRET_RECOVERY_RESPONSE'));
+    await waitFor(() => {
+      expect(view.getByText('Could not sign in. Try again.')).toBeTruthy();
+      expect(view.getByTestId('sign-in-email').props.editable).toBe(true);
+    });
+    expect(view.queryByText('SECRET_RECOVERY_RESPONSE')).toBeNull();
+    expect(signIn).not.toHaveBeenCalled();
+  });
 });
