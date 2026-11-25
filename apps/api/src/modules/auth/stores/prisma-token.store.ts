@@ -17,7 +17,11 @@ import {
 } from '../selects/auth-token.select.js';
 import { toEmailTokenRecord, toRefreshTokenRecord } from '../mappers/auth-token.mapper.js';
 import type { AuthConsumedEmailTokenRow } from '../types/auth-store.types.js';
-import { lockActiveCredentialOwner } from './lock-active-credential-owner.js';
+import { PASSWORD_ONLY_OWNER_FILTER } from '#src/common/auth/password-only-owner.filter';
+import {
+  assertPasswordOnlyCredentialOwner,
+  lockActiveCredentialOwner,
+} from './lock-active-credential-owner.js';
 
 /** PostgreSQL-backed stores for opaque refresh tokens and email links. */
 @Injectable()
@@ -33,7 +37,10 @@ export class PrismaTokenStore implements RefreshTokenStore, EmailTokenStore {
 
   async getRefreshToken(id: string): Promise<RefreshTokenRecord | undefined> {
     const row = await this.prisma.refreshToken.findUnique({
-      where: { id, user: { deletedAt: null, status: 'ACTIVE' } },
+      where: {
+        id,
+        user: { deletedAt: null, status: 'ACTIVE', ...PASSWORD_ONLY_OWNER_FILTER },
+      },
       select: authRefreshTokenSelect,
     });
 
@@ -43,6 +50,7 @@ export class PrismaTokenStore implements RefreshTokenStore, EmailTokenStore {
   async saveRefreshToken(record: RefreshTokenRecord): Promise<void> {
     await this.prisma.$transaction(async (tx) => {
       await lockActiveCredentialOwner(tx, record.userId);
+      await assertPasswordOnlyCredentialOwner(tx, record.userId);
       // Lock order: user row, then refresh-family row.
       // Ensure the family exists before acquiring a row lock. A preceding
       // upsert with update: {} may be a plain read and does NOT serialize
@@ -90,7 +98,11 @@ export class PrismaTokenStore implements RefreshTokenStore, EmailTokenStore {
   async markRefreshTokenUsed(id: string, at: Date): Promise<boolean> {
     // One conditional writing a read followed by update is unsafe under races.
     const result = await this.prisma.refreshToken.updateMany({
-      where: { id, usedAt: null, user: { deletedAt: null, status: 'ACTIVE' } },
+      where: {
+        id,
+        usedAt: null,
+        user: { deletedAt: null, status: 'ACTIVE', ...PASSWORD_ONLY_OWNER_FILTER },
+      },
       data: { usedAt: at },
     });
 
