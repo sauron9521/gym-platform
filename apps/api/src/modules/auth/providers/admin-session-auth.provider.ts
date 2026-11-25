@@ -47,10 +47,14 @@ export class AdminSessionAuth extends AdminSessionCookieProvider {
     }
 
     const user = await this.users.findUserById(record.userId);
-    if (!user || user.role !== 'ADMIN') {
+    if (!user) {
       await this.cookies.sessions.discard(record.id);
       return null;
     }
+    // Preserve the legacy authentication/authorization split: the route
+    // guard returns 403 for a demoted password-only principal. A scoped MFA
+    // session additionally requires the current Admin role at this boundary.
+    if (record.mfa === 'verified' && user.role !== 'ADMIN') return null;
     return { user, session: record, mfa: record.mfa };
   }
 }
