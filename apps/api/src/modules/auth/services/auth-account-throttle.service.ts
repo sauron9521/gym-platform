@@ -54,6 +54,20 @@ export const AUTH_ACCOUNT_THROTTLE_POLICIES = {
     limit: 5,
     ttlMs: 15 * 60 * 1_000,
   },
+  adminMfaReplacementBegin: {
+    namespace: 'auth:admin:mfa:replacement-begin:v1\0',
+    keyPrefix: 'admin-mfa-replacement-begin',
+    throttlerName: 'admin-mfa-replacement-begin',
+    limit: 5,
+    ttlMs: 15 * 60 * 1_000,
+  },
+  adminMfaReplacementConfirm: {
+    namespace: 'auth:admin:mfa:replacement-confirm:v1\0',
+    keyPrefix: 'admin-mfa-replacement-confirm',
+    throttlerName: 'admin-mfa-replacement-confirm',
+    limit: 5,
+    ttlMs: 15 * 60 * 1_000,
+  },
   verificationResend: {
     namespace: 'auth:verification:resend:user:v1\0',
     keyPrefix: 'verification-resend',
