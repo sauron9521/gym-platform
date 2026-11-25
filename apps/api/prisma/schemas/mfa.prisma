@@ -35,3 +35,18 @@ model MfaFailure {
   @@index([userId, occurredAt])
   @@map("mfa_failures")
 }
+
+// Append-only lifecycle evidence, retained independently from account deletion.
+enum MfaLifecycleAction {
+  FIRST_TOTP_CONFIRMED
+}
+
+model MfaLifecycleAudit {
+  id String @id @default(uuid(4))
+  userId String @map("user_id")
+  action MfaLifecycleAction
+  occurredAt DateTime @default(now()) @map("occurred_at") @db.Timestamptz(3)
+
+  @@index([userId, occurredAt(sort: Desc)])
+  @@map("mfa_lifecycle_audit")
+}

@@ -26,6 +26,13 @@ export const AUTH_ACCOUNT_THROTTLE_POLICIES = {
     limit: 5,
     ttlMs: 15 * 60 * 1_000,
   },
+  adminMfaConfirmation: {
+    namespace: 'auth:admin:mfa:confirmation:v1\0',
+    keyPrefix: 'admin-mfa-confirmation',
+    throttlerName: 'admin-mfa-confirmation',
+    limit: 5,
+    ttlMs: 15 * 60 * 1_000,
+  },
   verificationResend: {
     namespace: 'auth:verification:resend:user:v1\0',
     keyPrefix: 'verification-resend',

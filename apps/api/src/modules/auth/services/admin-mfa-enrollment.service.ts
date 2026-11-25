@@ -59,8 +59,17 @@ async function readAdmin(db: Prisma.TransactionClient, principal: AdminPrincipal
   return { user: row.user, session };
 }
 
+async function lockAdminSession(tx: Prisma.TransactionClient, principal: AdminPrincipal) {
+  await tx.$queryRaw`
+    SELECT "id" FROM "sessions"
+    WHERE "id" = ${principal.sessionId} AND "user_id" = ${principal.userId}
+    FOR UPDATE
+  `;
+  return readAdmin(tx, principal);
+}
+
 /**
- * Internal first-enrollment staging only. The principal must come from the
+ * Internal first-enrollment staging and confirmation. The principal must come from the
  * server's validated Admin cookie, never a body or header supplied identity.
  * No controller may expose this before confirmation/recovery and login exist.
  */
@@ -74,11 +83,14 @@ export class AdminMfaEnrollmentService {
     @Inject(ConfigService) private readonly config: AppConfigService,
   ) {}
 
-  async begin(principal: AdminPrincipal, password: string) {
+  private encryption() {
     const keyring = this.config.get('MFA_ENCRYPTION_KEYS');
     if (!keyring) throw new ServiceUnavailableException('MFA enrollment unavailable');
-    const encryption = createMfaEncryptionOptions(keyring, this.config.getOrThrow('JWT_SECRET'));
+    return createMfaEncryptionOptions(keyring, this.config.getOrThrow('JWT_SECRET'));
+  }
 
+  async begin(principal: AdminPrincipal, password: string) {
+    const encryption = this.encryption();
     const initial = await readAdmin(this.prisma, principal);
     await this.throttle.assertAllowed(
       principal.userId,
@@ -92,12 +104,7 @@ export class AdminMfaEnrollmentService {
     return this.store.withLockedOwner(principal.userId, async (tx, store) => {
       // Account row is already locked. Lock the exact persisted session so
       // a concurrent sign-out or revocation cannot pass the final check.
-      await tx.$queryRaw`
-        SELECT "id" FROM "sessions"
-        WHERE "id" = ${principal.sessionId} AND "user_id" = ${principal.userId}
-        FOR UPDATE
-      `;
-      const current = await readAdmin(tx, principal);
+      const current = await lockAdminSession(tx, principal);
       if (current.user.passwordHash !== initial.user.passwordHash) {
         throw new ForbiddenException('Administrative enrollment unavailable');
       }
@@ -135,6 +142,74 @@ export class AdminMfaEnrollmentService {
       });
       // A plaintext URI is returned only to this caller, never persisted or logged.
       return { ...enrollment, expiresAt };
+    });
+  }
+
+  /**
+   * No HTTP route: activation must stay gated until every sign-in path
+   * enforces enrolled factors. Failed proof returns null INSIDE the transaction
+   * so the library's durable attempt counter is committed, not rolled back.
+   */
+  async confirm(
+    principal: AdminPrincipal,
+    code: string,
+  ): Promise<{ recoveryCodes: string[] } | null> {
+    const encryption = this.encryption();
+    await readAdmin(this.prisma, principal);
+    await this.throttle.assertAllowed(
+      principal.userId,
+      AUTH_ACCOUNT_THROTTLE_POLICIES.adminMfaConfirmation,
+    );
+    if (typeof code !== 'string' || !/^\d{6}$/.test(code)) return null;
+
+    return this.store.withLockedOwner(principal.userId, async (tx, store) => {
+      await lockAdminSession(tx, principal);
+      const pending = await tx.mfaAuthenticator.findUnique({ where: { userId: principal.userId } });
+      if (
+        !pending ||
+        pending.confirmed ||
+        pending.pendingSecret !== null ||
+        pending.enrollmentSessionId !== principal.sessionId ||
+        !pending.enrollmentExpiresAt ||
+        pending.enrollmentExpiresAt.getTime() <= Date.now()
+      ) {
+        throw new ForbiddenException('Administrative enrollment unavailable');
+      }
+
+      const storage = new AuthenticationStorage();
+      storage.registerSource({ mfa: store });
+      const mfa = new MfaService(storage, { mfa: { encryption, issuer: 'OVRANTO' } });
+      if (!(await mfa.confirm(principal.userId, code))) return null;
+      const recoveryCodes = await mfa.generateRecoveryCodes(principal.userId);
+
+      // Recheck expiry after the recovery-code hashing work. Any exception
+      // rolls back activation, replay claim, codes, audit and revocation.
+      await readAdmin(tx, principal);
+      const fence = new Date();
+      if (pending.enrollmentExpiresAt <= fence) {
+        throw new ForbiddenException('Administrative enrollment unavailable');
+      }
+
+      await tx.mfaAuthenticator.update({
+        where: { userId: principal.userId },
+        data: { enrollmentSessionId: null, enrollmentExpiresAt: null },
+      });
+      // Factors belong to the shared identity. Revoke ALL prior credentials,
+      // including the enrollment session; do not upgrade an old cookie in place.
+      await tx.user.update({ where: { id: principal.userId }, data: { authInvalidatedAt: fence } });
+      await tx.session.deleteMany({ where: { userId: principal.userId } });
+      await tx.refreshTokenFamily.updateMany({
+        where: { userId: principal.userId, revokedAt: null },
+        data: { revokedAt: fence },
+      });
+      await tx.refreshToken.updateMany({
+        where: { userId: principal.userId, revoked: false },
+        data: { revoked: true },
+      });
+      await tx.mfaLifecycleAudit.create({
+        data: { userId: principal.userId, action: 'FIRST_TOTP_CONFIRMED' },
+      });
+      return { recoveryCodes };
     });
   }
 }
