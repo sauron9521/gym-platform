@@ -120,9 +120,9 @@ describe('AdminMfaRecoveryService', () => {
           user: { ...current.user, authInvalidatedAt: new Date() },
         });
       } else {
-        tx.session.findFirst.mockResolvedValueOnce(row).mockResolvedValueOnce(
-          kind === 'missing' ? null : current,
-        );
+        tx.session.findFirst
+          .mockResolvedValueOnce(row)
+          .mockResolvedValueOnce(kind === 'missing' ? null : current);
       }
       expect(await service.regenerate(token, 'password', '123456')).toBeNull();
       expect(verify).not.toHaveBeenCalled();
