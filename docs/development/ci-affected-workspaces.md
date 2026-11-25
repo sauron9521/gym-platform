@@ -25,6 +25,8 @@ The table describes the explicit application/client scopes returned by the selec
 | Known documentation paths (see below)                                              | No application scopes                     | No                          | No                                               |
 | Root lockfile, root config, CI, non-doc infra, `packages/domain/**`, unknown paths | Full                                      | Yes                         | Yes                                              |
 
+The explicitly listed monitoring shadow fixtures, evidence scripts and platform test use the required offline Alloy, Compose and Prometheus validation. A PR limited to those files and documentation skips application checks. The same validation runs for full main and manual CI, and for PRs changing the selector, the main CI workflow or the manual shadow workflow. Production monitoring, unknown paths and CI files still select full regression.
+
 For mixed PRs, selected scopes are unioned. Landing is not an OpenAPI consumer. Empty diffs select full scope; invalid or unavailable base/head commits fail classification, and required result gates fail closed. Renames are compared as deletion and addition, so both old and new paths contribute to scope.
 
 The documentation exemptions cover `docs/**`, root Markdown files, `infra/**/*.md`, `apps/mobile/docs/**/*.md`, `apps/api/test/README.md`, and the top-level README in API, Athlete Web, Admin, Trainer, Landing, Mobile and API Client. Other app-local Markdown selects its application. Unknown package paths fall back to full checks. In a mixed PR, each changed path is classified independently.

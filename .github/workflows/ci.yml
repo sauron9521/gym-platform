@@ -34,6 +34,7 @@ jobs:
       client: ${{ steps.select.outputs.client }}
       deps: ${{ steps.select.outputs.deps }}
       workspaces: ${{ steps.select.outputs.workspaces }}
+      monitoring_shadow: ${{ steps.select.outputs.monitoringShadow }}
       redis: ${{ steps.select.outputs.redis }}
 
     steps:
@@ -456,6 +457,35 @@ jobs:
           fi
           pnpm exec turbo run build "${filters[@]}"
 
+  monitoring-shadow:
+    name: Monitoring shadow / Offline validation
+    needs: changes
+    if: needs.changes.outputs.monitoring_shadow == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      ALLOY_IMAGE: grafana/alloy:v1.22.0@sha256:9acc2529bc1edb7f5b2bd801dd8334ebc80c158e3a9e5526ecd7c9a273d43189
+      PROM_IMAGE: prom/prometheus:v3.16.0@sha256:e04987641b57704f408e31f6373ba4138ecf27cb4a165d24aabb6c38fddd0f06
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Validate shadow Compose, Alloy and Prometheus rules offline
+        run: |
+          set -euo pipefail
+          shadow_dir="$PWD/ops/monitoring/shadow"
+          docker compose -f "$shadow_dir/fixture.compose.yml" --profile resource-shadow config --quiet
+
+          validate=(docker run --rm --network none --cap-drop ALL
+            --security-opt no-new-privileges --read-only
+            --volume "$shadow_dir:/shadow:ro")
+          "${validate[@]}" --entrypoint /bin/alloy "$ALLOY_IMAGE" validate /shadow/config.alloy
+          "${validate[@]}" --entrypoint /bin/promtool "$PROM_IMAGE" check config /shadow/prometheus.yml
+          "${validate[@]}" --tmpfs /tmp:rw,noexec,nosuid,nodev,size=64m,mode=1777 \
+            --entrypoint /bin/promtool "$PROM_IMAGE" test rules /shadow/shadow.test.yml
+
   quality:
     name: Quality / Node 24
     needs:
@@ -473,6 +503,7 @@ jobs:
       - api-readiness
       - api-migration
       - api-observability
+      - monitoring-shadow
       - api-docker
     if: always()
     runs-on: ubuntu-latest
@@ -502,6 +533,8 @@ jobs:
           API_READINESS_RESULT: ${{ needs.api-readiness.result }}
           API_MIGRATION_RESULT: ${{ needs.api-migration.result }}
           API_OBSERVABILITY_RESULT: ${{ needs.api-observability.result }}
+          MONITORING_SHADOW_REQUIRED: ${{ needs.changes.outputs.monitoring_shadow }}
+          MONITORING_SHADOW_RESULT: ${{ needs.monitoring-shadow.result }}
           API_DOCKER_RESULT: ${{ needs.api-docker.result }}
         run: |
           set -euo pipefail
@@ -543,6 +576,12 @@ jobs:
           else
             test "$MOBILE_REQUIRED" = false
             test "$MOBILE_IOS_DEV_RESULT" = skipped
+          fi
+          if [ "$MONITORING_SHADOW_REQUIRED" = true ]; then
+            test "$MONITORING_SHADOW_RESULT" = success
+          else
+            test "$MONITORING_SHADOW_REQUIRED" = false
+            test "$MONITORING_SHADOW_RESULT" = skipped
           fi
           # API E2E and coverage remain enforced by the separate required API E2E gate.
           if [ "$API_REQUIRED" = true ]; then

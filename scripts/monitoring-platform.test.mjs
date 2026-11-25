@@ -89,6 +89,27 @@ test('CI only validates monitoring offline and never enables privileged monitori
   assert.doesNotMatch(ci, /systemctl enable|systemctl start|docker compose up.*production/);
 });
 
+test('shadow validation pins the reviewed images and isolates the offline validators', async () => {
+  const ci = await read('.github/workflows/ci.yml');
+  const manual = await read('.github/workflows/monitoring-resource-shadow.yml');
+  const job = ci.split('  monitoring-shadow:\n')[1]?.split('\n  quality:\n')[0];
+  assert.ok(job);
+  assert.match(job, /if: needs\.changes\.outputs\.monitoring_shadow == 'true'/);
+  for (const name of ['ALLOY_IMAGE', 'PROM_IMAGE']) {
+    const line = manual.split('\n').find((entry) => entry.trimStart().startsWith(name + ': '));
+    assert.ok(line);
+    assert.ok(job.includes(line), name);
+  }
+  assert.match(job, /config --quiet/);
+  assert.match(job, /--network none --cap-drop ALL/);
+  assert.match(job, /--security-opt no-new-privileges --read-only/);
+  assert.match(job, /--volume "\$shadow_dir:\/shadow:ro"/);
+  assert.match(job, /validate \/shadow\/config\.alloy/);
+  assert.match(job, /check config \/shadow\/prometheus\.yml/);
+  assert.match(job, /test rules \/shadow\/shadow\.test\.yml/);
+  assert.doesNotMatch(job, /--privileged|docker\.sock|\/rootfs|docker compose[^\n]* up/);
+});
+
 test('manual shadow collectors use compatible single-file Docker log rotation', async () => {
   const workflow = await read('.github/workflows/monitoring-resource-shadow.yml');
   const logOptions = workflow.split('\n').filter((line) => line.includes('--log-driver local'));

@@ -6,6 +6,24 @@ import { fileURLToPath } from 'node:url';
 const repositoryRoot = fileURLToPath(new URL('../', import.meta.url));
 const commitSha = /^[0-9a-f]{40}$/i;
 
+const monitoringShadowPaths = new Set([
+  'ops/monitoring/shadow/config.alloy',
+  'ops/monitoring/shadow/fixture.compose.yml',
+  'ops/monitoring/shadow/prometheus.yml',
+  'ops/monitoring/shadow/shadow.rules.yml',
+  'ops/monitoring/shadow/shadow.test.yml',
+  'scripts/monitoring-platform.test.mjs',
+  'scripts/monitoring-shadow-evidence.mjs',
+  'scripts/monitoring-shadow-evidence.test.mjs',
+]);
+
+const monitoringShadowTriggers = new Set([
+  ...monitoringShadowPaths,
+  '.github/workflows/ci.yml',
+  '.github/workflows/monitoring-resource-shadow.yml',
+  'scripts/ci-select.mjs',
+]);
+
 function allScopes() {
   return {
     full: true,
@@ -19,6 +37,7 @@ function allScopes() {
     client: true,
     deps: true,
     workspaces: true,
+    monitoringShadow: true,
     redis: false,
   };
 }
@@ -40,6 +59,9 @@ export function classifyChangedPaths(paths, { forceFull = false } = {}) {
     client: false,
     deps: false,
     workspaces: false,
+    monitoringShadow: paths.some(
+      (raw) => typeof raw === 'string' && monitoringShadowTriggers.has(raw.replaceAll('\\', '/')),
+    ),
     redis: paths.some(
       (raw) =>
         typeof raw === 'string' &&
@@ -83,6 +105,9 @@ export function classifyChangedPaths(paths, { forceFull = false } = {}) {
     ) {
       continue;
     }
+
+    // The isolated shadow pilot has its own offline validators.
+    if (monitoringShadowPaths.has(path)) continue;
 
     // The committed OpenAPI contract affects every generated API-client consumer.
     if (path.startsWith('apps/api/openapi/')) {
@@ -194,7 +219,11 @@ export function classifyChangedPaths(paths, { forceFull = false } = {}) {
     if (path.startsWith('tooling/config/')) {
       // Adding a package manifest changes the workspace topology.
       if (path === 'tooling/config/package.json') {
-        return { ...allScopes(), redis: selected.redis };
+        return {
+          ...allScopes(),
+          monitoringShadow: selected.monitoringShadow,
+          redis: selected.redis,
+        };
       }
       selected.web = true;
       selected.landing = true;
@@ -204,7 +233,7 @@ export function classifyChangedPaths(paths, { forceFull = false } = {}) {
     }
 
     // Root manifests, lockfile, CI, infra and unknown files invalidate all.
-    return { ...allScopes(), redis: selected.redis };
+    return { ...allScopes(), monitoringShadow: selected.monitoringShadow, redis: selected.redis };
   }
 
   selected.adminBrowser ||= selected.admin;

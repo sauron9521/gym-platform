@@ -32,6 +32,7 @@ test('Web-only change skips API E2E, Docker and Mobile', () => {
     client: false,
     deps: false,
     workspaces: true,
+    monitoringShadow: false,
     redis: false,
   });
 });
@@ -49,6 +50,7 @@ test('Landing-only changes check landing without requiring API or Web browser su
     client: false,
     deps: false,
     workspaces: true,
+    monitoringShadow: false,
     redis: false,
   });
 
@@ -145,6 +147,7 @@ test('OpenAPI changes check every typed API consumer without full scope', () => 
     client: true,
     deps: false,
     workspaces: true,
+    monitoringShadow: false,
     redis: false,
   });
   assert.deepEqual(classifyChangedPaths(['README.md', 'apps/api/openapi/openapi.json']), actual);
@@ -189,6 +192,7 @@ test('known shared packages select consumers and avoid unrelated API E2E', () =>
       client: false,
       deps: false,
       workspaces: true,
+      monitoringShadow: false,
       redis: false,
     });
   }
@@ -209,6 +213,7 @@ test('shared locale changes select API mail and all UI consumers', () => {
       client: false,
       deps: false,
       workspaces: true,
+      monitoringShadow: false,
       redis: false,
     });
   }
@@ -336,6 +341,7 @@ test('application handbooks and nested infrastructure Markdown skip expensive PR
     client: false,
     deps: false,
     workspaces: false,
+    monitoringShadow: false,
     redis: false,
   });
 
@@ -449,6 +455,68 @@ test('root dependencies and cross-cutting changes force full regression', () => 
   }
 });
 
+test('known shadow fixtures and tooling activate offline monitoring without application checks', () => {
+  for (const path of [
+    'ops/monitoring/shadow/config.alloy',
+    'ops/monitoring/shadow/fixture.compose.yml',
+    'ops/monitoring/shadow/prometheus.yml',
+    'ops/monitoring/shadow/shadow.rules.yml',
+    'ops/monitoring/shadow/shadow.test.yml',
+    'scripts/monitoring-platform.test.mjs',
+    'scripts/monitoring-shadow-evidence.mjs',
+    'scripts/monitoring-shadow-evidence.test.mjs',
+    'ops\\monitoring\\shadow\\config.alloy',
+  ]) {
+    const selected = classifyChangedPaths([path, 'docs/operations/production-observability.md']);
+    assert.deepEqual(
+      Object.entries(selected)
+        .filter(([, enabled]) => enabled)
+        .map(([key]) => key),
+      ['monitoringShadow'],
+      path,
+    );
+  }
+});
+
+test('mixed changes preserve shadow checks and the other required scopes', () => {
+  const shadow = 'ops/monitoring/shadow/config.alloy';
+  const mixed = classifyChangedPaths([
+    'apps/api/src/modules/exercises/services/exercises.service.ts',
+    shadow,
+  ]);
+  assert.equal(mixed.monitoringShadow, true);
+  assert.equal(mixed.api, true);
+  assert.equal(mixed.full, false);
+
+  for (const path of [
+    'ops/monitoring/alerts.rules.yml',
+    'ops/monitoring/shadow/unknown.yml',
+    'pnpm-lock.yaml',
+  ]) {
+    const standalone = classifyChangedPaths([path]);
+    assert.equal(standalone.full, true, path);
+    assert.equal(standalone.monitoringShadow, false, path);
+    for (const paths of [
+      [path, shadow],
+      [shadow, path],
+    ]) {
+      const selected = classifyChangedPaths(paths);
+      assert.equal(selected.full, true, path);
+      assert.equal(selected.monitoringShadow, true, path);
+    }
+  }
+
+  for (const path of [
+    '.github/workflows/ci.yml',
+    '.github/workflows/monitoring-resource-shadow.yml',
+    'scripts/ci-select.mjs',
+  ]) {
+    const selected = classifyChangedPaths([path]);
+    assert.equal(selected.full, true, path);
+    assert.equal(selected.monitoringShadow, true, path);
+  }
+});
+
 test('empty, malformed and escaped paths fail closed', () => {
   for (const files of [[], [''], ['../../foo'], ['/tmp/evil']]) {
     const selected = classifyChangedPaths(files);
@@ -460,6 +528,7 @@ test('empty, malformed and escaped paths fail closed', () => {
 test('main pushes and manual dispatch always use full regression', () => {
   const actual = selectFromGitHubEnvironment({ CI_FORCE_ALL: 'true' });
   assert.equal(actual.adminBrowser, true);
+  assert.equal(actual.monitoringShadow, true);
   assert.equal(actual.full, true);
   assert.equal(actual.api, true);
   assert.equal(actual.web, true);
