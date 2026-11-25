@@ -17,6 +17,8 @@ const token = 'A'.repeat(43);
 const id = createHash('sha256').update(token).digest('base64url');
 const keyring = createHash('sha256').update('unit-test challenge key').digest('base64url');
 
+type LockedWork = (client: Prisma.TransactionClient, store: MfaStore) => Promise<unknown>;
+
 function setup() {
   const now = new Date();
   const row = {
@@ -41,11 +43,8 @@ function setup() {
   };
   const mfaStore = new InMemoryMfaStore();
   const factors = {
-    withLockedOwner: vi.fn(
-      async (
-        _owner: string,
-        work: (client: Prisma.TransactionClient, store: MfaStore) => Promise<unknown>,
-      ) => work(tx as unknown as Prisma.TransactionClient, mfaStore),
+    withLockedOwner: vi.fn((_owner: string, work: LockedWork) =>
+      work(tx as unknown as Prisma.TransactionClient, mfaStore),
     ),
   };
   const passwords = { verify: vi.fn().mockResolvedValue(true) };
@@ -76,7 +75,8 @@ describe('AdminMfaChallengeService', () => {
     const { service, config, tx } = setup();
     config.get.mockReturnValue(undefined);
     await expect(service.begin(userId, 'password')).rejects.toMatchObject({ status: 503 });
-    await expect(service.complete(token, { code: '123456' })).rejects.toMatchObject({ status: 503 });
+    const completion = service.complete(token, { code: '123456' });
+    await expect(completion).rejects.toMatchObject({ status: 503 });
     expect(tx.user.findUnique).not.toHaveBeenCalled();
   });
 
@@ -114,7 +114,8 @@ describe('AdminMfaChallengeService', () => {
     const result = await service.begin(userId, 'password');
     expect(result?.session.mfa).toBe('pending');
     expect(result?.cookie).toContain('__Host-admin-sid=');
-    expect(result!.session.expiresAt.getTime() - result!.session.createdAt.getTime()).toBe(300_000);
+    const { session } = result!;
+    expect(session.expiresAt.getTime() - session.createdAt.getTime()).toBe(300_000);
     expect(factors.withLockedOwner).toHaveBeenCalledTimes(1);
     expect(tx.session.create).toHaveBeenCalledWith({
       data: expect.objectContaining({ userId, mfa: 'pending', metadata: { purpose: 'admin' } }),
@@ -183,9 +184,8 @@ describe('AdminMfaChallengeService', () => {
   it.each(['totp', 'recovery'] as const)('rotates after valid %s proof', async (method) => {
     const { service, tx, row } = setup();
     const totp = vi.spyOn(MfaService.prototype, 'verifyTotp').mockResolvedValueOnce(true);
-    const recovery = vi
-      .spyOn(MfaService.prototype, 'verifyRecoveryCode')
-      .mockResolvedValueOnce(true);
+    const recovery = vi.spyOn(MfaService.prototype, 'verifyRecoveryCode');
+    recovery.mockResolvedValueOnce(true);
     const proof = method === 'totp' ? { code: '123456' } : { recoveryCode: 'ABCDE-FGHIJ' };
     const result = await service.complete(token, proof);
     expect(result?.session.mfa).toBe('verified');
@@ -196,13 +196,9 @@ describe('AdminMfaChallengeService', () => {
     expect(tx.session.deleteMany).toHaveBeenCalledWith({
       where: { id, userId, metadata: { path: ['purpose'], equals: 'admin' } },
     });
-    expect(tx.mfaLifecycleAudit.create).toHaveBeenCalledWith({
-      data: {
-        userId,
-        action:
-          method === 'totp' ? 'ADMIN_TOTP_CHALLENGE_VERIFIED' : 'ADMIN_RECOVERY_CHALLENGE_VERIFIED',
-      },
-    });
+    const action =
+      method === 'totp' ? 'ADMIN_TOTP_CHALLENGE_VERIFIED' : 'ADMIN_RECOVERY_CHALLENGE_VERIFIED';
+    expect(tx.mfaLifecycleAudit.create).toHaveBeenCalledWith({ data: { userId, action } });
   });
 
   it('does not commit success if rotation loses the session', async () => {
