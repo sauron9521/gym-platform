@@ -3,6 +3,8 @@ import { fileURLToPath } from 'node:url';
 import dotenv from 'dotenv';
 import { defineConfig } from 'vitest/config';
 
+import { ApiE2eSequencer } from './test/support/e2e-sequencer.js';
+
 dotenv.config({ path: '.env.test' });
 
 export default defineConfig({
@@ -20,5 +22,6 @@ export default defineConfig({
     root: './',
     include: ['test/**/*.e2e-spec.ts'],
     fileParallelism: false,
+    sequence: { sequencer: ApiE2eSequencer },
   },
 });
