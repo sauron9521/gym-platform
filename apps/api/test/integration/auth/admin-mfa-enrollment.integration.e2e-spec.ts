@@ -466,18 +466,17 @@ describe('Internal Admin MFA challenge (PostgreSQL)', () => {
     const pending = await challenge.begin(owner.userId, password);
     expect(pending?.session.mfa).toBe('pending');
     expect(pending?.cookie).toContain('__Host-admin-sid=');
-    expect(
-      pending!.session.expiresAt.getTime() - pending!.session.createdAt.getTime(),
-    ).toBeLessThanOrEqual(300_000);
+    const pendingTtl = pending!.session.expiresAt.getTime() - pending!.session.createdAt.getTime();
+    expect(pendingTtl).toBeLessThanOrEqual(300_000);
     expect(await app.get(PrismaSessionStore).getSession(pending!.session.id)).toBeUndefined();
 
     const verified = await challenge.complete(pending!.token, { code: codeAt(owner.secret) });
     expect(verified?.session.mfa).toBe('verified');
     expect(verified?.token).not.toBe(pending!.token);
     expect(verified?.session.createdAt).toEqual(pending!.session.createdAt);
-    expect(verified!.session.expiresAt.getTime() - verified!.session.createdAt.getTime()).toBe(
-      8 * 60 * 60 * 1000,
-    );
+    const verifiedSession = verified!.session;
+    const verifiedTtl = verifiedSession.expiresAt.getTime() - verifiedSession.createdAt.getTime();
+    expect(verifiedTtl).toBe(8 * 60 * 60 * 1000);
     expect(await prisma.session.findUnique({ where: { id: pending!.session.id } })).toBeNull();
     expect(await app.get(PrismaSessionStore).getSession(verified!.session.id)).toBeUndefined();
     expect(await challenge.complete(pending!.token, { code: codeAt(owner.secret) })).toBeNull();
@@ -549,9 +548,8 @@ describe('Internal Admin MFA challenge (PostgreSQL)', () => {
         'Administrative MFA session rotation failed',
       );
       expect(await prisma.mfaRecoveryCode.count({ where: { userId: owner.userId } })).toBe(10);
-      expect(await prisma.session.findUnique({ where: { id: pending.session.id } })).toMatchObject({
-        mfa: 'pending',
-      });
+      const unchanged = await prisma.session.findUnique({ where: { id: pending.session.id } });
+      expect(unchanged).toMatchObject({ mfa: 'pending' });
     } finally {
       failure.mockRestore();
     }

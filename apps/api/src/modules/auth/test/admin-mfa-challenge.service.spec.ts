@@ -1,6 +1,11 @@
 import { createHash } from 'node:crypto';
 
-import { InMemoryMfaStore, MfaService, SessionService, type MfaStore } from '@nestjs/authentication';
+import {
+  InMemoryMfaStore,
+  MfaService,
+  SessionService,
+  type MfaStore,
+} from '@nestjs/authentication';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import type { Prisma } from '#prisma/client';
@@ -71,9 +76,7 @@ describe('AdminMfaChallengeService', () => {
     const { service, config, tx } = setup();
     config.get.mockReturnValue(undefined);
     await expect(service.begin(userId, 'password')).rejects.toMatchObject({ status: 503 });
-    await expect(service.complete(token, { code: '123456' })).rejects.toMatchObject({
-      status: 503,
-    });
+    await expect(service.complete(token, { code: '123456' })).rejects.toMatchObject({ status: 503 });
     expect(tx.user.findUnique).not.toHaveBeenCalled();
   });
 
@@ -111,9 +114,7 @@ describe('AdminMfaChallengeService', () => {
     const result = await service.begin(userId, 'password');
     expect(result?.session.mfa).toBe('pending');
     expect(result?.cookie).toContain('__Host-admin-sid=');
-    expect(result!.session.expiresAt.getTime() - result!.session.createdAt.getTime()).toBe(
-      300_000,
-    );
+    expect(result!.session.expiresAt.getTime() - result!.session.createdAt.getTime()).toBe(300_000);
     expect(factors.withLockedOwner).toHaveBeenCalledTimes(1);
     expect(tx.session.create).toHaveBeenCalledWith({
       data: expect.objectContaining({ userId, mfa: 'pending', metadata: { purpose: 'admin' } }),
@@ -179,10 +180,12 @@ describe('AdminMfaChallengeService', () => {
     expect(tx.mfaLifecycleAudit.create).not.toHaveBeenCalled();
   });
 
-  it.each(['totp', 'recovery'] as const)('rotates only after successful %s proof', async (method) => {
+  it.each(['totp', 'recovery'] as const)('rotates after valid %s proof', async (method) => {
     const { service, tx, row } = setup();
     const totp = vi.spyOn(MfaService.prototype, 'verifyTotp').mockResolvedValueOnce(true);
-    const recovery = vi.spyOn(MfaService.prototype, 'verifyRecoveryCode').mockResolvedValueOnce(true);
+    const recovery = vi
+      .spyOn(MfaService.prototype, 'verifyRecoveryCode')
+      .mockResolvedValueOnce(true);
     const proof = method === 'totp' ? { code: '123456' } : { recoveryCode: 'ABCDE-FGHIJ' };
     const result = await service.complete(token, proof);
     expect(result?.session.mfa).toBe('verified');
@@ -215,9 +218,9 @@ describe('AdminMfaChallengeService', () => {
   it('throws if the deadline passes while verifying the factor', async () => {
     vi.useFakeTimers();
     const { service, tx, row } = setup();
-    vi.spyOn(MfaService.prototype, 'verifyTotp').mockImplementationOnce(async () => {
+    vi.spyOn(MfaService.prototype, 'verifyTotp').mockImplementationOnce(() => {
       vi.setSystemTime(row.expiresAt);
-      return true;
+      return Promise.resolve(true);
     });
     await expect(service.complete(token, { code: '123456' })).rejects.toThrow(
       'Administrative MFA challenge expired during verification',
