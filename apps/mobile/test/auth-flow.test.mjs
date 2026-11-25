@@ -9,15 +9,17 @@ import {
 } from '../src/features/auth/lib/login-flow.ts';
 
 test('credentials validation rejects malformed emails and whitespace passwords', () => {
-  assert.match(validateMobileCredentials('invalid', 'abc'), /адресу/);
-  assert.match(validateMobileCredentials('valid@example.test', '  '), /пароль/);
+  assert.equal(validateMobileCredentials('invalid', 'abc'), 'invalidEmail');
+  assert.equal(validateMobileCredentials('valid@example.test', '  '), 'invalidPassword');
   assert.equal(validateMobileCredentials(' valid@example.test ', 'pass'), null);
 });
 
 test('auth errors distinguish invalid credentials from throttling', () => {
-  assert.match(getMobileLoginError(401), /Невірна/);
-  assert.match(getMobileLoginError(429), /Забагато/);
-  assert.match(getMobileLoginError(500), /Не вдалося/);
+  assert.equal(getMobileLoginError(400), 'invalidRequest');
+  assert.equal(getMobileLoginError(403), 'accessDenied');
+  assert.equal(getMobileLoginError(401), 'invalidCredentials');
+  assert.equal(getMobileLoginError(429), 'throttled');
+  assert.equal(getMobileLoginError(500), 'failed');
 });
 
 test('native token flow guards protected routes and avoids plaintext storage', () => {
@@ -35,8 +37,8 @@ test('native token flow guards protected routes and avoids plaintext storage', (
 });
 
 test('sign-in failures report the safe failed step, without exposing underlying errors', () => {
-  assert.match(getMobileLoginTransportError('issue'), /запит входу до API/);
-  assert.match(getMobileLoginTransportError('persist'), /зберегти сесію/);
-  assert.match(getMobileLoginTransportError('verify'), /перевірити вхід/);
+  assert.equal(getMobileLoginTransportError('issue'), 'connectionFailed');
+  assert.equal(getMobileLoginTransportError('persist'), 'storageFailed');
+  assert.equal(getMobileLoginTransportError('verify'), 'verificationFailed');
   assert.ok(!getMobileLoginTransportError('issue').includes('token'));
 });

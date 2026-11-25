@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { getFlatMessages, isLocale, resolveLocale, type Locale } from '@gym/i18n';
+import { isLocale, resolveLocale, type Locale } from '@gym/i18n';
+import { getMobileMessages } from './mobile-messages';
 import { getLocales } from 'expo-localization';
 import { IntlProvider } from 'react-intl';
 import {
@@ -43,7 +44,7 @@ export function LocaleProvider({ children }: PropsWithChildren) {
     void AsyncStorage.setItem(STORAGE_KEY, next).catch(() => undefined);
   }, []);
 
-  const messages = useMemo(() => getFlatMessages(locale), [locale]);
+  const messages = useMemo(() => getMobileMessages(locale), [locale]);
   const value = useMemo(() => ({ locale, setLocale }), [locale, setLocale]);
   return (
     <LocaleContext.Provider value={value}>

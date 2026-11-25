@@ -16,6 +16,7 @@ import {
 
 import { signInSchema, type SignInValues } from '@/features/auth/lib/login-flow';
 import { useAuth } from '@/features/auth/model/auth-context';
+import { getMobileAuthErrorMessageId } from '@/shared/i18n/mobile-messages';
 import { palette } from '@/shared/config/theme';
 
 export function SignInScreen() {
@@ -48,16 +49,16 @@ export function SignInScreen() {
       try {
         const result = await signIn(email, password);
         if (!result.success) {
-          setError('root.server', { type: 'server', message: result.message });
+          setError('root.server', { type: 'server', message: result.code });
         }
       } catch {
         setError('root.server', {
           type: 'server',
-          message: t('failed'),
+          message: 'failed',
         });
       }
     },
-    [clearErrors, setError, signIn, t],
+    [clearErrors, setError, signIn],
   );
 
   const submit = async () => {
@@ -67,7 +68,7 @@ export function SignInScreen() {
     try {
       await handleSubmit(onValidSubmit)();
     } catch {
-      setError('root.server', { type: 'server', message: t('failed') });
+      setError('root.server', { type: 'server', message: 'failed' });
     } finally {
       submitLock.current = false;
     }
@@ -81,10 +82,10 @@ export function SignInScreen() {
     try {
       const result = await retryVerification();
       if (!result.success) {
-        setError('root.server', { type: 'server', message: result.message });
+        setError('root.server', { type: 'server', message: result.code });
       }
     } catch {
-      setError('root.server', { type: 'server', message: t('failed') });
+      setError('root.server', { type: 'server', message: 'failed' });
     } finally {
       submitLock.current = false;
       setRecovering(false);
@@ -162,7 +163,7 @@ export function SignInScreen() {
           ) : null}
           {errors.root?.server?.message ? (
             <Text accessibilityRole="alert" style={styles.error}>
-              {errors.root.server.message}
+              {intl.formatMessage({ id: getMobileAuthErrorMessageId(errors.root.server.message) })}
             </Text>
           ) : null}
           <Pressable
