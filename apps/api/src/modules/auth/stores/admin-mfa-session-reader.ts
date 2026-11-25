@@ -7,7 +7,7 @@ import { PrismaService } from '#src/infra/database/index';
 import { toSessionRecord } from '../mappers/auth-session.mapper.js';
 import { authSessionSelect } from '../selects/auth-session.select.js';
 import { ADMIN_MFA_PENDING_TTL_MS } from './admin-mfa-transaction-session.store.js';
-import { adminMfaSessionScope } from './admin-mfa-session-scope.js';
+import { adminMfaSessionScope, readAdminMfaAssurance } from './admin-mfa-session-scope.js';
 
 const enrolledAdmin = {
   role: 'ADMIN',
@@ -36,6 +36,7 @@ export class AdminMfaSessionReader {
     const now = Date.now();
     const fence = row.user.authInvalidatedAt;
     if (
+      !readAdminMfaAssurance(record) ||
       isAdminSessionExpired(record, now) ||
       (fence && record.createdAt <= fence) ||
       (record.mfa === 'pending' && now >= record.createdAt.getTime() + ADMIN_MFA_PENDING_TTL_MS)

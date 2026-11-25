@@ -473,6 +473,11 @@ describe('Internal Admin MFA challenge (PostgreSQL)', () => {
 
     const verified = await challenge.complete(pending!.token, { code: codeAt(owner.secret) });
     expect(verified?.session.mfa).toBe('verified');
+    expect(verified?.session.metadata?.adminMfaMethod).toBe('totp');
+    const persisted = await prisma.session.findUniqueOrThrow({
+      where: { id: verified!.session.id },
+    });
+    expect(persisted.metadata).toMatchObject({ adminMfaMethod: 'totp' });
     expect(verified?.token).not.toBe(pending!.token);
     expect(verified?.session.createdAt).toEqual(pending!.session.createdAt);
     const verifiedSession = verified!.session;
@@ -509,6 +514,12 @@ describe('Internal Admin MFA challenge (PostgreSQL)', () => {
       ]);
       expect(verifier).toHaveBeenCalledTimes(2);
       expect(results.filter(Boolean)).toHaveLength(1);
+      const winner = results.find(Boolean);
+      expect(winner?.session.metadata?.adminMfaMethod).toBe('recovery');
+      const persisted = await prisma.session.findUniqueOrThrow({
+        where: { id: winner!.session.id },
+      });
+      expect(persisted.metadata).toMatchObject({ adminMfaMethod: 'recovery' });
     } finally {
       verifier.mockRestore();
     }
