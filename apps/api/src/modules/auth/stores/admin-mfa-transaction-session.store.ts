@@ -3,7 +3,6 @@ import type { SessionRecord, SessionStore } from '@nestjs/authentication';
 import type { Prisma } from '#prisma/client';
 import { ADMIN_SESSION_PURPOSE } from '#src/common/auth/admin-session-purpose.guard';
 import {
-  ADMIN_SESSION_ABSOLUTE_TTL_MS,
   capAdminSessionExpiry,
   isAdminSessionExpired,
 } from '#src/common/auth/admin-session-lifetime.policy';
@@ -54,15 +53,8 @@ export class AdminMfaTransactionSessionStore implements SessionStore {
     }
     capAdminSessionExpiry(record);
     if (this.state === 'pending') {
-      record.expiresAt = new Date(
-        Math.min(
-          record.expiresAt.getTime(),
-          record.createdAt.getTime() + ADMIN_MFA_PENDING_TTL_MS,
-        ),
-      );
-    } else {
-      // Rotation retains the original password-authentication time.
-      record.expiresAt = new Date(record.createdAt.getTime() + ADMIN_SESSION_ABSOLUTE_TTL_MS);
+      const cap = record.createdAt.getTime() + ADMIN_MFA_PENDING_TTL_MS;
+      if (record.expiresAt.getTime() > cap) record.expiresAt = new Date(cap);
     }
     await this.tx.session.create({
       data: {

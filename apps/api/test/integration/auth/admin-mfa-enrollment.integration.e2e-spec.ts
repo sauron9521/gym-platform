@@ -475,9 +475,9 @@ describe('Internal Admin MFA challenge (PostgreSQL)', () => {
     expect(verified?.session.mfa).toBe('verified');
     expect(verified?.token).not.toBe(pending!.token);
     expect(verified?.session.createdAt).toEqual(pending!.session.createdAt);
-    expect(
-      verified!.session.expiresAt.getTime() - verified!.session.createdAt.getTime(),
-    ).toBe(8 * 60 * 60 * 1000);
+    expect(verified!.session.expiresAt.getTime() - verified!.session.createdAt.getTime()).toBe(
+      8 * 60 * 60 * 1000,
+    );
     expect(await prisma.session.findUnique({ where: { id: pending!.session.id } })).toBeNull();
     expect(await app.get(PrismaSessionStore).getSession(verified!.session.id)).toBeUndefined();
     expect(await challenge.complete(pending!.token, { code: codeAt(owner.secret) })).toBeNull();
@@ -494,11 +494,24 @@ describe('Internal Admin MFA challenge (PostgreSQL)', () => {
     const first = (await challenge.begin(owner.userId, password))!;
     const second = (await challenge.begin(owner.userId, password))!;
     const proof = { recoveryCode: owner.recoveryCodes[0]! };
-    const results = await Promise.all([
-      challenge.complete(first.token, proof),
-      challenge.complete(second.token, proof),
-    ]);
-    expect(results.filter(Boolean)).toHaveLength(1);
+    expect(first.session.id).not.toBe(second.session.id);
+    expect(
+      await prisma.session.count({
+        where: { id: { in: [first.session.id, second.session.id] }, mfa: 'pending' },
+      }),
+    ).toBe(2);
+    expect(await prisma.mfaRecoveryCode.count({ where: { userId: owner.userId } })).toBe(10);
+    const verifier = vi.spyOn(MfaService.prototype, 'verifyRecoveryCode');
+    try {
+      const results = await Promise.all([
+        challenge.complete(first.token, proof),
+        challenge.complete(second.token, proof),
+      ]);
+      expect(verifier).toHaveBeenCalledTimes(2);
+      expect(results.filter(Boolean)).toHaveLength(1);
+    } finally {
+      verifier.mockRestore();
+    }
     expect(await prisma.mfaRecoveryCode.count({ where: { userId: owner.userId } })).toBe(9);
     expect(
       await prisma.mfaLifecycleAudit.count({

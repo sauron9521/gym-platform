@@ -87,14 +87,14 @@ export class AdminMfaChallengeService {
       mfa: mfaStore,
       sessions: new AdminMfaTransactionSessionStore(tx, userId, state),
     });
-    const origin = new URL(
-      this.config.get('ADMIN_APP_URL') ?? this.config.getOrThrow('APP_URL'),
-    ).origin;
+    const appUrl = this.config.get('ADMIN_APP_URL') ?? this.config.getOrThrow('APP_URL');
+    const origin = new URL(appUrl).origin;
     return {
       storage,
       sessions: new SessionService(
         storage,
         {
+          mfa: { pendingTtl: '5m' },
           session: {
             cookieName: '__Host-admin-sid',
             absoluteTtl: '8h',
@@ -133,12 +133,14 @@ export class AdminMfaChallengeService {
 
   async complete(token: string, proof: ChallengeProof): Promise<IssuedSession | null> {
     const encryption = this.encryption();
-    if (typeof token !== 'string' || !token || token.length > 512 || !validProof(proof)) {
+    if (typeof token !== 'string' || !/^[A-Za-z0-9_-]{43}$/.test(token) || !validProof(proof)) {
       return null;
     }
     // Match the existing library's SHA-256 base64url session ID contract.
     const id = createHash('sha256').update(token).digest('base64url');
-    const initial = await this.prisma.session.findUnique({
+    // Use an independent filtered read rather than findUnique's automatic
+    // batching: simultaneous challenges must resolve their own exact cookie.
+    const initial = await this.prisma.session.findFirst({
       where: { id, mfa: 'pending', metadata: { path: ['purpose'], equals: ADMIN_SESSION_PURPOSE } },
       select: { userId: true },
     });
@@ -154,7 +156,7 @@ export class AdminMfaChallengeService {
         FOR UPDATE
       `;
       const user = await readEnrolledAdmin(tx, userId);
-      const row = await tx.session.findUnique({
+      const row = await tx.session.findFirst({
         where: { id, userId, mfa: 'pending' },
         select: authSessionSelect,
       });
