@@ -93,6 +93,7 @@ describe('GET /admin/users (HTTP + PostgreSQL)', () => {
   afterAll(async () => {
     try {
       if (prisma && ids.length) {
+        await prisma.outboxEvent.deleteMany({ where: { actorUserId: { in: ids } } });
         await prisma.mfaLifecycleAudit.deleteMany({ where: { userId: { in: ids } } });
         await prisma.user.deleteMany({ where: { id: { in: ids } } });
       }

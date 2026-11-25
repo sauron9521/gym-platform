@@ -18,6 +18,7 @@ import {
 } from '../../../src/modules/auth/stores/index.js';
 import { UsersAuthFacade } from '../../../src/modules/users/services/users-auth.facade.js';
 import { AuthAccountThrottleService } from '../../../src/modules/auth/services/auth-account-throttle.service.js';
+import { recordMfaSecurityEvent } from '../../../src/modules/auth/services/record-mfa-security-event.js';
 import { useTestDatabase } from '../../utility/test-db-helper.js';
 import { codeAt } from '../../utility/totp-code.js';
 
@@ -66,6 +67,9 @@ afterAll(async () => {
     const users = await prisma?.user.findMany({
       where: { email: { endsWith: `@${domain}` } },
       select: { id: true },
+    });
+    await prisma?.outboxEvent.deleteMany({
+      where: { actorUserId: { in: users?.map((user) => user.id) ?? [] } },
     });
     await prisma?.mfaLifecycleAudit.deleteMany({
       where: { userId: { in: users?.map((user) => user.id) ?? [] } },
@@ -284,6 +288,18 @@ describe('Admin first MFA confirmation (internal, PostgreSQL)', () => {
     const audit = await prisma.mfaLifecycleAudit.findMany({ where: { userId: principal.userId } });
     expect(audit).toHaveLength(1);
     expect(audit[0]?.action).toBe('FIRST_TOTP_CONFIRMED');
+    const event = await prisma.outboxEvent.findUniqueOrThrow({
+      where: { eventKey: `mfa-lifecycle:${audit[0]!.id}:v1` },
+    });
+    expect(event.status).toBe('PENDING');
+    expect(event.attemptCount).toBe(0);
+    expect(event.type).toBe('account.security.changed');
+    expect(event.schemaVersion).toBe(1);
+    expect(event.actorUserId).toBe(principal.userId);
+    expect(event.payload).toEqual({
+      aggregate: { kind: 'MfaLifecycleAudit', id: audit[0]!.id },
+      context: { userId: principal.userId, action: 'FIRST_TOTP_CONFIRMED' },
+    });
     expect(JSON.stringify(audit)).not.toContain(enrollment.secret);
     await expect(service.confirm(principal, code)).rejects.toMatchObject({ status: 403 });
   });
@@ -746,6 +762,15 @@ describe('Internal Admin MFA challenge (PostgreSQL)', () => {
     expect(audit.filter((row) => row.action === 'ADMIN_TOTP_REPLACEMENT_CONFIRMED')).toHaveLength(
       1,
     );
+    const events = await prisma.outboxEvent.findMany({
+      where: { actorUserId: owner.userId },
+    });
+    expect(events).toHaveLength(4);
+    for (const event of events) {
+      expect(event.status).toBe('PENDING');
+      expect(event.attemptCount).toBe(0);
+      expect(JSON.stringify(event.payload)).not.toContain(staged.secret);
+    }
     expect(JSON.stringify(audit)).not.toContain(staged.secret);
 
     const next = (await challenge.begin(owner.userId, password))!;
@@ -795,5 +820,42 @@ describe('Internal Admin MFA challenge (PostgreSQL)', () => {
         where: { userId: owner.userId, action: 'ADMIN_TOTP_REPLACEMENT_CONFIRMED' },
       }),
     ).toBe(0);
+  });
+});
+
+describe('MFA security notice outbox (PostgreSQL)', () => {
+  it('rolls back the audit and queued notice with the owner transaction', async () => {
+    const owner = await seed();
+    const store = app.get(PrismaMfaStore);
+    await expect(
+      store.withLockedOwner(owner.userId, async (tx) => {
+        await recordMfaSecurityEvent(tx, owner.userId, 'ADMIN_TOTP_REPLACEMENT_STAGED');
+        throw new Error('injected lifecycle rollback');
+      }),
+    ).rejects.toThrow('injected lifecycle rollback');
+    expect(await prisma.mfaLifecycleAudit.count({ where: { userId: owner.userId } })).toBe(0);
+    expect(await prisma.outboxEvent.count({ where: { actorUserId: owner.userId } })).toBe(0);
+  });
+
+  it('enforces uniqueness of the persisted transition key', async () => {
+    const owner = await seed();
+    await app.get(PrismaMfaStore).withLockedOwner(owner.userId, async (tx) => {
+      await recordMfaSecurityEvent(tx, owner.userId, 'ADMIN_RECOVERY_CODES_REGENERATED');
+    });
+    const event = await prisma.outboxEvent.findFirstOrThrow({
+      where: { actorUserId: owner.userId },
+    });
+    const duplicate = {
+      eventKey: event.eventKey,
+      type: event.type,
+      schemaVersion: event.schemaVersion,
+      occurredAt: event.occurredAt,
+      actorUserId: owner.userId,
+      payload: { aggregate: { kind: 'MfaLifecycleAudit' }, context: {} },
+    };
+    await expect(prisma.outboxEvent.create({ data: duplicate })).rejects.toMatchObject({
+      code: 'P2002',
+    });
+    expect(await prisma.outboxEvent.count({ where: { actorUserId: owner.userId } })).toBe(1);
   });
 });

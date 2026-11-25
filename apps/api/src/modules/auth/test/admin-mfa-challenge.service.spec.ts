@@ -44,7 +44,10 @@ function setup() {
       create: vi.fn().mockResolvedValue({}),
       deleteMany: vi.fn().mockResolvedValue({ count: 1 }),
     },
-    mfaLifecycleAudit: { create: vi.fn().mockResolvedValue({}) },
+    mfaLifecycleAudit: {
+      create: vi.fn().mockResolvedValue({ id: 'audit-id', occurredAt: new Date() }),
+    },
+    outboxEvent: { create: vi.fn().mockResolvedValue({}) },
     $queryRaw: vi.fn().mockResolvedValue([{ id }]),
   };
   const mfaStore = new InMemoryMfaStore();
@@ -232,6 +235,22 @@ describe('AdminMfaChallengeService', () => {
     const action =
       method === 'totp' ? 'ADMIN_TOTP_CHALLENGE_VERIFIED' : 'ADMIN_RECOVERY_CHALLENGE_VERIFIED';
     expect(tx.mfaLifecycleAudit.create).toHaveBeenCalledWith({ data: { userId, action } });
+    if (method === 'recovery') {
+      expect(tx.outboxEvent.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          eventKey: 'mfa-lifecycle:audit-id:v1',
+          type: 'account.security.changed',
+          schemaVersion: 1,
+          actorUserId: userId,
+          payload: {
+            aggregate: { kind: 'MfaLifecycleAudit', id: 'audit-id' },
+            context: { userId, action },
+          },
+        }),
+      });
+    } else {
+      expect(tx.outboxEvent.create).not.toHaveBeenCalled();
+    }
   });
 
   it('does not commit success if rotation loses the session', async () => {

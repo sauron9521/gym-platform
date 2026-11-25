@@ -45,7 +45,10 @@ function setup() {
     user: { update: vi.fn().mockResolvedValue({}) },
     refreshTokenFamily: { updateMany: vi.fn().mockResolvedValue({ count: 1 }) },
     refreshToken: { updateMany: vi.fn().mockResolvedValue({ count: 1 }) },
-    mfaLifecycleAudit: { create: vi.fn().mockResolvedValue({}) },
+    mfaLifecycleAudit: {
+      create: vi.fn().mockResolvedValue({ id: 'audit-id', occurredAt: new Date() }),
+    },
+    outboxEvent: { create: vi.fn().mockResolvedValue({}) },
     $queryRaw: vi.fn().mockResolvedValue([{ id }]),
   };
   const store = new InMemoryMfaStore();
@@ -127,6 +130,7 @@ describe('AdminMfaReplacementService', () => {
     expect(tx.mfaLifecycleAudit.create).toHaveBeenCalledWith({
       data: { userId, action: 'ADMIN_TOTP_REPLACEMENT_STAGED' },
     });
+    expect(tx.outboxEvent.create).toHaveBeenCalledTimes(1);
   });
 
   it('refuses to overwrite a live or unbound candidate', async () => {
@@ -185,6 +189,7 @@ describe('AdminMfaReplacementService', () => {
     expect(tx.mfaLifecycleAudit.create).toHaveBeenCalledWith({
       data: { userId, action: 'ADMIN_TOTP_REPLACEMENT_CONFIRMED' },
     });
+    expect(tx.outboxEvent.create).toHaveBeenCalledTimes(1);
   });
 
   it('fails closed if the candidate expires during code generation', async () => {
