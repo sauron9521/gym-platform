@@ -11,7 +11,7 @@ updates:
       day: 'wednesday'
       time: '08:00'
       timezone: 'Europe/Kyiv'
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 10
     # Temporary toolchain compatibility guards. Revisit with Nest CLI,
     # Node runtime, or Expo SDK upgrades; keep reviewing security alerts.
     ignore:
@@ -30,20 +30,91 @@ updates:
       # Remove after a reviewed Expo upgrade and native build verification.
       - dependency-name: 'react-native-gesture-handler'
         versions: ['>=3.4.0']
+      # SDK 58 uses React 19.3.0 in Mobile; web apps already use 19.3.1.
+      # Root workspace ignore rules are not path-scoped. Suppress only this
+      # exact rejected target, not later React versions or entire majors.
+      # Revisit on SDK compatibility changes or any relevant security advisory.
+      - dependency-name: 'react'
+        versions: ['19.3.1']
+      - dependency-name: 'react-dom'
+        versions: ['19.3.1']
+      # SDK 58 and Reanimated 4.7.x support Worklets 0.13.x.
+      # Upgrade the pair together in a reviewed Expo/native-build PR.
+      - dependency-name: 'react-native-reanimated'
+        versions: ['>=4.8.0']
+      - dependency-name: 'react-native-worklets'
+        versions: ['>=0.14.0']
+    # Group only dependencies that are reviewed and tested together.
+    # Unmatched updates stay individual, including authentication, throttler,
+    # mail, react-intl, React Native and native modules such as react-native-svg.
+    # Major updates and runtime minor updates remain individual.
     groups:
-      patch-updates:
-        applies-to: version-updates
-        patterns:
-          - '*'
-        update-types:
-          - 'patch'
-      dev-minor-updates:
+      dev-tooling:
         applies-to: version-updates
         dependency-type: 'development'
         patterns:
-          - '*'
-        update-types:
-          - 'minor'
+          - 'turbo'
+          - 'oxlint'
+          - 'oxlint-tsgolint'
+          - 'prettier'
+          - 'knip'
+          - 'lint-staged'
+          - 'husky'
+          - 'dependency-cruiser'
+          - 'markdownlint-cli2'
+          - 'mdast-util-from-markdown'
+        update-types: ['minor', 'patch']
+      testing:
+        applies-to: version-updates
+        dependency-type: 'development'
+        patterns:
+          - 'vitest'
+          - '@vitest/*'
+          - 'vitest-native'
+          - '@playwright/test'
+          - 'playwright'
+          - 'playwright-core'
+          - '@testing-library/*'
+          - 'axe-core'
+          - 'supertest'
+        update-types: ['patch']
+      nest-tooling:
+        applies-to: version-updates
+        patterns: ['@nestjs/cli', '@nestjs/schematics']
+        update-types: ['patch']
+      nest-core:
+        applies-to: version-updates
+        patterns:
+          - '@nestjs/common'
+          - '@nestjs/core'
+          - '@nestjs/platform-express'
+          - '@nestjs/testing'
+        update-types: ['patch']
+      prisma:
+        applies-to: version-updates
+        patterns: ['prisma', '@prisma/client', '@prisma/adapter-pg']
+        update-types: ['patch']
+      react-runtime:
+        applies-to: version-updates
+        patterns: ['react', 'react-dom']
+        update-types: ['patch']
+      expo-runtime:
+        applies-to: version-updates
+        patterns: ['expo', 'expo-*', '@expo/*']
+        exclude-patterns: ['expo-doctor', 'expo-module-scripts']
+        update-types: ['patch']
+      next-framework:
+        applies-to: version-updates
+        patterns: ['next', 'eslint-config-next', '@next/*']
+        update-types: ['patch']
+      forms:
+        applies-to: version-updates
+        patterns: ['react-hook-form', '@hookform/resolvers']
+        update-types: ['patch']
+      web-ui:
+        applies-to: version-updates
+        patterns: ['tailwindcss', '@tailwindcss/*', 'tailwind-merge', 'clsx', 'lucide-react']
+        update-types: ['patch']
 
   - package-ecosystem: 'github-actions'
     directory: '/'
