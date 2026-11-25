@@ -1,0 +1,34 @@
+// Identity-scoped MFA persistence. The authentication library seals TOTP secrets
+// and hashes recovery codes before they reach this adapter.
+model MfaAuthenticator {
+  userId String @id @map("user_id")
+  secret String @db.Text
+  confirmed Boolean @default(false)
+  pendingSecret String? @map("pending_secret") @db.Text
+  lastUsedStep Int? @map("last_used_step")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("mfa_authenticators")
+}
+
+model MfaRecoveryCode {
+  userId String @map("user_id")
+  hash String @db.Text
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, hash])
+  @@map("mfa_recovery_codes")
+}
+
+model MfaFailure {
+  id String @id @default(uuid(4))
+  userId String @map("user_id")
+  occurredAt DateTime @map("occurred_at") @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, occurredAt])
+  @@map("mfa_failures")
+}

@@ -33,6 +33,7 @@
     "auth-token.prisma",
     "body-measurements.prisma",
     "exercises.prisma",
+    "mfa.prisma",
     "profiles.prisma",
     "schema.prisma",
     "session.prisma",

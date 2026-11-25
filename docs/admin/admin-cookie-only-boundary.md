@@ -106,8 +106,9 @@ The internal completion helper accepts one well-formed factor only, on a
 POST from the trusted Admin origin. No new public challenge endpoint is
 enabled in this slice.
 
-The authentication package currently has no configured MFA options or
-registered durable MFA store in this application. A session with no MFA
+At the first slice, the authentication package had no configured MFA options
+or registered durable MFA store. The second slice below adds the adapter;
+MFA options remain disabled. A session with no MFA
 state remains a transitional legacy session; this is **not** S05 compliance.
 Do not enable mandatory enrollment or expose challenge completion before
 encrypted durable factor storage, atomic replay/recovery-code consumption
@@ -116,3 +117,30 @@ WebAuthn, support TOTP and one-time recovery codes, and require a fresh
 session-bound factor for sensitive actions (maximum five minutes).
 Recovery and factor changes must be audited and revoke affected sessions.
 Do not close #290 or grant Security/Beta GO based on this hardening alone.
+
+### Durable MFA storage (#290, second slice)
+
+The shared identity now owns three additive PostgreSQL tables:
+`mfa_authenticators`, `mfa_recovery_codes` and `mfa_failures`.
+The registered adapter implements the existing authentication library's MFA
+store contract; it does not issue sessions or invent cryptographic formats.
+The library must seal TOTP secrets with AES-256-GCM and hash recovery codes
+before calling the adapter. Keys must remain outside PostgreSQL and be
+independent of the JWT key. The adapter treats those representations as
+opaque values; the live application still has no MFA service configuration.
+
+Replay claims are conditional updates, recovery consumption is a conditional
+delete, and replacement batches roll back atomically. Saving an authenticator
+cannot lower its claimed TOTP step. Failure accounting locks the active user
+row across the insert and count, so concurrent requests cannot all see the
+same low count. Old attempts are pruned per user when recording another
+attempt; use a consistent configured lockout window. Global retention and
+bounded request throttling must be reviewed before any public MFA endpoint.
+Physical user deletion cascades factor rows; suspended or soft-deleted
+accounts cannot use them.
+
+PostgreSQL contract tests use the package's concurrency suite and verify
+encrypted/hashed values with an explicitly configured test-only MFA service.
+This is not a live enrollment, recovery or mandatory-MFA rollout. Keep #290
+open. Next: protected encryption-key configuration, enrollment and lifecycle
+controls, then session-bound step-up and explicit rollout approval.
