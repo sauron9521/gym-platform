@@ -221,3 +221,22 @@ paths and enrolled Admin authorization must be fenced before any public
 activation; the global MFA service still has no live configuration.
 Audit retention/access, lost-response recovery and key provisioning
 remain rollout gates. Do not populate live factors or close #290 yet.
+
+### Confirmed-factor password-only credential fence (#290, sixth slice)
+
+A confirmed factor now blocks password-only session and refresh-token
+issuance under the same account row lock used by confirmation. Existing
+session and refresh-token reads and refresh consumption also require an
+absent or unconfirmed factor. JWT resolution applies that same durable
+predicate in addition to the existing revocation fence. These checks
+do not depend on the library's disabled MFA configuration.
+
+This is deliberately a fail-closed transitional gate: a confirmed identity
+cannot sign in through any existing password-only route, including Admin,
+until a dedicated MFA challenge path is implemented. An unconfirmed
+enrollment does not block existing authentication. Do not enable live
+enrollment or populate confirmed factors yet. The next slice must introduce
+a bounded Admin pending-session and verified-session policy, challenge
+completion and protected recovery without weakening the shared-identity
+fence. Requests authorized before confirmation commits may still complete;
+sensitive action reauthorization is a separate gate.

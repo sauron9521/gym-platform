@@ -8,7 +8,12 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import { PrismaService } from '../../../src/infra/database/index.js';
 import { AdminMfaEnrollmentService } from '../../../src/modules/auth/services/admin-mfa-enrollment.service.js';
-import { PrismaMfaStore } from '../../../src/modules/auth/stores/index.js';
+import {
+  PrismaMfaStore,
+  PrismaSessionStore,
+  PrismaTokenStore,
+} from '../../../src/modules/auth/stores/index.js';
+import { UsersAuthFacade } from '../../../src/modules/users/services/users-auth.facade.js';
 import { AuthAccountThrottleService } from '../../../src/modules/auth/services/auth-account-throttle.service.js';
 import { useTestDatabase } from '../../utility/test-db-helper.js';
 
@@ -377,5 +382,64 @@ describe('Admin first MFA confirmation (internal, PostgreSQL)', () => {
     } finally {
       failure.mockRestore();
     }
+  });
+});
+
+describe('Confirmed-factor password-only credential boundary (PostgreSQL)', () => {
+  it('denies existing and new credentials for confirmed factors, even with MFA disabled', async () => {
+    const principal = await seed();
+    const other = await seed();
+    const sessions = app.get(PrismaSessionStore);
+    const tokens = app.get(PrismaTokenStore);
+    const users = app.get(UsersAuthFacade);
+    const enrollment = await service.begin(principal, password);
+    const now = new Date();
+    const expiresAt = new Date(now.getTime() + 3_600_000);
+    const refresh = {
+      id: randomUUID(),
+      familyId: randomUUID(),
+      userId: principal.userId,
+      createdAt: now,
+      expiresAt,
+      familyExpiresAt: expiresAt,
+    };
+
+    // Unconfirmed enrollment must not block ordinary credentials.
+    expect(await sessions.getSession(principal.sessionId)).toBeDefined();
+    expect(await users.findUserForJwtAuth(principal.userId, Math.floor(Date.now() / 1000)))
+      .not.toBeNull();
+    await tokens.saveRefreshToken(refresh);
+    expect(await tokens.getRefreshToken(refresh.id)).toBeDefined();
+
+    // Simulate a surviving credential row from an earlier deployment. The
+    // real confirmation service also revokes credentials in its transaction.
+    await prisma.mfaAuthenticator.update({
+      where: { userId: principal.userId },
+      data: { confirmed: true },
+    });
+    expect(enrollment.secret).toBeDefined();
+    expect(await sessions.getSession(principal.sessionId)).toBeUndefined();
+    expect(await tokens.getRefreshToken(refresh.id)).toBeUndefined();
+    expect(await tokens.markRefreshTokenUsed(refresh.id, new Date())).toBe(false);
+    expect(
+      await users.findUserForJwtAuth(principal.userId, Math.floor(Date.now() / 1000)),
+    ).toBeNull();
+
+    await expect(
+      sessions.createSession({
+        id: randomUUID(),
+        userId: principal.userId,
+        createdAt: now,
+        lastActiveAt: now,
+        expiresAt,
+        metadata: { purpose: 'admin' },
+      }),
+    ).rejects.toThrow('MFA authentication required');
+    await expect(tokens.saveRefreshToken({ ...refresh, id: randomUUID() })).rejects.toThrow(
+      'MFA authentication required',
+    );
+    expect(await sessions.getSession(other.sessionId)).toBeDefined();
+    expect(await users.findUserForJwtAuth(other.userId, Math.floor(Date.now() / 1000)))
+      .not.toBeNull();
   });
 });

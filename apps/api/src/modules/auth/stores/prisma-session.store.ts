@@ -12,7 +12,11 @@ import {
   isAdminSessionExpired,
 } from '#src/common/auth/admin-session-lifetime.policy';
 import { PrismaService } from '#src/infra/database/index';
-import { lockActiveCredentialOwner } from './lock-active-credential-owner.js';
+import { PASSWORD_ONLY_OWNER_FILTER } from '#src/common/auth/password-only-owner.filter';
+import {
+  assertPasswordOnlyCredentialOwner,
+  lockActiveCredentialOwner,
+} from './lock-active-credential-owner.js';
 
 @Injectable()
 export class PrismaSessionStore implements SessionStore {
@@ -26,7 +30,10 @@ export class PrismaSessionStore implements SessionStore {
 
   async getSession(id: string): Promise<SessionRecord | undefined> {
     const session = await this.prisma.session.findUnique({
-      where: { id, user: { deletedAt: null, status: 'ACTIVE' } },
+      where: {
+        id,
+        user: { deletedAt: null, status: 'ACTIVE', ...PASSWORD_ONLY_OWNER_FILTER },
+      },
       select: authSessionSelect,
     });
 
@@ -51,6 +58,7 @@ export class PrismaSessionStore implements SessionStore {
 
     await this.prisma.$transaction(async (tx) => {
       await lockActiveCredentialOwner(tx, record.userId);
+      await assertPasswordOnlyCredentialOwner(tx, record.userId);
       await tx.session.create({ data });
     });
   }
@@ -59,7 +67,7 @@ export class PrismaSessionStore implements SessionStore {
     await this.prisma.session.updateMany({
       where: {
         id,
-        user: { deletedAt: null, status: 'ACTIVE' },
+        user: { deletedAt: null, status: 'ACTIVE', ...PASSWORD_ONLY_OWNER_FILTER },
         lastActiveAt: { lt: lastActiveAt },
       },
       data: { lastActiveAt },
@@ -76,7 +84,10 @@ export class PrismaSessionStore implements SessionStore {
 
   async listUserSessions(userId: string): Promise<SessionRecord[]> {
     const sessions = await this.prisma.session.findMany({
-      where: { userId, user: { deletedAt: null, status: 'ACTIVE' } },
+      where: {
+        userId,
+        user: { deletedAt: null, status: 'ACTIVE', ...PASSWORD_ONLY_OWNER_FILTER },
+      },
       orderBy: { createdAt: 'desc' },
       select: authSessionSelect,
     });

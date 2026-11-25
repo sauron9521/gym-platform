@@ -5,6 +5,7 @@ import type {
 } from '@nestjs/authentication';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { PrismaService } from '#src/infra/database/index';
+import { PASSWORD_ONLY_OWNER_FILTER } from '#src/common/auth/password-only-owner.filter';
 import { authRefreshTokenSelect } from '../selects/auth-token.select.js';
 import { PrismaTokenStore } from '../stores/prisma-token.store.js';
 
@@ -35,6 +36,7 @@ describe('PrismaTokenStore security and persistence contracts', () => {
 
   const prisma = {
     user: { findUnique: vi.fn() },
+    mfaAuthenticator: { findUnique: vi.fn() },
     refreshToken: {
       findUnique: vi.fn(),
       findFirst: vi.fn(),
@@ -62,6 +64,7 @@ describe('PrismaTokenStore security and persistence contracts', () => {
 
   beforeEach(() => {
     vi.resetAllMocks();
+    prisma.mfaAuthenticator.findUnique.mockResolvedValue(null);
     prisma.$transaction.mockImplementation(
       async (callback: (transaction: typeof prisma) => Promise<unknown>) => callback(prisma),
     );
@@ -94,7 +97,10 @@ describe('PrismaTokenStore security and persistence contracts', () => {
   it('looks up refresh tokens only for non-deleted owners and limits selected fields', async () => {
     await expect(store.getRefreshToken(refresh.id)).resolves.toBeUndefined();
     expect(prisma.refreshToken.findUnique).toHaveBeenCalledExactlyOnceWith({
-      where: { id: refresh.id, user: { deletedAt: null, status: 'ACTIVE' } },
+      where: {
+        id: refresh.id,
+        user: { deletedAt: null, status: 'ACTIVE', ...PASSWORD_ONLY_OWNER_FILTER },
+      },
       select: authRefreshTokenSelect,
     });
     expect(authRefreshTokenSelect).not.toHaveProperty('revoked');
@@ -116,6 +122,13 @@ describe('PrismaTokenStore security and persistence contracts', () => {
   it('never mints refresh credentials for a suspended or missing account', async () => {
     prisma.$queryRaw.mockResolvedValueOnce([]);
     await expect(store.saveRefreshToken(refresh)).rejects.toThrow('Account unavailable');
+    expect(prisma.refreshTokenFamily.upsert).not.toHaveBeenCalled();
+    expect(prisma.refreshToken.create).not.toHaveBeenCalled();
+  });
+
+  it('refuses refresh issuance for a confirmed factor under the owner lock', async () => {
+    prisma.mfaAuthenticator.findUnique.mockResolvedValueOnce({ confirmed: true });
+    await expect(store.saveRefreshToken(refresh)).rejects.toThrow('MFA authentication required');
     expect(prisma.refreshTokenFamily.upsert).not.toHaveBeenCalled();
     expect(prisma.refreshToken.create).not.toHaveBeenCalled();
   });
@@ -190,7 +203,7 @@ describe('PrismaTokenStore security and persistence contracts', () => {
       where: {
         id: refresh.id,
         usedAt: null,
-        user: { deletedAt: null, status: 'ACTIVE' },
+        user: { deletedAt: null, status: 'ACTIVE', ...PASSWORD_ONLY_OWNER_FILTER },
       },
       data: { usedAt: now },
     });
@@ -433,7 +446,7 @@ describe('PrismaTokenStore security and persistence contracts', () => {
 
       await expect(store.markRefreshTokenUsed(refresh.id, now)).rejects.toBe(failure);
       expect(prisma.refreshToken.updateMany).toHaveBeenCalledExactlyOnceWith({
-        where: { id: refresh.id, usedAt: null, user: { deletedAt: null, status: 'ACTIVE' } },
+        where: { id: refresh.id, usedAt: null, user: { deletedAt: null, status: 'ACTIVE', ...PASSWORD_ONLY_OWNER_FILTER } },
         data: { usedAt: now },
       });
     });
@@ -496,7 +509,10 @@ describe('PrismaTokenStore security and persistence contracts', () => {
 
       await expect(store.getRefreshToken(refresh.id)).rejects.toBe(failure);
       expect(prisma.refreshToken.findUnique).toHaveBeenCalledExactlyOnceWith({
-        where: { id: refresh.id, user: { deletedAt: null, status: 'ACTIVE' } },
+        where: {
+          id: refresh.id,
+          user: { deletedAt: null, status: 'ACTIVE', ...PASSWORD_ONLY_OWNER_FILTER },
+        },
         select: authRefreshTokenSelect,
       });
     });
