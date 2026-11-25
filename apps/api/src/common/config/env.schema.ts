@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import { createMfaEncryptionOptions } from './mfa-keyring.config.js';
 import { isTrustedProxyList } from './proxy.config.js';
 import { isValidOperatorSuperAdminIds } from '../rbac/operator-superadmin-allowlist.js';
 
@@ -83,6 +84,8 @@ const baseEnvSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   DATABASE_URL: z.string().min(1).refine(isPostgresUrl, 'Must be a PostgreSQL connection URL'),
   JWT_SECRET: z.string().min(1),
+  // Reserved for the gated MFA rollout.
+  MFA_ENCRYPTION_KEYS: z.preprocess(emptyToUndefined, z.string().max(512).optional()),
   JWT_ISSUER: z
     .string()
     .min(1)
@@ -177,6 +180,17 @@ const baseEnvSchema = z.object({
 });
 
 export const envSchema = baseEnvSchema.superRefine((env, ctx) => {
+  if (env.MFA_ENCRYPTION_KEYS !== undefined) {
+    try {
+      createMfaEncryptionOptions(env.MFA_ENCRYPTION_KEYS, env.JWT_SECRET);
+    } catch {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['MFA_ENCRYPTION_KEYS'],
+        message: 'Expected 1–5 distinct random 32-byte base64url keys independent of JWT_SECRET',
+      });
+    }
+  }
   if (env.HTTP_METRICS_ENABLED && !env.HTTP_METRICS_TOKEN) {
     ctx.addIssue({
       code: 'custom',
