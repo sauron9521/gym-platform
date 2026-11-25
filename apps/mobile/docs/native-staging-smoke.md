@@ -235,3 +235,14 @@ read-only reconciliation and exact write-count are confirmed, and failed
 runs are addressed. This PR only adds runnable flows, guarded dispatch and
 static contract tests; **Issue #324 stays open** until operator-supplied
 native evidence passes.
+
+### Foreground authentication regression coverage
+
+The JavaScript component regression suite `test/vitest/auth-foreground.test.tsx`
+checks that backgrounding clears account/workout queries; foreground grant
+verification restores only the current account snapshot (marked stale), and a
+superseded check, logout or failed verification cannot repopulate private cache.
+The suite mocks AppState and API transport: it does not substitute for Android
+or iOS execution. On the native resume scenario, also confirm a canonical GET
+after foreground verification and that no additional PATCH is sent. Do not
+close #324 or #348 until the device/build evidence above exists.

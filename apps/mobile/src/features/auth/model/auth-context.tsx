@@ -340,6 +340,10 @@ export function AuthProvider({ children }: PropsWithChildren) {
         const grants =
           response.response.status === 200 ? parseAccountCapabilities(response.data) : null;
         if (hasMobileAccess(grants)) {
+          // Backgrounding clears private queries. Restore the verified account
+          // marker before unlocking screens so workout GET reconciliation can run.
+          // This is an existing account snapshot, not a fresh profile response.
+          queryClient.setQueryData(accountQueryKeys.me(account.id), account, { updatedAt: 0 });
           setCapabilities(grants);
           return;
         }
