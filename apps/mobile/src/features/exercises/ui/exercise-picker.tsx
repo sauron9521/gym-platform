@@ -1,7 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
 import {
   FlatList,
-  Keyboard,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -12,74 +10,32 @@ import {
   View,
 } from 'react-native';
 
-import { useExercisesQuery } from '@/features/exercises/model/exercises-query';
+import { useExercisePicker, type ExercisePickerOptions } from '../model/use-exercise-picker';
 import { createThemedStyles, useMobileTheme } from '@/shared/config/theme-provider';
 import { AsyncResourceState } from '@/shared/ui/async-resource-state';
-
-type Props = {
-  selectedId: string;
-  disabled?: boolean;
-  onSelect: (id: string) => void;
-};
-
-type RememberedSelection = {
-  id: string;
-  name: string;
-};
 
 /**
  * OVRANTO exercise selection keeps the parent workout form compact.
  * Account-scoped results are searched and paginated in a virtualized modal.
  * The parent remains the source of truth for the selected exercise ID.
  */
-export function ExercisePicker({ selectedId, disabled = false, onSelect }: Props) {
+export function ExercisePicker({ selectedId, disabled = false, onSelect }: ExercisePickerOptions) {
   const styles = useStyles();
   const { palette } = useMobileTheme();
-  const [open, setOpen] = useState(false);
-  const [input, setInput] = useState('');
-  const [search, setSearch] = useState('');
-  const [remembered, setRemembered] = useState<RememberedSelection | null>(null);
-
-  useEffect(() => {
-    const timeout = setTimeout(() => setSearch(input.trim()), 300);
-    return () => clearTimeout(timeout);
-  }, [input]);
-
-  const query = useExercisesQuery({ search });
-  const isSearching = input.trim() !== search;
-  const initialError = query.isError && !query.data;
-  const entries = useMemo(() => {
-    const seen = new Set<string>();
-    return (
-      query.data?.pages.flatMap((page) =>
-        page.data.filter((exercise) => {
-          if (exercise.isArchived || seen.has(exercise.id)) return false;
-          seen.add(exercise.id);
-          return true;
-        }),
-      ) ?? []
-    );
-  }, [query.data]);
-
-  const selectedName = selectedId
-    ? (entries.find((exercise) => exercise.id === selectedId)?.name ??
-      (remembered?.id === selectedId ? remembered.name : 'Вправу обрано'))
-    : null;
-  const visibleEntries = isSearching || initialError ? [] : entries;
-
-  const close = () => {
-    Keyboard.dismiss();
-    setOpen(false);
-    setInput('');
-    setSearch('');
-  };
-
-  const chooseExercise = (id: string, name: string) => {
-    if (disabled) return;
-    setRemembered({ id, name });
-    close();
-    onSelect(id);
-  };
+  const {
+    open,
+    input,
+    setInput,
+    selectedName,
+    visibleEntries,
+    isSearching,
+    initialError,
+    query,
+    canLoadMore,
+    openPicker,
+    close,
+    chooseExercise,
+  } = useExercisePicker({ selectedId, disabled, onSelect });
 
   return (
     <View style={styles.container}>
@@ -90,7 +46,7 @@ export function ExercisePicker({ selectedId, disabled = false, onSelect }: Props
         accessibilityState={{ disabled }}
         accessibilityHint="Відкриває пошук і вибір вправ"
         disabled={disabled}
-        onPress={() => setOpen(true)}
+        onPress={openPicker}
         style={[styles.trigger, selectedName && styles.selectedTrigger]}
       >
         <View style={styles.triggerCopy}>
@@ -165,7 +121,7 @@ export function ExercisePicker({ selectedId, disabled = false, onSelect }: Props
               ) : initialError ? (
                 <AsyncResourceState
                   kind="error"
-                  message={query.error.message}
+                  message={initialError.message}
                   retrying={disabled || query.isFetching}
                   onRetry={() => void query.refetch()}
                 />
@@ -196,7 +152,7 @@ export function ExercisePicker({ selectedId, disabled = false, onSelect }: Props
               );
             }}
             ListFooterComponent={
-              !isSearching && !query.isPending && !initialError && query.hasNextPage ? (
+              canLoadMore ? (
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel="Показати більше вправ"
