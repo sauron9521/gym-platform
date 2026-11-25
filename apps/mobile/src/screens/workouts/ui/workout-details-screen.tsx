@@ -1,8 +1,6 @@
-import { useRef, useState } from 'react';
-import { canCompleteWorkout, workoutSetProgress } from '@gym/domain';
+import { useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Pressable,
   Platform,
   ScrollView,
@@ -13,15 +11,9 @@ import {
 } from 'react-native';
 
 import { workoutTitleError } from '@/features/workouts/lib/workout-edit-policy';
-import { useCancelWorkout, useUpdateWorkoutTitle } from '@/features/workouts/model/workout-edit';
 import { workoutStatusLabel } from '@/features/workouts/lib/workout-presentation';
-import { useAppSettings } from '@/features/app-settings/model/app-settings-context';
-import { RestTimer, type RestStart } from '@/features/workouts/ui/rest-timer';
-import {
-  useWorkoutDetailsQuery,
-  useWorkoutTransition,
-  type WorkoutTransition,
-} from '@/features/workouts/model/workout-details-query';
+import { RestTimer } from '@/features/workouts/ui/rest-timer';
+import { useWorkoutDetails } from '../model/use-workout-details';
 import { createThemedStyles } from '@/shared/config/theme-provider';
 import { WorkoutSetRow } from './workout-set-row';
 
@@ -73,96 +65,16 @@ function WorkoutTitleEditor({ title, disabled, pending, failure, onSave }: Title
   );
 }
 
-// Preserve the compact native status-action state machine for focused review.
 // prettier-ignore
 export function WorkoutDetailsScreen({ id }: { id: string }) {
   const styles = useStyles();
-  const { shouldAutoStartRestTimer } = useAppSettings();
-  const details = useWorkoutDetailsQuery(id);
-  const transition = useWorkoutTransition(id);
-  const titleUpdate = useUpdateWorkoutTitle(id);
-  const cancellation = useCancelWorkout(id);
-  const writeLock = useRef(false);
-  const setWriteLock = useRef<string | null>(null);
-  const requiredRead = useRef<number | null>(null);
-  const [pendingSet, setPendingSet] = useState<string | null>(null);
-  const [requiredReadVersion, setRequiredReadVersion] = useState<number | null>(null);
-  const [restStart, setRestStart] = useState<RestStart | null>(null);
-  const [actionLocked, setActionLocked] = useState(false);
-  const workout = details.data;
-  const allSets = workout?.exercises.flatMap((exercise) => exercise.sets) ?? [];
-  const progress = workoutSetProgress(allSets);
-  const completionAllowed = canCompleteWorkout(allSets);
-  const reconciling = details.isFetching && !details.isPending;
-  const readVersion = details.canonicalReadVersion ?? 0;
-  const uncertain = requiredReadVersion !== null && readVersion <= requiredReadVersion;
-  const actionBusy = transition.isPending || titleUpdate.isPending || cancellation.isPending || actionLocked || reconciling;
-  const busy = actionBusy || pendingSet !== null || uncertain;
-  const setWritesBlocked = () => setWriteLock.current !== null ||
-    (requiredRead.current !== null && readVersion <= requiredRead.current);
-  const beginSetWrite = (setId: string) => {
-    if (writeLock.current || actionBusy || setWritesBlocked() || workout?.status !== 'IN_PROGRESS') return false;
-    setWriteLock.current = setId;
-    setPendingSet(setId);
-    return true;
-  };
-  const settleSetWrite = (setId: string, required: number | null) => {
-    if (setWriteLock.current !== setId) return;
-    requiredRead.current = required;
-    setRequiredReadVersion(required);
-    setWriteLock.current = null;
-    setPendingSet(null);
-  };
-  const startRest = () => {
-    if (!shouldAutoStartRestTimer()) return;
-    const startedAt = Date.now();
-    setRestStart((previous) => ({ sequence: (previous?.sequence ?? 0) + 1, startedAt }));
-  };
-  const total = allSets.length;
-  const processed = progress.completed + progress.skipped;
-  const percent = total ? Math.round(processed / total * 100) : 0;
-  const cancellable = workout?.status === 'PLANNED' || workout?.status === 'IN_PROGRESS';
-  const releaseLock = () => { writeLock.current = false; setActionLocked(false); };
-
-  const saveTitle = (title: string) => {
-    if (writeLock.current || setWritesBlocked() || busy || workout?.status !== 'PLANNED') return;
-    writeLock.current = true;
-    setActionLocked(true);
-    titleUpdate.mutate(title, { onSettled: releaseLock });
-  };
-
-  const confirmCancellation = () => {
-    if (writeLock.current || setWritesBlocked() || busy || !cancellable) return;
-    writeLock.current = true;
-    setActionLocked(true);
-    Alert.alert(
-      'Скасувати тренування?',
-      'Цю дію не можна скасувати.',
-      [
-        {
-          text: 'Назад',
-          style: 'cancel',
-          onPress: releaseLock,
-        },
-        {
-          text: 'Скасувати тренування',
-          style: 'destructive',
-          onPress: () => {
-            cancellation.mutate(undefined, {
-              onSettled: releaseLock,
-            });
-          },
-        },
-      ],
-      { cancelable: false },
-    );
-  };
-  const nextAction: WorkoutTransition | null =
-    workout?.status === 'PLANNED'
-      ? 'start'
-      : workout?.status === 'IN_PROGRESS'
-        ? 'complete'
-        : null;
+  const {
+    details, transition, titleUpdate, cancellation, workout,
+    progress, total, processed, percent, completionAllowed, reconciling,
+    busy, pendingSet, uncertain, restStart, nextAction, actionDisabled,
+    saveTitle, confirmCancellation, runTransition, isSetActionBlocked,
+    beginSetWrite, settleSetWrite, startRest,
+  } = useWorkoutDetails(id);
 
   return (
     <ScrollView
@@ -253,7 +165,7 @@ export function WorkoutDetailsScreen({ id }: { id: string }) {
                   set={set}
                   editable={workout.status === 'IN_PROGRESS'}
                   reconciling={reconciling}
-                  actionBlocked={actionBusy || (pendingSet !== null && pendingSet !== set.id) || uncertain}
+                  actionBlocked={isSetActionBlocked(set.id)}
                   onWriteStart={beginSetWrite}
                   onWriteSettled={settleSetWrite}
                   onNewCompletion={startRest}
@@ -286,14 +198,9 @@ export function WorkoutDetailsScreen({ id }: { id: string }) {
               accessibilityRole="button"
               testID="workout-status-action"
               style={styles.button}
-              disabled={busy || (nextAction === 'complete' && !completionAllowed)}
-              accessibilityState={{ disabled: busy || (nextAction === 'complete' && !completionAllowed) }}
-              onPress={() => {
-                if (writeLock.current || setWritesBlocked() || busy || (nextAction === 'complete' && !completionAllowed)) return;
-                writeLock.current = true;
-                setActionLocked(true);
-                transition.mutate(nextAction, { onSettled: releaseLock });
-              }}
+              disabled={actionDisabled}
+              accessibilityState={{ disabled: actionDisabled }}
+              onPress={runTransition}
             >
               <Text style={styles.buttonText}>
                 {transition.isPending

@@ -264,6 +264,31 @@ describe('WorkoutDetailsScreen editing and cancellation (native)', () => {
     expect(mutateCancel).toHaveBeenCalledOnce();
   });
 
+  it('releases the action lock when cancellation is dismissed and keeps set writes blocked during transitions', async () => {
+    prepareWorkout('IN_PROGRESS');
+    const alert = vi.spyOn(Alert, 'alert').mockImplementation(() => undefined);
+    const view = await render(<WorkoutDetailsScreen id="workout-123" />);
+    const row = () => vi.mocked(WorkoutSetRow).mock.calls.at(-1)![0];
+    await fireEvent.press(view.getByTestId('workout-cancel'));
+    expect(row().actionBlocked).toBe(true);
+    expect(row().onWriteStart?.('set-1')).toBe(false);
+    expect(view.getByTestId('workout-status-action').props.accessibilityState.disabled).toBe(true);
+    await act(async () => alert.mock.calls[0]?.[2]?.[0]?.onPress?.());
+    expect(mutateCancel).not.toHaveBeenCalled();
+    expect(row().actionBlocked).toBe(false);
+    await fireEvent.press(view.getByTestId('workout-status-action'));
+    expect(mutate).toHaveBeenCalledOnce();
+    expect(row().onWriteStart?.('set-1')).toBe(false);
+    await act(async () => mutate.mock.calls[0]?.[1]?.onSettled?.());
+    expect(row().actionBlocked).toBe(false);
+    await act(async () => {
+      expect(row().onWriteStart?.('set-1')).toBe(true);
+    });
+    expect(view.getByTestId('workout-status-action').props.accessibilityState.disabled).toBe(true);
+    await act(async () => row().onWriteSettled?.('set-1', null));
+    expect(view.getByTestId('workout-status-action').props.accessibilityState.disabled).toBe(false);
+  });
+
   it('never offers editing or cancellation for completed workouts', async () => {
     prepareWorkout('COMPLETED');
     const view = await render(<WorkoutDetailsScreen id="workout-123" />);

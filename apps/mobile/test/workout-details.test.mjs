@@ -34,7 +34,9 @@ test('protected detail route uses typed API and account-scoped invalidation', ()
   assert.match(query, /getQueryData\(accountQueryKeys\.me\(account\.id\)\)/);
   assert.match(list, /testID="workouts-refresh"/);
   assert.match(list, /router\.push/);
-  assert.match(screen, /useWorkoutDetailsQuery/);
+  const controller = read('../src/screens/workouts/model/use-workout-details.ts');
+  assert.match(screen, /useWorkoutDetails\(id\)/);
+  assert.match(controller, /useWorkoutDetailsQuery\(id\)/);
   assert.doesNotMatch(query, /localStorage|AsyncStorage|console\.log/);
 });
 
