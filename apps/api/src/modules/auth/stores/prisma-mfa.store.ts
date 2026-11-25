@@ -1,25 +1,39 @@
 import { AuthenticationStorage, type MfaStore, type TotpRecord } from '@nestjs/authentication';
 import { Injectable } from '@nestjs/common';
 
+import type { Prisma } from '#prisma/client';
 import { PrismaService } from '#src/infra/database/index';
 import { lockActiveCredentialOwner } from './lock-active-credential-owner.js';
 
-/**
- * Durable storage for the library's opaque sealed secrets and recovery hashes.
- * No encryption keys, plaintext factors or enrollment endpoints belong here.
- * MFA remains disabled until the separate encrypted service configuration and
- * protected enrollment/recovery flows are ready.
- */
-@Injectable()
-export class PrismaMfaStore implements MfaStore {
+type OwnerWrite = <T>(
+  userId: string,
+  work: (tx: Prisma.TransactionClient) => Promise<T>,
+) => Promise<T>;
+
+function ownerWrite(prisma: PrismaService): OwnerWrite {
+  return (userId, work) =>
+    prisma.$transaction(async (tx) => {
+      await lockActiveCredentialOwner(tx, userId);
+      return work(tx);
+    });
+}
+
+/** Shared implementation for normal and transaction-bound library calls. */
+class MfaPersistence implements MfaStore {
   constructor(
-    private readonly prisma: PrismaService,
-    storage: AuthenticationStorage,
-  ) {
-    storage.registerSource({ mfa: this });
+    private readonly prisma: Prisma.TransactionClient,
+    private readonly write: OwnerWrite,
+    private readonly boundOwner?: string,
+  ) {}
+
+  private assertOwner(userId: string): void {
+    if (this.boundOwner !== undefined && this.boundOwner !== userId) {
+      throw new Error('MFA owner mismatch');
+    }
   }
 
   async getTotp(userId: string): Promise<TotpRecord | undefined> {
+    this.assertOwner(userId);
     const row = await this.prisma.mfaAuthenticator.findUnique({
       where: { userId, user: { deletedAt: null, status: 'ACTIVE' } },
     });
@@ -33,8 +47,8 @@ export class PrismaMfaStore implements MfaStore {
   }
 
   async saveTotp(userId: string, record: TotpRecord | null): Promise<void> {
-    await this.prisma.$transaction(async (tx) => {
-      await lockActiveCredentialOwner(tx, userId);
+    this.assertOwner(userId);
+    await this.write(userId, async (tx) => {
       if (!record) {
         await tx.mfaAuthenticator.deleteMany({ where: { userId } });
         return;
@@ -57,6 +71,7 @@ export class PrismaMfaStore implements MfaStore {
   }
 
   async claimTotpStep(userId: string, step: number): Promise<boolean> {
+    this.assertOwner(userId);
     const result = await this.prisma.mfaAuthenticator.updateMany({
       where: {
         userId,
@@ -69,8 +84,8 @@ export class PrismaMfaStore implements MfaStore {
   }
 
   async saveRecoveryCodes(userId: string, hashes: string[]): Promise<void> {
-    await this.prisma.$transaction(async (tx) => {
-      await lockActiveCredentialOwner(tx, userId);
+    this.assertOwner(userId);
+    await this.write(userId, async (tx) => {
       await tx.mfaRecoveryCode.deleteMany({ where: { userId } });
       if (hashes.length) {
         await tx.mfaRecoveryCode.createMany({
@@ -81,6 +96,7 @@ export class PrismaMfaStore implements MfaStore {
   }
 
   async consumeRecoveryCode(userId: string, hash: string): Promise<boolean> {
+    this.assertOwner(userId);
     const result = await this.prisma.mfaRecoveryCode.deleteMany({
       where: { userId, hash, user: { deletedAt: null, status: 'ACTIVE' } },
     });
@@ -88,16 +104,16 @@ export class PrismaMfaStore implements MfaStore {
   }
 
   async countRecoveryCodes(userId: string): Promise<number> {
+    this.assertOwner(userId);
     return this.prisma.mfaRecoveryCode.count({
       where: { userId, user: { deletedAt: null, status: 'ACTIVE' } },
     });
   }
 
   async recordMfaFailure(userId: string, windowMs: number, now: number): Promise<number> {
-    return this.prisma.$transaction(async (tx) => {
-      // Serialize across processes on the existing account row. The increment
-      // and count commit together so a burst cannot share a low attempt count.
-      await lockActiveCredentialOwner(tx, userId);
+    this.assertOwner(userId);
+    return this.write(userId, async (tx) => {
+      // The owner lock serializes attempt accounting across processes.
       const cutoff = new Date(now - windowMs);
       await tx.mfaFailure.deleteMany({ where: { userId, occurredAt: { lte: cutoff } } });
       await tx.mfaFailure.create({ data: { userId, occurredAt: new Date(now) } });
@@ -106,6 +122,7 @@ export class PrismaMfaStore implements MfaStore {
   }
 
   async countMfaFailures(userId: string, windowMs: number, now: number): Promise<number> {
+    this.assertOwner(userId);
     return this.prisma.mfaFailure.count({
       where: {
         userId,
@@ -116,9 +133,38 @@ export class PrismaMfaStore implements MfaStore {
   }
 
   async clearMfaFailures(userId: string): Promise<void> {
-    await this.prisma.$transaction(async (tx) => {
-      await lockActiveCredentialOwner(tx, userId);
+    this.assertOwner(userId);
+    await this.write(userId, async (tx) => {
       await tx.mfaFailure.deleteMany({ where: { userId } });
+    });
+  }
+}
+
+/** Durable storage for opaque sealed secrets and recovery hashes. */
+@Injectable()
+export class PrismaMfaStore extends MfaPersistence {
+  constructor(
+    private readonly database: PrismaService,
+    storage: AuthenticationStorage,
+  ) {
+    super(database, ownerWrite(database));
+    storage.registerSource({ mfa: this });
+  }
+
+  /**
+   * Run a factor lifecycle operation and its session checks in one transaction.
+   * Do not use the globally registered store from inside this callback.
+   */
+  async withLockedOwner<T>(
+    userId: string,
+    work: (tx: Prisma.TransactionClient, store: MfaStore) => Promise<T>,
+  ): Promise<T> {
+    return ownerWrite(this.database)(userId, async (tx) => {
+      const write: OwnerWrite = async (id, operation) => {
+        if (id !== userId) throw new Error('MFA owner mismatch');
+        return operation(tx);
+      };
+      return work(tx, new MfaPersistence(tx, write, userId));
     });
   }
 }
