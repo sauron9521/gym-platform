@@ -50,20 +50,24 @@ test('revoked trainer and ADMIN never inherit privileges from a stale role', () 
 
 test('auth bootstraps both account and live permissions before unlocking screens', () => {
   const auth = read('../src/features/auth/model/auth-context.tsx');
+  const lifecycle = read('../src/features/auth/model/use-auth-lifecycle.ts');
   const navigation = read('../src/app/_layout.tsx');
   const tabs = read('../src/app/(tabs)/_layout.tsx');
-  assert.equal((auth.match(/api\.GET\('\/users\/me\/capabilities'\)/g) ?? []).length, 4);
+  assert.equal(
+    ((auth + lifecycle).match(/api\.GET\('\/users\/me\/capabilities'\)/g) ?? []).length,
+    4,
+  );
   assert.ok(auth.includes('setAccount(me.data)'));
   assert.ok(auth.includes('setCapabilities(grants)'));
-  assert.ok(auth.includes("AppState.addEventListener('change'"));
-  assert.ok(auth.includes("state === 'background'"));
-  assert.ok(auth.includes("state === 'active'"));
+  assert.ok(lifecycle.includes("AppState.addEventListener('change'"));
+  assert.ok(lifecycle.includes("state === 'background'"));
+  assert.ok(lifecycle.includes("state === 'active'"));
   assert.ok(auth.includes('queryClient.clear()'));
   assert.ok(navigation.includes('guard={hasTrainerAccess(capabilities)}'));
   assert.ok(navigation.includes('guard={hasAthleteAccess(capabilities)}'));
   assert.ok(navigation.includes('guard={Boolean(account && hasMobileAccess(capabilities))}'));
   assert.ok(tabs.includes('<Tabs.Protected guard={hasAthleteAccess(capabilities)}>'));
-  for (const source of [auth, navigation, tabs]) {
+  for (const source of [auth, lifecycle, navigation, tabs]) {
     assert.doesNotMatch(source, /account\??\.role\s*===?\s*['"](?:ATHLETE|TRAINER)['"]/);
   }
 });

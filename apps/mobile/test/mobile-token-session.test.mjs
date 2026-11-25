@@ -175,13 +175,14 @@ test('failed SecureStore write invalidates and revokes the rotated successor', a
 test('native secure storage and gated profile bootstrap are wired without web persistence', () => {
   const read = (path) => readFileSync(new URL(path, import.meta.url), 'utf8');
   const auth = read('../src/features/auth/model/auth-context.tsx');
+  const lifecycle = read('../src/features/auth/model/use-auth-lifecycle.ts');
   const layout = read('../src/app/_layout.tsx');
   const native = read('../src/features/auth/model/refresh-token-store.ts');
   const web = read('../src/features/auth/model/refresh-token-store.web.ts');
   const config = JSON.parse(read('../app.json'));
 
-  assert.ok(auth.includes('await session.restore()'));
-  assert.ok(auth.includes("api.GET('/users/me')"));
+  assert.ok(lifecycle.includes('await session.restore()'));
+  assert.ok(lifecycle.includes("api.GET('/users/me')"));
   assert.ok(auth.includes("POST('/auth/token/refresh'"));
   assert.ok(auth.includes("POST('/auth/token/revoke'"));
   assert.ok(auth.includes('session.getAccessToken()'));
@@ -231,6 +232,10 @@ test('transient profile failure exposes a safe retry without replaying one-time 
     new URL('../src/features/auth/model/auth-context.tsx', import.meta.url),
     'utf8',
   );
+  const lifecycle = readFileSync(
+    new URL('../src/features/auth/model/use-auth-lifecycle.ts', import.meta.url),
+    'utf8',
+  );
   const screen = readFileSync(
     new URL('../src/screens/sign-in/ui/sign-in-screen.tsx', import.meta.url),
     'utf8',
@@ -238,7 +243,9 @@ test('transient profile failure exposes a safe retry without replaying one-time 
   assert.match(auth, /session\.canRevalidate\(\)/);
   assert.match(auth, /retryVerification/);
   assert.ok(auth.includes('createMobileApi(baseUrl, () => session.getRevalidationToken())'));
-  assert.ok(auth.includes('response.response.status === 401 || response.response.status === 403'));
+  assert.ok(
+    lifecycle.includes('response.response.status === 401 || response.response.status === 403'),
+  );
   assert.ok(auth.includes('result.response.status === 401 || result.response.status === 403'));
   const retry = auth.split('const retryVerification =')[1]?.split('const signIn =')[0];
   assert.ok(retry, 'Verification callback exists');
