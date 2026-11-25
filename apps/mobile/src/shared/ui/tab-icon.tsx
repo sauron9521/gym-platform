@@ -1,3 +1,4 @@
+import type { ColorValue } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
 const paths = {
@@ -13,7 +14,7 @@ export function TabIcon({
   size,
 }: {
   name: keyof typeof paths;
-  color: string;
+  color: ColorValue;
   size: number;
 }) {
   return (
