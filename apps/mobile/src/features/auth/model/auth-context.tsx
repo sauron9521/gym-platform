@@ -11,6 +11,7 @@ import {
 import type { paths } from '@gym/api-client';
 import { useQueryClient } from '@tanstack/react-query';
 
+import type { MobileAuthErrorCode } from '@/shared/i18n/mobile-messages';
 import { createMobileApi } from '@/shared/api/client';
 import {
   hasMobileAccess,
@@ -27,7 +28,7 @@ import { MobileTokenSession } from './mobile-token-session';
 import { refreshTokenStore } from './refresh-token-store';
 
 export type Account = paths['/users/me']['get']['responses'][200]['content']['application/json'];
-type Result = { success: true } | { success: false; message: string };
+type Result = { success: true } | { success: false; code: MobileAuthErrorCode };
 type AuthValue = {
   account: Account | null;
   capabilities: AccountCapabilities | null;
@@ -179,21 +180,21 @@ export function AuthProvider({ children }: PropsWithChildren) {
   const retryVerification = useCallback(async (): Promise<Result> => {
     if (!recoveryAvailable || !session.canRevalidate()) {
       setRecoveryAvailable(false);
-      return { success: false, message: 'Сесія потребує повторного входу.' };
+      return { success: false, code: 'sessionExpired' };
     }
     const api = getVerificationApi();
-    if (!api) return { success: false, message: 'Не налаштовано адресу API.' };
+    if (!api) return { success: false, code: 'apiUnavailable' };
 
     const revision = session.revision;
     try {
       const result = await api.GET('/users/me');
       if (session.revision !== revision) {
-        return { success: false, message: 'Сесія змінилася. Спробуйте ще раз.' };
+        return { success: false, code: 'sessionChanged' };
       }
       if (result.response.status === 200 && result.data) {
         const grantResult = await api.GET('/users/me/capabilities');
         if (session.revision !== revision) {
-          return { success: false, message: 'Session changed during verification.' };
+          return { success: false, code: 'sessionChanged' };
         }
         const grants =
           grantResult.response.status === 200 ? parseAccountCapabilities(grantResult.data) : null;
@@ -219,23 +220,23 @@ export function AuthProvider({ children }: PropsWithChildren) {
         setCapabilities(null);
         setRecoveryAvailable(false);
       }
-      return { success: false, message: 'Не вдалося підтвердити сесію.' };
+      return { success: false, code: 'sessionVerificationFailed' };
     } catch {
       // Retain the rotated refresh token; never retry the one-time refresh call.
-      return { success: false, message: 'Немає з’єднання з API. Спробуйте ще раз.' };
+      return { success: false, code: 'connectionFailed' };
     }
   }, [getVerificationApi, queryClient, recoveryAvailable, session]);
 
   const signIn = useCallback(
     async (email: string, password: string): Promise<Result> => {
-      if (restoring) return { success: false, message: 'Зачекайте на перевірку сесії.' };
+      if (restoring) return { success: false, code: 'restoring' };
       const validation = validateMobileCredentials(email, password);
-      if (validation) return { success: false, message: validation };
+      if (validation) return { success: false, code: validation };
 
       const guestApi = getGuestApi();
       const api = getApi();
       if (!guestApi || !api) {
-        return { success: false, message: 'Налаштуйте EXPO_PUBLIC_API_URL.' };
+        return { success: false, code: 'apiUnavailable' };
       }
 
       setRecoveryAvailable(false);
@@ -247,13 +248,13 @@ export function AuthProvider({ children }: PropsWithChildren) {
           body: { email: email.trim(), password },
         });
         if (issued.response.status !== 200 || !issued.data) {
-          return { success: false, message: getMobileLoginError(issued.response.status) };
+          return { success: false, code: getMobileLoginError(issued.response.status) };
         }
         issuedRefreshToken = issued.data.refreshToken;
 
         stage = 'persist';
         if (!(await session.accept(issued.data))) {
-          return { success: false, message: 'Не вдалося зберегти сесію.' };
+          return { success: false, code: 'storageFailed' };
         }
 
         // Never unlock based only on token issuance or SecureStore contents.
@@ -261,16 +262,16 @@ export function AuthProvider({ children }: PropsWithChildren) {
         const revision = session.revision;
         const me = await api.GET('/users/me');
         if (me.response.status !== 200 || !me.data || session.revision !== revision) {
-          return { success: false, message: 'Не вдалося підтвердити вхід.' };
+          return { success: false, code: 'verificationFailed' };
         }
 
         const grantResult = await api.GET('/users/me/capabilities');
         if (session.revision !== revision || grantResult.response.status !== 200) {
-          return { success: false, message: 'Unable to verify account permissions.' };
+          return { success: false, code: 'permissionsFailed' };
         }
         const grants = parseAccountCapabilities(grantResult.data);
         if (!hasMobileAccess(grants)) {
-          return { success: false, message: 'Account is not eligible for Mobile access.' };
+          return { success: false, code: 'mobileAccessDenied' };
         }
 
         queryClient.clear();
@@ -281,7 +282,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
         return { success: true };
       } catch {
         // Identify the failed step without exposing credentials or raw exceptions.
-        return { success: false, message: getMobileLoginTransportError(stage) };
+        return { success: false, code: getMobileLoginTransportError(stage) };
       } finally {
         if (!verified) {
           await session.clear().catch(() => undefined);

@@ -23,7 +23,7 @@ test('Zod sign-in schema rejects empty, whitespace-only and invalid input', () =
   assert.equal(invalid.success, false);
   assert.ok(invalid.error.issues.some((issue) => issue.path[0] === 'email'));
   assert.ok(invalid.error.issues.some((issue) => issue.path[0] === 'password'));
-  assert.match(invalid.error.issues[0].message, /адресу/);
+  assert.equal(invalid.error.issues[0].message, 'invalidEmail');
 
   assert.equal(
     signInSchema.safeParse({ email: 'valid@example.test', password: '' }).success,
@@ -44,8 +44,8 @@ test('react-hook-form Zod resolver returns field errors and normalized values', 
     shouldUseNativeValidation: false,
   };
   const invalid = await resolver({ email: 'invalid', password: '  ' }, undefined, options);
-  assert.match(invalid.errors.email?.message, /адресу/);
-  assert.match(invalid.errors.password?.message, /пароль/);
+  assert.equal(invalid.errors.email?.message, 'invalidEmail');
+  assert.equal(invalid.errors.password?.message, 'invalidPassword');
 
   const valid = await resolver(
     { email: '  athlete@example.test ', password: '  secret  ' },

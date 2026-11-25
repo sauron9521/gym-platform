@@ -1,7 +1,8 @@
 import { z } from 'zod';
+import type { MobileAuthErrorCode } from '../../../shared/i18n/mobile-messages';
 
-const INVALID_EMAIL = 'Вкажіть коректну електронну адресу.';
-const INVALID_PASSWORD = 'Вкажіть пароль.';
+const INVALID_EMAIL = 'invalidEmail';
+const INVALID_PASSWORD = 'invalidPassword';
 
 /** Single source of truth for sign-in validation on iOS, Android and Expo Web. */
 export const signInSchema = z.object({
@@ -18,35 +19,41 @@ export const signInSchema = z.object({
 
 export type SignInValues = z.infer<typeof signInSchema>;
 
-export function getMobileLoginError(status: number): string {
+export function getMobileLoginError(status: number): MobileAuthErrorCode {
   switch (status) {
     case 400:
-      return 'Перевірте електронну адресу та пароль.';
+      return 'invalidRequest';
     case 401:
-      return 'Невірна електронна адреса або пароль.';
+      return 'invalidCredentials';
     case 403:
-      return 'Доступ заборонено.';
+      return 'accessDenied';
     case 429:
-      return 'Забагато спроб входу. Спробуйте пізніше.';
+      return 'throttled';
     default:
-      return 'Не вдалося увійти. Спробуйте ще раз.';
+      return 'failed';
   }
 }
 
 /** Do not show raw fetch errors: they may contain URLs or other sensitive details. */
-export function getMobileLoginTransportError(stage: 'issue' | 'persist' | 'verify'): string {
+export function getMobileLoginTransportError(
+  stage: 'issue' | 'persist' | 'verify',
+): MobileAuthErrorCode {
   switch (stage) {
     case 'issue':
-      return 'Не вдалося виконати запит входу до API. Перевірте адресу сервера, з’єднання та CORS (Expo Web).';
+      return 'connectionFailed';
     case 'persist':
-      return 'Не вдалося захищено зберегти сесію на пристрої.';
+      return 'storageFailed';
     case 'verify':
-      return 'Не вдалося перевірити вхід через API. Перевірте з’єднання із сервером.';
+      return 'verificationFailed';
   }
 }
 
 /** Keep the imperative auth API protected for callers outside React forms. */
-export function validateMobileCredentials(email: string, password: string): string | null {
+export function validateMobileCredentials(
+  email: string,
+  password: string,
+): MobileAuthErrorCode | null {
   const result = signInSchema.safeParse({ email, password });
-  return result.success ? null : (result.error.issues[0]?.message ?? INVALID_EMAIL);
+  if (result.success) return null;
+  return result.error.issues[0]?.path[0] === 'password' ? INVALID_PASSWORD : INVALID_EMAIL;
 }
