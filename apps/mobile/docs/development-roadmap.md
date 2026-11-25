@@ -23,21 +23,21 @@ and is refreshed against main before final CI. Existing issues remain canonical.
 
 ## Ordered PR queue
 
-| Order | Scope | Existing issue / gate |
-| --- | --- | --- |
-| M01 | Audit, mobile-only scope, queue and acceptance criteria | #318, #385 |
-| M02 | Network snapshot vs live listener ordering | #324 |
-| M03 | Visible sign-in recovery pending state and failure handling | #318, #327 |
-| M04 | Auth error codes and locale-aware presentation | #327 |
-| M05 | Native staging evidence and lifecycle regression coverage | #324, #348, #385 |
-| M06 | Athlete tab navigation, branding and route compatibility | #368, #385 |
-| M07 | Active workout feedback, safe area, keyboard and accessibility | #385, #392 |
-| M08 | Theme adapter and screen-by-screen light/dark parity | #391 |
-| M09 | Workout and auth component extraction with unchanged behavior | #318 |
-| M10 | Account-scoped encrypted draft persistence and explicit review | #345 |
-| M11 | Calendar using existing GET contracts and bounded pagination | #340 |
-| M12 | Native crash monitoring with redaction and preview validation | #350 |
-| M13 | Inbox, preferences, then local reminders and push | #574, #577, #342, #343; backend contracts first |
+| Order | Scope                                                          | Existing issue / gate                           |
+| ----- | -------------------------------------------------------------- | ----------------------------------------------- |
+| M01   | Audit, mobile-only scope, queue and acceptance criteria        | #318, #385                                      |
+| M02   | Network snapshot vs live listener ordering                     | #324                                            |
+| M03   | Visible sign-in recovery pending state and failure handling    | #318, #327                                      |
+| M04   | Auth error codes and locale-aware presentation                 | #327                                            |
+| M05   | Native staging evidence and lifecycle regression coverage      | #324, #348, #385                                |
+| M06   | Athlete tab navigation, branding and route compatibility       | #368, #385                                      |
+| M07   | Active workout feedback, safe area, keyboard and accessibility | #385, #392                                      |
+| M08   | Theme adapter and screen-by-screen light/dark parity           | #391                                            |
+| M09   | Workout and auth component extraction with unchanged behavior  | #318                                            |
+| M10   | Account-scoped encrypted draft persistence and explicit review | #345                                            |
+| M11   | Calendar using existing GET contracts and bounded pagination   | #340                                            |
+| M12   | Native crash monitoring with redaction and preview validation  | #350                                            |
+| M13   | Inbox, preferences, then local reminders and push              | #574, #577, #342, #343; backend contracts first |
 
 ## Merge and release rules
 
