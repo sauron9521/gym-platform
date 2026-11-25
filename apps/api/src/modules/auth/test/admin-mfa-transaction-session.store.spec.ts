@@ -2,6 +2,7 @@ import type { SessionRecord } from '@nestjs/authentication';
 import { describe, expect, it, vi } from 'vitest';
 
 import type { Prisma } from '#prisma/client';
+import { ADMIN_MFA_METADATA, adminMfaSessionScope } from '../stores/admin-mfa-session-scope.js';
 import { AdminMfaTransactionSessionStore } from '../stores/admin-mfa-transaction-session.store.js';
 
 function setup(state: 'pending' | 'verified' = 'pending') {
@@ -13,7 +14,7 @@ function setup(state: 'pending' | 'verified' = 'pending') {
     lastActiveAt: now,
     expiresAt: new Date(now.getTime() + 8 * 60 * 60 * 1000),
     mfa: state,
-    metadata: { purpose: 'admin' },
+    metadata: { ...ADMIN_MFA_METADATA },
   };
   const tx = {
     session: {
@@ -62,9 +63,8 @@ describe('AdminMfaTransactionSessionStore', () => {
   it('scopes reads, activity and deletion to the exact owner and Admin purpose', async () => {
     const { store, tx, record } = setup();
     const scope = {
-      id: record.id,
+      ...adminMfaSessionScope(record.id),
       userId: record.userId,
-      metadata: { path: ['purpose'], equals: 'admin' },
     };
     expect(await store.getSession(record.id)).toMatchObject({ id: record.id });
     expect(tx.session.findFirst).toHaveBeenCalledWith({

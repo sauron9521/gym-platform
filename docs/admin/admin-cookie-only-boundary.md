@@ -263,3 +263,23 @@ pending/verified reader, enforce origin checks, handle sign-out and lost
 responses, provide protected recovery, verify key provisioning and complete
 browser and multi-replica security tests. No live enrollment or production
 activation; do not close #290. The audit enum extension is additive.
+
+### Scoped Admin MFA cookie reader (#290, eighth slice)
+
+Challenge-issued sessions carry server-written flow provenance in metadata.
+The scoped Admin reader accepts only that provenance, an active ADMIN owner,
+a confirmed factor, a configured keyring and a session newer than the
+credential invalidation fence. Pending sessions cannot authorize protected
+routes or extend their five-minute deadline; verified sessions keep the
+8h/15m policy. Legacy password-only Admin sessions remain available only
+through the existing fence; an unmarked stored verified state is insufficient.
+
+The internal cookie challenge helper delegates to the atomic coordinator
+instead of verifying a factor and rotating separately. Admin sign-out can
+discard the exact scoped MFA token, including expired rows, without touching
+ordinary credentials. If rotation already won, the old token cannot revoke
+the new token; handle lost responses and logout races in the HTTP rollout
+gate. Ordinary cookie and JWT stores remain unchanged. No public challenge
+or enrolled-user login endpoint is enabled. Existing unmarked internal
+challenge rows must be discarded and recreated before exposure. No schema
+change, no mandatory MFA activation, and #289/#290 remain open.

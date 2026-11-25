@@ -9,6 +9,8 @@ import {
 import { toSessionRecord } from '../mappers/auth-session.mapper.js';
 import { authSessionSelect } from '../selects/auth-session.select.js';
 
+import { ADMIN_MFA_METADATA, adminMfaSessionScope } from './admin-mfa-session-scope.js';
+
 export const ADMIN_MFA_PENDING_TTL_MS = 5 * 60 * 1000;
 
 /**
@@ -29,9 +31,8 @@ export class AdminMfaTransactionSessionStore implements SessionStore {
 
   private scope(id: string) {
     return {
-      id,
+      ...adminMfaSessionScope(id),
       userId: this.ownerId,
-      metadata: { path: ['purpose'], equals: ADMIN_SESSION_PURPOSE },
     };
   }
 
@@ -51,6 +52,7 @@ export class AdminMfaTransactionSessionStore implements SessionStore {
     if (record.metadata?.purpose !== ADMIN_SESSION_PURPOSE || record.mfa !== this.state) {
       throw new Error('Admin MFA session state mismatch');
     }
+    record.metadata = { ...ADMIN_MFA_METADATA };
     capAdminSessionExpiry(record);
     if (this.state === 'pending') {
       const cap = record.createdAt.getTime() + ADMIN_MFA_PENDING_TTL_MS;
@@ -64,7 +66,7 @@ export class AdminMfaTransactionSessionStore implements SessionStore {
         expiresAt: record.expiresAt,
         lastActiveAt: record.lastActiveAt,
         mfa: record.mfa,
-        metadata: { purpose: ADMIN_SESSION_PURPOSE },
+        metadata: ADMIN_MFA_METADATA,
       },
     });
   }
