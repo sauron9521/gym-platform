@@ -25,6 +25,13 @@ test('required Quality gate waits for every API operational job without changing
   assert.match(workflow, /admin_browser: \$\{\{ steps\.select\.outputs\.adminBrowser \}\}/);
   assert.match(quality, /ADMIN_REQUIRED: \$\{\{ needs\.changes\.outputs\.admin_browser \}\}/);
   assert.ok(quality.includes('ADMIN_E2E_RESULT: ' + '$' + '{{ needs.admin-browser-e2e.result }}'));
+  assert.ok(quality.includes('      - monitoring-shadow\n'));
+  assert.match(workflow, /monitoring_shadow: \$\{\{ steps\.select\.outputs\.monitoringShadow \}\}/);
+  assert.match(
+    quality,
+    /MONITORING_SHADOW_REQUIRED: \$\{\{ needs\.changes\.outputs\.monitoring_shadow \}\}/,
+  );
+  assert.match(quality, /MONITORING_SHADOW_RESULT: \$\{\{ needs\.monitoring-shadow\.result \}\}/);
   for (const [job, status] of apiJobs) {
     assert.ok(quality.includes('      - ' + job + '\n'), job + ' must be a job dependency');
     assert.ok(
@@ -60,6 +67,8 @@ test('required Quality gate fails closed for API errors and checks expected skip
     QUALITY_WORKSPACES_RESULT: 'success',
     TOOLING_CONTRACTS_RESULT: 'success',
     FULL_SCOPE: 'false',
+    MONITORING_SHADOW_REQUIRED: 'false',
+    MONITORING_SHADOW_RESULT: 'skipped',
     WINDOWS_RESULT: 'skipped',
     WEB_REQUIRED: 'false',
     WEB_E2E_RESULT: 'skipped',
@@ -121,4 +130,19 @@ test('required Quality gate fails closed for API errors and checks expected skip
     );
   }
   assert.notEqual(exitStatus({ API_REQUIRED: '' }), 0);
+
+  const shadow = classifyChangedPaths(['ops/monitoring/shadow/config.alloy']);
+  assert.equal(shadow.monitoringShadow, true);
+  assert.equal(shadow.api, false);
+  const shadowScope = {
+    API_REQUIRED: String(shadow.api),
+    ...skipped,
+    MONITORING_SHADOW_REQUIRED: String(shadow.monitoringShadow),
+  };
+  assert.equal(exitStatus({ ...shadowScope, MONITORING_SHADOW_RESULT: 'success' }), 0);
+  for (const invalid of ['failure', 'cancelled', 'skipped', '']) {
+    assert.notEqual(exitStatus({ ...shadowScope, MONITORING_SHADOW_RESULT: invalid }), 0);
+  }
+  assert.notEqual(exitStatus({ MONITORING_SHADOW_RESULT: 'success' }), 0);
+  assert.notEqual(exitStatus({ MONITORING_SHADOW_REQUIRED: '' }), 0);
 });
