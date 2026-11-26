@@ -5,7 +5,7 @@ import { PrismaService } from '#src/infra/database/index';
 
 import { trainerApplicationAdminSelect } from '../selects/trainer-application.admin-select.js';
 
-export type TrainerReviewAction = 'APPROVE' | 'REJECT' | 'REVOKE';
+import type { TrainerReviewAction } from '../domain/trainer-application.lifecycle.js';
 
 @Injectable()
 export class TrainerReviewRepository {

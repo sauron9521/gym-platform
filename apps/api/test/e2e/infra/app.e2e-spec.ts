@@ -1,4 +1,5 @@
-import type { INestApplication } from '@nestjs/common';
+import { Injectable, Module, type INestApplication } from '@nestjs/common';
+import { ModulesContainer } from '@nestjs/core';
 import { ConfigService } from '@nestjs/config';
 import { Test, type TestingModule } from '@nestjs/testing';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -19,7 +20,14 @@ import { ExercisesService } from '../../../src/modules/exercises/services/exerci
 import { TrainerAthletesModule } from '../../../src/modules/trainer-athletes/trainer-athletes.module.js';
 import { TrainerAthletesService } from '../../../src/modules/trainer-athletes/services/trainer-athletes.service.js';
 import { TrainerOnboardingModule } from '../../../src/modules/trainer-onboarding/trainer-onboarding.module.js';
-import { TrainerApplicationsService } from '../../../src/modules/trainer-onboarding/services/trainer-applications.service.js';
+import {
+  TrainerApplicationsService,
+  TrainerReviewService,
+} from '../../../src/modules/trainer-onboarding/public-api.js';
+import { TrainerApplicationsRepository } from '../../../src/modules/trainer-onboarding/repositories/trainer-applications.repository.js';
+import { TrainerReviewRepository } from '../../../src/modules/trainer-onboarding/repositories/trainer-review.repository.js';
+import { TrainerApplicationsController } from '../../../src/modules/trainer-onboarding/controllers/trainer-applications.controller.js';
+import { TrainerReviewController } from '../../../src/modules/trainer-onboarding/controllers/trainer-review.controller.js';
 import { TrainingProgramsModule } from '../../../src/modules/training-programs/training-programs.module.js';
 import { TrainingProgramsService } from '../../../src/modules/training-programs/services/training-programs.service.js';
 import { UsersModule } from '../../../src/modules/users/users.module.js';
@@ -32,12 +40,25 @@ import { WorkoutAnalyticsService } from '../../../src/modules/workout-analytics/
 import { WorkoutsModule } from '../../../src/modules/workouts/workouts.module.js';
 import { WorkoutsService } from '../../../src/modules/workouts/services/workouts.service.js';
 
+// Test-only consumer proves future adapter modules can resolve the existing
+// services without redeclaring providers or exposing repositories.
+@Injectable()
+class TrainerOnboardingBoundaryProbe {
+  constructor(
+    readonly applications: TrainerApplicationsService,
+    readonly review: TrainerReviewService,
+  ) {}
+}
+
+@Module({ imports: [TrainerOnboardingModule], providers: [TrainerOnboardingBoundaryProbe] })
+class TrainerOnboardingBoundaryProbeModule {}
+
 describe('App (e2e)', () => {
   let app: INestApplication;
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [AppModule],
+      imports: [AppModule, TrainerOnboardingBoundaryProbeModule],
     }).compile();
 
     app = moduleFixture.createNestApplication();
@@ -73,6 +94,34 @@ describe('App (e2e)', () => {
 
     for (const [owner, provider] of scopes) {
       expect(app.select(owner).get(provider, { strict: true })).toBeInstanceOf(provider);
+    }
+  });
+
+  it('resolves both onboarding contracts from an importing module without duplicate providers or controllers', () => {
+    const modules = [...app.get(ModulesContainer).values()];
+    const core = app.select(TrainerOnboardingModule);
+    const probe = app
+      .select(TrainerOnboardingBoundaryProbeModule)
+      .get(TrainerOnboardingBoundaryProbe, { strict: true });
+    expect(modules.filter((module) => module.metatype === TrainerOnboardingModule)).toHaveLength(1);
+    expect(probe.applications).toBe(core.get(TrainerApplicationsService, { strict: true }));
+    expect(probe.review).toBe(core.get(TrainerReviewService, { strict: true }));
+    for (const provider of [
+      TrainerApplicationsService,
+      TrainerReviewService,
+      TrainerApplicationsRepository,
+      TrainerReviewRepository,
+    ]) {
+      expect(
+        modules.filter((module) => module.providers.has(provider)).map((module) => module.metatype),
+      ).toEqual([TrainerOnboardingModule]);
+    }
+    for (const controller of [TrainerApplicationsController, TrainerReviewController]) {
+      expect(
+        modules
+          .filter((module) => module.controllers.has(controller))
+          .map((module) => module.metatype),
+      ).toEqual([TrainerOnboardingModule]);
     }
   });
 

@@ -25,8 +25,9 @@ import {
   trainerReviewApplicationIdSchema,
   trainerReviewDecisionSchema,
   type TrainerReviewDecision,
-} from '../dto/trainer-review.schemas.js';
-import { TrainerReviewService, type Reviewer } from '../services/trainer-review.service.js';
+  TrainerReviewService,
+  type Reviewer,
+} from '../public-api.js';
 
 @ApiTags('Trainer moderation')
 @ApiCookieAuth('adminSessionCookie')
