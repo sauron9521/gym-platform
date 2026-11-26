@@ -41,7 +41,9 @@ import { TrainingProgramsModule } from '../../../src/modules/training-programs/t
 import { TrainingProgramsService } from '../../../src/modules/training-programs/services/training-programs.service.js';
 import { UsersModule } from '../../../src/modules/users/users.module.js';
 import { AccountDeletionRequestsModule } from '../../../src/modules/account-deletion-requests/account-deletion-requests.module.js';
-import { AccountDeletionRequestsService } from '../../../src/modules/account-deletion-requests/services/account-deletion-requests.service.js';
+import { AccountDeletionRequestsService } from '../../../src/modules/account-deletion-requests/public-api.js';
+import { AccountDeletionRequestsRepository } from '../../../src/modules/account-deletion-requests/repositories/account-deletion-requests.repository.js';
+import { AccountDeletionRequestsController } from '../../../src/modules/account-deletion-requests/controllers/account-deletion-requests.controller.js';
 import { UsersAuthFacade } from '../../../src/modules/users/services/users-auth.facade.js';
 import { UsersService } from '../../../src/modules/users/services/users.service.js';
 import { WorkoutAnalyticsModule } from '../../../src/modules/workout-analytics/workout-analytics.module.js';
@@ -70,12 +72,28 @@ class NotificationsBoundaryProbe {
 @Module({ imports: [NotificationsModule], providers: [NotificationsBoundaryProbe] })
 class NotificationsBoundaryProbeModule {}
 
+@Injectable()
+class AccountDeletionRequestsBoundaryProbe {
+  constructor(readonly requests: AccountDeletionRequestsService) {}
+}
+
+@Module({
+  imports: [AccountDeletionRequestsModule],
+  providers: [AccountDeletionRequestsBoundaryProbe],
+})
+class AccountDeletionRequestsBoundaryProbeModule {}
+
 describe('App (e2e)', () => {
   let app: INestApplication;
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [AppModule, TrainerOnboardingBoundaryProbeModule, NotificationsBoundaryProbeModule],
+      imports: [
+        AppModule,
+        TrainerOnboardingBoundaryProbeModule,
+        NotificationsBoundaryProbeModule,
+        AccountDeletionRequestsBoundaryProbeModule,
+      ],
     }).compile();
 
     app = moduleFixture.createNestApplication();
@@ -212,6 +230,33 @@ describe('App (e2e)', () => {
         .filter((module) => module.controllers.has(NotificationSettingsController))
         .map((module) => module.metatype),
     ).toEqual([SharedNotificationsApiModule]);
+  });
+
+  it('resolves account deletion intake from an importing module with unique service, repository, quota and controller ownership', () => {
+    const modules = [...app.get(ModulesContainer).values()];
+    const core = app.select(AccountDeletionRequestsModule);
+    const probe = app
+      .select(AccountDeletionRequestsBoundaryProbeModule)
+      .get(AccountDeletionRequestsBoundaryProbe, { strict: true });
+    expect(
+      modules.filter((module) => module.metatype === AccountDeletionRequestsModule),
+    ).toHaveLength(1);
+    expect(probe.requests).toBe(core.get(AccountDeletionRequestsService, { strict: true }));
+    for (const provider of [AccountDeletionRequestsService, AccountDeletionRequestsRepository]) {
+      expect(
+        modules.filter((module) => module.providers.has(provider)).map((module) => module.metatype),
+      ).toEqual([AccountDeletionRequestsModule]);
+    }
+    expect(
+      modules
+        .filter((module) => module.providers.has(DistributedThrottlerStorage))
+        .map((module) => module.metatype),
+    ).toEqual([RateLimitStorageModule]);
+    expect(
+      modules
+        .filter((module) => module.controllers.has(AccountDeletionRequestsController))
+        .map((module) => module.metatype),
+    ).toEqual([AccountDeletionRequestsModule]);
   });
 
   it('resolves the same Prisma singleton from the declaring module and app context', () => {
