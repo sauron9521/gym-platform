@@ -1,6 +1,6 @@
 # ADR-010 — Segregated API interfaces inside the modular monolith
 
-- **Status:** Accepted target direction by the owner, 2026-11-26; Users pilot implementation merged, [pilot review](adr-010-users-pilot-review.md) records evidence and recommends limited expansion pending owner approval.
+- **Status:** Accepted target direction by the owner, 2026-11-26; Users and Auth migrations merged; [Users pilot review](adr-010-users-pilot-review.md) and [Auth migration review](adr-010-auth-migration-review.md) record evidence. ABI06 limited expansion recommended pending review.
 - **Scope:** [Epic #909](https://github.com/sauron9521/gym-platform/issues/909), E14 [#354](https://github.com/sauron9521/gym-platform/issues/354).
 - **Baseline:** [main 61401e69](https://github.com/sauron9521/gym-platform/commit/61401e69e2ef4b21e4ffc63adecf66c105402427); initial composition and file inventory, not a complete route/security audit.
 - **Related:** [ADR-005](adr-005-product-ownership-trainer-migration.md), [ADR-007](adr-007-pragmatic-clean-architecture.md), [master roadmap #353](https://github.com/sauron9521/gym-platform/issues/353), [architecture roadmap #380](https://github.com/sauron9521/gym-platform/issues/380).
@@ -88,7 +88,7 @@ Reassess a separate Admin API only with measured operational or release coupling
 2. ABI02 — [baseline inventory](adr-010-api-boundary-inventory.md): inventory actual controllers and methods, audiences, security policies, module/provider graphs, OpenAPI and regression coverage; reconcile parallel changes.
 3. ABI03 — add minimal composition and enforce boundaries through existing architecture checks.
 4. ABI04 — pilot Users/Admin Users separation without route or behavior changes; verify DI, OpenAPI parity, authorization and regression suites; [pilot review](adr-010-users-pilot-review.md) before expansion.
-5. ABI05 — [Auth boundary inventory](adr-010-auth-boundary-inventory.md); Auth/Admin Auth only after session/MFA and dependency review, with dedicated security regression coverage.
+5. ABI05 — [Auth boundary inventory](adr-010-auth-boundary-inventory.md); Auth/Admin Auth only after session/MFA and dependency review, with dedicated security regression coverage; [ABI05e review](adr-010-auth-migration-review.md) before expansion.
 6. ABI06 — remaining interfaces by small feature slice; keep shared routes single-owned.
 7. ABI07 — simplify composition and evaluate audience OpenAPI views without changing canonical contracts.
 8. ABI08 — reconcile docs and evidence, verify architecture guardrails and document future extraction gates.
