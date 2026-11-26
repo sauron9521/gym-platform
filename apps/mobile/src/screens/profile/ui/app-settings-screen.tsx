@@ -20,6 +20,7 @@ export function AppSettingsScreen() {
     setRestVibration,
     setKeepWorkoutScreenAwake,
     setShowPreviousSets,
+    setAutoCollapseExercises,
     reload,
     retryAccount,
   } = useAppSettings((state) => state);
@@ -144,6 +145,20 @@ export function AppSettingsScreen() {
             disabled={disabled}
             value={settings.showPreviousSets}
             onValueChange={(value) => void setShowPreviousSets(value)}
+            trackColor={{ false: palette.border, true: palette.primary }}
+          />
+        </View>
+        <View style={styles.row}>
+          <View style={styles.description}>
+            <Text style={styles.label}>{t('autoCollapseExercises')}</Text>
+            <Text style={styles.hint}>{t('autoCollapseExercisesHint')}</Text>
+          </View>
+          <Switch
+            testID="settings-auto-collapse-exercises"
+            accessibilityLabel={t('autoCollapseExercises')}
+            disabled={disabled}
+            value={settings.autoCollapseExercises}
+            onValueChange={(value) => void setAutoCollapseExercises(value)}
             trackColor={{ false: palette.border, true: palette.primary }}
           />
         </View>

@@ -17,6 +17,8 @@ import { previousSetHint } from '@/features/workouts/lib/previous-set-hints';
 import { RestTimer } from '@/features/workouts/ui/rest-timer';
 import { useWorkoutDetails } from '../model/use-workout-details';
 import { createThemedStyles } from '@/shared/config/theme-provider';
+import { useAppSettings } from '@/features/app-settings/model/app-settings-context';
+import { WorkoutExerciseCard } from './workout-exercise-card';
 import { WorkoutSetRow } from './workout-set-row';
 
 type TitleEditorProps = {
@@ -78,6 +80,8 @@ export function WorkoutDetailsScreen({ id }: { id: string }) {
     beginSetWrite, settleSetWrite, startRest,
   } = useWorkoutDetails(id);
   const histories = usePreviousSetHints(details.isError ? undefined : workout);
+  const accountId = useAppSettings((state) => state.settings.accountId);
+  const autoCollapse = useAppSettings((state) => state.settings.autoCollapseExercises);
 
   return (
     <ScrollView
@@ -158,9 +162,13 @@ export function WorkoutDetailsScreen({ id }: { id: string }) {
             </>
           ) : null}
           {workout.exercises.map((exercise) => (
-            <View key={exercise.id} style={styles.card}>
-              <Text style={styles.heading}>{exercise.exerciseNameSnapshot}</Text>
-              <Text style={styles.muted}>Підходів: {exercise.sets.length}</Text>
+            <WorkoutExerciseCard
+              key={`${accountId}:${id}:${exercise.id}`}
+              exercise={exercise}
+              active={Boolean(accountId && workout.athleteId === accountId && workout.status === 'IN_PROGRESS')}
+              autoCollapse={autoCollapse}
+              confirmed={!reconciling && !uncertain && !exercise.sets.some((set) => set.id === pendingSet)}
+            >
               {exercise.sets.map((set) => (
                 <WorkoutSetRow
                   key={set.id}
@@ -177,7 +185,7 @@ export function WorkoutDetailsScreen({ id }: { id: string }) {
                   canonicalReadVersion={details.canonicalReadVersion}
                 />
               ))}
-            </View>
+            </WorkoutExerciseCard>
           ))}
           {workout.status === 'PLANNED' || workout.status === 'IN_PROGRESS' ? (
             <Pressable
@@ -231,7 +239,6 @@ const useStyles = createThemedStyles((palette) =>
     container: { flex: 1, backgroundColor: palette.background },
     content: { paddingHorizontal: 20, paddingTop: 24, paddingBottom: 24, gap: 16 },
     title: { fontSize: 26, fontWeight: '700', color: palette.text },
-    heading: { fontSize: 17, fontWeight: '600', color: palette.text },
     muted: { fontSize: 14, color: palette.muted },
     error: { fontSize: 14, color: palette.error },
     progressTrack: {
@@ -259,15 +266,6 @@ const useStyles = createThemedStyles((palette) =>
       minHeight: 48,
     },
     cancelText: { color: palette.error, fontWeight: '600' },
-    card: {
-      borderWidth: 1,
-      borderColor: palette.border,
-      backgroundColor: palette.surface,
-      borderRadius: 14,
-      padding: 18,
-      gap: 8,
-      minWidth: 0,
-    },
     button: {
       backgroundColor: palette.primary,
       borderRadius: 12,

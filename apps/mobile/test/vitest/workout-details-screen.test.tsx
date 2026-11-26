@@ -3,6 +3,8 @@ import { act, fireEvent, render as nativeRender } from '@testing-library/react-n
 import { useEffect, type PropsWithChildren } from 'react';
 import { RestTimerProvider } from '@/features/workouts/model/rest-timer-provider';
 import { Alert } from 'react-native';
+import { IntlProvider } from 'react-intl';
+import { getMobileMessages } from '@/shared/i18n/mobile-messages';
 
 import {
   useWorkoutDetailsQuery,
@@ -22,7 +24,9 @@ function Wrapper({ children }: PropsWithChildren) {
       defaultDuration={120}
       feedback={{ sound: true, vibration: true }}
     >
-      {children}
+      <IntlProvider locale="uk" messages={getMobileMessages('uk')}>
+        {children}
+      </IntlProvider>
     </RestTimerProvider>
   );
 }
@@ -51,6 +55,7 @@ vi.mock('@/features/workouts/lib/use-workout-keep-awake', () => ({
 const notify = vi.hoisted(() => vi.fn());
 vi.mock('@/features/workouts/lib/use-rest-feedback', () => ({ useRestFeedback: () => notify }));
 
+const collapsePreference = vi.hoisted(() => ({ enabled: false }));
 const shouldAutoStartRestTimer = vi.hoisted(() => vi.fn(() => true));
 vi.mock('@/features/app-settings/model/app-settings-context', () => ({
   useAppSettings: (select: (state: unknown) => unknown) =>
@@ -62,6 +67,7 @@ vi.mock('@/features/app-settings/model/app-settings-context', () => ({
         restSound: true,
         restVibration: true,
         keepWorkoutScreenAwake: true,
+        autoCollapseExercises: collapsePreference.enabled,
       },
     }),
 }));
@@ -79,6 +85,7 @@ function prepareWorkout(
     data: {
       id: 'workout-123',
       title: 'Тренування A',
+      athleteId: 'athlete-a',
       status,
       notes: null,
       exercises:
@@ -121,6 +128,7 @@ describe('WorkoutDetailsScreen (real React Native renderer)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(usePreviousSetHints).mockReturnValue(new Map());
+    collapsePreference.enabled = false;
   });
 
   it('passes only matching strength history to pending rows', async () => {
@@ -181,6 +189,72 @@ describe('WorkoutDetailsScreen (real React Native renderer)', () => {
     vi.mocked(usePreviousSetHints).mockReturnValue(new Map());
     await view.rerender(<WorkoutDetailsScreen id="workout-123" />);
     expect(row('set-1')?.previousHint).toBeUndefined();
+  });
+
+  it('collapses only after the final set write settles and preserves manual expansion', async () => {
+    collapsePreference.enabled = true;
+    prepareWorkout('IN_PROGRESS', 'PENDING');
+    const view = await render(<WorkoutDetailsScreen id="workout-123" />);
+    expect(view.queryByTestId('exercise-toggle-exercise-1')).toBeNull();
+    const row = () => vi.mocked(WorkoutSetRow).mock.calls.at(-1)![0];
+    await act(async () => {
+      expect(row().onWriteStart?.('set-1')).toBe(true);
+    });
+    prepareWorkout('IN_PROGRESS', 'COMPLETED');
+    await view.rerender(<WorkoutDetailsScreen id="workout-123" />);
+    const toggle = () => view.getByTestId('exercise-toggle-exercise-1');
+    expect(toggle().props.accessibilityState.expanded).toBe(true);
+    await act(async () => row().onWriteSettled?.('set-1', null));
+    expect(toggle().props.accessibilityState.expanded).toBe(false);
+    expect(view.getByText('1 виконано · 0 пропущено / 1')).toBeTruthy();
+    await fireEvent.press(toggle());
+    expect(toggle().props.accessibilityState.expanded).toBe(true);
+    await view.rerender(<WorkoutDetailsScreen id="workout-123" />);
+    expect(toggle().props.accessibilityState.expanded).toBe(true);
+    collapsePreference.enabled = false;
+    await view.rerender(<WorkoutDetailsScreen id="workout-123" />);
+    expect(view.queryByTestId('exercise-toggle-exercise-1')).toBeNull();
+    expect(view.getByTestId('exercise-sets-exercise-1').props.accessibilityElementsHidden).toBe(
+      false,
+    );
+  });
+
+  it('waits for canonical verification after ambiguous final set write', async () => {
+    collapsePreference.enabled = true;
+    prepareWorkout('IN_PROGRESS', 'PENDING');
+    const view = await render(<WorkoutDetailsScreen id="workout-123" />);
+    const row = () => vi.mocked(WorkoutSetRow).mock.calls.at(-1)![0];
+    await act(async () => {
+      expect(row().onWriteStart?.('set-1')).toBe(true);
+    });
+    await act(async () => row().onWriteSettled?.('set-1', 5));
+    prepareWorkout('IN_PROGRESS', 'COMPLETED');
+    await view.rerender(<WorkoutDetailsScreen id="workout-123" />);
+    expect(view.getByTestId('exercise-toggle-exercise-1').props.accessibilityState.expanded).toBe(
+      true,
+    );
+    expect(view.getByTestId('workout-status-action').props.accessibilityState.disabled).toBe(true);
+    vi.mocked(useWorkoutDetailsQuery).mockReturnValue({
+      ...vi.mocked(useWorkoutDetailsQuery)('workout-123'),
+      canonicalReadVersion: 6,
+    });
+    await view.rerender(<WorkoutDetailsScreen id="workout-123" />);
+    expect(view.getByTestId('exercise-toggle-exercise-1').props.accessibilityState.expanded).toBe(
+      false,
+    );
+  });
+
+  it('collapses all-skipped exercise without unlocking workout completion', async () => {
+    collapsePreference.enabled = true;
+    prepareWorkout('IN_PROGRESS', 'SKIPPED');
+    const view = await render(<WorkoutDetailsScreen id="workout-123" />);
+    expect(view.getByTestId('exercise-toggle-exercise-1').props.accessibilityState.expanded).toBe(
+      false,
+    );
+    expect(view.getByText('0 виконано · 1 пропущено / 1')).toBeTruthy();
+    expect(view.getByTestId('workout-status-action').props.accessibilityState.disabled).toBe(true);
+    await fireEvent.press(view.getByTestId('workout-status-action'));
+    expect(mutate).not.toHaveBeenCalled();
   });
 
   it('requests keep-awake only for an in-progress workout with valid details', async () => {

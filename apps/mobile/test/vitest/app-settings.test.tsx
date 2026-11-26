@@ -34,6 +34,7 @@ const state = vi.hoisted(() => ({
   getFeedback: vi.fn(),
   getKeepAwake: vi.fn(),
   getPreviousSets: vi.fn(),
+  getAutoCollapse: vi.fn(),
   patch: vi.fn(),
   setItem: vi.fn(),
   getRemote: vi.fn(),
@@ -45,19 +46,21 @@ const state = vi.hoisted(() => ({
 vi.mock('@react-native-async-storage/async-storage', () => ({
   default: {
     getItem: (key: string) =>
-      key.endsWith(':show-previous-sets')
-        ? state.getPreviousSets(key)
-        : key.endsWith(':confirmed-workout-preferences')
-          ? state.getConfirmed(key)
-          : key.endsWith(':keep-workout-screen-awake')
-            ? state.getKeepAwake(key)
-            : key.endsWith(':rest-sound') || key.endsWith(':rest-vibration')
-              ? state.getFeedback(key)
-              : key.endsWith(':rest-duration')
-                ? state.getDuration(key)
-                : key.includes(':app-settings:')
-                  ? state.getItem(key)
-                  : Promise.resolve(null),
+      key.endsWith(':auto-collapse-exercises')
+        ? state.getAutoCollapse(key)
+        : key.endsWith(':show-previous-sets')
+          ? state.getPreviousSets(key)
+          : key.endsWith(':confirmed-workout-preferences')
+            ? state.getConfirmed(key)
+            : key.endsWith(':keep-workout-screen-awake')
+              ? state.getKeepAwake(key)
+              : key.endsWith(':rest-sound') || key.endsWith(':rest-vibration')
+                ? state.getFeedback(key)
+                : key.endsWith(':rest-duration')
+                  ? state.getDuration(key)
+                  : key.includes(':app-settings:')
+                    ? state.getItem(key)
+                    : Promise.resolve(null),
     setItem: state.setItem,
   },
 }));
@@ -164,6 +167,7 @@ beforeEach(() => {
   state.getFeedback.mockReset().mockResolvedValue(null);
   state.getKeepAwake.mockReset().mockResolvedValue(null);
   state.getPreviousSets.mockReset().mockResolvedValue(null);
+  state.getAutoCollapse.mockReset().mockResolvedValue(null);
   state.setItem.mockReset().mockResolvedValue(undefined);
   state.patch
     .mockReset()
@@ -177,6 +181,51 @@ afterEach(async () => {
 });
 
 describe('App settings', () => {
+  it('persists optional exercise collapse offline, restores it per account and defaults corrupt values off', async () => {
+    onlineManager.setOnline(false);
+    const view = await render(<App />);
+    const setting = () => view.getByTestId('settings-auto-collapse-exercises');
+    await waitFor(() => expect(setting().props.disabled).toBe(false));
+    expect(setting().props.value).toBe(false);
+    await fireEvent(setting(), 'valueChange', true);
+    await waitFor(() => expect(setting().props.value).toBe(true));
+    expect(state.setItem).toHaveBeenCalledWith(
+      'gym-platform:app-settings:v1:athlete-a:auto-collapse-exercises',
+      'true',
+    );
+    expect(state.patchWorkout).not.toHaveBeenCalled();
+    await view.unmount();
+    state.getAutoCollapse.mockResolvedValue('true');
+    const restored = await render(<App />);
+    await waitFor(() =>
+      expect(restored.getByTestId('settings-auto-collapse-exercises').props.value).toBe(true),
+    );
+    state.account = { id: 'athlete-b' };
+    state.getAutoCollapse.mockResolvedValue('corrupt');
+    await restored.rerender(<App />);
+    await waitFor(() =>
+      expect(restored.getByTestId('settings-auto-collapse-exercises').props.disabled).toBe(false),
+    );
+    expect(restored.getByTestId('settings-auto-collapse-exercises').props.value).toBe(false);
+    expect(state.getAutoCollapse).toHaveBeenLastCalledWith(
+      'gym-platform:app-settings:v1:athlete-b:auto-collapse-exercises',
+    );
+  });
+
+  it('retains committed exercise collapse preference on failed write', async () => {
+    state.getAutoCollapse.mockResolvedValue('true');
+    const view = await render(<App />);
+    await waitFor(() =>
+      expect(view.getByTestId('settings-auto-collapse-exercises').props.disabled).toBe(false),
+    );
+    state.setItem.mockRejectedValueOnce(new Error('disk full'));
+    await fireEvent(view.getByTestId('settings-auto-collapse-exercises'), 'valueChange', false);
+    await waitFor(() =>
+      expect(view.getByTestId('settings-auto-collapse-exercises').props.disabled).toBe(false),
+    );
+    expect(view.getByTestId('settings-auto-collapse-exercises').props.value).toBe(true);
+  });
+
   it('keeps previous results opt-in, saves offline and restores only the same account choice', async () => {
     onlineManager.setOnline(false);
     const view = await render(<App />);
