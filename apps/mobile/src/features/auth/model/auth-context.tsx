@@ -39,6 +39,7 @@ type AuthValue = {
   signIn: (email: string, password: string) => Promise<Result>;
   signOut: () => Promise<void>;
   getApi: () => ReturnType<typeof createMobileApi> | null;
+  getScopedApi: (isCurrent: () => boolean) => ReturnType<typeof createMobileApi> | null;
 };
 const AuthContext = createContext<AuthValue | null>(null);
 
@@ -106,6 +107,26 @@ export function AuthProvider({
       return null;
     }
   }, [baseUrl, session]);
+
+  // A long-running reviewed operation must never attach a newer account's token.
+  const getScopedApi = useCallback(
+    (isCurrent: () => boolean) => {
+      if (!baseUrl || !isCurrent()) return null;
+      const revision = session.revision;
+      try {
+        return createMobileApi(baseUrl, async () => {
+          if (revision !== session.revision || !isCurrent()) throw new Error('session-changed');
+          const token = await session.getAccessToken();
+          if (!token || revision !== session.revision || !isCurrent())
+            throw new Error('session-changed');
+          return token;
+        });
+      } catch {
+        return null;
+      }
+    },
+    [baseUrl, session],
+  );
 
   // Use a non-rotating token reader for manual post-startup verification.
   const getVerificationApi = useCallback(() => {
@@ -302,6 +323,7 @@ export function AuthProvider({
       signIn,
       signOut,
       getApi,
+      getScopedApi,
     }),
     [
       account,
@@ -312,6 +334,7 @@ export function AuthProvider({
       signIn,
       signOut,
       getApi,
+      getScopedApi,
     ],
   );
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

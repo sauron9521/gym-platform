@@ -47,6 +47,12 @@ export class OfflineDraftRepository {
   private generation = 0;
   private unlocked = false;
   private cleanupRequired = false;
+  private acknowledgedCleanup: {
+    ownerId: string;
+    generation: number;
+    key: string;
+    workoutId: string;
+  } | null = null;
   private purgeInFlight: Promise<void> | null = null;
   private queue: Promise<void> = Promise.resolve();
 
@@ -64,6 +70,7 @@ export class OfflineDraftRepository {
 
   lock() {
     this.unlocked = false;
+    this.acknowledgedCleanup = null;
     this.generation += 1;
   }
 
@@ -138,6 +145,7 @@ export class OfflineDraftRepository {
       throw new OfflineDraftRepositoryError('invalid-draft');
     }
     return this.enqueue(async () => {
+      if (this.acknowledgedCleanup) throw new OfflineDraftRepositoryError('submission-pending');
       const existing = await this.readCurrent(scope);
       if (existing && existing.state !== 'REQUIRES_REVIEW') {
         throw new OfflineDraftRepositoryError('submission-pending');
@@ -152,6 +160,7 @@ export class OfflineDraftRepository {
   async discard() {
     const scope = this.scope();
     return this.enqueue(async () => {
+      if (this.acknowledgedCleanup) throw new OfflineDraftRepositoryError('submission-pending');
       const existing = await this.readCurrent(scope);
       if (existing && existing.state !== 'REQUIRES_REVIEW') {
         throw new OfflineDraftRepositoryError('submission-pending');
@@ -184,6 +193,7 @@ export class OfflineDraftRepository {
       throw new OfflineDraftRepositoryError('invalid-draft');
     }
     return this.enqueue(async () => {
+      if (this.acknowledgedCleanup) throw new OfflineDraftRepositoryError('submission-pending');
       const existing = await this.readCurrent(scope);
       if (!existing || draftBodyJson(existing.form) !== bodyJson) {
         throw new OfflineDraftRepositoryError('submission-mismatch');
@@ -234,18 +244,35 @@ export class OfflineDraftRepository {
   async clearAcknowledgedSubmission(key: string, workoutId: string) {
     const scope = this.scope();
     return this.enqueue(async () => {
-      const existing = await this.readCurrent(scope);
-      if (
-        !existing ||
-        existing.state !== 'SUBMISSION_ACKNOWLEDGED' ||
-        existing.key !== key ||
-        existing.workoutId !== workoutId
-      ) {
-        throw new OfflineDraftRepositoryError('submission-mismatch');
+      const cleanup = this.acknowledgedCleanup;
+      if (cleanup) {
+        if (
+          cleanup.ownerId !== scope.ownerId ||
+          cleanup.generation !== scope.generation ||
+          cleanup.key !== key ||
+          cleanup.workoutId !== workoutId
+        ) {
+          throw new OfflineDraftRepositoryError('submission-mismatch');
+        }
+      } else {
+        const existing = await this.readCurrent(scope);
+        if (
+          !existing ||
+          existing.state !== 'SUBMISSION_ACKNOWLEDGED' ||
+          existing.key !== key ||
+          existing.workoutId !== workoutId
+        ) {
+          throw new OfflineDraftRepositoryError('submission-mismatch');
+        }
+        this.assertCurrent(scope);
+        // Removal can erase the key before a filesystem failure. Retry only the
+        // exact already-authorized cleanup, without needing to decrypt again.
+        this.acknowledgedCleanup = { ...scope, key, workoutId };
       }
       this.assertCurrent(scope);
       await this.accessStorage(() => this.storage.remove(scope.ownerId));
       this.assertCurrent(scope);
+      this.acknowledgedCleanup = null;
     });
   }
 

@@ -74,10 +74,46 @@ export function getMobileAuthErrorMessageId(code: string): string {
 }
 
 const navigationMessages = {
+  'mobile.draft.submission-pending': {
+    uk: 'Результат надсилання не підтверджено. Відновіть чернетку та повторіть той самий запит.',
+    en: 'Submission is unconfirmed. Restore the draft and retry the same request.',
+  },
+  'mobile.draft.acknowledged': {
+    uk: 'Сервер підтвердив створення тренування. Можна очистити локальну чернетку.',
+    en: 'The server confirmed workout creation. You can clear the local draft.',
+  },
+  'mobile.draft.send': { uk: 'Надіслати тренування', en: 'Send workout' },
+  'mobile.draft.resend': { uk: 'Повторити надсилання', en: 'Retry submission' },
+  'mobile.draft.sendConfirm': {
+    uk: 'Надіслати саме збережену форму? Якщо змінювали дані, спочатку збережіть їх. Повтор використовує той самий ключ запиту.',
+    en: 'Send the saved form? Save any edits first. Retrying uses the same request key.',
+  },
+  'mobile.draft.clear': { uk: 'Очистити підтверджену чернетку', en: 'Clear confirmed draft' },
+  'mobile.draft.clearConfirm': {
+    uk: 'Видалити локальну копію? Тренування на сервері залишиться.',
+    en: 'Remove the local copy? The server workout will remain.',
+  },
+  'mobile.draft.offline': {
+    uk: 'Для надсилання потрібен інтернет.',
+    en: 'Internet is required to submit.',
+  },
+  'mobile.draft.sendFailed': {
+    uk: 'Не вдалося підтвердити надсилання. Перевірте збережену форму та стан чернетки; автоматичного повтору немає.',
+    en: 'Submission could not be confirmed. Check the saved form and draft status; no automatic retry.',
+  },
+  'mobile.draft.sent': {
+    uk: 'Тренування створено на сервері.',
+    en: 'Workout created on the server.',
+  },
+  'mobile.draft.cleared': { uk: 'Локальну чернетку очищено.', en: 'Local draft cleared.' },
+  'mobile.draft.clearFailed': {
+    uk: 'Не вдалося очистити локальну копію. Серверне тренування вже створено. Повторіть лише очищення.',
+    en: 'Could not clear the local copy. The server workout is already created. Retry cleanup only.',
+  },
   'mobile.draft.title': { uk: 'Локальна чернетка', en: 'Local draft' },
   'mobile.draft.hint': {
-    uk: 'Зберігається лише на цьому пристрої. Для надсилання чернетки потрібен окремий підтверджений сценарій, який ще недоступний.',
-    en: 'Stored on this device only. Sending drafts requires a separate reviewed flow, not yet available.',
+    uk: 'Зберігайте зміни локально. Перед надсиланням перевірте збережену форму та підтвердьте дію.',
+    en: 'Save changes locally. Review the saved form and confirm before sending.',
   },
   'mobile.draft.none': { uk: 'Збереженої чернетки немає.', en: 'No saved draft.' },
   'mobile.draft.exists': {

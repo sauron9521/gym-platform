@@ -1,8 +1,7 @@
 # Offline-first workout drafts — safety foundation
 
 **Status:** encrypted native adapter, verified auth lifecycle and explicit
-local-only draft UI implemented. Version 2 submission reservations and receipts
-are supported by the repository, but no reviewed network send is wired yet.
+local-only draft UI implemented. Version 2 submission reservations and receipts are supported, with explicit reviewed network submission and separate acknowledged cleanup.
 Native device acceptance remains outstanding. No offline login, background
 upload queue or automatic write delivery exists.
 
@@ -232,3 +231,32 @@ generation, fresh scope checks, same-key retry after ambiguous responses,
 receipt validation, acknowledged cleanup recovery, and appropriate UI for
 pending/acknowledged states. No transport or UI sends are enabled in M10.4a.
 Mocked storage tests are not evidence of physical-device crash durability.
+
+### M10.4b — reviewed submission and acknowledgment
+
+The draft panel permits submission only after the saved form has been explicitly
+restored or saved, reviewed and confirmed, with the current owner generation,
+verified athlete grants and online state. Changes must be saved before sending;
+the repository compares the canonical body. The transport uses an Expo Crypto
+UUID-v4 key, persists and reads back the reservation before the first POST,
+and sends exactly the frozen body. The scoped auth client checks session
+revision and the operation guard before and after token acquisition. The
+coordinator serializes sends across screens and rechecks owner scope before
+accepting a 201 receipt whose workout UUID and athlete ID match expectations.
+
+An ambiguous response, invalid receipt or failed acknowledgment leaves the
+durable reservation in place. Recovery is read-only until the user explicitly
+restores/reviews and confirms another same-key POST. There is no auto retry or
+online-event replay. Pending data is read-only and ordinary discard/save are
+blocked. A confirmed receipt permits only explicit local cleanup; if removal
+partially fails after destroying the key, same-generation cleanup can retry
+using the already validated receipt, without re-reading ciphertext or sending
+another POST. Native preparation resumes a durable interrupted purge on a
+later verified startup/foreground. Logout/owner purge still clears local
+private data, including pending reservations. No guarantee of global
+exactly-once behavior across device loss or deliberate server deletion.
+
+The tests cover mocked native storage and transport; actual SQLCipher,
+filesystem, backup/restore, lost-response staging API and device restart
+acceptance are still required for #345. Offline login, unfinished-form/active
+set logs and automated sync remain outside this slice.
