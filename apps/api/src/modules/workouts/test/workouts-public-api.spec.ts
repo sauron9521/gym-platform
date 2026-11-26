@@ -1,12 +1,18 @@
 import { ForbiddenException } from '@nestjs/common';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, expectTypeOf, it } from 'vitest';
 
-import { assertWorkoutAthlete } from '../public-api.js';
+import { assertWorkoutAthlete, type WorkoutActor } from '../public-api.js';
+import type { WorkoutActor as InternalWorkoutActor } from '../types/workout.types.js';
 import { assertWorkoutAthlete as internalAssertWorkoutAthlete } from '../policies/workout-access.policy.js';
 
 describe('Workouts public athlete authorization contract', () => {
   it('re-exports the exact canonical policy without duplicated authorization logic', () => {
     expect(assertWorkoutAthlete).toBe(internalAssertWorkoutAthlete);
+  });
+
+  it('exposes the exact existing actor type, without adding a runtime export', () => {
+    expectTypeOf<WorkoutActor>().toEqualTypeOf<InternalWorkoutActor>();
+    expectTypeOf<WorkoutActor['id']>().toEqualTypeOf<string>();
   });
 
   it('accepts only persisted athlete capability and denies admins', () => {
