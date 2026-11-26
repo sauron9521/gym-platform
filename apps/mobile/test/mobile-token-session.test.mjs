@@ -178,6 +178,72 @@ test('logout while a refresh is pending never resurrects the session', async () 
   assert.deepEqual(revoked, ['refresh-new']);
 });
 
+test('late refresh from a previous account cannot replace or clear a newly accepted session', async () => {
+  for (const response of [pair('stale-successor'), null]) {
+    const store = makeStore();
+    let finish;
+    let now = 0;
+    let invalidations = 0;
+    const revoked = [];
+    const session = new MobileTokenSession(
+      store.storage,
+      async () =>
+        new Promise((resolve) => {
+          finish = resolve;
+        }),
+      async (token) => revoked.push(token),
+      () => invalidations++,
+      () => now,
+    );
+    await session.accept(pair('old', 60));
+    now = 45_000;
+    const pending = session.getAccessToken();
+    await session.clear();
+    await session.accept(pair('new-account'));
+    finish(response);
+    assert.equal(await pending, null);
+    assert.equal(await session.getAccessToken(), 'access-new-account');
+    assert.equal(store.saved, 'refresh-new-account');
+    assert.deepEqual(store.writes, ['refresh-old', 'refresh-new-account']);
+    assert.deepEqual(revoked, response ? ['refresh-stale-successor'] : []);
+    assert.equal(invalidations, 0);
+  }
+});
+
+test('does not expose issued access credentials before secure storage commits', async () => {
+  const store = makeStore();
+  let finish;
+  let started;
+  const writing = new Promise((resolve) => {
+    started = resolve;
+  });
+  const write = store.storage.write;
+  store.storage.write = async (token) => {
+    started();
+    await new Promise((resolve) => {
+      finish = resolve;
+    });
+    await write(token);
+  };
+  const session = new MobileTokenSession(
+    store.storage,
+    async () => {
+      throw new Error('unexpected refresh');
+    },
+    async () => undefined,
+    () => undefined,
+  );
+  const accepting = session.accept(pair('new'));
+  await writing;
+  assert.equal(await session.getAccessToken(), null);
+  assert.equal(session.currentRefreshToken, null);
+  assert.equal(session.getRevalidationToken(), null);
+  finish();
+  assert.equal(await accepting, true);
+  assert.equal(await session.getAccessToken(), 'access-new');
+  assert.equal(store.saved, 'refresh-new');
+});
+
 test('failed SecureStore write invalidates and revokes the rotated successor', async () => {
   const store = makeStore();
   const write = store.storage.write;

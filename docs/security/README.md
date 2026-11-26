@@ -24,6 +24,7 @@ Navigation for technical security contracts, implementation evidence and remaini
 - [Dependency audit exception lifecycle](security-audit-exceptions.md) — historical withdrawn advisory and blocking audit commands; not a new vulnerability scan.
 - [S05 Security & Trust](../product-strategy/s05-security-trust-v1.md) and [S03 Privacy & Data Ownership](../product-strategy/s03-privacy-data-ownership-v1.md) — approved product decisions, not implementation claims.
 - [Account deletion intake](../api/modules/account-deletion-requests.md) — receipt only, not deletion completion.
+- [Security stabilization regression review](stabilization-regression-review.md) — targeted regression coverage, residual risks and release limitations.
 - [Beta evidence gates](../beta-readiness-gates.md) and [Operations](../operations/README.md) — independent rollout requirements.
 
 API-specific contracts and Admin test evidence remain in their owning directories. Old root-level security documents contain compatibility links to canonical pages. Use the canonical paths for new references.

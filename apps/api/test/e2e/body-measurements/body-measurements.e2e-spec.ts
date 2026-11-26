@@ -174,6 +174,32 @@ describe('Body Measurements (HTTP + PostgreSQL)', () => {
     expect(remove.status).toBe(404);
   });
 
+  it('denies foreign bearer mutations without revealing existence or changing the row', async () => {
+    const http = request(app.getHttpServer());
+    const issued = await http
+      .post('/auth/token')
+      .send({ email: secondEmail, password })
+      .expect(200);
+    const bearer = 'Bearer ' + String(issued.body.accessToken);
+    const before = await prisma.bodyMeasurement.findUniqueOrThrow({ where: { id: measurementId } });
+    for (const id of [measurementId, randomUUID()]) {
+      const path = '/body-measurements/' + id;
+      await http.get(path).set('Authorization', bearer).expect(404);
+      await http.patch(path).set('Authorization', bearer).send({ weightKg: 72 }).expect(404);
+      await http.delete(path).set('Authorization', bearer).expect(404);
+    }
+    expect(
+      (await http.get('/body-measurements').set('Authorization', bearer).expect(200)).body.data,
+    ).toEqual([]);
+    expect(
+      await prisma.bodyMeasurement.findUniqueOrThrow({ where: { id: measurementId } }),
+    ).toEqual(before);
+    await http
+      .get('/body-measurements/' + measurementId)
+      .set('Cookie', firstCookie)
+      .expect(200);
+  });
+
   it('supports partial update and prevents clearing the final metric', async () => {
     const update = await request(app.getHttpServer())
       .patch(`/body-measurements/${measurementId}`)
