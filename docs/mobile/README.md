@@ -22,3 +22,16 @@ becomes pending again or the preference is disabled. Existing rows remain
 mounted but hidden from accessibility while collapsed. This preserves drafts
 and does not change workout completion rules, rest timer or API writes.
 No server preference or cross-device synchronization is introduced.
+
+## Workout completion confirmation
+
+The device/account-scoped confirm-workout-completion preference defaults on;
+only an explicitly stored false disables the optional review. Loading, corrupt
+or failed storage reads retain confirmation. Review shows completed/skipped
+counts before the completion POST, and is invalidated by navigation, changed
+workout snapshot, pending writes or reconciliation. Completion still requires
+at least one completed set, no pending sets, no unresolved writes and no
+open saved-set editor. Confirming rechecks the same account/session and
+authoritative cache snapshot; no optimistic completion or offline queue.
+Start and cancellation flows keep their existing confirmation behavior.
+No API/schema change or cross-device preference synchronization.

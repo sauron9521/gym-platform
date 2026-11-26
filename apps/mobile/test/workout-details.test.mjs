@@ -28,7 +28,7 @@ test('protected detail route uses typed API and account-scoped invalidation', ()
   assert.match(query, /api\.POST\('\/workouts\/\{id\}\/start'/);
   assert.match(query, /api\.POST\('\/workouts\/\{id\}\/complete'/);
   assert.match(query, /accountQueryKeys\.workoutDetail/);
-  assert.match(query, /accountQueryKeys\.workouts\(account\.id\)/);
+  assert.match(query, /accountQueryKeys\.workouts\(request\.accountId\)/);
   assert.match(query, /isSessionExpired\(response\.response\.status\)/);
   assert.match(query, /mobileReadError\(response\.response\.status/);
   assert.match(query, /getQueryData\(accountQueryKeys\.me\(account\.id\)\)/);

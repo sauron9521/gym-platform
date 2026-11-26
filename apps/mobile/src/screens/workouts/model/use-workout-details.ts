@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useFocusEffect } from 'expo-router';
 import { useStore } from 'zustand';
 import { Alert } from 'react-native';
+import { focusManager, onlineManager } from '@tanstack/react-query';
 import { canCompleteWorkout, workoutSetProgress } from '@gym/domain';
 import { useAppSettings } from '@/features/app-settings/model/app-settings-context';
 import { useCancelWorkout, useUpdateWorkoutTitle } from '@/features/workouts/model/workout-edit';
@@ -9,6 +10,7 @@ import {
   useWorkoutDetailsQuery,
   useWorkoutTransition,
   type WorkoutTransition,
+  type WorkoutDetails,
 } from '@/features/workouts/model/workout-details-query';
 import { useWorkoutKeepAwake } from '@/features/workouts/lib/use-workout-keep-awake';
 import { useRestTimerStore } from '@/features/workouts/model/rest-timer-provider';
@@ -19,6 +21,9 @@ export function useWorkoutDetails(id: string) {
   const restDuration = useAppSettings((state) => state.settings.restDuration);
   const keepWorkoutScreenAwake = useAppSettings((state) => state.settings.keepWorkoutScreenAwake);
   const shouldAutoStartRestTimer = useAppSettings((state) => state.shouldAutoStartRestTimer);
+  const confirmWorkoutCompletion = useAppSettings(
+    (state) => state.settings.confirmWorkoutCompletion,
+  );
   const details = useWorkoutDetailsQuery(id);
   const transition = useWorkoutTransition(id);
   const titleUpdate = useUpdateWorkoutTitle(id);
@@ -29,6 +34,32 @@ export function useWorkoutDetails(id: string) {
   const [pendingSet, setPendingSet] = useState<string | null>(null);
   const [requiredReadVersion, setRequiredReadVersion] = useState<number | null>(null);
   const [actionLocked, setActionLocked] = useState(false);
+  const editingSets = useRef(new Set<string>());
+  const [openEdits, setOpenEdits] = useState<ReadonlySet<string>>(() => new Set());
+  const [review, setReview] = useState<{
+    accountId: string;
+    workoutId: string;
+    snapshot: WorkoutDetails;
+    readVersion: number;
+    updatedAt: number;
+    current: () => boolean;
+  } | null>(null);
+  useFocusEffect(
+    useCallback(() => {
+      if (!accountId || !id) return;
+      const unsubscribeOnline = onlineManager.subscribe((online) => {
+        if (!online) setReview(null);
+      });
+      const unsubscribeFocus = focusManager.subscribe((focused) => {
+        if (!focused) setReview(null);
+      });
+      return () => {
+        unsubscribeOnline();
+        unsubscribeFocus();
+        setReview(null);
+      };
+    }, [accountId, id]),
+  );
   const workout = details.data;
   const restStore = useRestTimerStore();
   const restScope = useStore(restStore, (state) =>
@@ -67,9 +98,20 @@ export function useWorkoutDetails(id: string) {
   const setWritesBlocked = () =>
     setWriteLock.current !== null ||
     (requiredRead.current !== null && readVersion <= requiredRead.current);
+  const beginSetEdit = useCallback((setId: string) => {
+    if (writeLock.current || setWriteLock.current !== null) return false;
+    editingSets.current.add(setId);
+    setOpenEdits(new Set(editingSets.current));
+    setReview(null);
+    return true;
+  }, []);
+  const endSetEdit = useCallback((setId: string) => {
+    if (editingSets.current.delete(setId)) setOpenEdits(new Set(editingSets.current));
+  }, []);
   const beginSetWrite = (setId: string) => {
     if (writeLock.current || actionBusy || setWritesBlocked() || workout?.status !== 'IN_PROGRESS')
       return false;
+    setReview(null);
     setWriteLock.current = setId;
     setPendingSet(setId);
     return true;
@@ -105,6 +147,7 @@ export function useWorkoutDetails(id: string) {
     if (writeLock.current || setWritesBlocked() || busy || !cancellable) return;
     writeLock.current = true;
     setActionLocked(true);
+    setReview(null);
     Alert.alert(
       'Скасувати тренування?',
       'Цю дію не можна скасувати.',
@@ -130,12 +173,73 @@ export function useWorkoutDetails(id: string) {
   const nextAction: WorkoutTransition | null =
     workout?.status === 'PLANNED' ? 'start' : workout?.status === 'IN_PROGRESS' ? 'complete' : null;
 
-  const actionDisabled = busy || (nextAction === 'complete' && !completionAllowed);
-  const runTransition = () => {
-    if (!nextAction || writeLock.current || setWritesBlocked() || actionDisabled) return;
+  const editBlocked = openEdits.size > 0;
+  const actionDisabled = busy || (nextAction === 'complete' && (!completionAllowed || editBlocked));
+  const reviewCurrent = Boolean(
+    review &&
+    confirmWorkoutCompletion !== false &&
+    !actionDisabled &&
+    !details.isError &&
+    nextAction === 'complete' &&
+    review.accountId === accountId &&
+    review.workoutId === id &&
+    review.snapshot === workout &&
+    review.readVersion === readVersion &&
+    review.updatedAt === details.dataUpdatedAt,
+  );
+  // A changed authoritative view invalidates the old consent, even if all sets
+  // happen to be completed again later.
+  if (review && !reviewCurrent) setReview(null);
+
+  const submit = (action: WorkoutTransition, canSend?: () => boolean) => {
     writeLock.current = true;
     setActionLocked(true);
-    transition.mutate(nextAction, { onSettled: releaseLock });
+    setReview(null);
+    transition.mutate(action, { onSettled: releaseLock, canSend });
+  };
+  const mayTransition = () =>
+    Boolean(
+      nextAction &&
+      !details.isError &&
+      !writeLock.current &&
+      !setWritesBlocked() &&
+      !actionDisabled,
+    );
+  const runTransition = () => {
+    if (!mayTransition() || !nextAction) return;
+    if (nextAction === 'start') {
+      submit('start');
+      return;
+    }
+    if (!accountId || !workout || editingSets.current.size || !onlineManager.isOnline()) return;
+    const current = details.captureCompletionGuard();
+    if (!current()) return;
+    if (confirmWorkoutCompletion !== false) {
+      setReview({
+        accountId,
+        workoutId: id,
+        snapshot: workout,
+        readVersion,
+        updatedAt: details.dataUpdatedAt,
+        current,
+      });
+    } else {
+      submit('complete', current);
+    }
+  };
+  const confirmCompletion = () => {
+    if (
+      !reviewCurrent ||
+      !review ||
+      !mayTransition() ||
+      editingSets.current.size ||
+      !onlineManager.isOnline() ||
+      !review.current()
+    ) {
+      setReview(null);
+      return;
+    }
+    submit('complete', review.current);
   };
   const isSetActionBlocked = (setId: string) =>
     actionBusy || (pendingSet !== null && pendingSet !== setId) || uncertain;
@@ -157,6 +261,13 @@ export function useWorkoutDetails(id: string) {
     uncertain,
     nextAction,
     actionDisabled,
+    editBlocked,
+    openEdits,
+    reviewCurrent,
+    confirmCompletion,
+    cancelCompletion: () => setReview(null),
+    beginSetEdit,
+    endSetEdit,
     saveTitle,
     confirmCancellation,
     runTransition,

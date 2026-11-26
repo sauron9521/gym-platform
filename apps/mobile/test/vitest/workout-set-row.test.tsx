@@ -37,6 +37,32 @@ describe('WorkoutSetRow (React Native)', () => {
     } as unknown as ReturnType<typeof useWorkoutSetMutation>);
   });
 
+  it('reports saved-set edit start, cancel, successful save and cleanup to the workout guard', async () => {
+    const onEditStart = vi.fn(() => true);
+    const onEditEnd = vi.fn();
+    const saved = { ...set, status: 'COMPLETED' as const, actualReps: 8, actualWeightKg: '60' };
+    const view = await render(
+      <WorkoutSetRow
+        workoutId="workout-1"
+        set={saved}
+        editable
+        onEditStart={onEditStart}
+        onEditEnd={onEditEnd}
+      />,
+    );
+    await fireEvent.press(view.getByTestId('set-edit-set-1'));
+    expect(onEditStart).toHaveBeenCalledWith('set-1');
+    await fireEvent.press(view.getByTestId('set-edit-cancel-set-1'));
+    expect(onEditEnd).toHaveBeenCalledWith('set-1');
+    onEditEnd.mockClear();
+    await fireEvent.press(view.getByTestId('set-edit-set-1'));
+    await fireEvent.press(view.getByTestId('set-complete-set-1'));
+    await waitFor(() => expect(onEditEnd).toHaveBeenCalledWith('set-1'));
+    onEditEnd.mockClear();
+    await view.unmount();
+    expect(onEditEnd).toHaveBeenCalledWith('set-1');
+  });
+
   it('shows historical metrics separately and never replaces draft input or submits them', async () => {
     const hint = { setNumber: 1, setType: 'WORKING' as const, actualReps: 10, actualWeightKg: 0 };
     const row = (previousHint: typeof hint | undefined) => (
