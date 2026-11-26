@@ -20,7 +20,7 @@ export function AppSettingsScreen() {
     setRestVibration,
     setKeepWorkoutScreenAwake,
     reload,
-  } = useAppSettings();
+  } = useAppSettings((state) => state);
   const disabled = settings.status !== 'ready' && settings.status !== 'saveError';
 
   return (

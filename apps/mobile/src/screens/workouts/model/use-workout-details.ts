@@ -15,7 +15,10 @@ import { useRestTimerStore } from '@/features/workouts/model/rest-timer-provider
 
 /** Screen-scoped orchestration: coordinate set writes, workout actions and rest events. */
 export function useWorkoutDetails(id: string) {
-  const { settings, shouldAutoStartRestTimer } = useAppSettings();
+  const accountId = useAppSettings((state) => state.settings.accountId);
+  const restDuration = useAppSettings((state) => state.settings.restDuration);
+  const keepWorkoutScreenAwake = useAppSettings((state) => state.settings.keepWorkoutScreenAwake);
+  const shouldAutoStartRestTimer = useAppSettings((state) => state.shouldAutoStartRestTimer);
   const details = useWorkoutDetailsQuery(id);
   const transition = useWorkoutTransition(id);
   const titleUpdate = useUpdateWorkoutTitle(id);
@@ -31,13 +34,11 @@ export function useWorkoutDetails(id: string) {
   const restScope = useStore(restStore, (state) =>
     state.timer?.scope.workoutId === id ? state.timer.scope : null,
   );
-  const active = Boolean(
-    settings.accountId && !details.isError && workout?.status === 'IN_PROGRESS',
-  );
+  const active = Boolean(accountId && !details.isError && workout?.status === 'IN_PROGRESS');
   useFocusEffect(
     useCallback(() => {
-      if (active) restStore.getState().selectWorkout(id, settings.restDuration);
-    }, [active, id, restStore, settings.restDuration]),
+      if (active) restStore.getState().selectWorkout(id, restDuration);
+    }, [active, id, restStore, restDuration]),
   );
   useEffect(() => {
     if (workout && !details.isError && workout.status !== 'IN_PROGRESS') {
@@ -47,10 +48,7 @@ export function useWorkoutDetails(id: string) {
 
   useWorkoutKeepAwake(
     Boolean(
-      settings.accountId &&
-      settings.keepWorkoutScreenAwake &&
-      !details.isError &&
-      workout?.status === 'IN_PROGRESS',
+      accountId && keepWorkoutScreenAwake && !details.isError && workout?.status === 'IN_PROGRESS',
     ),
   );
   const allSets = workout?.exercises.flatMap((exercise) => exercise.sets) ?? [];

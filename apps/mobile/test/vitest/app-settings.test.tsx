@@ -6,6 +6,10 @@ import {
   AppSettingsProvider,
   useAppSettings,
 } from '@/features/app-settings/model/app-settings-context';
+import {
+  autoRestTimerEnabled,
+  createAppSettingsStore,
+} from '@/features/app-settings/model/app-settings-store';
 import { AppSettingsScreen } from '@/screens/profile/ui/app-settings-screen';
 import { LocaleProvider } from '@/shared/i18n/locale-provider';
 import { MobileThemeProvider } from '@/shared/config/theme-provider';
@@ -43,8 +47,8 @@ vi.mock('expo-localization', () => ({
 }));
 
 function TimerGate() {
-  const { shouldAutoStartRestTimer } = useAppSettings();
-  return <Text>{shouldAutoStartRestTimer() ? 'automatic-on' : 'automatic-off'}</Text>;
+  const enabled = useAppSettings(autoRestTimerEnabled);
+  return <Text>{enabled ? 'automatic-on' : 'automatic-off'}</Text>;
 }
 
 function App() {
@@ -283,5 +287,116 @@ describe('App settings', () => {
     expect(view.getByText('automatic-off')).toBeTruthy();
     await fireEvent.press(view.getByRole('button', { name: 'Retry' }));
     await waitFor(() => expect(view.getByText('automatic-on')).toBeTruthy());
+  });
+});
+
+describe('App settings store isolation and subscriptions', () => {
+  it('does not render duration or action subscribers for unrelated saves', async () => {
+    const durationRender = vi.fn();
+    const actionRender = vi.fn();
+    const statusRender = vi.fn();
+    let saveSound!: (value: boolean) => Promise<void>;
+    let saveDuration!: (value: 60 | 90 | 120) => Promise<void>;
+    function DurationProbe() {
+      const duration = useAppSettings((value) => value.settings.restDuration);
+      durationRender(duration);
+      return <Text>{duration}</Text>;
+    }
+    function ActionProbe() {
+      saveSound = useAppSettings((value) => value.setRestSound);
+      saveDuration = useAppSettings((value) => value.setRestDuration);
+      actionRender();
+      return null;
+    }
+    function StatusProbe() {
+      const status = useAppSettings((value) => value.settings.status);
+      statusRender(status);
+      return <Text>{status}</Text>;
+    }
+    const view = await render(
+      <AppSettingsProvider>
+        <DurationProbe />
+        <ActionProbe />
+        <StatusProbe />
+      </AppSettingsProvider>,
+    );
+    await waitFor(() => expect(view.getByText('ready')).toBeTruthy());
+    const durationCount = durationRender.mock.calls.length;
+    const actionCount = actionRender.mock.calls.length;
+    const statusCount = statusRender.mock.calls.length;
+    await act(async () => saveSound(false));
+    expect(durationRender).toHaveBeenCalledTimes(durationCount);
+    expect(actionRender).toHaveBeenCalledTimes(actionCount);
+    expect(statusRender.mock.calls.length).toBeGreaterThan(statusCount);
+    await act(async () => saveDuration(120));
+    expect(view.getByText('120')).toBeTruthy();
+    expect(durationRender.mock.calls.length).toBeGreaterThan(durationCount);
+    expect(actionRender).toHaveBeenCalledTimes(actionCount);
+  });
+
+  it('waits for an old account write before rehydration and rejects stale actions after sign-out', async () => {
+    const writes = new Map<string, Promise<void>>();
+    const first = createAppSettingsStore('athlete-a', writes);
+    const deactivate = first.activate();
+    await waitFor(() => expect(first.store.getState().settings.status).toBe('ready'));
+    let finish!: () => void;
+    state.setItem.mockReturnValueOnce(
+      new Promise<void>((resolve) => {
+        finish = resolve;
+      }),
+    );
+    const previous = first.store.getState();
+    const pending = previous.setAutoRestTimer(false);
+    await waitFor(() => expect(state.setItem).toHaveBeenCalledWith(key('athlete-a'), 'false'));
+    expect(previous.shouldAutoStartRestTimer()).toBe(true);
+    deactivate();
+    expect(previous.shouldAutoStartRestTimer()).toBe(false);
+    const next = createAppSettingsStore('athlete-a', writes);
+    const closeNext = next.activate();
+    const other = createAppSettingsStore('athlete-b', writes);
+    const closeOther = other.activate();
+    await waitFor(() => expect(other.store.getState().settings.status).toBe('ready'));
+    expect(next.store.getState().settings.status).toBe('loading');
+    expect(state.getItem.mock.calls.filter(([name]) => name === key('athlete-a'))).toHaveLength(1);
+    await previous.setRestSound(false);
+    expect(state.setItem).toHaveBeenCalledTimes(1);
+    state.getItem.mockResolvedValue('false');
+    finish();
+    await pending;
+    await waitFor(() => expect(next.store.getState().settings.status).toBe('ready'));
+    expect(next.store.getState().shouldAutoStartRestTimer()).toBe(false);
+    expect(other.store.getState().shouldAutoStartRestTimer()).toBe(true);
+    expect(first.store.getState().settings.status).toBe('loading');
+    expect(writes.size).toBe(0);
+    closeNext();
+    closeOther();
+  });
+
+  it('ignores stale hydration after switching account and reads the current auto-start preference', async () => {
+    let finish!: (value: string | null) => void;
+    state.getItem.mockReturnValueOnce(
+      new Promise<string | null>((resolve) => {
+        finish = resolve;
+      }),
+    );
+    const writes = new Map<string, Promise<void>>();
+    const first = createAppSettingsStore('athlete-a', writes);
+    const closeFirst = first.activate();
+    await waitFor(() => expect(state.getItem).toHaveBeenCalledWith(key('athlete-a')));
+    closeFirst();
+    const second = createAppSettingsStore('athlete-b', writes);
+    const closeSecond = second.activate();
+    await waitFor(() => expect(second.store.getState().settings.status).toBe('ready'));
+    const gate = second.store.getState().shouldAutoStartRestTimer;
+    expect(gate()).toBe(true);
+    await second.store.getState().setAutoRestTimer(false);
+    expect(gate()).toBe(false);
+    finish(null);
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(first.store.getState().settings.status).toBe('loading');
+    expect(first.store.getState().shouldAutoStartRestTimer()).toBe(false);
+    expect(gate()).toBe(false);
+    closeSecond();
   });
 });

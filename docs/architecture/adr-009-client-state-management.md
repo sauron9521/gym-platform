@@ -55,3 +55,9 @@ The timer uses an account-scoped vanilla Zustand store, provided above navigatio
 The pilot is subject to CI, owner review, native device verification and a follow-up evaluation before any wider adoption.
 
 See the [SM05 pilot evaluation](adr-009-pilot-evaluation.md) for merged evidence, comparison with a scoped provider/reducer, proposed limited retention and remaining native acceptance. Owner decision remains pending.
+
+## SM06: app settings selector boundaries
+
+The mobile app settings provider previously exposed one changing Context value to the settings screen, workout controller and navigation root. Saving any preference therefore notified all three consumers, including on intermediate storage status changes. The scoped vanilla store now owns the in-memory preferences and actions; the Context transports only the instance. Navigation selects duration and feedback, the workout controller selects account, duration, keep-awake and a stable confirmation-time gate, and the settings screen observes the complete state.
+
+Existing account-scoped AsyncStorage keys, safe hydration defaults, write acknowledgement, retry and pending-write coordination remain intact. Theme, locale, authentication, timer state and offline drafts retain their respective owners. Selector regression tests demonstrate unrelated changes do not render a duration or action-only subscriber; this is not a measured application-wide performance claim.
