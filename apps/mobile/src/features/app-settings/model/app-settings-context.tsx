@@ -21,6 +21,7 @@ type SettingsState = {
   restDuration: RestDuration;
   restSound: boolean;
   restVibration: boolean;
+  keepWorkoutScreenAwake: boolean;
   status: 'loading' | 'ready' | 'saving' | 'readError' | 'saveError';
 };
 type SettingsContextValue = {
@@ -29,11 +30,17 @@ type SettingsContextValue = {
   setRestDuration: (duration: RestDuration) => Promise<void>;
   setRestSound: (enabled: boolean) => Promise<void>;
   setRestVibration: (enabled: boolean) => Promise<void>;
+  setKeepWorkoutScreenAwake: (enabled: boolean) => Promise<void>;
   reload: () => void;
   shouldAutoStartRestTimer: () => boolean;
 };
 const SettingsContext = createContext<SettingsContextValue | null>(null);
-type PreferenceKey = 'auto-rest-timer' | 'rest-duration' | 'rest-sound' | 'rest-vibration';
+type PreferenceKey =
+  | 'auto-rest-timer'
+  | 'rest-duration'
+  | 'rest-sound'
+  | 'rest-vibration'
+  | 'keep-workout-screen-awake';
 const preferenceKey = (accountId: string, preference: PreferenceKey) =>
   `gym-platform:app-settings:v1:${accountId}:${preference}`;
 
@@ -43,6 +50,7 @@ const initial = (accountId: string | null): SettingsState => ({
   restDuration: defaultRestDuration,
   restSound: false,
   restVibration: false,
+  keepWorkoutScreenAwake: false,
   status: 'loading',
 });
 
@@ -69,12 +77,13 @@ export function AppSettingsProvider({ children }: PropsWithChildren) {
         AsyncStorage.getItem(preferenceKey(accountId, 'rest-duration')),
         AsyncStorage.getItem(preferenceKey(accountId, 'rest-sound')),
         AsyncStorage.getItem(preferenceKey(accountId, 'rest-vibration')),
+        AsyncStorage.getItem(preferenceKey(accountId, 'keep-workout-screen-awake')),
       ]);
     const read = pendingWrite
       ? pendingWrite.catch(() => undefined).then(readPreferences)
       : readPreferences();
     void read
-      .then(([saved, duration, sound, vibration]) => {
+      .then(([saved, duration, sound, vibration, keepAwake]) => {
         if (scopeRef.current !== scope) return;
         // A corrupt value is safe-off and can be overwritten by the user.
         scope.state = {
@@ -83,6 +92,7 @@ export function AppSettingsProvider({ children }: PropsWithChildren) {
           restDuration: parseRestDuration(duration),
           restSound: sound === null || sound === 'true',
           restVibration: vibration === null || vibration === 'true',
+          keepWorkoutScreenAwake: keepAwake === null || keepAwake === 'true',
           status: 'ready',
         };
         setState(scope.state);
@@ -102,7 +112,10 @@ export function AppSettingsProvider({ children }: PropsWithChildren) {
     preference: PreferenceKey,
     value: string,
     changes: Partial<
-      Pick<SettingsState, 'enabled' | 'restDuration' | 'restSound' | 'restVibration'>
+      Pick<
+        SettingsState,
+        'enabled' | 'restDuration' | 'restSound' | 'restVibration' | 'keepWorkoutScreenAwake'
+      >
     >,
   ) => {
     const scope = scopeRef.current;
@@ -152,6 +165,10 @@ export function AppSettingsProvider({ children }: PropsWithChildren) {
         setRestSound: (restSound) => savePreference('rest-sound', String(restSound), { restSound }),
         setRestVibration: (restVibration) =>
           savePreference('rest-vibration', String(restVibration), { restVibration }),
+        setKeepWorkoutScreenAwake: (keepWorkoutScreenAwake) =>
+          savePreference('keep-workout-screen-awake', String(keepWorkoutScreenAwake), {
+            keepWorkoutScreenAwake,
+          }),
         reload: () => {
           setState(initial(accountId));
           setRevision((value) => value + 1);

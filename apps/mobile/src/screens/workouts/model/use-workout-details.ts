@@ -8,6 +8,7 @@ import {
   useWorkoutTransition,
   type WorkoutTransition,
 } from '@/features/workouts/model/workout-details-query';
+import { useWorkoutKeepAwake } from '@/features/workouts/lib/use-workout-keep-awake';
 import type { RestStart } from '@/features/workouts/ui/rest-timer';
 
 /** Screen-scoped orchestration: coordinate set writes, workout actions and rest events. */
@@ -25,6 +26,14 @@ export function useWorkoutDetails(id: string) {
   const [restStart, setRestStart] = useState<RestStart | null>(null);
   const [actionLocked, setActionLocked] = useState(false);
   const workout = details.data;
+  useWorkoutKeepAwake(
+    Boolean(
+      settings.accountId &&
+      settings.keepWorkoutScreenAwake &&
+      !details.isError &&
+      workout?.status === 'IN_PROGRESS',
+    ),
+  );
   const allSets = workout?.exercises.flatMap((exercise) => exercise.sets) ?? [];
   const progress = workoutSetProgress(allSets);
   const completionAllowed = canCompleteWorkout(allSets);
