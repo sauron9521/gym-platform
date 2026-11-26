@@ -10,7 +10,7 @@ import { ADMIN_MFA_METADATA, adminMfaSessionScope } from '../stores/admin-mfa-se
 
 const token = 'A'.repeat(43);
 const id = createHash('sha256').update(token).digest('base64url');
-const userId = 'admin-id';
+const userId = '11111111-1111-4111-8111-111111111111';
 
 function setup() {
   const now = new Date();
@@ -33,9 +33,11 @@ function setup() {
     refreshTokenFamily: { updateMany: vi.fn().mockResolvedValue({ count: 1 }) },
     refreshToken: { updateMany: vi.fn().mockResolvedValue({ count: 1 }) },
     mfaLifecycleAudit: {
-      create: vi.fn().mockResolvedValue({ id: 'audit-id', occurredAt: new Date() }),
+      create: vi
+        .fn()
+        .mockResolvedValue({ id: '22222222-2222-4222-8222-222222222222', occurredAt: new Date() }),
     },
-    outboxEvent: { create: vi.fn().mockResolvedValue({}) },
+    outboxEvent: { createMany: vi.fn().mockResolvedValue({ count: 1 }) },
     $queryRaw: vi.fn().mockResolvedValue([{ id }]),
   };
   const store = new InMemoryMfaStore();
@@ -193,10 +195,11 @@ describe('AdminMfaRecoveryService', () => {
     expect(tx.mfaLifecycleAudit.create).toHaveBeenCalledWith({
       data: { userId, action: 'ADMIN_RECOVERY_CODES_REGENERATED' },
     });
-    expect(tx.outboxEvent.create).toHaveBeenCalledWith({
+    expect(tx.outboxEvent.createMany).toHaveBeenCalledWith({
+      skipDuplicates: true,
       data: expect.objectContaining({
         payload: {
-          aggregate: { kind: 'MfaLifecycleAudit', id: 'audit-id' },
+          aggregate: { kind: 'MfaLifecycleAudit', id: '22222222-2222-4222-8222-222222222222' },
           context: { userId, action: 'ADMIN_RECOVERY_CODES_REGENERATED' },
         },
       }),

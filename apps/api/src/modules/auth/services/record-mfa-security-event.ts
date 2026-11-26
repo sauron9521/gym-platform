@@ -1,4 +1,5 @@
 import type { MfaLifecycleAction, Prisma } from '#prisma/client';
+import { publishOutboxEvent } from '#src/modules/notifications/public-api';
 
 type SecurityNoticeAction = Exclude<MfaLifecycleAction, 'ADMIN_TOTP_CHALLENGE_VERIFIED'>;
 
@@ -13,17 +14,14 @@ export async function recordMfaSecurityEvent(
   action: SecurityNoticeAction,
 ): Promise<void> {
   const audit = await tx.mfaLifecycleAudit.create({ data: { userId, action } });
-  await tx.outboxEvent.create({
-    data: {
-      eventKey: `mfa-lifecycle:${audit.id}:v1`,
-      type: 'account.security.changed',
-      schemaVersion: 1,
-      occurredAt: audit.occurredAt,
-      actorUserId: userId,
-      payload: {
-        aggregate: { kind: 'MfaLifecycleAudit', id: audit.id },
-        context: { userId, action },
-      },
+  await publishOutboxEvent(tx, {
+    type: 'account.security.changed',
+    schemaVersion: 1,
+    occurredAt: audit.occurredAt,
+    actorUserId: userId,
+    payload: {
+      aggregate: { kind: 'MfaLifecycleAudit', id: audit.id },
+      context: { userId, action },
     },
   });
 }

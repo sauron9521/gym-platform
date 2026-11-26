@@ -9,7 +9,7 @@ import { ADMIN_MFA_METADATA } from '../stores/admin-mfa-session-scope.js';
 
 const token = 'A'.repeat(43);
 const id = createHash('sha256').update(token).digest('base64url');
-const userId = 'admin-id';
+const userId = '11111111-1111-4111-8111-111111111111';
 
 function setup() {
   const fence = new Date();
@@ -46,9 +46,11 @@ function setup() {
     refreshTokenFamily: { updateMany: vi.fn().mockResolvedValue({ count: 1 }) },
     refreshToken: { updateMany: vi.fn().mockResolvedValue({ count: 1 }) },
     mfaLifecycleAudit: {
-      create: vi.fn().mockResolvedValue({ id: 'audit-id', occurredAt: new Date() }),
+      create: vi
+        .fn()
+        .mockResolvedValue({ id: '22222222-2222-4222-8222-222222222222', occurredAt: new Date() }),
     },
-    outboxEvent: { create: vi.fn().mockResolvedValue({}) },
+    outboxEvent: { createMany: vi.fn().mockResolvedValue({ count: 1 }) },
     $queryRaw: vi.fn().mockResolvedValue([{ id }]),
   };
   const store = new InMemoryMfaStore();
@@ -130,7 +132,7 @@ describe('AdminMfaReplacementService', () => {
     expect(tx.mfaLifecycleAudit.create).toHaveBeenCalledWith({
       data: { userId, action: 'ADMIN_TOTP_REPLACEMENT_STAGED' },
     });
-    expect(tx.outboxEvent.create).toHaveBeenCalledTimes(1);
+    expect(tx.outboxEvent.createMany).toHaveBeenCalledTimes(1);
   });
 
   it('refuses to overwrite a live or unbound candidate', async () => {
@@ -189,7 +191,7 @@ describe('AdminMfaReplacementService', () => {
     expect(tx.mfaLifecycleAudit.create).toHaveBeenCalledWith({
       data: { userId, action: 'ADMIN_TOTP_REPLACEMENT_CONFIRMED' },
     });
-    expect(tx.outboxEvent.create).toHaveBeenCalledTimes(1);
+    expect(tx.outboxEvent.createMany).toHaveBeenCalledTimes(1);
   });
 
   it('fails closed if the candidate expires during code generation', async () => {
