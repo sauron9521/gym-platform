@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { TrainerReviewController } from '../../controllers/trainer-review.controller.js';
-import type { TrainerReviewService } from '../../services/trainer-review.service.js';
+import type { TrainerReviewService } from '#src/modules/trainer-onboarding/public-api';
 
 describe('TrainerReviewController', () => {
   const service = { findPending: vi.fn(), decide: vi.fn() };
