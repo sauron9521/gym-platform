@@ -2258,6 +2258,2008 @@
         "tags": ["Users"]
       }
     },
+    "/trainer-athletes": {
+      "post": {
+        "operationId": "TrainerAthletesController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "userId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  }
+                },
+                "required": ["userId"],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "trainerId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "athleteId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "initiatedById": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": ["PENDING", "ACTIVE", "DECLINED", "CANCELLED", "TERMINATED"]
+                    },
+                    "respondedAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "nullable": true
+                    },
+                    "endedAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "nullable": true
+                    },
+                    "endedById": {
+                      "type": "string",
+                      "format": "uuid",
+                      "nullable": true
+                    },
+                    "endReason": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "trainer": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "email": {
+                          "type": "string"
+                        },
+                        "role": {
+                          "type": "string",
+                          "enum": ["ATHLETE", "TRAINER", "ADMIN"]
+                        }
+                      },
+                      "required": ["id", "email", "role"],
+                      "additionalProperties": false
+                    },
+                    "athlete": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "email": {
+                          "type": "string"
+                        },
+                        "role": {
+                          "type": "string",
+                          "enum": ["ATHLETE", "TRAINER", "ADMIN"]
+                        }
+                      },
+                      "required": ["id", "email", "role"],
+                      "additionalProperties": false
+                    },
+                    "initiatedBy": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "email": {
+                          "type": "string"
+                        },
+                        "role": {
+                          "type": "string",
+                          "enum": ["ATHLETE", "TRAINER", "ADMIN"]
+                        }
+                      },
+                      "required": ["id", "email", "role"],
+                      "additionalProperties": false
+                    },
+                    "endedBy": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "email": {
+                          "type": "string"
+                        },
+                        "role": {
+                          "type": "string",
+                          "enum": ["ATHLETE", "TRAINER", "ADMIN"]
+                        }
+                      },
+                      "required": ["id", "email", "role"],
+                      "additionalProperties": false,
+                      "nullable": true
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "trainerId",
+                    "athleteId",
+                    "initiatedById",
+                    "status",
+                    "respondedAt",
+                    "endedAt",
+                    "endedById",
+                    "endReason",
+                    "trainer",
+                    "athlete",
+                    "initiatedBy",
+                    "endedBy",
+                    "createdAt",
+                    "updatedAt"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "accessToken": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "tags": ["Trainer & Athlete Relationships"]
+      },
+      "get": {
+        "operationId": "TrainerAthletesController_findMany",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 1,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 20,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["PENDING", "ACTIVE", "DECLINED", "CANCELLED", "TERMINATED"]
+            }
+          },
+          {
+            "name": "scope",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["trainer"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "oneOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "trainerId": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "athleteId": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "initiatedById": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "status": {
+                                "type": "string",
+                                "enum": ["PENDING", "ACTIVE", "DECLINED", "CANCELLED", "TERMINATED"]
+                              },
+                              "respondedAt": {
+                                "type": "string",
+                                "format": "date-time",
+                                "nullable": true
+                              },
+                              "endedAt": {
+                                "type": "string",
+                                "format": "date-time",
+                                "nullable": true
+                              },
+                              "endedById": {
+                                "type": "string",
+                                "format": "uuid",
+                                "nullable": true
+                              },
+                              "endReason": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "trainer": {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                  },
+                                  "email": {
+                                    "type": "string"
+                                  },
+                                  "role": {
+                                    "type": "string",
+                                    "enum": ["ATHLETE", "TRAINER", "ADMIN"]
+                                  }
+                                },
+                                "required": ["id", "email", "role"],
+                                "additionalProperties": false
+                              },
+                              "athlete": {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                  },
+                                  "email": {
+                                    "type": "string"
+                                  },
+                                  "role": {
+                                    "type": "string",
+                                    "enum": ["ATHLETE", "TRAINER", "ADMIN"]
+                                  }
+                                },
+                                "required": ["id", "email", "role"],
+                                "additionalProperties": false
+                              },
+                              "initiatedBy": {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                  },
+                                  "email": {
+                                    "type": "string"
+                                  },
+                                  "role": {
+                                    "type": "string",
+                                    "enum": ["ATHLETE", "TRAINER", "ADMIN"]
+                                  }
+                                },
+                                "required": ["id", "email", "role"],
+                                "additionalProperties": false
+                              },
+                              "endedBy": {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                  },
+                                  "email": {
+                                    "type": "string"
+                                  },
+                                  "role": {
+                                    "type": "string",
+                                    "enum": ["ATHLETE", "TRAINER", "ADMIN"]
+                                  }
+                                },
+                                "required": ["id", "email", "role"],
+                                "additionalProperties": false,
+                                "nullable": true
+                              },
+                              "createdAt": {
+                                "type": "string",
+                                "format": "date-time"
+                              },
+                              "updatedAt": {
+                                "type": "string",
+                                "format": "date-time"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "trainerId",
+                              "athleteId",
+                              "initiatedById",
+                              "status",
+                              "respondedAt",
+                              "endedAt",
+                              "endedById",
+                              "endReason",
+                              "trainer",
+                              "athlete",
+                              "initiatedBy",
+                              "endedBy",
+                              "createdAt",
+                              "updatedAt"
+                            ],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "trainerId": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "athleteId": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "initiatedById": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "status": {
+                                "type": "string",
+                                "enum": ["PENDING", "ACTIVE", "DECLINED", "CANCELLED", "TERMINATED"]
+                              },
+                              "respondedAt": {
+                                "type": "string",
+                                "format": "date-time",
+                                "nullable": true
+                              },
+                              "endedAt": {
+                                "type": "string",
+                                "format": "date-time",
+                                "nullable": true
+                              },
+                              "endedById": {
+                                "type": "string",
+                                "format": "uuid",
+                                "nullable": true
+                              },
+                              "endReason": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "trainer": {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                  },
+                                  "role": {
+                                    "type": "string",
+                                    "enum": ["ATHLETE", "TRAINER", "ADMIN"]
+                                  }
+                                },
+                                "required": ["id", "role"],
+                                "additionalProperties": false
+                              },
+                              "athlete": {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                  },
+                                  "role": {
+                                    "type": "string",
+                                    "enum": ["ATHLETE", "TRAINER", "ADMIN"]
+                                  }
+                                },
+                                "required": ["id", "role"],
+                                "additionalProperties": false
+                              },
+                              "initiatedBy": {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                  },
+                                  "role": {
+                                    "type": "string",
+                                    "enum": ["ATHLETE", "TRAINER", "ADMIN"]
+                                  }
+                                },
+                                "required": ["id", "role"],
+                                "additionalProperties": false
+                              },
+                              "endedBy": {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                  },
+                                  "role": {
+                                    "type": "string",
+                                    "enum": ["ATHLETE", "TRAINER", "ADMIN"]
+                                  }
+                                },
+                                "required": ["id", "role"],
+                                "additionalProperties": false,
+                                "nullable": true
+                              },
+                              "createdAt": {
+                                "type": "string",
+                                "format": "date-time"
+                              },
+                              "updatedAt": {
+                                "type": "string",
+                                "format": "date-time"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "trainerId",
+                              "athleteId",
+                              "initiatedById",
+                              "status",
+                              "respondedAt",
+                              "endedAt",
+                              "endedById",
+                              "endReason",
+                              "trainer",
+                              "athlete",
+                              "initiatedBy",
+                              "endedBy",
+                              "createdAt",
+                              "updatedAt"
+                            ],
+                            "additionalProperties": false
+                          }
+                        ]
+                      }
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "total": {
+                          "type": "integer"
+                        },
+                        "skip": {
+                          "type": "integer"
+                        },
+                        "take": {
+                          "type": "integer"
+                        },
+                        "totalPages": {
+                          "type": "integer"
+                        }
+                      },
+                      "required": ["total", "skip", "take", "totalPages"],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["data", "meta"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "accessToken": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "tags": ["Trainer & Athlete Relationships"]
+      }
+    },
+    "/trainer-athletes/{id}": {
+      "get": {
+        "operationId": "TrainerAthletesController_findOne",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "trainerId": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "athleteId": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "initiatedById": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": ["PENDING", "ACTIVE", "DECLINED", "CANCELLED", "TERMINATED"]
+                        },
+                        "respondedAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "nullable": true
+                        },
+                        "endedAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "nullable": true
+                        },
+                        "endedById": {
+                          "type": "string",
+                          "format": "uuid",
+                          "nullable": true
+                        },
+                        "endReason": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "trainer": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "email": {
+                              "type": "string"
+                            },
+                            "role": {
+                              "type": "string",
+                              "enum": ["ATHLETE", "TRAINER", "ADMIN"]
+                            }
+                          },
+                          "required": ["id", "email", "role"],
+                          "additionalProperties": false
+                        },
+                        "athlete": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "email": {
+                              "type": "string"
+                            },
+                            "role": {
+                              "type": "string",
+                              "enum": ["ATHLETE", "TRAINER", "ADMIN"]
+                            }
+                          },
+                          "required": ["id", "email", "role"],
+                          "additionalProperties": false
+                        },
+                        "initiatedBy": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "email": {
+                              "type": "string"
+                            },
+                            "role": {
+                              "type": "string",
+                              "enum": ["ATHLETE", "TRAINER", "ADMIN"]
+                            }
+                          },
+                          "required": ["id", "email", "role"],
+                          "additionalProperties": false
+                        },
+                        "endedBy": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "email": {
+                              "type": "string"
+                            },
+                            "role": {
+                              "type": "string",
+                              "enum": ["ATHLETE", "TRAINER", "ADMIN"]
+                            }
+                          },
+                          "required": ["id", "email", "role"],
+                          "additionalProperties": false,
+                          "nullable": true
+                        },
+                        "createdAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "updatedAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "trainerId",
+                        "athleteId",
+                        "initiatedById",
+                        "status",
+                        "respondedAt",
+                        "endedAt",
+                        "endedById",
+                        "endReason",
+                        "trainer",
+                        "athlete",
+                        "initiatedBy",
+                        "endedBy",
+                        "createdAt",
+                        "updatedAt"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "trainerId": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "athleteId": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "initiatedById": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": ["PENDING", "ACTIVE", "DECLINED", "CANCELLED", "TERMINATED"]
+                        },
+                        "respondedAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "nullable": true
+                        },
+                        "endedAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "nullable": true
+                        },
+                        "endedById": {
+                          "type": "string",
+                          "format": "uuid",
+                          "nullable": true
+                        },
+                        "endReason": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "trainer": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "role": {
+                              "type": "string",
+                              "enum": ["ATHLETE", "TRAINER", "ADMIN"]
+                            }
+                          },
+                          "required": ["id", "role"],
+                          "additionalProperties": false
+                        },
+                        "athlete": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "role": {
+                              "type": "string",
+                              "enum": ["ATHLETE", "TRAINER", "ADMIN"]
+                            }
+                          },
+                          "required": ["id", "role"],
+                          "additionalProperties": false
+                        },
+                        "initiatedBy": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "role": {
+                              "type": "string",
+                              "enum": ["ATHLETE", "TRAINER", "ADMIN"]
+                            }
+                          },
+                          "required": ["id", "role"],
+                          "additionalProperties": false
+                        },
+                        "endedBy": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "role": {
+                              "type": "string",
+                              "enum": ["ATHLETE", "TRAINER", "ADMIN"]
+                            }
+                          },
+                          "required": ["id", "role"],
+                          "additionalProperties": false,
+                          "nullable": true
+                        },
+                        "createdAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "updatedAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "trainerId",
+                        "athleteId",
+                        "initiatedById",
+                        "status",
+                        "respondedAt",
+                        "endedAt",
+                        "endedById",
+                        "endReason",
+                        "trainer",
+                        "athlete",
+                        "initiatedBy",
+                        "endedBy",
+                        "createdAt",
+                        "updatedAt"
+                      ],
+                      "additionalProperties": false
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "accessToken": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "tags": ["Trainer & Athlete Relationships"]
+      }
+    },
+    "/trainer-athletes/{id}/accept": {
+      "post": {
+        "operationId": "TrainerAthletesController_accept",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "trainerId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "athleteId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "initiatedById": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": ["PENDING", "ACTIVE", "DECLINED", "CANCELLED", "TERMINATED"]
+                    },
+                    "respondedAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "nullable": true
+                    },
+                    "endedAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "nullable": true
+                    },
+                    "endedById": {
+                      "type": "string",
+                      "format": "uuid",
+                      "nullable": true
+                    },
+                    "endReason": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "trainer": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "email": {
+                          "type": "string"
+                        },
+                        "role": {
+                          "type": "string",
+                          "enum": ["ATHLETE", "TRAINER", "ADMIN"]
+                        }
+                      },
+                      "required": ["id", "email", "role"],
+                      "additionalProperties": false
+                    },
+                    "athlete": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "email": {
+                          "type": "string"
+                        },
+                        "role": {
+                          "type": "string",
+                          "enum": ["ATHLETE", "TRAINER", "ADMIN"]
+                        }
+                      },
+                      "required": ["id", "email", "role"],
+                      "additionalProperties": false
+                    },
+                    "initiatedBy": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "email": {
+                          "type": "string"
+                        },
+                        "role": {
+                          "type": "string",
+                          "enum": ["ATHLETE", "TRAINER", "ADMIN"]
+                        }
+                      },
+                      "required": ["id", "email", "role"],
+                      "additionalProperties": false
+                    },
+                    "endedBy": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "email": {
+                          "type": "string"
+                        },
+                        "role": {
+                          "type": "string",
+                          "enum": ["ATHLETE", "TRAINER", "ADMIN"]
+                        }
+                      },
+                      "required": ["id", "email", "role"],
+                      "additionalProperties": false,
+                      "nullable": true
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "trainerId",
+                    "athleteId",
+                    "initiatedById",
+                    "status",
+                    "respondedAt",
+                    "endedAt",
+                    "endedById",
+                    "endReason",
+                    "trainer",
+                    "athlete",
+                    "initiatedBy",
+                    "endedBy",
+                    "createdAt",
+                    "updatedAt"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "accessToken": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "tags": ["Trainer & Athlete Relationships"]
+      }
+    },
+    "/trainer-athletes/{id}/decline": {
+      "post": {
+        "operationId": "TrainerAthletesController_decline",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "trainerId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "athleteId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "initiatedById": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": ["PENDING", "ACTIVE", "DECLINED", "CANCELLED", "TERMINATED"]
+                    },
+                    "respondedAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "nullable": true
+                    },
+                    "endedAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "nullable": true
+                    },
+                    "endedById": {
+                      "type": "string",
+                      "format": "uuid",
+                      "nullable": true
+                    },
+                    "endReason": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "trainer": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "email": {
+                          "type": "string"
+                        },
+                        "role": {
+                          "type": "string",
+                          "enum": ["ATHLETE", "TRAINER", "ADMIN"]
+                        }
+                      },
+                      "required": ["id", "email", "role"],
+                      "additionalProperties": false
+                    },
+                    "athlete": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "email": {
+                          "type": "string"
+                        },
+                        "role": {
+                          "type": "string",
+                          "enum": ["ATHLETE", "TRAINER", "ADMIN"]
+                        }
+                      },
+                      "required": ["id", "email", "role"],
+                      "additionalProperties": false
+                    },
+                    "initiatedBy": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "email": {
+                          "type": "string"
+                        },
+                        "role": {
+                          "type": "string",
+                          "enum": ["ATHLETE", "TRAINER", "ADMIN"]
+                        }
+                      },
+                      "required": ["id", "email", "role"],
+                      "additionalProperties": false
+                    },
+                    "endedBy": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "email": {
+                          "type": "string"
+                        },
+                        "role": {
+                          "type": "string",
+                          "enum": ["ATHLETE", "TRAINER", "ADMIN"]
+                        }
+                      },
+                      "required": ["id", "email", "role"],
+                      "additionalProperties": false,
+                      "nullable": true
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "trainerId",
+                    "athleteId",
+                    "initiatedById",
+                    "status",
+                    "respondedAt",
+                    "endedAt",
+                    "endedById",
+                    "endReason",
+                    "trainer",
+                    "athlete",
+                    "initiatedBy",
+                    "endedBy",
+                    "createdAt",
+                    "updatedAt"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "accessToken": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "tags": ["Trainer & Athlete Relationships"]
+      }
+    },
+    "/trainer-athletes/{id}/cancel": {
+      "post": {
+        "operationId": "TrainerAthletesController_cancel",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "reason": {
+                    "nullable": true,
+                    "type": "string",
+                    "maxLength": 500
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "trainerId": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "athleteId": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "initiatedById": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": ["PENDING", "ACTIVE", "DECLINED", "CANCELLED", "TERMINATED"]
+                        },
+                        "respondedAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "nullable": true
+                        },
+                        "endedAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "nullable": true
+                        },
+                        "endedById": {
+                          "type": "string",
+                          "format": "uuid",
+                          "nullable": true
+                        },
+                        "endReason": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "trainer": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "email": {
+                              "type": "string"
+                            },
+                            "role": {
+                              "type": "string",
+                              "enum": ["ATHLETE", "TRAINER", "ADMIN"]
+                            }
+                          },
+                          "required": ["id", "email", "role"],
+                          "additionalProperties": false
+                        },
+                        "athlete": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "email": {
+                              "type": "string"
+                            },
+                            "role": {
+                              "type": "string",
+                              "enum": ["ATHLETE", "TRAINER", "ADMIN"]
+                            }
+                          },
+                          "required": ["id", "email", "role"],
+                          "additionalProperties": false
+                        },
+                        "initiatedBy": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "email": {
+                              "type": "string"
+                            },
+                            "role": {
+                              "type": "string",
+                              "enum": ["ATHLETE", "TRAINER", "ADMIN"]
+                            }
+                          },
+                          "required": ["id", "email", "role"],
+                          "additionalProperties": false
+                        },
+                        "endedBy": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "email": {
+                              "type": "string"
+                            },
+                            "role": {
+                              "type": "string",
+                              "enum": ["ATHLETE", "TRAINER", "ADMIN"]
+                            }
+                          },
+                          "required": ["id", "email", "role"],
+                          "additionalProperties": false,
+                          "nullable": true
+                        },
+                        "createdAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "updatedAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "trainerId",
+                        "athleteId",
+                        "initiatedById",
+                        "status",
+                        "respondedAt",
+                        "endedAt",
+                        "endedById",
+                        "endReason",
+                        "trainer",
+                        "athlete",
+                        "initiatedBy",
+                        "endedBy",
+                        "createdAt",
+                        "updatedAt"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "trainerId": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "athleteId": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "initiatedById": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": ["PENDING", "ACTIVE", "DECLINED", "CANCELLED", "TERMINATED"]
+                        },
+                        "respondedAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "nullable": true
+                        },
+                        "endedAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "nullable": true
+                        },
+                        "endedById": {
+                          "type": "string",
+                          "format": "uuid",
+                          "nullable": true
+                        },
+                        "endReason": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "trainer": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "role": {
+                              "type": "string",
+                              "enum": ["ATHLETE", "TRAINER", "ADMIN"]
+                            }
+                          },
+                          "required": ["id", "role"],
+                          "additionalProperties": false
+                        },
+                        "athlete": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "role": {
+                              "type": "string",
+                              "enum": ["ATHLETE", "TRAINER", "ADMIN"]
+                            }
+                          },
+                          "required": ["id", "role"],
+                          "additionalProperties": false
+                        },
+                        "initiatedBy": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "role": {
+                              "type": "string",
+                              "enum": ["ATHLETE", "TRAINER", "ADMIN"]
+                            }
+                          },
+                          "required": ["id", "role"],
+                          "additionalProperties": false
+                        },
+                        "endedBy": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "role": {
+                              "type": "string",
+                              "enum": ["ATHLETE", "TRAINER", "ADMIN"]
+                            }
+                          },
+                          "required": ["id", "role"],
+                          "additionalProperties": false,
+                          "nullable": true
+                        },
+                        "createdAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "updatedAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "trainerId",
+                        "athleteId",
+                        "initiatedById",
+                        "status",
+                        "respondedAt",
+                        "endedAt",
+                        "endedById",
+                        "endReason",
+                        "trainer",
+                        "athlete",
+                        "initiatedBy",
+                        "endedBy",
+                        "createdAt",
+                        "updatedAt"
+                      ],
+                      "additionalProperties": false
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "accessToken": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "tags": ["Trainer & Athlete Relationships"]
+      }
+    },
+    "/trainer-athletes/{id}/terminate": {
+      "post": {
+        "operationId": "TrainerAthletesController_terminate",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "reason": {
+                    "nullable": true,
+                    "type": "string",
+                    "maxLength": 500
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "trainerId": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "athleteId": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "initiatedById": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": ["PENDING", "ACTIVE", "DECLINED", "CANCELLED", "TERMINATED"]
+                        },
+                        "respondedAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "nullable": true
+                        },
+                        "endedAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "nullable": true
+                        },
+                        "endedById": {
+                          "type": "string",
+                          "format": "uuid",
+                          "nullable": true
+                        },
+                        "endReason": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "trainer": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "email": {
+                              "type": "string"
+                            },
+                            "role": {
+                              "type": "string",
+                              "enum": ["ATHLETE", "TRAINER", "ADMIN"]
+                            }
+                          },
+                          "required": ["id", "email", "role"],
+                          "additionalProperties": false
+                        },
+                        "athlete": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "email": {
+                              "type": "string"
+                            },
+                            "role": {
+                              "type": "string",
+                              "enum": ["ATHLETE", "TRAINER", "ADMIN"]
+                            }
+                          },
+                          "required": ["id", "email", "role"],
+                          "additionalProperties": false
+                        },
+                        "initiatedBy": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "email": {
+                              "type": "string"
+                            },
+                            "role": {
+                              "type": "string",
+                              "enum": ["ATHLETE", "TRAINER", "ADMIN"]
+                            }
+                          },
+                          "required": ["id", "email", "role"],
+                          "additionalProperties": false
+                        },
+                        "endedBy": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "email": {
+                              "type": "string"
+                            },
+                            "role": {
+                              "type": "string",
+                              "enum": ["ATHLETE", "TRAINER", "ADMIN"]
+                            }
+                          },
+                          "required": ["id", "email", "role"],
+                          "additionalProperties": false,
+                          "nullable": true
+                        },
+                        "createdAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "updatedAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "trainerId",
+                        "athleteId",
+                        "initiatedById",
+                        "status",
+                        "respondedAt",
+                        "endedAt",
+                        "endedById",
+                        "endReason",
+                        "trainer",
+                        "athlete",
+                        "initiatedBy",
+                        "endedBy",
+                        "createdAt",
+                        "updatedAt"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "trainerId": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "athleteId": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "initiatedById": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": ["PENDING", "ACTIVE", "DECLINED", "CANCELLED", "TERMINATED"]
+                        },
+                        "respondedAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "nullable": true
+                        },
+                        "endedAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "nullable": true
+                        },
+                        "endedById": {
+                          "type": "string",
+                          "format": "uuid",
+                          "nullable": true
+                        },
+                        "endReason": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "trainer": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "role": {
+                              "type": "string",
+                              "enum": ["ATHLETE", "TRAINER", "ADMIN"]
+                            }
+                          },
+                          "required": ["id", "role"],
+                          "additionalProperties": false
+                        },
+                        "athlete": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "role": {
+                              "type": "string",
+                              "enum": ["ATHLETE", "TRAINER", "ADMIN"]
+                            }
+                          },
+                          "required": ["id", "role"],
+                          "additionalProperties": false
+                        },
+                        "initiatedBy": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "role": {
+                              "type": "string",
+                              "enum": ["ATHLETE", "TRAINER", "ADMIN"]
+                            }
+                          },
+                          "required": ["id", "role"],
+                          "additionalProperties": false
+                        },
+                        "endedBy": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "role": {
+                              "type": "string",
+                              "enum": ["ATHLETE", "TRAINER", "ADMIN"]
+                            }
+                          },
+                          "required": ["id", "role"],
+                          "additionalProperties": false,
+                          "nullable": true
+                        },
+                        "createdAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "updatedAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "trainerId",
+                        "athleteId",
+                        "initiatedById",
+                        "status",
+                        "respondedAt",
+                        "endedAt",
+                        "endedById",
+                        "endReason",
+                        "trainer",
+                        "athlete",
+                        "initiatedBy",
+                        "endedBy",
+                        "createdAt",
+                        "updatedAt"
+                      ],
+                      "additionalProperties": false
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "accessToken": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "tags": ["Trainer & Athlete Relationships"]
+      }
+    },
+    "/trainer-dashboard/overview": {
+      "get": {
+        "operationId": "TrainerDashboardController_overview",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "asOf": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "windowStart": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "activeClients": {
+                      "type": "integer"
+                    },
+                    "activeProgramAssignments": {
+                      "type": "integer"
+                    },
+                    "completedProgramWorkouts30d": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "asOf",
+                    "windowStart",
+                    "activeClients",
+                    "activeProgramAssignments",
+                    "completedProgramWorkouts30d"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "accessToken": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "tags": ["Trainer Dashboard"]
+      }
+    },
+    "/trainer-dashboard/clients/{relationId}/progress": {
+      "get": {
+        "operationId": "TrainerDashboardController_clientProgress",
+        "parameters": [
+          {
+            "name": "relationId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "asOf": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "windowStart": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "activeProgramAssignments": {
+                      "type": "integer"
+                    },
+                    "completedProgramWorkouts30d": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "asOf",
+                    "windowStart",
+                    "activeProgramAssignments",
+                    "completedProgramWorkouts30d"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "accessToken": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "tags": ["Trainer Dashboard"]
+      }
+    },
     "/avatars/{key}": {
       "get": {
         "operationId": "AvatarPublicController_get",
@@ -4674,2008 +6676,6 @@
           }
         ],
         "tags": ["Exercises"]
-      }
-    },
-    "/trainer-athletes": {
-      "post": {
-        "operationId": "TrainerAthletesController_create",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "userId": {
-                    "type": "string",
-                    "format": "uuid",
-                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-                  }
-                },
-                "required": ["userId"],
-                "additionalProperties": false
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "id": {
-                      "type": "string",
-                      "format": "uuid"
-                    },
-                    "trainerId": {
-                      "type": "string",
-                      "format": "uuid"
-                    },
-                    "athleteId": {
-                      "type": "string",
-                      "format": "uuid"
-                    },
-                    "initiatedById": {
-                      "type": "string",
-                      "format": "uuid"
-                    },
-                    "status": {
-                      "type": "string",
-                      "enum": ["PENDING", "ACTIVE", "DECLINED", "CANCELLED", "TERMINATED"]
-                    },
-                    "respondedAt": {
-                      "type": "string",
-                      "format": "date-time",
-                      "nullable": true
-                    },
-                    "endedAt": {
-                      "type": "string",
-                      "format": "date-time",
-                      "nullable": true
-                    },
-                    "endedById": {
-                      "type": "string",
-                      "format": "uuid",
-                      "nullable": true
-                    },
-                    "endReason": {
-                      "type": "string",
-                      "nullable": true
-                    },
-                    "trainer": {
-                      "type": "object",
-                      "properties": {
-                        "id": {
-                          "type": "string",
-                          "format": "uuid"
-                        },
-                        "email": {
-                          "type": "string"
-                        },
-                        "role": {
-                          "type": "string",
-                          "enum": ["ATHLETE", "TRAINER", "ADMIN"]
-                        }
-                      },
-                      "required": ["id", "email", "role"],
-                      "additionalProperties": false
-                    },
-                    "athlete": {
-                      "type": "object",
-                      "properties": {
-                        "id": {
-                          "type": "string",
-                          "format": "uuid"
-                        },
-                        "email": {
-                          "type": "string"
-                        },
-                        "role": {
-                          "type": "string",
-                          "enum": ["ATHLETE", "TRAINER", "ADMIN"]
-                        }
-                      },
-                      "required": ["id", "email", "role"],
-                      "additionalProperties": false
-                    },
-                    "initiatedBy": {
-                      "type": "object",
-                      "properties": {
-                        "id": {
-                          "type": "string",
-                          "format": "uuid"
-                        },
-                        "email": {
-                          "type": "string"
-                        },
-                        "role": {
-                          "type": "string",
-                          "enum": ["ATHLETE", "TRAINER", "ADMIN"]
-                        }
-                      },
-                      "required": ["id", "email", "role"],
-                      "additionalProperties": false
-                    },
-                    "endedBy": {
-                      "type": "object",
-                      "properties": {
-                        "id": {
-                          "type": "string",
-                          "format": "uuid"
-                        },
-                        "email": {
-                          "type": "string"
-                        },
-                        "role": {
-                          "type": "string",
-                          "enum": ["ATHLETE", "TRAINER", "ADMIN"]
-                        }
-                      },
-                      "required": ["id", "email", "role"],
-                      "additionalProperties": false,
-                      "nullable": true
-                    },
-                    "createdAt": {
-                      "type": "string",
-                      "format": "date-time"
-                    },
-                    "updatedAt": {
-                      "type": "string",
-                      "format": "date-time"
-                    }
-                  },
-                  "required": [
-                    "id",
-                    "trainerId",
-                    "athleteId",
-                    "initiatedById",
-                    "status",
-                    "respondedAt",
-                    "endedAt",
-                    "endedById",
-                    "endReason",
-                    "trainer",
-                    "athlete",
-                    "initiatedBy",
-                    "endedBy",
-                    "createdAt",
-                    "updatedAt"
-                  ],
-                  "additionalProperties": false
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "accessToken": []
-          },
-          {
-            "sessionCookie": []
-          }
-        ],
-        "tags": ["Trainer & Athlete Relationships"]
-      },
-      "get": {
-        "operationId": "TrainerAthletesController_findMany",
-        "parameters": [
-          {
-            "name": "page",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "default": 1,
-              "type": "integer",
-              "minimum": 1,
-              "maximum": 9007199254740991
-            }
-          },
-          {
-            "name": "limit",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "default": 20,
-              "type": "integer",
-              "minimum": 1,
-              "maximum": 100
-            }
-          },
-          {
-            "name": "status",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "type": "string",
-              "enum": ["PENDING", "ACTIVE", "DECLINED", "CANCELLED", "TERMINATED"]
-            }
-          },
-          {
-            "name": "scope",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "type": "string",
-              "enum": ["trainer"]
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "data": {
-                      "type": "array",
-                      "items": {
-                        "oneOf": [
-                          {
-                            "type": "object",
-                            "properties": {
-                              "id": {
-                                "type": "string",
-                                "format": "uuid"
-                              },
-                              "trainerId": {
-                                "type": "string",
-                                "format": "uuid"
-                              },
-                              "athleteId": {
-                                "type": "string",
-                                "format": "uuid"
-                              },
-                              "initiatedById": {
-                                "type": "string",
-                                "format": "uuid"
-                              },
-                              "status": {
-                                "type": "string",
-                                "enum": ["PENDING", "ACTIVE", "DECLINED", "CANCELLED", "TERMINATED"]
-                              },
-                              "respondedAt": {
-                                "type": "string",
-                                "format": "date-time",
-                                "nullable": true
-                              },
-                              "endedAt": {
-                                "type": "string",
-                                "format": "date-time",
-                                "nullable": true
-                              },
-                              "endedById": {
-                                "type": "string",
-                                "format": "uuid",
-                                "nullable": true
-                              },
-                              "endReason": {
-                                "type": "string",
-                                "nullable": true
-                              },
-                              "trainer": {
-                                "type": "object",
-                                "properties": {
-                                  "id": {
-                                    "type": "string",
-                                    "format": "uuid"
-                                  },
-                                  "email": {
-                                    "type": "string"
-                                  },
-                                  "role": {
-                                    "type": "string",
-                                    "enum": ["ATHLETE", "TRAINER", "ADMIN"]
-                                  }
-                                },
-                                "required": ["id", "email", "role"],
-                                "additionalProperties": false
-                              },
-                              "athlete": {
-                                "type": "object",
-                                "properties": {
-                                  "id": {
-                                    "type": "string",
-                                    "format": "uuid"
-                                  },
-                                  "email": {
-                                    "type": "string"
-                                  },
-                                  "role": {
-                                    "type": "string",
-                                    "enum": ["ATHLETE", "TRAINER", "ADMIN"]
-                                  }
-                                },
-                                "required": ["id", "email", "role"],
-                                "additionalProperties": false
-                              },
-                              "initiatedBy": {
-                                "type": "object",
-                                "properties": {
-                                  "id": {
-                                    "type": "string",
-                                    "format": "uuid"
-                                  },
-                                  "email": {
-                                    "type": "string"
-                                  },
-                                  "role": {
-                                    "type": "string",
-                                    "enum": ["ATHLETE", "TRAINER", "ADMIN"]
-                                  }
-                                },
-                                "required": ["id", "email", "role"],
-                                "additionalProperties": false
-                              },
-                              "endedBy": {
-                                "type": "object",
-                                "properties": {
-                                  "id": {
-                                    "type": "string",
-                                    "format": "uuid"
-                                  },
-                                  "email": {
-                                    "type": "string"
-                                  },
-                                  "role": {
-                                    "type": "string",
-                                    "enum": ["ATHLETE", "TRAINER", "ADMIN"]
-                                  }
-                                },
-                                "required": ["id", "email", "role"],
-                                "additionalProperties": false,
-                                "nullable": true
-                              },
-                              "createdAt": {
-                                "type": "string",
-                                "format": "date-time"
-                              },
-                              "updatedAt": {
-                                "type": "string",
-                                "format": "date-time"
-                              }
-                            },
-                            "required": [
-                              "id",
-                              "trainerId",
-                              "athleteId",
-                              "initiatedById",
-                              "status",
-                              "respondedAt",
-                              "endedAt",
-                              "endedById",
-                              "endReason",
-                              "trainer",
-                              "athlete",
-                              "initiatedBy",
-                              "endedBy",
-                              "createdAt",
-                              "updatedAt"
-                            ],
-                            "additionalProperties": false
-                          },
-                          {
-                            "type": "object",
-                            "properties": {
-                              "id": {
-                                "type": "string",
-                                "format": "uuid"
-                              },
-                              "trainerId": {
-                                "type": "string",
-                                "format": "uuid"
-                              },
-                              "athleteId": {
-                                "type": "string",
-                                "format": "uuid"
-                              },
-                              "initiatedById": {
-                                "type": "string",
-                                "format": "uuid"
-                              },
-                              "status": {
-                                "type": "string",
-                                "enum": ["PENDING", "ACTIVE", "DECLINED", "CANCELLED", "TERMINATED"]
-                              },
-                              "respondedAt": {
-                                "type": "string",
-                                "format": "date-time",
-                                "nullable": true
-                              },
-                              "endedAt": {
-                                "type": "string",
-                                "format": "date-time",
-                                "nullable": true
-                              },
-                              "endedById": {
-                                "type": "string",
-                                "format": "uuid",
-                                "nullable": true
-                              },
-                              "endReason": {
-                                "type": "string",
-                                "nullable": true
-                              },
-                              "trainer": {
-                                "type": "object",
-                                "properties": {
-                                  "id": {
-                                    "type": "string",
-                                    "format": "uuid"
-                                  },
-                                  "role": {
-                                    "type": "string",
-                                    "enum": ["ATHLETE", "TRAINER", "ADMIN"]
-                                  }
-                                },
-                                "required": ["id", "role"],
-                                "additionalProperties": false
-                              },
-                              "athlete": {
-                                "type": "object",
-                                "properties": {
-                                  "id": {
-                                    "type": "string",
-                                    "format": "uuid"
-                                  },
-                                  "role": {
-                                    "type": "string",
-                                    "enum": ["ATHLETE", "TRAINER", "ADMIN"]
-                                  }
-                                },
-                                "required": ["id", "role"],
-                                "additionalProperties": false
-                              },
-                              "initiatedBy": {
-                                "type": "object",
-                                "properties": {
-                                  "id": {
-                                    "type": "string",
-                                    "format": "uuid"
-                                  },
-                                  "role": {
-                                    "type": "string",
-                                    "enum": ["ATHLETE", "TRAINER", "ADMIN"]
-                                  }
-                                },
-                                "required": ["id", "role"],
-                                "additionalProperties": false
-                              },
-                              "endedBy": {
-                                "type": "object",
-                                "properties": {
-                                  "id": {
-                                    "type": "string",
-                                    "format": "uuid"
-                                  },
-                                  "role": {
-                                    "type": "string",
-                                    "enum": ["ATHLETE", "TRAINER", "ADMIN"]
-                                  }
-                                },
-                                "required": ["id", "role"],
-                                "additionalProperties": false,
-                                "nullable": true
-                              },
-                              "createdAt": {
-                                "type": "string",
-                                "format": "date-time"
-                              },
-                              "updatedAt": {
-                                "type": "string",
-                                "format": "date-time"
-                              }
-                            },
-                            "required": [
-                              "id",
-                              "trainerId",
-                              "athleteId",
-                              "initiatedById",
-                              "status",
-                              "respondedAt",
-                              "endedAt",
-                              "endedById",
-                              "endReason",
-                              "trainer",
-                              "athlete",
-                              "initiatedBy",
-                              "endedBy",
-                              "createdAt",
-                              "updatedAt"
-                            ],
-                            "additionalProperties": false
-                          }
-                        ]
-                      }
-                    },
-                    "meta": {
-                      "type": "object",
-                      "properties": {
-                        "total": {
-                          "type": "integer"
-                        },
-                        "skip": {
-                          "type": "integer"
-                        },
-                        "take": {
-                          "type": "integer"
-                        },
-                        "totalPages": {
-                          "type": "integer"
-                        }
-                      },
-                      "required": ["total", "skip", "take", "totalPages"],
-                      "additionalProperties": false
-                    }
-                  },
-                  "required": ["data", "meta"],
-                  "additionalProperties": false
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "accessToken": []
-          },
-          {
-            "sessionCookie": []
-          }
-        ],
-        "tags": ["Trainer & Athlete Relationships"]
-      }
-    },
-    "/trainer-athletes/{id}": {
-      "get": {
-        "operationId": "TrainerAthletesController_findOne",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "oneOf": [
-                    {
-                      "type": "object",
-                      "properties": {
-                        "id": {
-                          "type": "string",
-                          "format": "uuid"
-                        },
-                        "trainerId": {
-                          "type": "string",
-                          "format": "uuid"
-                        },
-                        "athleteId": {
-                          "type": "string",
-                          "format": "uuid"
-                        },
-                        "initiatedById": {
-                          "type": "string",
-                          "format": "uuid"
-                        },
-                        "status": {
-                          "type": "string",
-                          "enum": ["PENDING", "ACTIVE", "DECLINED", "CANCELLED", "TERMINATED"]
-                        },
-                        "respondedAt": {
-                          "type": "string",
-                          "format": "date-time",
-                          "nullable": true
-                        },
-                        "endedAt": {
-                          "type": "string",
-                          "format": "date-time",
-                          "nullable": true
-                        },
-                        "endedById": {
-                          "type": "string",
-                          "format": "uuid",
-                          "nullable": true
-                        },
-                        "endReason": {
-                          "type": "string",
-                          "nullable": true
-                        },
-                        "trainer": {
-                          "type": "object",
-                          "properties": {
-                            "id": {
-                              "type": "string",
-                              "format": "uuid"
-                            },
-                            "email": {
-                              "type": "string"
-                            },
-                            "role": {
-                              "type": "string",
-                              "enum": ["ATHLETE", "TRAINER", "ADMIN"]
-                            }
-                          },
-                          "required": ["id", "email", "role"],
-                          "additionalProperties": false
-                        },
-                        "athlete": {
-                          "type": "object",
-                          "properties": {
-                            "id": {
-                              "type": "string",
-                              "format": "uuid"
-                            },
-                            "email": {
-                              "type": "string"
-                            },
-                            "role": {
-                              "type": "string",
-                              "enum": ["ATHLETE", "TRAINER", "ADMIN"]
-                            }
-                          },
-                          "required": ["id", "email", "role"],
-                          "additionalProperties": false
-                        },
-                        "initiatedBy": {
-                          "type": "object",
-                          "properties": {
-                            "id": {
-                              "type": "string",
-                              "format": "uuid"
-                            },
-                            "email": {
-                              "type": "string"
-                            },
-                            "role": {
-                              "type": "string",
-                              "enum": ["ATHLETE", "TRAINER", "ADMIN"]
-                            }
-                          },
-                          "required": ["id", "email", "role"],
-                          "additionalProperties": false
-                        },
-                        "endedBy": {
-                          "type": "object",
-                          "properties": {
-                            "id": {
-                              "type": "string",
-                              "format": "uuid"
-                            },
-                            "email": {
-                              "type": "string"
-                            },
-                            "role": {
-                              "type": "string",
-                              "enum": ["ATHLETE", "TRAINER", "ADMIN"]
-                            }
-                          },
-                          "required": ["id", "email", "role"],
-                          "additionalProperties": false,
-                          "nullable": true
-                        },
-                        "createdAt": {
-                          "type": "string",
-                          "format": "date-time"
-                        },
-                        "updatedAt": {
-                          "type": "string",
-                          "format": "date-time"
-                        }
-                      },
-                      "required": [
-                        "id",
-                        "trainerId",
-                        "athleteId",
-                        "initiatedById",
-                        "status",
-                        "respondedAt",
-                        "endedAt",
-                        "endedById",
-                        "endReason",
-                        "trainer",
-                        "athlete",
-                        "initiatedBy",
-                        "endedBy",
-                        "createdAt",
-                        "updatedAt"
-                      ],
-                      "additionalProperties": false
-                    },
-                    {
-                      "type": "object",
-                      "properties": {
-                        "id": {
-                          "type": "string",
-                          "format": "uuid"
-                        },
-                        "trainerId": {
-                          "type": "string",
-                          "format": "uuid"
-                        },
-                        "athleteId": {
-                          "type": "string",
-                          "format": "uuid"
-                        },
-                        "initiatedById": {
-                          "type": "string",
-                          "format": "uuid"
-                        },
-                        "status": {
-                          "type": "string",
-                          "enum": ["PENDING", "ACTIVE", "DECLINED", "CANCELLED", "TERMINATED"]
-                        },
-                        "respondedAt": {
-                          "type": "string",
-                          "format": "date-time",
-                          "nullable": true
-                        },
-                        "endedAt": {
-                          "type": "string",
-                          "format": "date-time",
-                          "nullable": true
-                        },
-                        "endedById": {
-                          "type": "string",
-                          "format": "uuid",
-                          "nullable": true
-                        },
-                        "endReason": {
-                          "type": "string",
-                          "nullable": true
-                        },
-                        "trainer": {
-                          "type": "object",
-                          "properties": {
-                            "id": {
-                              "type": "string",
-                              "format": "uuid"
-                            },
-                            "role": {
-                              "type": "string",
-                              "enum": ["ATHLETE", "TRAINER", "ADMIN"]
-                            }
-                          },
-                          "required": ["id", "role"],
-                          "additionalProperties": false
-                        },
-                        "athlete": {
-                          "type": "object",
-                          "properties": {
-                            "id": {
-                              "type": "string",
-                              "format": "uuid"
-                            },
-                            "role": {
-                              "type": "string",
-                              "enum": ["ATHLETE", "TRAINER", "ADMIN"]
-                            }
-                          },
-                          "required": ["id", "role"],
-                          "additionalProperties": false
-                        },
-                        "initiatedBy": {
-                          "type": "object",
-                          "properties": {
-                            "id": {
-                              "type": "string",
-                              "format": "uuid"
-                            },
-                            "role": {
-                              "type": "string",
-                              "enum": ["ATHLETE", "TRAINER", "ADMIN"]
-                            }
-                          },
-                          "required": ["id", "role"],
-                          "additionalProperties": false
-                        },
-                        "endedBy": {
-                          "type": "object",
-                          "properties": {
-                            "id": {
-                              "type": "string",
-                              "format": "uuid"
-                            },
-                            "role": {
-                              "type": "string",
-                              "enum": ["ATHLETE", "TRAINER", "ADMIN"]
-                            }
-                          },
-                          "required": ["id", "role"],
-                          "additionalProperties": false,
-                          "nullable": true
-                        },
-                        "createdAt": {
-                          "type": "string",
-                          "format": "date-time"
-                        },
-                        "updatedAt": {
-                          "type": "string",
-                          "format": "date-time"
-                        }
-                      },
-                      "required": [
-                        "id",
-                        "trainerId",
-                        "athleteId",
-                        "initiatedById",
-                        "status",
-                        "respondedAt",
-                        "endedAt",
-                        "endedById",
-                        "endReason",
-                        "trainer",
-                        "athlete",
-                        "initiatedBy",
-                        "endedBy",
-                        "createdAt",
-                        "updatedAt"
-                      ],
-                      "additionalProperties": false
-                    }
-                  ]
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "accessToken": []
-          },
-          {
-            "sessionCookie": []
-          }
-        ],
-        "tags": ["Trainer & Athlete Relationships"]
-      }
-    },
-    "/trainer-athletes/{id}/accept": {
-      "post": {
-        "operationId": "TrainerAthletesController_accept",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "id": {
-                      "type": "string",
-                      "format": "uuid"
-                    },
-                    "trainerId": {
-                      "type": "string",
-                      "format": "uuid"
-                    },
-                    "athleteId": {
-                      "type": "string",
-                      "format": "uuid"
-                    },
-                    "initiatedById": {
-                      "type": "string",
-                      "format": "uuid"
-                    },
-                    "status": {
-                      "type": "string",
-                      "enum": ["PENDING", "ACTIVE", "DECLINED", "CANCELLED", "TERMINATED"]
-                    },
-                    "respondedAt": {
-                      "type": "string",
-                      "format": "date-time",
-                      "nullable": true
-                    },
-                    "endedAt": {
-                      "type": "string",
-                      "format": "date-time",
-                      "nullable": true
-                    },
-                    "endedById": {
-                      "type": "string",
-                      "format": "uuid",
-                      "nullable": true
-                    },
-                    "endReason": {
-                      "type": "string",
-                      "nullable": true
-                    },
-                    "trainer": {
-                      "type": "object",
-                      "properties": {
-                        "id": {
-                          "type": "string",
-                          "format": "uuid"
-                        },
-                        "email": {
-                          "type": "string"
-                        },
-                        "role": {
-                          "type": "string",
-                          "enum": ["ATHLETE", "TRAINER", "ADMIN"]
-                        }
-                      },
-                      "required": ["id", "email", "role"],
-                      "additionalProperties": false
-                    },
-                    "athlete": {
-                      "type": "object",
-                      "properties": {
-                        "id": {
-                          "type": "string",
-                          "format": "uuid"
-                        },
-                        "email": {
-                          "type": "string"
-                        },
-                        "role": {
-                          "type": "string",
-                          "enum": ["ATHLETE", "TRAINER", "ADMIN"]
-                        }
-                      },
-                      "required": ["id", "email", "role"],
-                      "additionalProperties": false
-                    },
-                    "initiatedBy": {
-                      "type": "object",
-                      "properties": {
-                        "id": {
-                          "type": "string",
-                          "format": "uuid"
-                        },
-                        "email": {
-                          "type": "string"
-                        },
-                        "role": {
-                          "type": "string",
-                          "enum": ["ATHLETE", "TRAINER", "ADMIN"]
-                        }
-                      },
-                      "required": ["id", "email", "role"],
-                      "additionalProperties": false
-                    },
-                    "endedBy": {
-                      "type": "object",
-                      "properties": {
-                        "id": {
-                          "type": "string",
-                          "format": "uuid"
-                        },
-                        "email": {
-                          "type": "string"
-                        },
-                        "role": {
-                          "type": "string",
-                          "enum": ["ATHLETE", "TRAINER", "ADMIN"]
-                        }
-                      },
-                      "required": ["id", "email", "role"],
-                      "additionalProperties": false,
-                      "nullable": true
-                    },
-                    "createdAt": {
-                      "type": "string",
-                      "format": "date-time"
-                    },
-                    "updatedAt": {
-                      "type": "string",
-                      "format": "date-time"
-                    }
-                  },
-                  "required": [
-                    "id",
-                    "trainerId",
-                    "athleteId",
-                    "initiatedById",
-                    "status",
-                    "respondedAt",
-                    "endedAt",
-                    "endedById",
-                    "endReason",
-                    "trainer",
-                    "athlete",
-                    "initiatedBy",
-                    "endedBy",
-                    "createdAt",
-                    "updatedAt"
-                  ],
-                  "additionalProperties": false
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "accessToken": []
-          },
-          {
-            "sessionCookie": []
-          }
-        ],
-        "tags": ["Trainer & Athlete Relationships"]
-      }
-    },
-    "/trainer-athletes/{id}/decline": {
-      "post": {
-        "operationId": "TrainerAthletesController_decline",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "id": {
-                      "type": "string",
-                      "format": "uuid"
-                    },
-                    "trainerId": {
-                      "type": "string",
-                      "format": "uuid"
-                    },
-                    "athleteId": {
-                      "type": "string",
-                      "format": "uuid"
-                    },
-                    "initiatedById": {
-                      "type": "string",
-                      "format": "uuid"
-                    },
-                    "status": {
-                      "type": "string",
-                      "enum": ["PENDING", "ACTIVE", "DECLINED", "CANCELLED", "TERMINATED"]
-                    },
-                    "respondedAt": {
-                      "type": "string",
-                      "format": "date-time",
-                      "nullable": true
-                    },
-                    "endedAt": {
-                      "type": "string",
-                      "format": "date-time",
-                      "nullable": true
-                    },
-                    "endedById": {
-                      "type": "string",
-                      "format": "uuid",
-                      "nullable": true
-                    },
-                    "endReason": {
-                      "type": "string",
-                      "nullable": true
-                    },
-                    "trainer": {
-                      "type": "object",
-                      "properties": {
-                        "id": {
-                          "type": "string",
-                          "format": "uuid"
-                        },
-                        "email": {
-                          "type": "string"
-                        },
-                        "role": {
-                          "type": "string",
-                          "enum": ["ATHLETE", "TRAINER", "ADMIN"]
-                        }
-                      },
-                      "required": ["id", "email", "role"],
-                      "additionalProperties": false
-                    },
-                    "athlete": {
-                      "type": "object",
-                      "properties": {
-                        "id": {
-                          "type": "string",
-                          "format": "uuid"
-                        },
-                        "email": {
-                          "type": "string"
-                        },
-                        "role": {
-                          "type": "string",
-                          "enum": ["ATHLETE", "TRAINER", "ADMIN"]
-                        }
-                      },
-                      "required": ["id", "email", "role"],
-                      "additionalProperties": false
-                    },
-                    "initiatedBy": {
-                      "type": "object",
-                      "properties": {
-                        "id": {
-                          "type": "string",
-                          "format": "uuid"
-                        },
-                        "email": {
-                          "type": "string"
-                        },
-                        "role": {
-                          "type": "string",
-                          "enum": ["ATHLETE", "TRAINER", "ADMIN"]
-                        }
-                      },
-                      "required": ["id", "email", "role"],
-                      "additionalProperties": false
-                    },
-                    "endedBy": {
-                      "type": "object",
-                      "properties": {
-                        "id": {
-                          "type": "string",
-                          "format": "uuid"
-                        },
-                        "email": {
-                          "type": "string"
-                        },
-                        "role": {
-                          "type": "string",
-                          "enum": ["ATHLETE", "TRAINER", "ADMIN"]
-                        }
-                      },
-                      "required": ["id", "email", "role"],
-                      "additionalProperties": false,
-                      "nullable": true
-                    },
-                    "createdAt": {
-                      "type": "string",
-                      "format": "date-time"
-                    },
-                    "updatedAt": {
-                      "type": "string",
-                      "format": "date-time"
-                    }
-                  },
-                  "required": [
-                    "id",
-                    "trainerId",
-                    "athleteId",
-                    "initiatedById",
-                    "status",
-                    "respondedAt",
-                    "endedAt",
-                    "endedById",
-                    "endReason",
-                    "trainer",
-                    "athlete",
-                    "initiatedBy",
-                    "endedBy",
-                    "createdAt",
-                    "updatedAt"
-                  ],
-                  "additionalProperties": false
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "accessToken": []
-          },
-          {
-            "sessionCookie": []
-          }
-        ],
-        "tags": ["Trainer & Athlete Relationships"]
-      }
-    },
-    "/trainer-athletes/{id}/cancel": {
-      "post": {
-        "operationId": "TrainerAthletesController_cancel",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "reason": {
-                    "nullable": true,
-                    "type": "string",
-                    "maxLength": 500
-                  }
-                },
-                "additionalProperties": false
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "oneOf": [
-                    {
-                      "type": "object",
-                      "properties": {
-                        "id": {
-                          "type": "string",
-                          "format": "uuid"
-                        },
-                        "trainerId": {
-                          "type": "string",
-                          "format": "uuid"
-                        },
-                        "athleteId": {
-                          "type": "string",
-                          "format": "uuid"
-                        },
-                        "initiatedById": {
-                          "type": "string",
-                          "format": "uuid"
-                        },
-                        "status": {
-                          "type": "string",
-                          "enum": ["PENDING", "ACTIVE", "DECLINED", "CANCELLED", "TERMINATED"]
-                        },
-                        "respondedAt": {
-                          "type": "string",
-                          "format": "date-time",
-                          "nullable": true
-                        },
-                        "endedAt": {
-                          "type": "string",
-                          "format": "date-time",
-                          "nullable": true
-                        },
-                        "endedById": {
-                          "type": "string",
-                          "format": "uuid",
-                          "nullable": true
-                        },
-                        "endReason": {
-                          "type": "string",
-                          "nullable": true
-                        },
-                        "trainer": {
-                          "type": "object",
-                          "properties": {
-                            "id": {
-                              "type": "string",
-                              "format": "uuid"
-                            },
-                            "email": {
-                              "type": "string"
-                            },
-                            "role": {
-                              "type": "string",
-                              "enum": ["ATHLETE", "TRAINER", "ADMIN"]
-                            }
-                          },
-                          "required": ["id", "email", "role"],
-                          "additionalProperties": false
-                        },
-                        "athlete": {
-                          "type": "object",
-                          "properties": {
-                            "id": {
-                              "type": "string",
-                              "format": "uuid"
-                            },
-                            "email": {
-                              "type": "string"
-                            },
-                            "role": {
-                              "type": "string",
-                              "enum": ["ATHLETE", "TRAINER", "ADMIN"]
-                            }
-                          },
-                          "required": ["id", "email", "role"],
-                          "additionalProperties": false
-                        },
-                        "initiatedBy": {
-                          "type": "object",
-                          "properties": {
-                            "id": {
-                              "type": "string",
-                              "format": "uuid"
-                            },
-                            "email": {
-                              "type": "string"
-                            },
-                            "role": {
-                              "type": "string",
-                              "enum": ["ATHLETE", "TRAINER", "ADMIN"]
-                            }
-                          },
-                          "required": ["id", "email", "role"],
-                          "additionalProperties": false
-                        },
-                        "endedBy": {
-                          "type": "object",
-                          "properties": {
-                            "id": {
-                              "type": "string",
-                              "format": "uuid"
-                            },
-                            "email": {
-                              "type": "string"
-                            },
-                            "role": {
-                              "type": "string",
-                              "enum": ["ATHLETE", "TRAINER", "ADMIN"]
-                            }
-                          },
-                          "required": ["id", "email", "role"],
-                          "additionalProperties": false,
-                          "nullable": true
-                        },
-                        "createdAt": {
-                          "type": "string",
-                          "format": "date-time"
-                        },
-                        "updatedAt": {
-                          "type": "string",
-                          "format": "date-time"
-                        }
-                      },
-                      "required": [
-                        "id",
-                        "trainerId",
-                        "athleteId",
-                        "initiatedById",
-                        "status",
-                        "respondedAt",
-                        "endedAt",
-                        "endedById",
-                        "endReason",
-                        "trainer",
-                        "athlete",
-                        "initiatedBy",
-                        "endedBy",
-                        "createdAt",
-                        "updatedAt"
-                      ],
-                      "additionalProperties": false
-                    },
-                    {
-                      "type": "object",
-                      "properties": {
-                        "id": {
-                          "type": "string",
-                          "format": "uuid"
-                        },
-                        "trainerId": {
-                          "type": "string",
-                          "format": "uuid"
-                        },
-                        "athleteId": {
-                          "type": "string",
-                          "format": "uuid"
-                        },
-                        "initiatedById": {
-                          "type": "string",
-                          "format": "uuid"
-                        },
-                        "status": {
-                          "type": "string",
-                          "enum": ["PENDING", "ACTIVE", "DECLINED", "CANCELLED", "TERMINATED"]
-                        },
-                        "respondedAt": {
-                          "type": "string",
-                          "format": "date-time",
-                          "nullable": true
-                        },
-                        "endedAt": {
-                          "type": "string",
-                          "format": "date-time",
-                          "nullable": true
-                        },
-                        "endedById": {
-                          "type": "string",
-                          "format": "uuid",
-                          "nullable": true
-                        },
-                        "endReason": {
-                          "type": "string",
-                          "nullable": true
-                        },
-                        "trainer": {
-                          "type": "object",
-                          "properties": {
-                            "id": {
-                              "type": "string",
-                              "format": "uuid"
-                            },
-                            "role": {
-                              "type": "string",
-                              "enum": ["ATHLETE", "TRAINER", "ADMIN"]
-                            }
-                          },
-                          "required": ["id", "role"],
-                          "additionalProperties": false
-                        },
-                        "athlete": {
-                          "type": "object",
-                          "properties": {
-                            "id": {
-                              "type": "string",
-                              "format": "uuid"
-                            },
-                            "role": {
-                              "type": "string",
-                              "enum": ["ATHLETE", "TRAINER", "ADMIN"]
-                            }
-                          },
-                          "required": ["id", "role"],
-                          "additionalProperties": false
-                        },
-                        "initiatedBy": {
-                          "type": "object",
-                          "properties": {
-                            "id": {
-                              "type": "string",
-                              "format": "uuid"
-                            },
-                            "role": {
-                              "type": "string",
-                              "enum": ["ATHLETE", "TRAINER", "ADMIN"]
-                            }
-                          },
-                          "required": ["id", "role"],
-                          "additionalProperties": false
-                        },
-                        "endedBy": {
-                          "type": "object",
-                          "properties": {
-                            "id": {
-                              "type": "string",
-                              "format": "uuid"
-                            },
-                            "role": {
-                              "type": "string",
-                              "enum": ["ATHLETE", "TRAINER", "ADMIN"]
-                            }
-                          },
-                          "required": ["id", "role"],
-                          "additionalProperties": false,
-                          "nullable": true
-                        },
-                        "createdAt": {
-                          "type": "string",
-                          "format": "date-time"
-                        },
-                        "updatedAt": {
-                          "type": "string",
-                          "format": "date-time"
-                        }
-                      },
-                      "required": [
-                        "id",
-                        "trainerId",
-                        "athleteId",
-                        "initiatedById",
-                        "status",
-                        "respondedAt",
-                        "endedAt",
-                        "endedById",
-                        "endReason",
-                        "trainer",
-                        "athlete",
-                        "initiatedBy",
-                        "endedBy",
-                        "createdAt",
-                        "updatedAt"
-                      ],
-                      "additionalProperties": false
-                    }
-                  ]
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "accessToken": []
-          },
-          {
-            "sessionCookie": []
-          }
-        ],
-        "tags": ["Trainer & Athlete Relationships"]
-      }
-    },
-    "/trainer-athletes/{id}/terminate": {
-      "post": {
-        "operationId": "TrainerAthletesController_terminate",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "reason": {
-                    "nullable": true,
-                    "type": "string",
-                    "maxLength": 500
-                  }
-                },
-                "additionalProperties": false
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "oneOf": [
-                    {
-                      "type": "object",
-                      "properties": {
-                        "id": {
-                          "type": "string",
-                          "format": "uuid"
-                        },
-                        "trainerId": {
-                          "type": "string",
-                          "format": "uuid"
-                        },
-                        "athleteId": {
-                          "type": "string",
-                          "format": "uuid"
-                        },
-                        "initiatedById": {
-                          "type": "string",
-                          "format": "uuid"
-                        },
-                        "status": {
-                          "type": "string",
-                          "enum": ["PENDING", "ACTIVE", "DECLINED", "CANCELLED", "TERMINATED"]
-                        },
-                        "respondedAt": {
-                          "type": "string",
-                          "format": "date-time",
-                          "nullable": true
-                        },
-                        "endedAt": {
-                          "type": "string",
-                          "format": "date-time",
-                          "nullable": true
-                        },
-                        "endedById": {
-                          "type": "string",
-                          "format": "uuid",
-                          "nullable": true
-                        },
-                        "endReason": {
-                          "type": "string",
-                          "nullable": true
-                        },
-                        "trainer": {
-                          "type": "object",
-                          "properties": {
-                            "id": {
-                              "type": "string",
-                              "format": "uuid"
-                            },
-                            "email": {
-                              "type": "string"
-                            },
-                            "role": {
-                              "type": "string",
-                              "enum": ["ATHLETE", "TRAINER", "ADMIN"]
-                            }
-                          },
-                          "required": ["id", "email", "role"],
-                          "additionalProperties": false
-                        },
-                        "athlete": {
-                          "type": "object",
-                          "properties": {
-                            "id": {
-                              "type": "string",
-                              "format": "uuid"
-                            },
-                            "email": {
-                              "type": "string"
-                            },
-                            "role": {
-                              "type": "string",
-                              "enum": ["ATHLETE", "TRAINER", "ADMIN"]
-                            }
-                          },
-                          "required": ["id", "email", "role"],
-                          "additionalProperties": false
-                        },
-                        "initiatedBy": {
-                          "type": "object",
-                          "properties": {
-                            "id": {
-                              "type": "string",
-                              "format": "uuid"
-                            },
-                            "email": {
-                              "type": "string"
-                            },
-                            "role": {
-                              "type": "string",
-                              "enum": ["ATHLETE", "TRAINER", "ADMIN"]
-                            }
-                          },
-                          "required": ["id", "email", "role"],
-                          "additionalProperties": false
-                        },
-                        "endedBy": {
-                          "type": "object",
-                          "properties": {
-                            "id": {
-                              "type": "string",
-                              "format": "uuid"
-                            },
-                            "email": {
-                              "type": "string"
-                            },
-                            "role": {
-                              "type": "string",
-                              "enum": ["ATHLETE", "TRAINER", "ADMIN"]
-                            }
-                          },
-                          "required": ["id", "email", "role"],
-                          "additionalProperties": false,
-                          "nullable": true
-                        },
-                        "createdAt": {
-                          "type": "string",
-                          "format": "date-time"
-                        },
-                        "updatedAt": {
-                          "type": "string",
-                          "format": "date-time"
-                        }
-                      },
-                      "required": [
-                        "id",
-                        "trainerId",
-                        "athleteId",
-                        "initiatedById",
-                        "status",
-                        "respondedAt",
-                        "endedAt",
-                        "endedById",
-                        "endReason",
-                        "trainer",
-                        "athlete",
-                        "initiatedBy",
-                        "endedBy",
-                        "createdAt",
-                        "updatedAt"
-                      ],
-                      "additionalProperties": false
-                    },
-                    {
-                      "type": "object",
-                      "properties": {
-                        "id": {
-                          "type": "string",
-                          "format": "uuid"
-                        },
-                        "trainerId": {
-                          "type": "string",
-                          "format": "uuid"
-                        },
-                        "athleteId": {
-                          "type": "string",
-                          "format": "uuid"
-                        },
-                        "initiatedById": {
-                          "type": "string",
-                          "format": "uuid"
-                        },
-                        "status": {
-                          "type": "string",
-                          "enum": ["PENDING", "ACTIVE", "DECLINED", "CANCELLED", "TERMINATED"]
-                        },
-                        "respondedAt": {
-                          "type": "string",
-                          "format": "date-time",
-                          "nullable": true
-                        },
-                        "endedAt": {
-                          "type": "string",
-                          "format": "date-time",
-                          "nullable": true
-                        },
-                        "endedById": {
-                          "type": "string",
-                          "format": "uuid",
-                          "nullable": true
-                        },
-                        "endReason": {
-                          "type": "string",
-                          "nullable": true
-                        },
-                        "trainer": {
-                          "type": "object",
-                          "properties": {
-                            "id": {
-                              "type": "string",
-                              "format": "uuid"
-                            },
-                            "role": {
-                              "type": "string",
-                              "enum": ["ATHLETE", "TRAINER", "ADMIN"]
-                            }
-                          },
-                          "required": ["id", "role"],
-                          "additionalProperties": false
-                        },
-                        "athlete": {
-                          "type": "object",
-                          "properties": {
-                            "id": {
-                              "type": "string",
-                              "format": "uuid"
-                            },
-                            "role": {
-                              "type": "string",
-                              "enum": ["ATHLETE", "TRAINER", "ADMIN"]
-                            }
-                          },
-                          "required": ["id", "role"],
-                          "additionalProperties": false
-                        },
-                        "initiatedBy": {
-                          "type": "object",
-                          "properties": {
-                            "id": {
-                              "type": "string",
-                              "format": "uuid"
-                            },
-                            "role": {
-                              "type": "string",
-                              "enum": ["ATHLETE", "TRAINER", "ADMIN"]
-                            }
-                          },
-                          "required": ["id", "role"],
-                          "additionalProperties": false
-                        },
-                        "endedBy": {
-                          "type": "object",
-                          "properties": {
-                            "id": {
-                              "type": "string",
-                              "format": "uuid"
-                            },
-                            "role": {
-                              "type": "string",
-                              "enum": ["ATHLETE", "TRAINER", "ADMIN"]
-                            }
-                          },
-                          "required": ["id", "role"],
-                          "additionalProperties": false,
-                          "nullable": true
-                        },
-                        "createdAt": {
-                          "type": "string",
-                          "format": "date-time"
-                        },
-                        "updatedAt": {
-                          "type": "string",
-                          "format": "date-time"
-                        }
-                      },
-                      "required": [
-                        "id",
-                        "trainerId",
-                        "athleteId",
-                        "initiatedById",
-                        "status",
-                        "respondedAt",
-                        "endedAt",
-                        "endedById",
-                        "endReason",
-                        "trainer",
-                        "athlete",
-                        "initiatedBy",
-                        "endedBy",
-                        "createdAt",
-                        "updatedAt"
-                      ],
-                      "additionalProperties": false
-                    }
-                  ]
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "accessToken": []
-          },
-          {
-            "sessionCookie": []
-          }
-        ],
-        "tags": ["Trainer & Athlete Relationships"]
-      }
-    },
-    "/trainer-dashboard/overview": {
-      "get": {
-        "operationId": "TrainerDashboardController_overview",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "asOf": {
-                      "type": "string",
-                      "format": "date-time"
-                    },
-                    "windowStart": {
-                      "type": "string",
-                      "format": "date-time"
-                    },
-                    "activeClients": {
-                      "type": "integer"
-                    },
-                    "activeProgramAssignments": {
-                      "type": "integer"
-                    },
-                    "completedProgramWorkouts30d": {
-                      "type": "integer"
-                    }
-                  },
-                  "required": [
-                    "asOf",
-                    "windowStart",
-                    "activeClients",
-                    "activeProgramAssignments",
-                    "completedProgramWorkouts30d"
-                  ],
-                  "additionalProperties": false
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "accessToken": []
-          },
-          {
-            "sessionCookie": []
-          }
-        ],
-        "tags": ["Trainer Dashboard"]
-      }
-    },
-    "/trainer-dashboard/clients/{relationId}/progress": {
-      "get": {
-        "operationId": "TrainerDashboardController_clientProgress",
-        "parameters": [
-          {
-            "name": "relationId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "asOf": {
-                      "type": "string",
-                      "format": "date-time"
-                    },
-                    "windowStart": {
-                      "type": "string",
-                      "format": "date-time"
-                    },
-                    "activeProgramAssignments": {
-                      "type": "integer"
-                    },
-                    "completedProgramWorkouts30d": {
-                      "type": "integer"
-                    }
-                  },
-                  "required": [
-                    "asOf",
-                    "windowStart",
-                    "activeProgramAssignments",
-                    "completedProgramWorkouts30d"
-                  ],
-                  "additionalProperties": false
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "accessToken": []
-          },
-          {
-            "sessionCookie": []
-          }
-        ],
-        "tags": ["Trainer Dashboard"]
       }
     },
     "/workouts": {
