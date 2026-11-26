@@ -35,6 +35,7 @@ test('public route paths remain unchanged and program list is protected', () => 
     'programs/[id]',
     'progress/exercises/[id]',
     'workouts/new',
+    'workouts/calendar',
   ]) {
     assert.ok(athlete.includes(`name="${route}"`));
   }
@@ -54,5 +55,15 @@ test('app settings is reachable from profile and protected by mobile account acc
   assert.match(
     read('../src/screens/profile/ui/profile-screen.tsx'),
     /router.push\('\/profile\/settings'\)/,
+  );
+});
+
+test('calendar direct route requires verified athlete access and is account keyed', () => {
+  const route = read('../src/app/workouts/calendar.tsx');
+  assert.match(route, /if \(!account \|\| !hasAthleteAccess\(capabilities\)\) return null/);
+  assert.match(route, /<WorkoutCalendarScreen key=\{account.id\}/);
+  assert.match(
+    read('../src/screens/workouts/ui/workouts-screen.tsx'),
+    /router.push\('\/workouts\/calendar'\)/,
   );
 });

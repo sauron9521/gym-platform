@@ -49,3 +49,22 @@ and is refreshed against main before final CI. Existing issues remain canonical.
 - Keep #324 and native UX/release gates open until dated device evidence exists.
 - Defer coordinated SDK upgrade (#854), billing/IAP and trainer-mobile until their
   existing readiness gates. Do not duplicate existing issues.
+
+### M11 — native workout calendar
+
+M11.1 adds an athlete-only monthly calendar via the existing authenticated
+`GET /workouts?view=summary&scheduledFrom=…&scheduledTo=…` contract.
+It matches web scheduling semantics: device-local calendar days, Monday-first
+weeks and inclusive ISO month bounds; unscheduled workouts are not shown,
+and the status is shown against the scheduled date, not the completion date.
+The account-scoped query shares the existing workout invalidation prefix,
+uses the scoped bearer reader, accepts at most ten pages of 100 records, and
+rejects malformed, duplicate, foreign-owner or detectably incomplete pages.
+Offset pagination is not a transactional snapshot across requests. The UI
+supports date selection, today's date, previous/next months, status markers
+with accessible labels, localized loading/empty/error states and detail
+navigation in both themes.
+
+M11.2 adds weekly mode and device acceptance scenarios. Keep #340 open until
+both modes and actual Android/iOS QA are verified. No new API, native library
+or date dependency is introduced.

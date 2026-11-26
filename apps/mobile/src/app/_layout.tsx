@@ -76,6 +76,10 @@ function Navigation() {
           />
           <Stack.Screen name="programs/[id]" options={{ headerShown: true, title: t('program') }} />
           <Stack.Screen
+            name="workouts/calendar"
+            options={{ headerShown: true, title: t('workoutCalendar') }}
+          />
+          <Stack.Screen
             name="workouts/new"
             options={{ headerShown: true, title: t('newWorkout') }}
           />

@@ -116,6 +116,18 @@ export function WorkoutsScreen() {
               </Text>
             </Pressable>
           ) : null}
+          {hasAthleteAccess(capabilities) ? (
+            <Pressable
+              testID="workouts-calendar"
+              accessibilityRole="button"
+              style={styles.moreButton}
+              onPress={() => router.push('/workouts/calendar')}
+            >
+              <Text style={styles.subtitle}>
+                {intl.formatMessage({ id: 'mobile.navigation.workoutCalendar' })}
+              </Text>
+            </Pressable>
+          ) : null}
           <View style={styles.filters}>
             {filters.map((choice) => (
               <Pressable
