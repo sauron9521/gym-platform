@@ -19,15 +19,17 @@ import { PasswordResetController } from '../../controllers/password-reset.contro
 import { TokensController } from '../../controllers/tokens.controller.js';
 import { EmailVerificationController } from '../../controllers/email-verification.controller.js';
 import { AuthController } from '../../controllers/auth.controller.js';
+import { SignOutController } from '../../controllers/sign-out.controller.js';
 import { PublicAuthApiModule } from '../../public-auth-api.module.js';
 
 describe('PublicAuthApiModule controller registry', () => {
-  it('owns all four public controllers and imports the existing AuthModule without registering it twice', () => {
+  it('owns all five public controllers and imports the existing AuthModule without registering it twice', () => {
     expect(Reflect.getMetadata(MODULE_METADATA.CONTROLLERS, PublicAuthApiModule)).toEqual([
       PasswordResetController,
       TokensController,
       EmailVerificationController,
       AuthController,
+      SignOutController,
     ]);
     expect(Reflect.getMetadata(MODULE_METADATA.CONTROLLERS, AuthModule)).not.toContain(
       PasswordResetController,
@@ -180,6 +182,37 @@ describe('PublicAuthApiModule controller registry', () => {
     for (const tracker of ['127.0.0.1', '2001:db8::1']) {
       expect(generateKey(moved, tracker, 'default')).toBe(
         createHash('sha256').update(`AuthController-${name}-default-${tracker}`).digest('hex'),
+      );
+    }
+  });
+
+  it('preserves public sign-out route, no-store and inherited rate budget', () => {
+    expect(Reflect.getMetadata(MODULE_METADATA.CONTROLLERS, AuthModule)).toEqual([]);
+    expect(Reflect.getMetadata(PATH_METADATA, SignOutController)).toBe('auth');
+    expect(Reflect.getMetadata(INTERCEPTORS_METADATA, SignOutController)).toContain(
+      AuthNoStoreInterceptor,
+    );
+    expect(Object.getOwnPropertyNames(SignOutController.prototype)).toEqual([
+      'constructor',
+      'signOut',
+    ]);
+    const handler = Object.getOwnPropertyDescriptor(SignOutController.prototype, 'signOut')?.value;
+    expect(Reflect.getMetadata(METHOD_METADATA, handler)).toBe(RequestMethod.POST);
+    expect(Reflect.getMetadata(PATH_METADATA, handler)).toBe('sign-out');
+    expect(Reflect.getMetadata(HTTP_CODE_METADATA, handler)).toBe(204);
+    expect(Reflect.getMetadata('THROTTLER:LIMITdefault', handler)).toBeUndefined();
+    expect(Reflect.getMetadata('THROTTLER:TTLdefault', handler)).toBeUndefined();
+    const generateKey = Reflect.getMetadata(
+      'THROTTLER:KEY_GENERATORdefault',
+      handler,
+    ) as ThrottlerGenerateKeyFunction;
+    const moved = {
+      getClass: () => class RenamedController {},
+      getHandler: () => function renamedHandler() {},
+    } as unknown as ExecutionContext;
+    for (const tracker of ['127.0.0.1', '2001:db8::1']) {
+      expect(generateKey(moved, tracker, 'default')).toBe(
+        createHash('sha256').update(`SessionsController-signOut-default-${tracker}`).digest('hex'),
       );
     }
   });

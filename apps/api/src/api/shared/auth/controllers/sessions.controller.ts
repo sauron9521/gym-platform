@@ -1,7 +1,6 @@
 import {
   CurrentSession,
   CurrentUser,
-  Public,
   SessionService,
   SignInService,
   type SessionRecord,
@@ -14,10 +13,9 @@ import {
   NotFoundException,
   Param,
   Post,
-  UnauthorizedException,
   UseInterceptors,
 } from '@nestjs/common';
-import { AuthNoStoreInterceptor } from '../public-api.js';
+import { AuthNoStoreInterceptor } from '#src/modules/auth/public-api';
 import { StableHttpOperation } from '#src/common/http/stable-http-operation.decorator';
 
 @UseInterceptors(AuthNoStoreInterceptor)
@@ -52,17 +50,6 @@ export class SessionsController {
   async revoke(@CurrentUser('id') userId: string, @Param('id') id: string) {
     if (!(await this.sessionService.revoke(id, { userId }))) {
       throw new NotFoundException();
-    }
-  }
-
-  // Public so that a pending-MFA session can also be signed out.
-  @Public()
-  @StableHttpOperation('SessionsController', 'signOut', 'Sessions')
-  @Post('sign-out')
-  @HttpCode(204)
-  async signOut(): Promise<void> {
-    if (!(await this.signInService.signOut())) {
-      throw new UnauthorizedException();
     }
   }
 

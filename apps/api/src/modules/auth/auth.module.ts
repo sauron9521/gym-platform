@@ -1,7 +1,6 @@
 import { Module } from '@nestjs/common';
 import { RateLimitStorageModule } from '#src/common/rate-limit/rate-limit-storage.module';
 import { UsersModule } from '#src/modules/users/users.module';
-import { SessionsController } from './controllers/sessions.controller.js';
 
 import { EmailVerificationMailer, PasswordResetMailer } from './mailers/index.js';
 import { JwtAuth, SessionAuth } from './providers/index.js';
@@ -22,7 +21,7 @@ import { PrismaMfaStore, PrismaSessionStore, PrismaTokenStore } from './stores/i
 
 @Module({
   imports: [UsersModule, RateLimitStorageModule],
-  controllers: [SessionsController],
+  controllers: [],
   providers: [
     AuthAccountThrottleService,
     SessionAuth,

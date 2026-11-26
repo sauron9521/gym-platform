@@ -5,6 +5,7 @@ import { PasswordResetController } from './controllers/password-reset.controller
 import { TokensController } from './controllers/tokens.controller.js';
 import { EmailVerificationController } from './controllers/email-verification.controller.js';
 import { AuthController } from './controllers/auth.controller.js';
+import { SignOutController } from './controllers/sign-out.controller.js';
 
 @Module({
   imports: [AuthModule],
@@ -13,6 +14,7 @@ import { AuthController } from './controllers/auth.controller.js';
     TokensController,
     EmailVerificationController,
     AuthController,
+    SignOutController,
   ],
 })
 export class PublicAuthApiModule {}

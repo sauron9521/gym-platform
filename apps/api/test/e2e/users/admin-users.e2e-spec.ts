@@ -21,7 +21,9 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { AppModule } from '../../../src/app.module.js';
 import { AdminAuthController } from '../../../src/api/admin/auth/controllers/admin-auth.controller.js';
 import { AdminSessionsController } from '../../../src/api/admin/auth/controllers/admin-sessions.controller.js';
-import { SessionsController } from '../../../src/modules/auth/controllers/sessions.controller.js';
+import { SessionsController } from '../../../src/api/shared/auth/controllers/sessions.controller.js';
+import { SharedAuthApiModule } from '../../../src/api/shared/auth/shared-auth-api.module.js';
+import { SignOutController } from '../../../src/api/public/auth/controllers/sign-out.controller.js';
 import { AdminSessionPurposeGuard } from '../../../src/common/auth/admin-session-purpose.guard.js';
 import { AdminAuthApiModule } from '../../../src/api/admin/auth/admin-auth-api.module.js';
 import { AuthController } from '../../../src/api/public/auth/controllers/auth.controller.js';
@@ -211,7 +213,7 @@ describe('GET /admin/users (HTTP + PostgreSQL)', () => {
     ).toBe(true);
   });
 
-  it('owns Admin sessions in the Admin API without moving ordinary sessions or duplicating guards in core', async () => {
+  it('owns Admin sessions in the Admin API and ordinary sessions in Shared API without duplicating guards in core', async () => {
     const modules = [...app.get(ModulesContainer).values()];
     expect(
       modules
@@ -222,11 +224,23 @@ describe('GET /admin/users (HTTP + PostgreSQL)', () => {
       modules
         .filter((module) => module.controllers.has(SessionsController))
         .map((module) => module.metatype),
-    ).toEqual([AuthModule]);
+    ).toEqual([SharedAuthApiModule]);
     expect(
       app.select(AdminAuthApiModule).get(AdminSessionsController, { strict: true }),
     ).toBeInstanceOf(AdminSessionsController);
+    expect(
+      modules
+        .filter((module) => module.controllers.has(SignOutController))
+        .map((module) => module.metatype),
+    ).toEqual([PublicAuthApiModule]);
+    expect(app.select(PublicAuthApiModule).get(SignOutController, { strict: true })).toBeInstanceOf(
+      SignOutController,
+    );
+    expect(
+      app.select(SharedAuthApiModule).get(SessionsController, { strict: true }),
+    ).toBeInstanceOf(SessionsController);
     const core = modules.find((module) => module.metatype === AuthModule);
+    expect(core?.controllers.size).toBe(0);
     const admin = modules.find((module) => module.metatype === AdminAuthApiModule);
     for (const guard of [AdminOriginGuard, AdminSessionPurposeGuard]) {
       expect(core?.providers.has(guard)).toBe(false);
@@ -237,6 +251,10 @@ describe('GET /admin/users (HTTP + PostgreSQL)', () => {
       ['get', '/auth/admin-session'],
       ['post', '/auth/admin-sessions/revoke-all'],
       ['post', '/auth/admin-sign-out'],
+      ['get', '/auth/sessions'],
+      ['delete', '/auth/sessions/not-owned'],
+      ['post', '/auth/sign-out-everywhere'],
+      ['post', '/auth/sign-out'],
     ] as const) {
       const denied = await request(app.getHttpServer())[method](path).expect(401);
       expect(denied.headers['cache-control']).toBe('no-store');

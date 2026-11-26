@@ -108,6 +108,7 @@ test('source relocation map permits only known feature controller paths and matc
   const valid = {
     [controller]: 'src/api/shared/users/controllers/users.controller.ts',
     [spec]: 'src/api/shared/users/test/controllers/users.controller.spec.ts',
+    'src/modules/auth/controllers/index.ts': 'src/api/shared/auth/controllers/index.ts',
   };
   assert.deepEqual(validateSourceRelocations(valid, originalPaths), valid);
   for (const invalid of [
@@ -122,6 +123,8 @@ test('source relocation map permits only known feature controller paths and matc
         'src/api/shared/users/controllers/missing.controller.ts',
     },
     { [controller]: 'src/api/unknown/users/controllers/users.controller.ts' },
+    { 'src/modules/auth/controllers/index.ts': 'src/api/shared/users/controllers/index.ts' },
+    { 'src/modules/auth/controllers/index.ts': 'src/api/shared/auth/controllers/other.ts' },
   ]) {
     assert.throws(() => validateSourceRelocations(invalid, originalPaths));
   }

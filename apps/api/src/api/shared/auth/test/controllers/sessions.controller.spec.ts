@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { NotFoundException } from '@nestjs/common';
 import type { SessionRecord, SessionService, SignInService } from '@nestjs/authentication';
 import { SessionsController } from '../../controllers/sessions.controller.js';
 
@@ -10,7 +10,6 @@ describe('SessionsController', () => {
       revoke: vi.fn(),
     };
     const signInService = {
-      signOut: vi.fn(),
       signOutEverywhere: vi.fn(),
     };
     const controller = new SessionsController(
@@ -105,21 +104,6 @@ describe('SessionsController', () => {
     await expect(controller.revoke('user-1', 'someone-elses-session')).rejects.toBeInstanceOf(
       NotFoundException,
     );
-  });
-
-  it('signs out the current browser session', async () => {
-    const { controller, signInService } = makeController();
-    signInService.signOut.mockResolvedValue(true);
-
-    await expect(controller.signOut()).resolves.toBeUndefined();
-    expect(signInService.signOut).toHaveBeenCalledOnce();
-  });
-
-  it('rejects sign-out when there is no session cookie', async () => {
-    const { controller, signInService } = makeController();
-    signInService.signOut.mockResolvedValue(false);
-
-    await expect(controller.signOut()).rejects.toBeInstanceOf(UnauthorizedException);
   });
 
   it('signs the user out everywhere', async () => {
