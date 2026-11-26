@@ -11,6 +11,7 @@ import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 
 import { ApiExceptionFilter } from '#src/common/filters/api-exception.filter';
 import { AdminAuditModule } from '#src/common/audit/admin-audit.module';
+import { AdminApiModule } from '#src/api/admin/admin-api.module';
 import { RolesGuard } from '#src/common/guards/roles.guard';
 import { PermissionsGuard } from '#src/common/rbac/permissions.guard';
 import { RequestContextMiddleware } from '#src/common/request-context/request-context.middleware';
@@ -97,6 +98,7 @@ import { WorkoutAnalyticsModule } from '#src/modules/workout-analytics/workout-a
     }),
     ScheduleModule.forRoot(),
     UsersModule,
+    AdminApiModule,
     NotificationsModule,
     AccountDeletionRequestsModule,
     ExercisesModule,

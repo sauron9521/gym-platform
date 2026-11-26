@@ -1223,6 +1223,30 @@
         "tags": ["AvatarPublic"]
       }
     },
+    "/health/live": {
+      "get": {
+        "operationId": "HealthController_liveness",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": ["Health"]
+      }
+    },
+    "/health/ready": {
+      "get": {
+        "operationId": "HealthController_readiness",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": ["Health"]
+      }
+    },
     "/admin/users": {
       "get": {
         "operationId": "AdminUsersController_list",
@@ -1444,30 +1468,6 @@
           }
         ],
         "tags": ["Admin users"]
-      }
-    },
-    "/health/live": {
-      "get": {
-        "operationId": "HealthController_liveness",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "tags": ["Health"]
-      }
-    },
-    "/health/ready": {
-      "get": {
-        "operationId": "HealthController_readiness",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "tags": ["Health"]
       }
     },
     "/users/me/notification-settings": {

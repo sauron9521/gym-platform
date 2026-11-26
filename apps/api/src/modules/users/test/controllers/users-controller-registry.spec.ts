@@ -8,16 +8,14 @@ import {
 
 import { UsersController } from '../../controllers/users.controller.js';
 import { AvatarPublicController } from '../../controllers/avatar-public.controller.js';
-import { AdminUsersController } from '../../controllers/admin-users.controller.js';
 import { UsersModule } from '../../users.module.js';
 
 describe('UsersModule controller registry', () => {
   const controllers = [UsersController, AvatarPublicController];
 
-  it('preserves existing controllers and registers the scoped Admin directory', () => {
+  it('registers only the remaining legacy Users and Avatar controllers', () => {
     const registered: unknown[] = Reflect.getMetadata(MODULE_METADATA.CONTROLLERS, UsersModule);
-    expect(registered).toEqual([...controllers, AdminUsersController]);
-    expect(Reflect.getMetadata(PATH_METADATA, AdminUsersController)).toBe('admin/users');
+    expect(registered).toEqual(controllers);
     expect(Reflect.getMetadata(PATH_METADATA, UsersController)).toBe('users');
     expect(Reflect.getMetadata(PATH_METADATA, AvatarPublicController)).toBe('avatars');
   });

@@ -16,11 +16,12 @@ import {
   adminUserListResponseSchema,
 } from '#src/infra/openapi/response-contracts';
 
-import { type AdminUsersQuery, adminUsersQuerySchema } from '../dto/admin-users-query.dto.js';
 import {
+  adminUsersQuerySchema,
   AdminUsersReadService,
+  type AdminUsersQuery,
   type AdminUsersReadActor,
-} from '../services/admin-users-read.service.js';
+} from '#src/modules/users/public-api';
 
 @ApiTags('Admin users')
 @ApiCookieAuth('adminSessionCookie')
