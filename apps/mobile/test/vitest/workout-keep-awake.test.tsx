@@ -31,7 +31,7 @@ function Probe({ enabled = true }: { enabled?: boolean }) {
 
 let change: ((status: AppStateStatus) => void) | undefined;
 const remove = vi.fn();
-let originalState: AppStateStatus | null;
+let originalState: typeof AppState.currentState;
 
 beforeEach(() => {
   originalState = AppState.currentState;
@@ -97,6 +97,16 @@ describe('workout screen wake lock', () => {
     await view.rerender(<Probe />);
     await waitFor(() => expect(lock.available).toHaveBeenCalledOnce());
     expect(lock.activate).not.toHaveBeenCalled();
+  });
+
+  it('waits for a confirmed active state when the initial state is undefined', async () => {
+    AppState.currentState = undefined;
+    const view = await render(<Probe />);
+    expect(lock.available).not.toHaveBeenCalled();
+    await act(async () => change?.('active'));
+    await waitFor(() => expect(lock.activate).toHaveBeenCalledOnce());
+    await view.unmount();
+    expect(lock.deactivate).toHaveBeenCalledOnce();
   });
 
   it('does not acquire from background and ignores duplicate active events', async () => {

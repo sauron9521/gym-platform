@@ -1,5 +1,5 @@
 import { useCallback, useId, useRef } from 'react';
-import { AppState, type AppStateStatus } from 'react-native';
+import { AppState } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { activateKeepAwakeAsync, deactivateKeepAwake, isAvailableAsync } from 'expo-keep-awake';
 
@@ -14,7 +14,7 @@ export function useWorkoutKeepAwake(enabled: boolean) {
       let live = true;
       let stop: (() => void) | null = null;
 
-      const sync = (state: AppStateStatus | null) => {
+      const sync = (state: typeof AppState.currentState) => {
         if (state !== 'active') {
           stop?.();
           stop = null;
