@@ -1,4 +1,6 @@
-import { useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useFocusEffect } from 'expo-router';
+import { useStore } from 'zustand';
 import { Alert } from 'react-native';
 import { canCompleteWorkout, workoutSetProgress } from '@gym/domain';
 import { useAppSettings } from '@/features/app-settings/model/app-settings-context';
@@ -9,7 +11,7 @@ import {
   type WorkoutTransition,
 } from '@/features/workouts/model/workout-details-query';
 import { useWorkoutKeepAwake } from '@/features/workouts/lib/use-workout-keep-awake';
-import type { RestStart } from '@/features/workouts/ui/rest-timer';
+import { useRestTimerStore } from '@/features/workouts/model/rest-timer-provider';
 
 /** Screen-scoped orchestration: coordinate set writes, workout actions and rest events. */
 export function useWorkoutDetails(id: string) {
@@ -23,9 +25,26 @@ export function useWorkoutDetails(id: string) {
   const requiredRead = useRef<number | null>(null);
   const [pendingSet, setPendingSet] = useState<string | null>(null);
   const [requiredReadVersion, setRequiredReadVersion] = useState<number | null>(null);
-  const [restStart, setRestStart] = useState<RestStart | null>(null);
   const [actionLocked, setActionLocked] = useState(false);
   const workout = details.data;
+  const restStore = useRestTimerStore();
+  const restScope = useStore(restStore, (state) =>
+    state.timer?.scope.workoutId === id ? state.timer.scope : null,
+  );
+  const active = Boolean(
+    settings.accountId && !details.isError && workout?.status === 'IN_PROGRESS',
+  );
+  useFocusEffect(
+    useCallback(() => {
+      if (active) restStore.getState().selectWorkout(id, settings.restDuration);
+    }, [active, id, restStore, settings.restDuration]),
+  );
+  useEffect(() => {
+    if (workout && !details.isError && workout.status !== 'IN_PROGRESS') {
+      restStore.getState().clearWorkout(id);
+    }
+  }, [details.isError, id, restStore, workout]);
+
   useWorkoutKeepAwake(
     Boolean(
       settings.accountId &&
@@ -65,9 +84,8 @@ export function useWorkoutDetails(id: string) {
     setPendingSet(null);
   };
   const startRest = () => {
-    if (!shouldAutoStartRestTimer()) return;
-    const startedAt = Date.now();
-    setRestStart((previous) => ({ sequence: (previous?.sequence ?? 0) + 1, startedAt }));
+    if (!restScope || !shouldAutoStartRestTimer()) return;
+    restStore.getState().start(restScope, Date.now());
   };
   const total = allSets.length;
   const processed = progress.completed + progress.skipped;
@@ -139,9 +157,6 @@ export function useWorkoutDetails(id: string) {
     busy,
     pendingSet,
     uncertain,
-    restStart,
-    restDuration: settings.restDuration,
-    restFeedback: { sound: settings.restSound, vibration: settings.restVibration },
     nextAction,
     actionDisabled,
     saveTitle,

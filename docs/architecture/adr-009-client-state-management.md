@@ -47,3 +47,9 @@ Prefer Zustand for a narrowly scoped mobile pilot, subject to owner approval, de
 ## Consequences
 
 One additional dependency may be justified by timer continuity and independent consumers; it adds lifecycle and isolation obligations. No library is required for ordinary local state. This proposal grants no implementation, release or broad migration approval and does not close the related issues.
+
+## Mobile pilot implementation
+
+The timer uses an account-scoped vanilla Zustand store, provided above navigation. Its active workout scope changes when another in-progress workout is selected; returning to the same workout keeps the countdown and manual preset. Terminal workout cache updates and account changes clear the state. A single runtime handles foreground reconciliation and feedback, while only timer consumers subscribe to countdown ticks. The server-confirmed set mutation path remains unchanged. There is no disk persistence or OS-level background alarm: process termination clears the timer, and expiration while backgrounded is reconciled on foreground.
+
+The pilot is subject to CI, owner review, native device verification and a follow-up evaluation before any wider adoption.
