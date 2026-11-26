@@ -1,7 +1,15 @@
 import { z } from 'zod';
 
 import type { MobileMultiWorkoutForm } from '../lib/create-workout-schema';
-import { createOfflineWorkoutDraft, parseOwnedWorkoutDraft } from '../lib/offline-workout-draft';
+import {
+  createOfflineWorkoutDraft,
+  parseOwnedWorkoutDraft,
+  draftBodyJson,
+  reserveWorkoutDraft,
+  type PendingWorkoutDraft,
+  type AcknowledgedWorkoutDraft,
+  type PersistedWorkoutDraft,
+} from '../lib/offline-workout-draft';
 
 /**
  * Persistence port, NOT an encryption implementation. Only an audited encrypted
@@ -13,7 +21,14 @@ export interface OfflineDraftStorage {
   remove(ownerId: string): Promise<void>;
 }
 
-type DraftErrorCode = 'locked' | 'cleanup-required' | 'invalid-draft' | 'storage-failed';
+type DraftErrorCode =
+  | 'locked'
+  | 'cleanup-required'
+  | 'invalid-draft'
+  | 'storage-failed'
+  | 'submission-pending'
+  | 'submission-mismatch'
+  | 'review-required';
 
 export class OfflineDraftRepositoryError extends Error {
   constructor(readonly code: DraftErrorCode) {
@@ -81,17 +96,36 @@ export class OfflineDraftRepository {
     }
   }
 
+  private async readCurrent(scope: { ownerId: string; generation: number }) {
+    this.assertCurrent(scope);
+    const serialized = await this.accessStorage(() => this.storage.read(scope.ownerId));
+    this.assertCurrent(scope);
+    if (serialized === null) return null;
+    const draft = parseOwnedWorkoutDraft(serialized, scope.ownerId);
+    if (!draft) throw new OfflineDraftRepositoryError('invalid-draft');
+    return draft;
+  }
+
+  private async persistAndVerify(
+    scope: { ownerId: string; generation: number },
+    record: PersistedWorkoutDraft,
+  ) {
+    const serialized = JSON.stringify(record);
+    const expected = parseOwnedWorkoutDraft(serialized, scope.ownerId);
+    if (!expected) {
+      throw new OfflineDraftRepositoryError('invalid-draft');
+    }
+    this.assertCurrent(scope);
+    await this.accessStorage(() => this.storage.write(scope.ownerId, serialized));
+    this.assertCurrent(scope);
+    const confirmed = await this.readCurrent(scope);
+    if (JSON.stringify(confirmed) !== JSON.stringify(expected))
+      throw new OfflineDraftRepositoryError('storage-failed');
+  }
+
   async load() {
     const scope = this.scope();
-    return this.enqueue(async () => {
-      this.assertCurrent(scope);
-      const serialized = await this.accessStorage(() => this.storage.read(scope.ownerId));
-      this.assertCurrent(scope);
-      if (serialized === null) return null;
-      const draft = parseOwnedWorkoutDraft(serialized, scope.ownerId);
-      if (!draft) throw new OfflineDraftRepositoryError('invalid-draft');
-      return draft;
-    });
+    return this.enqueue(() => this.readCurrent(scope));
   }
 
   async save(form: MobileMultiWorkoutForm, now = Date.now()) {
@@ -104,6 +138,10 @@ export class OfflineDraftRepository {
       throw new OfflineDraftRepositoryError('invalid-draft');
     }
     return this.enqueue(async () => {
+      const existing = await this.readCurrent(scope);
+      if (existing && existing.state !== 'REQUIRES_REVIEW') {
+        throw new OfflineDraftRepositoryError('submission-pending');
+      }
       this.assertCurrent(scope);
       await this.accessStorage(() => this.storage.write(scope.ownerId, serialized));
       this.assertCurrent(scope);
@@ -114,6 +152,97 @@ export class OfflineDraftRepository {
   async discard() {
     const scope = this.scope();
     return this.enqueue(async () => {
+      const existing = await this.readCurrent(scope);
+      if (existing && existing.state !== 'REQUIRES_REVIEW') {
+        throw new OfflineDraftRepositoryError('submission-pending');
+      }
+      this.assertCurrent(scope);
+      await this.accessStorage(() => this.storage.remove(scope.ownerId));
+      this.assertCurrent(scope);
+    });
+  }
+
+  /**
+   * Reserve a durable key BEFORE a caller may send. This is local-only.
+   * Reopening an uncertain attempt returns the exact previous request.
+   * The network layer must still verify current authorization/connectivity
+   * and require a new explicit confirmation for each send.
+   */
+  async reserveReviewedSubmission(
+    form: MobileMultiWorkoutForm,
+    review: { online: boolean; explicitlyConfirmed: boolean },
+    createKey: () => string,
+  ): Promise<PendingWorkoutDraft> {
+    const scope = this.scope();
+    if (review.online !== true || review.explicitlyConfirmed !== true) {
+      throw new OfflineDraftRepositoryError('review-required');
+    }
+    let bodyJson: string;
+    try {
+      bodyJson = draftBodyJson(form);
+    } catch {
+      throw new OfflineDraftRepositoryError('invalid-draft');
+    }
+    return this.enqueue(async () => {
+      const existing = await this.readCurrent(scope);
+      if (!existing || draftBodyJson(existing.form) !== bodyJson) {
+        throw new OfflineDraftRepositoryError('submission-mismatch');
+      }
+      if (existing.state === 'SUBMISSION_ACKNOWLEDGED') {
+        throw new OfflineDraftRepositoryError('submission-pending');
+      }
+      this.assertCurrent(scope);
+      if (existing.state === 'SUBMISSION_PENDING') return existing;
+      let pending: PendingWorkoutDraft;
+      try {
+        pending = reserveWorkoutDraft(existing, createKey());
+      } catch {
+        throw new OfflineDraftRepositoryError('invalid-draft');
+      }
+      await this.persistAndVerify(scope, pending);
+      return pending;
+    });
+  }
+
+  /** Trusted caller supplies the validated 201 receipt for this exact key. */
+  async acknowledgeSubmission(key: string, workoutId: string): Promise<AcknowledgedWorkoutDraft> {
+    const scope = this.scope();
+    if (!z.uuid().safeParse(workoutId).success)
+      throw new OfflineDraftRepositoryError('invalid-draft');
+    return this.enqueue(async () => {
+      const existing = await this.readCurrent(scope);
+      if (!existing || existing.state === 'REQUIRES_REVIEW' || existing.key !== key) {
+        throw new OfflineDraftRepositoryError('submission-mismatch');
+      }
+      this.assertCurrent(scope);
+      if (existing.state === 'SUBMISSION_ACKNOWLEDGED') {
+        if (existing.workoutId !== workoutId)
+          throw new OfflineDraftRepositoryError('submission-mismatch');
+        return existing;
+      }
+      const acknowledged: AcknowledgedWorkoutDraft = {
+        ...existing,
+        state: 'SUBMISSION_ACKNOWLEDGED',
+        workoutId,
+      };
+      await this.persistAndVerify(scope, acknowledged);
+      return acknowledged;
+    });
+  }
+
+  /** Cleanup is separate so a failed removal never causes another POST. */
+  async clearAcknowledgedSubmission(key: string, workoutId: string) {
+    const scope = this.scope();
+    return this.enqueue(async () => {
+      const existing = await this.readCurrent(scope);
+      if (
+        !existing ||
+        existing.state !== 'SUBMISSION_ACKNOWLEDGED' ||
+        existing.key !== key ||
+        existing.workoutId !== workoutId
+      ) {
+        throw new OfflineDraftRepositoryError('submission-mismatch');
+      }
       this.assertCurrent(scope);
       await this.accessStorage(() => this.storage.remove(scope.ownerId));
       this.assertCurrent(scope);

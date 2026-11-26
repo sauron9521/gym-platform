@@ -1,9 +1,10 @@
 # Offline-first workout drafts — safety foundation
 
-**Status:** versioned draft contract and storage-neutral repository boundary.
-No production storage adapter, restart recovery, upload queue, sync scheduler,
-or offline write delivery exists yet. It must not be advertised as
-support for saving workouts without connectivity.
+**Status:** encrypted native adapter, verified auth lifecycle and explicit
+local-only draft UI implemented. Version 2 submission reservations and receipts
+are supported by the repository, but no reviewed network send is wired yet.
+Native device acceptance remains outstanding. No offline login, background
+upload queue or automatic write delivery exists.
 
 ## Existing API/form compatibility
 
@@ -194,3 +195,40 @@ not automatically restored or submitted. The screen still requires the
 existing verified athlete session and exercise catalog access. Device-level
 encryption, persistence, backup, cleanup and UX acceptance remain release
 gates. Keep #345 open.
+
+### M10.4a — durable reviewed submission reservation
+
+The server's existing manual workout creation uses a unique
+`(athleteId, idempotencyKey)` constraint and a canonical request fingerprint.
+Same-key/same-body replay returns the original workout representation;
+same-key/different-body conflicts. No server API changes are necessary for
+this storage slice.
+
+Version 1 review-only records remain readable and writable. Version 2 adds
+`SUBMISSION_PENDING` (UUID-v4-based URL-safe key and frozen canonical
+POST body JSON) and `SUBMISSION_ACKNOWLEDGED` (same key/body and the
+validated server workout UUID). The repository reserves only an already saved
+matching form with explicit review and online eligibility, writes and reads
+back the pending record before returning it, and reuses the exact same
+key/body after reopening. The future transport must use the frozen body,
+not a mutable form, and must recheck the current verified athlete session,
+generation, connectivity and confirmation before sending. A future body
+builder change needs explicit migration/reconciliation; never create a new key
+for an unreadable or conflicting pending request.
+
+Ordinary save/discard cannot overwrite or remove pending/acknowledged records.
+Invalid or unreadable records fail closed rather than being discarded as
+ordinary drafts. The trusted transport must validate a matching 201 response
+before recording an acknowledgment; acknowledgment itself is persisted and
+read back before separate explicit cleanup. Failed cleanup must not cause a
+new POST. A storage failure or stale generation never authorizes sending.
+Account logout/purge still removes private local data per the approved privacy
+policy, including reservations: retry protection does not survive intentional
+purge, uninstall, device loss or external deletion of the server record.
+Do not claim global exactly-once delivery.
+
+M10.4b must implement a single explicit reviewed send flow, secure UUID
+generation, fresh scope checks, same-key retry after ambiguous responses,
+receipt validation, acknowledged cleanup recovery, and appropriate UI for
+pending/acknowledged states. No transport or UI sends are enabled in M10.4a.
+Mocked storage tests are not evidence of physical-device crash durability.

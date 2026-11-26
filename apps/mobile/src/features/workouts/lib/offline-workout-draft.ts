@@ -1,6 +1,10 @@
 import { z } from 'zod';
 
-import { mobileMultiWorkoutFormSchema, type MobileMultiWorkoutForm } from './create-workout-schema';
+import {
+  buildMobileMultiWorkoutBody,
+  mobileMultiWorkoutFormSchema,
+  type MobileMultiWorkoutForm,
+} from './create-workout-schema';
 
 /**
  * Storage-neutral, versioned draft contract for a future offline adapter.
@@ -17,6 +21,53 @@ const draftSchema = z.strictObject({
 });
 
 export type OfflineWorkoutDraft = z.infer<typeof draftSchema>;
+
+// Freeze the canonical request before any network attempt. A future change to
+// the body builder must explicitly migrate/reconcile these records, not
+// generate a replacement key.
+const submissionFields = {
+  schemaVersion: z.literal(2),
+  ownerId: z.uuid(),
+  savedAt: z.number().int().nonnegative(),
+  form: mobileMultiWorkoutFormSchema,
+  key: z
+    .string()
+    .regex(/^draft-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/),
+  bodyJson: z.string().max(1_000_000),
+};
+const pendingSchema = z.strictObject({
+  ...submissionFields,
+  state: z.literal('SUBMISSION_PENDING'),
+});
+const acknowledgedSchema = z.strictObject({
+  ...submissionFields,
+  state: z.literal('SUBMISSION_ACKNOWLEDGED'),
+  workoutId: z.uuid(),
+});
+const persistedSchema = z
+  .discriminatedUnion('state', [draftSchema, pendingSchema, acknowledgedSchema])
+  .refine(
+    (record) =>
+      record.state === 'REQUIRES_REVIEW' || record.bodyJson === draftBodyJson(record.form),
+  );
+
+export type PendingWorkoutDraft = z.infer<typeof pendingSchema>;
+export type AcknowledgedWorkoutDraft = z.infer<typeof acknowledgedSchema>;
+export type PersistedWorkoutDraft = z.infer<typeof persistedSchema>;
+
+export function draftBodyJson(form: MobileMultiWorkoutForm) {
+  return JSON.stringify(buildMobileMultiWorkoutBody(mobileMultiWorkoutFormSchema.parse(form)));
+}
+
+export function reserveWorkoutDraft(draft: OfflineWorkoutDraft, key: string): PendingWorkoutDraft {
+  return pendingSchema.parse({
+    ...draft,
+    schemaVersion: 2,
+    state: 'SUBMISSION_PENDING',
+    key,
+    bodyJson: draftBodyJson(draft.form),
+  });
+}
 
 export function createOfflineWorkoutDraft(
   ownerId: string,
@@ -36,12 +87,12 @@ export function createOfflineWorkoutDraft(
 export function parseOwnedWorkoutDraft(
   serialized: string,
   currentOwnerId: string,
-): OfflineWorkoutDraft | null {
+): PersistedWorkoutDraft | null {
   // Bound parsing work for a corrupted or hostile storage record.
   if (!currentOwnerId || serialized.length > 1_000_000) return null;
 
   try {
-    const parsed = draftSchema.safeParse(JSON.parse(serialized));
+    const parsed = persistedSchema.safeParse(JSON.parse(serialized));
     if (!parsed.success || parsed.data.ownerId !== currentOwnerId) return null;
     return parsed.data;
   } catch {
@@ -60,7 +111,7 @@ export function canSendReviewedDraft(
   online: boolean,
   explicitlyConfirmed: boolean,
 ): boolean {
-  if (!currentUserId || !online || !explicitlyConfirmed) return false;
+  if (!currentUserId || online !== true || explicitlyConfirmed !== true) return false;
   const validated = draftSchema.safeParse(draft);
   return validated.success && validated.data.ownerId === currentUserId;
 }
