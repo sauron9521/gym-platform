@@ -121,6 +121,87 @@ function checkCleanImport(sourceRoot, featureRoot, file, imported, files, graph,
   graph.get(file).add(target);
 }
 
+// ADR-010: audience adapters depend inward on explicitly public feature
+// contracts. This first guard is source-level only; Nest registration and
+// provider visibility are checked separately during the composition pilot.
+const apiAudiences = new Set(['public', 'shared', 'athlete', 'trainer', 'admin']);
+
+function sourceImportTarget(sourceRoot, file, specifier) {
+  if (specifier.startsWith('#src/')) return resolve(sourceRoot, specifier.slice(5));
+  if (specifier.startsWith('#prisma/')) {
+    return resolve(sourceRoot, 'infra/database/generated/prisma', specifier.slice(8));
+  }
+  if (specifier.startsWith('./') || specifier.startsWith('../')) {
+    return resolve(dirname(file), specifier);
+  }
+  return null;
+}
+
+function checkApiInterfaceImports(sourceRoot, known) {
+  const apiRoot = join(sourceRoot, 'api');
+  const errors = [];
+
+  for (const file of walk(sourceRoot)) {
+    const parts = relative(sourceRoot, file).split(sep);
+    if (
+      !/\.[mc]?ts$/.test(file) ||
+      parts.includes('test') ||
+      /\.(?:spec|test)\.[mc]?ts$/.test(file) ||
+      parts.includes('generated')
+    )
+      continue;
+
+    const inApi = parts[0] === 'api';
+    const audience = inApi && apiAudiences.has(parts[1]) ? parts[1] : null;
+    const inward = ['modules', 'common', 'infra'].includes(parts[0]);
+    if (!inApi && !inward) continue;
+
+    const display = 'src/' + parts.join('/');
+    if (inApi && !audience && !(parts.length === 2 && file.endsWith('.module.ts'))) {
+      errors.push(
+        display + ': API interface must belong to an audience or root composition module',
+      );
+    }
+
+    for (const imported of parseModuleImports(readFileSync(file, 'utf8'), file, {
+      checkComputedRequire: inApi,
+    })) {
+      const fail = (reason) => errors.push(display + ': ' + reason + " '" + imported.path + "'");
+      if (imported.path === null) {
+        if (inApi) errors.push(display + ': computed import/require cannot be checked statically');
+        continue;
+      }
+      const target = sourceImportTarget(sourceRoot, file, imported.path);
+      if (target && !outside(apiRoot, target)) {
+        if (inward) fail('inward layer cannot import API interface');
+        if (audience && relative(apiRoot, target).split(sep)[0] !== audience) {
+          fail('audience cannot import another API interface or root composition');
+        }
+      }
+      if (!inApi) continue;
+
+      if (
+        imported.path === '@prisma/client' ||
+        imported.path.startsWith('@prisma/') ||
+        imported.path === 'prisma' ||
+        imported.path.startsWith('#prisma/') ||
+        (target && !outside(join(sourceRoot, 'infra', 'database'), target))
+      ) {
+        fail('API interface cannot import persistence directly');
+      }
+
+      if (target && !outside(join(sourceRoot, 'modules'), target)) {
+        const [feature, ...rest] = relative(join(sourceRoot, 'modules'), target).split(sep);
+        const contract = rest.join('/').replace(/\.[mc]?[jt]s$/, '');
+        if (!known.has(feature) || ![feature + '.module', 'public-api'].includes(contract)) {
+          fail('API interface must use an explicit feature module or public-api contract');
+        }
+      }
+    }
+  }
+  return errors;
+}
+
 /**
  * Checks the source-level runtime dependency graph separately from type-only
  * references; checks Nest module imports and direct cross-feature boundaries.
@@ -150,7 +231,7 @@ export function checkFeatureDependencies(repositoryRoot) {
   const moduleMetadata = new Map(
     modules.map((name) => [name, parseNestModuleMetadata(moduleSources.get(name))]),
   );
-  const errors = [];
+  const errors = checkApiInterfaceImports(sourceRoot, known);
 
   for (const name of modules) {
     const files = walk(join(modulesRoot, name)).filter(

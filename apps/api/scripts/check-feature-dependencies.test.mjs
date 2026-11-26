@@ -903,3 +903,111 @@ test('rejects type-only cycles inside Trainer–Athletes application', () => {
     assert.match(check().join('\n'), /trainer-athletes: clean architecture file dependency cycle/);
   });
 });
+
+test('ADR-010 allows root composition and independent audience adapters using explicit feature contracts', () => {
+  fixture(({ module, write, check }) => {
+    module('users');
+    write('src/modules/users/public-api.ts', 'export class UsersRead {}');
+    write(
+      'src/api/admin/admin-api.module.ts',
+      "import { UsersModule } from '#src/modules/users/users.module';",
+    );
+    write(
+      'src/api/admin/users/users.controller.ts',
+      "import { UsersRead } from '#src/modules/users/public-api';",
+    );
+    write(
+      'src/api/shared/users/users.controller.ts',
+      "import type { UsersRead } from '../../../modules/users/public-api.js';",
+    );
+    write(
+      'src/api/api.module.ts',
+      "import './admin/admin-api.module.js'; import './shared/users/users.controller.js';",
+    );
+    assert.deepEqual(check(), []);
+  });
+});
+
+test('ADR-010 rejects reverse dependencies from modules, common and infrastructure, including type-only imports', () => {
+  fixture(({ module, source, write, check }) => {
+    module('users');
+    write('src/api/admin/admin-api.module.ts', 'export class AdminApiModule {}');
+    source(
+      'users',
+      'services/users.service.ts',
+      "import type { AdminApiModule } from '#src/api/admin/admin-api.module';",
+    );
+    write(
+      'src/common/auth/policy.ts',
+      "export type Policy = import('../../api/admin/admin-api.module.js').AdminApiModule;",
+    );
+    write('src/infra/health/health.service.ts', "import '../../api/admin/admin-api.module.js';");
+    assert.equal(
+      check().filter((error) => error.includes('inward layer cannot import API interface')).length,
+      3,
+    );
+  });
+});
+
+test('ADR-010 rejects cross-audience imports and root composition imports from an audience', () => {
+  fixture(({ module, write, check }) => {
+    module('users');
+    write(
+      'src/api/admin/admin-api.module.ts',
+      "import '../shared/shared-api.module.js'; import type { ApiModule } from '#src/api/api.module';",
+    );
+    write('src/api/shared/shared-api.module.ts', 'export class SharedApiModule {}');
+    write('src/api/api.module.ts', 'export class ApiModule {}');
+    assert.equal(check().filter((error) => error.includes('audience cannot import')).length, 2);
+  });
+});
+
+test('ADR-010 rejects private feature files through aliases, relative imports, re-exports and type queries', () => {
+  fixture(({ module, write, check }) => {
+    module('users');
+    write(
+      'src/api/admin/users/users.controller.ts',
+      [
+        "import { Repository } from '#src/modules/users/repositories/users.repository';",
+        "import type { Row } from '../../../modules/users/selects/users.select.js';",
+        "export { Service } from '#src/modules/users/services/users.service';",
+        "type Policy = import('#src/modules/users/policies/users.policy').Policy;",
+        "import '#src/modules/unknown/public-api';",
+      ].join('\n'),
+    );
+    assert.equal(
+      check().filter((error) => error.includes('explicit feature module or public-api')).length,
+      5,
+    );
+  });
+});
+
+test('ADR-010 blocks persistence and computed imports from audience adapters', () => {
+  fixture(({ module, write, check }) => {
+    module('users');
+    write(
+      'src/api/admin/users/users.controller.ts',
+      [
+        "import type { Role } from '#prisma/client';",
+        "import { PrismaClient } from '@prisma/client';",
+        "import { PrismaService } from '../../../infra/database/prisma.service.js';",
+        "import('#src/infra/database/index');",
+        'import(path); require(path);',
+      ].join('\n'),
+    );
+    const errors = check();
+    assert.equal(
+      errors.filter((error) => error.includes('cannot import persistence directly')).length,
+      4,
+    );
+    assert.equal(errors.filter((error) => error.includes('computed import/require')).length, 1);
+  });
+});
+
+test('ADR-010 does not allow an unclassified API source directory', () => {
+  fixture(({ module, write, check }) => {
+    module('users');
+    write('src/api/misc/users.controller.ts', 'export class UsersController {}');
+    assert.match(check().join('\n'), /API interface must belong to an audience/);
+  });
+});
