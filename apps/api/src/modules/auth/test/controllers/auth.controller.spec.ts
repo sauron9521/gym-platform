@@ -5,6 +5,7 @@ import { Logger, UnauthorizedException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AuthController } from '../../controllers/auth.controller.js';
 import { AdminCookieAuthService } from '../../services/admin-cookie-auth.service.js';
+import { AdminSignInService } from '../../public-api.js';
 import { CredentialsService } from '../../services/index.js';
 
 describe('AuthController', () => {
@@ -30,6 +31,7 @@ describe('AuthController', () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [AuthController],
       providers: [
+        AdminSignInService,
         { provide: AdminCookieAuthService, useValue: adminCookieAuth },
         {
           provide: ConfigService,

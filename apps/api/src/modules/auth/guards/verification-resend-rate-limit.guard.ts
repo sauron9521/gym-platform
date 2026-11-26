@@ -1,11 +1,9 @@
 import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
 import type { Request } from 'express';
 
-import type { UserResponse } from '#src/modules/users/types/user-payload.types';
-import {
-  AuthAccountThrottleService,
-  AUTH_ACCOUNT_THROTTLE_POLICIES,
-} from '../services/auth-account-throttle.service.js';
+import type { VerificationResendActor } from '../types/verification-resend-actor.js';
+import { AUTH_ACCOUNT_THROTTLE_POLICIES } from '../services/auth-account-throttle.service.js';
+import { AuthHttpQuotaFacade } from '../services/auth-http-quota.facade.js';
 
 export const VERIFICATION_RESEND_USER_LIMIT =
   AUTH_ACCOUNT_THROTTLE_POLICIES.verificationResend.limit;
@@ -13,7 +11,7 @@ export const VERIFICATION_RESEND_USER_TTL_MS =
   AUTH_ACCOUNT_THROTTLE_POLICIES.verificationResend.ttlMs;
 
 type AuthenticatedRequest = Request & {
-  user?: Pick<UserResponse, 'id' | 'emailVerified'>;
+  user?: Pick<VerificationResendActor, 'id' | 'emailVerified'>;
 };
 
 /**
@@ -22,7 +20,7 @@ type AuthenticatedRequest = Request & {
  */
 @Injectable()
 export class VerificationResendRateLimitGuard implements CanActivate {
-  constructor(private readonly accountThrottle: AuthAccountThrottleService) {}
+  constructor(private readonly accountThrottle: AuthHttpQuotaFacade) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const { user } = context.switchToHttp().getRequest<AuthenticatedRequest>();
@@ -38,10 +36,7 @@ export class VerificationResendRateLimitGuard implements CanActivate {
       return true;
     }
 
-    await this.accountThrottle.assertAllowed(
-      user.id,
-      AUTH_ACCOUNT_THROTTLE_POLICIES.verificationResend,
-    );
+    await this.accountThrottle.assertVerificationResend(user.id);
 
     return true;
   }

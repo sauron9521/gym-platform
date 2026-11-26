@@ -9,6 +9,7 @@ import { afterAll, describe, expect, it } from 'vitest';
 import { DistributedThrottlerStorage } from '../../../src/common/rate-limit/distributed-throttler.storage.js';
 import { AccountRecoveryRateLimitGuard } from '../../../src/modules/auth/guards/account-recovery-rate-limit.guard.js';
 import { AuthAccountThrottleService } from '../../../src/modules/auth/services/auth-account-throttle.service.js';
+import { AuthHttpQuotaFacade } from '../../../src/modules/auth/public-api.js';
 
 const redisUrl = process.env.TEST_REDIS_URL;
 const redisDescribe = redisUrl ? describe : describe.skip;
@@ -43,6 +44,7 @@ redisDescribe('Account recovery throttle (two Redis-backed HTTP apps)', () => {
           },
         },
         AuthAccountThrottleService,
+        AuthHttpQuotaFacade,
         AccountRecoveryRateLimitGuard,
       ],
     }).compile();

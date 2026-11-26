@@ -22,7 +22,7 @@ import { HttpMetricsController } from '#src/common/http-metrics/http-metrics.con
 import { DistributedThrottlerStorage } from '#src/common/rate-limit/distributed-throttler.storage';
 import { RateLimitStorageModule } from '#src/common/rate-limit/rate-limit-storage.module';
 import { RATE_LIMIT_POLICIES } from '#src/common/rate-limit/rate-limit.policies';
-import { AuthNoStoreMiddleware } from '#src/modules/auth/middleware/auth-no-store.middleware';
+import { AuthNoStoreMiddleware } from '#src/modules/auth/public-api';
 import { PrivateApiNoStoreMiddleware } from '#src/common/http/private-api-no-store.middleware';
 import type { AppConfigService } from '#src/common/config/app-config.types';
 import { validateEnv } from '#src/common/config/env.validation';
