@@ -42,6 +42,33 @@ module.exports = {
         dependencyTypes: ['local'],
       },
     },
+    {
+      name: 'no-inward-to-api-interface-imports',
+      severity: 'error',
+      from: { path: '^apps/api/src/(?:modules|common|infra)/' },
+      to: { path: '^apps/api/src/api/' },
+    },
+    {
+      name: 'no-cross-audience-api-imports',
+      severity: 'error',
+      from: { path: '^apps/api/src/api/(public|shared|athlete|trainer|admin)/' },
+      to: { path: '^apps/api/src/api/', pathNot: '^apps/api/src/api/$1/' },
+    },
+    {
+      name: 'no-api-interface-private-feature-imports',
+      severity: 'error',
+      from: { path: '^apps/api/src/api/' },
+      to: {
+        path: '^apps/api/src/modules/',
+        pathNot: '^apps/api/src/modules/[^/]+/(?:[^/]+\\.module|public-api)\\.[cm]?[jt]s$',
+      },
+    },
+    {
+      name: 'no-api-interface-database-imports',
+      severity: 'error',
+      from: { path: '^apps/api/src/api/' },
+      to: { path: '^apps/api/src/infra/database/' },
+    },
   ],
   options: {
     // Analyze type-only imports before TypeScript compilation removes them.

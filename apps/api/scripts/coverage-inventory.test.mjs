@@ -89,6 +89,31 @@ describe('coverage source inventory', () => {
     }
   });
 
+  it('groups migrated audience adapters separately without counting their test files', () => {
+    const paths = [
+      'src/modules/users/users.module.ts',
+      'src/api/admin/users/controllers/admin-users.controller.ts',
+      'src/api/admin/users/test/controllers/admin-users.controller.spec.ts',
+      'src/api/shared/users/controllers/users.controller.ts',
+      'src/api/admin/admin-api.module.ts',
+      'src/api/api.module.ts',
+    ];
+    const inventory = buildCoverageInventory(paths, summary([paths[1], paths[4]]));
+
+    assert.equal(inventory.eligible, 5);
+    assert.equal(inventory.measured, 2);
+    assert.deepEqual(
+      inventory.scopes.map(({ scope, eligible, measured }) => [scope, eligible, measured]),
+      [
+        ['api', 1, 0],
+        ['api/admin', 1, 1],
+        ['api/admin/users', 1, 1],
+        ['api/shared/users', 1, 0],
+        ['modules/users', 1, 0],
+      ],
+    );
+  });
+
   it('fails closed if the summary or source tree is empty', () => {
     assert.throws(
       () => buildCoverageInventory(['src/main.ts'], {}),

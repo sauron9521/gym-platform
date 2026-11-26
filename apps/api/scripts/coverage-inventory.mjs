@@ -59,6 +59,10 @@ function coverageSourcePath(coveragePath) {
 function scopeForSource(path) {
   const segments = path.split('/');
   if (segments[1] === 'modules' && segments[2]) return 'modules/' + segments[2];
+  if (segments[1] === 'api' && segments.length >= 5) {
+    return 'api/' + segments[2] + '/' + segments[3];
+  }
+  if (segments[1] === 'api' && segments.length >= 4) return 'api/' + segments[2];
   return segments[1] ?? 'src';
 }
 
