@@ -1,131 +1,21 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { AppState, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useStore } from 'zustand';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import {
-  defaultRestDuration,
-  restDurationPresets,
-  type RestDuration,
-} from '@/shared/config/rest-duration';
+import { restDurationPresets } from '@/shared/config/rest-duration';
 import { createThemedStyles } from '@/shared/config/theme-provider';
 
-import { useRestFeedback, type RestFeedback } from '../lib/use-rest-feedback';
-import { formatRestTime, secondsRemaining } from '../lib/rest-timer';
+import { formatRestTime } from '../lib/rest-timer';
+import { useRestTimerStore } from '../model/rest-timer-provider';
 
-type Countdown = {
-  duration: RestDuration;
-  used: boolean;
-  remaining: number;
-  deadline: number | null;
-  completion: number;
-};
-
-/**
- * Client-only rest timer. The absolute deadline preserves elapsed time while
- * React Native pauses JS intervals in the background. It is not persisted
- * across process termination and never writes to the API.
- */
-export type RestStart = { sequence: number; startedAt: number };
-
-export function RestTimer({
-  autoStart,
-  defaultDuration = defaultRestDuration,
-  feedback = { sound: false, vibration: false },
-}: { autoStart?: RestStart | null; defaultDuration?: RestDuration; feedback?: RestFeedback } = {}) {
+export function RestTimer({ workoutId }: { workoutId: string }) {
   const styles = useStyles();
-  const [timer, setTimer] = useState<Countdown>({
-    duration: defaultDuration,
-    remaining: defaultDuration,
-    used: false,
-    deadline: null,
-    completion: 0,
-  });
-  // Hydration may finish after the screen mounts. Never reset a timer that
-  // has already been started or customized in this workout.
-  if (!timer.used && timer.duration !== defaultDuration) {
-    setTimer({ ...timer, duration: defaultDuration, remaining: defaultDuration });
-  }
-  const [foreground, setForeground] = useState(true);
-  const consumed = useRef<number | null>(null);
-  const signaled = useRef(0);
-  const notify = useRestFeedback();
-
-  useEffect(() => {
-    if (!foreground || timer.completion <= signaled.current) return;
-    signaled.current = timer.completion;
-    notify(feedback);
-  }, [foreground, timer.completion, feedback, notify]);
-
-  useEffect(() => {
-    if (!autoStart || consumed.current === autoStart.sequence) return;
-    consumed.current = autoStart.sequence;
-    setTimer((current) => {
-      const deadline = autoStart.startedAt + current.duration * 1000;
-      const remaining = secondsRemaining(deadline, Date.now());
-      return { ...current, used: true, remaining, deadline: remaining > 0 ? deadline : null };
-    });
-  }, [autoStart]);
-
-  const refresh = useCallback(() => {
-    setTimer((current) => {
-      if (current.deadline === null) return current;
-      const remaining = secondsRemaining(current.deadline, Date.now());
-      if (remaining === current.remaining && remaining > 0) return current;
-      return {
-        ...current,
-        remaining,
-        deadline: remaining === 0 ? null : current.deadline,
-        completion: current.completion + (remaining === 0 ? 1 : 0),
-      };
-    });
-  }, []);
-
-  useEffect(() => {
-    const subscription = AppState.addEventListener('change', (state) => {
-      setForeground(state === 'active');
-      if (state === 'active') refresh();
-    });
-    return () => subscription.remove();
-  }, [refresh]);
-
-  useEffect(() => {
-    if (!foreground || timer.deadline === null) return;
-    const interval = setInterval(refresh, 1000);
-    return () => clearInterval(interval);
-  }, [foreground, refresh, timer.deadline]);
-
-  const toggle = () => {
-    setTimer((current) => {
-      if (current.deadline !== null) {
-        return {
-          ...current,
-          remaining: secondsRemaining(current.deadline, Date.now()),
-          deadline: null,
-        };
-      }
-      const remaining = current.remaining > 0 ? current.remaining : current.duration;
-      return {
-        ...current,
-        remaining,
-        used: true,
-        deadline: Date.now() + remaining * 1000,
-      };
-    });
-  };
-
-  const reset = () => {
-    setTimer((current) => ({
-      ...current,
-      remaining: current.duration,
-      deadline: null,
-    }));
-  };
-
-  const selectPreset = (duration: RestDuration) => {
-    setTimer((current) => {
-      if (current.deadline !== null) return current;
-      return { ...current, duration, remaining: duration, deadline: null, used: true };
-    });
-  };
+  const store = useRestTimerStore();
+  const timer = useStore(store, (state) =>
+    state.timer?.scope.workoutId === workoutId ? state.timer : null,
+  );
+  if (!timer) return null;
+  const { scope } = timer;
+  const { toggle, reset, selectPreset } = store.getState();
 
   const running = timer.deadline !== null;
   const canResume = timer.remaining > 0 && timer.remaining < timer.duration;
@@ -146,7 +36,7 @@ export function RestTimer({
             accessibilityLabel={`${duration} секунд`}
             accessibilityState={{ selected: timer.duration === duration, disabled: running }}
             disabled={running}
-            onPress={() => selectPreset(duration)}
+            onPress={() => selectPreset(scope, duration)}
             style={styles.choice}
           >
             <Text style={styles.text}>{duration} с</Text>
@@ -157,7 +47,7 @@ export function RestTimer({
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={running ? 'Пауза' : startLabel}
-          onPress={toggle}
+          onPress={() => toggle(scope, Date.now())}
           style={styles.button}
         >
           <Text style={styles.buttonText}>{running ? 'Пауза' : startLabel}</Text>
@@ -165,7 +55,7 @@ export function RestTimer({
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Скинути"
-          onPress={reset}
+          onPress={() => reset(scope)}
           style={styles.choice}
         >
           <Text style={styles.text}>Скинути</Text>

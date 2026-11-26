@@ -1,140 +1,208 @@
 import { act, fireEvent, render, waitFor } from '@testing-library/react-native';
 import { AppState, type AppStateStatus } from 'react-native';
+import { useEffect } from 'react';
+import { QueryClient } from '@tanstack/react-query';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { RestTimer } from '@/features/workouts/ui/rest-timer';
+import {
+  RestTimerProvider,
+  useRestTimerStore,
+} from '@/features/workouts/model/rest-timer-provider';
+import {
+  createRestTimerStore,
+  type RestTimerStore,
+} from '@/features/workouts/model/rest-timer-store';
+import { accountQueryKeys } from '@/shared/api/query-client';
+import type { RestDuration } from '@/shared/config/rest-duration';
 
 const notify = vi.hoisted(() => vi.fn());
 vi.mock('@/features/workouts/lib/use-rest-feedback', () => ({ useRestFeedback: () => notify }));
+afterEach(() => vi.restoreAllMocks());
 
-afterEach(() => {
-  vi.restoreAllMocks();
-});
+type Options = {
+  accountId?: string | null;
+  workoutId?: string;
+  visible?: boolean;
+  duration?: RestDuration;
+  feedback?: { sound: boolean; vibration: boolean };
+  queryClient?: QueryClient;
+};
+
+function harness() {
+  let store: RestTimerStore;
+  function Screen({
+    workoutId,
+    duration,
+    visible,
+  }: {
+    workoutId: string;
+    duration: RestDuration;
+    visible: boolean;
+  }) {
+    const instance = useRestTimerStore();
+    store = instance;
+    useEffect(() => {
+      if (visible) instance.getState().selectWorkout(workoutId, duration);
+    }, [instance, workoutId, duration, visible]);
+    return visible ? <RestTimer workoutId={workoutId} /> : null;
+  }
+  const tree = ({
+    accountId = 'athlete-a',
+    workoutId = 'workout-a',
+    visible = true,
+    duration = 90,
+    feedback = { sound: false, vibration: false },
+    queryClient,
+  }: Options = {}) => (
+    <RestTimerProvider
+      accountId={accountId}
+      defaultDuration={duration}
+      feedback={feedback}
+      queryClient={queryClient}
+    >
+      <Screen workoutId={workoutId} duration={duration} visible={visible && Boolean(accountId)} />
+    </RestTimerProvider>
+  );
+  return {
+    tree,
+    store: () => store!,
+    start: () => {
+      const state = store!.getState();
+      if (state.timer) state.start(state.timer.scope, Date.now());
+    },
+  };
+}
 
 describe('RestTimer (native)', () => {
-  it('signals one natural expiration after background reconciliation, never on reset or pause', async () => {
+  it('offers presets, pause/resume and reset without feedback', async () => {
     const clock = vi.spyOn(Date, 'now').mockReturnValue(100000);
-    let change: ((status: AppStateStatus) => void) | undefined;
-    vi.spyOn(AppState, 'addEventListener').mockImplementation((_event, listener) => {
-      change = listener as (status: AppStateStatus) => void;
-      return { remove: vi.fn() } as ReturnType<typeof AppState.addEventListener>;
-    });
-    const view = await render(
-      <RestTimer defaultDuration={60} feedback={{ sound: true, vibration: false }} />,
-    );
-    await fireEvent.press(view.getByRole('button', { name: 'Старт' }));
-    await fireEvent.press(view.getByRole('button', { name: 'Пауза' }));
-    expect(notify).not.toHaveBeenCalled();
-    await fireEvent.press(view.getByRole('button', { name: 'Скинути' }));
-    await fireEvent.press(view.getByRole('button', { name: 'Старт' }));
-    await act(async () => change?.('background'));
-    clock.mockReturnValue(161000);
-    await act(async () => change?.('active'));
-    await waitFor(() => expect(view.getByText('00:00')).toBeTruthy());
-    expect(notify).toHaveBeenCalledExactlyOnceWith({ sound: true, vibration: false });
-    await act(async () => change?.('active'));
-    await view.rerender(
-      <RestTimer defaultDuration={60} feedback={{ sound: false, vibration: true }} />,
-    );
-    expect(notify).toHaveBeenCalledTimes(1);
-  });
-
-  it('applies a hydrated default before use and keeps an in-workout override', async () => {
-    const view = await render(<RestTimer />);
-    await view.rerender(<RestTimer defaultDuration={120} />);
-    expect(view.getByText('02:00')).toBeTruthy();
-    await fireEvent.press(view.getByRole('button', { name: '60 секунд' }));
-    await view.rerender(<RestTimer defaultDuration={90} />);
-    expect(view.getByText('01:00')).toBeTruthy();
-    await fireEvent.press(view.getByRole('button', { name: 'Старт' }));
-    expect(view.getByRole('button', { name: 'Пауза' })).toBeTruthy();
-  });
-
-  it('does not restart an active timer when the default changes', async () => {
-    const clock = vi.spyOn(Date, 'now').mockReturnValue(100000);
-    const view = await render(
-      <RestTimer defaultDuration={120} autoStart={{ sequence: 1, startedAt: 100000 }} />,
-    );
-    expect(view.getByText('02:00')).toBeTruthy();
-    clock.mockReturnValue(110000);
-    await view.rerender(
-      <RestTimer defaultDuration={60} autoStart={{ sequence: 1, startedAt: 100000 }} />,
-    );
-    await fireEvent.press(view.getByRole('button', { name: 'Пауза' }));
-    expect(view.getByText('01:50')).toBeTruthy();
-  });
-
-  it('offers 60/90/120 presets, pause/resume and reset', async () => {
-    const clock = vi.spyOn(Date, 'now').mockReturnValue(100000);
-    const view = await render(<RestTimer />);
+    const h = harness();
+    const view = await render(h.tree());
     expect(view.getByText('01:30')).toBeTruthy();
-
     await fireEvent.press(view.getByRole('button', { name: '120 секунд' }));
-    expect(view.getByText('02:00')).toBeTruthy();
     await fireEvent.press(view.getByRole('button', { name: 'Старт' }));
     expect(view.getByRole('button', { name: '60 секунд', disabled: true })).toBeTruthy();
-
     clock.mockReturnValue(165000);
     await fireEvent.press(view.getByRole('button', { name: 'Пауза' }));
     expect(view.getByText('00:55')).toBeTruthy();
-
     await fireEvent.press(view.getByRole('button', { name: 'Продовжити' }));
     expect(view.getByRole('button', { name: 'Пауза' })).toBeTruthy();
-
     await fireEvent.press(view.getByRole('button', { name: 'Скинути' }));
     expect(view.getByText('02:00')).toBeTruthy();
-    expect(view.getByRole('button', { name: 'Старт' })).toBeTruthy();
+    expect(notify).not.toHaveBeenCalled();
   });
 
-  it('restarts the full preset when the previous deadline has elapsed', async () => {
-    const clock = vi.spyOn(Date, 'now').mockReturnValue(10000);
-    const view = await render(<RestTimer />);
-
+  it('applies hydrated defaults before use but keeps a selected preset or active deadline', async () => {
+    const h = harness();
+    const view = await render(h.tree());
+    await view.rerender(h.tree({ duration: 120 }));
+    expect(view.getByText('02:00')).toBeTruthy();
     await fireEvent.press(view.getByRole('button', { name: '60 секунд' }));
-    await fireEvent.press(view.getByRole('button', { name: 'Старт' }));
-
-    clock.mockReturnValue(71000);
-    await fireEvent.press(view.getByRole('button', { name: 'Пауза' }));
-    expect(view.getByText('00:00')).toBeTruthy();
-
-    await fireEvent.press(view.getByRole('button', { name: 'Старт' }));
+    await view.rerender(h.tree({ duration: 90 }));
     expect(view.getByText('01:00')).toBeTruthy();
+    await act(async () => h.start());
+    const deadline = h.store().getState().timer?.deadline;
+    await view.rerender(h.tree({ duration: 120 }));
+    expect(h.store().getState().timer?.deadline).toBe(deadline);
+    expect(view.getByRole('button', { name: 'Пауза' })).toBeTruthy();
   });
 
-  it('reconciles the deadline on returning from background without server requests', async () => {
-    const clock = vi.spyOn(Date, 'now').mockReturnValue(10000);
+  it('signals exactly one expiration when foregrounded, even without a timer screen', async () => {
+    const clock = vi.spyOn(Date, 'now').mockReturnValue(100000);
     let change: ((status: AppStateStatus) => void) | undefined;
     vi.spyOn(AppState, 'addEventListener').mockImplementation((_event, listener) => {
       change = listener as (status: AppStateStatus) => void;
       return { remove: vi.fn() } as ReturnType<typeof AppState.addEventListener>;
     });
-
-    const view = await render(<RestTimer />);
+    const h = harness();
+    const options = { duration: 60 as const, feedback: { sound: true, vibration: false } };
+    const view = await render(h.tree(options));
     await fireEvent.press(view.getByRole('button', { name: 'Старт' }));
-    expect(change).toBeDefined();
-
-    await act(async () => {
-      change?.('background');
-    });
-    clock.mockReturnValue(55000);
-    await act(async () => {
-      change?.('active');
-    });
-    await waitFor(() => expect(view.getByText('00:45')).toBeTruthy());
+    await view.rerender(h.tree({ ...options, visible: false }));
+    await act(async () => change?.('background'));
+    clock.mockReturnValue(161000);
+    await act(async () => change?.('active'));
+    expect(notify).toHaveBeenCalledExactlyOnceWith(options.feedback);
+    await act(async () => change?.('active'));
+    await view.rerender(h.tree(options));
+    expect(view.getByText('00:00')).toBeTruthy();
+    expect(notify).toHaveBeenCalledTimes(1);
   });
-  it('auto-starts selected preset only for a new confirmation event', async () => {
+
+  it('preserves the deadline across screen removal and remount, then restarts on a new confirmed event', async () => {
     const clock = vi.spyOn(Date, 'now').mockReturnValue(100000);
-    const view = await render(<RestTimer />);
-    await fireEvent.press(view.getByRole('button', { name: '60 секунд' }));
-    await view.rerender(<RestTimer autoStart={{ sequence: 1, startedAt: 100000 }} />);
-    expect(view.getByRole('button', { name: 'Пауза' })).toBeTruthy();
+    const h = harness();
+    const view = await render(h.tree({ duration: 60 }));
+    await act(async () => h.start());
+    await view.rerender(h.tree({ duration: 60, visible: false }));
     clock.mockReturnValue(110000);
-    await fireEvent.press(view.getByRole('button', { name: 'Пауза' }));
+    await act(async () => {
+      h.store().getState().refresh(Date.now());
+    });
+    await view.rerender(h.tree({ duration: 60 }));
     expect(view.getByText('00:50')).toBeTruthy();
-    await view.rerender(<RestTimer autoStart={{ sequence: 1, startedAt: 100000 }} />);
-    expect(view.getByRole('button', { name: 'Продовжити' })).toBeTruthy();
-    await view.rerender(<RestTimer autoStart={{ sequence: 2, startedAt: 110000 }} />);
+    await act(async () => h.start());
     expect(view.getByText('01:00')).toBeTruthy();
-    expect(view.getByRole('button', { name: 'Пауза' })).toBeTruthy();
+  });
+
+  it('isolates account changes and rejects a stale workout scope', async () => {
+    const h = harness();
+    const view = await render(h.tree());
+    const oldStore = h.store();
+    const oldScope = oldStore.getState().timer!.scope;
+    await act(async () => h.start());
+    await view.rerender(h.tree({ workoutId: 'workout-b' }));
+    await act(async () => oldStore.getState().start(oldScope, Date.now()));
+    expect(view.getByRole('button', { name: 'Старт' })).toBeTruthy();
+    await view.rerender(h.tree({ accountId: null }));
+    expect(oldStore.getState().timer).toBeNull();
+    await view.rerender(h.tree({ accountId: 'athlete-b' }));
+    expect(h.store()).not.toBe(oldStore);
+    expect(view.getByRole('button', { name: 'Старт' })).toBeTruthy();
+  });
+
+  it('clears the timer on authoritative terminal cache update while the screen is absent', async () => {
+    const h = harness();
+    const queryClient = new QueryClient();
+    const view = await render(h.tree({ queryClient }));
+    await act(async () => h.start());
+    await view.rerender(h.tree({ queryClient, visible: false }));
+    await act(async () => {
+      queryClient.setQueryData(accountQueryKeys.workoutDetail('athlete-b', 'workout-a'), {
+        status: 'COMPLETED',
+      });
+    });
+    expect(h.store().getState().timer).not.toBeNull();
+    await act(async () => {
+      queryClient.setQueryData(accountQueryKeys.workoutDetail('athlete-a', 'workout-a'), {
+        status: 'COMPLETED',
+      });
+    });
+    await waitFor(() => expect(h.store().getState().timer).toBeNull());
+  });
+});
+
+describe('rest timer store', () => {
+  it('rejects stale callbacks even when returning to the same workout ID', () => {
+    const store = createRestTimerStore('athlete-a');
+    store.getState().selectWorkout('a', 60);
+    const old = store.getState().timer!.scope;
+    store.getState().selectWorkout('b', 90);
+    store.getState().selectWorkout('a', 120);
+    store.getState().start(old, 100000);
+    expect(store.getState().timer?.deadline).toBeNull();
+    expect(store.getState().timer?.duration).toBe(120);
+  });
+  it('restarts a full preset after an elapsed deadline and consumes expiration once', () => {
+    const store = createRestTimerStore('athlete-a');
+    store.getState().selectWorkout('a', 60);
+    const scope = store.getState().timer!.scope;
+    store.getState().start(scope, 100000);
+    expect(store.getState().refresh(161000)).toBe(true);
+    expect(store.getState().refresh(161000)).toBe(false);
+    store.getState().toggle(scope, 162000);
+    expect(store.getState().timer?.remaining).toBe(60);
+    expect(store.getState().timer?.deadline).toBe(222000);
   });
 });

@@ -23,7 +23,12 @@ import {
 import { OfflineBanner } from '@/shared/ui/offline-banner';
 import { MobileErrorBoundary } from '@/shared/ui/mobile-error-boundary';
 import { LocaleProvider } from '@/shared/i18n/locale-provider';
-import { AppSettingsProvider } from '@/features/app-settings/model/app-settings-context';
+import { useQueryClient } from '@tanstack/react-query';
+import {
+  AppSettingsProvider,
+  useAppSettings,
+} from '@/features/app-settings/model/app-settings-context';
+import { RestTimerProvider } from '@/features/workouts/model/rest-timer-provider';
 import { offlineDraftLifecycle } from '@/features/workouts/model/offline-draft-lifecycle';
 import { AccountLocaleSync } from '@/features/profile/ui/account-locale-sync';
 
@@ -120,6 +125,22 @@ const useStyles = createThemedStyles((palette) =>
   }),
 );
 
+function WorkoutNavigation() {
+  const { account, capabilities } = useAuth();
+  const { settings } = useAppSettings();
+  const queryClient = useQueryClient();
+  return (
+    <RestTimerProvider
+      accountId={account && hasMobileAccess(capabilities) ? account.id : null}
+      defaultDuration={settings.restDuration}
+      feedback={{ sound: settings.restSound, vibration: settings.restVibration }}
+      queryClient={queryClient}
+    >
+      <Navigation />
+    </RestTimerProvider>
+  );
+}
+
 function ThemedApp() {
   const { palette, preference, mode } = useMobileTheme();
   const base = mode === 'dark' ? DarkTheme : DefaultTheme;
@@ -145,7 +166,7 @@ function ThemedApp() {
               <AuthProvider privateData={offlineDraftLifecycle}>
                 <AccountLocaleSync />
                 <AppSettingsProvider>
-                  <Navigation />
+                  <WorkoutNavigation />
                 </AppSettingsProvider>
               </AuthProvider>
             </MobileErrorBoundary>

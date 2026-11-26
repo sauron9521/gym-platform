@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { act, fireEvent, render } from '@testing-library/react-native';
+import { act, fireEvent, render as nativeRender } from '@testing-library/react-native';
+import { useEffect, type PropsWithChildren } from 'react';
+import { RestTimerProvider } from '@/features/workouts/model/rest-timer-provider';
 import { Alert } from 'react-native';
 
 import {
@@ -9,6 +11,21 @@ import {
 import { useCancelWorkout, useUpdateWorkoutTitle } from '@/features/workouts/model/workout-edit';
 import { WorkoutSetRow } from '@/screens/workouts/ui/workout-set-row';
 import { WorkoutDetailsScreen } from '@/screens/workouts/ui/workout-details-screen';
+
+vi.mock('expo-router', () => ({ useFocusEffect: useEffect }));
+
+function Wrapper({ children }: PropsWithChildren) {
+  return (
+    <RestTimerProvider
+      accountId="athlete-a"
+      defaultDuration={120}
+      feedback={{ sound: true, vibration: true }}
+    >
+      {children}
+    </RestTimerProvider>
+  );
+}
+const render = (element: React.ReactElement) => nativeRender(element, { wrapper: Wrapper });
 
 vi.mock('@/features/workouts/model/workout-details-query', () => ({
   useWorkoutDetailsQuery: vi.fn(),
@@ -229,6 +246,19 @@ describe('WorkoutDetailsScreen (real React Native renderer)', () => {
     await act(async () => vi.mocked(WorkoutSetRow).mock.calls.at(-1)![0].onNewCompletion?.());
     expect(view.getByRole('button', { name: 'Пауза' })).toBeTruthy();
     expect(view.getByTestId('workout-set-progress').props.accessibilityValue.now).toBe(0);
+  });
+
+  it('keeps the timer when the details screen unmounts and returns to the same workout', async () => {
+    prepareWorkout('IN_PROGRESS');
+    const clock = vi.spyOn(Date, 'now').mockReturnValue(100000);
+    const view = await render(<WorkoutDetailsScreen id="workout-123" />);
+    await fireEvent.press(view.getByRole('button', { name: 'Старт' }));
+    await view.rerender(<></>);
+    clock.mockReturnValue(110000);
+    await view.rerender(<WorkoutDetailsScreen id="workout-123" />);
+    await fireEvent.press(view.getByRole('button', { name: 'Пауза' }));
+    expect(view.getByText('01:50')).toBeTruthy();
+    clock.mockRestore();
   });
 
   it('does not auto-start when disabled and keeps the manual timer available', async () => {
