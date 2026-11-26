@@ -50,7 +50,7 @@ training-programs/
   training-programs.module.ts          # composition
 ```
 
-Logical presentation/infrastructure layers need not be named directories. Keep controllers directly in the existing controllers directory and registered in the feature module, with their existing test registry. Preserve current naming and import conventions. Extend guardrails deliberately before introducing nested paths or new provider patterns; do not disable an existing check to allow a migration.
+Logical presentation/infrastructure layers need not be named directories. For unmigrated slices, keep controllers directly in the existing controllers directory and registered in the feature module, with their existing test registry. [ADR-010](adr-010-segregated-api-interfaces.md) defines the later, incremental audience-specific HTTP composition target for selected slices; it does not change the inward dependency rules. Preserve current naming and import conventions. Extend guardrails deliberately before introducing nested paths or new provider patterns; do not disable an existing check to allow a migration.
 
 ## Selecting migration slices
 
