@@ -22,6 +22,12 @@ vi.mock('@/features/auth/model/refresh-token-store', () => ({
   refreshTokenStore: { read: mocks.read, write: mocks.write, remove: mocks.remove },
 }));
 
+const privateData = {
+  lock: vi.fn(),
+  verified: vi.fn(async () => undefined),
+  end: vi.fn(async () => undefined),
+};
+
 const account = { id: 'athlete-a', role: 'ATHLETE' };
 const grants = { athlete: true, trainer: false, admin: false };
 const ok = (data: unknown) => ({ response: { status: 200 }, data });
@@ -47,7 +53,7 @@ async function harness() {
   const client = createMobileQueryClient();
   const wrapper = ({ children }: PropsWithChildren) => (
     <QueryClientProvider client={client}>
-      <AuthProvider>{children}</AuthProvider>
+      <AuthProvider privateData={privateData}>{children}</AuthProvider>
     </QueryClientProvider>
   );
   const hook = await renderHook(() => useAuth(), { wrapper });
@@ -58,6 +64,11 @@ async function harness() {
     });
   });
   expect(hook.result.current.capabilities).toEqual(grants);
+  expect(privateData.end).toHaveBeenCalledOnce();
+  expect(privateData.verified).toHaveBeenCalledExactlyOnceWith(account.id, grants);
+  privateData.end.mockClear();
+  privateData.verified.mockClear();
+  privateData.lock.mockClear();
   return {
     ...hook,
     client,
@@ -77,6 +88,8 @@ async function harness() {
 describe('auth foreground account-cache lifecycle', () => {
   beforeEach(() => {
     vi.resetAllMocks();
+    privateData.verified.mockResolvedValue(undefined);
+    privateData.end.mockResolvedValue(undefined);
     vi.stubEnv('EXPO_PUBLIC_API_URL', 'https://staging.example.test');
     mocks.read.mockResolvedValue(null);
     mocks.write.mockResolvedValue(undefined);
@@ -105,6 +118,8 @@ describe('auth foreground account-cache lifecycle', () => {
     try {
       h.client.setQueryData(workoutKey, { status: 'PENDING' });
       await h.emit('background');
+      expect(privateData.lock).toHaveBeenCalledOnce();
+      expect(privateData.end).not.toHaveBeenCalled();
       expect(h.result.current.capabilities).toBeNull();
       expect(h.client.getQueryData(key)).toBeUndefined();
       expect(h.client.getQueryData(workoutKey)).toBeUndefined();
@@ -115,8 +130,10 @@ describe('auth foreground account-cache lifecycle', () => {
       expect(h.client.getQueryData(key)).toBeUndefined();
       expect(h.result.current.capabilities).toBeNull();
 
+      expect(privateData.verified).not.toHaveBeenCalled();
       await act(async () => check.resolve(ok(grants)));
       await waitFor(() => expect(h.result.current.capabilities).toEqual(grants));
+      expect(privateData.verified).toHaveBeenCalledExactlyOnceWith(account.id, grants);
       expect(h.client.getQueryData(key)).toEqual(account);
       expect(h.client.getQueryState(key)?.dataUpdatedAt).toBe(0);
       expect(h.client.getQueryData(workoutKey)).toBeUndefined();
@@ -143,6 +160,7 @@ describe('auth foreground account-cache lifecycle', () => {
       await act(async () => check.resolve(ok(grants)));
       expect(h.client.getQueryData(key)).toBeUndefined();
       expect(h.result.current.capabilities).toBeNull();
+      expect(privateData.verified).not.toHaveBeenCalled();
     } finally {
       await h.dispose();
     }
@@ -156,10 +174,12 @@ describe('auth foreground account-cache lifecycle', () => {
       mocks.get.mockReturnValueOnce(check.promise);
       await h.emit('active');
       await act(async () => h.result.current.signOut());
+      expect(privateData.end).toHaveBeenCalledOnce();
       await act(async () => check.resolve(ok(grants)));
       expect(h.result.current.account).toBeNull();
       expect(h.result.current.capabilities).toBeNull();
       expect(h.client.getQueryCache().getAll()).toHaveLength(0);
+      expect(privateData.verified).not.toHaveBeenCalled();
     } finally {
       await h.dispose();
     }
@@ -175,6 +195,8 @@ describe('auth foreground account-cache lifecycle', () => {
       expect(h.result.current.account).toBeNull();
       expect(h.result.current.capabilities).toBeNull();
       expect(h.client.getQueryCache().getAll()).toHaveLength(0);
+      expect(privateData.end).not.toHaveBeenCalled();
+      expect(privateData.verified).not.toHaveBeenCalled();
     } finally {
       await h.dispose();
     }
@@ -190,6 +212,7 @@ describe('auth foreground account-cache lifecycle', () => {
       expect(h.result.current.recoveryAvailable).toBe(false);
       expect(h.client.getQueryCache().getAll()).toHaveLength(0);
       expect(mocks.remove).toHaveBeenCalled();
+      expect(privateData.end).toHaveBeenCalledOnce();
     } finally {
       await h.dispose();
     }
@@ -202,7 +225,7 @@ describe('auth foreground account-cache lifecycle', () => {
     const client = createMobileQueryClient();
     const wrapper = ({ children }: PropsWithChildren) => (
       <QueryClientProvider client={client}>
-        <AuthProvider>{children}</AuthProvider>
+        <AuthProvider privateData={privateData}>{children}</AuthProvider>
       </QueryClientProvider>
     );
     const hook = await renderHook(() => useAuth(), { wrapper });
@@ -212,11 +235,14 @@ describe('auth foreground account-cache lifecycle', () => {
       expect(hook.result.current.account).toBeNull();
       expect(hook.result.current.capabilities).toBeNull();
       expect(client.getQueryData(accountQueryKeys.me(account.id))).toBeUndefined();
+      expect(privateData.verified).not.toHaveBeenCalled();
+      expect(privateData.end).not.toHaveBeenCalled();
       await act(async () => pending.resolve(ok(grants)));
       await waitFor(() => expect(hook.result.current.restoring).toBe(false));
       expect(hook.result.current.account).toEqual(account);
       expect(hook.result.current.capabilities).toEqual(grants);
       expect(client.getQueryData(accountQueryKeys.me(account.id))).toEqual(account);
+      expect(privateData.verified).toHaveBeenCalledExactlyOnceWith(account.id, grants);
       expect(mocks.post.mock.calls.map(([path]) => path)).toEqual(['/auth/token/refresh']);
     } finally {
       await hook.unmount();
@@ -230,13 +256,15 @@ describe('auth foreground account-cache lifecycle', () => {
     const client = createMobileQueryClient();
     const wrapper = ({ children }: PropsWithChildren) => (
       <QueryClientProvider client={client}>
-        <AuthProvider>{children}</AuthProvider>
+        <AuthProvider privateData={privateData}>{children}</AuthProvider>
       </QueryClientProvider>
     );
     const hook = await renderHook(() => useAuth(), { wrapper });
     try {
       await waitFor(() => expect(hook.result.current.restoring).toBe(false));
       expect(hook.result.current.recoveryAvailable).toBe(true);
+      expect(privateData.end).not.toHaveBeenCalled();
+      expect(privateData.verified).not.toHaveBeenCalled();
       expect(hook.result.current.account).toBeNull();
       expect(hook.result.current.capabilities).toBeNull();
       await act(async () => {
@@ -245,6 +273,7 @@ describe('auth foreground account-cache lifecycle', () => {
       expect(hook.result.current.account).toEqual(account);
       expect(hook.result.current.capabilities).toEqual(grants);
       expect(hook.result.current.recoveryAvailable).toBe(false);
+      expect(privateData.verified).toHaveBeenCalledExactlyOnceWith(account.id, grants);
       expect(mocks.post.mock.calls.map(([path]) => path)).toEqual(['/auth/token/refresh']);
     } finally {
       await hook.unmount();

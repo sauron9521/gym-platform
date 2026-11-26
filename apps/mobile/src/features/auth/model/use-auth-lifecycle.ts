@@ -10,9 +10,11 @@ import {
 } from './account-capabilities';
 import type { MobileTokenSession } from './mobile-token-session';
 import type { Account } from './auth-context';
+import type { PrivateDataLifecycle } from './private-data-lifecycle';
 
 type LifecycleOptions = {
   session: MobileTokenSession;
+  privateData: PrivateDataLifecycle;
   getApi: () => ReturnType<typeof createMobileApi> | null;
   queryClient: QueryClient;
   setAccount: Dispatch<SetStateAction<Account | null>>;
@@ -22,6 +24,7 @@ type LifecycleOptions = {
 
 export function useAuthBootstrap({
   baseUrl,
+  privateData,
   session,
   getApi,
   queryClient,
@@ -38,7 +41,15 @@ export function useAuthBootstrap({
     const bootstrap = async () => {
       try {
         if (!baseUrl) return;
-        if (!(await session.restore()) || !active) return;
+        const initialRevision = session.revision;
+        const restored = await session.restore();
+        if (!active) return;
+        if (!restored) {
+          // No persisted credential (or an already-invalidated restore).
+          // Transient failures throw instead; do not delete their drafts.
+          if (session.revision === initialRevision) void privateData.end();
+          return;
+        }
 
         const revision = session.revision;
         const api = getApi();
@@ -51,9 +62,10 @@ export function useAuthBootstrap({
           if (!active || session.revision !== revision) return;
           const grants =
             grantResult.response.status === 200 ? parseAccountCapabilities(grantResult.data) : null;
-          if (hasMobileAccess(grants)) {
+          if (grants && hasMobileAccess(grants)) {
             queryClient.clear();
             queryClient.setQueryData(accountQueryKeys.me(response.data.id), response.data);
+            void privateData.verified(response.data.id, grants);
             setCapabilities(grants);
             setAccount(response.data);
             setRecoveryAvailable(false);
@@ -62,6 +74,7 @@ export function useAuthBootstrap({
             grantResult.response.status === 403 ||
             (grants && !hasMobileAccess(grants))
           ) {
+            void privateData.end();
             await session.clear();
             setCapabilities(null);
             setRecoveryAvailable(false);
@@ -71,6 +84,7 @@ export function useAuthBootstrap({
             setRecoveryAvailable(true);
           }
         } else if (response.response.status === 401 || response.response.status === 403) {
+          void privateData.end();
           await session.clear();
           setCapabilities(null);
           setRecoveryAvailable(false);
@@ -100,6 +114,7 @@ export function useAuthBootstrap({
     };
   }, [
     baseUrl,
+    privateData,
     getApi,
     queryClient,
     session,
@@ -112,6 +127,7 @@ export function useAuthBootstrap({
 
 export function useAuthForeground({
   account,
+  privateData,
   session,
   getApi,
   queryClient,
@@ -122,12 +138,13 @@ export function useAuthForeground({
   // Revalidate persisted grants on foreground; old roles and cached claims
   // are never enough to unlock a privileged navigation stack.
   useEffect(() => {
-    if (!account) return;
     let alive = true;
     let checkGeneration = 0;
     const revalidate = async () => {
+      if (!account) return;
       const currentCheck = ++checkGeneration;
       const revision = session.revision;
+      privateData.lock();
       setCapabilities(null);
       queryClient.clear();
       try {
@@ -137,11 +154,12 @@ export function useAuthForeground({
         if (!alive || currentCheck !== checkGeneration || session.revision !== revision) return;
         const grants =
           response.response.status === 200 ? parseAccountCapabilities(response.data) : null;
-        if (hasMobileAccess(grants)) {
+        if (grants && hasMobileAccess(grants)) {
           // Backgrounding clears private queries. Restore the verified account
           // marker before unlocking screens so workout GET reconciliation can run.
           // This is an existing account snapshot, not a fresh profile response.
           queryClient.setQueryData(accountQueryKeys.me(account.id), account, { updatedAt: 0 });
+          void privateData.verified(account.id, grants);
           setCapabilities(grants);
           return;
         }
@@ -150,6 +168,7 @@ export function useAuthForeground({
           response.response.status === 403 ||
           (grants && !hasMobileAccess(grants))
         ) {
+          void privateData.end();
           await session.clear();
           if (!alive || currentCheck !== checkGeneration) return;
           setRecoveryAvailable(false);
@@ -171,6 +190,8 @@ export function useAuthForeground({
     const subscription = AppState.addEventListener('change', (state) => {
       if (state === 'background' || state === 'inactive') {
         ++checkGeneration;
+        privateData.lock();
+        if (!account) return;
         setCapabilities(null);
         queryClient.clear();
       } else if (state === 'active') {
@@ -182,5 +203,14 @@ export function useAuthForeground({
       ++checkGeneration;
       subscription.remove();
     };
-  }, [account, getApi, queryClient, session, setAccount, setCapabilities, setRecoveryAvailable]);
+  }, [
+    account,
+    getApi,
+    privateData,
+    queryClient,
+    session,
+    setAccount,
+    setCapabilities,
+    setRecoveryAvailable,
+  ]);
 }

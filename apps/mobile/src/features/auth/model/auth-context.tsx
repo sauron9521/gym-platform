@@ -2,6 +2,7 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
   type PropsWithChildren,
@@ -25,6 +26,7 @@ import {
 import { MobileTokenSession } from './mobile-token-session';
 import { refreshTokenStore } from './refresh-token-store';
 import { useAuthBootstrap, useAuthForeground } from './use-auth-lifecycle';
+import { noPrivateDataLifecycle, type PrivateDataLifecycle } from './private-data-lifecycle';
 
 export type Account = paths['/users/me']['get']['responses'][200]['content']['application/json'];
 type Result = { success: true } | { success: false; code: MobileAuthErrorCode };
@@ -44,11 +46,16 @@ const AuthContext = createContext<AuthValue | null>(null);
  * Access tokens are memory-only. A single-use refresh token is persisted only
  * on native platforms, rotated serially, and verified with GET /users/me.
  */
-export function AuthProvider({ children }: PropsWithChildren) {
+export function AuthProvider({
+  children,
+  privateData = noPrivateDataLifecycle,
+}: PropsWithChildren<{ privateData?: PrivateDataLifecycle }>) {
   const [account, setAccount] = useState<Account | null>(null);
   const [capabilities, setCapabilities] = useState<AccountCapabilities | null>(null);
   const [restoring, setRestoring] = useState(true);
   const [recoveryAvailable, setRecoveryAvailable] = useState(false);
+  // The composition root supplies one stable private-data lifecycle instance.
+  useEffect(() => () => privateData.lock(), [privateData]);
   const queryClient = useQueryClient();
   const baseUrl = process.env.EXPO_PUBLIC_API_URL?.trim();
 
@@ -83,6 +90,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
         },
         () => {
           // Expired or replayed refresh tokens invalidate all private UI state.
+          void privateData.end();
           queryClient.clear();
           setAccount(null);
           setCapabilities(null);
@@ -118,6 +126,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
     setCapabilities,
     setRecoveryAvailable,
     setRestoring,
+    privateData,
   });
 
   const retryVerification = useCallback(async (): Promise<Result> => {
@@ -141,9 +150,10 @@ export function AuthProvider({ children }: PropsWithChildren) {
         }
         const grants =
           grantResult.response.status === 200 ? parseAccountCapabilities(grantResult.data) : null;
-        if (hasMobileAccess(grants)) {
+        if (grants && hasMobileAccess(grants)) {
           queryClient.clear();
           queryClient.setQueryData(accountQueryKeys.me(result.data.id), result.data);
+          void privateData.verified(result.data.id, grants);
           setCapabilities(grants);
           setAccount(result.data);
           setRecoveryAvailable(false);
@@ -154,11 +164,13 @@ export function AuthProvider({ children }: PropsWithChildren) {
           grantResult.response.status === 403 ||
           (grants && !hasMobileAccess(grants))
         ) {
+          void privateData.end();
           await session.clear();
           setCapabilities(null);
           setRecoveryAvailable(false);
         }
       } else if (result.response.status === 401 || result.response.status === 403) {
+        void privateData.end();
         await session.clear();
         setCapabilities(null);
         setRecoveryAvailable(false);
@@ -168,7 +180,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
       // Retain the rotated refresh token; never retry the one-time refresh call.
       return { success: false, code: 'connectionFailed' };
     }
-  }, [getVerificationApi, queryClient, recoveryAvailable, session]);
+  }, [getVerificationApi, privateData, queryClient, recoveryAvailable, session]);
 
   const signIn = useCallback(
     async (email: string, password: string): Promise<Result> => {
@@ -182,6 +194,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
         return { success: false, code: 'apiUnavailable' };
       }
 
+      privateData.lock();
       setRecoveryAvailable(false);
       let issuedRefreshToken: string | null = null;
       let verified = false;
@@ -213,12 +226,13 @@ export function AuthProvider({ children }: PropsWithChildren) {
           return { success: false, code: 'permissionsFailed' };
         }
         const grants = parseAccountCapabilities(grantResult.data);
-        if (!hasMobileAccess(grants)) {
+        if (!grants || !hasMobileAccess(grants)) {
           return { success: false, code: 'mobileAccessDenied' };
         }
 
         queryClient.clear();
         queryClient.setQueryData(accountQueryKeys.me(me.data.id), me.data);
+        void privateData.verified(me.data.id, grants);
         setCapabilities(grants);
         setAccount(me.data);
         verified = true;
@@ -228,6 +242,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
         return { success: false, code: getMobileLoginTransportError(stage) };
       } finally {
         if (!verified) {
+          void privateData.end();
           await session.clear().catch(() => undefined);
           queryClient.clear();
           setAccount(null);
@@ -244,12 +259,13 @@ export function AuthProvider({ children }: PropsWithChildren) {
         }
       }
     },
-    [getApi, getGuestApi, queryClient, restoring, session],
+    [getApi, getGuestApi, privateData, queryClient, restoring, session],
   );
 
   const signOut = useCallback(async () => {
     const refreshToken = session.currentRefreshToken;
     const guestApi = getGuestApi();
+    const cleanup = privateData.end();
     queryClient.clear();
     setAccount(null);
     setCapabilities(null);
@@ -262,7 +278,8 @@ export function AuthProvider({ children }: PropsWithChildren) {
         // The local credential is discarded before remote revocation.
       }
     }
-  }, [getGuestApi, queryClient, session]);
+    await cleanup;
+  }, [getGuestApi, privateData, queryClient, session]);
 
   useAuthForeground({
     account,
@@ -272,6 +289,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
     setAccount,
     setCapabilities,
     setRecoveryAvailable,
+    privateData,
   });
 
   const value = useMemo(

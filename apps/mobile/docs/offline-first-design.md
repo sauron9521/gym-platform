@@ -144,3 +144,22 @@ contents, incorrect-key rejection, kill/reopen, schema rollback, interrupted
 purge, account isolation, OS backup/restore and reinstall behavior. Backup
 exclusion and native key-loss/locked-device handling remain device/release
 gates. No UI wiring or offline POST/PATCH is enabled by this PR.
+
+### M10.3a — auth lifecycle coordination
+
+The composition root injects a stable private-data lifecycle port into AuthProvider.
+Only fresh athlete grants and active AppState permit repository unlock. Background,
+foreground revalidation and provider unmount lock synchronously and invalidate
+in-flight results; transient verification failures retain encrypted records but
+never expose them. Explicit logout, rejected refresh, definitive permission loss,
+trainer-only grants and cold start without a stored credential request cleanup.
+Credential rejection invalidates UI before SecureStore deletion finishes.
+The coordinator serializes cleanup and new owner preparation, waits for in-flight
+repository writes, and refuses new access when deletion fails. Storage failures
+do not block ordinary online authentication. Native storage is loaded lazily so
+missing native modules and Web fail closed rather than preventing sign-in.
+
+M10.3b will expose explicit save/load/discard/review UI, a reactive lifecycle
+state and a safe cleanup retry flow. The current coordinator is not a user-facing
+feature; no draft is created or exposed automatically. Only valid new-workout
+forms are supported by the existing versioned envelope. Device QA remains open.
