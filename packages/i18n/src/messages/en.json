@@ -247,6 +247,7 @@
       "resetUnknown": "Could not change the password. Try again later."
     },
     "profile": {
+      "appSettings": "App settings",
       "title": "My profile",
       "firstName": "First name",
       "lastName": "Last name",
@@ -278,6 +279,26 @@
       "timezoneRequired": "Enter a time zone.",
       "timezoneTooLong": "The time zone is too long.",
       "timezoneInvalid": "Enter a valid time zone, such as Europe/Kyiv."
+    },
+    "appSettings": {
+      "title": "App settings",
+      "back": "My profile",
+      "description": "Manage preferences shared across your account.",
+      "workouts": "Workouts",
+      "accountHint": "These settings sync with the mobile app. The web workout timer is not available yet.",
+      "autoRestTimer": "Automatic rest timer",
+      "autoHint": "Start the rest timer after completing a set in the mobile app.",
+      "restDuration": "Default rest duration",
+      "seconds": "{seconds} s",
+      "offline": "Offline. Reconnect to change account settings.",
+      "loading": "Loading settings…",
+      "saving": "Saving settings…",
+      "loadError": "Could not load workout settings.",
+      "saveError": "Could not confirm the change. The server values are refreshed when possible.",
+      "scopeChanged": "The signed-in account changed. Open settings again from your profile.",
+      "retry": "Refresh settings",
+      "signedOut": "Your session has ended.",
+      "saved": "Settings saved."
     },
     "profileAvatar": {
       "section": "Profile photo",
