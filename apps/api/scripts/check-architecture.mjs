@@ -2,6 +2,8 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import ts from 'typescript';
+
 import { parseModuleImports } from './import-parser.mjs';
 
 function filesUnder(directory) {
@@ -19,8 +21,235 @@ function isOutside(directory, target) {
   return path === '..' || path.startsWith('..' + sep) || isAbsolute(path);
 }
 
+const apiAudiences = new Set(['public', 'shared', 'athlete', 'trainer', 'admin']);
+
+function registeredControllers(source, file) {
+  const ast = ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
+  const names = [];
+  const bindings = new Map();
+  let literal = true;
+
+  for (const declaration of ast.statements) {
+    if (ts.isImportDeclaration(declaration)) {
+      const clause = declaration.importClause;
+      const named = clause?.namedBindings;
+      if (
+        !clause?.isTypeOnly &&
+        named &&
+        ts.isNamedImports(named) &&
+        ts.isStringLiteralLike(declaration.moduleSpecifier)
+      ) {
+        for (const binding of named.elements) {
+          if (!binding.isTypeOnly) {
+            bindings.set(binding.name.text, {
+              name: binding.propertyName?.text ?? binding.name.text,
+              path: declaration.moduleSpecifier.text,
+            });
+          }
+        }
+      }
+    }
+    if (!ts.isClassDeclaration(declaration)) continue;
+    for (const decorator of ts.getDecorators(declaration) ?? []) {
+      const call = decorator.expression;
+      if (
+        !ts.isCallExpression(call) ||
+        !ts.isIdentifier(call.expression) ||
+        call.expression.text !== 'Module'
+      ) {
+        continue;
+      }
+      const options = call.arguments[0];
+      if (!options || !ts.isObjectLiteralExpression(options)) {
+        literal = false;
+        continue;
+      }
+      for (const property of options.properties) {
+        if (ts.isSpreadAssignment(property)) literal = false;
+        if (!property.name || property.name.getText(ast).replace(/['"]/g, '') !== 'controllers') {
+          continue;
+        }
+        if (
+          !ts.isPropertyAssignment(property) ||
+          !ts.isArrayLiteralExpression(property.initializer)
+        ) {
+          literal = false;
+          continue;
+        }
+        for (const item of property.initializer.elements) {
+          if (ts.isIdentifier(item)) names.push(item.text);
+          else literal = false;
+        }
+      }
+    }
+  }
+  return { names, bindings, literal };
+}
+
+function controllerImportTarget(sourceRoot, file, specifier) {
+  let target;
+  if (specifier.startsWith('#src/')) target = resolve(sourceRoot, specifier.slice(5));
+  else if (specifier.startsWith('./') || specifier.startsWith('../')) {
+    target = resolve(dirname(file), specifier);
+  }
+  if (!target) return null;
+  return target.endsWith('.js')
+    ? target.replace(/\.js$/, '.ts')
+    : target.endsWith('.ts')
+      ? target
+      : target + '.ts';
+}
+
+// A feature opts in only with a nonempty, reviewed audience declaration and
+// real controllers. Keep the legacy checks for every controller still in place.
+function checkApiControllerOwnership(root, modules, errors) {
+  const sourceRoot = join(root, 'src');
+  const apiRoot = join(sourceRoot, 'api');
+  const display = (file) => relative(root, file).split(sep).join('/');
+  const declared = new Map();
+  const moved = new Map();
+  const owners = new Map();
+
+  for (const feature of modules) {
+    const manifest = join(sourceRoot, 'modules', feature, 'api-interfaces.json');
+    if (!existsSync(manifest)) continue;
+    try {
+      const value = JSON.parse(readFileSync(manifest, 'utf8'));
+      const audiences = value?.audiences;
+      if (
+        !Array.isArray(audiences) ||
+        !audiences.length ||
+        audiences.some((audience) => !apiAudiences.has(audience)) ||
+        new Set(audiences).size !== audiences.length
+      ) {
+        throw new Error('expected nonempty unique audiences');
+      }
+      declared.set(feature, audiences);
+    } catch {
+      errors.push(display(manifest) + ': invalid API interface ownership declaration');
+    }
+  }
+
+  const apiFiles = filesUnder(apiRoot);
+  for (const file of apiFiles.filter((path) => path.endsWith('.controller.ts'))) {
+    const [audience, feature, folder, filename, ...extra] = relative(apiRoot, file).split(sep);
+    if (
+      !apiAudiences.has(audience) ||
+      !modules.includes(feature) ||
+      folder !== 'controllers' ||
+      !filename ||
+      extra.length
+    ) {
+      errors.push(display(file) + ': expected api/<audience>/<feature>/controllers/*.controller.ts');
+      continue;
+    }
+    if (!declared.get(feature)?.includes(audience)) {
+      errors.push(display(file) + ': missing feature API interface ownership declaration');
+    }
+    const leaf = join(apiRoot, audience, feature);
+    const owner = join(leaf, audience + '-' + feature + '-api.module.ts');
+    const className = readFileSync(file, 'utf8').match(/\bexport\s+class\s+(\w+Controller)\b/)?.[1];
+    if (!className) {
+      errors.push(display(file) + ': missing exported controller class');
+      continue;
+    }
+    const controllers = owners.get(owner) ?? [];
+    controllers.push({ file, className });
+    owners.set(owner, controllers);
+    const audiences = moved.get(feature) ?? new Set();
+    audiences.add(audience);
+    moved.set(feature, audiences);
+
+    const spec = join(leaf, 'test', 'controllers', filename.replace(/\.ts$/, '.spec.ts'));
+    if (!existsSync(spec)) errors.push(display(spec) + ': missing controller unit test');
+    const registry = join(leaf, 'test', 'controllers');
+    if (!filesUnder(registry).some((path) => dirname(path) === registry && path.endsWith('controller-registry.spec.ts'))) {
+      errors.push(display(leaf) + ': expected test/controllers/*controller-registry.spec.ts');
+    }
+  }
+
+  for (const [feature, audiences] of declared) {
+    for (const audience of audiences) {
+      if (!moved.get(feature)?.has(audience)) {
+        errors.push(feature + ': declared API audience ' + audience + ' has no controller');
+      }
+    }
+  }
+
+  // Check literal registrations across source modules, including AppModule,
+  // so moving a controller cannot leave a second explicit registration behind.
+  const registrations = new Map();
+  const allModules = filesUnder(sourceRoot).filter(
+    (file) =>
+      file.endsWith('.module.ts') &&
+      !relative(sourceRoot, file).split(sep).some((part) => ['test', 'generated'].includes(part)),
+  );
+  for (const file of allModules) {
+    const metadata = registeredControllers(readFileSync(file, 'utf8'), file);
+    registrations.set(file, metadata);
+    if (isOutside(apiRoot, file)) continue;
+    const expected = owners.get(file) ?? [];
+    if (!metadata.literal) {
+      errors.push(display(file) + ': API controller registration must be a literal array');
+    }
+    for (const name of metadata.names) {
+      if (!expected.some((controller) => controller.className === name)) {
+        errors.push(display(file) + ": unrecognized registered API controller '" + name + "'");
+      }
+    }
+  }
+
+  for (const [owner, controllers] of owners) {
+    const metadata = registrations.get(owner);
+    if (!metadata) {
+      errors.push(display(owner) + ': missing owning API module');
+      continue;
+    }
+    for (const { file, className } of controllers) {
+      const expectedImport = './controllers/' + basename(file).replace(/\.ts$/, '.js');
+      const binding = metadata.bindings.get(className);
+      if (binding?.path !== expectedImport || binding.name !== className) {
+        errors.push(display(owner) + ": import controller directly from '" + expectedImport + "'");
+      }
+      if (metadata.names.filter((name) => name === className).length !== 1) {
+        errors.push(display(owner) + ': ' + className + ' must be registered exactly once');
+      }
+      for (const [other, registration] of registrations) {
+        if (other === owner) continue;
+        for (const name of registration.names) {
+          const imported = registration.bindings.get(name);
+          if (
+            name === className ||
+            (imported?.name === className &&
+              controllerImportTarget(sourceRoot, other, imported.path) === file)
+          ) {
+            errors.push(display(other) + ': duplicate API controller registration ' + className);
+          }
+        }
+      }
+    }
+  }
+
+  for (const file of apiFiles.filter((path) => path.endsWith('.controller.spec.ts'))) {
+    const [audience, feature, test, folder, filename, ...extra] = relative(apiRoot, file).split(sep);
+    if (
+      test !== 'test' ||
+      folder !== 'controllers' ||
+      !filename ||
+      extra.length ||
+      !existsSync(join(apiRoot, audience, feature, 'controllers', filename.replace(/\.spec\.ts$/, '.ts')))
+    ) {
+      errors.push(display(file) + ': no matching API controller in controllers/');
+    }
+  }
+
+  return new Set([...declared].filter(([feature, audiences]) =>
+    audiences.every((audience) => moved.get(feature)?.has(audience)),
+  ).map(([feature]) => feature));
+}
+
 /**
- * Non-mutating, dependency-free guard for structural conventions in src/modules.
+ * Non-mutating guard for structural conventions in src/modules and src/api.
  * Returns actionable diagnostics, allowing isolated filesystem fixtures in tests.
  */
 export function checkArchitecture(repositoryRoot) {
@@ -41,6 +270,8 @@ export function checkArchitecture(repositoryRoot) {
   if (modules.length === 0) {
     return ['src/modules: no feature modules found'];
   }
+
+  const migrated = checkApiControllerOwnership(root, modules, errors);
 
   for (const name of modules) {
     const directory = join(modulesRoot, name);
@@ -87,7 +318,7 @@ export function checkArchitecture(repositoryRoot) {
       }
     }
 
-    if (controllers.length === 0) {
+    if (controllers.length === 0 && !migrated.has(name)) {
       errors.push(`${name}: expected controllers/*.controller.ts`);
     }
 
@@ -155,7 +386,10 @@ export function checkArchitecture(repositoryRoot) {
       }
     }
 
-    if (!testFiles.some((path) => basename(path).endsWith('controller-registry.spec.ts'))) {
+    if (
+      (controllers.length > 0 || !migrated.has(name)) &&
+      !testFiles.some((path) => basename(path).endsWith('controller-registry.spec.ts'))
+    ) {
       errors.push(`${name}: expected test/controllers/*controller-registry.spec.ts`);
     }
 

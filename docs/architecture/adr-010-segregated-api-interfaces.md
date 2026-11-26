@@ -42,6 +42,23 @@ apps/api/src/
 
 Only create an audience module when it owns actual routes. Health and metrics remain operational interfaces with their current access policy; they are not automatically public product routes. Existing routes need not match folder names. Existing role/capability semantics, including trainers acting as athletes, remain unchanged.
 
+### Incremental controller ownership convention
+
+For a feature moving HTTP adapters, declare the participating audiences in
+`modules/<feature>/api-interfaces.json`, for example
+`{"audiences":["admin","shared"]}`. Add the declaration only with real migrated controllers.
+Use `api/<audience>/<feature>/controllers/`, a local
+`<audience>-<feature>-api.module.ts`, and matching
+`test/controllers/` unit and registry specs. During partial migration, the
+legacy feature retains all its existing registration and test obligations.
+A controller-free feature must explicitly register `controllers: []` and have
+a nonempty, valid audience declaration backed by actual audience controllers.
+
+The existing architecture checker validates these conventions and explicit
+controller registrations. Static checks do not prove runtime route parity,
+Nest dependency injection or reachability from AppModule; the pilot must prove
+those separately.
+
 ## Ownership and dependencies
 
 - HTTP adapters own route declarations, transport validation, request actor extraction, guards and response/error mapping. Audience composition modules import only the required business capabilities and transport helpers.
