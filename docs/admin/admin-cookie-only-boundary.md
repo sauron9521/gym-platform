@@ -390,3 +390,14 @@ read. #568/#569/#572 and #290 remain open. Revalidate the current verified
 address and account eligibility before future delivery, follow the S05
 security-notice policy and use the existing auth mail transport. Review
 retention/access and missing-address fallback before release.
+
+### TOTP challenge replay and rollback regression (#290)
+
+The real PostgreSQL integration suite verifies that concurrent distinct
+pending Admin sessions cannot both consume the same TOTP step. Exactly
+one session rotates, one replay claim and one verified audit persist, and
+the losing session stays pending. A missing keyring fails closed before
+verification; an injected rotation failure rolls back the replay claim,
+session changes and audit so the original pending session can retry.
+This is internal service evidence, not a public enrollment/challenge
+endpoint, multi-replica deployment test or authorization to activate MFA.
