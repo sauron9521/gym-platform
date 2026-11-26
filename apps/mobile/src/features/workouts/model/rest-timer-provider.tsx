@@ -86,7 +86,14 @@ function RestTimerRuntime({
     if (deadline === null) return;
     let foreground = AppState.currentState !== 'background' && AppState.currentState !== 'inactive';
     const refresh = () => {
-      if (foreground && store.getState().refresh(Date.now())) notify({ sound, vibration });
+      if (!foreground || !store.getState().refresh(Date.now())) return;
+      // Audio initialization is asynchronous. A reset, restart, logout or
+      // workout switch must invalidate the already-consumed expiration.
+      const completed = store.getState().timer;
+      notify(
+        { sound, vibration },
+        () => completed !== null && store.getState().timer === completed,
+      );
     };
     const subscription = AppState.addEventListener('change', (state) => {
       foreground = state === 'active';
