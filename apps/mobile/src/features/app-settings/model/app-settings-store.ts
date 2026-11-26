@@ -1,13 +1,12 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createStore } from 'zustand/vanilla';
-import { defaultWorkoutPreferences } from '@gym/domain';
-import { legacyWorkoutPreferenceKey } from './account-workout-preferences';
 
+import { defaultRestDuration, type RestDuration } from '@/shared/config/rest-duration';
 import {
-  defaultRestDuration,
-  parseRestDuration,
-  type RestDuration,
-} from '@/shared/config/rest-duration';
+  activateAccountWorkoutPreferences,
+  type AccountPreferenceConnection,
+  type AccountPreferenceStatus,
+} from './account-workout-preferences-runtime';
 
 type SettingsState = {
   accountId: string | null;
@@ -17,6 +16,7 @@ type SettingsState = {
   restVibration: boolean;
   keepWorkoutScreenAwake: boolean;
   status: 'loading' | 'ready' | 'saving' | 'readError' | 'saveError';
+  accountStatus: AccountPreferenceStatus;
 };
 
 export type AppSettingsState = {
@@ -27,19 +27,13 @@ export type AppSettingsState = {
   setRestVibration: (enabled: boolean) => Promise<void>;
   setKeepWorkoutScreenAwake: (enabled: boolean) => Promise<void>;
   reload: () => void;
+  retryAccount: () => void;
   shouldAutoStartRestTimer: () => boolean;
 };
 
-type PreferenceKey =
-  | 'auto-rest-timer'
-  | 'rest-duration'
-  | 'rest-sound'
-  | 'rest-vibration'
-  | 'keep-workout-screen-awake';
-const preferenceKey = (accountId: string, preference: PreferenceKey) =>
-  preference === 'auto-rest-timer' || preference === 'rest-duration'
-    ? legacyWorkoutPreferenceKey(accountId, preference)
-    : `gym-platform:app-settings:v1:${accountId}:${preference}`;
+type DeviceKey = 'rest-sound' | 'rest-vibration' | 'keep-workout-screen-awake';
+const preferenceKey = (accountId: string, preference: DeviceKey) =>
+  `gym-platform:app-settings:v1:${accountId}:${preference}`;
 
 const initial = (accountId: string | null): SettingsState => ({
   accountId,
@@ -49,54 +43,54 @@ const initial = (accountId: string | null): SettingsState => ({
   restVibration: false,
   keepWorkoutScreenAwake: false,
   status: 'loading',
+  accountStatus: 'loading',
 });
 
 export function autoRestTimerEnabled({ settings }: AppSettingsState) {
-  return Boolean(
-    settings.accountId &&
-    (settings.status === 'ready' ||
-      settings.status === 'saving' ||
-      settings.status === 'saveError') &&
-    settings.enabled,
-  );
+  return Boolean(settings.accountId && settings.enabled);
 }
 
-/** Each verified account gets a separate in-memory store. Only the existing
- * AsyncStorage keys are durable; pending writes survive account switches. */
+/** Only device preferences are owned here. Account values are a read-only
+ * effective projection of the query/fallback runtime for timer selectors. */
 export function createAppSettingsStore(
   accountId: string | null,
   pendingWrites: Map<string, Promise<void>>,
+  connection: AccountPreferenceConnection,
+  pendingSnapshots: Map<string, Promise<void>>,
 ) {
   let active = false;
   let generation = 0;
+  let runtime: ReturnType<typeof activateAccountWorkoutPreferences> | undefined;
   const store = createStore<AppSettingsState>()((set, get) => {
     const reload = () => {
       if (!active || !accountId) return;
       const revision = ++generation;
-      set({ settings: initial(accountId) });
-      const readPreferences = () =>
-        Promise.all([
-          AsyncStorage.getItem(preferenceKey(accountId, 'auto-rest-timer')),
-          AsyncStorage.getItem(preferenceKey(accountId, 'rest-duration')),
-          AsyncStorage.getItem(preferenceKey(accountId, 'rest-sound')),
-          AsyncStorage.getItem(preferenceKey(accountId, 'rest-vibration')),
-          AsyncStorage.getItem(preferenceKey(accountId, 'keep-workout-screen-awake')),
-        ]);
+      set({
+        settings: {
+          ...get().settings,
+          restSound: false,
+          restVibration: false,
+          keepWorkoutScreenAwake: false,
+          status: 'loading',
+        },
+      });
       const pendingWrite = pendingWrites.get(accountId);
       void Promise.resolve(pendingWrite)
         .catch(() => undefined)
         .then(() => {
           if (!active || generation !== revision) return undefined;
-          return readPreferences();
+          return Promise.all([
+            AsyncStorage.getItem(preferenceKey(accountId, 'rest-sound')),
+            AsyncStorage.getItem(preferenceKey(accountId, 'rest-vibration')),
+            AsyncStorage.getItem(preferenceKey(accountId, 'keep-workout-screen-awake')),
+          ]);
         })
         .then((values) => {
           if (!values || !active || generation !== revision) return;
-          const [saved, duration, sound, vibration, keepAwake] = values;
+          const [sound, vibration, keepAwake] = values;
           set({
             settings: {
-              accountId,
-              enabled: saved === null ? defaultWorkoutPreferences.autoRestTimer : saved === 'true',
-              restDuration: parseRestDuration(duration),
+              ...get().settings,
               restSound: sound === null || sound === 'true',
               restVibration: vibration === null || vibration === 'true',
               keepWorkoutScreenAwake: keepAwake === null || keepAwake === 'true',
@@ -111,13 +105,10 @@ export function createAppSettingsStore(
     };
 
     const savePreference = async (
-      preference: PreferenceKey,
-      value: string,
+      preference: DeviceKey,
+      value: boolean,
       changes: Partial<
-        Pick<
-          SettingsState,
-          'enabled' | 'restDuration' | 'restSound' | 'restVibration' | 'keepWorkoutScreenAwake'
-        >
+        Pick<SettingsState, 'restSound' | 'restVibration' | 'keepWorkoutScreenAwake'>
       >,
     ) => {
       if (!active || !accountId) return;
@@ -125,7 +116,7 @@ export function createAppSettingsStore(
       if (settings.status !== 'ready' && settings.status !== 'saveError') return;
       const revision = generation;
       const write = Promise.resolve().then(() =>
-        AsyncStorage.setItem(preferenceKey(accountId, preference), value),
+        AsyncStorage.setItem(preferenceKey(accountId, preference), String(value)),
       );
       pendingWrites.set(accountId, write);
       set({ settings: { ...settings, status: 'saving' } });
@@ -143,19 +134,17 @@ export function createAppSettingsStore(
 
     return {
       settings: initial(accountId),
-      setAutoRestTimer: (enabled) =>
-        savePreference('auto-rest-timer', String(enabled), { enabled }),
-      setRestDuration: (restDuration) =>
-        savePreference('rest-duration', String(restDuration), { restDuration }),
-      setRestSound: (restSound) => savePreference('rest-sound', String(restSound), { restSound }),
+      setAutoRestTimer: async (autoRestTimer) => runtime?.update({ autoRestTimer }),
+      setRestDuration: async (restDurationSeconds) => runtime?.update({ restDurationSeconds }),
+      setRestSound: (restSound) => savePreference('rest-sound', restSound, { restSound }),
       setRestVibration: (restVibration) =>
-        savePreference('rest-vibration', String(restVibration), { restVibration }),
+        savePreference('rest-vibration', restVibration, { restVibration }),
       setKeepWorkoutScreenAwake: (keepWorkoutScreenAwake) =>
-        savePreference('keep-workout-screen-awake', String(keepWorkoutScreenAwake), {
+        savePreference('keep-workout-screen-awake', keepWorkoutScreenAwake, {
           keepWorkoutScreenAwake,
         }),
       reload,
-      // Read at confirmation time, not when the workout mutation was submitted.
+      retryAccount: () => runtime?.retry(),
       shouldAutoStartRestTimer: () => active && autoRestTimerEnabled(get()),
     };
   });
@@ -165,9 +154,30 @@ export function createAppSettingsStore(
     activate() {
       active = true;
       store.getState().reload();
+      if (accountId) {
+        runtime = activateAccountWorkoutPreferences(
+          accountId,
+          connection,
+          pendingSnapshots,
+          (values, accountStatus) => {
+            if (!active) return;
+            store.setState(({ settings }) => ({
+              settings: {
+                ...settings,
+                ...(values
+                  ? { enabled: values.autoRestTimer, restDuration: values.restDurationSeconds }
+                  : {}),
+                accountStatus,
+              },
+            }));
+          },
+        );
+      }
       return () => {
         active = false;
         generation += 1;
+        runtime?.close();
+        runtime = undefined;
         store.setState({ settings: initial(accountId) });
       };
     },

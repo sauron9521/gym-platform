@@ -20,8 +20,10 @@ export function AppSettingsScreen() {
     setRestVibration,
     setKeepWorkoutScreenAwake,
     reload,
+    retryAccount,
   } = useAppSettings((state) => state);
   const disabled = settings.status !== 'ready' && settings.status !== 'saveError';
+  const accountDisabled = settings.accountStatus !== 'ready';
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
@@ -37,7 +39,7 @@ export function AppSettingsScreen() {
           <Switch
             testID="settings-auto-rest-timer"
             accessibilityLabel={t('autoRestTimer')}
-            disabled={disabled}
+            disabled={accountDisabled}
             value={settings.enabled}
             onValueChange={(value) => void setAutoRestTimer(value)}
             trackColor={{ false: palette.border, true: palette.primary }}
@@ -58,8 +60,8 @@ export function AppSettingsScreen() {
                     { id: 'mobile.settings.seconds' },
                     { seconds },
                   )}
-                  accessibilityState={{ selected, disabled }}
-                  disabled={disabled}
+                  accessibilityState={{ selected, disabled: accountDisabled }}
+                  disabled={accountDisabled}
                   onPress={() => {
                     if (!selected) void setRestDuration(seconds);
                   }}
@@ -73,6 +75,25 @@ export function AppSettingsScreen() {
             })}
           </View>
         </View>
+        <Text style={styles.hint}>{t('workoutAccount')}</Text>
+        {settings.accountStatus === 'loading' || settings.accountStatus === 'saving' ? (
+          <Text accessibilityLiveRegion="polite" style={styles.hint}>
+            {t('pending')}
+          </Text>
+        ) : null}
+        {settings.accountStatus === 'offline' ? (
+          <Text style={styles.hint}>{t('workoutOffline')}</Text>
+        ) : null}
+        {settings.accountStatus === 'error' ? (
+          <>
+            <Text accessibilityRole="alert" style={styles.label}>
+              {t('workoutSyncError')}
+            </Text>
+            <Pressable accessibilityRole="button" onPress={retryAccount}>
+              <Text style={styles.label}>{t('retry')}</Text>
+            </Pressable>
+          </>
+        ) : null}
         {[
           { id: 'rest-sound', label: 'restSound', enabled: settings.restSound, save: setRestSound },
           {

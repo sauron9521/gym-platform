@@ -221,8 +221,20 @@ const navigationMessages = {
   },
   'mobile.settings.retry': { uk: 'Повторити', en: 'Retry' },
   'mobile.settings.deviceOnly': {
-    uk: 'Налаштування зберігаються для вашого акаунта на цьому пристрої.',
-    en: 'Settings are saved for your account on this device.',
+    uk: 'Звук, вібрація й утримання екрана зберігаються лише на цьому пристрої.',
+    en: 'Sound, vibration and screen wake settings are saved only on this device.',
+  },
+  'mobile.settings.workoutAccount': {
+    uk: 'Автотаймер і тривалість відпочинку синхронізуються з акаунтом.',
+    en: 'Automatic rest timer and default rest duration sync with your account.',
+  },
+  'mobile.settings.workoutOffline': {
+    uk: 'Немає мережі. Використовуються локальні налаштування; для зміни потрібне підключення.',
+    en: 'Offline. Local settings are in use; reconnect to make changes.',
+  },
+  'mobile.settings.workoutSyncError': {
+    uk: 'Не вдалося синхронізувати налаштування акаунта. Спробуйте ще раз.',
+    en: 'Could not sync account workout preferences. Please try again.',
   },
   'mobile.navigation.workoutCalendar': { uk: 'Календар тренувань', en: 'Workout calendar' },
   'mobile.calendar.description': {

@@ -1,19 +1,19 @@
 # Account workout preferences — incremental rollout
 
-Status: proposed delivery contract; shared defaults merged in #898; server persistence and read/update merged in #899; conditional initialization merged in #900; mobile synchronization boundary implemented in this slice, runtime sync not enabled.
+Status: proposed delivery contract; shared defaults merged in #898; server persistence and read/update merged in #899; conditional initialization merged in #900; mobile synchronization boundary merged in #901; mobile runtime integration implemented in this slice; native acceptance and release remain pending.
 Baseline: mobile Zustand settings (#895) and timer scope (#892, #893, #896).
 
 ## Ownership
 
-| Preference                                            | Authority after rollout                            | Current state               |
-| ----------------------------------------------------- | -------------------------------------------------- | --------------------------- |
-| Auto-start rest timer                                 | Account API                                        | Account/device AsyncStorage |
-| Default rest duration (60/90/120 seconds, default 90) | Account API                                        | Account/device AsyncStorage |
-| Account language                                      | Existing account API                               | Unchanged                   |
-| Theme                                                 | Existing device theme provider                     | Unchanged                   |
-| Timer sound, vibration, keep screen awake             | Device-local account-scoped Zustand + AsyncStorage | Unchanged                   |
-| In-progress countdown, manual workout preset          | Account/workout-scoped timer store                 | Unchanged                   |
-| Units                                                 | Future account preference                          | Not implemented             |
+| Preference                                            | Authority after rollout                            | Current state                  |
+| ----------------------------------------------------- | -------------------------------------------------- | ------------------------------ |
+| Auto-start rest timer                                 | Account API                                        | Account API + offline snapshot |
+| Default rest duration (60/90/120 seconds, default 90) | Account API                                        | Account API + offline snapshot |
+| Account language                                      | Existing account API                               | Unchanged                      |
+| Theme                                                 | Existing device theme provider                     | Unchanged                      |
+| Timer sound, vibration, keep screen awake             | Device-local account-scoped Zustand + AsyncStorage | Unchanged                      |
+| In-progress countdown, manual workout preset          | Account/workout-scoped timer store                 | Unchanged                      |
+| Units                                                 | Future account preference                          | Not implemented                |
 
 Do not add a root store or move server entities into Zustand. The account preference
 query and mutation lifecycle belong to TanStack Query. Existing durable local
@@ -56,8 +56,8 @@ fields remain untouched. A no-op import does not update the account timestamp.
   callbacks on logout/account switch and reconcile ambiguous outcomes by GET.
   Do not restart or reset a running timer on preference hydration.
 - Keep legacy clients and the existing locale endpoint compatible. Do not
-  enable synchronization until the server contract and device migration tests
-  pass. No background notifications or server countdown are in scope.
+  release the mobile synchronization until the server contract and device
+  migration acceptance gates pass. No background notifications or server countdown are in scope.
 
 ## Delivery slices
 
@@ -70,12 +70,17 @@ fields remain untouched. A no-op import does not update the account timestamp.
 4. Mobile synchronization in two reviewable slices:
    - 4a. Typed GET query options and explicit online mutation transport,
      strict response validation, explicit legacy codec and separate
-     account-scoped confirmed snapshot (this slice).
+     account-scoped confirmed snapshot (#901).
    - 4b. Wire the verified-account runtime to the existing settings UI and
      timer with serialized writes, cache cancellation/reconciliation,
      durable snapshot ordering and reconnect/account-switch regressions.
-     The runtime must use the authenticated scoped API and not enable
-     synchronization until these integration gates pass.
+     (this slice). The runtime uses the authenticated scoped API, and stores
+     only effective values in Zustand. It pins the verified session marker
+     during the active scope and fences callbacks when that marker is removed.
+     Device preferences remain writable offline. Account writes are disabled
+     until an online canonical read; ambiguous writes reconcile by GET and
+     are not replayed. Confirmed snapshots use a separate v2 key and serialize
+     writes per account. Native acceptance remains a release gate.
 5. Web settings controls and parity; native acceptance and incremental rollout.
 
 Units and reset behavior need separate decisions and implementation. In
