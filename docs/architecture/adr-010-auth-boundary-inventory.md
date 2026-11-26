@@ -74,6 +74,10 @@ Use the method-level [StableHttpOperation decorator](../../apps/api/src/common/h
 
 Keep the legacy literals when moving or renaming a handler. The Auth controller registry pins every key identity; the real OpenAPI E2E pins all 17 route/ID/tag/status tuples. The Redis HTTP regression exercises an existing stock Nest counter across a renamed class and handler, including independent tracker and route buckets. These tests and canonical regeneration remain mandatory for later slices. No new routes or auth semantics are introduced.
 
+### ABI05b2 Admin session boundary
+
+The [AdminSessionFacade](../../apps/api/src/modules/auth/services/admin-session.facade.ts) is the first injected Auth public contract, exported through [public-api](../../apps/api/src/modules/auth/public-api.ts) and AuthModule. SessionsController delegates scoped revoke-all and sign-out to it; the facade awaits the existing store transaction before clearing the Admin cookie, preserves false sign-out after revocation, and propagates errors. The caller must still supply the authenticated and authorized current principal for revoke-all; this facade does not authenticate or authorize an arbitrary user ID by itself. Pending-MFA sign-out retains its existing public transport exception and origin guard. PrismaSessionStore, PrismaTokenStore, PrismaMfaStore, AdminCookieAuthService, the scoped reader and cleanup remain private. No route, store query, transaction, MFA or cookie policy changes.
+
 ## Acceptance matrix before expansion
 
 | Concern                       | Required existing or additional evidence                                                                                                                                                                                            |

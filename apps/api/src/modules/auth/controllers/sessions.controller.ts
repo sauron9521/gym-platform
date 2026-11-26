@@ -28,9 +28,8 @@ import { AdminSessionPurposeGuard } from '#src/common/auth/admin-session-purpose
 import { AdminOriginGuard } from '#src/common/auth/admin-origin.guard';
 import { AdminCookieRoute } from '#src/common/auth/admin-cookie-route';
 import { AdminSessionCookieProvider } from '#src/common/auth/admin-session-cookie.provider';
-import { AdminCookieAuthService } from '../services/admin-cookie-auth.service.js';
+import { AdminSessionFacade } from '../public-api.js';
 import type { Request, Response } from 'express';
-import { PrismaSessionStore } from '../stores/prisma-session.store.js';
 import { adminSessionResponseSchema } from '#src/infra/openapi/response-contracts';
 
 @UseInterceptors(AuthNoStoreInterceptor)
@@ -39,8 +38,7 @@ export class SessionsController {
   constructor(
     private readonly sessionService: SessionService,
     private readonly signInService: SignInService,
-    private readonly prismaSessionStore: PrismaSessionStore,
-    private readonly adminCookies: AdminCookieAuthService,
+    private readonly adminSessions: AdminSessionFacade,
   ) {}
 
   /** Only a live, explicitly elevated cookie can prove Admin Web access. */
@@ -73,10 +71,7 @@ export class SessionsController {
     @Req() request: Request,
     @Res({ passthrough: true }) response: Response,
   ): Promise<void> {
-    await this.prismaSessionStore.revokeAdminSessionsForUser(userId);
-    // Already revoked: signOut() still clears this browser's cookie, even
-    // when it returns false for an absent server session.
-    await this.adminCookies.signOut(request, response);
+    await this.adminSessions.revokeAll(userId, request, response);
   }
 
   /** Public to let a pending MFA admin session be cleared safely. */
@@ -90,7 +85,7 @@ export class SessionsController {
     @Req() request: Request,
     @Res({ passthrough: true }) response: Response,
   ): Promise<void> {
-    if (!(await this.adminCookies.signOut(request, response))) {
+    if (!(await this.adminSessions.signOut(request, response))) {
       throw new UnauthorizedException();
     }
   }
