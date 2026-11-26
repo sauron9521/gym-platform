@@ -36,7 +36,7 @@ A notification is a **read/navigation artifact**. It is not the source of truth 
 
 `In-App` persistence is the canonical user-visible delivery for ordinary app events. `NotificationDelivery` tracks external channel attempts independently; a failed SMTP/Expo send cannot roll back or duplicate the original business transaction. External delivery remains at-least-once/unknown-outcome in some failure cases; dedupe logical Inbox rows and avoid blind repeated sends when provider state is ambiguous.
 
-### Planned data model (future additive Prisma migration, not present today)
+### Data model and rollout status
 
 | Entity                   | Ownership and principal fields                                                                                                                                           | Key invariant                                                                             |
 | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------- |
@@ -46,6 +46,26 @@ A notification is a **read/navigation artifact**. It is not the source of truth 
 | `PushDevice`             | `id`, `userId`, installation identity, encrypted/secured Expo token, platform, revoked/lastSeen                                                                          | tokens never logged or returned broadly; revoke on logout/account switch                  |
 | `NotificationDelivery`   | notification/event identity, channel, optional device, state/attempt/retry timestamps and redacted error                                                                 | idempotency key per notification + channel + destination                                  |
 | `OutboxEvent`            | UUID ID, unique business event key, schema version, safe payload, available/lease/attempt/dead-letter state                                                              | same transaction as source business write; replay-safe                                    |
+
+**N02a settings foundation (#565, this slice):** additive
+`NotificationSettings` and `NotificationPreference` tables, no backfill.
+Quiet boundaries are integer minutes since local midnight (0–1439),
+start inclusive/end exclusive; equal endpoints are invalid even if disabled.
+Default lead is 60 minutes. The MVP consent allowlist is TRAINER/PROGRAM
+Mobile Push, WORKOUT Local Reminder, ACCOUNT optional Email; all default
+off, enabling requires a consent timestamp and revocation clears it.
+Neither Inbox nor urgent authentication/security mail is controlled by these
+external-channel settings; marketing and Admin preferences remain deferred.
+Profile timezone remains canonical. The pure policy validates strict nonempty
+partial updates, merged quiet boundaries, timezone and actual-instant quiet
+classification including repeated/skipped DST minutes. Reminder candidates
+are absolute lead offsets; expired or quiet candidates are skipped.
+It does not schedule or send, prompt permissions, or register tokens.
+A later slice must implement authenticated atomic reads/writes with a
+user-row lock (including first-write races), server-generated consent
+timestamps, GET defaults without inserts and explicit ownership checks,
+then generated OpenAPI and clients. External-channel deferral, native
+permission, device scheduling/dedup and security-mail routing remain gates.
 
 Candidate API surface (review and generate actual OpenAPI in [#567](https://github.com/sauron9521/gym-platform/issues/567)): `GET /notifications`, `GET /notifications/unread-count`, `GET /notifications/:id`, `PATCH /notifications/:id/read`, `POST /notifications/read-all`, `GET/PATCH /users/me/notification-settings`, `POST/DELETE /notifications/devices`. Privileged Admin read endpoints require their own authorization boundary. Notification details and deep-link targets are server-scoped, not arbitrary user-supplied URLs.
 
