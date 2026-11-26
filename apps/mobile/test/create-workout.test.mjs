@@ -51,7 +51,7 @@ test('create route is protected and mutation only navigates after success', () =
   const model = read('../src/features/workouts/model/workout-create.ts');
   assert.match(layout, /name="workouts\/new"/);
   assert.ok(layout.includes('<Stack.Protected guard={hasAthleteAccess(capabilities)}>'));
-  assert.match(screen, /useCreateWorkoutForm\(\)/);
+  assert.match(screen, /useCreateWorkoutForm\(lifecycle\)/);
   assert.match(controller, /await createWorkout\.mutateAsync/);
   assert.match(controller, /router\.back\(\)/);
   assert.match(model, /api\.POST\('\/workouts'/);
@@ -84,7 +84,7 @@ test('manual creation locks submission, sends idempotency header and refreshes s
   const model = read('../src/features/workouts/model/workout-create.ts');
 
   assert.match(controller, /submitLock\.current/);
-  assert.match(controller, /if \(submitLock\.current\) return/);
+  assert.match(controller, /if \(submitLock\.current \|\| draft\.blocksSubmission\(\)\) return/);
   assert.match(controller, /const disabled = isSubmitting \|\| createWorkout\.isPending/);
   assert.match(screen, /disabled=\{disabled\}/);
   assert.match(model, /'Idempotency-Key': attempt\.current\.key/);

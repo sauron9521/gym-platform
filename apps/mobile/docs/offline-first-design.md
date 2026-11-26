@@ -163,3 +163,34 @@ M10.3b will expose explicit save/load/discard/review UI, a reactive lifecycle
 state and a safe cleanup retry flow. The current coordinator is not a user-facing
 feature; no draft is created or exposed automatically. Only valid new-workout
 forms are supported by the existing versioned envelope. Device QA remains open.
+
+### M10.3b — explicit local draft form
+
+The existing new-workout screen exposes a themed Ukrainian/English local-draft
+panel. Storage availability follows a reactive generation-scoped lifecycle
+snapshot. A ready session checks whether a draft exists without applying its
+values. Save validates the existing version-1 complete form, restore and
+discard require explicit confirmation, and any local operation is serialized
+against the ordinary online submit. A restored or saved form is bound to its
+current generation; lock/account change clears it, including React Hook Form
+defaults. Late reads and stale confirmation callbacks cannot populate a new
+session. The route is keyed by verified account ID and independently requires
+athlete grants.
+
+This slice intentionally does not let the existing in-memory idempotency POST
+submit a saved/restored draft. Until M10.4, a stored draft blocks ordinary
+creation while it exists and must be explicitly discarded to start a new
+workout; discarding a bound form resets it. A normal POST attempt also disables
+draft actions for that screen, so an uncertain response cannot be converted into
+a local draft. Storage failures use generic messages and require recheck or
+explicit discard. If native encrypted storage is unavailable, ordinary online
+creation remains available without exposing persisted contents or using a
+plaintext fallback. Cleanup-required status directs the user to sign out and
+sign in again; no recovery/reset of orphan files is enabled.
+
+Known scope: one validated new-workout draft, not a partially filled form, a
+completed-set log, an offline login, or a background sync queue. Drafts are
+not automatically restored or submitted. The screen still requires the
+existing verified athlete session and exercise catalog access. Device-level
+encryption, persistence, backup, cleanup and UX acceptance remain release
+gates. Keep #345 open.
