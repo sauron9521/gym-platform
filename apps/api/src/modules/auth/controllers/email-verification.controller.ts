@@ -12,7 +12,7 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { AuthNoStoreInterceptor } from '../interceptors/auth-no-store.interceptor.js';
-import { Throttle } from '@nestjs/throttler';
+import { StableHttpOperation } from '#src/common/http/stable-http-operation.decorator';
 import { verificationTokenSchema, type VerificationTokenInput } from '../dto/auth.schemas.js';
 import { VerificationResendRateLimitGuard } from '../guards/verification-resend-rate-limit.guard.js';
 import type { UserResponse } from '#src/modules/users/types/user-payload.types';
@@ -25,7 +25,10 @@ export class EmailVerificationController {
   constructor(private readonly emailVerificationService: EmailVerificationService) {}
 
   @Public()
-  @Throttle({ default: { limit: 8, ttl: 60000 } })
+  @StableHttpOperation('EmailVerificationController', 'verifyEmail', 'EmailVerification', {
+    limit: 8,
+    ttl: 60_000,
+  })
   @Post('verify')
   @HttpCode(200)
   async verifyEmail(@Body({ schema: verificationTokenSchema }) body: VerificationTokenInput) {
@@ -36,8 +39,11 @@ export class EmailVerificationController {
     return { email: verified.email, emailVerified: true };
   }
 
-  @Throttle({ default: { limit: 3, ttl: 60000 } })
   @UseGuards(VerificationResendRateLimitGuard)
+  @StableHttpOperation('EmailVerificationController', 'resend', 'EmailVerification', {
+    limit: 3,
+    ttl: 60_000,
+  })
   @Post('verification')
   @HttpCode(202)
   async resend(@CurrentUser() user: UserResponse): Promise<void> {

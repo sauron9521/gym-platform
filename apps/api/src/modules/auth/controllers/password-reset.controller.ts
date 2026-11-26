@@ -9,7 +9,7 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { AuthNoStoreInterceptor } from '../interceptors/auth-no-store.interceptor.js';
-import { Throttle } from '@nestjs/throttler';
+import { StableHttpOperation } from '#src/common/http/stable-http-operation.decorator';
 import {
   emailSchema,
   resetPasswordSchema,
@@ -24,15 +24,21 @@ import { AccountRecoveryRateLimitGuard } from '../guards/account-recovery-rate-l
 export class PasswordResetController {
   constructor(private readonly passwordResetService: PasswordResetService) {}
 
-  @Throttle({ default: { limit: 3, ttl: 60000 } })
   @UseGuards(AccountRecoveryRateLimitGuard)
+  @StableHttpOperation('PasswordResetController', 'forgot', 'PasswordReset', {
+    limit: 3,
+    ttl: 60_000,
+  })
   @Post('forgot')
   @HttpCode(202)
   async forgot(@Body({ schema: emailSchema }) body: EmailInput): Promise<void> {
     return this.passwordResetService.request(body.email);
   }
 
-  @Throttle({ default: { limit: 3, ttl: 60000 } })
+  @StableHttpOperation('PasswordResetController', 'reset', 'PasswordReset', {
+    limit: 3,
+    ttl: 60_000,
+  })
   @Post('reset')
   @HttpCode(200)
   async reset(@Body({ schema: resetPasswordSchema }) body: ResetPasswordInput) {

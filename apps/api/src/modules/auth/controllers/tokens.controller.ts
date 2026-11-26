@@ -10,6 +10,7 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { AuthNoStoreInterceptor } from '../interceptors/auth-no-store.interceptor.js';
+import { StableHttpOperation } from '#src/common/http/stable-http-operation.decorator';
 import { CredentialsService } from '../services/index.js';
 import {
   refreshTokenSchema,
@@ -17,7 +18,6 @@ import {
   type RefreshTokenInput,
   type SignInInput,
 } from '../dto/auth.schemas.js';
-import { Throttle } from '@nestjs/throttler';
 
 @Public()
 @UseInterceptors(AuthNoStoreInterceptor)
@@ -28,7 +28,7 @@ export class TokensController {
     private readonly tokenService: TokenService,
   ) {}
 
-  @Throttle({ default: { limit: 3, ttl: 60000 } })
+  @StableHttpOperation('TokensController', 'issue', 'Tokens', { limit: 3, ttl: 60_000 })
   @Post()
   @HttpCode(200)
   @ApiOkResponse({ schema: tokenPairResponseSchema })
@@ -44,7 +44,7 @@ export class TokensController {
     });
   }
 
-  @Throttle({ default: { limit: 20, ttl: 60000 } })
+  @StableHttpOperation('TokensController', 'refresh', 'Tokens', { limit: 20, ttl: 60_000 })
   @Post('refresh')
   @HttpCode(200)
   @ApiOkResponse({ schema: tokenPairResponseSchema })
@@ -52,7 +52,7 @@ export class TokensController {
     return this.tokenService.refresh(body.refreshToken);
   }
 
-  @Throttle({ default: { limit: 10, ttl: 60000 } })
+  @StableHttpOperation('TokensController', 'revoke', 'Tokens', { limit: 10, ttl: 60_000 })
   @Post('revoke')
   @HttpCode(204)
   async revoke(@Body({ schema: refreshTokenSchema }) body: RefreshTokenInput): Promise<void> {
