@@ -12,10 +12,8 @@ import { hasAdminPermission } from '#src/common/rbac/admin-permissions';
 import { parseOperatorSuperAdminIds } from '#src/common/rbac/operator-superadmin-allowlist';
 
 import type { TrainerReviewDecision } from '../dto/trainer-review.schemas.js';
-import {
-  TrainerReviewRepository,
-  type TrainerReviewAction,
-} from '../repositories/trainer-review.repository.js';
+import type { TrainerReviewAction } from '../domain/trainer-application.lifecycle.js';
+import { TrainerReviewRepository } from '../repositories/trainer-review.repository.js';
 
 export type Reviewer = { id: string; role: 'ATHLETE' | 'TRAINER' | 'ADMIN' };
 

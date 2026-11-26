@@ -18,8 +18,8 @@ import {
 import {
   trainerApplicationInputSchema,
   type TrainerApplicationInput,
-} from '../dto/trainer-application.schemas.js';
-import { TrainerApplicationsService } from '../services/trainer-applications.service.js';
+  TrainerApplicationsService,
+} from '../public-api.js';
 
 type Actor = { id: string };
 

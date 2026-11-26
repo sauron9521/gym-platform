@@ -22,5 +22,6 @@ import { TrainerReviewService } from './services/trainer-review.service.js';
     TrainerReviewRepository,
     TrainerReviewService,
   ],
+  exports: [TrainerApplicationsService, TrainerReviewService],
 })
 export class TrainerOnboardingModule {}
