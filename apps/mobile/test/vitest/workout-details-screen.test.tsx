@@ -49,16 +49,17 @@ vi.mock('@/features/workouts/lib/use-rest-feedback', () => ({ useRestFeedback: (
 
 const shouldAutoStartRestTimer = vi.hoisted(() => vi.fn(() => true));
 vi.mock('@/features/app-settings/model/app-settings-context', () => ({
-  useAppSettings: () => ({
-    shouldAutoStartRestTimer,
-    settings: {
-      accountId: 'athlete-a',
-      restDuration: 120,
-      restSound: true,
-      restVibration: true,
-      keepWorkoutScreenAwake: true,
-    },
-  }),
+  useAppSettings: (select: (state: unknown) => unknown) =>
+    select({
+      shouldAutoStartRestTimer,
+      settings: {
+        accountId: 'athlete-a',
+        restDuration: 120,
+        restSound: true,
+        restVibration: true,
+        keepWorkoutScreenAwake: true,
+      },
+    }),
 }));
 
 const refetch = vi.fn();

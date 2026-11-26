@@ -127,13 +127,15 @@ const useStyles = createThemedStyles((palette) =>
 
 function WorkoutNavigation() {
   const { account, capabilities } = useAuth();
-  const { settings } = useAppSettings();
+  const restDuration = useAppSettings((state) => state.settings.restDuration);
+  const restSound = useAppSettings((state) => state.settings.restSound);
+  const restVibration = useAppSettings((state) => state.settings.restVibration);
   const queryClient = useQueryClient();
   return (
     <RestTimerProvider
       accountId={account && hasMobileAccess(capabilities) ? account.id : null}
-      defaultDuration={settings.restDuration}
-      feedback={{ sound: settings.restSound, vibration: settings.restVibration }}
+      defaultDuration={restDuration}
+      feedback={{ sound: restSound, vibration: restVibration }}
       queryClient={queryClient}
     >
       <Navigation />
