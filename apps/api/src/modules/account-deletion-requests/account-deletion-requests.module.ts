@@ -8,5 +8,6 @@ import { AccountDeletionRequestsService } from './services/account-deletion-requ
   imports: [RateLimitStorageModule],
   controllers: [AccountDeletionRequestsController],
   providers: [AccountDeletionRequestsRepository, AccountDeletionRequestsService],
+  exports: [AccountDeletionRequestsService],
 })
 export class AccountDeletionRequestsModule {}

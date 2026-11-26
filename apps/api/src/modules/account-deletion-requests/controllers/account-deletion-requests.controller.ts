@@ -9,8 +9,8 @@ import {
 import {
   type AccountDeletionRequestInput,
   accountDeletionRequestSchema,
-} from '../dto/account-deletion-request.dto.js';
-import { AccountDeletionRequestsService } from '../services/account-deletion-requests.service.js';
+  AccountDeletionRequestsService,
+} from '../public-api.js';
 
 @ApiTags('Users')
 @ApiCookieAuth('sessionCookie')
