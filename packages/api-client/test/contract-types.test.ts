@@ -61,3 +61,24 @@ void missingMfa;
 
 // @ts-expect-error - the mobile factory requires an explicit access-token callback
 createBearerTokenClient({ baseUrl: 'https://api.example.test' });
+
+// Shared account-scoped notification settings are accessible to both transports.
+void browser.GET('/users/me/notification-settings');
+void native.GET('/users/me/notification-settings');
+void native.PATCH('/users/me/notification-settings', {
+  body: {
+    reminderLeadMinutes: 15,
+    preferences: [{ category: 'WORKOUT', channel: 'LOCAL_REMINDER', enabled: true }],
+  },
+});
+// @ts-expect-error - unsupported lead time
+void browser.PATCH('/users/me/notification-settings', { body: { reminderLeadMinutes: 30 } });
+type NotificationPatch =
+  paths['/users/me/notification-settings']['patch']['requestBody']['content']['application/json'];
+type Preference = NonNullable<NotificationPatch['preferences']>[number];
+// @ts-expect-error - no unsupported channel pairs
+const wrongPair: Preference = { category: 'WORKOUT', channel: 'EMAIL', enabled: true };
+// @ts-expect-error - timezone is read-only in this resource
+const wrongTimezone: NotificationPatch = { timezone: 'UTC' };
+void wrongPair;
+void wrongTimezone;

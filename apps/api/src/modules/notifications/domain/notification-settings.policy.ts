@@ -78,7 +78,7 @@ export const notificationSettingsPatchSchema = z
   );
 export type NotificationSettingsPatch = z.infer<typeof notificationSettingsPatchSchema>;
 
-/** Call under the future settings write lock, not against a stale GET. */
+/** Call under the settings write lock, not against a stale GET. */
 export function mergeNotificationSettings(
   current: NotificationSettings,
   patch: NotificationSettingsPatch,
