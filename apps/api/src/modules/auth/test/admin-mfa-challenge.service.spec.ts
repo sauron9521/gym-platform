@@ -13,7 +13,7 @@ import { ADMIN_MFA_METADATA, adminMfaSessionScope } from '../stores/admin-mfa-se
 import { AdminMfaChallengeService } from '../services/admin-mfa-challenge.service.js';
 import { AUTH_ACCOUNT_THROTTLE_POLICIES } from '../services/auth-account-throttle.service.js';
 
-const userId = 'enrolled-admin';
+const userId = '11111111-1111-4111-8111-111111111111';
 const token = 'A'.repeat(43);
 const id = createHash('sha256').update(token).digest('base64url');
 const keyring = createHash('sha256').update('unit-test challenge key').digest('base64url');
@@ -45,9 +45,11 @@ function setup() {
       deleteMany: vi.fn().mockResolvedValue({ count: 1 }),
     },
     mfaLifecycleAudit: {
-      create: vi.fn().mockResolvedValue({ id: 'audit-id', occurredAt: new Date() }),
+      create: vi
+        .fn()
+        .mockResolvedValue({ id: '22222222-2222-4222-8222-222222222222', occurredAt: new Date() }),
     },
-    outboxEvent: { create: vi.fn().mockResolvedValue({}) },
+    outboxEvent: { createMany: vi.fn().mockResolvedValue({ count: 1 }) },
     $queryRaw: vi.fn().mockResolvedValue([{ id }]),
   };
   const mfaStore = new InMemoryMfaStore();
@@ -236,20 +238,21 @@ describe('AdminMfaChallengeService', () => {
       method === 'totp' ? 'ADMIN_TOTP_CHALLENGE_VERIFIED' : 'ADMIN_RECOVERY_CHALLENGE_VERIFIED';
     expect(tx.mfaLifecycleAudit.create).toHaveBeenCalledWith({ data: { userId, action } });
     if (method === 'recovery') {
-      expect(tx.outboxEvent.create).toHaveBeenCalledWith({
+      expect(tx.outboxEvent.createMany).toHaveBeenCalledWith({
+        skipDuplicates: true,
         data: expect.objectContaining({
-          eventKey: 'mfa-lifecycle:audit-id:v1',
+          eventKey: 'mfa-lifecycle:22222222-2222-4222-8222-222222222222:v1',
           type: 'account.security.changed',
           schemaVersion: 1,
           actorUserId: userId,
           payload: {
-            aggregate: { kind: 'MfaLifecycleAudit', id: 'audit-id' },
+            aggregate: { kind: 'MfaLifecycleAudit', id: '22222222-2222-4222-8222-222222222222' },
             context: { userId, action },
           },
         }),
       });
     } else {
-      expect(tx.outboxEvent.create).not.toHaveBeenCalled();
+      expect(tx.outboxEvent.createMany).not.toHaveBeenCalled();
     }
   });
 

@@ -18,10 +18,11 @@ describe('NotificationsModule public boundary', () => {
     ]);
   });
 
-  it('exposes exactly the existing service, patch schema and reminder vocabulary', () => {
+  it('exposes settings and the transaction-local publication contract', () => {
     expect(Object.keys(publicApi).sort()).toEqual([
       'NotificationSettingsService',
       'notificationSettingsPatchSchema',
+      'publishOutboxEvent',
       'reminderLeadMinutes',
     ]);
     expect(publicApi.notificationSettingsPatchSchema).toBe(notificationSettingsPatchSchema);

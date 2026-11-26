@@ -1,6 +1,6 @@
 # Notifications — event taxonomy, ownership and contract
 
-- **Status:** Accepted target contract (documentation only; not yet emitted in running applications)
+- **Status:** Accepted target contract; MFA lifecycle producer and transactional publication implemented; remaining producers and delivery pending.
 - **Parent:** [#563](https://github.com/sauron9521/gym-platform/issues/563); contract slice [#564](https://github.com/sauron9521/gym-platform/issues/564)
 - **Architecture:** [notifications.md](notifications.md) · **Delivery:** [notification-delivery.md](notification-delivery.md)
 
@@ -78,4 +78,32 @@ These are logical types. E11 [#342](https://github.com/sauron9521/gym-platform/i
 | [#572](https://github.com/sauron9521/gym-platform/issues/572) | verify existing auth mail not duplicated, correct account owner, moderator eligibility and role revocation, missing permission denial               |
 | [#543](https://github.com/sauron9521/gym-platform/issues/543) | submitted proposal/revision only, privileged recipients, proposer outcome, revoked role and provider mismatch, approval never implied by read/click |
 
-The first implementation PR must decide exact Zod discriminated-union schema and stable IDs; **this ADR does not add code or make the events available**.
+## Transactional publisher (#568)
+
+The existing OutboxEvent table and indexes from migration
+`20261125120000_notification_outbox` are reused. The notification module's
+public API exposes `publishOutboxEvent(tx, input)` for trusted server-side
+producers. No new migration is required, and reverting this publisher does
+not remove previously persisted events.
+
+The strict versioned Zod union currently accepts only
+`account.security.changed` v1 with an MFA audit UUID, account UUID, matching
+actor, finite timestamp and an allowlisted lifecycle action. Unknown fields,
+versions and actions are rejected before persistence. No email, token, proof,
+secret, free-form context or arbitrary recipient is permitted. Other event
+types must add an explicit schema and deterministic key before use.
+
+The publisher derives the existing `mfa-lifecycle:<audit-id>:v1` key and
+uses PostgreSQL conflict-safe insertion. An identical replay returns
+`existing`, without changing status, attempt count or timestamps; a key
+collision with different immutable event data rejects the transaction.
+`inserted` and `existing` describe transaction-local results only, not
+commit or delivery. Callers must propagate publication errors and use the
+same transaction as their domain mutation. The existing MFA producer uses
+this contract without changing its audit or authorization semantics.
+
+No notification dispatcher, recipient selection, Inbox endpoint, external
+send or replay operator endpoint is enabled. Inbox persistence and reads
+(#566/#567) precede dispatcher activation (#569); new event sources and
+retention remain separately owned. The event key deduplicates publication
+of an already identified transition, not the domain operation itself.
