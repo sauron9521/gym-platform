@@ -1,7 +1,5 @@
 import { Module } from '@nestjs/common';
 import { RateLimitStorageModule } from '#src/common/rate-limit/rate-limit-storage.module';
-import { AdminSessionPurposeGuard } from '#src/common/auth/admin-session-purpose.guard';
-import { AdminOriginGuard } from '#src/common/auth/admin-origin.guard';
 import { UsersModule } from '#src/modules/users/users.module';
 import { SessionsController } from './controllers/sessions.controller.js';
 
@@ -26,8 +24,6 @@ import { PrismaMfaStore, PrismaSessionStore, PrismaTokenStore } from './stores/i
   imports: [UsersModule, RateLimitStorageModule],
   controllers: [SessionsController],
   providers: [
-    AdminSessionPurposeGuard,
-    AdminOriginGuard,
     AuthAccountThrottleService,
     SessionAuth,
     AdminCookieAuthService,
