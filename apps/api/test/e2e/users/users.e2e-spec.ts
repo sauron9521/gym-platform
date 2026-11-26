@@ -822,6 +822,64 @@ describe('Users /me (HTTP + PostgreSQL)', () => {
     expect(stored).toEqual({ preferredLocale: null, role: 'ATHLETE' });
   });
 
+  it('stores independent account workout preferences without changing locale or exposing them to other users', async () => {
+    const path = '/users/me/preferences/workouts';
+    const http = request(app.getHttpServer());
+    await http.get(path).expect(401);
+    await http.patch(path).send({ autoRestTimer: false }).expect(401);
+    const own = () => http.get(path).set('Cookie', athleteCookie);
+    const patch = (body: object) => http.patch(path).set('Cookie', athleteCookie).send(body);
+    const initial = { autoRestTimer: null, restDurationSeconds: null };
+    expect((await own().expect('Cache-Control', 'no-store').expect(200)).body).toEqual(initial);
+    for (const body of [
+      {},
+      { autoRestTimer: null },
+      { restDurationSeconds: 91 },
+      { restDurationSeconds: '90' },
+      { autoRestTimer: false, userId: otherId },
+      { restSound: false },
+    ]) {
+      await patch(body).expect(400);
+    }
+    expect((await own().expect(200)).body).toEqual(initial);
+    await expect(
+      prisma.user.update({ where: { id: athleteId }, data: { restDurationSeconds: 91 } }),
+    ).rejects.toThrow();
+    expect(
+      (await patch({ autoRestTimer: false }).expect('Cache-Control', 'no-store').expect(200)).body,
+    ).toEqual({ autoRestTimer: false, restDurationSeconds: null });
+    expect((await patch({ restDurationSeconds: 120 }).expect(200)).body).toEqual({
+      autoRestTimer: false,
+      restDurationSeconds: 120,
+    });
+    await Promise.all([
+      patch({ autoRestTimer: true }).expect(200),
+      patch({ restDurationSeconds: 60 }).expect(200),
+    ]);
+    expect((await own().expect(200)).body).toEqual({
+      autoRestTimer: true,
+      restDurationSeconds: 60,
+    });
+    expect((await http.get(path).set('Cookie', otherCookie).expect(200)).body).toEqual(initial);
+    const legacy = await http
+      .patch('/users/me/preferences')
+      .set('Cookie', athleteCookie)
+      .send({ preferredLocale: 'en' })
+      .expect(200);
+    expect(legacy.body.preferredLocale).toBe('en');
+    expect(legacy.body).not.toHaveProperty('autoRestTimer');
+    expect(legacy.body).not.toHaveProperty('restDurationSeconds');
+    expect((await own().expect(200)).body).toEqual({
+      autoRestTimer: true,
+      restDurationSeconds: 60,
+    });
+    await http
+      .patch('/users/me/preferences')
+      .set('Cookie', athleteCookie)
+      .send({ preferredLocale: null })
+      .expect(200);
+  });
+
   it('rejects a soft-deleted account even with an existing session', async () => {
     await prisma.user.update({
       where: { id: otherId },
@@ -830,5 +888,14 @@ describe('Users /me (HTTP + PostgreSQL)', () => {
 
     const result = await request(app.getHttpServer()).get('/users/me').set('Cookie', otherCookie);
     expect(result.status).toBe(401);
+    await request(app.getHttpServer())
+      .get('/users/me/preferences/workouts')
+      .set('Cookie', otherCookie)
+      .expect(401);
+    await request(app.getHttpServer())
+      .patch('/users/me/preferences/workouts')
+      .set('Cookie', otherCookie)
+      .send({ autoRestTimer: false })
+      .expect(401);
   });
 });

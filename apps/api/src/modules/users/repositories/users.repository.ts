@@ -1,4 +1,5 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import type { UpdateMyWorkoutPreferencesDto } from '../dto/update-my-workout-preferences.dto.js';
 import type { AdminUsersQuery } from '../dto/admin-users-query.dto.js';
 import { Prisma, type Role } from '#prisma/client';
 import { PrismaService } from '#src/infra/database/index';
@@ -13,6 +14,7 @@ import {
   userSelect,
   userSelectWithCredentials,
   userWithProfileSelect,
+  userWorkoutPreferencesSelect,
 } from '../selects/user.select.js';
 
 @Injectable()
@@ -144,6 +146,33 @@ export class UsersRepository {
         where: { id: userId, deletedAt: null, status: 'ACTIVE' },
         data: { preferredLocale },
         select: userWithProfileSelect,
+      });
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+        throw new NotFoundException('User not found');
+      }
+      throw error;
+    }
+  }
+
+  async findMyWorkoutPreferences(userId: string) {
+    return this.prisma.user.findUnique({
+      where: { id: userId, deletedAt: null, status: 'ACTIVE' },
+      select: userWorkoutPreferencesSelect,
+    });
+  }
+
+  async updateMyWorkoutPreferences(userId: string, input: UpdateMyWorkoutPreferencesDto) {
+    try {
+      return await this.prisma.user.update({
+        where: { id: userId, deletedAt: null, status: 'ACTIVE' },
+        data: {
+          ...(input.autoRestTimer !== undefined ? { autoRestTimer: input.autoRestTimer } : {}),
+          ...(input.restDurationSeconds !== undefined
+            ? { restDurationSeconds: input.restDurationSeconds }
+            : {}),
+        },
+        select: userWorkoutPreferencesSelect,
       });
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {

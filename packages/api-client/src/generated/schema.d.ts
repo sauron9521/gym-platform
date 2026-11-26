@@ -324,6 +324,22 @@ export interface paths {
     patch: operations['UsersController_updatePreferences'];
     trace?: never;
   };
+  '/users/me/preferences/workouts': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['UsersController_myWorkoutPreferences'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch: operations['UsersController_updateWorkoutPreferences'];
+    trace?: never;
+  };
   '/users/me/avatar': {
     parameters: {
       query?: never;
@@ -1859,6 +1875,68 @@ export interface operations {
               height?: number | null;
               weight?: number | null;
             } | null;
+          };
+        };
+      };
+    };
+  };
+  UsersController_myWorkoutPreferences: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Stored account workout preferences; null means uninitialized. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            autoRestTimer: boolean | null;
+            /** @enum {integer|null} */
+            restDurationSeconds: 60 | 90 | 120 | null;
+          };
+        };
+      };
+    };
+  };
+  UsersController_updateWorkoutPreferences: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json':
+          | {
+              autoRestTimer: boolean;
+              /** @enum {number} */
+              restDurationSeconds?: 60 | 90 | 120;
+            }
+          | {
+              autoRestTimer?: boolean;
+              /** @enum {number} */
+              restDurationSeconds: 60 | 90 | 120;
+            };
+      };
+    };
+    responses: {
+      /** @description Stored account workout preferences; null means uninitialized. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            autoRestTimer: boolean | null;
+            /** @enum {integer|null} */
+            restDurationSeconds: 60 | 90 | 120 | null;
           };
         };
       };

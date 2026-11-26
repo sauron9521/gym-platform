@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Get,
+  Header,
   HttpCode,
   HttpStatus,
   Patch,
@@ -19,6 +20,7 @@ import {
   ApiOkResponse,
   ApiTags,
 } from '@nestjs/swagger';
+import { restDurationPresets } from '@gym/domain';
 import { RateLimit } from '#src/common/rate-limit/rate-limit.policies';
 import { AvatarService } from '../avatar/avatar.service.js';
 import type { AvatarUploadFile } from '../avatar/avatar-validation.js';
@@ -32,7 +34,29 @@ import {
   updateMyPreferencesSchema,
 } from '../dto/update-my-preferences.dto.js';
 
+import {
+  type UpdateMyWorkoutPreferencesDto,
+  updateMyWorkoutPreferencesSchema,
+} from '../dto/update-my-workout-preferences.dto.js';
+
 type UserActor = { id: string };
+
+const workoutPreferencesResponse = {
+  description: 'Stored account workout preferences; null means uninitialized.',
+  schema: {
+    type: 'object',
+    required: ['autoRestTimer', 'restDurationSeconds'],
+    additionalProperties: false,
+    properties: {
+      autoRestTimer: { type: 'boolean', nullable: true },
+      restDurationSeconds: {
+        type: 'integer',
+        enum: [...restDurationPresets, null],
+        nullable: true,
+      },
+    },
+  },
+};
 
 @ApiTags('Users')
 @ApiCookieAuth('sessionCookie')
@@ -167,6 +191,24 @@ export class UsersController {
     @Body({ schema: updateMyPreferencesSchema }) body: UpdateMyPreferencesDto,
   ) {
     return this.usersService.updateMyPreferences(user.id, body);
+  }
+
+  @Get('me/preferences/workouts')
+  @RateLimit('read')
+  @Header('Cache-Control', 'no-store')
+  @ApiOkResponse(workoutPreferencesResponse)
+  myWorkoutPreferences(@CurrentUser() user: UserActor) {
+    return this.usersService.findMyWorkoutPreferences(user.id);
+  }
+
+  @Patch('me/preferences/workouts')
+  @Header('Cache-Control', 'no-store')
+  @ApiOkResponse(workoutPreferencesResponse)
+  updateWorkoutPreferences(
+    @CurrentUser() user: UserActor,
+    @Body({ schema: updateMyWorkoutPreferencesSchema }) body: UpdateMyWorkoutPreferencesDto,
+  ) {
+    return this.usersService.updateMyWorkoutPreferences(user.id, body);
   }
 
   /** Multipart field: file. Returns the versioned, API-relative avatar URL. */

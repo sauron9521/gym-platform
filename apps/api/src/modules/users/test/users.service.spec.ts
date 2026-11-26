@@ -10,6 +10,8 @@ describe('UsersService', () => {
     findCapabilitySnapshotForWrite: vi.fn(),
     upsertMyProfile: vi.fn(),
     updateMyPreferences: vi.fn(),
+    findMyWorkoutPreferences: vi.fn(),
+    updateMyWorkoutPreferences: vi.fn(),
     replaceAvatar: vi.fn(),
   };
   const avatarService = { removePrevious: vi.fn() };
@@ -18,6 +20,28 @@ describe('UsersService', () => {
   beforeEach(() => {
     vi.resetAllMocks();
     service = new UsersService(repository as unknown as UsersRepository, avatarService as never);
+  });
+
+  it('returns uninitialized preferences and preserves the actor on partial writes', async () => {
+    const initial = { autoRestTimer: null, restDurationSeconds: null };
+    const updated = { autoRestTimer: false, restDurationSeconds: null };
+    repository.findMyWorkoutPreferences.mockResolvedValue(initial);
+    repository.updateMyWorkoutPreferences.mockResolvedValue(updated);
+    await expect(service.findMyWorkoutPreferences('user-1')).resolves.toEqual(initial);
+    await expect(
+      service.updateMyWorkoutPreferences('user-1', { autoRestTimer: false }),
+    ).resolves.toEqual(updated);
+    expect(repository.findMyWorkoutPreferences).toHaveBeenCalledExactlyOnceWith('user-1');
+    expect(repository.updateMyWorkoutPreferences).toHaveBeenCalledExactlyOnceWith('user-1', {
+      autoRestTimer: false,
+    });
+  });
+
+  it('rejects missing active accounts on workout preference reads', async () => {
+    repository.findMyWorkoutPreferences.mockResolvedValue(null);
+    await expect(service.findMyWorkoutPreferences('gone')).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
   });
 
   it('derives grants from current DB state, and removes trainer access after revocation', async () => {

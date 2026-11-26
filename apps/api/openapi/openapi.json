@@ -951,6 +951,123 @@
         "tags": ["Users"]
       }
     },
+    "/users/me/preferences/workouts": {
+      "get": {
+        "operationId": "UsersController_myWorkoutPreferences",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Stored account workout preferences; null means uninitialized.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["autoRestTimer", "restDurationSeconds"],
+                  "additionalProperties": false,
+                  "properties": {
+                    "autoRestTimer": {
+                      "type": "boolean",
+                      "nullable": true
+                    },
+                    "restDurationSeconds": {
+                      "type": "integer",
+                      "enum": [60, 90, 120, null],
+                      "nullable": true
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "accessToken": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "tags": ["Users"]
+      },
+      "patch": {
+        "operationId": "UsersController_updateWorkoutPreferences",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "autoRestTimer": {
+                        "type": "boolean"
+                      },
+                      "restDurationSeconds": {
+                        "type": "number",
+                        "enum": [60, 90, 120]
+                      }
+                    },
+                    "required": ["autoRestTimer"],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "autoRestTimer": {
+                        "type": "boolean"
+                      },
+                      "restDurationSeconds": {
+                        "type": "number",
+                        "enum": [60, 90, 120]
+                      }
+                    },
+                    "required": ["restDurationSeconds"],
+                    "additionalProperties": false
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Stored account workout preferences; null means uninitialized.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["autoRestTimer", "restDurationSeconds"],
+                  "additionalProperties": false,
+                  "properties": {
+                    "autoRestTimer": {
+                      "type": "boolean",
+                      "nullable": true
+                    },
+                    "restDurationSeconds": {
+                      "type": "integer",
+                      "enum": [60, 90, 120, null],
+                      "nullable": true
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "accessToken": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "tags": ["Users"]
+      }
+    },
     "/users/me/avatar": {
       "post": {
         "operationId": "UsersController_uploadAvatar",

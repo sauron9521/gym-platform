@@ -1,4 +1,4 @@
-import { ConflictException } from '@nestjs/common';
+import { ConflictException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '#src/infra/database/index';
 import { PASSWORD_ONLY_OWNER_FILTER } from '#src/common/auth/password-only-owner.filter';
 import { UsersRepository } from '../repositories/users.repository.js';
@@ -25,6 +25,51 @@ describe('UsersRepository', () => {
     vi.resetAllMocks();
 
     repository = new UsersRepository(prisma as unknown as PrismaService);
+  });
+
+  describe('account workout preferences', () => {
+    const select = { autoRestTimer: true, restDurationSeconds: true };
+    const where = { id: 'actor-1', deletedAt: null, status: 'ACTIVE' };
+    it('reads only the two preferences for an active account', async () => {
+      const result = { autoRestTimer: null, restDurationSeconds: null };
+      prisma.user.findUnique.mockResolvedValue(result);
+      await expect(repository.findMyWorkoutPreferences('actor-1')).resolves.toEqual(result);
+      expect(prisma.user.findUnique).toHaveBeenCalledExactlyOnceWith({ where, select });
+    });
+    it('writes only explicit fields, including false, using one atomic update', async () => {
+      const result = { autoRestTimer: false, restDurationSeconds: 120 };
+      prisma.user.update.mockResolvedValue(result);
+      await expect(
+        repository.updateMyWorkoutPreferences('actor-1', { autoRestTimer: false }),
+      ).resolves.toEqual(result);
+      expect(prisma.user.update).toHaveBeenCalledExactlyOnceWith({
+        where,
+        select,
+        data: { autoRestTimer: false },
+      });
+      prisma.user.update.mockClear();
+      await repository.updateMyWorkoutPreferences('actor-1', { restDurationSeconds: 120 });
+      expect(prisma.user.update).toHaveBeenCalledExactlyOnceWith({
+        where,
+        select,
+        data: { restDurationSeconds: 120 },
+      });
+    });
+    it('maps a missing or inactive account to not found', async () => {
+      prisma.user.update.mockRejectedValue(
+        new Prisma.PrismaClientKnownRequestError('missing', { code: 'P2025', clientVersion: '7' }),
+      );
+      await expect(
+        repository.updateMyWorkoutPreferences('actor-1', { autoRestTimer: true }),
+      ).rejects.toBeInstanceOf(NotFoundException);
+    });
+    it('does not swallow unexpected database failures', async () => {
+      const error = new Error('unavailable');
+      prisma.user.update.mockRejectedValue(error);
+      await expect(
+        repository.updateMyWorkoutPreferences('actor-1', { autoRestTimer: true }),
+      ).rejects.toBe(error);
+    });
   });
 
   describe('findCapabilitySnapshot', () => {
