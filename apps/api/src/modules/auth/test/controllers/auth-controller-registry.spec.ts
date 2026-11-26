@@ -1,4 +1,7 @@
-import { RequestMethod } from '@nestjs/common';
+import { createHash } from 'node:crypto';
+
+import { RequestMethod, type ExecutionContext } from '@nestjs/common';
+import type { ThrottlerGenerateKeyFunction } from '@nestjs/throttler';
 import {
   HTTP_CODE_METADATA,
   INTERCEPTORS_METADATA,
@@ -85,6 +88,46 @@ describe('AuthModule controller registry', () => {
     expect(Reflect.getMetadata('THROTTLER:LIMITdefault', handler)).toBe(limit);
     expect(Reflect.getMetadata('THROTTLER:TTLdefault', handler)).toBe(60_000);
   });
+
+  it.each([
+    [AuthController, 'signUp', 'AuthController-signUp'],
+    [AuthController, 'adminSignIn', 'AuthController-adminSignIn'],
+    [AuthController, 'signIn', 'AuthController-signIn'],
+    [PasswordResetController, 'forgot', 'PasswordResetController-forgot'],
+    [PasswordResetController, 'reset', 'PasswordResetController-reset'],
+    [EmailVerificationController, 'verifyEmail', 'EmailVerificationController-verifyEmail'],
+    [EmailVerificationController, 'resend', 'EmailVerificationController-resend'],
+    [TokensController, 'issue', 'TokensController-issue'],
+    [TokensController, 'refresh', 'TokensController-refresh'],
+    [TokensController, 'revoke', 'TokensController-revoke'],
+    [SessionsController, 'adminSession', 'SessionsController-adminSession'],
+    [SessionsController, 'revokeAdminSessions', 'SessionsController-revokeAdminSessions'],
+    [SessionsController, 'adminSignOut', 'SessionsController-adminSignOut'],
+    [SessionsController, 'list', 'SessionsController-list'],
+    [SessionsController, 'revoke', 'SessionsController-revoke'],
+    [SessionsController, 'signOut', 'SessionsController-signOut'],
+    [SessionsController, 'signOutEverywhere', 'SessionsController-signOutEverywhere'],
+  ] as const)(
+    'retains the original throttle identity for %s.%s',
+    (controller, method, identity) => {
+      const handler = Object.getOwnPropertyDescriptor(controller.prototype, method)?.value;
+      const generateKey = Reflect.getMetadata('THROTTLER:KEY_GENERATORdefault', handler) as
+        ThrottlerGenerateKeyFunction | undefined;
+      expect(generateKey).toBeTypeOf('function');
+      // Even if Nest reports a different class or method name after relocation,
+      // existing buckets remain identical for the tracker and throttler name.
+      const moved = {
+        getClass: () => class RenamedController {},
+        getHandler: () => function renamedHandler() {},
+      } as unknown as ExecutionContext;
+      for (const tracker of ['127.0.0.1', '2001:db8::1']) {
+        const expected = createHash('sha256')
+          .update(`${identity}-default-${tracker}`)
+          .digest('hex');
+        expect(generateKey!(moved, tracker, 'default')).toBe(expected);
+      }
+    },
+  );
 
   it('retains the no-store interceptor on all five controllers', () => {
     for (const controller of controllers) {

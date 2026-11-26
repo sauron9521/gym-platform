@@ -22,6 +22,7 @@ import {
   Res,
 } from '@nestjs/common';
 import { AuthNoStoreInterceptor } from '../interceptors/auth-no-store.interceptor.js';
+import { StableHttpOperation } from '#src/common/http/stable-http-operation.decorator';
 import { ApiCookieAuth, ApiNoContentResponse, ApiOkResponse } from '@nestjs/swagger';
 import { AdminSessionPurposeGuard } from '#src/common/auth/admin-session-purpose.guard';
 import { AdminOriginGuard } from '#src/common/auth/admin-origin.guard';
@@ -43,6 +44,7 @@ export class SessionsController {
   ) {}
 
   /** Only a live, explicitly elevated cookie can prove Admin Web access. */
+  @StableHttpOperation('SessionsController', 'adminSession', 'Sessions')
   @Get('admin-session')
   @AdminCookieRoute()
   @Authenticate({ providers: [AdminSessionCookieProvider] })
@@ -58,6 +60,7 @@ export class SessionsController {
    * The endpoint MUST authenticate via an admin-purpose cookie, not JWT or an
    * ordinary ADMIN login. No refresh token or regular session is revoked.
    */
+  @StableHttpOperation('SessionsController', 'revokeAdminSessions', 'Sessions')
   @Post('admin-sessions/revoke-all')
   @HttpCode(204)
   @AdminCookieRoute()
@@ -78,6 +81,7 @@ export class SessionsController {
 
   /** Public to let a pending MFA admin session be cleared safely. */
   @Public()
+  @StableHttpOperation('SessionsController', 'adminSignOut', 'Sessions')
   @Post('admin-sign-out')
   @HttpCode(204)
   @UseGuards(AdminOriginGuard)
@@ -91,6 +95,7 @@ export class SessionsController {
     }
   }
 
+  @StableHttpOperation('SessionsController', 'list', 'Sessions')
   @Get('sessions')
   async list(
     @CurrentUser('id') userId: string,
@@ -108,6 +113,7 @@ export class SessionsController {
   }
 
   // A user may revoke only their own sessions.
+  @StableHttpOperation('SessionsController', 'revoke', 'Sessions')
   @Delete('sessions/:id')
   @HttpCode(204)
   async revoke(@CurrentUser('id') userId: string, @Param('id') id: string) {
@@ -118,6 +124,7 @@ export class SessionsController {
 
   // Public so that a pending-MFA session can also be signed out.
   @Public()
+  @StableHttpOperation('SessionsController', 'signOut', 'Sessions')
   @Post('sign-out')
   @HttpCode(204)
   async signOut(): Promise<void> {
@@ -126,6 +133,7 @@ export class SessionsController {
     }
   }
 
+  @StableHttpOperation('SessionsController', 'signOutEverywhere', 'Sessions')
   @Post('sign-out-everywhere')
   @HttpCode(204)
   async signOutEverywhere(@CurrentUser('id') userId: string): Promise<void> {

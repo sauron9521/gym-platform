@@ -38,6 +38,8 @@ type OpenApiDocument = {
     Record<
       string,
       {
+        operationId?: string;
+        tags?: string[];
         requestBody?: { content?: Record<string, { schema?: Schema }> };
         responses?: Record<
           string,
@@ -292,6 +294,74 @@ describe('OpenAPI / HTTP contract regression (PostgreSQL)', () => {
       expect(tokenPair.properties?.refreshToken?.type).toBe('string');
       expect(tokenPair.properties?.expiresIn?.type).toBe('integer');
       expect(tokenPair.additionalProperties).toBe(false);
+    }
+  });
+
+  it('keeps all seventeen legacy Auth operation IDs, tags and success statuses independent of controller placement', () => {
+    const expected = [
+      ['post', '/auth/register', 'AuthController_signUp', 'Authentication', 201],
+      ['post', '/auth/login', 'AuthController_signIn', 'Authentication', 200],
+      ['post', '/auth/admin-login', 'AuthController_adminSignIn', 'Authentication', 200],
+      [
+        'post',
+        '/auth/password-reset/forgot',
+        'PasswordResetController_forgot',
+        'PasswordReset',
+        202,
+      ],
+      ['post', '/auth/password-reset/reset', 'PasswordResetController_reset', 'PasswordReset', 200],
+      [
+        'post',
+        '/auth/email/verify',
+        'EmailVerificationController_verifyEmail',
+        'EmailVerification',
+        200,
+      ],
+      [
+        'post',
+        '/auth/email/verification',
+        'EmailVerificationController_resend',
+        'EmailVerification',
+        202,
+      ],
+      ['post', '/auth/token', 'TokensController_issue', 'Tokens', 200],
+      ['post', '/auth/token/refresh', 'TokensController_refresh', 'Tokens', 200],
+      ['post', '/auth/token/revoke', 'TokensController_revoke', 'Tokens', 204],
+      ['get', '/auth/admin-session', 'SessionsController_adminSession', 'Sessions', 200],
+      [
+        'post',
+        '/auth/admin-sessions/revoke-all',
+        'SessionsController_revokeAdminSessions',
+        'Sessions',
+        204,
+      ],
+      ['post', '/auth/admin-sign-out', 'SessionsController_adminSignOut', 'Sessions', 204],
+      ['get', '/auth/sessions', 'SessionsController_list', 'Sessions', 200],
+      ['delete', '/auth/sessions/{id}', 'SessionsController_revoke', 'Sessions', 204],
+      ['post', '/auth/sign-out', 'SessionsController_signOut', 'Sessions', 204],
+      [
+        'post',
+        '/auth/sign-out-everywhere',
+        'SessionsController_signOutEverywhere',
+        'Sessions',
+        204,
+      ],
+    ] as const;
+    const actual = Object.entries(document.paths ?? {})
+      .filter(([path]) => path.startsWith('/auth/'))
+      .flatMap(([path, methods]) =>
+        Object.entries(methods).map(([method, operation]) => ({
+          method,
+          path,
+          id: operation.operationId,
+          tags: operation.tags,
+          statuses: Object.keys(operation.responses ?? {}).sort(),
+        })),
+      );
+    expect(actual).toHaveLength(expected.length);
+    expect(new Set(actual.map((operation) => operation.id)).size).toBe(expected.length);
+    for (const [method, path, id, tag, status] of expected) {
+      expect(actual).toContainEqual({ method, path, id, tags: [tag], statuses: [String(status)] });
     }
   });
 

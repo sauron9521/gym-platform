@@ -7,6 +7,8 @@ import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import request from 'supertest';
 import { afterAll, describe, expect, it } from 'vitest';
 
+import { StableHttpOperation } from '../../../src/common/http/stable-http-operation.decorator.js';
+
 import { DistributedThrottlerStorage } from '../../../src/common/rate-limit/distributed-throttler.storage.js';
 
 const redisUrl = process.env.TEST_REDIS_URL;
@@ -22,6 +24,29 @@ function storageForRedis(): DistributedThrottlerStorage {
 class RedisRateTestController {
   @Get()
   get() {
+    return { ok: true };
+  }
+}
+
+@Controller('stable-identity-test')
+class LegacyIdentityController {
+  @Get()
+  get() {
+    return { ok: true };
+  }
+}
+
+@Controller('stable-identity-test')
+class RenamedIdentityController {
+  @StableHttpOperation('LegacyIdentityController', 'get', 'LegacyIdentity')
+  @Get()
+  moved() {
+    return { ok: true };
+  }
+
+  @StableHttpOperation('LegacyIdentityController', 'other', 'LegacyIdentity')
+  @Get('other')
+  other() {
     return { ok: true };
   }
 }
@@ -76,6 +101,43 @@ redisDescribe('distributed throttling (Redis + HTTP)', () => {
     await request(b.getHttpServer()).get('/distributed-rate-test').expect(200);
     await request(a.getHttpServer()).get('/distributed-rate-test').expect(429);
     await request(b.getHttpServer()).get('/distributed-rate-test').expect(429);
+  });
+
+  it('preserves an existing stock Nest counter across a controller/handler rename without sharing unrelated buckets', async () => {
+    const tracker = randomUUID();
+    async function makeIdentityApp(
+      controller: typeof LegacyIdentityController | typeof RenamedIdentityController,
+    ) {
+      const storage = storageForRedis();
+      storages.push(storage);
+      const moduleRef = await Test.createTestingModule({
+        imports: [
+          ThrottlerModule.forRoot({
+            throttlers: [{ ttl: 60_000, limit: 2 }],
+            storage,
+            getTracker: (req) =>
+              req.headers['x-test-tracker'] === 'other' ? tracker + '-other' : tracker,
+          }),
+        ],
+        controllers: [controller],
+        providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
+      }).compile();
+      const app = moduleRef.createNestApplication();
+      apps.push(app);
+      await app.init();
+      return app;
+    }
+    const legacy = await makeIdentityApp(LegacyIdentityController);
+    const renamed = await makeIdentityApp(RenamedIdentityController);
+    await request(legacy.getHttpServer()).get('/stable-identity-test').expect(200);
+    await request(renamed.getHttpServer()).get('/stable-identity-test').expect(200);
+    await request(renamed.getHttpServer()).get('/stable-identity-test').expect(429);
+    await request(legacy.getHttpServer()).get('/stable-identity-test').expect(429);
+    await request(renamed.getHttpServer()).get('/stable-identity-test/other').expect(200);
+    await request(renamed.getHttpServer())
+      .get('/stable-identity-test')
+      .set('x-test-tracker', 'other')
+      .expect(200);
   });
 
   it('increments atomically across parallel requests', async () => {

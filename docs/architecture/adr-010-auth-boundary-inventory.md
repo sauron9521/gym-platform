@@ -68,6 +68,12 @@ Auth still consumes exported UsersAuthFacade through existing allowed direct ser
 4. **Session ownership.** Current Admin-specific revoke-all is a transaction locking the active owner, deleting only rows with metadata purpose admin, then clearing Admin cookie. Keep both steps, including clearing after prior revocation. Do not infer that the ordinary sign-out-everywhere or session-list behavior has a new purpose filter; preserve actual package/store semantics.
 5. **MFA scope.** Ordinary cookie __Host-sid and Admin cookie __Host-admin-sid are distinct. Admin absolute 8 hours / idle 15 minutes and Admin-only trusted origin remain. Transitional password-only Admin sessions with undefined MFA are currently supported; pending and unknown states fail closed for privileged reads; verified principals require TOTP assurance and current role. Recovery grants do not authorize existing Admin routes. Do not add mandatory enrollment or change status/error semantics in this migration.
 
+### ABI05b1 compatibility mechanism
+
+Use the method-level [StableHttpOperation decorator](../../apps/api/src/common/http/stable-http-operation.decorator.ts) on all 17 Auth operations. Its literal legacy controller and handler names determine the published operation ID and the existing default-throttler SHA-256 key; the explicit tag preserves the previous Swagger grouping. Pass the same endpoint budget when replacing an existing throttle override, or omit it to inherit the global default. Do not stack it with another method-level RateLimit or Throttle decorator: Nest writes the same metadata keys. The global guard, tracker, Redis hashing and secondary account HMAC quotas are unchanged.
+
+Keep the legacy literals when moving or renaming a handler. The Auth controller registry pins every key identity; the real OpenAPI E2E pins all 17 route/ID/tag/status tuples. The Redis HTTP regression exercises an existing stock Nest counter across a renamed class and handler, including independent tracker and route buckets. These tests and canonical regeneration remain mandatory for later slices. No new routes or auth semantics are introduced.
+
 ## Acceptance matrix before expansion
 
 | Concern                       | Required existing or additional evidence                                                                                                                                                                                            |

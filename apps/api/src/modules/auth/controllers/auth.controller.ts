@@ -9,8 +9,9 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { AuthNoStoreInterceptor } from '../interceptors/auth-no-store.interceptor.js';
+import { StableHttpOperation } from '#src/common/http/stable-http-operation.decorator';
 import { EmailVerificationService, Public, SignInService } from '@nestjs/authentication';
-import { RateLimit } from '#src/common/rate-limit/rate-limit.policies';
+import { RATE_LIMIT_POLICIES } from '#src/common/rate-limit/rate-limit.policies';
 import { ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { AdminOriginGuard } from '#src/common/auth/admin-origin.guard';
 import {
@@ -42,7 +43,7 @@ export class AuthController {
     private readonly adminCookies: AdminCookieAuthService,
   ) {}
 
-  @RateLimit('auth')
+  @StableHttpOperation('AuthController', 'signUp', 'Authentication', RATE_LIMIT_POLICIES.auth)
   @Post('register')
   @ApiCreatedResponse({ schema: registrationResponseSchema })
   async signUp(@Body({ schema: signUpSchema }) signUpDto: SignUpInput) {
@@ -69,7 +70,7 @@ export class AuthController {
    * The session is still subject to MFA enrollment and CSRF origin checks.
    * Use a generic failure for unknown credentials and non-admin users.
    */
-  @RateLimit('auth')
+  @StableHttpOperation('AuthController', 'adminSignIn', 'Authentication', RATE_LIMIT_POLICIES.auth)
   @Post('admin-login')
   @UseGuards(AdminOriginGuard)
   @HttpCode(200)
@@ -87,7 +88,7 @@ export class AuthController {
     return { mfaRequired: session.mfa === 'pending' };
   }
 
-  @RateLimit('auth')
+  @StableHttpOperation('AuthController', 'signIn', 'Authentication', RATE_LIMIT_POLICIES.auth)
   @Post('login')
   @HttpCode(200)
   @ApiOkResponse({ schema: sessionSignInResponseSchema })
