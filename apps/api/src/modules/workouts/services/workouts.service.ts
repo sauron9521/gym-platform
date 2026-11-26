@@ -30,7 +30,7 @@ import type {
   WorkoutListQuery,
   WorkoutRecord,
 } from '../types/workout.types.js';
-import { TrainerAthletesService } from '#src/modules/trainer-athletes/services/trainer-athletes.service';
+import { TrainerAthletesService } from '#src/modules/trainer-athletes/public-api';
 import type { WorkoutExportQuery } from '../dto/workout.schemas.js';
 import { buildWorkoutExport } from '../utils/workout-export.js';
 import { workoutIdempotency } from '../utils/workout-idempotency.js';

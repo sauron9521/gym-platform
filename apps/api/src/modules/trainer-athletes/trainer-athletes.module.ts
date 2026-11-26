@@ -22,6 +22,6 @@ import { TrainerDashboardService } from './services/trainer-dashboard.service.js
     TrainerDashboardRepository,
     TrainerDashboardService,
   ],
-  exports: [TrainerAthletesService],
+  exports: [TrainerAthletesService, TrainerDashboardService],
 })
 export class TrainerAthletesModule {}

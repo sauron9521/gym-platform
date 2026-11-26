@@ -5,7 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 
-import { UsersService } from '#src/modules/users/services/users.service';
+import { UsersService } from '#src/modules/users/public-api';
 import { InvitationAlreadyExists } from '../application/create-invitation.js';
 import { PendingInvitationConflict } from '../application/pending-invitation-transition.js';
 import { TrainerAthletesRepository } from '../repositories/trainer-athletes.repository.js';

@@ -1,12 +1,13 @@
 import { Test, TestingModule } from '@nestjs/testing';
 
 import { TrainerAthletesController } from '../../controllers/trainer-athletes.controller.js';
-import { TrainerAthletesService } from '../../services/trainer-athletes.service.js';
-
-import type { TrainerAthleteActor } from '../../types/trainer-athlete.types.js';
-import type { CreateTrainerAthleteDto } from '../../dto/create-trainer-athlete.dto.js';
-import type { QueryTrainerAthletesDto } from '../../dto/query-trainer-athletes.dto.js';
-import type { TerminateTrainerAthleteDto } from '../../dto/terminate-trainer-athlete.dto.js';
+import {
+  TrainerAthletesService,
+  type TrainerAthleteActor,
+  type CreateTrainerAthleteDto,
+  type QueryTrainerAthletesDto,
+  type TerminateTrainerAthleteDto,
+} from '../../public-api.js';
 
 describe('TrainerAthletesController', () => {
   let controller: TrainerAthletesController;

@@ -1,6 +1,6 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 
-import { UsersService } from '#src/modules/users/services/users.service';
+import { UsersService } from '#src/modules/users/public-api';
 import { TrainerDashboardRepository } from '../repositories/trainer-dashboard.repository.js';
 
 import type { TrainerAthleteActor } from '../types/trainer-athlete.types.js';

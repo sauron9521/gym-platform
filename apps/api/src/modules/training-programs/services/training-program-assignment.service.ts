@@ -9,7 +9,7 @@ import {
 import { AssignmentCancellationStateChanged } from '../application/assignment-cancellation.js';
 import { AssignmentCreationError } from '../application/assignment-creation.js';
 
-import { TrainerAthletesService } from '#src/modules/trainer-athletes/services/trainer-athletes.service';
+import { TrainerAthletesService } from '#src/modules/trainer-athletes/public-api';
 
 import {
   assignmentFullReadWhere,
