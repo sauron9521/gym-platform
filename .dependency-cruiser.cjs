@@ -42,6 +42,43 @@ module.exports = {
         dependencyTypes: ['local'],
       },
     },
+    {
+      name: 'no-inward-to-api-interface-imports',
+      severity: 'error',
+      from: { path: '^apps/api/src/(?:modules|common|infra)/' },
+      to: { path: '^apps/api/src/api/' },
+    },
+    {
+      name: 'no-cross-audience-api-imports',
+      severity: 'error',
+      from: { path: '^apps/api/src/api/(public|shared|athlete|trainer|admin)/' },
+      to: { path: '^apps/api/src/api/', pathNot: '^apps/api/src/api/$1/' },
+    },
+    {
+      name: 'no-api-interface-private-feature-imports',
+      severity: 'error',
+      from: { path: '^apps/api/src/api/' },
+      to: {
+        path: '^apps/api/src/modules/',
+        pathNot: '^apps/api/src/modules/([^/]+)/(?:$1\\.module|public-api)\\.[cm]?[jt]s
+    // Analyze type-only imports before TypeScript compilation removes them.
+    tsPreCompilationDeps: true,
+    doNotFollow: { path: 'node_modules' },
+    // Source tests remain in scope: the legacy boundary guard scans them too.
+    exclude: {
+      path: '(^|/)(?:node_modules|\\.next|\\.expo|dist|build|coverage|generated)(/|$)',
+    },
+  },
+};
+,
+      },
+    },
+    {
+      name: 'no-api-interface-database-imports',
+      severity: 'error',
+      from: { path: '^apps/api/src/api/' },
+      to: { path: '^apps/api/src/infra/database/' },
+    },
   ],
   options: {
     // Analyze type-only imports before TypeScript compilation removes them.
