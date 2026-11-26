@@ -3,7 +3,7 @@ import type {
   WorkoutAnalyticsService,
   WorkoutAnalyticsQuery,
   WorkoutActor,
-} from '../../public-api.js';
+} from '#src/modules/workout-analytics/public-api';
 
 describe('WorkoutAnalyticsController', () => {
   const service = {
