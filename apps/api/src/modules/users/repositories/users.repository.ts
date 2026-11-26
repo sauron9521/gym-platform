@@ -182,6 +182,38 @@ export class UsersRepository {
     }
   }
 
+  /**
+   * Import explicit legacy values only while each field is still NULL.
+   * Conditional UPDATE predicates are rechecked by PostgreSQL after a
+   * concurrent row update. Both fields and the final read share one transaction.
+   */
+  async initializeMyWorkoutPreferences(userId: string, input: UpdateMyWorkoutPreferencesDto) {
+    return this.prisma.$transaction(
+      async (tx) => {
+        const where = { id: userId, deletedAt: null, status: 'ACTIVE' } as const;
+        if (input.autoRestTimer !== undefined) {
+          await tx.user.updateMany({
+            where: { ...where, autoRestTimer: null },
+            data: { autoRestTimer: input.autoRestTimer },
+          });
+        }
+        if (input.restDurationSeconds !== undefined) {
+          await tx.user.updateMany({
+            where: { ...where, restDurationSeconds: null },
+            data: { restDurationSeconds: input.restDurationSeconds },
+          });
+        }
+        const preferences = await tx.user.findUnique({
+          where,
+          select: userWorkoutPreferencesSelect,
+        });
+        if (!preferences) throw new NotFoundException('User not found');
+        return preferences;
+      },
+      { isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted },
+    );
+  }
+
   async upsertMyProfile(userId: string, data: Prisma.ProfileCreateWithoutUserInput) {
     try {
       // One atomic upsert, safe when two requests create a missing profile.

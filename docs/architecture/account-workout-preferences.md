@@ -1,6 +1,6 @@
 # Account workout preferences — incremental rollout
 
-Status: proposed delivery contract; shared defaults merged in #898; server persistence and read/update implemented in this slice, client sync not enabled.
+Status: proposed delivery contract; shared defaults merged in #898; server persistence and read/update merged in #899; conditional initialization implemented in this slice, client sync not enabled.
 Baseline: mobile Zustand settings (#895) and timer scope (#892, #893, #896).
 
 ## Ownership
@@ -33,9 +33,14 @@ and clients distinguish uninitialized fields from explicit choices.
 
 A normal PATCH changes only explicitly supplied, validated fields; no empty
 patch, implicit defaults for omitted fields, or unrelated device preferences.
-Keep updates atomic with active account checks. Define a conditional
-initialize-if-unset operation before migrating old device values; it must not
-overwrite an existing explicit account value even on concurrent first login.
+Keep updates atomic with active account checks. The authenticated
+`POST /users/me/preferences/workouts/initialize` accepts the same strict,
+non-empty partial payload and returns canonical stored values with HTTP 200,
+including on retry. Each supplied field is updated only if it is still NULL,
+with both conditional updates and the read in one Read Committed transaction.
+An explicit normal PATCH wins for overlapping fields regardless of ordering.
+Concurrent imports cannot overwrite already initialized fields, and omitted
+fields remain untouched. A no-op import does not update the account timestamp.
 
 ## Migration and failure behavior
 
@@ -60,8 +65,8 @@ overwrite an existing explicit account value even on concurrent first login.
    them without changing storage, UI or behavior (#898).
 2. Typed nullable persistence and authenticated read/partial update contract,
    migration and generated OpenAPI client; verify old locale clients and
-   account isolation (this slice).
-3. Conditional legacy initialization and concurrency tests.
+   account isolation (#899).
+3. Conditional legacy initialization and concurrency tests (this slice).
 4. Mobile query/mutation integration and account-scoped offline fallback,
    migration, stale-response and timer regressions.
 5. Web settings controls and parity; native acceptance and incremental rollout.
