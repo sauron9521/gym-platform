@@ -67,3 +67,7 @@ Existing account-scoped AsyncStorage keys, safe hydration defaults, write acknow
 Home and the workouts list share a compact, athlete-only continuation shortcut for the most recently opened in-progress workout in this app session. It reads the existing Rest Timer Store scope and countdown; no third store, duplicated server workout record, background polling or new API call is necessary. Only the countdown component subscribes to timer ticks. The workout details screen remains the owner of workout mutations, forms and write locks.
 
 The shortcut is not a server-wide active workout discovery mechanism and is not persisted across process termination. It clears on account change, matching terminal detail/list evidence or explicit detail access denial/not-found. A missing row in a filtered or paginated list is not terminal evidence; remote changes are observed when existing queries receive the relevant result. Opening the shortcut uses the existing workout route and reconciliation path. Native navigation and device acceptance remain pending.
+
+## SM08: Trainer editor review
+
+The [Trainer editor state boundary review](adr-009-trainer-editor-state.md) records the current legacy/new app split, ownership rules and adoption gates for #365. The review recommends deferring a Trainer store until a real multi-pane editor demonstrates shared interaction needs. No new dependency or legacy editor migration is authorized.
