@@ -67,3 +67,12 @@ test('calendar direct route requires verified athlete access and is account keye
     /router.push\('\/workouts\/calendar'\)/,
   );
 });
+
+test('authenticated appearance and language controls live only in app settings', () => {
+  const profile = read('../src/screens/profile/ui/profile-screen.tsx');
+  const settings = read('../src/screens/profile/ui/app-settings-screen.tsx');
+  for (const component of ['ThemePicker', 'AccountLocalePicker']) {
+    assert.ok(!profile.includes(component));
+    assert.ok(settings.includes(`<${component} />`));
+  }
+});

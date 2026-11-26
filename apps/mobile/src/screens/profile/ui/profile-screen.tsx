@@ -6,8 +6,6 @@ import { useAuth } from '@/features/auth/model/auth-context';
 import { hasTrainerAccess } from '@/features/auth/model/account-capabilities';
 import { useAccountQuery } from '@/features/profile/model/account-query';
 import { createThemedStyles, useMobileTheme } from '@/shared/config/theme-provider';
-import { ThemePicker } from '@/shared/ui/theme-picker';
-import { AccountLocalePicker } from '@/features/profile/ui/account-locale-picker';
 
 export function ProfileScreen() {
   const styles = useStyles();
@@ -32,8 +30,6 @@ export function ProfileScreen() {
     <ScrollView style={styles.container} contentContainerStyle={styles.content} bounces={false}>
       <Text style={styles.heading}>{name}</Text>
       <Text style={styles.subheading}>{t('mobile.profile.apiData')}</Text>
-      <AccountLocalePicker />
-      <ThemePicker />
       <View style={styles.card}>
         <Text style={styles.label}>{t('mobile.profile.email')}</Text>
         <Text style={styles.value}>{currentAccount.email}</Text>

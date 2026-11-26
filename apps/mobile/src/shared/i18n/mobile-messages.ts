@@ -178,6 +178,16 @@ const navigationMessages = {
   'mobile.theme.dark': { uk: 'Темна', en: 'Dark' },
   'mobile.tabs.progress': { uk: 'Прогрес', en: 'Progress' },
   'mobile.navigation.appSettings': { uk: 'Налаштування застосунку', en: 'App settings' },
+  'mobile.settings.appearance': { uk: 'Зовнішній вигляд', en: 'Display' },
+  'mobile.settings.language': { uk: 'Мова', en: 'Language' },
+  'mobile.settings.themeDeviceOnly': {
+    uk: 'Тема застосовується до цього пристрою.',
+    en: 'The theme applies to this device.',
+  },
+  'mobile.settings.languageAccount': {
+    uk: 'Мова зберігається в акаунті. Для зміни потрібне підключення до сервера.',
+    en: 'Language is saved to your account. Changing it requires a server connection.',
+  },
   'mobile.settings.workouts': { uk: 'Тренування', en: 'Workouts' },
   'mobile.settings.autoRestTimer': { uk: 'Автоматичний таймер', en: 'Automatic rest timer' },
   'mobile.settings.autoRestTimerHint': {

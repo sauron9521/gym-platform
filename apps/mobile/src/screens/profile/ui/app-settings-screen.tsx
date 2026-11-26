@@ -1,6 +1,8 @@
 import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { useIntl } from 'react-intl';
 
+import { AccountLocalePicker } from '@/features/profile/ui/account-locale-picker';
+import { ThemePicker } from '@/shared/ui/theme-picker';
 import { useAppSettings } from '@/features/app-settings/model/app-settings-context';
 import { createThemedStyles, useMobileTheme } from '@/shared/config/theme-provider';
 
@@ -14,7 +16,9 @@ export function AppSettingsScreen() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={styles.heading}>{t('workouts')}</Text>
+      <Text accessibilityRole="header" style={styles.heading}>
+        {t('workouts')}
+      </Text>
       <View style={styles.card}>
         <View style={styles.row}>
           <View style={styles.description}>
@@ -47,6 +51,20 @@ export function AppSettingsScreen() {
         ) : null}
       </View>
       <Text style={styles.hint}>{t('deviceOnly')}</Text>
+      <Text accessibilityRole="header" style={styles.heading}>
+        {t('appearance')}
+      </Text>
+      <View style={styles.card}>
+        <ThemePicker />
+        <Text style={styles.hint}>{t('themeDeviceOnly')}</Text>
+      </View>
+      <Text accessibilityRole="header" style={styles.heading}>
+        {t('language')}
+      </Text>
+      <View style={styles.card}>
+        <AccountLocalePicker />
+        <Text style={styles.hint}>{t('languageAccount')}</Text>
+      </View>
     </ScrollView>
   );
 }
