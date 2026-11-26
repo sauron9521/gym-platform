@@ -1,4 +1,4 @@
-import { MfaService, PasswordHasher } from '@nestjs/authentication';
+import { PasswordHasher } from '@nestjs/authentication';
 import { ForbiddenException } from '@nestjs/common';
 import { ThrottlerException } from '@nestjs/throttler';
 import type { DistributedThrottlerStorage } from '#src/common/rate-limit/distributed-throttler.storage';
@@ -17,18 +17,13 @@ function setup() {
     submit: vi.fn().mockResolvedValue(receipt),
   };
   const passwords = { verify: vi.fn().mockResolvedValue(true) };
-  const mfa = {
-    isEnrolled: vi.fn().mockResolvedValue(false),
-    verifyTotp: vi.fn().mockResolvedValue(true),
-  };
   const throttle = { increment: vi.fn().mockResolvedValue({ isBlocked: false }) };
   const service = new AccountDeletionRequestsService(
     repository as unknown as AccountDeletionRequestsRepository,
     passwords as unknown as PasswordHasher,
-    mfa as unknown as MfaService,
     throttle as unknown as DistributedThrottlerStorage,
   );
-  return { service, repository, passwords, mfa, throttle };
+  return { service, repository, passwords, throttle };
 }
 
 describe('AccountDeletionRequestsService', () => {
@@ -58,32 +53,21 @@ describe('AccountDeletionRequestsService', () => {
   });
 
   it('rejects an invalid password or an inactive account before recording the request', async () => {
-    const { service, repository, passwords, mfa } = setup();
+    const { service, repository, passwords } = setup();
     passwords.verify.mockResolvedValueOnce(false);
     await expect(service.submit(owner, confirmation)).rejects.toThrow(ForbiddenException);
     repository.findConfirmationCredentials.mockResolvedValue(null);
     await expect(service.submit(owner, confirmation)).rejects.toThrow(ForbiddenException);
-    expect(mfa.verifyTotp).not.toHaveBeenCalled();
     expect(repository.submit).not.toHaveBeenCalled();
   });
 
-  it('requires and verifies a fresh authenticator code when enrolled', async () => {
-    const { service, repository, mfa } = setup();
-    mfa.isEnrolled.mockResolvedValue(true);
-
-    await expect(service.submit(owner, confirmation)).rejects.toThrow(
-      'Current authenticator code required',
+  it('cannot authorize a missing or enrolled password-only owner even with a TOTP-shaped input', async () => {
+    const { service, repository } = setup();
+    repository.findConfirmationCredentials.mockResolvedValue(null);
+    await expect(service.submit(owner, { ...confirmation, totpCode: '123456' })).rejects.toThrow(
+      ForbiddenException,
     );
-    mfa.verifyTotp.mockResolvedValueOnce(false);
-    const withMfa = { ...confirmation, totpCode: '123456' };
-    await expect(service.submit(owner, withMfa)).rejects.toThrow(ForbiddenException);
     expect(repository.submit).not.toHaveBeenCalled();
-
-    await expect(service.submit(owner, withMfa)).resolves.toEqual({
-      request: { ...receipt, status: 'REQUESTED' },
-    });
-    expect(mfa.verifyTotp).toHaveBeenCalledWith(owner, '123456');
-    expect(repository.submit).toHaveBeenCalledExactlyOnceWith(owner, credentials);
   });
 
   it('refuses to confirm submission when the verified account state changed', async () => {

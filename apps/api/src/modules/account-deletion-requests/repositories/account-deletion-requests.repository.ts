@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { PASSWORD_ONLY_OWNER_FILTER } from '#src/common/auth/password-only-owner.filter';
 import { PrismaService } from '#src/infra/database/index';
 import type { Prisma } from '#prisma/client';
 
@@ -18,7 +19,7 @@ export class AccountDeletionRequestsRepository {
 
   findConfirmationCredentials(userId: string) {
     return this.prisma.user.findUnique({
-      where: { id: userId, status: 'ACTIVE', deletedAt: null },
+      where: { id: userId, status: 'ACTIVE', deletedAt: null, ...PASSWORD_ONLY_OWNER_FILTER },
       select: { passwordHash: true, authInvalidatedAt: true },
     });
   }
@@ -44,6 +45,15 @@ export class AccountDeletionRequestsRepository {
         FOR UPDATE
       `;
       if (current.length === 0) return null;
+
+      // Enrollment and factor replacement use this same owner lock. Read
+      // the factor after acquiring it so a concurrent confirmation cannot
+      // be missed by the password-only check before verification.
+      const passwordOnlyOwner = await tx.user.findUnique({
+        where: { id: userId, ...PASSWORD_ONLY_OWNER_FILTER },
+        select: { id: true },
+      });
+      if (!passwordOnlyOwner) return null;
 
       return tx.accountDeletionRequest.upsert({
         where: { userId },

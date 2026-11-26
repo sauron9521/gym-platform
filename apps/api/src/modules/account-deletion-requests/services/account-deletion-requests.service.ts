@@ -1,4 +1,4 @@
-import { MfaService, PasswordHasher } from '@nestjs/authentication';
+import { PasswordHasher } from '@nestjs/authentication';
 import { ForbiddenException, Injectable } from '@nestjs/common';
 import { ThrottlerException } from '@nestjs/throttler';
 import { DistributedThrottlerStorage } from '#src/common/rate-limit/distributed-throttler.storage';
@@ -11,7 +11,6 @@ export class AccountDeletionRequestsService {
   constructor(
     private readonly repository: AccountDeletionRequestsRepository,
     private readonly passwords: PasswordHasher,
-    private readonly mfa: MfaService,
     private readonly throttle: DistributedThrottlerStorage,
   ) {}
 
@@ -20,7 +19,7 @@ export class AccountDeletionRequestsService {
     return { request: receipt && { ...receipt, status: 'REQUESTED' as const } };
   }
 
-  async submit(userId: string, { password, totpCode }: AccountDeletionRequestInput) {
+  async submit(userId: string, { password }: AccountDeletionRequestInput) {
     const policy = RATE_LIMIT_POLICIES.auth;
     const attempt = await this.throttle.increment(
       `account-deletion:${userId}`,
@@ -35,13 +34,6 @@ export class AccountDeletionRequestsService {
     const passwordMatches = await this.passwords.verify(password, credentials?.passwordHash);
     if (!credentials || !passwordMatches) {
       throw new ForbiddenException('Account confirmation failed');
-    }
-
-    if (await this.mfa.isEnrolled(userId)) {
-      if (!totpCode) throw new ForbiddenException('Current authenticator code required');
-      if (!(await this.mfa.verifyTotp(userId, totpCode))) {
-        throw new ForbiddenException('Account confirmation failed');
-      }
     }
 
     const receipt = await this.repository.submit(userId, credentials);
