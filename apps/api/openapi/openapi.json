@@ -1,63 +1,6 @@
 {
   "openapi": "3.0.0",
   "paths": {
-    "/auth/sessions": {
-      "get": {
-        "operationId": "SessionsController_list",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "tags": ["Sessions"]
-      }
-    },
-    "/auth/sessions/{id}": {
-      "delete": {
-        "operationId": "SessionsController_revoke",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": ""
-          }
-        },
-        "tags": ["Sessions"]
-      }
-    },
-    "/auth/sign-out": {
-      "post": {
-        "operationId": "SessionsController_signOut",
-        "parameters": [],
-        "responses": {
-          "204": {
-            "description": ""
-          }
-        },
-        "tags": ["Sessions"]
-      }
-    },
-    "/auth/sign-out-everywhere": {
-      "post": {
-        "operationId": "SessionsController_signOutEverywhere",
-        "parameters": [],
-        "responses": {
-          "204": {
-            "description": ""
-          }
-        },
-        "tags": ["Sessions"]
-      }
-    },
     "/health/live": {
       "get": {
         "operationId": "HealthController_liveness",
@@ -1046,6 +989,51 @@
         "tags": ["EmailVerification"]
       }
     },
+    "/auth/sessions": {
+      "get": {
+        "operationId": "SessionsController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": ["Sessions"]
+      }
+    },
+    "/auth/sessions/{id}": {
+      "delete": {
+        "operationId": "SessionsController_revoke",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "tags": ["Sessions"]
+      }
+    },
+    "/auth/sign-out-everywhere": {
+      "post": {
+        "operationId": "SessionsController_signOutEverywhere",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "tags": ["Sessions"]
+      }
+    },
     "/avatars/{key}": {
       "get": {
         "operationId": "AvatarPublicController_get",
@@ -1468,6 +1456,18 @@
           }
         },
         "tags": ["Authentication"]
+      }
+    },
+    "/auth/sign-out": {
+      "post": {
+        "operationId": "SessionsController_signOut",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "tags": ["Sessions"]
       }
     },
     "/users/me/notification-settings": {
