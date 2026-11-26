@@ -20,6 +20,9 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { AppModule } from '../../../src/app.module.js';
 import { AdminAuthController } from '../../../src/api/admin/auth/controllers/admin-auth.controller.js';
+import { AdminSessionsController } from '../../../src/api/admin/auth/controllers/admin-sessions.controller.js';
+import { SessionsController } from '../../../src/modules/auth/controllers/sessions.controller.js';
+import { AdminSessionPurposeGuard } from '../../../src/common/auth/admin-session-purpose.guard.js';
 import { AdminAuthApiModule } from '../../../src/api/admin/auth/admin-auth-api.module.js';
 import { AuthController } from '../../../src/api/public/auth/controllers/auth.controller.js';
 import { PublicAuthApiModule } from '../../../src/api/public/auth/public-auth-api.module.js';
@@ -206,6 +209,38 @@ describe('GET /admin/users (HTTP + PostgreSQL)', () => {
         .find((module) => module.metatype === AdminAuthApiModule)
         ?.injectables.has(AdminOriginGuard),
     ).toBe(true);
+  });
+
+  it('owns Admin sessions in the Admin API without moving ordinary sessions or duplicating guards in core', async () => {
+    const modules = [...app.get(ModulesContainer).values()];
+    expect(
+      modules
+        .filter((module) => module.controllers.has(AdminSessionsController))
+        .map((module) => module.metatype),
+    ).toEqual([AdminAuthApiModule]);
+    expect(
+      modules
+        .filter((module) => module.controllers.has(SessionsController))
+        .map((module) => module.metatype),
+    ).toEqual([AuthModule]);
+    expect(
+      app.select(AdminAuthApiModule).get(AdminSessionsController, { strict: true }),
+    ).toBeInstanceOf(AdminSessionsController);
+    const core = modules.find((module) => module.metatype === AuthModule);
+    const admin = modules.find((module) => module.metatype === AdminAuthApiModule);
+    for (const guard of [AdminOriginGuard, AdminSessionPurposeGuard]) {
+      expect(core?.providers.has(guard)).toBe(false);
+      expect(core?.injectables.has(guard)).toBe(false);
+      expect(admin?.injectables.has(guard)).toBe(true);
+    }
+    for (const [method, path] of [
+      ['get', '/auth/admin-session'],
+      ['post', '/auth/admin-sessions/revoke-all'],
+      ['post', '/auth/admin-sign-out'],
+    ] as const) {
+      const denied = await request(app.getHttpServer())[method](path).expect(401);
+      expect(denied.headers['cache-control']).toBe('no-store');
+    }
   });
 
   it('owns the Admin session facade and private Auth lifecycle providers exactly once', () => {

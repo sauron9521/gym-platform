@@ -1,71 +1,6 @@
 {
   "openapi": "3.0.0",
   "paths": {
-    "/auth/admin-session": {
-      "get": {
-        "operationId": "SessionsController_adminSession",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "id": {
-                      "type": "string",
-                      "format": "uuid"
-                    },
-                    "role": {
-                      "type": "string",
-                      "enum": ["ADMIN"]
-                    }
-                  },
-                  "required": ["id", "role"],
-                  "additionalProperties": false
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "adminSessionCookie": []
-          }
-        ],
-        "tags": ["Sessions"]
-      }
-    },
-    "/auth/admin-sessions/revoke-all": {
-      "post": {
-        "operationId": "SessionsController_revokeAdminSessions",
-        "parameters": [],
-        "responses": {
-          "204": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "adminSessionCookie": []
-          }
-        ],
-        "tags": ["Sessions"]
-      }
-    },
-    "/auth/admin-sign-out": {
-      "post": {
-        "operationId": "SessionsController_adminSignOut",
-        "parameters": [],
-        "responses": {
-          "204": {
-            "description": ""
-          }
-        },
-        "tags": ["Sessions"]
-      }
-    },
     "/auth/sessions": {
       "get": {
         "operationId": "SessionsController_list",
@@ -419,6 +354,71 @@
           }
         },
         "tags": ["Authentication"]
+      }
+    },
+    "/auth/admin-session": {
+      "get": {
+        "operationId": "SessionsController_adminSession",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "role": {
+                      "type": "string",
+                      "enum": ["ADMIN"]
+                    }
+                  },
+                  "required": ["id", "role"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "adminSessionCookie": []
+          }
+        ],
+        "tags": ["Sessions"]
+      }
+    },
+    "/auth/admin-sessions/revoke-all": {
+      "post": {
+        "operationId": "SessionsController_revokeAdminSessions",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "adminSessionCookie": []
+          }
+        ],
+        "tags": ["Sessions"]
+      }
+    },
+    "/auth/admin-sign-out": {
+      "post": {
+        "operationId": "SessionsController_adminSignOut",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "tags": ["Sessions"]
       }
     },
     "/users/me/capabilities": {

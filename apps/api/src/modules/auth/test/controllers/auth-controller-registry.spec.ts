@@ -26,18 +26,9 @@ describe('AuthModule controller registry', () => {
   });
 
   it.each([
-    [SessionsController, 'adminSession', RequestMethod.GET, 'admin-session', undefined],
-    [
-      SessionsController,
-      'revokeAdminSessions',
-      RequestMethod.POST,
-      'admin-sessions/revoke-all',
-      204,
-    ],
     [SessionsController, 'list', RequestMethod.GET, 'sessions', undefined],
     [SessionsController, 'revoke', RequestMethod.DELETE, 'sessions/:id', 204],
     [SessionsController, 'signOut', RequestMethod.POST, 'sign-out', 204],
-    [SessionsController, 'adminSignOut', RequestMethod.POST, 'admin-sign-out', 204],
     [SessionsController, 'signOutEverywhere', RequestMethod.POST, 'sign-out-everywhere', 204],
   ] as const)('preserves %s.%s HTTP contract', (controller, name, method, path, code) => {
     const handler = Object.getOwnPropertyDescriptor(controller.prototype, name)?.value as (
@@ -50,9 +41,6 @@ describe('AuthModule controller registry', () => {
   });
 
   it.each([
-    [SessionsController, 'adminSession', 'SessionsController-adminSession'],
-    [SessionsController, 'revokeAdminSessions', 'SessionsController-revokeAdminSessions'],
-    [SessionsController, 'adminSignOut', 'SessionsController-adminSignOut'],
     [SessionsController, 'list', 'SessionsController-list'],
     [SessionsController, 'revoke', 'SessionsController-revoke'],
     [SessionsController, 'signOut', 'SessionsController-signOut'],
@@ -86,7 +74,7 @@ describe('AuthModule controller registry', () => {
     }
   });
 
-  it('registers exactly seven unique HTTP verb/path pairs', () => {
+  it('registers exactly four unique HTTP verb/path pairs', () => {
     const routes = controllers.flatMap((controller) => {
       const prefix = Reflect.getMetadata(PATH_METADATA, controller) as string;
       return Object.getOwnPropertyNames(controller.prototype)
@@ -103,7 +91,7 @@ describe('AuthModule controller registry', () => {
         });
     });
 
-    expect(routes).toHaveLength(7);
+    expect(routes).toHaveLength(4);
     expect(new Set(routes).size).toBe(routes.length);
   });
 });
