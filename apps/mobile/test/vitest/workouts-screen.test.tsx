@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render } from '@testing-library/react-native';
-import { getFlatMessages, type Locale } from '@gym/i18n';
+import type { Locale } from '@gym/i18n';
+import { getMobileMessages } from '@/shared/i18n/mobile-messages';
 import { IntlProvider } from 'react-intl';
 
 import { useAuth } from '@/features/auth/model/auth-context';
@@ -55,7 +56,7 @@ function prepare(
 
 function screenFor(locale: Locale) {
   return render(
-    <IntlProvider locale={locale} defaultLocale="uk" messages={getFlatMessages(locale)}>
+    <IntlProvider locale={locale} defaultLocale="uk" messages={getMobileMessages(locale)}>
       <WorkoutsScreen />
     </IntlProvider>,
   );
@@ -79,6 +80,8 @@ describe('WorkoutsScreen native pagination and localized copy', () => {
     expect(push).toHaveBeenCalledWith('/workouts/new');
     await fireEvent.press(view.getByTestId('workouts-programs'));
     expect(push).toHaveBeenCalledWith('/programs');
+    await fireEvent.press(view.getByTestId('workouts-calendar'));
+    expect(push).toHaveBeenCalledWith('/workouts/calendar');
 
     await fireEvent.press(view.getByTestId('workouts-filter-COMPLETED'));
     expect(useWorkoutsQuery).toHaveBeenCalledWith('COMPLETED');
@@ -93,6 +96,7 @@ describe('WorkoutsScreen native pagination and localized copy', () => {
 
     expect(view.queryByTestId('workouts-create')).toBeNull();
     expect(view.queryByTestId('workouts-programs')).toBeNull();
+    expect(view.queryByTestId('workouts-calendar')).toBeNull();
     expect(view.getByText('Помилка завантаження. Спробувати ще')).toBeTruthy();
     expect(fetchNextPage).not.toHaveBeenCalled();
 
@@ -149,7 +153,7 @@ describe('WorkoutsScreen native pagination and localized copy', () => {
     await fireEvent.press(view.getByTestId('workouts-filter-COMPLETED'));
     expect(useWorkoutsQuery).toHaveBeenCalledWith('COMPLETED');
     await view.rerender(
-      <IntlProvider locale="uk" defaultLocale="uk" messages={getFlatMessages('uk')}>
+      <IntlProvider locale="uk" defaultLocale="uk" messages={getMobileMessages('uk')}>
         <WorkoutsScreen />
       </IntlProvider>,
     );
@@ -184,7 +188,7 @@ describe('WorkoutsScreen native pagination and localized copy', () => {
     expect(view.queryByText('Show more')).toBeNull();
     prepare('ATHLETE', false, { data: { pages: [] }, isPending: false, hasNextPage: false });
     await view.rerender(
-      <IntlProvider locale="en" defaultLocale="uk" messages={getFlatMessages('en')}>
+      <IntlProvider locale="en" defaultLocale="uk" messages={getMobileMessages('en')}>
         <WorkoutsScreen />
       </IntlProvider>,
     );
