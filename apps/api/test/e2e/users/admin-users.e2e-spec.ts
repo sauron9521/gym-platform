@@ -19,7 +19,14 @@ import { PrismaService } from '../../../src/infra/database/index.js';
 import { AdminMfaChallengeService } from '../../../src/modules/auth/services/admin-mfa-challenge.service.js';
 import { AdminMfaEnrollmentService } from '../../../src/modules/auth/services/admin-mfa-enrollment.service.js';
 import { AdminCookieAuthService } from '../../../src/modules/auth/services/admin-cookie-auth.service.js';
-import { PrismaMfaStore } from '../../../src/modules/auth/stores/index.js';
+import {
+  PrismaMfaStore,
+  PrismaSessionStore,
+  PrismaTokenStore,
+} from '../../../src/modules/auth/stores/index.js';
+import { AuthModule } from '../../../src/modules/auth/auth.module.js';
+import { AdminSessionFacade } from '../../../src/modules/auth/public-api.js';
+import { TokenCleanupService } from '../../../src/modules/auth/services/token-cleanup.service.js';
 import { createMfaEncryptionOptions } from '../../../src/common/config/mfa-keyring.config.js';
 import { useTestDatabase } from '../../utility/test-db-helper.js';
 import { codeAt } from '../../utility/totp-code.js';
@@ -122,6 +129,26 @@ describe('GET /admin/users (HTTP + PostgreSQL)', () => {
     ).toBeInstanceOf(AdminUsersController);
     expect([...modules.values()].filter((module) => module.metatype === UsersModule)).toHaveLength(
       1,
+    );
+  });
+
+  it('owns the Admin session facade and private Auth lifecycle providers exactly once', () => {
+    const modules = [...app.get(ModulesContainer).values()];
+    expect(modules.filter((module) => module.metatype === AuthModule)).toHaveLength(1);
+    for (const provider of [
+      AdminSessionFacade,
+      PrismaSessionStore,
+      PrismaTokenStore,
+      PrismaMfaStore,
+      AdminCookieAuthService,
+      TokenCleanupService,
+    ]) {
+      expect(
+        modules.filter((module) => module.providers.has(provider)).map((module) => module.metatype),
+      ).toEqual([AuthModule]);
+    }
+    expect(app.select(AuthModule).get(AdminSessionFacade, { strict: true })).toBeInstanceOf(
+      AdminSessionFacade,
     );
   });
 

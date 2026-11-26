@@ -2,8 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { NotFoundException, UnauthorizedException } from '@nestjs/common';
 import type { SessionRecord, SessionService, SignInService } from '@nestjs/authentication';
 import { SessionsController } from '../../controllers/sessions.controller.js';
-import type { PrismaSessionStore } from '../../stores/prisma-session.store.js';
-import type { AdminCookieAuthService } from '../../services/admin-cookie-auth.service.js';
+import type { AdminSessionFacade } from '../../public-api.js';
 
 describe('SessionsController', () => {
   const makeController = () => {
@@ -15,22 +14,19 @@ describe('SessionsController', () => {
       signOut: vi.fn(),
       signOutEverywhere: vi.fn(),
     };
-    const prismaSessionStore = { revokeAdminSessionsForUser: vi.fn() };
-    const adminCookies = { signOut: vi.fn() };
+    const adminSessions = { revokeAll: vi.fn(), signOut: vi.fn() };
     const request = { headers: {}, method: 'POST' } as never;
     const response = { append: vi.fn() } as never;
     const controller = new SessionsController(
       sessionService as unknown as SessionService,
       signInService as unknown as SignInService,
-      prismaSessionStore as unknown as PrismaSessionStore,
-      adminCookies as unknown as AdminCookieAuthService,
+      adminSessions as unknown as AdminSessionFacade,
     );
     return {
       controller,
       sessionService,
       signInService,
-      prismaSessionStore,
-      adminCookies,
+      adminSessions,
       request,
       response,
     };
@@ -41,47 +37,43 @@ describe('SessionsController', () => {
     expect(controller.adminSession('operator-id')).toEqual({ id: 'operator-id', role: 'ADMIN' });
   });
 
-  it('revokes only the current principal’s admin sessions and clears the cookie', async () => {
-    const {
-      controller,
-      prismaSessionStore,
-      signInService,
-      adminCookies,
-      request,
-      response,
-      sessionService,
-    } = makeController();
-    prismaSessionStore.revokeAdminSessionsForUser.mockResolvedValue(2);
-    adminCookies.signOut.mockResolvedValue(false); // Session is already revoked.
+  it('delegates admin revocation to the scoped command for the current principal', async () => {
+    const { controller, adminSessions, signInService, request, response, sessionService } =
+      makeController();
+    adminSessions.revokeAll.mockResolvedValue(undefined);
     await expect(
       controller.revokeAdminSessions('operator-id', request, response),
     ).resolves.toBeUndefined();
-    expect(prismaSessionStore.revokeAdminSessionsForUser).toHaveBeenCalledExactlyOnceWith(
+    expect(adminSessions.revokeAll).toHaveBeenCalledExactlyOnceWith(
       'operator-id',
+      request,
+      response,
     );
-    expect(adminCookies.signOut).toHaveBeenCalledExactlyOnceWith(request, response);
+    expect(adminSessions.signOut).not.toHaveBeenCalled();
     expect(signInService.signOut).not.toHaveBeenCalled();
     expect(sessionService.revoke).not.toHaveBeenCalled();
   });
 
-  it('never reports success or clears the cookie before admin revocation succeeds', async () => {
-    const { controller, prismaSessionStore, signInService, adminCookies, request, response } =
-      makeController();
-    prismaSessionStore.revokeAdminSessionsForUser.mockRejectedValueOnce(
+  it('propagates scoped revocation errors without ordinary or duplicate sign-out', async () => {
+    const { controller, adminSessions, signInService, request, response } = makeController();
+    adminSessions.revokeAll.mockRejectedValueOnce(
       new Error('Admin revocation storage unavailable'),
     );
     await expect(controller.revokeAdminSessions('operator-id', request, response)).rejects.toThrow(
       'Admin revocation storage unavailable',
     );
     expect(signInService.signOut).not.toHaveBeenCalled();
-    expect(adminCookies.signOut).not.toHaveBeenCalled();
+    expect(adminSessions.signOut).not.toHaveBeenCalled();
   });
 
-  it('admin-sign-out only clears the scoped Admin cookie and denies no-session callers', async () => {
-    const { controller, adminCookies, request, response, signInService } = makeController();
-    adminCookies.signOut.mockResolvedValueOnce(true).mockResolvedValueOnce(false);
+  it('admin-sign-out only delegates the scoped command and denies no-session callers', async () => {
+    const { controller, adminSessions, request, response, signInService } = makeController();
+    adminSessions.signOut.mockResolvedValueOnce(true).mockResolvedValueOnce(false);
     await expect(controller.adminSignOut(request, response)).resolves.toBeUndefined();
     await expect(controller.adminSignOut(request, response)).rejects.toThrow(UnauthorizedException);
+    expect(adminSessions.signOut).toHaveBeenCalledTimes(2);
+    expect(adminSessions.signOut).toHaveBeenCalledWith(request, response);
+    expect(adminSessions.revokeAll).not.toHaveBeenCalled();
     expect(signInService.signOut).not.toHaveBeenCalled();
   });
 
