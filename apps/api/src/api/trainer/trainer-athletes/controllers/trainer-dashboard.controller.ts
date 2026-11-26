@@ -9,7 +9,7 @@ import {
   trainerAthleteIdSchema,
   trainerDashboardOverviewResponse,
   trainerClientProgressResponse,
-} from '../public-api.js';
+} from '#src/modules/trainer-athletes/public-api';
 
 @ApiTags('Trainer Dashboard')
 @ApiCookieAuth('sessionCookie')

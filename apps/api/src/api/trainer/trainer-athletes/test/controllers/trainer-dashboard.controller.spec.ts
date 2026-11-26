@@ -3,7 +3,7 @@ import { METHOD_METADATA, PATH_METADATA } from '@nestjs/common/constants';
 import { Test } from '@nestjs/testing';
 
 import { TrainerDashboardController } from '../../controllers/trainer-dashboard.controller.js';
-import { TrainerDashboardService } from '../../public-api.js';
+import { TrainerDashboardService } from '#src/modules/trainer-athletes/public-api';
 
 describe('TrainerDashboardController', () => {
   it('registers a read-only client-progress route with relationId', () => {
