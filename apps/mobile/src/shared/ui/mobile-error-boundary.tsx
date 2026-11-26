@@ -1,6 +1,7 @@
 import { Component, type ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { mobileDiagnostics } from '@/shared/diagnostics/mobile-diagnostics';
 import { createThemedStyles } from '@/shared/config/theme-provider';
 
 type Props = { children: ReactNode };
@@ -15,6 +16,11 @@ export class MobileErrorBoundary extends Component<Props, State> {
 
   static getDerivedStateFromError(): State {
     return { failed: true };
+  }
+
+  componentDidCatch() {
+    // Do not pass the exception, message, component stack or user context.
+    mobileDiagnostics.report({ version: 1, kind: 'render_failure' });
   }
 
   render() {

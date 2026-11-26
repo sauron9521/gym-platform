@@ -2,6 +2,7 @@ import { fireEvent, render } from '@testing-library/react-native';
 import { Text } from 'react-native';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import { mobileDiagnostics } from '@/shared/diagnostics/mobile-diagnostics';
 import { MobileErrorBoundary } from '@/shared/ui/mobile-error-boundary';
 
 function Child({ fail }: { fail: boolean }) {
@@ -11,6 +12,7 @@ function Child({ fail }: { fail: boolean }) {
 
 describe('MobileErrorBoundary (native)', () => {
   afterEach(() => {
+    mobileDiagnostics.disable();
     vi.restoreAllMocks();
   });
 
@@ -26,6 +28,8 @@ describe('MobileErrorBoundary (native)', () => {
 
   it('hides exception details and offers an explicit retry', async () => {
     vi.spyOn(console, 'error').mockImplementation(() => {});
+    const sink = vi.fn();
+    mobileDiagnostics.configure({ environment: 'preview', permissionGranted: true, sink });
     const view = await render(
       <MobileErrorBoundary>
         <Child fail />
@@ -34,6 +38,10 @@ describe('MobileErrorBoundary (native)', () => {
 
     expect(view.getByText('Виникла помилка інтерфейсу')).toBeTruthy();
     expect(view.queryByText('secret: private API payload')).toBeNull();
+    expect(sink).toHaveBeenCalledExactlyOnceWith(
+      { version: 1, kind: 'render_failure' },
+      expect.any(AbortSignal),
+    );
     view.rerender(
       <MobileErrorBoundary>
         <Child fail={false} />
