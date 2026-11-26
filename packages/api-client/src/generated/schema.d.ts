@@ -132,6 +132,102 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/admin/trainer-applications': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['TrainerReviewController_findPending'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/admin/trainer-applications/{id}/approve': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['TrainerReviewController_approve'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/admin/trainer-applications/{id}/reject': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['TrainerReviewController_reject'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/admin/trainer-applications/{id}/revoke': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['TrainerReviewController_revoke'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/trainer-applications/me': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['TrainerApplicationsController_findMine'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch: operations['TrainerApplicationsController_updateMine'];
+    trace?: never;
+  };
+  '/trainer-applications': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['TrainerApplicationsController_submit'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/users/me/capabilities': {
     parameters: {
       query?: never;
@@ -948,102 +1044,6 @@ export interface paths {
     patch: operations['BodyMeasurementsController_update'];
     trace?: never;
   };
-  '/trainer-applications/me': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get: operations['TrainerApplicationsController_findMine'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch: operations['TrainerApplicationsController_updateMine'];
-    trace?: never;
-  };
-  '/trainer-applications': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    post: operations['TrainerApplicationsController_submit'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/admin/trainer-applications': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get: operations['TrainerReviewController_findPending'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/admin/trainer-applications/{id}/approve': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    post: operations['TrainerReviewController_approve'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/admin/trainer-applications/{id}/reject': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    post: operations['TrainerReviewController_reject'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/admin/trainer-applications/{id}/revoke': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    post: operations['TrainerReviewController_revoke'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
   '/training-programs/assignments': {
     parameters: {
       query?: never;
@@ -1580,6 +1580,310 @@ export interface operations {
           [name: string]: unknown;
         };
         content?: never;
+      };
+    };
+  };
+  TrainerReviewController_findPending: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            userId: string;
+            /** @enum {string} */
+            status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'REVOKED';
+            applicantNote: string | null;
+            /** Format: uuid */
+            reviewerId: string | null;
+            /** Format: date-time */
+            reviewedAt: string | null;
+            reviewReason: string | null;
+            /** Format: uuid */
+            revokedById: string | null;
+            /** Format: date-time */
+            revokedAt: string | null;
+            revokeReason: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+          }[];
+        };
+      };
+    };
+  };
+  TrainerReviewController_approve: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          reason: string;
+        };
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            userId: string;
+            /** @enum {string} */
+            status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'REVOKED';
+            applicantNote: string | null;
+            /** Format: uuid */
+            reviewerId: string | null;
+            /** Format: date-time */
+            reviewedAt: string | null;
+            reviewReason: string | null;
+            /** Format: uuid */
+            revokedById: string | null;
+            /** Format: date-time */
+            revokedAt: string | null;
+            revokeReason: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+          };
+        };
+      };
+    };
+  };
+  TrainerReviewController_reject: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          reason: string;
+        };
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            userId: string;
+            /** @enum {string} */
+            status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'REVOKED';
+            applicantNote: string | null;
+            /** Format: uuid */
+            reviewerId: string | null;
+            /** Format: date-time */
+            reviewedAt: string | null;
+            reviewReason: string | null;
+            /** Format: uuid */
+            revokedById: string | null;
+            /** Format: date-time */
+            revokedAt: string | null;
+            revokeReason: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+          };
+        };
+      };
+    };
+  };
+  TrainerReviewController_revoke: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          reason: string;
+        };
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            userId: string;
+            /** @enum {string} */
+            status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'REVOKED';
+            applicantNote: string | null;
+            /** Format: uuid */
+            reviewerId: string | null;
+            /** Format: date-time */
+            reviewedAt: string | null;
+            reviewReason: string | null;
+            /** Format: uuid */
+            revokedById: string | null;
+            /** Format: date-time */
+            revokedAt: string | null;
+            revokeReason: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+          };
+        };
+      };
+    };
+  };
+  TrainerApplicationsController_findMine: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            application: {
+              /** Format: uuid */
+              id: string;
+              /** @enum {string} */
+              status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'REVOKED';
+              applicantNote: string | null;
+              reviewReason: string | null;
+              /** Format: date-time */
+              reviewedAt: string | null;
+              /** Format: date-time */
+              revokedAt: string | null;
+              /** Format: date-time */
+              createdAt: string;
+              /** Format: date-time */
+              updatedAt: string;
+            } | null;
+          };
+        };
+      };
+    };
+  };
+  TrainerApplicationsController_updateMine: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          applicantNote: string;
+        };
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'REVOKED';
+            applicantNote: string | null;
+            reviewReason: string | null;
+            /** Format: date-time */
+            reviewedAt: string | null;
+            /** Format: date-time */
+            revokedAt: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+          };
+        };
+      };
+    };
+  };
+  TrainerApplicationsController_submit: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          applicantNote: string;
+        };
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'REVOKED';
+            applicantNote: string | null;
+            reviewReason: string | null;
+            /** Format: date-time */
+            reviewedAt: string | null;
+            /** Format: date-time */
+            revokedAt: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+          };
+        };
       };
     };
   };
@@ -5001,310 +5305,6 @@ export interface operations {
           [name: string]: unknown;
         };
         content?: never;
-      };
-    };
-  };
-  TrainerApplicationsController_findMine: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': {
-            application: {
-              /** Format: uuid */
-              id: string;
-              /** @enum {string} */
-              status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'REVOKED';
-              applicantNote: string | null;
-              reviewReason: string | null;
-              /** Format: date-time */
-              reviewedAt: string | null;
-              /** Format: date-time */
-              revokedAt: string | null;
-              /** Format: date-time */
-              createdAt: string;
-              /** Format: date-time */
-              updatedAt: string;
-            } | null;
-          };
-        };
-      };
-    };
-  };
-  TrainerApplicationsController_updateMine: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': {
-          applicantNote: string;
-        };
-      };
-    };
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': {
-            /** Format: uuid */
-            id: string;
-            /** @enum {string} */
-            status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'REVOKED';
-            applicantNote: string | null;
-            reviewReason: string | null;
-            /** Format: date-time */
-            reviewedAt: string | null;
-            /** Format: date-time */
-            revokedAt: string | null;
-            /** Format: date-time */
-            createdAt: string;
-            /** Format: date-time */
-            updatedAt: string;
-          };
-        };
-      };
-    };
-  };
-  TrainerApplicationsController_submit: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': {
-          applicantNote: string;
-        };
-      };
-    };
-    responses: {
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': {
-            /** Format: uuid */
-            id: string;
-            /** @enum {string} */
-            status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'REVOKED';
-            applicantNote: string | null;
-            reviewReason: string | null;
-            /** Format: date-time */
-            reviewedAt: string | null;
-            /** Format: date-time */
-            revokedAt: string | null;
-            /** Format: date-time */
-            createdAt: string;
-            /** Format: date-time */
-            updatedAt: string;
-          };
-        };
-      };
-    };
-  };
-  TrainerReviewController_findPending: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': {
-            /** Format: uuid */
-            id: string;
-            /** Format: uuid */
-            userId: string;
-            /** @enum {string} */
-            status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'REVOKED';
-            applicantNote: string | null;
-            /** Format: uuid */
-            reviewerId: string | null;
-            /** Format: date-time */
-            reviewedAt: string | null;
-            reviewReason: string | null;
-            /** Format: uuid */
-            revokedById: string | null;
-            /** Format: date-time */
-            revokedAt: string | null;
-            revokeReason: string | null;
-            /** Format: date-time */
-            createdAt: string;
-            /** Format: date-time */
-            updatedAt: string;
-          }[];
-        };
-      };
-    };
-  };
-  TrainerReviewController_approve: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': {
-          reason: string;
-        };
-      };
-    };
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': {
-            /** Format: uuid */
-            id: string;
-            /** Format: uuid */
-            userId: string;
-            /** @enum {string} */
-            status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'REVOKED';
-            applicantNote: string | null;
-            /** Format: uuid */
-            reviewerId: string | null;
-            /** Format: date-time */
-            reviewedAt: string | null;
-            reviewReason: string | null;
-            /** Format: uuid */
-            revokedById: string | null;
-            /** Format: date-time */
-            revokedAt: string | null;
-            revokeReason: string | null;
-            /** Format: date-time */
-            createdAt: string;
-            /** Format: date-time */
-            updatedAt: string;
-          };
-        };
-      };
-    };
-  };
-  TrainerReviewController_reject: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': {
-          reason: string;
-        };
-      };
-    };
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': {
-            /** Format: uuid */
-            id: string;
-            /** Format: uuid */
-            userId: string;
-            /** @enum {string} */
-            status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'REVOKED';
-            applicantNote: string | null;
-            /** Format: uuid */
-            reviewerId: string | null;
-            /** Format: date-time */
-            reviewedAt: string | null;
-            reviewReason: string | null;
-            /** Format: uuid */
-            revokedById: string | null;
-            /** Format: date-time */
-            revokedAt: string | null;
-            revokeReason: string | null;
-            /** Format: date-time */
-            createdAt: string;
-            /** Format: date-time */
-            updatedAt: string;
-          };
-        };
-      };
-    };
-  };
-  TrainerReviewController_revoke: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': {
-          reason: string;
-        };
-      };
-    };
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': {
-            /** Format: uuid */
-            id: string;
-            /** Format: uuid */
-            userId: string;
-            /** @enum {string} */
-            status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'REVOKED';
-            applicantNote: string | null;
-            /** Format: uuid */
-            reviewerId: string | null;
-            /** Format: date-time */
-            reviewedAt: string | null;
-            reviewReason: string | null;
-            /** Format: uuid */
-            revokedById: string | null;
-            /** Format: date-time */
-            revokedAt: string | null;
-            revokeReason: string | null;
-            /** Format: date-time */
-            createdAt: string;
-            /** Format: date-time */
-            updatedAt: string;
-          };
-        };
       };
     };
   };

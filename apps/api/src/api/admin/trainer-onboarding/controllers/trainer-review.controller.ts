@@ -27,7 +27,7 @@ import {
   type TrainerReviewDecision,
   TrainerReviewService,
   type Reviewer,
-} from '../public-api.js';
+} from '#src/modules/trainer-onboarding/public-api';
 
 @ApiTags('Trainer moderation')
 @ApiCookieAuth('adminSessionCookie')

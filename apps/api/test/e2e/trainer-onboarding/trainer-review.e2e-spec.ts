@@ -360,6 +360,34 @@ describe('Operator trainer review (HTTP + PostgreSQL)', () => {
     ]);
   });
 
+  it('allows only one competing decision and keeps the application and trainer profile consistent', async () => {
+    const apply = await request(app.getHttpServer())
+      .post('/trainer-applications')
+      .set('Cookie', asUser('other'))
+      .send({ applicantNote: 'Independent application for concurrent review regression.' })
+      .expect(201);
+    const id = apply.body.id as string;
+    const [approve, reject] = await Promise.all([
+      request(app.getHttpServer())
+        .post(url(id, 'approve'))
+        .set('Cookie', asUser('operator'))
+        .send({ reason: 'Verified concurrent approval' }),
+      request(app.getHttpServer())
+        .post(url(id, 'reject'))
+        .set('Cookie', asUser('operator'))
+        .send({ reason: 'Verified concurrent rejection' }),
+    ]);
+    expect([approve.status, reject.status].sort((a, b) => a - b)).toEqual([200, 409]);
+    const application = await prisma.trainerApplication.findUniqueOrThrow({ where: { id } });
+    const profile = await prisma.trainerProfile.findUnique({
+      where: { userId: application.userId },
+    });
+    expect(application.status).toBe(approve.status === 200 ? 'APPROVED' : 'REJECTED');
+    expect(application.reviewerId).toBe(operatorId);
+    if (approve.status === 200) expect(profile?.isActive).toBe(true);
+    else expect(profile).toBeNull();
+  });
+
   it('refuses to review if the database administrator role has been removed', async () => {
     await prisma.user.update({ where: { id: operatorId }, data: { role: 'ATHLETE' } });
     try {

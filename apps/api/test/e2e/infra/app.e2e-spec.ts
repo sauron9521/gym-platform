@@ -27,7 +27,10 @@ import {
 import { TrainerApplicationsRepository } from '../../../src/modules/trainer-onboarding/repositories/trainer-applications.repository.js';
 import { TrainerReviewRepository } from '../../../src/modules/trainer-onboarding/repositories/trainer-review.repository.js';
 import { TrainerApplicationsController } from '../../../src/modules/trainer-onboarding/controllers/trainer-applications.controller.js';
-import { TrainerReviewController } from '../../../src/modules/trainer-onboarding/controllers/trainer-review.controller.js';
+import { TrainerReviewController } from '../../../src/api/admin/trainer-onboarding/controllers/trainer-review.controller.js';
+import { AdminTrainerOnboardingApiModule } from '../../../src/api/admin/trainer-onboarding/admin-trainer-onboarding-api.module.js';
+import { AdminOriginGuard } from '../../../src/common/auth/admin-origin.guard.js';
+import { AdminSessionPurposeGuard } from '../../../src/common/auth/admin-session-purpose.guard.js';
 import { TrainingProgramsModule } from '../../../src/modules/training-programs/training-programs.module.js';
 import { TrainingProgramsService } from '../../../src/modules/training-programs/services/training-programs.service.js';
 import { UsersModule } from '../../../src/modules/users/users.module.js';
@@ -116,13 +119,35 @@ describe('App (e2e)', () => {
         modules.filter((module) => module.providers.has(provider)).map((module) => module.metatype),
       ).toEqual([TrainerOnboardingModule]);
     }
-    for (const controller of [TrainerApplicationsController, TrainerReviewController]) {
+    for (const [controller, owner] of [
+      [TrainerApplicationsController, TrainerOnboardingModule],
+      [TrainerReviewController, AdminTrainerOnboardingApiModule],
+    ] as const) {
       expect(
         modules
           .filter((module) => module.controllers.has(controller))
           .map((module) => module.metatype),
-      ).toEqual([TrainerOnboardingModule]);
+      ).toEqual([owner]);
     }
+  });
+
+  it('resolves moved review controller and guards from the Admin leaf without redundant core registration', () => {
+    const modules = [...app.get(ModulesContainer).values()];
+    const core = modules.find((module) => module.metatype === TrainerOnboardingModule);
+    const admin = modules.find((module) => module.metatype === AdminTrainerOnboardingApiModule);
+    expect(
+      app.select(AdminTrainerOnboardingApiModule).get(TrainerReviewController, { strict: true }),
+    ).toBeInstanceOf(TrainerReviewController);
+    for (const guard of [AdminOriginGuard, AdminSessionPurposeGuard]) {
+      expect(core?.providers.has(guard)).toBe(false);
+      expect(core?.injectables.has(guard)).toBe(false);
+      expect(admin?.injectables.has(guard)).toBe(true);
+    }
+    expect(
+      modules
+        .filter((module) => module.providers.has(AdminAuditLogger))
+        .map((module) => module.metatype),
+    ).toEqual([AdminAuditModule]);
   });
 
   it('resolves the same Prisma singleton from the declaring module and app context', () => {
