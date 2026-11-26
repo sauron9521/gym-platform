@@ -17,5 +17,7 @@
   "src/modules/body-measurements/controllers/body-measurements.controller.ts": "src/api/athlete/body-measurements/controllers/body-measurements.controller.ts",
   "src/modules/body-measurements/test/controllers/body-measurements.controller.spec.ts": "src/api/athlete/body-measurements/test/controllers/body-measurements.controller.spec.ts",
   "src/modules/workout-analytics/controllers/workout-analytics.controller.ts": "src/api/athlete/workout-analytics/controllers/workout-analytics.controller.ts",
-  "src/modules/workout-analytics/test/controllers/workout-analytics.controller.spec.ts": "src/api/athlete/workout-analytics/test/controllers/workout-analytics.controller.spec.ts"
+  "src/modules/workout-analytics/test/controllers/workout-analytics.controller.spec.ts": "src/api/athlete/workout-analytics/test/controllers/workout-analytics.controller.spec.ts",
+  "src/modules/trainer-athletes/controllers/trainer-athletes.controller.ts": "src/api/shared/trainer-athletes/controllers/trainer-athletes.controller.ts",
+  "src/modules/trainer-athletes/test/controllers/trainer-athletes.controller.spec.ts": "src/api/shared/trainer-athletes/test/controllers/trainer-athletes.controller.spec.ts"
 }

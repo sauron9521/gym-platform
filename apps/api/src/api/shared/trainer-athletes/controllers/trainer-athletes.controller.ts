@@ -25,7 +25,7 @@ import {
   queryTrainerAthletesSchema,
   type TerminateTrainerAthleteDto,
   terminateTrainerAthleteSchema,
-} from '../public-api.js';
+} from '#src/modules/trainer-athletes/public-api';
 
 @ApiTags('Trainer & Athlete Relationships')
 @ApiCookieAuth('sessionCookie')

@@ -7,7 +7,7 @@ import {
   type CreateTrainerAthleteDto,
   type QueryTrainerAthletesDto,
   type TerminateTrainerAthleteDto,
-} from '../../public-api.js';
+} from '#src/modules/trainer-athletes/public-api';
 
 describe('TrainerAthletesController', () => {
   let controller: TrainerAthletesController;

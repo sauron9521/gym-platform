@@ -6,14 +6,13 @@ import { TrainerAthletesRepository } from './repositories/trainer-athletes.repos
 import { TrainerAthletesService } from './services/trainer-athletes.service.js';
 import { TrainerAthleteTerminationService } from './services/trainer-athlete-termination.service.js';
 import { TrainerAthleteExerciseCopyService } from './services/trainer-athlete-exercise-copy.service.js';
-import { TrainerAthletesController } from './controllers/trainer-athletes.controller.js';
 import { TrainerDashboardController } from './controllers/trainer-dashboard.controller.js';
 import { TrainerDashboardRepository } from './repositories/trainer-dashboard.repository.js';
 import { TrainerDashboardService } from './services/trainer-dashboard.service.js';
 
 @Module({
   imports: [UsersModule],
-  controllers: [TrainerAthletesController, TrainerDashboardController],
+  controllers: [TrainerDashboardController],
   providers: [
     TrainerAthletesRepository,
     TrainerAthletesService,
