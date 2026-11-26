@@ -206,6 +206,14 @@ const navigationMessages = {
     uk: 'Після завершення відпочинку або після повернення в застосунок.',
     en: 'When rest ends, or when you return to the app.',
   },
+  'mobile.settings.keepWorkoutScreenAwake': {
+    uk: 'Не вимикати екран під час тренування',
+    en: 'Keep screen awake during workouts',
+  },
+  'mobile.settings.keepWorkoutScreenAwakeHint': {
+    uk: 'Лише на відкритому екрані активного тренування. Може збільшити витрати заряду.',
+    en: 'Only while the active workout screen is open. May increase battery use.',
+  },
   'mobile.settings.pending': { uk: 'Зачекайте…', en: 'Please wait…' },
   'mobile.settings.storageError': {
     uk: 'Не вдалося зберегти або прочитати налаштування. Спробуйте ще раз.',

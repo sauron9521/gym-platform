@@ -15,19 +15,22 @@ const state = vi.hoisted(() => ({
   getItem: vi.fn(),
   getDuration: vi.fn(),
   getFeedback: vi.fn(),
+  getKeepAwake: vi.fn(),
   patch: vi.fn(),
   setItem: vi.fn(),
 }));
 vi.mock('@react-native-async-storage/async-storage', () => ({
   default: {
     getItem: (key: string) =>
-      key.endsWith(':rest-sound') || key.endsWith(':rest-vibration')
-        ? state.getFeedback(key)
-        : key.endsWith(':rest-duration')
-          ? state.getDuration(key)
-          : key.includes(':app-settings:')
-            ? state.getItem(key)
-            : Promise.resolve(null),
+      key.endsWith(':keep-workout-screen-awake')
+        ? state.getKeepAwake(key)
+        : key.endsWith(':rest-sound') || key.endsWith(':rest-vibration')
+          ? state.getFeedback(key)
+          : key.endsWith(':rest-duration')
+            ? state.getDuration(key)
+            : key.includes(':app-settings:')
+              ? state.getItem(key)
+              : Promise.resolve(null),
     setItem: state.setItem,
   },
 }));
@@ -64,6 +67,7 @@ beforeEach(() => {
   state.getItem.mockReset().mockResolvedValue(null);
   state.getDuration.mockReset().mockResolvedValue(null);
   state.getFeedback.mockReset().mockResolvedValue(null);
+  state.getKeepAwake.mockReset().mockResolvedValue(null);
   state.setItem.mockReset().mockResolvedValue(undefined);
   state.patch
     .mockReset()
@@ -72,6 +76,35 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe('App settings', () => {
+  it('defaults keep-awake on, persists it and isolates accounts', async () => {
+    const view = await render(<App />);
+    const setting = () => view.getByTestId('settings-keep-workout-screen-awake');
+    await waitFor(() => expect(setting().props.disabled).toBe(false));
+    expect(setting().props.value).toBe(true);
+    await fireEvent(setting(), 'valueChange', false);
+    await waitFor(() => expect(setting().props.value).toBe(false));
+    expect(state.setItem).toHaveBeenCalledWith(
+      'gym-platform:app-settings:v1:athlete-a:keep-workout-screen-awake',
+      'false',
+    );
+    await view.unmount();
+    state.getKeepAwake.mockResolvedValue('false');
+    const restored = await render(<App />);
+    await waitFor(() =>
+      expect(restored.getByTestId('settings-keep-workout-screen-awake').props.disabled).toBe(false),
+    );
+    expect(restored.getByTestId('settings-keep-workout-screen-awake').props.value).toBe(false);
+    state.account = { id: 'athlete-b' };
+    state.getKeepAwake.mockResolvedValue(null);
+    await restored.rerender(<App />);
+    await waitFor(() =>
+      expect(restored.getByTestId('settings-keep-workout-screen-awake').props.value).toBe(true),
+    );
+    expect(state.getKeepAwake).toHaveBeenLastCalledWith(
+      'gym-platform:app-settings:v1:athlete-b:keep-workout-screen-awake',
+    );
+  });
+
   it('persists sound and vibration independently of auto-start and restores both', async () => {
     state.getItem.mockResolvedValue('false');
     const view = await render(<App />);
