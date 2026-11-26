@@ -14,7 +14,7 @@ import {
   workoutAnalyticsExerciseResponseSchema,
   workoutAnalyticsPersonalRecordsResponseSchema,
   workoutAnalyticsSummaryResponseSchema,
-} from '../public-api.js';
+} from '#src/modules/workout-analytics/public-api';
 
 @Authenticate()
 @ApiTags('Workout Analytics')

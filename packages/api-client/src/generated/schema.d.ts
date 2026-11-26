@@ -628,6 +628,70 @@ export interface paths {
     patch: operations['BodyMeasurementsController_update'];
     trace?: never;
   };
+  '/workout-analytics/summary': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['WorkoutAnalyticsController_summary'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/workout-analytics/personal-records': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['WorkoutAnalyticsController_personalRecords'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/workout-analytics/exercises/{exerciseId}/previous-sets': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['WorkoutAnalyticsController_previousSets'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/workout-analytics/exercises/{exerciseId}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['WorkoutAnalyticsController_exercise'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/exercises': {
     parameters: {
       query?: never;
@@ -974,70 +1038,6 @@ export interface paths {
     get?: never;
     put?: never;
     post: operations['WorkoutsController_createFromProgram'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/workout-analytics/summary': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get: operations['WorkoutAnalyticsController_summary'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/workout-analytics/personal-records': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get: operations['WorkoutAnalyticsController_personalRecords'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/workout-analytics/exercises/{exerciseId}/previous-sets': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get: operations['WorkoutAnalyticsController_previousSets'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/workout-analytics/exercises/{exerciseId}': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get: operations['WorkoutAnalyticsController_exercise'];
-    put?: never;
-    post?: never;
     delete?: never;
     options?: never;
     head?: never;
@@ -2907,6 +2907,148 @@ export interface operations {
           [name: string]: unknown;
         };
         content?: never;
+      };
+    };
+  };
+  WorkoutAnalyticsController_summary: {
+    parameters: {
+      query?: {
+        range?: '7d' | '30d' | '90d';
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** @enum {string} */
+            range: '7d' | '30d' | '90d';
+            /** Format: date-time */
+            from: string;
+            /** Format: date-time */
+            asOf: string;
+            workoutCount: number;
+            activeDays: number;
+            completedSets: number;
+            strengthVolumeKg: number;
+            daily: {
+              /** Format: date */
+              date: string;
+              workoutCount: number;
+              completedSets: number;
+              strengthVolumeKg: number;
+            }[];
+          };
+        };
+      };
+    };
+  };
+  WorkoutAnalyticsController_personalRecords: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** Format: date-time */
+            asOf: string;
+            exerciseCount: number;
+          };
+        };
+      };
+    };
+  };
+  WorkoutAnalyticsController_previousSets: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        exerciseId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** Format: uuid */
+            exerciseId: string;
+            /** Format: date-time */
+            workoutCompletedAt: string | null;
+            sets: {
+              setNumber: number;
+              /** @enum {string} */
+              setType: 'WARMUP' | 'WORKING' | 'DROP_SET' | 'AMRAP';
+              actualReps: number | null;
+              actualWeightKg: number | null;
+            }[];
+          };
+        };
+      };
+    };
+  };
+  WorkoutAnalyticsController_exercise: {
+    parameters: {
+      query?: {
+        range?: '7d' | '30d' | '90d';
+      };
+      header?: never;
+      path: {
+        exerciseId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** @enum {string} */
+            range: '7d' | '30d' | '90d';
+            /** Format: date-time */
+            from: string;
+            /** Format: date-time */
+            asOf: string;
+            /** Format: uuid */
+            exerciseId: string;
+            name: string | null;
+            workoutCount: number;
+            completedSets: number;
+            strengthReps: number;
+            strengthVolumeKg: number;
+            bestWeightKg: number | null;
+            daily: {
+              /** Format: date */
+              date: string;
+              workoutCount: number;
+              completedSets: number;
+              strengthVolumeKg: number;
+              strengthReps: number;
+              bestWeightKg: number | null;
+            }[];
+          };
+        };
       };
     };
   };
@@ -5161,148 +5303,6 @@ export interface operations {
             createdAt: string;
             /** Format: date-time */
             updatedAt: string;
-          };
-        };
-      };
-    };
-  };
-  WorkoutAnalyticsController_summary: {
-    parameters: {
-      query?: {
-        range?: '7d' | '30d' | '90d';
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': {
-            /** @enum {string} */
-            range: '7d' | '30d' | '90d';
-            /** Format: date-time */
-            from: string;
-            /** Format: date-time */
-            asOf: string;
-            workoutCount: number;
-            activeDays: number;
-            completedSets: number;
-            strengthVolumeKg: number;
-            daily: {
-              /** Format: date */
-              date: string;
-              workoutCount: number;
-              completedSets: number;
-              strengthVolumeKg: number;
-            }[];
-          };
-        };
-      };
-    };
-  };
-  WorkoutAnalyticsController_personalRecords: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': {
-            /** Format: date-time */
-            asOf: string;
-            exerciseCount: number;
-          };
-        };
-      };
-    };
-  };
-  WorkoutAnalyticsController_previousSets: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        exerciseId: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': {
-            /** Format: uuid */
-            exerciseId: string;
-            /** Format: date-time */
-            workoutCompletedAt: string | null;
-            sets: {
-              setNumber: number;
-              /** @enum {string} */
-              setType: 'WARMUP' | 'WORKING' | 'DROP_SET' | 'AMRAP';
-              actualReps: number | null;
-              actualWeightKg: number | null;
-            }[];
-          };
-        };
-      };
-    };
-  };
-  WorkoutAnalyticsController_exercise: {
-    parameters: {
-      query?: {
-        range?: '7d' | '30d' | '90d';
-      };
-      header?: never;
-      path: {
-        exerciseId: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': {
-            /** @enum {string} */
-            range: '7d' | '30d' | '90d';
-            /** Format: date-time */
-            from: string;
-            /** Format: date-time */
-            asOf: string;
-            /** Format: uuid */
-            exerciseId: string;
-            name: string | null;
-            workoutCount: number;
-            completedSets: number;
-            strengthReps: number;
-            strengthVolumeKg: number;
-            bestWeightKg: number | null;
-            daily: {
-              /** Format: date */
-              date: string;
-              workoutCount: number;
-              completedSets: number;
-              strengthVolumeKg: number;
-              strengthReps: number;
-              bestWeightKg: number | null;
-            }[];
           };
         };
       };

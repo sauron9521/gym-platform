@@ -58,7 +58,8 @@ import { UsersService } from '../../../src/modules/users/services/users.service.
 import { WorkoutAnalyticsModule } from '../../../src/modules/workout-analytics/workout-analytics.module.js';
 import { WorkoutAnalyticsService } from '../../../src/modules/workout-analytics/public-api.js';
 import { WorkoutAnalyticsRepository } from '../../../src/modules/workout-analytics/repositories/workout-analytics.repository.js';
-import { WorkoutAnalyticsController } from '../../../src/modules/workout-analytics/controllers/workout-analytics.controller.js';
+import { WorkoutAnalyticsController } from '../../../src/api/athlete/workout-analytics/controllers/workout-analytics.controller.js';
+import { AthleteWorkoutAnalyticsApiModule } from '../../../src/api/athlete/workout-analytics/athlete-workout-analytics-api.module.js';
 import { WorkoutsModule } from '../../../src/modules/workouts/workouts.module.js';
 import { WorkoutsService } from '../../../src/modules/workouts/services/workouts.service.js';
 
@@ -356,6 +357,22 @@ describe('App (e2e)', () => {
       .get(WorkoutAnalyticsBoundaryProbe, { strict: true });
     expect(modules.filter((module) => module.metatype === WorkoutAnalyticsModule)).toHaveLength(1);
     expect(probe.analytics).toBe(core.get(WorkoutAnalyticsService, { strict: true }));
+    expect(
+      modules.find((module) => module.metatype === WorkoutAnalyticsModule)?.controllers.size,
+    ).toBe(0);
+    expect(modules.filter((module) => module.metatype === AthleteApiModule)).toHaveLength(1);
+    expect(
+      modules.filter((module) => module.metatype === AthleteWorkoutAnalyticsApiModule),
+    ).toHaveLength(1);
+    expect(
+      modules.find((module) => module.metatype === AthleteWorkoutAnalyticsApiModule)?.controllers
+        .size,
+    ).toBe(1);
+    expect(
+      app
+        .select(AthleteWorkoutAnalyticsApiModule)
+        .get(WorkoutAnalyticsController, { strict: true }),
+    ).toBeInstanceOf(WorkoutAnalyticsController);
     for (const provider of [WorkoutAnalyticsService, WorkoutAnalyticsRepository]) {
       expect(
         modules.filter((module) => module.providers.has(provider)).map((module) => module.metatype),
@@ -370,7 +387,7 @@ describe('App (e2e)', () => {
       modules
         .filter((module) => module.controllers.has(WorkoutAnalyticsController))
         .map((module) => module.metatype),
-    ).toEqual([WorkoutAnalyticsModule]);
+    ).toEqual([AthleteWorkoutAnalyticsApiModule]);
   });
 
   it('resolves the same Prisma singleton from the declaring module and app context', () => {

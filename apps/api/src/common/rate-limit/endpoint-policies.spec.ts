@@ -4,7 +4,7 @@ import { RATE_LIMIT_POLICIES } from './rate-limit.policies.js';
 
 import { ExercisesController } from '#src/modules/exercises/controllers/exercises.controller';
 import { WorkoutsController } from '#src/modules/workouts/controllers/workouts.controller';
-import { WorkoutAnalyticsController } from '#src/modules/workout-analytics/controllers/workout-analytics.controller';
+import { WorkoutAnalyticsController } from '#src/api/athlete/workout-analytics/controllers/workout-analytics.controller';
 import { AuthController } from '#src/api/public/auth/controllers/auth.controller';
 import { UsersController } from '#src/api/shared/users/controllers/users.controller';
 import { TrainerApplicationsController } from '#src/api/shared/trainer-onboarding/controllers/trainer-applications.controller';
