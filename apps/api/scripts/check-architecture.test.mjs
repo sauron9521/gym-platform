@@ -275,3 +275,112 @@ test('rejects computed dynamic imports and ignores commented-out imports', () =>
     assert.doesNotMatch(violations, /relative ESM import needs \.js/);
   });
 });
+
+function audienceFixture(write) {
+  write('src/modules/example/api-interfaces.json', '{"audiences":["admin"]}');
+  write(
+    'src/api/admin/example/controllers/admin-example.controller.ts',
+    'export class AdminExampleController {}',
+  );
+  write(
+    'src/api/admin/example/admin-example-api.module.ts',
+    "import { AdminExampleController } from './controllers/admin-example.controller.js';\n" +
+      '@Module({ controllers: [AdminExampleController] }) export class AdminExampleApiModule {}',
+  );
+  write('src/api/admin/example/test/controllers/admin-example.controller.spec.ts', '');
+  write('src/api/admin/example/test/controllers/admin-example-controller-registry.spec.ts', '');
+}
+
+test('ADR-010 accepts an explicitly owned audience controller alongside legacy controllers', () => {
+  fixture(({ write, check }) => {
+    audienceFixture(write);
+    assert.deepEqual(check(), []);
+  });
+});
+
+test('ADR-010 accepts controller-free core only after explicit audience ownership', () => {
+  fixture(({ root, write, check }) => {
+    audienceFixture(write);
+    rmSync(join(root, 'src/modules/example/controllers'), { recursive: true });
+    rmSync(join(root, 'src/modules/example/test/controllers'), { recursive: true });
+    write(
+      'src/modules/example/example.module.ts',
+      '@Module({ controllers: [] }) export class ExampleModule {}',
+    );
+    assert.deepEqual(check(), []);
+    rmSync(join(root, 'src/modules/example/api-interfaces.json'));
+    assert.match(check().join('\n'), /expected controllers\/\*\.controller\.ts/);
+    assert.match(check().join('\n'), /missing feature API interface ownership declaration/);
+  });
+});
+
+test('ADR-010 does not accept an empty or stale ownership declaration', () => {
+  fixture(({ write, check }) => {
+    write('src/modules/example/api-interfaces.json', '{"audiences":["admin","admin"]}');
+    assert.match(check().join('\n'), /invalid API interface ownership declaration/);
+    write('src/modules/example/api-interfaces.json', '{"audiences":["admin"]}');
+    assert.match(check().join('\n'), /declared API audience admin has no controller/);
+  });
+});
+
+test('ADR-010 requires the owning module and both audience test files', () => {
+  fixture(({ root, write, check }) => {
+    audienceFixture(write);
+    rmSync(join(root, 'src/api/admin/example/admin-example-api.module.ts'));
+    rmSync(join(root, 'src/api/admin/example/test'), { recursive: true });
+    const errors = check().join('\n');
+    assert.match(errors, /missing owning API module/);
+    assert.match(errors, /missing controller unit test/);
+    assert.match(errors, /controller-registry\.spec\.ts/);
+  });
+});
+
+test('ADR-010 rejects double and foreign controller registration', () => {
+  fixture(({ write, check }) => {
+    audienceFixture(write);
+    write(
+      'src/api/admin/example/admin-example-api.module.ts',
+      "import { AdminExampleController } from './controllers/admin-example.controller.js';\n" +
+        '@Module({ controllers: [AdminExampleController, AdminExampleController] }) export class AdminExampleApiModule {}',
+    );
+    write(
+      'src/app.module.ts',
+      "import { AdminExampleController as Duplicate } from './api/admin/example/controllers/admin-example.controller.js';\n" +
+        '@Module({ controllers: [Duplicate] }) export class AppModule {}',
+    );
+    const errors = check().join('\n');
+    assert.match(errors, /must be registered exactly once/);
+    assert.match(errors, /duplicate API controller registration/);
+  });
+});
+
+test('ADR-010 rejects type-only and computed audience registrations', () => {
+  fixture(({ write, check }) => {
+    audienceFixture(write);
+    write(
+      'src/api/admin/example/admin-example-api.module.ts',
+      "import type { AdminExampleController } from './controllers/admin-example.controller.js';\n" +
+        '@Module({ controllers: [...controllers] }) export class AdminExampleApiModule {}',
+    );
+    const errors = check().join('\n');
+    assert.match(errors, /registration must be a literal array/);
+    assert.match(errors, /import controller directly/);
+    assert.match(errors, /must be registered exactly once/);
+  });
+});
+
+test('ADR-010 rejects misplaced controllers, phantom tests and root controller registration', () => {
+  fixture(({ write, check }) => {
+    audienceFixture(write);
+    write('src/api/admin/example/misplaced.controller.ts', 'export class MisplacedController {}');
+    write('src/api/admin/example/test/controllers/phantom.controller.spec.ts', '');
+    write(
+      'src/api/api.module.ts',
+      '@Module({ controllers: [UnknownController] }) export class ApiModule {}',
+    );
+    const errors = check().join('\n');
+    assert.match(errors, /expected api\/<audience>\/<feature>\/controllers/);
+    assert.match(errors, /no matching API controller/);
+    assert.match(errors, /unrecognized registered API controller/);
+  });
+});
