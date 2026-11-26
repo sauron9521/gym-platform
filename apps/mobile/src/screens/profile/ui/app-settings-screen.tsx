@@ -12,7 +12,8 @@ export function AppSettingsScreen() {
   const { palette } = useMobileTheme();
   const intl = useIntl();
   const t = (key: string) => intl.formatMessage({ id: `mobile.settings.${key}` });
-  const { settings, setAutoRestTimer, setRestDuration, reload } = useAppSettings();
+  const { settings, setAutoRestTimer, setRestDuration, setRestSound, setRestVibration, reload } =
+    useAppSettings();
   const disabled = settings.status !== 'ready' && settings.status !== 'saveError';
 
   return (
@@ -65,6 +66,30 @@ export function AppSettingsScreen() {
             })}
           </View>
         </View>
+        {[
+          { id: 'rest-sound', label: 'restSound', enabled: settings.restSound, save: setRestSound },
+          {
+            id: 'rest-vibration',
+            label: 'restVibration',
+            enabled: settings.restVibration,
+            save: setRestVibration,
+          },
+        ].map((feedback) => (
+          <View key={feedback.id} style={styles.row}>
+            <View style={styles.description}>
+              <Text style={styles.label}>{t(feedback.label)}</Text>
+              <Text style={styles.hint}>{t('restFeedbackHint')}</Text>
+            </View>
+            <Switch
+              testID={`settings-${feedback.id}`}
+              accessibilityLabel={t(feedback.label)}
+              disabled={disabled}
+              value={feedback.enabled}
+              onValueChange={(value) => void feedback.save(value)}
+              trackColor={{ false: palette.border, true: palette.primary }}
+            />
+          </View>
+        ))}
         {settings.status === 'loading' || settings.status === 'saving' ? (
           <Text accessibilityLiveRegion="polite" style={styles.hint}>
             {t('pending')}

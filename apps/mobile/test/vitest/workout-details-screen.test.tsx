@@ -22,9 +22,15 @@ vi.mock('@/features/workouts/model/workout-edit', () => ({
   useUpdateWorkoutTitle: vi.fn(),
 }));
 
+const notify = vi.hoisted(() => vi.fn());
+vi.mock('@/features/workouts/lib/use-rest-feedback', () => ({ useRestFeedback: () => notify }));
+
 const shouldAutoStartRestTimer = vi.hoisted(() => vi.fn(() => true));
 vi.mock('@/features/app-settings/model/app-settings-context', () => ({
-  useAppSettings: () => ({ shouldAutoStartRestTimer, settings: { restDuration: 120 } }),
+  useAppSettings: () => ({
+    shouldAutoStartRestTimer,
+    settings: { restDuration: 120, restSound: true, restVibration: true },
+  }),
 }));
 
 const refetch = vi.fn();

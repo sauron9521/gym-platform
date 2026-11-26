@@ -8,6 +8,7 @@ import {
 } from '@/shared/config/rest-duration';
 import { createThemedStyles } from '@/shared/config/theme-provider';
 
+import { useRestFeedback, type RestFeedback } from '../lib/use-rest-feedback';
 import { formatRestTime, secondsRemaining } from '../lib/rest-timer';
 
 type Countdown = {
@@ -15,6 +16,7 @@ type Countdown = {
   used: boolean;
   remaining: number;
   deadline: number | null;
+  completion: number;
 };
 
 /**
@@ -27,13 +29,15 @@ export type RestStart = { sequence: number; startedAt: number };
 export function RestTimer({
   autoStart,
   defaultDuration = defaultRestDuration,
-}: { autoStart?: RestStart | null; defaultDuration?: RestDuration } = {}) {
+  feedback = { sound: false, vibration: false },
+}: { autoStart?: RestStart | null; defaultDuration?: RestDuration; feedback?: RestFeedback } = {}) {
   const styles = useStyles();
   const [timer, setTimer] = useState<Countdown>({
     duration: defaultDuration,
     remaining: defaultDuration,
     used: false,
     deadline: null,
+    completion: 0,
   });
   // Hydration may finish after the screen mounts. Never reset a timer that
   // has already been started or customized in this workout.
@@ -42,6 +46,14 @@ export function RestTimer({
   }
   const [foreground, setForeground] = useState(true);
   const consumed = useRef<number | null>(null);
+  const signaled = useRef(0);
+  const notify = useRestFeedback();
+
+  useEffect(() => {
+    if (!foreground || timer.completion <= signaled.current) return;
+    signaled.current = timer.completion;
+    notify(feedback);
+  }, [foreground, timer.completion, feedback, notify]);
 
   useEffect(() => {
     if (!autoStart || consumed.current === autoStart.sequence) return;
@@ -62,6 +74,7 @@ export function RestTimer({
         ...current,
         remaining,
         deadline: remaining === 0 ? null : current.deadline,
+        completion: current.completion + (remaining === 0 ? 1 : 0),
       };
     });
   }, []);
@@ -110,7 +123,7 @@ export function RestTimer({
   const selectPreset = (duration: RestDuration) => {
     setTimer((current) => {
       if (current.deadline !== null) return current;
-      return { duration, remaining: duration, deadline: null, used: true };
+      return { ...current, duration, remaining: duration, deadline: null, used: true };
     });
   };
 

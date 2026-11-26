@@ -19,23 +19,30 @@ type SettingsState = {
   accountId: string | null;
   enabled: boolean;
   restDuration: RestDuration;
+  restSound: boolean;
+  restVibration: boolean;
   status: 'loading' | 'ready' | 'saving' | 'readError' | 'saveError';
 };
 type SettingsContextValue = {
   settings: SettingsState;
   setAutoRestTimer: (enabled: boolean) => Promise<void>;
   setRestDuration: (duration: RestDuration) => Promise<void>;
+  setRestSound: (enabled: boolean) => Promise<void>;
+  setRestVibration: (enabled: boolean) => Promise<void>;
   reload: () => void;
   shouldAutoStartRestTimer: () => boolean;
 };
 const SettingsContext = createContext<SettingsContextValue | null>(null);
-const preferenceKey = (accountId: string, preference: 'auto-rest-timer' | 'rest-duration') =>
+type PreferenceKey = 'auto-rest-timer' | 'rest-duration' | 'rest-sound' | 'rest-vibration';
+const preferenceKey = (accountId: string, preference: PreferenceKey) =>
   `gym-platform:app-settings:v1:${accountId}:${preference}`;
 
 const initial = (accountId: string | null): SettingsState => ({
   accountId,
   enabled: false,
   restDuration: defaultRestDuration,
+  restSound: false,
+  restVibration: false,
   status: 'loading',
 });
 
@@ -60,18 +67,22 @@ export function AppSettingsProvider({ children }: PropsWithChildren) {
       Promise.all([
         AsyncStorage.getItem(preferenceKey(accountId, 'auto-rest-timer')),
         AsyncStorage.getItem(preferenceKey(accountId, 'rest-duration')),
+        AsyncStorage.getItem(preferenceKey(accountId, 'rest-sound')),
+        AsyncStorage.getItem(preferenceKey(accountId, 'rest-vibration')),
       ]);
     const read = pendingWrite
       ? pendingWrite.catch(() => undefined).then(readPreferences)
       : readPreferences();
     void read
-      .then(([saved, duration]) => {
+      .then(([saved, duration, sound, vibration]) => {
         if (scopeRef.current !== scope) return;
         // A corrupt value is safe-off and can be overwritten by the user.
         scope.state = {
           accountId,
           enabled: saved === null || saved === 'true',
           restDuration: parseRestDuration(duration),
+          restSound: sound === null || sound === 'true',
+          restVibration: vibration === null || vibration === 'true',
           status: 'ready',
         };
         setState(scope.state);
@@ -88,9 +99,11 @@ export function AppSettingsProvider({ children }: PropsWithChildren) {
 
   const settings = state.accountId === accountId ? state : initial(accountId);
   const savePreference = async (
-    preference: 'auto-rest-timer' | 'rest-duration',
+    preference: PreferenceKey,
     value: string,
-    changes: Partial<Pick<SettingsState, 'enabled' | 'restDuration'>>,
+    changes: Partial<
+      Pick<SettingsState, 'enabled' | 'restDuration' | 'restSound' | 'restVibration'>
+    >,
   ) => {
     const scope = scopeRef.current;
     if (!scope || scope.accountId !== accountId) return;
@@ -136,6 +149,9 @@ export function AppSettingsProvider({ children }: PropsWithChildren) {
           savePreference('auto-rest-timer', String(enabled), { enabled }),
         setRestDuration: (restDuration) =>
           savePreference('rest-duration', String(restDuration), { restDuration }),
+        setRestSound: (restSound) => savePreference('rest-sound', String(restSound), { restSound }),
+        setRestVibration: (restVibration) =>
+          savePreference('rest-vibration', String(restVibration), { restVibration }),
         reload: () => {
           setState(initial(accountId));
           setRevision((value) => value + 1);

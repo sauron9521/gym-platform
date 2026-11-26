@@ -14,17 +14,20 @@ const state = vi.hoisted(() => ({
   account: { id: 'athlete-a' },
   getItem: vi.fn(),
   getDuration: vi.fn(),
+  getFeedback: vi.fn(),
   patch: vi.fn(),
   setItem: vi.fn(),
 }));
 vi.mock('@react-native-async-storage/async-storage', () => ({
   default: {
     getItem: (key: string) =>
-      key.endsWith(':rest-duration')
-        ? state.getDuration(key)
-        : key.includes(':app-settings:')
-          ? state.getItem(key)
-          : Promise.resolve(null),
+      key.endsWith(':rest-sound') || key.endsWith(':rest-vibration')
+        ? state.getFeedback(key)
+        : key.endsWith(':rest-duration')
+          ? state.getDuration(key)
+          : key.includes(':app-settings:')
+            ? state.getItem(key)
+            : Promise.resolve(null),
     setItem: state.setItem,
   },
 }));
@@ -60,6 +63,7 @@ beforeEach(() => {
   state.account = { id: 'athlete-a' };
   state.getItem.mockReset().mockResolvedValue(null);
   state.getDuration.mockReset().mockResolvedValue(null);
+  state.getFeedback.mockReset().mockResolvedValue(null);
   state.setItem.mockReset().mockResolvedValue(undefined);
   state.patch
     .mockReset()
@@ -68,6 +72,38 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe('App settings', () => {
+  it('persists sound and vibration independently of auto-start and restores both', async () => {
+    state.getItem.mockResolvedValue('false');
+    const view = await render(<App />);
+    await waitFor(() => expect(view.getByTestId('settings-rest-sound').props.disabled).toBe(false));
+    expect(view.getByTestId('settings-rest-sound').props.value).toBe(true);
+    expect(view.getByTestId('settings-rest-vibration').props.value).toBe(true);
+    await fireEvent(view.getByTestId('settings-rest-sound'), 'valueChange', false);
+    await waitFor(() => expect(view.getByTestId('settings-rest-sound').props.value).toBe(false));
+    expect(view.getByTestId('settings-rest-vibration').props.value).toBe(true);
+    await fireEvent(view.getByTestId('settings-rest-vibration'), 'valueChange', false);
+    await waitFor(() =>
+      expect(view.getByTestId('settings-rest-vibration').props.value).toBe(false),
+    );
+    expect(state.setItem).toHaveBeenCalledWith(
+      'gym-platform:app-settings:v1:athlete-a:rest-sound',
+      'false',
+    );
+    expect(state.setItem).toHaveBeenCalledWith(
+      'gym-platform:app-settings:v1:athlete-a:rest-vibration',
+      'false',
+    );
+    expect(view.getByText('automatic-off')).toBeTruthy();
+    await view.unmount();
+    state.getFeedback.mockResolvedValue('false');
+    const restored = await render(<App />);
+    await waitFor(() =>
+      expect(restored.getByTestId('settings-rest-sound').props.disabled).toBe(false),
+    );
+    expect(restored.getByTestId('settings-rest-sound').props.value).toBe(false);
+    expect(restored.getByTestId('settings-rest-vibration').props.value).toBe(false);
+  });
+
   it('saves the rest duration independently of auto-start and restores it on remount', async () => {
     state.getItem.mockResolvedValue('false');
     const view = await render(<App />);
