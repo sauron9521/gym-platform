@@ -68,7 +68,7 @@ Reassess a separate Admin API only with measured operational or release coupling
 ## Incremental delivery and acceptance
 
 1. ABI01 — record this ADR and register, clarify presentation placement in ADR-007.
-2. ABI02 — inventory actual controllers and methods, audiences, security policies, module/provider graphs, OpenAPI and regression coverage; reconcile parallel changes.
+2. ABI02 — [baseline inventory](adr-010-api-boundary-inventory.md): inventory actual controllers and methods, audiences, security policies, module/provider graphs, OpenAPI and regression coverage; reconcile parallel changes.
 3. ABI03 — add minimal composition and enforce boundaries through existing architecture checks.
 4. ABI04 — pilot Users/Admin Users separation without route or behavior changes; verify DI, OpenAPI parity, authorization and regression suites; review pilot before expansion.
 5. ABI05 — Auth/Admin Auth only after session/MFA and dependency review, with dedicated security regression coverage.
