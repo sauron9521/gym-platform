@@ -272,6 +272,13 @@ const navigationMessages = {
   'mobile.calendar.fri': { uk: 'Пт', en: 'Fri' },
   'mobile.calendar.sat': { uk: 'Сб', en: 'Sat' },
   'mobile.calendar.sun': { uk: 'Нд', en: 'Sun' },
+  'mobile.activeWorkout.resume': { uk: 'Повернутися до тренування', en: 'Return to workout' },
+  'mobile.activeWorkout.hint': {
+    uk: 'Останнє відкрите активне тренування',
+    en: 'Last opened active workout',
+  },
+  'mobile.activeWorkout.rest': { uk: 'Відпочинок', en: 'Rest' },
+  'mobile.activeWorkout.paused': { uk: 'Пауза', en: 'Paused' },
   'mobile.navigation.editProfile': { uk: 'Редагувати профіль', en: 'Edit profile' },
   'mobile.navigation.exercises': { uk: 'Вправи', en: 'Exercises' },
   'mobile.navigation.workout': { uk: 'Тренування', en: 'Workout' },

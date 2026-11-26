@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { fireEvent, render } from '@testing-library/react-native';
+import { fireEvent, render, waitFor } from '@testing-library/react-native';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { useAuth } from '@/features/auth/model/auth-context';
@@ -7,9 +7,19 @@ import { useAccountQuery } from '@/features/profile/model/account-query';
 import { useProgramAssignments } from '@/features/programs/model/program-assignments-query';
 import { useWorkoutSummary } from '@/features/progress/model/workout-summary-query';
 import { useWorkoutsQuery } from '@/features/workouts/model/workouts-query';
+import { IntlProvider } from 'react-intl';
+import { getMobileMessages } from '@/shared/i18n/mobile-messages';
+import { useEffect } from 'react';
+import {
+  RestTimerProvider,
+  useRestTimerStore,
+} from '@/features/workouts/model/rest-timer-provider';
 import { HomeScreen } from '@/screens/home/ui/home-screen';
 
 const push = vi.hoisted(() => vi.fn());
+vi.mock('@/features/workouts/lib/use-rest-feedback', () => ({
+  useRestFeedback: () => () => undefined,
+}));
 vi.mock('expo-router', () => ({ useRouter: () => ({ push }) }));
 vi.mock('@/features/auth/model/auth-context', () => ({ useAuth: vi.fn() }));
 vi.mock('@/features/profile/model/account-query', () => ({ useAccountQuery: vi.fn() }));
@@ -65,11 +75,30 @@ function prepareAthlete() {
   } as unknown as ReturnType<typeof useWorkoutsQuery>);
 }
 
-function renderHome() {
+function SeedWorkout() {
+  const store = useRestTimerStore();
+  useEffect(() => {
+    store.getState().selectWorkout('resume-1', 90);
+    const scope = store.getState().timer!.scope;
+    store.getState().start(scope, Date.now());
+  }, [store]);
+  return null;
+}
+
+function renderHome(active = false) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={queryClient}>
-      <HomeScreen />
+      <IntlProvider locale="uk" messages={getMobileMessages('uk')}>
+        <RestTimerProvider
+          accountId={active ? 'account-1' : null}
+          defaultDuration={90}
+          feedback={{ sound: false, vibration: false }}
+        >
+          {active ? <SeedWorkout /> : null}
+          <HomeScreen />
+        </RestTimerProvider>
+      </IntlProvider>
     </QueryClientProvider>,
   );
 }
@@ -97,9 +126,18 @@ describe('HomeScreen real athlete dashboard', () => {
     expect(push).toHaveBeenCalledWith('/workouts/new');
   });
 
+  it('shows the local active workout shortcut and countdown on Home', async () => {
+    const view = await renderHome(true);
+    await waitFor(() => expect(view.getByTestId('active-workout-resume')).toBeTruthy());
+    expect(view.getByTestId('active-workout-countdown')).toBeTruthy();
+    await fireEvent.press(view.getByTestId('active-workout-resume'));
+    expect(push).toHaveBeenCalledWith({ pathname: '/workouts/[id]', params: { id: 'resume-1' } });
+  });
+
   it('does not invoke athlete-only API queries or actions for trainers', async () => {
     setAccount('TRAINER');
-    const view = await renderHome();
+    const view = await renderHome(true);
+    expect(view.queryByTestId('active-workout-resume')).toBeNull();
     expect(useWorkoutsQuery).not.toHaveBeenCalled();
     expect(useProgramAssignments).not.toHaveBeenCalled();
     expect(useWorkoutSummary).not.toHaveBeenCalled();

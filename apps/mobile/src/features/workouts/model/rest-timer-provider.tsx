@@ -4,10 +4,14 @@ import { useStore } from 'zustand';
 import type { QueryClient } from '@tanstack/react-query';
 
 import { type RestDuration } from '@/shared/config/rest-duration';
+import { MobileAccessDeniedError, MobileReadHttpError } from '@/shared/api/api-error-policy';
 import { accountQueryKeys } from '@/shared/api/query-client';
 import { useRestFeedback, type RestFeedback } from '../lib/use-rest-feedback';
 import { createRestTimerStore, type RestTimerStore } from './rest-timer-store';
 import type { WorkoutDetails } from './workout-details-query';
+import type { useWorkoutsQuery } from './workouts-query';
+
+type WorkoutListData = NonNullable<ReturnType<typeof useWorkoutsQuery>['data']>;
 
 const RestTimerContext = createContext<RestTimerStore | null>(null);
 
@@ -71,13 +75,41 @@ function RestTimerRuntime({
       const scope = store.getState().timer?.scope;
       if (!scope) return;
       const key = accountQueryKeys.workoutDetail(accountId, scope.workoutId);
+      const queryKey = event.query.queryKey;
+      if (queryKey.length === key.length && key.every((part, index) => queryKey[index] === part)) {
+        const workout = event.query.state.data as WorkoutDetails | undefined;
+        const error = event.query.state.error;
+        const inaccessible =
+          event.type === 'updated' &&
+          event.action.type === 'error' &&
+          (error instanceof MobileAccessDeniedError ||
+            (error instanceof MobileReadHttpError &&
+              (error.status === 403 || error.status === 404)));
+        if (inaccessible || (workout && workout.status !== 'IN_PROGRESS')) {
+          store.getState().clearWorkout(scope.workoutId);
+        }
+        return;
+      }
+      // A list refresh may reveal completion/cancellation while details are
+      // unmounted. Absence from a filtered/paginated list is not proof.
+      const listKey = accountQueryKeys.workouts(accountId);
       if (
-        event.query.queryKey.length !== key.length ||
-        !key.every((part, index) => event.query.queryKey[index] === part)
+        event.type !== 'updated' ||
+        event.action.type !== 'success' ||
+        queryKey.length !== listKey.length + 1 ||
+        !listKey.every((part, index) => queryKey[index] === part)
       )
         return;
-      const workout = event.query.state.data as WorkoutDetails | undefined;
-      if (workout && workout.status !== 'IN_PROGRESS')
+      const list = event.query.state.data as WorkoutListData | undefined;
+      if (
+        list?.pages?.some((page) =>
+          page.data.some(
+            (workout) =>
+              workout.id === scope.workoutId &&
+              (workout.status === 'COMPLETED' || workout.status === 'CANCELLED'),
+          ),
+        )
+      )
         store.getState().clearWorkout(scope.workoutId);
     });
   }, [store, accountId, queryClient]);
