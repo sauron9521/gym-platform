@@ -493,6 +493,89 @@ describe('Internal Admin MFA challenge (PostgreSQL)', () => {
     ).toBe(1);
   });
 
+  it('accepts one TOTP step across concurrent distinct pending Admin sessions', async () => {
+    const owner = await enrolled();
+    const challenge = app.get(AdminMfaChallengeService);
+    const first = (await challenge.begin(owner.userId, password))!;
+    const second = (await challenge.begin(owner.userId, password))!;
+    const step = Math.floor(Date.now() / 30_000);
+    const proof = { code: codeAt(owner.secret, step) };
+    const results = await Promise.all([
+      challenge.complete(first.token, proof),
+      challenge.complete(second.token, proof),
+    ]);
+    expect(results.filter(Boolean)).toHaveLength(1);
+    const winner = results[0] ? first : second;
+    const loser = results[0] ? second : first;
+    const verified = results.find(Boolean)!;
+    expect(verified.session.metadata?.adminMfaMethod).toBe('totp');
+    expect(verified.session.id).not.toBe(winner.session.id);
+    expect(await prisma.session.findUnique({ where: { id: winner.session.id } })).toBeNull();
+    expect(await prisma.session.findUnique({ where: { id: loser.session.id } })).toMatchObject({
+      mfa: 'pending',
+    });
+    expect(await challenge.complete(loser.token, proof)).toBeNull();
+    expect(
+      await prisma.mfaAuthenticator.findUniqueOrThrow({ where: { userId: owner.userId } }),
+    ).toMatchObject({ lastUsedStep: step });
+    expect(await prisma.session.count({ where: { userId: owner.userId, mfa: 'verified' } })).toBe(
+      1,
+    );
+    expect(
+      await prisma.mfaLifecycleAudit.count({
+        where: { userId: owner.userId, action: 'ADMIN_TOTP_CHALLENGE_VERIFIED' },
+      }),
+    ).toBe(1);
+    expect(await prisma.mfaRecoveryCode.count({ where: { userId: owner.userId } })).toBe(10);
+  });
+
+  it('preserves a pending challenge and replay state when TOTP rotation fails or the keyring is unavailable', async () => {
+    const owner = await enrolled();
+    const challenge = app.get(AdminMfaChallengeService);
+    const pending = (await challenge.begin(owner.userId, password))!;
+    const before = await prisma.mfaAuthenticator.findUniqueOrThrow({
+      where: { userId: owner.userId },
+    });
+    const proof = { code: codeAt(owner.secret) };
+    const config = app.get(ConfigService);
+    const previous = config.get('MFA_ENCRYPTION_KEYS');
+    config.set('MFA_ENCRYPTION_KEYS', '');
+    try {
+      await expect(challenge.complete(pending.token, proof)).rejects.toMatchObject({ status: 503 });
+    } finally {
+      config.set('MFA_ENCRYPTION_KEYS', previous);
+    }
+
+    const failure = vi.spyOn(SessionService.prototype, 'rotate').mockResolvedValueOnce(null);
+    try {
+      await expect(challenge.complete(pending.token, proof)).rejects.toThrow(
+        'Administrative MFA session rotation failed',
+      );
+    } finally {
+      failure.mockRestore();
+    }
+    expect(
+      await prisma.mfaAuthenticator.findUniqueOrThrow({ where: { userId: owner.userId } }),
+    ).toEqual(before);
+    expect(await prisma.session.findUnique({ where: { id: pending.session.id } })).toMatchObject({
+      mfa: 'pending',
+    });
+    expect(await prisma.session.count({ where: { userId: owner.userId, mfa: 'verified' } })).toBe(
+      0,
+    );
+    expect(
+      await prisma.mfaLifecycleAudit.count({
+        where: { userId: owner.userId, action: 'ADMIN_TOTP_CHALLENGE_VERIFIED' },
+      }),
+    ).toBe(0);
+    expect((await challenge.complete(pending.token, proof))?.session.mfa).toBe('verified');
+    expect(
+      await prisma.mfaLifecycleAudit.count({
+        where: { userId: owner.userId, action: 'ADMIN_TOTP_CHALLENGE_VERIFIED' },
+      }),
+    ).toBe(1);
+  });
+
   it('consumes a recovery code once across concurrent pending sessions', async () => {
     const owner = await enrolled();
     const challenge = app.get(AdminMfaChallengeService);
