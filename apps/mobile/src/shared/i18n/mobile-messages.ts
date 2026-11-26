@@ -234,6 +234,22 @@ const navigationMessages = {
     uk: 'Минулого разу: {reps} повт.',
     en: 'Last time: {reps} reps',
   },
+  'mobile.settings.autoCollapseExercises': {
+    uk: 'Автоматично згортати завершені вправи',
+    en: 'Automatically collapse finished exercises',
+  },
+  'mobile.settings.autoCollapseExercisesHint': {
+    uk: 'Коли всі підходи виконані або пропущені. Торкніться назви, щоб відкрити результати. Лише на цьому пристрої.',
+    en: 'When every set is completed or skipped. Tap the exercise name to view results. On this device only.',
+  },
+  'mobile.workout.exerciseSetSummary': {
+    uk: '{completed} виконано · {skipped} пропущено / {total}',
+    en: '{completed} completed · {skipped} skipped / {total}',
+  },
+  'mobile.workout.exerciseSetCount': {
+    uk: 'Підходів: {total}',
+    en: 'Sets: {total}',
+  },
   'mobile.settings.pending': { uk: 'Зачекайте…', en: 'Please wait…' },
   'mobile.settings.storageError': {
     uk: 'Не вдалося зберегти або прочитати налаштування. Спробуйте ще раз.',
@@ -241,8 +257,8 @@ const navigationMessages = {
   },
   'mobile.settings.retry': { uk: 'Повторити', en: 'Retry' },
   'mobile.settings.deviceOnly': {
-    uk: 'Звук, вібрація, утримання екрана та підказки зберігаються лише на цьому пристрої.',
-    en: 'Sound, vibration, screen wake and hints are saved only on this device.',
+    uk: 'Звук, вібрація, утримання екрана, підказки та згортання вправ зберігаються лише на цьому пристрої.',
+    en: 'Sound, vibration, screen wake, hints and exercise collapse are saved only on this device.',
   },
   'mobile.settings.workoutAccount': {
     uk: 'Автотаймер і тривалість відпочинку синхронізуються з акаунтом.',
