@@ -1,9 +1,11 @@
 import { AppState } from 'react-native';
+import { z } from 'zod';
 import {
   hasAthleteAccess,
   type AccountCapabilities,
 } from '@/features/auth/model/account-capabilities';
 import type { PrivateDataLifecycle } from '@/features/auth/model/private-data-lifecycle';
+import type { PendingWorkoutDraft } from '../lib/offline-workout-draft';
 import type { MobileMultiWorkoutForm } from '../lib/create-workout-schema';
 import type { EncryptedOfflineDraftStorage } from './encrypted-draft-storage';
 import { OfflineDraftRepository } from './offline-draft-repository';
@@ -18,6 +20,14 @@ export class OfflineDraftLifecycle implements PrivateDataLifecycle {
   private generation = 0;
   private repositoryOwner: string | null = null;
   private cleanupRequired = false;
+  private sending = false;
+  private clearing = false;
+  private cleanupReceipt: {
+    ownerId: string;
+    generation: number;
+    key: string;
+    workoutId: string;
+  } | null = null;
   private state: DraftLifecycleState = 'locked';
   private snapshot = { status: this.state as DraftLifecycleState, generation: 0 };
   private readonly listeners = new Set<() => void>();
@@ -49,6 +59,7 @@ export class OfflineDraftLifecycle implements PrivateDataLifecycle {
 
   lock() {
     ++this.generation;
+    this.cleanupReceipt = null;
     this.repository.lock();
     this.publish(this.cleanupRequired ? 'cleanup-required' : 'locked');
   }
@@ -120,15 +131,98 @@ export class OfflineDraftLifecycle implements PrivateDataLifecycle {
     });
   }
 
+  isCurrentOwner(ownerId: string, generation: number) {
+    return (
+      this.state === 'ready' &&
+      this.generation === generation &&
+      this.repositoryOwner === ownerId &&
+      this.isForeground()
+    );
+  }
+
+  /** Explicit, one-at-a-time send. Never queue a network retry. */
+  async submitReviewed(options: {
+    ownerId: string;
+    generation: number;
+    form: MobileMultiWorkoutForm;
+    explicitlyConfirmed: boolean;
+    isOnline: () => boolean;
+    createKey: () => string;
+    send: (attempt: PendingWorkoutDraft, isCurrent: () => boolean) => Promise<unknown>;
+  }) {
+    const { ownerId, generation, form, explicitlyConfirmed, isOnline, createKey, send } = options;
+    const isCurrent = () => this.isCurrentOwner(ownerId, generation);
+    const canSend = () => isCurrent() && isOnline() === true;
+    if (
+      this.sending ||
+      this.clearing ||
+      this.cleanupReceipt ||
+      !canSend() ||
+      explicitlyConfirmed !== true
+    )
+      throw new Error('draft-send-blocked');
+    this.sending = true;
+    try {
+      const pending = await this.repository.reserveReviewedSubmission(
+        form,
+        { online: isOnline(), explicitlyConfirmed },
+        createKey,
+      );
+      if (!canSend() || pending.ownerId !== ownerId) throw new Error('draft-send-blocked');
+      const result = await send(pending, canSend);
+      if (!isCurrent()) throw new Error('draft-send-blocked');
+      const receipt = z.object({ id: z.uuid(), athleteId: z.literal(ownerId) }).safeParse(result);
+      if (!receipt.success) throw new Error('draft-receipt-invalid');
+      return await this.repository.acknowledgeSubmission(pending.key, receipt.data.id);
+    } finally {
+      this.sending = false;
+    }
+  }
+
+  async clearSubmitted(ownerId: string, generation: number) {
+    if (this.sending || this.clearing || !this.isCurrentOwner(ownerId, generation)) {
+      throw new Error('draft-send-blocked');
+    }
+    this.clearing = true;
+    try {
+      let receipt = this.cleanupReceipt;
+      if (!receipt) {
+        const record = await this.repository.load();
+        if (
+          !this.isCurrentOwner(ownerId, generation) ||
+          record?.state !== 'SUBMISSION_ACKNOWLEDGED'
+        ) {
+          throw new Error('draft-receipt-invalid');
+        }
+        receipt = { ownerId, generation, key: record.key, workoutId: record.workoutId };
+        this.cleanupReceipt = receipt;
+      }
+      if (
+        receipt.ownerId !== ownerId ||
+        receipt.generation !== generation ||
+        !this.isCurrentOwner(ownerId, generation)
+      )
+        throw new Error('draft-send-blocked');
+      await this.repository.clearAcknowledgedSubmission(receipt.key, receipt.workoutId);
+      if (this.isCurrentOwner(ownerId, generation)) this.cleanupReceipt = null;
+    } finally {
+      this.clearing = false;
+    }
+  }
+
   load() {
     return this.repository.load();
   }
 
   save(form: MobileMultiWorkoutForm) {
+    if (this.sending || this.clearing || this.cleanupReceipt)
+      return Promise.reject(new Error('draft-send-blocked'));
     return this.repository.save(form);
   }
 
   discard() {
+    if (this.sending || this.clearing || this.cleanupReceipt)
+      return Promise.reject(new Error('draft-send-blocked'));
     return this.repository.discard();
   }
 }

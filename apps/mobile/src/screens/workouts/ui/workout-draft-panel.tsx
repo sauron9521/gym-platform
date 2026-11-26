@@ -15,7 +15,7 @@ export function WorkoutDraftPanel({ draft, disabled, submissionStarted }: Props)
   const intl = useIntl();
   const t = (key: string) => intl.formatMessage({ id: `mobile.draft.${key}` });
   const blocked = disabled || submissionStarted;
-  const confirm = (kind: 'restore' | 'discard', action: () => Promise<void>) => {
+  const confirm = (kind: 'restore' | 'discard' | 'send' | 'clear', action: () => Promise<void>) => {
     Alert.alert(
       t(kind),
       t(`${kind}Confirm`),
@@ -36,9 +36,13 @@ export function WorkoutDraftPanel({ draft, disabled, submissionStarted }: Props)
       ? draft.scope.status
       : draft.presence === 'exists'
         ? 'exists'
-        : draft.presence === 'error'
-          ? 'failed'
-          : 'none';
+        : draft.presence === 'submission-pending'
+          ? 'submission-pending'
+          : draft.presence === 'acknowledged'
+            ? 'acknowledged'
+            : draft.presence === 'error'
+              ? 'failed'
+              : 'none';
   return (
     <View style={styles.panel} testID="workout-draft-panel">
       <Text style={styles.title}>{t('title')}</Text>
@@ -46,7 +50,7 @@ export function WorkoutDraftPanel({ draft, disabled, submissionStarted }: Props)
         {t(status)}
       </Text>
       <Text style={styles.hint}>{t('hint')}</Text>
-      {draft.feedback && draft.feedback !== 'failed' ? (
+      {draft.feedback && (draft.feedback !== 'failed' || draft.presence !== 'error') ? (
         <Text
           style={draft.feedback === 'invalid' ? styles.error : styles.text}
           accessibilityLiveRegion="polite"
@@ -67,7 +71,7 @@ export function WorkoutDraftPanel({ draft, disabled, submissionStarted }: Props)
           >
             <Text style={styles.buttonText}>{t('save')}</Text>
           </Pressable>
-          {draft.presence === 'exists' ? (
+          {draft.presence === 'exists' || draft.presence === 'submission-pending' ? (
             <Pressable
               testID="workout-draft-restore"
               accessibilityRole="button"
@@ -89,6 +93,36 @@ export function WorkoutDraftPanel({ draft, disabled, submissionStarted }: Props)
               onPress={() => void draft.retry()}
             >
               <Text style={styles.buttonText}>{t('retry')}</Text>
+            </Pressable>
+          ) : null}
+          {draft.canSend ? (
+            <Pressable
+              testID="workout-draft-send"
+              accessibilityRole="button"
+              accessibilityState={{ disabled: blocked }}
+              disabled={blocked}
+              style={styles.button}
+              onPress={() => confirm('send', draft.confirmSend())}
+            >
+              <Text style={styles.buttonText}>
+                {t(draft.presence === 'submission-pending' ? 'resend' : 'send')}
+              </Text>
+            </Pressable>
+          ) : null}
+          {!draft.online &&
+          (draft.presence === 'exists' || draft.presence === 'submission-pending') ? (
+            <Text style={styles.hint}>{t('offline')}</Text>
+          ) : null}
+          {draft.canClear ? (
+            <Pressable
+              testID="workout-draft-clear"
+              accessibilityRole="button"
+              accessibilityState={{ disabled: blocked }}
+              disabled={blocked}
+              style={styles.button}
+              onPress={() => confirm('clear', draft.clear)}
+            >
+              <Text style={styles.buttonText}>{t('clear')}</Text>
             </Pressable>
           ) : null}
           {draft.canDiscard ? (

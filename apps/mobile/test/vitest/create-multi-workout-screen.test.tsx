@@ -2,6 +2,7 @@ import { act, fireEvent, render, waitFor } from '@testing-library/react-native';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { IntlProvider } from 'react-intl';
 import { Alert } from 'react-native';
+import { QueryClient, QueryClientProvider, onlineManager } from '@tanstack/react-query';
 import { getMobileMessages } from '@/shared/i18n/mobile-messages';
 import { OfflineDraftLifecycle } from '@/features/workouts/model/offline-draft-lifecycle';
 import type { EncryptedOfflineDraftStorage } from '@/features/workouts/model/encrypted-draft-storage';
@@ -12,6 +13,16 @@ import { useCreateMultiMobileWorkout } from '@/features/workouts/model/workout-c
 import { CreateWorkoutScreen } from '@/screens/workouts/ui/create-workout-screen';
 
 const back = vi.hoisted(() => vi.fn());
+const post = vi.hoisted(() => vi.fn());
+const scoped = vi.hoisted(() => vi.fn());
+vi.mock('expo-crypto', () => ({ randomUUID: () => 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa' }));
+vi.mock('@/features/auth/model/auth-context', () => ({
+  useAuth: () => ({
+    account: { id: '22222222-2222-4222-8222-222222222222' },
+    capabilities: { athlete: true, trainer: false, admin: false },
+    getScopedApi: scoped,
+  }),
+}));
 
 vi.mock('expo-router', () => ({ useRouter: () => ({ back }) }));
 vi.mock('@/features/exercises/model/exercises-query', () => ({
@@ -28,9 +39,11 @@ const exerciseId = '11111111-1111-4111-8111-111111111111';
 
 const renderScreen = (lifecycle?: OfflineDraftLifecycle) =>
   render(
-    <IntlProvider locale="uk" messages={getMobileMessages('uk')}>
-      <CreateWorkoutScreen lifecycle={lifecycle} />
-    </IntlProvider>,
+    <QueryClientProvider client={new QueryClient()}>
+      <IntlProvider locale="uk" messages={getMobileMessages('uk')}>
+        <CreateWorkoutScreen lifecycle={lifecycle} />
+      </IntlProvider>
+    </QueryClientProvider>,
   );
 
 async function draftHarness(initial: string | null = null) {
@@ -92,6 +105,12 @@ describe('Multi-exercise CreateWorkoutScreen (native)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mutateAsync.mockResolvedValue('workout-created');
+    onlineManager.setOnline(true);
+    scoped.mockImplementation((guard: () => boolean) => (guard() ? { POST: post } : null));
+    post.mockResolvedValue({
+      response: { status: 201 },
+      data: { id: '33333333-3333-4333-8333-333333333333', athleteId: ownerId },
+    });
     prepare();
   });
 
@@ -374,6 +393,140 @@ describe('Multi-exercise CreateWorkoutScreen (native)', () => {
       await confirmAlert();
       await waitFor(() => expect(view.getByLabelText('Назва тренування').props.value).toBe(''));
       expect(mutateAsync).not.toHaveBeenCalled();
+    } finally {
+      alert.mockRestore();
+    }
+  });
+  it('sends a saved reviewed form only after confirmation, retains receipt and clears without another POST', async () => {
+    const h = await draftHarness(persisted);
+    const view = await renderScreen(h.lifecycle);
+    const alert = vi.spyOn(Alert, 'alert').mockImplementation(() => undefined);
+    try {
+      await waitFor(() => expect(view.getByTestId('workout-draft-restore')).toBeTruthy());
+      await fireEvent.press(view.getByTestId('workout-draft-restore'));
+      await confirmAlert();
+      await waitFor(() => expect(view.getByTestId('workout-draft-send')).toBeTruthy());
+      await fireEvent.press(view.getByTestId('workout-draft-send'));
+      expect(post).not.toHaveBeenCalled();
+      await confirmAlert();
+      await waitFor(() => expect(view.getByText('Тренування створено на сервері.')).toBeTruthy());
+      expect(post).toHaveBeenCalledExactlyOnceWith('/workouts', {
+        headers: { 'Idempotency-Key': 'draft-aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa' },
+        body: {
+          title: storedForm.title,
+          exercises: [
+            { exerciseId, sets: [{ setType: 'WORKING', plannedReps: 12, plannedWeightKg: 65 }] },
+          ],
+        },
+      });
+      expect(JSON.parse(h.value!).state).toBe('SUBMISSION_ACKNOWLEDGED');
+      expect(view.queryByTestId('workout-draft-send')).toBeNull();
+      expect(h.storage.remove).not.toHaveBeenCalled();
+      await fireEvent.press(view.getByTestId('workout-draft-clear'));
+      await confirmAlert();
+      await waitFor(() => expect(view.getByText('Локальну чернетку очищено.')).toBeTruthy());
+      expect(h.value).toBeNull();
+      expect(post).toHaveBeenCalledOnce();
+      expect(mutateAsync).not.toHaveBeenCalled();
+    } finally {
+      alert.mockRestore();
+    }
+  });
+
+  it('reopens an ambiguous submission and explicitly retries the exact key/body', async () => {
+    const h = await draftHarness(persisted);
+    post.mockRejectedValueOnce(new Error('lost response'));
+    const view = await renderScreen(h.lifecycle);
+    const alert = vi.spyOn(Alert, 'alert').mockImplementation(() => undefined);
+    try {
+      await waitFor(() => expect(view.getByTestId('workout-draft-restore')).toBeTruthy());
+      await fireEvent.press(view.getByTestId('workout-draft-restore'));
+      await confirmAlert();
+      await waitFor(() => expect(view.getByTestId('workout-draft-send')).toBeTruthy());
+      await fireEvent.press(view.getByTestId('workout-draft-send'));
+      await confirmAlert();
+      await waitFor(() => expect(view.getByText('Повторити надсилання')).toBeTruthy());
+      expect(JSON.parse(h.value!).state).toBe('SUBMISSION_PENDING');
+      expect(post).toHaveBeenCalledOnce();
+      expect(view.getByLabelText('Назва тренування').props.editable).toBe(false);
+      expect(view.queryByTestId('workout-draft-discard')).toBeNull();
+      await view.unmount();
+      const reopened = await draftHarness(h.value);
+      const next = await renderScreen(reopened.lifecycle);
+      await waitFor(() => expect(next.getByTestId('workout-draft-restore')).toBeTruthy());
+      expect(next.queryByTestId('workout-draft-send')).toBeNull();
+      await fireEvent.press(next.getByTestId('workout-draft-restore'));
+      await confirmAlert();
+      await waitFor(() => expect(next.getByText('Повторити надсилання')).toBeTruthy());
+      expect(post).toHaveBeenCalledOnce();
+      await fireEvent.press(next.getByTestId('workout-draft-send'));
+      await confirmAlert();
+      await waitFor(() => expect(next.getByText('Тренування створено на сервері.')).toBeTruthy());
+      expect(post).toHaveBeenCalledTimes(2);
+      expect(post.mock.calls[1]).toEqual(post.mock.calls[0]);
+    } finally {
+      alert.mockRestore();
+    }
+  });
+
+  it('does not send edited unsaved data or resume automatically on network restoration', async () => {
+    const h = await draftHarness(persisted);
+    const view = await renderScreen(h.lifecycle);
+    const alert = vi.spyOn(Alert, 'alert').mockImplementation(() => undefined);
+    try {
+      await waitFor(() => expect(view.getByTestId('workout-draft-restore')).toBeTruthy());
+      await fireEvent.press(view.getByTestId('workout-draft-restore'));
+      await confirmAlert();
+      await waitFor(() => expect(view.getByTestId('workout-draft-send')).toBeTruthy());
+      await fireEvent.changeText(view.getByLabelText('Назва тренування'), 'Незбережені зміни');
+      await fireEvent.press(view.getByTestId('workout-draft-send'));
+      await confirmAlert();
+      await waitFor(() =>
+        expect(
+          view.getByText(
+            'Не вдалося підтвердити надсилання. Перевірте збережену форму та стан чернетки; автоматичного повтору немає.',
+          ),
+        ).toBeTruthy(),
+      );
+      expect(post).not.toHaveBeenCalled();
+      await act(async () => onlineManager.setOnline(false));
+      expect(view.queryByTestId('workout-draft-send')).toBeNull();
+      await act(async () => onlineManager.setOnline(true));
+      expect(post).not.toHaveBeenCalled();
+      expect(JSON.parse(h.value!).state).toBe('REQUIRES_REVIEW');
+    } finally {
+      alert.mockRestore();
+    }
+  });
+
+  it('retries only cleanup after a confirmed submission even if removal made the record unreadable', async () => {
+    const h = await draftHarness(persisted);
+    const view = await renderScreen(h.lifecycle);
+    const alert = vi.spyOn(Alert, 'alert').mockImplementation(() => undefined);
+    try {
+      await waitFor(() => expect(view.getByTestId('workout-draft-restore')).toBeTruthy());
+      await fireEvent.press(view.getByTestId('workout-draft-restore'));
+      await confirmAlert();
+      await waitFor(() => expect(view.getByTestId('workout-draft-send')).toBeTruthy());
+      await fireEvent.press(view.getByTestId('workout-draft-send'));
+      await confirmAlert();
+      await waitFor(() => expect(view.getByTestId('workout-draft-clear')).toBeTruthy());
+      h.storage.remove.mockRejectedValueOnce(new Error('file cleanup failed'));
+      await fireEvent.press(view.getByTestId('workout-draft-clear'));
+      await confirmAlert();
+      await waitFor(() =>
+        expect(
+          view.getByText(
+            'Не вдалося очистити локальну копію. Серверне тренування вже створено. Повторіть лише очищення.',
+          ),
+        ).toBeTruthy(),
+      );
+      h.storage.read.mockRejectedValue(new Error('key removed'));
+      await fireEvent.press(view.getByTestId('workout-draft-clear'));
+      await confirmAlert();
+      await waitFor(() => expect(view.getByText('Локальну чернетку очищено.')).toBeTruthy());
+      expect(post).toHaveBeenCalledOnce();
+      expect(h.storage.remove).toHaveBeenCalledTimes(2);
     } finally {
       alert.mockRestore();
     }

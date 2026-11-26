@@ -57,7 +57,7 @@ export function CreateWorkoutScreen({ lifecycle }: { lifecycle?: OfflineDraftLif
                   value={field.value}
                   onChangeText={field.onChange}
                   onBlur={field.onBlur}
-                  editable={!disabled}
+                  editable={!disabled && !draft.readOnly}
                 />
               )}
             />
@@ -71,7 +71,7 @@ export function CreateWorkoutScreen({ lifecycle }: { lifecycle?: OfflineDraftLif
               <WorkoutExerciseFields
                 key={field.id}
                 index={index}
-                disabled={disabled}
+                disabled={disabled || draft.readOnly}
                 canRemove={fields.length > 1}
                 onRemove={() => remove(index)}
               />
@@ -84,9 +84,9 @@ export function CreateWorkoutScreen({ lifecycle }: { lifecycle?: OfflineDraftLif
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Додати вправу"
-              accessibilityState={{ disabled: disabled || fields.length >= 50 }}
+              accessibilityState={{ disabled: disabled || draft.readOnly || fields.length >= 50 }}
               testID="workout-exercise-add"
-              disabled={disabled || fields.length >= 50}
+              disabled={disabled || draft.readOnly || fields.length >= 50}
               onPress={() => append({ exerciseId: '', sets: [{ reps: '10', weightKg: '' }] })}
               style={styles.secondary}
             >

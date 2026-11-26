@@ -10,9 +10,32 @@ import {
   type OfflineDraftLifecycle,
 } from '@/features/workouts/model/offline-draft-lifecycle';
 
-type DraftPresence = 'checking' | 'none' | 'exists' | 'error';
-type Feedback = 'saved' | 'restored' | 'discarded' | 'invalid' | 'failed' | null;
-type Operation = 'check' | 'save' | 'restore' | 'discard';
+import {
+  draftBodyJson,
+  type PersistedWorkoutDraft,
+} from '@/features/workouts/lib/offline-workout-draft';
+import { useReviewedDraftSubmission } from '@/features/workouts/model/use-reviewed-draft-submission';
+
+type DraftPresence =
+  'checking' | 'none' | 'exists' | 'error' | 'submission-pending' | 'acknowledged';
+function presenceOf(draft: PersistedWorkoutDraft | null): DraftPresence {
+  if (!draft) return 'none';
+  if (draft.state === 'SUBMISSION_PENDING') return 'submission-pending';
+  if (draft.state === 'SUBMISSION_ACKNOWLEDGED') return 'acknowledged';
+  return 'exists';
+}
+type Feedback =
+  | 'saved'
+  | 'restored'
+  | 'discarded'
+  | 'invalid'
+  | 'failed'
+  | 'sendFailed'
+  | 'sent'
+  | 'cleared'
+  | 'clearFailed'
+  | null;
+type Operation = 'check' | 'save' | 'restore' | 'discard' | 'send' | 'clear';
 type ViewState = {
   generation: number;
   presence: DraftPresence;
@@ -37,6 +60,7 @@ export function useWorkoutDraftForm(
   submissionAttempted: { current: boolean },
   lifecycle: OfflineDraftLifecycle = offlineDraftLifecycle,
 ) {
+  const submission = useReviewedDraftSubmission(lifecycle);
   const scope = useSyncExternalStore(
     lifecycle.subscribe,
     lifecycle.getSnapshot,
@@ -116,7 +140,7 @@ export function useWorkoutDraftForm(
           lifecycle.getSnapshot().status !== 'ready'
         )
           return;
-        setView({ generation, presence: draft ? 'exists' : 'none', feedback: null, pending: null });
+        setView({ generation, presence: presenceOf(draft), feedback: null, pending: null });
       },
       () => {
         if (
@@ -138,13 +162,24 @@ export function useWorkoutDraftForm(
   const canOperate = ready && !busy && !hideForm;
   const canSave =
     canOperate &&
-    current.presence !== 'error' &&
-    (current.presence === 'none' || boundGeneration === scope.generation);
-  const canRestore = canOperate && current.presence === 'exists';
+    (current.presence === 'none' ||
+      (current.presence === 'exists' && boundGeneration === scope.generation));
+  const canRestore =
+    canOperate && (current.presence === 'exists' || current.presence === 'submission-pending');
   const canDiscard =
     canOperate &&
-    (current.presence === 'exists' || current.presence === 'error' || boundGeneration !== null);
+    (current.presence === 'exists' ||
+      current.presence === 'error' ||
+      (current.presence === 'none' && boundGeneration !== null));
   const canRetry = canOperate && current.presence === 'error';
+  const canSend =
+    canOperate &&
+    submission.allowed &&
+    submission.online &&
+    boundGeneration === scope.generation &&
+    (current.presence === 'exists' || current.presence === 'submission-pending');
+  const canClear = canOperate && submission.allowed && current.presence === 'acknowledged';
+  const readOnly = current.presence === 'submission-pending' || current.presence === 'acknowledged';
 
   // Imperative guard is rechecked both before validation and before the POST.
   // While checking existing storage, never race a normal submission.
@@ -165,7 +200,7 @@ export function useWorkoutDraftForm(
     return false;
   };
 
-  const run = async (operation: Operation, expectedGeneration: number) => {
+  const run = async (operation: Operation, expectedGeneration: number, reviewedBody?: string) => {
     const latest = lifecycle.getSnapshot();
     if (
       !active.current ||
@@ -183,6 +218,8 @@ export function useWorkoutDraftForm(
     if (operation === 'restore' && !canRestore) return;
     if (operation === 'discard' && !canDiscard) return;
     if (operation === 'check' && !canRetry) return;
+    if (operation === 'send' && !canSend) return;
+    if (operation === 'clear' && !canClear) return;
     operationLock.current = true;
     const token = ++operationToken.current;
     setView({ ...current, pending: operation, feedback: null });
@@ -208,13 +245,13 @@ export function useWorkoutDraftForm(
       } else if (operation === 'restore') {
         const draft = await lifecycle.load();
         if (!isCurrent(expectedGeneration, token)) return;
-        if (draft) {
+        if (draft && draft.state !== 'SUBMISSION_ACKNOWLEDGED') {
           reset(draft.form, { keepDefaultValues: true });
           bindForm(expectedGeneration);
         }
         setView({
           generation: expectedGeneration,
-          presence: draft ? 'exists' : 'none',
+          presence: presenceOf(draft),
           pending: null,
           feedback: draft ? 'restored' : null,
         });
@@ -230,24 +267,67 @@ export function useWorkoutDraftForm(
           pending: null,
           feedback: 'discarded',
         });
+      } else if (operation === 'send') {
+        const valid = await trigger();
+        if (!isCurrent(expectedGeneration, token)) return;
+        const parsed = mobileMultiWorkoutFormSchema.safeParse(getValues());
+        if (!valid || !parsed.success || draftBodyJson(parsed.data) !== reviewedBody) {
+          setView({ ...current, pending: null, feedback: 'invalid' });
+          return;
+        }
+        await submission.send(parsed.data, expectedGeneration);
+        if (!isCurrent(expectedGeneration, token)) return;
+        clearForm();
+        bindForm(null);
+        setView({
+          generation: expectedGeneration,
+          presence: 'acknowledged',
+          pending: null,
+          feedback: 'sent',
+        });
+      } else if (operation === 'clear') {
+        await submission.clear(expectedGeneration);
+        if (!isCurrent(expectedGeneration, token)) return;
+        clearForm();
+        bindForm(null);
+        setView({
+          generation: expectedGeneration,
+          presence: 'none',
+          pending: null,
+          feedback: 'cleared',
+        });
       } else {
         const draft = await lifecycle.load();
         if (!isCurrent(expectedGeneration, token)) return;
         setView({
           generation: expectedGeneration,
-          presence: draft ? 'exists' : 'none',
+          presence: presenceOf(draft),
           pending: null,
           feedback: null,
         });
       }
     } catch {
       if (isCurrent(expectedGeneration, token)) {
-        // Unknown storage outcome: require another read or explicit discard.
+        // Read only after ambiguous send/cleanup. Never retry the POST automatically.
+        let presence: DraftPresence = operation === 'clear' ? 'acknowledged' : 'error';
+        if (operation === 'send') {
+          try {
+            presence = presenceOf(await lifecycle.load());
+          } catch {
+            /* stay blocked */
+          }
+        }
+        if (!isCurrent(expectedGeneration, token)) return;
+        if (presence === 'acknowledged') {
+          clearForm();
+          bindForm(null);
+        }
         setView({
           generation: expectedGeneration,
-          presence: 'error',
+          presence,
           pending: null,
-          feedback: 'failed',
+          feedback:
+            operation === 'send' ? 'sendFailed' : operation === 'clear' ? 'clearFailed' : 'failed',
         });
       }
     } finally {
@@ -266,7 +346,21 @@ export function useWorkoutDraftForm(
     canRestore,
     canDiscard,
     canRetry,
+    canSend,
+    canClear,
+    readOnly,
+    online: submission.online,
     blocksSubmission,
+    confirmSend: () => {
+      let reviewedBody: string;
+      try {
+        reviewedBody = draftBodyJson(getValues());
+      } catch {
+        return () => Promise.resolve();
+      }
+      return () => run('send', scope.generation, reviewedBody);
+    },
+    clear: () => run('clear', scope.generation),
     save: () => run('save', scope.generation),
     restore: () => run('restore', scope.generation),
     discard: () => run('discard', scope.generation),

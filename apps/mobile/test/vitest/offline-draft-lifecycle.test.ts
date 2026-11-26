@@ -168,4 +168,63 @@ describe('offline draft auth lifecycle', () => {
     expect(lifecycle.status).toBe('ready');
     expect(await lifecycle.load()).toBeNull();
   });
+  it('does not send when the generation changes during durable reservation', async () => {
+    const { lifecycle, storage } = harness();
+    await lifecycle.verified(ownerA, athlete);
+    await lifecycle.save(form);
+    const generation = lifecycle.getSnapshot().generation;
+    const started = deferred();
+    const finish = deferred();
+    storage.write.mockImplementationOnce(async () => {
+      started.resolve();
+      await finish.promise;
+    });
+    const send = vi.fn();
+    const pending = lifecycle.submitReviewed({
+      ownerId: ownerA,
+      generation,
+      form,
+      explicitlyConfirmed: true,
+      isOnline: () => true,
+      createKey: () => 'draft-aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+      send,
+    });
+    const rejected = expect(pending).rejects.toThrow();
+    await started.promise;
+    lifecycle.lock();
+    finish.resolve();
+    await rejected;
+    expect(send).not.toHaveBeenCalled();
+  });
+
+  it('keeps pending reservation on malformed or wrong-owner receipt and prevents simultaneous sends', async () => {
+    const { lifecycle } = harness();
+    await lifecycle.verified(ownerA, athlete);
+    await lifecycle.save(form);
+    const generation = lifecycle.getSnapshot().generation;
+    const started = deferred();
+    const finish = deferred();
+    const send = vi.fn(async () => {
+      started.resolve();
+      await finish.promise;
+      return { id: '33333333-3333-4333-8333-333333333333', athleteId: ownerB };
+    });
+    const options = {
+      ownerId: ownerA,
+      generation,
+      form,
+      explicitlyConfirmed: true,
+      isOnline: () => true,
+      createKey: () => 'draft-aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+      send,
+    };
+    const pending = lifecycle.submitReviewed(options);
+    const rejected = expect(pending).rejects.toThrow('draft-receipt-invalid');
+    await started.promise;
+    await expect(lifecycle.submitReviewed(options)).rejects.toThrow('draft-send-blocked');
+    finish.resolve();
+    await rejected;
+    expect(send).toHaveBeenCalledOnce();
+    expect((await lifecycle.load())?.state).toBe('SUBMISSION_PENDING');
+  });
 });
