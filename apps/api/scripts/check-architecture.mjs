@@ -187,7 +187,9 @@ function checkApiControllerOwnership(root, modules, errors) {
   const allModules = filesUnder(sourceRoot).filter(
     (file) =>
       file.endsWith('.module.ts') &&
-      !relative(sourceRoot, file).split(sep).some((part) => ['test', 'generated'].includes(part)),
+      !relative(sourceRoot, file)
+        .split(sep)
+        .some((part) => ['test', 'generated'].includes(part)),
   );
   for (const file of allModules) {
     const metadata = registeredControllers(readFileSync(file, 'utf8'), file);
