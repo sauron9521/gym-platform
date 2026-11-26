@@ -388,6 +388,22 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/users/me/notification-settings': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['NotificationSettingsController_get'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch: operations['NotificationSettingsController_patch'];
+    trace?: never;
+  };
   '/avatars/{key}': {
     parameters: {
       query?: never;
@@ -546,22 +562,6 @@ export interface paths {
     options?: never;
     head?: never;
     patch?: never;
-    trace?: never;
-  };
-  '/users/me/notification-settings': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get: operations['NotificationSettingsController_get'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch: operations['NotificationSettingsController_patch'];
     trace?: never;
   };
   '/users/me/account-deletion-request': {
@@ -2254,6 +2254,151 @@ export interface operations {
       };
     };
   };
+  NotificationSettingsController_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Account preferences; consent does not imply delivery or OS permission. Null timezone means invalid stored timezone. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            quietHoursEnabled: boolean;
+            quietStartMinute: number;
+            quietEndMinute: number;
+            /** @enum {integer} */
+            reminderLeadMinutes: 15 | 60 | 1440;
+            timezone: string | null;
+            preferences: (
+              | {
+                  /** @enum {string} */
+                  category: 'TRAINER' | 'PROGRAM';
+                  /** @enum {string} */
+                  channel: 'MOBILE_PUSH';
+                  enabled: boolean;
+                  /** Format: date-time */
+                  consentedAt: string | null;
+                }
+              | {
+                  /** @enum {string} */
+                  category: 'WORKOUT';
+                  /** @enum {string} */
+                  channel: 'LOCAL_REMINDER';
+                  enabled: boolean;
+                  /** Format: date-time */
+                  consentedAt: string | null;
+                }
+              | {
+                  /** @enum {string} */
+                  category: 'ACCOUNT';
+                  /** @enum {string} */
+                  channel: 'EMAIL';
+                  enabled: boolean;
+                  /** Format: date-time */
+                  consentedAt: string | null;
+                }
+            )[];
+          };
+        };
+      };
+    };
+  };
+  NotificationSettingsController_patch: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          quietHoursEnabled?: boolean;
+          quietStartMinute?: number;
+          quietEndMinute?: number;
+          /** @enum {number} */
+          reminderLeadMinutes?: 15 | 60 | 1440;
+          preferences?: (
+            | {
+                /** @enum {string} */
+                category: 'TRAINER' | 'PROGRAM';
+                /** @enum {string} */
+                channel: 'MOBILE_PUSH';
+                enabled: boolean;
+              }
+            | {
+                /** @enum {string} */
+                category: 'WORKOUT';
+                /** @enum {string} */
+                channel: 'LOCAL_REMINDER';
+                enabled: boolean;
+              }
+            | {
+                /** @enum {string} */
+                category: 'ACCOUNT';
+                /** @enum {string} */
+                channel: 'EMAIL';
+                enabled: boolean;
+              }
+          )[];
+        };
+      };
+    };
+    responses: {
+      /** @description Account preferences; consent does not imply delivery or OS permission. Null timezone means invalid stored timezone. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            quietHoursEnabled: boolean;
+            quietStartMinute: number;
+            quietEndMinute: number;
+            /** @enum {integer} */
+            reminderLeadMinutes: 15 | 60 | 1440;
+            timezone: string | null;
+            preferences: (
+              | {
+                  /** @enum {string} */
+                  category: 'TRAINER' | 'PROGRAM';
+                  /** @enum {string} */
+                  channel: 'MOBILE_PUSH';
+                  enabled: boolean;
+                  /** Format: date-time */
+                  consentedAt: string | null;
+                }
+              | {
+                  /** @enum {string} */
+                  category: 'WORKOUT';
+                  /** @enum {string} */
+                  channel: 'LOCAL_REMINDER';
+                  enabled: boolean;
+                  /** Format: date-time */
+                  consentedAt: string | null;
+                }
+              | {
+                  /** @enum {string} */
+                  category: 'ACCOUNT';
+                  /** @enum {string} */
+                  channel: 'EMAIL';
+                  enabled: boolean;
+                  /** Format: date-time */
+                  consentedAt: string | null;
+                }
+            )[];
+          };
+        };
+      };
+    };
+  };
   AvatarPublicController_get: {
     parameters: {
       query?: never;
@@ -2509,151 +2654,6 @@ export interface operations {
           [name: string]: unknown;
         };
         content?: never;
-      };
-    };
-  };
-  NotificationSettingsController_get: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Account preferences; consent does not imply delivery or OS permission. Null timezone means invalid stored timezone. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': {
-            quietHoursEnabled: boolean;
-            quietStartMinute: number;
-            quietEndMinute: number;
-            /** @enum {integer} */
-            reminderLeadMinutes: 15 | 60 | 1440;
-            timezone: string | null;
-            preferences: (
-              | {
-                  /** @enum {string} */
-                  category: 'TRAINER' | 'PROGRAM';
-                  /** @enum {string} */
-                  channel: 'MOBILE_PUSH';
-                  enabled: boolean;
-                  /** Format: date-time */
-                  consentedAt: string | null;
-                }
-              | {
-                  /** @enum {string} */
-                  category: 'WORKOUT';
-                  /** @enum {string} */
-                  channel: 'LOCAL_REMINDER';
-                  enabled: boolean;
-                  /** Format: date-time */
-                  consentedAt: string | null;
-                }
-              | {
-                  /** @enum {string} */
-                  category: 'ACCOUNT';
-                  /** @enum {string} */
-                  channel: 'EMAIL';
-                  enabled: boolean;
-                  /** Format: date-time */
-                  consentedAt: string | null;
-                }
-            )[];
-          };
-        };
-      };
-    };
-  };
-  NotificationSettingsController_patch: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': {
-          quietHoursEnabled?: boolean;
-          quietStartMinute?: number;
-          quietEndMinute?: number;
-          /** @enum {number} */
-          reminderLeadMinutes?: 15 | 60 | 1440;
-          preferences?: (
-            | {
-                /** @enum {string} */
-                category: 'TRAINER' | 'PROGRAM';
-                /** @enum {string} */
-                channel: 'MOBILE_PUSH';
-                enabled: boolean;
-              }
-            | {
-                /** @enum {string} */
-                category: 'WORKOUT';
-                /** @enum {string} */
-                channel: 'LOCAL_REMINDER';
-                enabled: boolean;
-              }
-            | {
-                /** @enum {string} */
-                category: 'ACCOUNT';
-                /** @enum {string} */
-                channel: 'EMAIL';
-                enabled: boolean;
-              }
-          )[];
-        };
-      };
-    };
-    responses: {
-      /** @description Account preferences; consent does not imply delivery or OS permission. Null timezone means invalid stored timezone. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': {
-            quietHoursEnabled: boolean;
-            quietStartMinute: number;
-            quietEndMinute: number;
-            /** @enum {integer} */
-            reminderLeadMinutes: 15 | 60 | 1440;
-            timezone: string | null;
-            preferences: (
-              | {
-                  /** @enum {string} */
-                  category: 'TRAINER' | 'PROGRAM';
-                  /** @enum {string} */
-                  channel: 'MOBILE_PUSH';
-                  enabled: boolean;
-                  /** Format: date-time */
-                  consentedAt: string | null;
-                }
-              | {
-                  /** @enum {string} */
-                  category: 'WORKOUT';
-                  /** @enum {string} */
-                  channel: 'LOCAL_REMINDER';
-                  enabled: boolean;
-                  /** Format: date-time */
-                  consentedAt: string | null;
-                }
-              | {
-                  /** @enum {string} */
-                  category: 'ACCOUNT';
-                  /** @enum {string} */
-                  channel: 'EMAIL';
-                  enabled: boolean;
-                  /** Format: date-time */
-                  consentedAt: string | null;
-                }
-            )[];
-          };
-        };
       };
     };
   };

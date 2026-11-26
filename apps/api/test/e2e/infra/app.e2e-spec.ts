@@ -8,7 +8,8 @@ import { AppModule } from '../../../src/app.module.js';
 import { NotificationsModule } from '../../../src/modules/notifications/notifications.module.js';
 import { NotificationSettingsService } from '../../../src/modules/notifications/public-api.js';
 import { NotificationSettingsRepository } from '../../../src/modules/notifications/repositories/notification-settings.repository.js';
-import { NotificationSettingsController } from '../../../src/modules/notifications/controllers/notification-settings.controller.js';
+import { NotificationSettingsController } from '../../../src/api/shared/notifications/controllers/notification-settings.controller.js';
+import { SharedNotificationsApiModule } from '../../../src/api/shared/notifications/shared-notifications-api.module.js';
 import { AdminAuditLogger } from '../../../src/common/audit/admin-audit.logger.js';
 import { AdminAuditModule } from '../../../src/common/audit/admin-audit.module.js';
 import { DistributedThrottlerStorage } from '../../../src/common/rate-limit/distributed-throttler.storage.js';
@@ -187,6 +188,20 @@ describe('App (e2e)', () => {
       .get(NotificationsBoundaryProbe, { strict: true });
     expect(modules.filter((module) => module.metatype === NotificationsModule)).toHaveLength(1);
     expect(probe.settings).toBe(core.get(NotificationSettingsService, { strict: true }));
+    expect(
+      modules.find((module) => module.metatype === NotificationsModule)?.controllers.size,
+    ).toBe(0);
+    expect(
+      modules.filter((module) => module.metatype === SharedNotificationsApiModule),
+    ).toHaveLength(1);
+    expect(
+      modules.find((module) => module.metatype === SharedNotificationsApiModule)?.controllers.size,
+    ).toBe(1);
+    expect(
+      app
+        .select(SharedNotificationsApiModule)
+        .get(NotificationSettingsController, { strict: true }),
+    ).toBeInstanceOf(NotificationSettingsController);
     for (const provider of [NotificationSettingsService, NotificationSettingsRepository]) {
       expect(
         modules.filter((module) => module.providers.has(provider)).map((module) => module.metatype),
@@ -196,7 +211,7 @@ describe('App (e2e)', () => {
       modules
         .filter((module) => module.controllers.has(NotificationSettingsController))
         .map((module) => module.metatype),
-    ).toEqual([NotificationsModule]);
+    ).toEqual([SharedNotificationsApiModule]);
   });
 
   it('resolves the same Prisma singleton from the declaring module and app context', () => {
