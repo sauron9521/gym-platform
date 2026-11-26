@@ -43,7 +43,8 @@ import { UsersModule } from '../../../src/modules/users/users.module.js';
 import { AccountDeletionRequestsModule } from '../../../src/modules/account-deletion-requests/account-deletion-requests.module.js';
 import { AccountDeletionRequestsService } from '../../../src/modules/account-deletion-requests/public-api.js';
 import { AccountDeletionRequestsRepository } from '../../../src/modules/account-deletion-requests/repositories/account-deletion-requests.repository.js';
-import { AccountDeletionRequestsController } from '../../../src/modules/account-deletion-requests/controllers/account-deletion-requests.controller.js';
+import { AccountDeletionRequestsController } from '../../../src/api/shared/account-deletion-requests/controllers/account-deletion-requests.controller.js';
+import { SharedAccountDeletionRequestsApiModule } from '../../../src/api/shared/account-deletion-requests/shared-account-deletion-requests-api.module.js';
 import { UsersAuthFacade } from '../../../src/modules/users/services/users-auth.facade.js';
 import { UsersService } from '../../../src/modules/users/services/users.service.js';
 import { WorkoutAnalyticsModule } from '../../../src/modules/workout-analytics/workout-analytics.module.js';
@@ -242,6 +243,21 @@ describe('App (e2e)', () => {
       modules.filter((module) => module.metatype === AccountDeletionRequestsModule),
     ).toHaveLength(1);
     expect(probe.requests).toBe(core.get(AccountDeletionRequestsService, { strict: true }));
+    expect(
+      modules.find((module) => module.metatype === AccountDeletionRequestsModule)?.controllers.size,
+    ).toBe(0);
+    expect(
+      modules.filter((module) => module.metatype === SharedAccountDeletionRequestsApiModule),
+    ).toHaveLength(1);
+    expect(
+      modules.find((module) => module.metatype === SharedAccountDeletionRequestsApiModule)
+        ?.controllers.size,
+    ).toBe(1);
+    expect(
+      app
+        .select(SharedAccountDeletionRequestsApiModule)
+        .get(AccountDeletionRequestsController, { strict: true }),
+    ).toBeInstanceOf(AccountDeletionRequestsController);
     for (const provider of [AccountDeletionRequestsService, AccountDeletionRequestsRepository]) {
       expect(
         modules.filter((module) => module.providers.has(provider)).map((module) => module.metatype),
@@ -256,7 +272,7 @@ describe('App (e2e)', () => {
       modules
         .filter((module) => module.controllers.has(AccountDeletionRequestsController))
         .map((module) => module.metatype),
-    ).toEqual([AccountDeletionRequestsModule]);
+    ).toEqual([SharedAccountDeletionRequestsApiModule]);
   });
 
   it('resolves the same Prisma singleton from the declaring module and app context', () => {

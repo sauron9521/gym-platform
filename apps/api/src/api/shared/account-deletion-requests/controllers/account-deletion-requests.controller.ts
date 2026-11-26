@@ -10,7 +10,7 @@ import {
   type AccountDeletionRequestInput,
   accountDeletionRequestSchema,
   AccountDeletionRequestsService,
-} from '../public-api.js';
+} from '#src/modules/account-deletion-requests/public-api';
 
 @ApiTags('Users')
 @ApiCookieAuth('sessionCookie')
