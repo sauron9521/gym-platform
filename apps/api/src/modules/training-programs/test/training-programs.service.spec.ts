@@ -10,7 +10,7 @@ import { DraftVersionCreationConflict } from '../application/draft-version-creat
 import { TrainingProgramsService } from '../services/training-programs.service.js';
 import type { TrainingProgramActor } from '../types/training-program.types.js';
 import { ExercisesService } from '#src/modules/exercises/services/exercises.service';
-import { TrainerAthletesService } from '#src/modules/trainer-athletes/services/trainer-athletes.service';
+import { TrainerAthletesService } from '#src/modules/trainer-athletes/public-api';
 import { TrainingProgramAccessService } from '../services/training-program-access.service.js';
 import { TrainingProgramWorkoutService } from '../services/training-program-workout.service.js';
 import { TrainingProgramExerciseService } from '../services/training-program-exercise.service.js';

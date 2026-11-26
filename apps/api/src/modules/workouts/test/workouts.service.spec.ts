@@ -22,7 +22,7 @@ import type {
   CreateWorkoutInput,
   WorkoutActor,
 } from '../types/workout.types.js';
-import { TrainerAthletesService } from '#src/modules/trainer-athletes/services/trainer-athletes.service';
+import { TrainerAthletesService } from '#src/modules/trainer-athletes/public-api';
 
 describe('WorkoutsService', () => {
   let service: WorkoutsService;
