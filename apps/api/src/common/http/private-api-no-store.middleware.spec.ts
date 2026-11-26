@@ -16,6 +16,9 @@ describe('PrivateApiNoStoreMiddleware', () => {
 
   it.each([
     '/users',
+    '/notifications',
+    '/notifications/unread-count',
+    '/notifications/abc/read',
     '/users/me',
     '/workouts',
     '/workouts/123',

@@ -30,3 +30,11 @@ ABI06b1b moves the whole NotificationSettingsController and its adapter test int
 [SharedNotificationsApiModule](../../apps/api/src/api/shared/notifications/shared-notifications-api.module.ts) owns the complete [NotificationSettingsController](../../apps/api/src/api/shared/notifications/controllers/notification-settings.controller.ts). The controller changes only its import of the existing public contract. Both original method names, authenticated owner selection, request/response schemas, cache headers, rate budgets and stock throttler identities are retained. NotificationsModule explicitly registers no controllers and still exports only NotificationSettingsService. Its repository, domain rules and transaction boundaries remain private and unchanged. The shared audience manifest, registry metadata tests and real Nest composition regression pin the sole controller owner and single service/repository instances. No frozen inventory paths need relocation.
 
 The module's two routes are now audience-owned. Continue with the account deletion boundary preparation after this slice passes contract, HTTP, architecture and CI checks; no notification delivery capability or production authorization is implied.
+
+## Subsequent functional extension
+
+After the ABI06b1b migration, #568 added the transactional publication
+function to the public contract. N03/N04 (#566/#567) add the shared
+NotificationInboxController and NotificationInboxService; the Inbox
+repository remains private and NotificationsModule remains controller-free.
+The original settings routes, operation IDs and rate limits are unchanged.

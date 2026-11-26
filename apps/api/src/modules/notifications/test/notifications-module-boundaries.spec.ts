@@ -1,6 +1,7 @@
 import { MODULE_METADATA } from '@nestjs/common/constants';
 import { NotificationsModule } from '../notifications.module.js';
 import * as publicApi from '../public-api.js';
+import { NotificationInboxRepository } from '../repositories/notification-inbox.repository.js';
 import { NotificationSettingsRepository } from '../repositories/notification-settings.repository.js';
 import {
   notificationSettingsPatchSchema,
@@ -8,19 +9,24 @@ import {
 } from '../domain/notification-settings.policy.js';
 
 describe('NotificationsModule public boundary', () => {
-  it('exports only its existing account settings service and keeps its repository private', () => {
+  it('exports account settings and Inbox services while keeping repositories private', () => {
     expect(Reflect.getMetadata(MODULE_METADATA.PROVIDERS, NotificationsModule)).toEqual([
       NotificationSettingsRepository,
       publicApi.NotificationSettingsService,
+      NotificationInboxRepository,
+      publicApi.NotificationInboxService,
     ]);
     expect(Reflect.getMetadata(MODULE_METADATA.EXPORTS, NotificationsModule)).toEqual([
       publicApi.NotificationSettingsService,
+      publicApi.NotificationInboxService,
     ]);
   });
 
   it('exposes settings and the transaction-local publication contract', () => {
     expect(Object.keys(publicApi).sort()).toEqual([
+      'NotificationInboxService',
       'NotificationSettingsService',
+      'notificationInboxQuerySchema',
       'notificationSettingsPatchSchema',
       'publishOutboxEvent',
       'reminderLeadMinutes',

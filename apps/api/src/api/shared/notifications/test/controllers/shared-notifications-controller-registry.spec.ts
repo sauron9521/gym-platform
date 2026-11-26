@@ -6,6 +6,7 @@ import {
   HTTP_CODE_METADATA,
   HEADERS_METADATA,
 } from '@nestjs/common/constants';
+import { NotificationInboxController } from '../../controllers/notification-inbox.controller.js';
 import { NotificationSettingsController } from '../../controllers/notification-settings.controller.js';
 import { NotificationsModule } from '#src/modules/notifications/notifications.module';
 import { ADMIN_COOKIE_ROUTE } from '#src/common/auth/admin-cookie-route';
@@ -15,6 +16,7 @@ describe('SharedNotificationsApiModule controller registry', () => {
   it('registers the account-owned resource and exactly its two HTTP methods', () => {
     expect(Reflect.getMetadata(MODULE_METADATA.CONTROLLERS, SharedNotificationsApiModule)).toEqual([
       NotificationSettingsController,
+      NotificationInboxController,
     ]);
     expect(Reflect.getMetadata(PATH_METADATA, NotificationSettingsController)).toBe(
       'users/me/notification-settings',
