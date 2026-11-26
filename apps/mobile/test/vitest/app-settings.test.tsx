@@ -1,5 +1,4 @@
 import { act, cleanup, fireEvent, render, waitFor } from '@testing-library/react-native';
-import { IntlProvider } from 'react-intl';
 import { Text } from 'react-native';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -8,18 +7,28 @@ import {
   useAppSettings,
 } from '@/features/app-settings/model/app-settings-context';
 import { AppSettingsScreen } from '@/screens/profile/ui/app-settings-screen';
-import { getMobileMessages } from '@/shared/i18n/mobile-messages';
+import { LocaleProvider } from '@/shared/i18n/locale-provider';
+import { MobileThemeProvider } from '@/shared/config/theme-provider';
 
 const state = vi.hoisted(() => ({
   account: { id: 'athlete-a' },
   getItem: vi.fn(),
+  patch: vi.fn(),
   setItem: vi.fn(),
 }));
 vi.mock('@react-native-async-storage/async-storage', () => ({
-  default: { getItem: state.getItem, setItem: state.setItem },
+  default: {
+    getItem: (key: string) =>
+      key.includes(':app-settings:') ? state.getItem(key) : Promise.resolve(null),
+    setItem: state.setItem,
+  },
 }));
 vi.mock('@/features/auth/model/auth-context', () => ({
-  useAuth: () => ({ account: state.account }),
+  useAuth: () => ({ account: state.account, getApi: () => ({ PATCH: state.patch }) }),
+}));
+
+vi.mock('expo-localization', () => ({
+  getLocales: () => [{ languageTag: 'en-US' }],
 }));
 
 function TimerGate() {
@@ -29,12 +38,14 @@ function TimerGate() {
 
 function App() {
   return (
-    <IntlProvider locale="en" messages={getMobileMessages('en')}>
-      <AppSettingsProvider>
-        <AppSettingsScreen />
-        <TimerGate />
-      </AppSettingsProvider>
-    </IntlProvider>
+    <MobileThemeProvider>
+      <LocaleProvider>
+        <AppSettingsProvider>
+          <AppSettingsScreen />
+          <TimerGate />
+        </AppSettingsProvider>
+      </LocaleProvider>
+    </MobileThemeProvider>
   );
 }
 
@@ -44,10 +55,43 @@ beforeEach(() => {
   state.account = { id: 'athlete-a' };
   state.getItem.mockReset().mockResolvedValue(null);
   state.setItem.mockReset().mockResolvedValue(undefined);
+  state.patch
+    .mockReset()
+    .mockResolvedValue({ response: { status: 200 }, data: { preferredLocale: 'uk' } });
 });
 afterEach(cleanup);
 
 describe('App settings', () => {
+  it('groups existing appearance and account language controls and persists them through their original providers', async () => {
+    const view = await render(<App />);
+    await waitFor(() => expect(view.getByText('automatic-on')).toBeTruthy());
+    expect(view.getByRole('header', { name: 'Workouts' })).toBeTruthy();
+    expect(view.getByRole('header', { name: 'Display' })).toBeTruthy();
+    expect(view.getByRole('header', { name: 'Language' })).toBeTruthy();
+    await fireEvent.press(view.getByTestId('theme-dark'));
+    expect(view.getByTestId('theme-dark').props.accessibilityState.selected).toBe(true);
+    await waitFor(() =>
+      expect(state.setItem).toHaveBeenCalledWith('gym-platform:preferred-theme', 'dark'),
+    );
+    await fireEvent.press(view.getByText('Українська'));
+    await waitFor(() => expect(view.getByRole('header', { name: 'Тренування' })).toBeTruthy());
+    expect(state.patch).toHaveBeenCalledWith('/users/me/preferences', {
+      body: { preferredLocale: 'uk' },
+    });
+    expect(state.setItem).toHaveBeenCalledWith('gym-platform:preferred-locale', 'uk');
+    expect(view.getByText('automatic-on')).toBeTruthy();
+  });
+
+  it('retains the current language when account persistence fails', async () => {
+    state.patch.mockResolvedValue({ response: { status: 503 } });
+    const view = await render(<App />);
+    await waitFor(() => expect(view.getByText('automatic-on')).toBeTruthy());
+    await fireEvent.press(view.getByText('Українська'));
+    await waitFor(() => expect(view.getByRole('alert')).toBeTruthy());
+    expect(view.getByRole('header', { name: 'Language' })).toBeTruthy();
+    expect(state.setItem).not.toHaveBeenCalledWith('gym-platform:preferred-locale', 'uk');
+  });
+
   it('defaults on, persists a change, and restores it after remount', async () => {
     const view = await render(<App />);
     await waitFor(() => expect(view.getByText('automatic-on')).toBeTruthy());
