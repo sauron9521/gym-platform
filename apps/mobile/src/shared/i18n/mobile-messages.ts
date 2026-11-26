@@ -214,6 +214,26 @@ const navigationMessages = {
     uk: 'Лише на відкритому екрані активного тренування. Може збільшити витрати заряду.',
     en: 'Only while the active workout screen is open. May increase battery use.',
   },
+  'mobile.settings.showPreviousSets': {
+    uk: 'Показувати попередні результати',
+    en: 'Show previous results',
+  },
+  'mobile.settings.showPreviousSetsHint': {
+    uk: 'Підказки з останнього силового тренування, без зміни введених значень. Лише на цьому пристрої.',
+    en: 'Hints from the last strength workout, without changing entered values. On this device only.',
+  },
+  'mobile.workout.previousSet': {
+    uk: 'Минулого разу: {weight} кг · {reps} повт.',
+    en: 'Last time: {weight} kg · {reps} reps',
+  },
+  'mobile.workout.previousSetWeight': {
+    uk: 'Минулого разу: {weight} кг',
+    en: 'Last time: {weight} kg',
+  },
+  'mobile.workout.previousSetReps': {
+    uk: 'Минулого разу: {reps} повт.',
+    en: 'Last time: {reps} reps',
+  },
   'mobile.settings.pending': { uk: 'Зачекайте…', en: 'Please wait…' },
   'mobile.settings.storageError': {
     uk: 'Не вдалося зберегти або прочитати налаштування. Спробуйте ще раз.',
@@ -221,8 +241,8 @@ const navigationMessages = {
   },
   'mobile.settings.retry': { uk: 'Повторити', en: 'Retry' },
   'mobile.settings.deviceOnly': {
-    uk: 'Звук, вібрація й утримання екрана зберігаються лише на цьому пристрої.',
-    en: 'Sound, vibration and screen wake settings are saved only on this device.',
+    uk: 'Звук, вібрація, утримання екрана та підказки зберігаються лише на цьому пристрої.',
+    en: 'Sound, vibration, screen wake and hints are saved only on this device.',
   },
   'mobile.settings.workoutAccount': {
     uk: 'Автотаймер і тривалість відпочинку синхронізуються з акаунтом.',

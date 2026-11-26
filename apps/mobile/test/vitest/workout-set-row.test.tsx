@@ -1,3 +1,5 @@
+import { IntlProvider } from 'react-intl';
+import { getMobileMessages } from '@/shared/i18n/mobile-messages';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, fireEvent, render, waitFor } from '@testing-library/react-native';
 
@@ -33,6 +35,55 @@ describe('WorkoutSetRow (React Native)', () => {
       isPending: false,
       isError: false,
     } as unknown as ReturnType<typeof useWorkoutSetMutation>);
+  });
+
+  it('shows historical metrics separately and never replaces draft input or submits them', async () => {
+    const hint = { setNumber: 1, setType: 'WORKING' as const, actualReps: 10, actualWeightKg: 0 };
+    const row = (previousHint: typeof hint | undefined) => (
+      <IntlProvider locale="en" messages={getMobileMessages('en')}>
+        <WorkoutSetRow workoutId="workout-1" set={set} editable previousHint={previousHint} />
+      </IntlProvider>
+    );
+    const view = await render(row(undefined));
+    await fireEvent.changeText(view.getByTestId('set-weight-set-1'), '72.5');
+    await fireEvent.changeText(view.getByTestId('set-reps-set-1'), '6');
+    await view.rerender(row(hint));
+    expect(view.getByText('Last time: 0 kg · 10 reps')).toBeTruthy();
+    expect(view.getByTestId('set-weight-set-1').props.value).toBe('72.5');
+    expect(view.getByTestId('set-reps-set-1').props.value).toBe('6');
+    expect(mutateAsync).not.toHaveBeenCalled();
+    await view.rerender(row(undefined));
+    expect(view.queryByTestId('set-previous-set-1')).toBeNull();
+    await fireEvent.press(view.getByTestId('set-complete-set-1'));
+    await waitFor(() =>
+      expect(mutateAsync).toHaveBeenCalledExactlyOnceWith({
+        setId: 'set-1',
+        body: { status: 'COMPLETED', actualReps: 6, actualWeightKg: 72.5 },
+      }),
+    );
+  });
+
+  it('shows partial history without fabricated zeroes and hides history on saved sets', async () => {
+    const hint = {
+      setNumber: 1,
+      setType: 'WORKING' as const,
+      actualReps: null,
+      actualWeightKg: 62.5,
+    };
+    const row = (status: 'PENDING' | 'COMPLETED') => (
+      <IntlProvider locale="uk" messages={getMobileMessages('uk')}>
+        <WorkoutSetRow
+          workoutId="workout-1"
+          set={{ ...set, status }}
+          editable
+          previousHint={hint}
+        />
+      </IntlProvider>
+    );
+    const view = await render(row('PENDING'));
+    expect(view.getByText('Минулого разу: 62,5 кг')).toBeTruthy();
+    await view.rerender(row('COMPLETED'));
+    expect(view.queryByTestId('set-previous-set-1')).toBeNull();
   });
 
   it('validates input and submits actual reps with a decimal comma weight', async () => {

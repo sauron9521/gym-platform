@@ -19,6 +19,7 @@ export function AppSettingsScreen() {
     setRestSound,
     setRestVibration,
     setKeepWorkoutScreenAwake,
+    setShowPreviousSets,
     reload,
     retryAccount,
   } = useAppSettings((state) => state);
@@ -129,6 +130,20 @@ export function AppSettingsScreen() {
             disabled={disabled}
             value={settings.keepWorkoutScreenAwake}
             onValueChange={(value) => void setKeepWorkoutScreenAwake(value)}
+            trackColor={{ false: palette.border, true: palette.primary }}
+          />
+        </View>
+        <View style={styles.row}>
+          <View style={styles.description}>
+            <Text style={styles.label}>{t('showPreviousSets')}</Text>
+            <Text style={styles.hint}>{t('showPreviousSetsHint')}</Text>
+          </View>
+          <Switch
+            testID="settings-show-previous-sets"
+            accessibilityLabel={t('showPreviousSets')}
+            disabled={disabled}
+            value={settings.showPreviousSets}
+            onValueChange={(value) => void setShowPreviousSets(value)}
             trackColor={{ false: palette.border, true: palette.primary }}
           />
         </View>

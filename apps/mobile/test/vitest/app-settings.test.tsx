@@ -33,6 +33,7 @@ const state = vi.hoisted(() => ({
   getDuration: vi.fn(),
   getFeedback: vi.fn(),
   getKeepAwake: vi.fn(),
+  getPreviousSets: vi.fn(),
   patch: vi.fn(),
   setItem: vi.fn(),
   getRemote: vi.fn(),
@@ -44,17 +45,19 @@ const state = vi.hoisted(() => ({
 vi.mock('@react-native-async-storage/async-storage', () => ({
   default: {
     getItem: (key: string) =>
-      key.endsWith(':confirmed-workout-preferences')
-        ? state.getConfirmed(key)
-        : key.endsWith(':keep-workout-screen-awake')
-          ? state.getKeepAwake(key)
-          : key.endsWith(':rest-sound') || key.endsWith(':rest-vibration')
-            ? state.getFeedback(key)
-            : key.endsWith(':rest-duration')
-              ? state.getDuration(key)
-              : key.includes(':app-settings:')
-                ? state.getItem(key)
-                : Promise.resolve(null),
+      key.endsWith(':show-previous-sets')
+        ? state.getPreviousSets(key)
+        : key.endsWith(':confirmed-workout-preferences')
+          ? state.getConfirmed(key)
+          : key.endsWith(':keep-workout-screen-awake')
+            ? state.getKeepAwake(key)
+            : key.endsWith(':rest-sound') || key.endsWith(':rest-vibration')
+              ? state.getFeedback(key)
+              : key.endsWith(':rest-duration')
+                ? state.getDuration(key)
+                : key.includes(':app-settings:')
+                  ? state.getItem(key)
+                  : Promise.resolve(null),
     setItem: state.setItem,
   },
 }));
@@ -160,6 +163,7 @@ beforeEach(() => {
   state.getDuration.mockReset().mockResolvedValue(null);
   state.getFeedback.mockReset().mockResolvedValue(null);
   state.getKeepAwake.mockReset().mockResolvedValue(null);
+  state.getPreviousSets.mockReset().mockResolvedValue(null);
   state.setItem.mockReset().mockResolvedValue(undefined);
   state.patch
     .mockReset()
@@ -173,6 +177,37 @@ afterEach(async () => {
 });
 
 describe('App settings', () => {
+  it('keeps previous results opt-in, saves offline and restores only the same account choice', async () => {
+    onlineManager.setOnline(false);
+    const view = await render(<App />);
+    const setting = () => view.getByTestId('settings-show-previous-sets');
+    await waitFor(() => expect(setting().props.disabled).toBe(false));
+    expect(setting().props.value).toBe(false);
+    await fireEvent(setting(), 'valueChange', true);
+    await waitFor(() => expect(setting().props.value).toBe(true));
+    expect(state.setItem).toHaveBeenCalledWith(
+      'gym-platform:app-settings:v1:athlete-a:show-previous-sets',
+      'true',
+    );
+    expect(state.patchWorkout).not.toHaveBeenCalled();
+    await view.unmount();
+    state.getPreviousSets.mockResolvedValue('true');
+    const restored = await render(<App />);
+    await waitFor(() =>
+      expect(restored.getByTestId('settings-show-previous-sets').props.value).toBe(true),
+    );
+    state.account = { id: 'athlete-b' };
+    state.getPreviousSets.mockResolvedValue('corrupt');
+    await restored.rerender(<App />);
+    await waitFor(() =>
+      expect(restored.getByTestId('settings-show-previous-sets').props.disabled).toBe(false),
+    );
+    expect(restored.getByTestId('settings-show-previous-sets').props.value).toBe(false);
+    expect(state.getPreviousSets).toHaveBeenLastCalledWith(
+      'gym-platform:app-settings:v1:athlete-b:show-previous-sets',
+    );
+  });
+
   it('defaults keep-awake on, persists it and isolates accounts', async () => {
     const view = await render(<App />);
     const setting = () => view.getByTestId('settings-keep-workout-screen-awake');
