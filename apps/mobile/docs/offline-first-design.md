@@ -110,3 +110,37 @@ and clear UI state. Tests use a fake in-memory adapter, not native persistence.
 | M10.5 | Android/iOS device evidence: encrypted at rest, kill/reopen, corruption, failed deletion, account switch, logout, backup/reinstall, network ambiguity. |
 
 Keep #345 open until its actual device acceptance criteria are satisfied.
+
+### M10.2 — isolated encrypted native adapter
+
+The native implementation uses one fixed private database file (not an account
+ID in a filename), one validated owner, and a randomly generated 256-bit key
+stored in a device-only SecureStore marker. Three marker states are used:
+`provisioning` (key saved before creating the database), `ready` (schema
+initialized), and `purging` (durable deletion intent without the stored key).
+Only a successful `prepareVerifiedOwner` admits reads/writes for that owner.
+The adapter serializes operations, closes each connection, disables the SQLite
+devtools registration, verifies cipher availability in memory before opening
+the disk file, checks the keyed database and schema version, and uses bound
+parameters for draft contents. Unknown versions, wrong keys, missing ready
+files, orphan files, corrupt markers and close failures fail closed. Version
+0 is initialized only for an empty provisioning database; future migrations
+require an explicit implementation and tests. There is no browser fallback.
+
+Owner switching and cold-start logout require `prepareVerifiedOwner` and
+`purgePersistedOwner` respectively. The upcoming auth integration must
+coordinate these with the repository generation, block UI before async cleanup,
+and retry failed cleanup explicitly. Purge persists intent before removing
+the database, journal, WAL and SHM files, checks that they are absent, then
+deletes the SecureStore marker. A marker without a key never permits reads.
+An orphan file with no marker is locked rather than silently discarded; define
+an explicit recovery/reset flow before release. Secure deletion is not a
+forensic erasure guarantee on flash storage.
+
+**Release blocker:** mocked native-module tests exercise the control flow,
+not the cryptographic implementation, file/Keychain behavior or filesystem
+durability. On a rebuilt Android/iOS binary, verify actual encrypted file
+contents, incorrect-key rejection, kill/reopen, schema rollback, interrupted
+purge, account isolation, OS backup/restore and reinstall behavior. Backup
+exclusion and native key-loss/locked-device handling remain device/release
+gates. No UI wiring or offline POST/PATCH is enabled by this PR.

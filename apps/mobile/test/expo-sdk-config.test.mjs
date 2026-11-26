@@ -15,6 +15,11 @@ test('Expo SDK 58 rejects removed new-architecture switch and preserves native a
   assert.equal(app.ios.supportsTablet, true);
   assert.equal(app.web.bundler, 'metro');
   assert.equal(app.web.output, 'static');
-  assert.deepEqual(app.plugins, ['expo-router', 'expo-secure-store', 'expo-localization']);
+  assert.deepEqual(app.plugins, [
+    'expo-router',
+    'expo-secure-store',
+    'expo-localization',
+    ['expo-sqlite', { useSQLCipher: true }],
+  ]);
   assert.equal(app.experiments.typedRoutes, true);
 });
