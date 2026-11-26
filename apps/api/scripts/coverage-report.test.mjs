@@ -28,6 +28,21 @@ describe('renderCoverageSummary', () => {
     assert.match(report, /training-programs \| 75\.00%/);
   });
 
+  it('includes migrated adapters in their critical feature coverage totals', () => {
+    const report = renderCoverageSummary({
+      total: entry(14, 20),
+      'src/modules/auth/auth.service.ts': entry(2, 4),
+      '/runner/src/api/admin/auth/controllers/admin-auth.controller.ts': entry(4, 4),
+      'C:\\repo\\src\\api\\shared\\auth\\controllers\\auth.controller.ts': entry(2, 4),
+      'src/api/admin/users/controllers/admin-users.controller.ts': entry(0, 4),
+      'src/modules/workouts/workouts.service.ts': entry(2, 2),
+      'src/modules/training-programs/program.service.ts': entry(2, 2),
+    });
+
+    assert.match(report, /auth \| 66\.67%/);
+    assert.match(report, /workouts \| 100\.00%/);
+  });
+
   it('handles Windows-style paths and zero-total metrics', () => {
     const report = renderCoverageSummary({
       total: entry(0, 0),

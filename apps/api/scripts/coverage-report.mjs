@@ -9,7 +9,16 @@ function aggregate(summary, moduleName) {
   const marker = `src/modules/${moduleName}/`;
   const files = Object.entries(summary).filter(([path]) => {
     const normalized = path.replaceAll('\\', '/');
-    return normalized.startsWith(marker) || normalized.includes(`/${marker}`);
+    const parts = normalized.split('/');
+    const src = parts.lastIndexOf('src');
+    const audience = parts[src + 2];
+    const feature = parts[src + 3];
+    const adapter =
+      src >= 0 &&
+      parts[src + 1] === 'api' &&
+      ['public', 'shared', 'athlete', 'trainer', 'admin'].includes(audience) &&
+      feature === moduleName;
+    return adapter || normalized.startsWith(marker) || normalized.includes(`/${marker}`);
   });
 
   if (files.length === 0) {

@@ -29,12 +29,13 @@ export default defineConfig({
       // Measured from successful main CI run 43107255423 (2026-11-11):
       // statements 79.11%, branches 69.96%, functions 77.05%, lines 79.53%.
       // Critical-module floors are calculated from the same coverage report.
+      // Keep migrated HTTP adapters inside the same critical feature floor.
       thresholds: {
         statements: 77,
         branches: 68,
         functions: 75,
         lines: 77,
-        'src/modules/auth/**/*.ts': {
+        'src/{modules/auth,api/*/auth}/**/*.ts': {
           // PR #73: 77.54% statements, 66.67% branches, 64.47% functions,
           // 77.45% lines. Keep a small buffer while guarding regressions.
           statements: 75,
@@ -42,7 +43,7 @@ export default defineConfig({
           functions: 62,
           lines: 75,
         },
-        'src/modules/workouts/**/*.ts': {
+        'src/{modules/workouts,api/*/workouts}/**/*.ts': {
           // PR #73: 88.86% statements, 83.14% branches, 86.02% functions,
           // 89.32% lines after concurrency and idempotency regression tests.
           statements: 85,
@@ -50,7 +51,7 @@ export default defineConfig({
           functions: 82,
           lines: 85,
         },
-        'src/modules/training-programs/**/*.ts': {
+        'src/{modules/training-programs,api/*/training-programs}/**/*.ts': {
           // Verified by successful PR #167 CI (run 43289865381):
           // statements 97.53%, branches 92.45%, functions 97.92%, lines 97.48%.
           // Leave a small buffer for routine, test-covered refactoring.
