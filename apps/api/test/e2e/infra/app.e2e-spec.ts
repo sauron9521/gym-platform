@@ -25,7 +25,9 @@ import {
 } from '../../../src/modules/body-measurements/public-api.js';
 import { BodyMeasurementsRepository } from '../../../src/modules/body-measurements/repositories/body-measurements.repository.js';
 import { BodyMeasurementStatisticsRepository } from '../../../src/modules/body-measurements/repositories/body-measurement-statistics.repository.js';
-import { BodyMeasurementsController } from '../../../src/modules/body-measurements/controllers/body-measurements.controller.js';
+import { BodyMeasurementsController } from '../../../src/api/athlete/body-measurements/controllers/body-measurements.controller.js';
+import { AthleteBodyMeasurementsApiModule } from '../../../src/api/athlete/body-measurements/athlete-body-measurements-api.module.js';
+import { AthleteApiModule } from '../../../src/api/athlete/athlete-api.module.js';
 import { ExercisesModule } from '../../../src/modules/exercises/exercises.module.js';
 import { ExercisesService } from '../../../src/modules/exercises/services/exercises.service.js';
 import { TrainerAthletesModule } from '../../../src/modules/trainer-athletes/trainer-athletes.module.js';
@@ -302,6 +304,22 @@ describe('App (e2e)', () => {
     expect(modules.filter((module) => module.metatype === BodyMeasurementsModule)).toHaveLength(1);
     expect(probe.measurements).toBe(core.get(BodyMeasurementsService, { strict: true }));
     expect(probe.statistics).toBe(core.get(BodyMeasurementStatisticsService, { strict: true }));
+    expect(
+      modules.find((module) => module.metatype === BodyMeasurementsModule)?.controllers.size,
+    ).toBe(0);
+    expect(modules.filter((module) => module.metatype === AthleteApiModule)).toHaveLength(1);
+    expect(
+      modules.filter((module) => module.metatype === AthleteBodyMeasurementsApiModule),
+    ).toHaveLength(1);
+    expect(
+      modules.find((module) => module.metatype === AthleteBodyMeasurementsApiModule)?.controllers
+        .size,
+    ).toBe(1);
+    expect(
+      app
+        .select(AthleteBodyMeasurementsApiModule)
+        .get(BodyMeasurementsController, { strict: true }),
+    ).toBeInstanceOf(BodyMeasurementsController);
     for (const provider of [
       BodyMeasurementsService,
       BodyMeasurementStatisticsService,
@@ -316,7 +334,7 @@ describe('App (e2e)', () => {
       modules
         .filter((module) => module.controllers.has(BodyMeasurementsController))
         .map((module) => module.metatype),
-    ).toEqual([BodyMeasurementsModule]);
+    ).toEqual([AthleteBodyMeasurementsApiModule]);
   });
 
   it('resolves the same Prisma singleton from the declaring module and app context', () => {

@@ -580,6 +580,54 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/body-measurements': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['BodyMeasurementsController_findMany'];
+    put?: never;
+    post: operations['BodyMeasurementsController_create'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/body-measurements/statistics': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['BodyMeasurementsController_statistics'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/body-measurements/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['BodyMeasurementsController_findOne'];
+    put?: never;
+    post?: never;
+    delete: operations['BodyMeasurementsController_remove'];
+    options?: never;
+    head?: never;
+    patch: operations['BodyMeasurementsController_update'];
+    trace?: never;
+  };
   '/exercises': {
     parameters: {
       query?: never;
@@ -994,54 +1042,6 @@ export interface paths {
     options?: never;
     head?: never;
     patch?: never;
-    trace?: never;
-  };
-  '/body-measurements': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get: operations['BodyMeasurementsController_findMany'];
-    put?: never;
-    post: operations['BodyMeasurementsController_create'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/body-measurements/statistics': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get: operations['BodyMeasurementsController_statistics'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/body-measurements/{id}': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get: operations['BodyMeasurementsController_findOne'];
-    put?: never;
-    post?: never;
-    delete: operations['BodyMeasurementsController_remove'];
-    options?: never;
-    head?: never;
-    patch: operations['BodyMeasurementsController_update'];
     trace?: never;
   };
   '/training-programs/assignments': {
@@ -2715,6 +2715,194 @@ export interface operations {
     requestBody?: never;
     responses: {
       204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  BodyMeasurementsController_findMany: {
+    parameters: {
+      query?: {
+        page?: number;
+        limit?: number;
+        from?: string;
+        to?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  BodyMeasurementsController_create: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          weightKg?: number | null;
+          bodyFatPct?: number | null;
+          chestCm?: number | null;
+          waistCm?: number | null;
+          hipsCm?: number | null;
+          armCm?: number | null;
+          thighCm?: number | null;
+          /** Format: date-time */
+          measuredAt?: string;
+          notes?: string | null;
+        };
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  BodyMeasurementsController_statistics: {
+    parameters: {
+      query?: {
+        metric?: 'weightKg' | 'bodyFatPct' | 'chestCm' | 'waistCm' | 'hipsCm' | 'armCm' | 'thighCm';
+        range?: '7d' | '30d' | '90d';
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description First/latest metric values, differences over 7/30/90 days and a UTC daily chart series. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** @enum {string} */
+            metric:
+              'weightKg' | 'bodyFatPct' | 'chestCm' | 'waistCm' | 'hipsCm' | 'armCm' | 'thighCm';
+            /** @enum {string} */
+            unit: 'kg' | '%' | 'cm';
+            /** @enum {string} */
+            range: '7d' | '30d' | '90d';
+            /** Format: date-time */
+            asOf: string;
+            first?: {
+              /** Format: uuid */
+              id?: string;
+              /** Format: date-time */
+              measuredAt?: string;
+              value?: number;
+            } | null;
+            latest?: {
+              /** Format: uuid */
+              id?: string;
+              /** Format: date-time */
+              measuredAt?: string;
+              value?: number;
+            } | null;
+            overall: {
+              delta?: number | null;
+              percentChange?: number | null;
+            };
+            /** @description Keys: 7d, 30d, 90d. Each includes nullable baseline, delta and percentChange. */
+            changes: {
+              [key: string]: unknown;
+            };
+            series: {
+              /** Format: uuid */
+              id?: string;
+              /** Format: date-time */
+              measuredAt?: string;
+              value?: number;
+            }[];
+          };
+        };
+      };
+    };
+  };
+  BodyMeasurementsController_findOne: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  BodyMeasurementsController_remove: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  BodyMeasurementsController_update: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          weightKg?: number | null;
+          bodyFatPct?: number | null;
+          chestCm?: number | null;
+          waistCm?: number | null;
+          hipsCm?: number | null;
+          armCm?: number | null;
+          thighCm?: number | null;
+          /** Format: date-time */
+          measuredAt?: string;
+          notes?: string | null;
+        };
+      };
+    };
+    responses: {
+      200: {
         headers: {
           [name: string]: unknown;
         };
@@ -5117,194 +5305,6 @@ export interface operations {
             }[];
           };
         };
-      };
-    };
-  };
-  BodyMeasurementsController_findMany: {
-    parameters: {
-      query?: {
-        page?: number;
-        limit?: number;
-        from?: string;
-        to?: string;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  BodyMeasurementsController_create: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': {
-          weightKg?: number | null;
-          bodyFatPct?: number | null;
-          chestCm?: number | null;
-          waistCm?: number | null;
-          hipsCm?: number | null;
-          armCm?: number | null;
-          thighCm?: number | null;
-          /** Format: date-time */
-          measuredAt?: string;
-          notes?: string | null;
-        };
-      };
-    };
-    responses: {
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  BodyMeasurementsController_statistics: {
-    parameters: {
-      query?: {
-        metric?: 'weightKg' | 'bodyFatPct' | 'chestCm' | 'waistCm' | 'hipsCm' | 'armCm' | 'thighCm';
-        range?: '7d' | '30d' | '90d';
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description First/latest metric values, differences over 7/30/90 days and a UTC daily chart series. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': {
-            /** @enum {string} */
-            metric:
-              'weightKg' | 'bodyFatPct' | 'chestCm' | 'waistCm' | 'hipsCm' | 'armCm' | 'thighCm';
-            /** @enum {string} */
-            unit: 'kg' | '%' | 'cm';
-            /** @enum {string} */
-            range: '7d' | '30d' | '90d';
-            /** Format: date-time */
-            asOf: string;
-            first?: {
-              /** Format: uuid */
-              id?: string;
-              /** Format: date-time */
-              measuredAt?: string;
-              value?: number;
-            } | null;
-            latest?: {
-              /** Format: uuid */
-              id?: string;
-              /** Format: date-time */
-              measuredAt?: string;
-              value?: number;
-            } | null;
-            overall: {
-              delta?: number | null;
-              percentChange?: number | null;
-            };
-            /** @description Keys: 7d, 30d, 90d. Each includes nullable baseline, delta and percentChange. */
-            changes: {
-              [key: string]: unknown;
-            };
-            series: {
-              /** Format: uuid */
-              id?: string;
-              /** Format: date-time */
-              measuredAt?: string;
-              value?: number;
-            }[];
-          };
-        };
-      };
-    };
-  };
-  BodyMeasurementsController_findOne: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  BodyMeasurementsController_remove: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      204: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  BodyMeasurementsController_update: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': {
-          weightKg?: number | null;
-          bodyFatPct?: number | null;
-          chestCm?: number | null;
-          waistCm?: number | null;
-          hipsCm?: number | null;
-          armCm?: number | null;
-          thighCm?: number | null;
-          /** Format: date-time */
-          measuredAt?: string;
-          notes?: string | null;
-        };
-      };
-    };
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
       };
     };
   };

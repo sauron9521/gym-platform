@@ -322,6 +322,34 @@ describe('Body Measurements (HTTP + PostgreSQL)', () => {
     }
   });
 
+  it('preserves a legacy TRAINER account’s access to its own measurements and statistics', async () => {
+    const http = request(app.getHttpServer());
+    const created = await http
+      .post('/body-measurements')
+      .set('Cookie', secondCookie)
+      .send({ weightKg: 73.25, notes: 'Legacy trainer owner regression' })
+      .expect(201);
+    const id = created.body.id as string;
+    try {
+      await http.get(`/body-measurements/${id}`).set('Cookie', secondCookie).expect(200);
+      const updated = await http
+        .patch(`/body-measurements/${id}`)
+        .set('Cookie', secondCookie)
+        .send({ weightKg: 74.25 })
+        .expect(200);
+      expect(updated.body.weightKg).toBe(74.25);
+      const statistics = await http
+        .get('/body-measurements/statistics')
+        .set('Cookie', secondCookie)
+        .query({ metric: 'weightKg', range: '7d' })
+        .expect(200);
+      expect(statistics.body.latest).toMatchObject({ id, value: 74.25 });
+      await http.get(`/body-measurements/${id}`).set('Cookie', firstCookie).expect(404);
+    } finally {
+      await http.delete(`/body-measurements/${id}`).set('Cookie', secondCookie).expect(204);
+    }
+  });
+
   it('uses exact UTC calendar-day bounds and the existing time-range index', async () => {
     // March 29 is a DST transition in Europe/Kyiv. UTC calendar days
     // must remain stable regardless of API/database host timezone.
