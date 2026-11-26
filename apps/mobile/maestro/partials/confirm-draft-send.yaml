@@ -1,0 +1,12 @@
+# Only this explicit confirmation can request POST /workouts.
+appId: ${APP_ID}
+---
+- scrollUntilVisible:
+    element:
+      id: workout-draft-send
+    direction: DOWN
+    timeout: 15000
+- tapOn:
+    id: workout-draft-send
+- assertVisible: Надіслати саме збережену форму.*
+- tapOn: Надіслати тренування

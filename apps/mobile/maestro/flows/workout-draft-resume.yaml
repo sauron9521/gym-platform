@@ -1,0 +1,35 @@
+# Staging only: operator verifies zero POST before confirmation and one created
+# workout after confirmation, including a persisted receipt across restart.
+appId: ${APP_ID}
+---
+- runFlow: ../partials/save-new-draft.yaml
+- pressKey: home
+- launchApp:
+    stopApp: false
+# Foreground auth deliberately clears private navigation. Cold restart is separate.
+- stopApp
+- launchApp:
+    clearState: false
+- runFlow: ../partials/open-draft-form.yaml
+- runFlow: ../partials/restore-saved-draft.yaml
+- runFlow: ../partials/confirm-draft-send.yaml
+- scrollUntilVisible:
+    element:
+      text: Тренування створено на сервері.
+    direction: UP
+    timeout: 60000
+# A persisted acknowledgment must not turn into a second POST after restart.
+- stopApp
+- launchApp:
+    clearState: false
+- runFlow: ../partials/open-draft-form.yaml
+- runFlow: ../partials/clear-confirmed-draft.yaml
+- stopApp
+- launchApp:
+    clearState: false
+- runFlow: ../partials/open-draft-form.yaml
+- extendedWaitUntil:
+    visible: Збереженої чернетки немає.
+    timeout: 20000
+- assertNotVisible:
+    id: workout-draft-restore

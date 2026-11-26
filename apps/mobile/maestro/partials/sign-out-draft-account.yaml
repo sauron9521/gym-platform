@@ -1,0 +1,21 @@
+# Cold restart navigates back to tabs without relying on a platform back gesture.
+appId: ${APP_ID}
+---
+- stopApp
+- launchApp:
+    clearState: false
+- extendedWaitUntil:
+    visible:
+      id: mobile-tab-profile
+    timeout: 30000
+- tapOn:
+    id: mobile-tab-profile
+- scrollUntilVisible:
+    element:
+      text: Вийти
+    direction: DOWN
+    timeout: 15000
+- tapOn: Вийти
+- extendedWaitUntil:
+    visible: З поверненням!
+    timeout: 30000

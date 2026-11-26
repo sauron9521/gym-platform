@@ -1,0 +1,53 @@
+# Local-only creation; no POST. The caller must provide a fresh staging account.
+appId: ${APP_ID}
+---
+- launchApp:
+    clearState: true
+- assertVisible: З поверненням!
+- tapOn:
+    id: sign-in-email
+- inputText: ${E2E_EMAIL}
+- tapOn:
+    id: sign-in-password
+- inputText: ${E2E_PASSWORD}
+- tapOn: Увійти
+- runFlow: open-draft-form.yaml
+- extendedWaitUntil:
+    visible: Збереженої чернетки немає.
+    timeout: 30000
+- scrollUntilVisible:
+    element:
+      id: workout-draft-title-input
+    direction: DOWN
+    timeout: 15000
+- tapOn:
+    id: workout-draft-title-input
+- inputText: ${E2E_WORKOUT_TITLE}
+- hideKeyboard
+- scrollUntilVisible:
+    element:
+      id: workout-exercise-open
+    direction: DOWN
+    timeout: 15000
+- tapOn:
+    id: workout-exercise-open
+- tapOn:
+    id: workout-exercise-search
+- inputText: ${E2E_EXERCISE_NAME}
+- hideKeyboard
+- extendedWaitUntil:
+    visible: ${E2E_EXERCISE_NAME}
+    timeout: 20000
+- tapOn: ${E2E_EXERCISE_NAME}
+- scrollUntilVisible:
+    element:
+      id: workout-draft-save
+    direction: UP
+    timeout: 15000
+- tapOn:
+    id: workout-draft-save
+- scrollUntilVisible:
+    element:
+      text: Чернетку збережено на пристрої. Не надіслано на сервер.
+    direction: UP
+    timeout: 60000

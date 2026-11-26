@@ -110,6 +110,7 @@ const navigationMessages = {
     uk: 'Не вдалося очистити локальну копію. Серверне тренування вже створено. Повторіть лише очищення.',
     en: 'Could not clear the local copy. The server workout is already created. Retry cleanup only.',
   },
+  'mobile.draft.confirmTitle': { uk: 'Підтвердження', en: 'Confirmation' },
   'mobile.draft.title': { uk: 'Локальна чернетка', en: 'Local draft' },
   'mobile.draft.hint': {
     uk: 'Зберігайте зміни локально. Перед надсиланням перевірте збережену форму та підтвердьте дію.',

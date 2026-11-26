@@ -1,0 +1,29 @@
+# Restore is a local read, not a network write.
+appId: ${APP_ID}
+---
+- extendedWaitUntil:
+    visible:
+      id: workout-draft-restore
+    timeout: 20000
+- tapOn:
+    id: workout-draft-restore
+- assertVisible: Поточна форма буде замінена збереженою чернеткою.
+- tapOn: Відновити чернетку
+- scrollUntilVisible:
+    element:
+      text: Чернетку відновлено. Перевірте вправи та підходи.
+    direction: UP
+    timeout: 60000
+- scrollUntilVisible:
+    element:
+      id: workout-draft-title-input
+    direction: DOWN
+    timeout: 15000
+- assertVisible:
+    id: workout-draft-title-input
+    text: ${E2E_WORKOUT_TITLE}
+- scrollUntilVisible:
+    element:
+      id: workout-draft-send
+    direction: UP
+    timeout: 15000
