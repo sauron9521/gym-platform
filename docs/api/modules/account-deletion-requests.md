@@ -23,6 +23,7 @@ During the staged MFA rollout, intake is password-only and available only to act
 
 - Module unit/controller tests: `apps/api/src/modules/account-deletion-requests/test/`.
 - Staged MFA regression: `apps/api/test/e2e/users/account-deletion-mfa.e2e-spec.ts` (real AppModule, no MFA override; HTTP IP guard disabled to isolate the account quota).
+- Distributed confirmation quota: `apps/api/test/e2e/users/account-deletion-redis.e2e-spec.ts` (two real AppModule instances with PostgreSQL and shared Redis, enabled by `TEST_REDIS_URL`; the outer HTTP IP guard is disabled to isolate the account budget). Verifies three attempts across cookie/bearer authentication, cross-instance blocking, owner isolation and read availability.
 - HTTP regressions: `apps/api/test/e2e/users/users.e2e-spec.ts`.
 - Use the [API testing guide](../testing.md) and a disposable database for E2E.
 - See [S03 privacy and data ownership](../../product-strategy/s03-privacy-data-ownership-v1.md) for the approved broader lifecycle, not an implementation claim.
