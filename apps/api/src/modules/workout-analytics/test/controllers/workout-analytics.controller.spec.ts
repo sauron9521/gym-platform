@@ -7,6 +7,7 @@ describe('WorkoutAnalyticsController', () => {
   const service = {
     summary: vi.fn(),
     exercise: vi.fn(),
+    previousSets: vi.fn(),
   };
   const athlete: WorkoutActor = { id: 'athlete-1', role: 'ATHLETE' };
   let controller: WorkoutAnalyticsController;
@@ -37,6 +38,14 @@ describe('WorkoutAnalyticsController', () => {
     expect(service.exercise).toHaveBeenCalledTimes(1);
     expect(service.exercise).toHaveBeenCalledWith(athlete, exerciseId, query);
     expect(service.summary).not.toHaveBeenCalled();
+  });
+
+  it('delegates previous sets using the authenticated actor and exercise only', async () => {
+    const exerciseId = '11111111-1111-4111-8111-111111111111';
+    const response = { exerciseId, workoutCompletedAt: null, sets: [] };
+    service.previousSets.mockResolvedValue(response);
+    await expect(controller.previousSets(athlete, exerciseId, {})).resolves.toBe(response);
+    expect(service.previousSets).toHaveBeenCalledExactlyOnceWith(athlete, exerciseId);
   });
 
   it('preserves errors from the service without exposing extra data', async () => {

@@ -16,6 +16,7 @@ describe('WorkoutAnalyticsService', () => {
     readSummary: vi.fn(),
     readExercise: vi.fn(),
     readPersonalRecords: vi.fn(),
+    readPreviousSets: vi.fn(),
   };
   const service = new WorkoutAnalyticsService(
     repository as unknown as WorkoutAnalyticsRepository,
@@ -124,6 +125,49 @@ describe('WorkoutAnalyticsService', () => {
     expect(result.exerciseCount).toBe(0);
   });
 
+  it('returns only the actual metrics from one recent historical occurrence, preserving zero and null', async () => {
+    const completedAt = new Date('2026-11-01T10:00:00Z');
+    repository.readPreviousSets.mockResolvedValue([
+      {
+        workoutCompletedAt: completedAt,
+        setNumber: 1,
+        setType: 'WARMUP',
+        actualReps: 12,
+        actualWeightKg: '0.00',
+      },
+      {
+        workoutCompletedAt: completedAt,
+        setNumber: 3,
+        setType: 'WORKING',
+        actualReps: null,
+        actualWeightKg: '62.50',
+      },
+    ]);
+    await expect(service.previousSets(athlete, 'exercise-1')).resolves.toEqual({
+      exerciseId: 'exercise-1',
+      workoutCompletedAt: completedAt,
+      sets: [
+        { setNumber: 1, setType: 'WARMUP', actualReps: 12, actualWeightKg: 0 },
+        { setNumber: 3, setType: 'WORKING', actualReps: null, actualWeightKg: 62.5 },
+      ],
+    });
+    expect(repository.readPreviousSets).toHaveBeenCalledExactlyOnceWith(
+      athlete.id,
+      'exercise-1',
+      expect.any(Date),
+      expect.any(Date),
+    );
+  });
+
+  it('returns an identical empty history for absent or inaccessible exercises', async () => {
+    repository.readPreviousSets.mockResolvedValue([]);
+    await expect(service.previousSets(athlete, 'unknown')).resolves.toEqual({
+      exerciseId: 'unknown',
+      workoutCompletedAt: null,
+      sets: [],
+    });
+  });
+
   it('allows legacy TRAINER accounts to use their personal athlete analytics', async () => {
     repository.readSummary.mockResolvedValue([]);
     repository.readPersonalRecords.mockResolvedValue([]);
@@ -131,11 +175,19 @@ describe('WorkoutAnalyticsService', () => {
 
     await service.summary(trainer, { range: '30d' });
     await service.personalRecords(trainer);
+    repository.readPreviousSets.mockResolvedValue([]);
+    await service.previousSets(trainer, 'exercise-1');
     await service.exercise(trainer, 'exercise-1', { range: '30d' });
 
     expect(users.findMyCapabilities).toHaveBeenCalledWith(trainer.id);
     expect(repository.readSummary).toHaveBeenCalledOnce();
     expect(repository.readPersonalRecords).toHaveBeenCalledOnce();
+    expect(repository.readPreviousSets).toHaveBeenCalledExactlyOnceWith(
+      trainer.id,
+      'exercise-1',
+      expect.any(Date),
+      expect.any(Date),
+    );
     expect(repository.readExercise).toHaveBeenCalledOnce();
   });
 
@@ -147,6 +199,10 @@ describe('WorkoutAnalyticsService', () => {
     await expect(service.exercise(oldAdminSession, 'exercise-1', { range: '30d' })).rejects.toThrow(
       ForbiddenException,
     );
+    await expect(service.previousSets(oldAdminSession, 'exercise-1')).rejects.toThrow(
+      ForbiddenException,
+    );
+    expect(repository.readPreviousSets).not.toHaveBeenCalled();
     expect(repository.readSummary).not.toHaveBeenCalled();
     expect(repository.readPersonalRecords).not.toHaveBeenCalled();
     expect(repository.readExercise).not.toHaveBeenCalled();

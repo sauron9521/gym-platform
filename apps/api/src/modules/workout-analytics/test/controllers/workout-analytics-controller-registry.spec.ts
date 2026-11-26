@@ -25,6 +25,7 @@ describe('WorkoutAnalyticsModule controller registry', () => {
   it.each([
     ['summary', RequestMethod.GET, 'summary'],
     ['exercise', RequestMethod.GET, 'exercises/:exerciseId'],
+    ['previousSets', RequestMethod.GET, 'exercises/:exerciseId/previous-sets'],
   ] as const)('preserves the %s HTTP method and path', (name, method, path) => {
     const handler = WorkoutAnalyticsController.prototype[name];
 
@@ -35,14 +36,14 @@ describe('WorkoutAnalyticsModule controller registry', () => {
 
   it('keeps the 20-per-minute throttling on all analytics endpoints', () => {
     const handlers = WorkoutAnalyticsController.prototype;
-    for (const name of ['summary', 'personalRecords', 'exercise'] as const) {
+    for (const name of ['summary', 'personalRecords', 'exercise', 'previousSets'] as const) {
       const handler = Object.getOwnPropertyDescriptor(handlers, name)?.value;
       expect(Reflect.getMetadata('THROTTLER:LIMITdefault', handler)).toBe(20);
       expect(Reflect.getMetadata('THROTTLER:TTLdefault', handler)).toBe(60_000);
     }
   });
 
-  it('registers exactly two unique HTTP method/path pairs', () => {
+  it('registers exactly four unique HTTP method/path pairs', () => {
     const routes = Object.getOwnPropertyNames(WorkoutAnalyticsController.prototype)
       .filter((name) => name !== 'constructor')
       .map((name) => {
@@ -53,7 +54,7 @@ describe('WorkoutAnalyticsModule controller registry', () => {
         return `${method}:workout-analytics/${path}`;
       });
 
-    expect(routes).toHaveLength(3);
+    expect(routes).toHaveLength(4);
     expect(new Set(routes).size).toBe(routes.length);
   });
 });

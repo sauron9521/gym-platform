@@ -56,3 +56,16 @@ export const workoutAnalyticsExerciseResponseSchema = objectSchema({
   bestWeightKg: nullable(decimalNumberSchema),
   daily: arraySchema(exerciseDaySchema),
 });
+
+export const previousWorkoutSetsResponseSchema = objectSchema({
+  exerciseId: uuidSchema,
+  workoutCompletedAt: nullable(dateTimeSchema),
+  sets: arraySchema(
+    objectSchema({
+      setNumber: integerSchema,
+      setType: { type: 'string', enum: ['WARMUP', 'WORKING', 'DROP_SET', 'AMRAP'] },
+      actualReps: nullable(integerSchema),
+      actualWeightKg: nullable(decimalNumberSchema),
+    }),
+  ),
+});

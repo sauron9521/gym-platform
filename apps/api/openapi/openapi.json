@@ -8005,6 +8005,82 @@
         "tags": ["Workout Analytics"]
       }
     },
+    "/workout-analytics/exercises/{exerciseId}/previous-sets": {
+      "get": {
+        "operationId": "WorkoutAnalyticsController_previousSets",
+        "parameters": [
+          {
+            "name": "exerciseId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "exerciseId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "workoutCompletedAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "nullable": true
+                    },
+                    "sets": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "setNumber": {
+                            "type": "integer"
+                          },
+                          "setType": {
+                            "type": "string",
+                            "enum": ["WARMUP", "WORKING", "DROP_SET", "AMRAP"]
+                          },
+                          "actualReps": {
+                            "type": "integer",
+                            "nullable": true
+                          },
+                          "actualWeightKg": {
+                            "type": "number",
+                            "nullable": true
+                          }
+                        },
+                        "required": ["setNumber", "setType", "actualReps", "actualWeightKg"],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": ["exerciseId", "workoutCompletedAt", "sets"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "accessToken": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "tags": ["Workout Analytics"]
+      }
+    },
     "/workout-analytics/exercises/{exerciseId}": {
       "get": {
         "operationId": "WorkoutAnalyticsController_exercise",
