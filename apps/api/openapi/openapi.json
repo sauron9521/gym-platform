@@ -2694,6 +2694,468 @@
         "tags": ["Sessions"]
       }
     },
+    "/body-measurements": {
+      "post": {
+        "operationId": "BodyMeasurementsController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "weightKg": {
+                    "nullable": true,
+                    "type": "number",
+                    "minimum": 1,
+                    "maximum": 600,
+                    "multipleOf": 0.01
+                  },
+                  "bodyFatPct": {
+                    "nullable": true,
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 100,
+                    "multipleOf": 0.01
+                  },
+                  "chestCm": {
+                    "nullable": true,
+                    "type": "number",
+                    "minimum": 1,
+                    "maximum": 400,
+                    "multipleOf": 0.01
+                  },
+                  "waistCm": {
+                    "nullable": true,
+                    "type": "number",
+                    "minimum": 1,
+                    "maximum": 400,
+                    "multipleOf": 0.01
+                  },
+                  "hipsCm": {
+                    "nullable": true,
+                    "type": "number",
+                    "minimum": 1,
+                    "maximum": 400,
+                    "multipleOf": 0.01
+                  },
+                  "armCm": {
+                    "nullable": true,
+                    "type": "number",
+                    "minimum": 1,
+                    "maximum": 200,
+                    "multipleOf": 0.01
+                  },
+                  "thighCm": {
+                    "nullable": true,
+                    "type": "number",
+                    "minimum": 1,
+                    "maximum": 250,
+                    "multipleOf": 0.01
+                  },
+                  "measuredAt": {
+                    "type": "string",
+                    "format": "date-time",
+                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                  },
+                  "notes": {
+                    "nullable": true,
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 500
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "accessToken": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "tags": ["Body Measurements"]
+      },
+      "get": {
+        "operationId": "BodyMeasurementsController_findMany",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 1,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 20,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          },
+          {
+            "name": "from",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+            }
+          },
+          {
+            "name": "to",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "accessToken": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "tags": ["Body Measurements"]
+      }
+    },
+    "/body-measurements/statistics": {
+      "get": {
+        "operationId": "BodyMeasurementsController_statistics",
+        "parameters": [
+          {
+            "name": "metric",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": "weightKg",
+              "type": "string",
+              "enum": ["weightKg", "bodyFatPct", "chestCm", "waistCm", "hipsCm", "armCm", "thighCm"]
+            }
+          },
+          {
+            "name": "range",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": "90d",
+              "type": "string",
+              "enum": ["7d", "30d", "90d"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "First/latest metric values, differences over 7/30/90 days and a UTC daily chart series.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["metric", "unit", "range", "asOf", "overall", "changes", "series"],
+                  "properties": {
+                    "metric": {
+                      "type": "string",
+                      "enum": [
+                        "weightKg",
+                        "bodyFatPct",
+                        "chestCm",
+                        "waistCm",
+                        "hipsCm",
+                        "armCm",
+                        "thighCm"
+                      ]
+                    },
+                    "unit": {
+                      "type": "string",
+                      "enum": ["kg", "%", "cm"]
+                    },
+                    "range": {
+                      "type": "string",
+                      "enum": ["7d", "30d", "90d"]
+                    },
+                    "asOf": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "first": {
+                      "type": "object",
+                      "nullable": true,
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "measuredAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "value": {
+                          "type": "number"
+                        }
+                      }
+                    },
+                    "latest": {
+                      "type": "object",
+                      "nullable": true,
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "measuredAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "value": {
+                          "type": "number"
+                        }
+                      }
+                    },
+                    "overall": {
+                      "type": "object",
+                      "properties": {
+                        "delta": {
+                          "type": "number",
+                          "nullable": true
+                        },
+                        "percentChange": {
+                          "type": "number",
+                          "nullable": true
+                        }
+                      }
+                    },
+                    "changes": {
+                      "type": "object",
+                      "description": "Keys: 7d, 30d, 90d. Each includes nullable baseline, delta and percentChange.",
+                      "additionalProperties": true
+                    },
+                    "series": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "measuredAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "value": {
+                            "type": "number"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "accessToken": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "tags": ["Body Measurements"]
+      }
+    },
+    "/body-measurements/{id}": {
+      "get": {
+        "operationId": "BodyMeasurementsController_findOne",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "accessToken": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "tags": ["Body Measurements"]
+      },
+      "patch": {
+        "operationId": "BodyMeasurementsController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "weightKg": {
+                    "nullable": true,
+                    "type": "number",
+                    "minimum": 1,
+                    "maximum": 600,
+                    "multipleOf": 0.01
+                  },
+                  "bodyFatPct": {
+                    "nullable": true,
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 100,
+                    "multipleOf": 0.01
+                  },
+                  "chestCm": {
+                    "nullable": true,
+                    "type": "number",
+                    "minimum": 1,
+                    "maximum": 400,
+                    "multipleOf": 0.01
+                  },
+                  "waistCm": {
+                    "nullable": true,
+                    "type": "number",
+                    "minimum": 1,
+                    "maximum": 400,
+                    "multipleOf": 0.01
+                  },
+                  "hipsCm": {
+                    "nullable": true,
+                    "type": "number",
+                    "minimum": 1,
+                    "maximum": 400,
+                    "multipleOf": 0.01
+                  },
+                  "armCm": {
+                    "nullable": true,
+                    "type": "number",
+                    "minimum": 1,
+                    "maximum": 200,
+                    "multipleOf": 0.01
+                  },
+                  "thighCm": {
+                    "nullable": true,
+                    "type": "number",
+                    "minimum": 1,
+                    "maximum": 250,
+                    "multipleOf": 0.01
+                  },
+                  "measuredAt": {
+                    "type": "string",
+                    "format": "date-time",
+                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                  },
+                  "notes": {
+                    "nullable": true,
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 500
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "accessToken": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "tags": ["Body Measurements"]
+      },
+      "delete": {
+        "operationId": "BodyMeasurementsController_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "accessToken": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "tags": ["Body Measurements"]
+      }
+    },
     "/exercises": {
       "get": {
         "operationId": "ExercisesController_findMany",
@@ -9312,468 +9774,6 @@
           }
         ],
         "tags": ["Workout Analytics"]
-      }
-    },
-    "/body-measurements": {
-      "post": {
-        "operationId": "BodyMeasurementsController_create",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "weightKg": {
-                    "nullable": true,
-                    "type": "number",
-                    "minimum": 1,
-                    "maximum": 600,
-                    "multipleOf": 0.01
-                  },
-                  "bodyFatPct": {
-                    "nullable": true,
-                    "type": "number",
-                    "minimum": 0,
-                    "maximum": 100,
-                    "multipleOf": 0.01
-                  },
-                  "chestCm": {
-                    "nullable": true,
-                    "type": "number",
-                    "minimum": 1,
-                    "maximum": 400,
-                    "multipleOf": 0.01
-                  },
-                  "waistCm": {
-                    "nullable": true,
-                    "type": "number",
-                    "minimum": 1,
-                    "maximum": 400,
-                    "multipleOf": 0.01
-                  },
-                  "hipsCm": {
-                    "nullable": true,
-                    "type": "number",
-                    "minimum": 1,
-                    "maximum": 400,
-                    "multipleOf": 0.01
-                  },
-                  "armCm": {
-                    "nullable": true,
-                    "type": "number",
-                    "minimum": 1,
-                    "maximum": 200,
-                    "multipleOf": 0.01
-                  },
-                  "thighCm": {
-                    "nullable": true,
-                    "type": "number",
-                    "minimum": 1,
-                    "maximum": 250,
-                    "multipleOf": 0.01
-                  },
-                  "measuredAt": {
-                    "type": "string",
-                    "format": "date-time",
-                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
-                  },
-                  "notes": {
-                    "nullable": true,
-                    "type": "string",
-                    "minLength": 1,
-                    "maxLength": 500
-                  }
-                },
-                "additionalProperties": false
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "accessToken": []
-          },
-          {
-            "sessionCookie": []
-          }
-        ],
-        "tags": ["Body Measurements"]
-      },
-      "get": {
-        "operationId": "BodyMeasurementsController_findMany",
-        "parameters": [
-          {
-            "name": "page",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "default": 1,
-              "type": "integer",
-              "minimum": 1,
-              "maximum": 9007199254740991
-            }
-          },
-          {
-            "name": "limit",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "default": 20,
-              "type": "integer",
-              "minimum": 1,
-              "maximum": 100
-            }
-          },
-          {
-            "name": "from",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "type": "string",
-              "format": "date-time",
-              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
-            }
-          },
-          {
-            "name": "to",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "type": "string",
-              "format": "date-time",
-              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "accessToken": []
-          },
-          {
-            "sessionCookie": []
-          }
-        ],
-        "tags": ["Body Measurements"]
-      }
-    },
-    "/body-measurements/statistics": {
-      "get": {
-        "operationId": "BodyMeasurementsController_statistics",
-        "parameters": [
-          {
-            "name": "metric",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "default": "weightKg",
-              "type": "string",
-              "enum": ["weightKg", "bodyFatPct", "chestCm", "waistCm", "hipsCm", "armCm", "thighCm"]
-            }
-          },
-          {
-            "name": "range",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "default": "90d",
-              "type": "string",
-              "enum": ["7d", "30d", "90d"]
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "First/latest metric values, differences over 7/30/90 days and a UTC daily chart series.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "required": ["metric", "unit", "range", "asOf", "overall", "changes", "series"],
-                  "properties": {
-                    "metric": {
-                      "type": "string",
-                      "enum": [
-                        "weightKg",
-                        "bodyFatPct",
-                        "chestCm",
-                        "waistCm",
-                        "hipsCm",
-                        "armCm",
-                        "thighCm"
-                      ]
-                    },
-                    "unit": {
-                      "type": "string",
-                      "enum": ["kg", "%", "cm"]
-                    },
-                    "range": {
-                      "type": "string",
-                      "enum": ["7d", "30d", "90d"]
-                    },
-                    "asOf": {
-                      "type": "string",
-                      "format": "date-time"
-                    },
-                    "first": {
-                      "type": "object",
-                      "nullable": true,
-                      "properties": {
-                        "id": {
-                          "type": "string",
-                          "format": "uuid"
-                        },
-                        "measuredAt": {
-                          "type": "string",
-                          "format": "date-time"
-                        },
-                        "value": {
-                          "type": "number"
-                        }
-                      }
-                    },
-                    "latest": {
-                      "type": "object",
-                      "nullable": true,
-                      "properties": {
-                        "id": {
-                          "type": "string",
-                          "format": "uuid"
-                        },
-                        "measuredAt": {
-                          "type": "string",
-                          "format": "date-time"
-                        },
-                        "value": {
-                          "type": "number"
-                        }
-                      }
-                    },
-                    "overall": {
-                      "type": "object",
-                      "properties": {
-                        "delta": {
-                          "type": "number",
-                          "nullable": true
-                        },
-                        "percentChange": {
-                          "type": "number",
-                          "nullable": true
-                        }
-                      }
-                    },
-                    "changes": {
-                      "type": "object",
-                      "description": "Keys: 7d, 30d, 90d. Each includes nullable baseline, delta and percentChange.",
-                      "additionalProperties": true
-                    },
-                    "series": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "id": {
-                            "type": "string",
-                            "format": "uuid"
-                          },
-                          "measuredAt": {
-                            "type": "string",
-                            "format": "date-time"
-                          },
-                          "value": {
-                            "type": "number"
-                          }
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "accessToken": []
-          },
-          {
-            "sessionCookie": []
-          }
-        ],
-        "tags": ["Body Measurements"]
-      }
-    },
-    "/body-measurements/{id}": {
-      "get": {
-        "operationId": "BodyMeasurementsController_findOne",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "accessToken": []
-          },
-          {
-            "sessionCookie": []
-          }
-        ],
-        "tags": ["Body Measurements"]
-      },
-      "patch": {
-        "operationId": "BodyMeasurementsController_update",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "weightKg": {
-                    "nullable": true,
-                    "type": "number",
-                    "minimum": 1,
-                    "maximum": 600,
-                    "multipleOf": 0.01
-                  },
-                  "bodyFatPct": {
-                    "nullable": true,
-                    "type": "number",
-                    "minimum": 0,
-                    "maximum": 100,
-                    "multipleOf": 0.01
-                  },
-                  "chestCm": {
-                    "nullable": true,
-                    "type": "number",
-                    "minimum": 1,
-                    "maximum": 400,
-                    "multipleOf": 0.01
-                  },
-                  "waistCm": {
-                    "nullable": true,
-                    "type": "number",
-                    "minimum": 1,
-                    "maximum": 400,
-                    "multipleOf": 0.01
-                  },
-                  "hipsCm": {
-                    "nullable": true,
-                    "type": "number",
-                    "minimum": 1,
-                    "maximum": 400,
-                    "multipleOf": 0.01
-                  },
-                  "armCm": {
-                    "nullable": true,
-                    "type": "number",
-                    "minimum": 1,
-                    "maximum": 200,
-                    "multipleOf": 0.01
-                  },
-                  "thighCm": {
-                    "nullable": true,
-                    "type": "number",
-                    "minimum": 1,
-                    "maximum": 250,
-                    "multipleOf": 0.01
-                  },
-                  "measuredAt": {
-                    "type": "string",
-                    "format": "date-time",
-                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
-                  },
-                  "notes": {
-                    "nullable": true,
-                    "type": "string",
-                    "minLength": 1,
-                    "maxLength": 500
-                  }
-                },
-                "additionalProperties": false
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "accessToken": []
-          },
-          {
-            "sessionCookie": []
-          }
-        ],
-        "tags": ["Body Measurements"]
-      },
-      "delete": {
-        "operationId": "BodyMeasurementsController_remove",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-            }
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "accessToken": []
-          },
-          {
-            "sessionCookie": []
-          }
-        ],
-        "tags": ["Body Measurements"]
       }
     },
     "/training-programs/assignments": {

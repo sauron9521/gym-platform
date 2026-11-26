@@ -11,6 +11,7 @@ import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 
 import { ApiExceptionFilter } from '#src/common/filters/api-exception.filter';
 import { AdminAuditModule } from '#src/common/audit/admin-audit.module';
+import { AthleteApiModule } from '#src/api/athlete/athlete-api.module';
 import { AdminApiModule } from '#src/api/admin/admin-api.module';
 import { SharedApiModule } from '#src/api/shared/shared-api.module';
 import { PublicApiModule } from '#src/api/public/public-api.module';
@@ -103,6 +104,7 @@ import { WorkoutAnalyticsModule } from '#src/modules/workout-analytics/workout-a
     AdminApiModule,
     SharedApiModule,
     PublicApiModule,
+    AthleteApiModule,
     NotificationsModule,
     AccountDeletionRequestsModule,
     ExercisesModule,

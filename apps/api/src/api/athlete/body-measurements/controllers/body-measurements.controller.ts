@@ -25,7 +25,7 @@ import {
   type CreateBodyMeasurementDto,
   type QueryBodyMeasurementsDto,
   type UpdateBodyMeasurementDto,
-} from '../public-api.js';
+} from '#src/modules/body-measurements/public-api';
 
 type UserActor = { id: string };
 

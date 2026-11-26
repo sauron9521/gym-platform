@@ -13,5 +13,7 @@
   "src/modules/auth/test/controllers/auth.controller.spec.ts": "src/api/public/auth/test/controllers/auth.controller.spec.ts",
   "src/modules/auth/controllers/sessions.controller.ts": "src/api/shared/auth/controllers/sessions.controller.ts",
   "src/modules/auth/controllers/index.ts": "src/api/shared/auth/controllers/index.ts",
-  "src/modules/auth/test/controllers/sessions.controller.spec.ts": "src/api/shared/auth/test/controllers/sessions.controller.spec.ts"
+  "src/modules/auth/test/controllers/sessions.controller.spec.ts": "src/api/shared/auth/test/controllers/sessions.controller.spec.ts",
+  "src/modules/body-measurements/controllers/body-measurements.controller.ts": "src/api/athlete/body-measurements/controllers/body-measurements.controller.ts",
+  "src/modules/body-measurements/test/controllers/body-measurements.controller.spec.ts": "src/api/athlete/body-measurements/test/controllers/body-measurements.controller.spec.ts"
 }

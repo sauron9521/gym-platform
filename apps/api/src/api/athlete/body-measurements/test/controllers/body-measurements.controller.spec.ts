@@ -2,7 +2,7 @@ import { BodyMeasurementsController } from '../../controllers/body-measurements.
 import type {
   BodyMeasurementsService,
   BodyMeasurementStatisticsService,
-} from '../../public-api.js';
+} from '#src/modules/body-measurements/public-api';
 
 describe('BodyMeasurementsController', () => {
   const service = {
