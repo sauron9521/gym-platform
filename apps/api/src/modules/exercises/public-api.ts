@@ -10,3 +10,6 @@
  */
 export { buildExerciseVisibilityWhere } from './policies/exercise-access.policy.js';
 export { workoutExerciseReferenceSelect } from './selects/exercise.select.js';
+
+// Type-only relationship visibility context; no new runtime dependency.
+export type { ExerciseAccessContext } from './types/exercise.types.js';

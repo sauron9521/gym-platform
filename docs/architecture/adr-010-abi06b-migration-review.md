@@ -63,4 +63,6 @@ Current source has nine operations in two controllers. Relationship endpoints se
 
 The existing termination transaction changes the active relationship, terminates active program assignments, copies relevant trainer exercises privately and revokes exercise assignments/access in one transaction. Preserve that boundary and concurrent winner behavior; do not split it by audience or rewrite it during this work. Review its implementation separately if new invariants or scaling evidence warrant it. Retain the frozen relationship registry test and add exact controller/spec mappings for the frozen relationship controller and spec; verify dashboard file membership before mapping. Do not start Exercises or larger Workouts/TrainingPrograms migrations until the next review.
 
+[ABI06c1 TrainerAthletes boundary inventory](adr-010-trainer-athletes-boundary-inventory.md) records the next preparation slice.
+
 This is a documentation-only review and a recommendation to continue the approved incremental architecture direction; each implementation slice still requires its own verified PR and manual merge.

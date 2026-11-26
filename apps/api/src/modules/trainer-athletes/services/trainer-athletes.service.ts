@@ -8,7 +8,7 @@ import {
 
 import type { Prisma } from '#prisma/client';
 
-import { UsersService } from '#src/modules/users/services/users.service';
+import { UsersService } from '#src/modules/users/public-api';
 import { InvitationAlreadyExists } from '../application/create-invitation.js';
 import {
   PendingInvitationConflict,
@@ -23,7 +23,7 @@ import { fullRelationshipReadWhere } from '../policies/trainer-athlete-read.poli
 import { TrainerAthletesRepository } from '../repositories/trainer-athletes.repository.js';
 import { TrainerAthleteTerminationService } from './trainer-athlete-termination.service.js';
 
-import type { ExerciseAccessContext } from '#src/modules/exercises/types/exercise.types';
+import type { ExerciseAccessContext } from '#src/modules/exercises/public-api';
 
 import type {
   CreateTrainerAthleteInput,

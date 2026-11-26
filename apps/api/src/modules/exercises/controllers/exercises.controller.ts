@@ -27,7 +27,7 @@ import { type UpdateExerciseDto, updateExerciseSchema } from '../dto/update-exer
 import { type QueryExercisesDto, queryExercisesSchema } from '../dto/query-exercises.dto.js';
 
 import { exerciseIdSchema } from '../dto/exercise.schemas.js';
-import { TrainerAthletesService } from '#src/modules/trainer-athletes/services/trainer-athletes.service';
+import { TrainerAthletesService } from '#src/modules/trainer-athletes/public-api';
 
 const EMPTY_ACCESS_CONTEXT: ExerciseAccessContext = {
   activeTrainerIds: [],

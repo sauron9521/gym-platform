@@ -31,7 +31,16 @@ import { AthleteApiModule } from '../../../src/api/athlete/athlete-api.module.js
 import { ExercisesModule } from '../../../src/modules/exercises/exercises.module.js';
 import { ExercisesService } from '../../../src/modules/exercises/services/exercises.service.js';
 import { TrainerAthletesModule } from '../../../src/modules/trainer-athletes/trainer-athletes.module.js';
-import { TrainerAthletesService } from '../../../src/modules/trainer-athletes/services/trainer-athletes.service.js';
+import {
+  TrainerAthletesService,
+  TrainerDashboardService,
+} from '../../../src/modules/trainer-athletes/public-api.js';
+import { TrainerAthletesRepository } from '../../../src/modules/trainer-athletes/repositories/trainer-athletes.repository.js';
+import { TrainerDashboardRepository } from '../../../src/modules/trainer-athletes/repositories/trainer-dashboard.repository.js';
+import { TrainerAthleteTerminationService } from '../../../src/modules/trainer-athletes/services/trainer-athlete-termination.service.js';
+import { TrainerAthleteExerciseCopyService } from '../../../src/modules/trainer-athletes/services/trainer-athlete-exercise-copy.service.js';
+import { TrainerAthletesController } from '../../../src/modules/trainer-athletes/controllers/trainer-athletes.controller.js';
+import { TrainerDashboardController } from '../../../src/modules/trainer-athletes/controllers/trainer-dashboard.controller.js';
 import { TrainerOnboardingModule } from '../../../src/modules/trainer-onboarding/trainer-onboarding.module.js';
 import {
   TrainerApplicationsService,
@@ -114,6 +123,17 @@ class WorkoutAnalyticsBoundaryProbe {
 @Module({ imports: [WorkoutAnalyticsModule], providers: [WorkoutAnalyticsBoundaryProbe] })
 class WorkoutAnalyticsBoundaryProbeModule {}
 
+@Injectable()
+class TrainerAthletesBoundaryProbe {
+  constructor(
+    readonly relationships: TrainerAthletesService,
+    readonly dashboard: TrainerDashboardService,
+  ) {}
+}
+
+@Module({ imports: [TrainerAthletesModule], providers: [TrainerAthletesBoundaryProbe] })
+class TrainerAthletesBoundaryProbeModule {}
+
 describe('App (e2e)', () => {
   let app: INestApplication;
 
@@ -126,6 +146,7 @@ describe('App (e2e)', () => {
         AccountDeletionRequestsBoundaryProbeModule,
         BodyMeasurementsBoundaryProbeModule,
         WorkoutAnalyticsBoundaryProbeModule,
+        TrainerAthletesBoundaryProbeModule,
       ],
     }).compile();
 
@@ -388,6 +409,41 @@ describe('App (e2e)', () => {
         .filter((module) => module.controllers.has(WorkoutAnalyticsController))
         .map((module) => module.metatype),
     ).toEqual([AthleteWorkoutAnalyticsApiModule]);
+  });
+
+  it('resolves both relationship and dashboard contracts without duplicating transactional providers or controllers', () => {
+    const modules = [...app.get(ModulesContainer).values()];
+    const core = app.select(TrainerAthletesModule);
+    const probe = app
+      .select(TrainerAthletesBoundaryProbeModule)
+      .get(TrainerAthletesBoundaryProbe, { strict: true });
+    expect(modules.filter((module) => module.metatype === TrainerAthletesModule)).toHaveLength(1);
+    expect(probe.relationships).toBe(core.get(TrainerAthletesService, { strict: true }));
+    expect(probe.dashboard).toBe(core.get(TrainerDashboardService, { strict: true }));
+    for (const provider of [
+      TrainerAthletesService,
+      TrainerDashboardService,
+      TrainerAthletesRepository,
+      TrainerDashboardRepository,
+      TrainerAthleteTerminationService,
+      TrainerAthleteExerciseCopyService,
+    ]) {
+      expect(
+        modules.filter((module) => module.providers.has(provider)).map((module) => module.metatype),
+      ).toEqual([TrainerAthletesModule]);
+    }
+    expect(
+      modules
+        .filter((module) => module.providers.has(UsersService))
+        .map((module) => module.metatype),
+    ).toEqual([UsersModule]);
+    for (const controller of [TrainerAthletesController, TrainerDashboardController]) {
+      expect(
+        modules
+          .filter((module) => module.controllers.has(controller))
+          .map((module) => module.metatype),
+      ).toEqual([TrainerAthletesModule]);
+    }
   });
 
   it('resolves the same Prisma singleton from the declaring module and app context', () => {
