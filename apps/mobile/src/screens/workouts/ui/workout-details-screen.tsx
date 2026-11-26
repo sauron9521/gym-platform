@@ -71,7 +71,7 @@ export function WorkoutDetailsScreen({ id }: { id: string }) {
   const {
     details, transition, titleUpdate, cancellation, workout,
     progress, total, processed, percent, completionAllowed, reconciling,
-    busy, pendingSet, uncertain, restStart, nextAction, actionDisabled,
+    busy, pendingSet, uncertain, restStart, restDuration, nextAction, actionDisabled,
     saveTitle, confirmCancellation, runTransition, isSetActionBlocked,
     beginSetWrite, settleSetWrite, startRest,
   } = useWorkoutDetails(id);
@@ -151,7 +151,7 @@ export function WorkoutDetailsScreen({ id }: { id: string }) {
                   Для завершення потрібен хоча б один виконаний підхід і жодного незавершеного.
                 </Text>
               ) : null}
-              <RestTimer key={id} autoStart={restStart} />
+              <RestTimer key={id} autoStart={restStart} defaultDuration={restDuration} />
             </>
           ) : null}
           {workout.exercises.map((exercise) => (

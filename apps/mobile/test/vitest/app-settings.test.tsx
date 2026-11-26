@@ -13,13 +13,18 @@ import { MobileThemeProvider } from '@/shared/config/theme-provider';
 const state = vi.hoisted(() => ({
   account: { id: 'athlete-a' },
   getItem: vi.fn(),
+  getDuration: vi.fn(),
   patch: vi.fn(),
   setItem: vi.fn(),
 }));
 vi.mock('@react-native-async-storage/async-storage', () => ({
   default: {
     getItem: (key: string) =>
-      key.includes(':app-settings:') ? state.getItem(key) : Promise.resolve(null),
+      key.endsWith(':rest-duration')
+        ? state.getDuration(key)
+        : key.includes(':app-settings:')
+          ? state.getItem(key)
+          : Promise.resolve(null),
     setItem: state.setItem,
   },
 }));
@@ -54,6 +59,7 @@ const key = (id: string) => `gym-platform:app-settings:v1:${id}:auto-rest-timer`
 beforeEach(() => {
   state.account = { id: 'athlete-a' };
   state.getItem.mockReset().mockResolvedValue(null);
+  state.getDuration.mockReset().mockResolvedValue(null);
   state.setItem.mockReset().mockResolvedValue(undefined);
   state.patch
     .mockReset()
@@ -62,6 +68,68 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe('App settings', () => {
+  it('saves the rest duration independently of auto-start and restores it on remount', async () => {
+    state.getItem.mockResolvedValue('false');
+    const view = await render(<App />);
+    await waitFor(() =>
+      expect(view.getByTestId('settings-rest-duration-90').props.accessibilityState.disabled).toBe(
+        false,
+      ),
+    );
+    expect(view.getByTestId('settings-rest-duration-90').props.accessibilityState.selected).toBe(
+      true,
+    );
+    await fireEvent.press(view.getByTestId('settings-rest-duration-120'));
+    await waitFor(() =>
+      expect(view.getByTestId('settings-rest-duration-120').props.accessibilityState.selected).toBe(
+        true,
+      ),
+    );
+    expect(state.setItem).toHaveBeenCalledWith(
+      'gym-platform:app-settings:v1:athlete-a:rest-duration',
+      '120',
+    );
+    expect(view.getByText('automatic-off')).toBeTruthy();
+    await view.unmount();
+    state.getDuration.mockResolvedValue('120');
+    const restored = await render(<App />);
+    await waitFor(() =>
+      expect(
+        restored.getByTestId('settings-rest-duration-120').props.accessibilityState.selected,
+      ).toBe(true),
+    );
+    state.account = { id: 'athlete-b' };
+    state.getDuration.mockResolvedValue('invalid');
+    await restored.rerender(<App />);
+    await waitFor(() =>
+      expect(
+        restored.getByTestId('settings-rest-duration-90').props.accessibilityState.disabled,
+      ).toBe(false),
+    );
+    expect(
+      restored.getByTestId('settings-rest-duration-90').props.accessibilityState.selected,
+    ).toBe(true);
+    expect(state.getDuration).toHaveBeenLastCalledWith(
+      'gym-platform:app-settings:v1:athlete-b:rest-duration',
+    );
+  });
+
+  it('retains the saved duration when storage fails', async () => {
+    state.getDuration.mockResolvedValue('60');
+    state.setItem.mockRejectedValue(new Error('storage error'));
+    const view = await render(<App />);
+    await waitFor(() =>
+      expect(view.getByTestId('settings-rest-duration-60').props.accessibilityState.selected).toBe(
+        true,
+      ),
+    );
+    await fireEvent.press(view.getByTestId('settings-rest-duration-120'));
+    await waitFor(() => expect(view.getByRole('alert')).toBeTruthy());
+    expect(view.getByTestId('settings-rest-duration-60').props.accessibilityState.selected).toBe(
+      true,
+    );
+  });
+
   it('groups existing appearance and account language controls and persists them through their original providers', async () => {
     const view = await render(<App />);
     await waitFor(() => expect(view.getByText('automatic-on')).toBeTruthy());

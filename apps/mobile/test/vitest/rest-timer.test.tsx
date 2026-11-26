@@ -9,6 +9,31 @@ afterEach(() => {
 });
 
 describe('RestTimer (native)', () => {
+  it('applies a hydrated default before use and keeps an in-workout override', async () => {
+    const view = await render(<RestTimer />);
+    await view.rerender(<RestTimer defaultDuration={120} />);
+    expect(view.getByText('02:00')).toBeTruthy();
+    await fireEvent.press(view.getByRole('button', { name: '60 секунд' }));
+    await view.rerender(<RestTimer defaultDuration={90} />);
+    expect(view.getByText('01:00')).toBeTruthy();
+    await fireEvent.press(view.getByRole('button', { name: 'Старт' }));
+    expect(view.getByRole('button', { name: 'Пауза' })).toBeTruthy();
+  });
+
+  it('does not restart an active timer when the default changes', async () => {
+    const clock = vi.spyOn(Date, 'now').mockReturnValue(100000);
+    const view = await render(
+      <RestTimer defaultDuration={120} autoStart={{ sequence: 1, startedAt: 100000 }} />,
+    );
+    expect(view.getByText('02:00')).toBeTruthy();
+    clock.mockReturnValue(110000);
+    await view.rerender(
+      <RestTimer defaultDuration={60} autoStart={{ sequence: 1, startedAt: 100000 }} />,
+    );
+    await fireEvent.press(view.getByRole('button', { name: 'Пауза' }));
+    expect(view.getByText('01:50')).toBeTruthy();
+  });
+
   it('offers 60/90/120 presets, pause/resume and reset', async () => {
     const clock = vi.spyOn(Date, 'now').mockReturnValue(100000);
     const view = await render(<RestTimer />);

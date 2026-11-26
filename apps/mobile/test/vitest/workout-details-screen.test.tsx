@@ -24,7 +24,7 @@ vi.mock('@/features/workouts/model/workout-edit', () => ({
 
 const shouldAutoStartRestTimer = vi.hoisted(() => vi.fn(() => true));
 vi.mock('@/features/app-settings/model/app-settings-context', () => ({
-  useAppSettings: () => ({ shouldAutoStartRestTimer }),
+  useAppSettings: () => ({ shouldAutoStartRestTimer, settings: { restDuration: 120 } }),
 }));
 
 const refetch = vi.fn();
@@ -196,6 +196,7 @@ describe('WorkoutDetailsScreen (real React Native renderer)', () => {
     const view = await render(<WorkoutDetailsScreen id="workout-123" />);
     expect(view.getByTestId('workout-set-progress').props.accessibilityValue.now).toBe(0);
     expect(view.getByRole('button', { name: 'Старт' })).toBeTruthy();
+    expect(view.getByText('02:00')).toBeTruthy();
     await act(async () => vi.mocked(WorkoutSetRow).mock.calls.at(-1)![0].onNewCompletion?.());
     expect(view.getByRole('button', { name: 'Пауза' })).toBeTruthy();
     expect(view.getByTestId('workout-set-progress').props.accessibilityValue.now).toBe(0);

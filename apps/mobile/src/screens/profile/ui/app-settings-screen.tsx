@@ -4,6 +4,7 @@ import { useIntl } from 'react-intl';
 import { AccountLocalePicker } from '@/features/profile/ui/account-locale-picker';
 import { ThemePicker } from '@/shared/ui/theme-picker';
 import { useAppSettings } from '@/features/app-settings/model/app-settings-context';
+import { restDurationPresets } from '@/shared/config/rest-duration';
 import { createThemedStyles, useMobileTheme } from '@/shared/config/theme-provider';
 
 export function AppSettingsScreen() {
@@ -11,7 +12,7 @@ export function AppSettingsScreen() {
   const { palette } = useMobileTheme();
   const intl = useIntl();
   const t = (key: string) => intl.formatMessage({ id: `mobile.settings.${key}` });
-  const { settings, setAutoRestTimer, reload } = useAppSettings();
+  const { settings, setAutoRestTimer, setRestDuration, reload } = useAppSettings();
   const disabled = settings.status !== 'ready' && settings.status !== 'saveError';
 
   return (
@@ -33,6 +34,36 @@ export function AppSettingsScreen() {
             onValueChange={(value) => void setAutoRestTimer(value)}
             trackColor={{ false: palette.border, true: palette.primary }}
           />
+        </View>
+        <View style={styles.description}>
+          <Text style={styles.label}>{t('restDuration')}</Text>
+          <Text style={styles.hint}>{t('restDurationHint')}</Text>
+          <View style={styles.presets}>
+            {restDurationPresets.map((seconds) => {
+              const selected = settings.restDuration === seconds;
+              return (
+                <Pressable
+                  key={seconds}
+                  testID={`settings-rest-duration-${seconds}`}
+                  accessibilityRole="button"
+                  accessibilityLabel={intl.formatMessage(
+                    { id: 'mobile.settings.seconds' },
+                    { seconds },
+                  )}
+                  accessibilityState={{ selected, disabled }}
+                  disabled={disabled}
+                  onPress={() => {
+                    if (!selected) void setRestDuration(seconds);
+                  }}
+                  style={[styles.preset, selected && styles.selected]}
+                >
+                  <Text style={[styles.label, selected && styles.selectedLabel]}>
+                    {intl.formatMessage({ id: 'mobile.settings.seconds' }, { seconds })}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
         </View>
         {settings.status === 'loading' || settings.status === 'saving' ? (
           <Text accessibilityLiveRegion="polite" style={styles.hint}>
@@ -86,5 +117,16 @@ const useStyles = createThemedStyles((palette) =>
     description: { flex: 1, gap: 6 },
     label: { fontSize: 16, fontWeight: '600', color: palette.text },
     hint: { fontSize: 14, color: palette.muted },
+    presets: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+    preset: {
+      minHeight: 48,
+      justifyContent: 'center',
+      paddingHorizontal: 14,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: palette.border,
+    },
+    selected: { backgroundColor: palette.primary, borderColor: palette.primary },
+    selectedLabel: { color: palette.primaryForeground },
   }),
 );

@@ -12,7 +12,7 @@ import type { RestStart } from '@/features/workouts/ui/rest-timer';
 
 /** Screen-scoped orchestration: coordinate set writes, workout actions and rest events. */
 export function useWorkoutDetails(id: string) {
-  const { shouldAutoStartRestTimer } = useAppSettings();
+  const { settings, shouldAutoStartRestTimer } = useAppSettings();
   const details = useWorkoutDetailsQuery(id);
   const transition = useWorkoutTransition(id);
   const titleUpdate = useUpdateWorkoutTitle(id);
@@ -131,6 +131,7 @@ export function useWorkoutDetails(id: string) {
     pendingSet,
     uncertain,
     restStart,
+    restDuration: settings.restDuration,
     nextAction,
     actionDisabled,
     saveTitle,
