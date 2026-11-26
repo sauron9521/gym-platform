@@ -22,11 +22,12 @@ export function useRestFeedback() {
   }, []);
 
   return useCallback(
-    (feedback: RestFeedback) => {
+    (feedback: RestFeedback, isCurrent: () => boolean = () => true) => {
       const current = ++generation.current;
       const canPlay = () =>
         mounted.current &&
         generation.current === current &&
+        isCurrent() &&
         AppState.currentState !== 'background' &&
         AppState.currentState !== 'inactive';
       if (feedback.vibration) {

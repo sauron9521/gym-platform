@@ -20,10 +20,10 @@ vi.mock('expo-haptics', () => ({
 }));
 vi.mock('../../assets/rest-complete.wav', () => ({ default: 1 }));
 
-function Trigger({ feedback }: { feedback: RestFeedback }) {
+function Trigger({ feedback, isCurrent }: { feedback: RestFeedback; isCurrent?: () => boolean }) {
   const notify = useRestFeedback();
   return (
-    <Pressable onPress={() => notify(feedback)}>
+    <Pressable onPress={() => notify(feedback, isCurrent)}>
       <Text>signal</Text>
     </Pressable>
   );
@@ -61,6 +61,25 @@ describe('rest completion feedback', () => {
     await fireEvent.press(view.getByText('signal'));
     expect(audio.vibrate).toHaveBeenCalledOnce();
     expect(audio.mode).not.toHaveBeenCalled();
+  });
+
+  it('suppresses delayed audio after the originating timer is no longer current', async () => {
+    let finish!: () => void;
+    audio.mode.mockReturnValue(
+      new Promise<void>((resolve) => {
+        finish = resolve;
+      }),
+    );
+    let current = true;
+    const view = await render(
+      <Trigger feedback={{ sound: true, vibration: false }} isCurrent={() => current} />,
+    );
+    await fireEvent.press(view.getByText('signal'));
+    expect(audio.mode).toHaveBeenCalledOnce();
+    current = false;
+    await act(async () => finish());
+    expect(audio.seek).not.toHaveBeenCalled();
+    expect(audio.play).not.toHaveBeenCalled();
   });
 
   it('does not play a delayed signal after unmount and isolates haptic failure', async () => {

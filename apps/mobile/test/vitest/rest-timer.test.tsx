@@ -1,5 +1,6 @@
 import { act, fireEvent, render, waitFor } from '@testing-library/react-native';
-import { AppState, type AppStateStatus } from 'react-native';
+import { AppState, Text, type AppStateStatus } from 'react-native';
+import { useStore } from 'zustand';
 import { useEffect } from 'react';
 import { QueryClient } from '@tanstack/react-query';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -18,7 +19,10 @@ import type { RestDuration } from '@/shared/config/rest-duration';
 
 const notify = vi.hoisted(() => vi.fn());
 vi.mock('@/features/workouts/lib/use-rest-feedback', () => ({ useRestFeedback: () => notify }));
-afterEach(() => vi.restoreAllMocks());
+afterEach(() => {
+  vi.useRealTimers();
+  vi.restoreAllMocks();
+});
 
 type Options = {
   accountId?: string | null;
@@ -123,11 +127,86 @@ describe('RestTimer (native)', () => {
     await act(async () => change?.('background'));
     clock.mockReturnValue(161000);
     await act(async () => change?.('active'));
-    expect(notify).toHaveBeenCalledExactlyOnceWith(options.feedback);
+    expect(notify).toHaveBeenCalledExactlyOnceWith(options.feedback, expect.any(Function));
     await act(async () => change?.('active'));
     await view.rerender(h.tree(options));
     expect(view.getByText('00:00')).toBeTruthy();
     expect(notify).toHaveBeenCalledTimes(1);
+  });
+
+  it('ticks in the runtime with no visible timer, uses current feedback and invalidates delayed signals', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(100000);
+    const h = harness();
+    const view = await render(h.tree({ duration: 60 }));
+    await act(async () => h.start());
+    await view.rerender(
+      h.tree({ duration: 60, visible: false, feedback: { sound: true, vibration: false } }),
+    );
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(59000);
+    });
+    expect(h.store().getState().timer?.remaining).toBe(1);
+    expect(notify).not.toHaveBeenCalled();
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1000);
+    });
+    expect(notify).toHaveBeenCalledExactlyOnceWith(
+      { sound: true, vibration: false },
+      expect.any(Function),
+    );
+    const isCurrent = notify.mock.calls[0]![1] as () => boolean;
+    expect(isCurrent()).toBe(true);
+    await act(async () => h.start());
+    expect(isCurrent()).toBe(false);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(60000);
+    });
+    expect(notify).toHaveBeenCalledTimes(2);
+    const second = notify.mock.calls[1]![1] as () => boolean;
+    await view.rerender(h.tree({ workoutId: 'workout-b', duration: 60 }));
+    expect(second()).toBe(false);
+    await view.unmount();
+  });
+
+  it('does not notify for reset, paused timer, or terminal cancellation even after the deadline', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(100000);
+    const queryClient = new QueryClient();
+    const h = harness();
+    const view = await render(h.tree({ duration: 60, queryClient }));
+    await fireEvent.press(view.getByRole('button', { name: 'Старт' }));
+    await fireEvent.press(view.getByRole('button', { name: 'Пауза' }));
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(61000);
+    });
+    expect(notify).not.toHaveBeenCalled();
+    await fireEvent.press(view.getByRole('button', { name: 'Старт' }));
+    await fireEvent.press(view.getByRole('button', { name: 'Скинути' }));
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(61000);
+    });
+    expect(notify).not.toHaveBeenCalled();
+    await act(async () => h.start());
+    await act(async () => {
+      queryClient.setQueryData(accountQueryKeys.workoutDetail('athlete-a', 'other'), {
+        status: 'CANCELED',
+      });
+      queryClient.setQueryData(accountQueryKeys.workoutDetail('athlete-a', 'workout-a'), {
+        status: 'IN_PROGRESS',
+      });
+    });
+    expect(h.store().getState().timer?.deadline).not.toBeNull();
+    await act(async () => {
+      queryClient.setQueryData(accountQueryKeys.workoutDetail('athlete-a', 'workout-a'), {
+        status: 'CANCELED',
+      });
+      await vi.advanceTimersByTimeAsync(61000);
+    });
+    expect(h.store().getState().timer).toBeNull();
+    expect(notify).not.toHaveBeenCalled();
+    await view.unmount();
+    queryClient.clear();
   });
 
   it('preserves the deadline across screen removal and remount, then restarts on a new confirmed event', async () => {
@@ -184,6 +263,45 @@ describe('RestTimer (native)', () => {
 });
 
 describe('rest timer store', () => {
+  it('isolates providers and keeps scope-only subscribers stable across countdown ticks', async () => {
+    const store = createRestTimerStore('athlete-a');
+    const other = createRestTimerStore('athlete-a');
+    const signedOut = createRestTimerStore(null);
+    signedOut.getState().selectWorkout('a', 60);
+    expect(signedOut.getState().timer).toBeNull();
+    store.getState().selectWorkout('a', 60);
+    const scope = store.getState().timer!.scope;
+    const scopeRender = vi.fn();
+    const countdownRender = vi.fn();
+    function Probe() {
+      const selected = useStore(store, (state) => state.timer?.scope);
+      scopeRender();
+      return <Text>{selected?.workoutId}</Text>;
+    }
+    function CountdownProbe() {
+      const remaining = useStore(store, (state) => state.timer?.remaining);
+      countdownRender();
+      return <Text>{remaining}</Text>;
+    }
+    const view = await render(
+      <>
+        <Probe />
+        <CountdownProbe />
+      </>,
+    );
+    await act(async () => store.getState().start(scope, 100000));
+    const scopeCount = scopeRender.mock.calls.length;
+    const countdownCount = countdownRender.mock.calls.length;
+    await act(async () => {
+      store.getState().refresh(101000);
+    });
+    expect(view.getByText('59')).toBeTruthy();
+    expect(scopeRender).toHaveBeenCalledTimes(scopeCount);
+    expect(countdownRender.mock.calls.length).toBeGreaterThan(countdownCount);
+    expect(other.getState().timer).toBeNull();
+    await view.unmount();
+  });
+
   it('rejects stale callbacks even when returning to the same workout ID', () => {
     const store = createRestTimerStore('athlete-a');
     store.getState().selectWorkout('a', 60);
