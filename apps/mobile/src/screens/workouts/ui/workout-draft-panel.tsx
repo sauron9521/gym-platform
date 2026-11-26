@@ -17,7 +17,7 @@ export function WorkoutDraftPanel({ draft, disabled, submissionStarted }: Props)
   const blocked = disabled || submissionStarted;
   const confirm = (kind: 'restore' | 'discard' | 'send' | 'clear', action: () => Promise<void>) => {
     Alert.alert(
-      t(kind),
+      t('confirmTitle'),
       t(`${kind}Confirm`),
       [
         { text: t('cancel'), style: 'cancel' },

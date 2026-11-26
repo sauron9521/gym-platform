@@ -50,6 +50,7 @@ export function CreateWorkoutScreen({ lifecycle }: { lifecycle?: OfflineDraftLif
               name="title"
               render={({ field }) => (
                 <TextInput
+                  testID="workout-draft-title-input"
                   accessibilityLabel="Назва тренування"
                   placeholder="Тренування грудей"
                   placeholderTextColor={palette.muted}

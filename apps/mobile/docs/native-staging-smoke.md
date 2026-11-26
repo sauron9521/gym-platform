@@ -246,3 +246,112 @@ The suite mocks AppState and API transport: it does not substitute for Android
 or iOS execution. On the native resume scenario, also confirm a canonical GET
 after foreground verification and that no additional PATCH is sent. Do not
 close #324 or #348 until the device/build evidence above exists.
+
+## M10.5 — Offline draft native acceptance (#345)
+
+These three scenarios exercise the real native SQLCipher build and the existing
+reviewed submission UI. They are **manual, staging-only** runs. Normal PR CI
+checks contracts, not native execution. Neither Expo Go nor a Metro bundle
+can satisfy this gate.
+
+### Setup
+
+- Complete the Android/iOS preflight and trusted-build setup above. Use a
+  newly rebuilt approved staging-native binary with SQLCipher enabled, the
+  actual reviewed commit, and the isolated HTTPS staging API. Confirm the app
+  ID is not the production ID. No release identifier or signing key is invented
+  by this PR.
+- Use fresh disposable verified athlete accounts with Ukrainian locale and
+  one unique, active, visible exercise with an ASCII name. The accounts must
+  have no pre-existing local draft; never clear a real user's app data.
+  On iOS, app data clearing does not necessarily clear Keychain; use a fresh
+  simulator or explicitly verified clean disposable staging installation.
+- Use the existing protected `mobile-staging` environment, main-only
+  deployment restrictions, required reviewers, verified EAS APK URL,
+  independent SHA-256 and `MOBILE_STAGING_ANDROID_APP_ID`.
+  For all three flows set `MOBILE_E2E_EXERCISE_NAME`, and the existing
+  `MOBILE_E2E_EMAIL` / `MOBILE_E2E_PASSWORD`.
+  For `draft-account-isolation` only, add distinct disposable athlete
+  credentials `MOBILE_E2E_SECOND_EMAIL` / `MOBILE_E2E_SECOND_PASSWORD`.
+  The workflow rejects empty credentials and equal email addresses before
+  downloading the APK. Independently verify distinct server account IDs.
+- Use a unique title for each run. Normal dispatch generates a run-based
+  title. For `draft-lost-response`, enter a unique
+  `draft_fault_title` matching `Mobile-draft-fault-<8–64 ASCII letters/digits/hyphens>`
+  and pre-arm the matching one-shot staging fixture **before dispatch**.
+
+### Runnable Maestro flows and evidence
+
+| Dispatch / file                                                    | Expected native UI result                                                                                                                                        | Independent staging evidence                                                                                                                                            |
+| ------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `draft-resume` / `workout-draft-resume.yaml`                       | Local save, background, cold restart, explicit restore and send, persisted acknowledgment after another cold restart, local cleanup and empty slot after restart | Zero POST before confirmation; exactly one POST /workouts and one created workout; no extra POST after acknowledgment/cleanup                                           |
+| `draft-lost-response` / `workout-draft-lost-response.yaml`         | Pending state after fault; no discard; restart; no automatic send; explicit restore/review/retry; receipt and cleanup                                            | Exactly two POST requests, same authenticated athlete, idempotency key and canonical request body; first committed response dropped; exactly one resulting workout UUID |
+| `draft-account-isolation` / `workout-draft-account-isolation.yaml` | A saves locally; explicit logout; B signs in and sees no draft; A signs in again and sees no draft                                                               | Zero POST /workouts; independently verify A and B IDs differ, no previous owner data and local cleanup                                                                  |
+
+The lost-response scenario needs a controlled **staging-only** fault injector
+that matches the exact disposable athlete and unique title, forwards the first
+POST /workouts, observes successful commit, and drops only that response.
+The second request must reach the real staging backend normally. The operator
+must independently inspect the request count, idempotency key equality,
+canonical body equality and single persisted workout. Record equality and
+counts, not the raw key or payload, in evidence. A normal successful 201
+cannot pass the required pending-state assertion. Airplane mode before POST
+is not a substitute for this post-commit fault. Do not add a production
+fault endpoint or embed a debug switch into the app.
+
+For Android dispatch the existing `Mobile native E2E / Maestro (manual)`
+workflow from reviewed main with the approved APK and flow choice. For iOS,
+use an approved native simulator/device build on an authorized Mac, Maestro
+2.12.1, the same environment variables and the flow file. The workflow is
+Android-only; iOS runs are manual. Example for a disposable iOS simulator:
+
+```sh
+maestro test \
+  -e APP_ID="$STAGING_IOS_BUNDLE_ID" \
+  -e E2E_EMAIL="$STAGING_E2E_EMAIL" \
+  -e E2E_PASSWORD="$STAGING_E2E_PASSWORD" \
+  -e E2E_EXERCISE_NAME="$STAGING_EXERCISE_NAME" \
+  -e E2E_WORKOUT_TITLE="$STAGING_UNIQUE_TITLE" \
+  apps/mobile/maestro/flows/workout-draft-resume.yaml
+```
+
+Use the second-account variables only for isolation and a separately
+pre-armed unique title for the fault test. Never paste credentials into
+shared terminals/logs or upload screenshots containing identities.
+
+### Additional manual native security and offline checks
+
+A passing Maestro UI is not proof of encryption or secure storage. On
+**both platforms** complete the following separately, using only synthetic
+data on an authorized staging inspection build/device. A non-debuggable APK
+may prohibit sandbox inspection; use an explicitly approved debuggable
+staging variant with the same SQLCipher config and code, and document the
+difference from the preview artifact. Do not weaken production settings.
+
+| Check                                | Evidence required                                                                                                                                                                                                                                                                                                                                                                                                              |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Cipher availability and at-rest file | Confirm nonempty native `PRAGMA cipher_version` via an approved local inspection/test harness, save a unique synthetic marker, stop the app, inspect the actual private `ovranto-offline-draft-v1.db` and existing journal/WAL/SHM. Normal SQLite must not read the schema without the key and the unique synthetic plaintext must not appear. Header inspection alone is not proof. Never extract or log a real key or token. |
+| Wrong key / key loss / corruption    | On a disposable sandbox copy/test harness only, use a deliberately wrong test key and corrupted ciphertext or simulate loss of the key marker; expect fail-closed storage and no silent recreation or plaintext fallback. Do not mutate the real device's credentials.                                                                                                                                                         |
+| Offline save and reconnect           | While the verified athlete remains foreground, fill a valid form, disable network using actual device controls, save locally, verify the offline indication and no send action. Restore network without tapping send: zero POST. Explicit review/confirmation creates at most one workout. Repeat with a background/resume: current auth policy requires online re-verification before restoring private data.                 |
+| Interrupted cleanup                  | With a synthetic confirmed receipt, induce a local file-removal failure through an authorized native test harness; verify only cleanup retry is offered, kill/reopen, verify durable purge intent is reconciled before new access. No second POST. Do not inject faults into production builds.                                                                                                                                |
+| Device lock / backups / reinstall    | Verify locked-device key access, Android backup/data-extraction rules and iOS backup exclusion for DB/sidecars, restore/reinstall behavior, and no cross-account recovery or plaintext data. Record actual OS/build behavior; verify SecureStore/Keychain lifecycle, not only the UI.                                                                                                                                          |
+
+Do not copy entire private databases or key material into public artifacts.
+If the required inspection harness, platform or staging fault fixture is
+unavailable, record **NOT RUN / NO-GO**, not PASS. The above checks do not
+promise forensic erasure on flash storage.
+
+### Evidence record (private staging only)
+
+Record per platform/scenario: reviewed commit, build SHA, app ID, verified
+staging origin, OS/device, fixture title and anonymized account identifiers,
+run ID/time, actual process restart, request counts, same-key/body check
+(where applicable), created-workout count, cleanup/inspection result, and
+PASS/FAIL/NOT RUN. Mark manual security checks independently; remove
+disposable server fixtures after evidence is recorded.
+
+**M10.5 status: prepared, NOT RUN.** Issue #345 remains open until Android
+and iOS acceptance, encryption/key lifecycle, backup/restore and fault/cleanup
+evidence pass. Missing app identifiers, approved EAS builds, staging
+credentials, native tooling and an isolated fault fixture are operator
+dependencies. These flow contracts do not authorize production release.

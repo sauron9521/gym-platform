@@ -1,0 +1,34 @@
+# Requires two distinct disposable staging athlete accounts, both Ukrainian.
+# No POST /workouts is permitted. Verify cleanup independently of UI.
+appId: ${APP_ID}
+---
+- runFlow: ../partials/save-new-draft.yaml
+- runFlow: ../partials/sign-out-draft-account.yaml
+- tapOn:
+    id: sign-in-email
+- inputText: ${E2E_SECOND_EMAIL}
+- tapOn:
+    id: sign-in-password
+- inputText: ${E2E_SECOND_PASSWORD}
+- tapOn: Увійти
+- runFlow: ../partials/open-draft-form.yaml
+- extendedWaitUntil:
+    visible: Збереженої чернетки немає.
+    timeout: 30000
+- assertNotVisible:
+    id: workout-draft-restore
+- assertNotVisible: ${E2E_WORKOUT_TITLE}
+- runFlow: ../partials/sign-out-draft-account.yaml
+- tapOn:
+    id: sign-in-email
+- inputText: ${E2E_EMAIL}
+- tapOn:
+    id: sign-in-password
+- inputText: ${E2E_PASSWORD}
+- tapOn: Увійти
+- runFlow: ../partials/open-draft-form.yaml
+- extendedWaitUntil:
+    visible: Збереженої чернетки немає.
+    timeout: 30000
+- assertNotVisible:
+    id: workout-draft-restore

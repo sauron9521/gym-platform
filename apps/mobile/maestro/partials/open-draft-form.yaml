@@ -1,0 +1,20 @@
+# Requires a live, verified disposable staging athlete session.
+appId: ${APP_ID}
+---
+- extendedWaitUntil:
+    visible:
+      id: mobile-tab-workouts
+    timeout: 30000
+- tapOn:
+    id: mobile-tab-workouts
+- scrollUntilVisible:
+    element:
+      id: workouts-create
+    direction: UP
+    timeout: 15000
+- tapOn:
+    id: workouts-create
+- extendedWaitUntil:
+    visible:
+      id: workout-draft-panel
+    timeout: 20000

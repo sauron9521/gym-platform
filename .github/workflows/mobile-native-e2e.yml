@@ -28,6 +28,13 @@ on:
           - reconcile-resume
           - reconcile-offline-android
           - reconcile-lost-response
+          - draft-resume
+          - draft-lost-response
+          - draft-account-isolation
+      draft_fault_title:
+        description: 'Only draft-lost-response: unique pre-armed Mobile-draft-fault-<suffix> title'
+        required: false
+        type: string
 
 permissions:
   contents: read
@@ -47,6 +54,7 @@ jobs:
       APK_URL: ${{ inputs.apk_url }}
       APK_SHA256: ${{ inputs.apk_sha256 }}
       FLOW: ${{ inputs.flow }}
+      DRAFT_FAULT_TITLE: ${{ inputs.draft_fault_title }}
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -93,6 +101,8 @@ jobs:
           E2E_PASSWORD: ${{ secrets.MOBILE_E2E_PASSWORD }}
           E2E_EXERCISE_NAME: ${{ secrets.MOBILE_E2E_EXERCISE_NAME }}
           STAGING_RECONCILE_WORKOUT_TITLE: ${{ secrets.MOBILE_E2E_RECONCILE_WORKOUT_TITLE }}
+          E2E_SECOND_EMAIL: ${{ secrets.MOBILE_E2E_SECOND_EMAIL }}
+          E2E_SECOND_PASSWORD: ${{ secrets.MOBILE_E2E_SECOND_PASSWORD }}
           EXPECTED_STAGING_APP_ID: ${{ secrets.MOBILE_STAGING_ANDROID_APP_ID }}
         with:
           api-level: 34
@@ -123,6 +133,22 @@ jobs:
                 exit 1
               fi
             fi
+            if [[ "$FLOW" == draft-* ]]; then
+              if [[ -z "$E2E_EXERCISE_NAME" || -z "$EXPECTED_STAGING_APP_ID" || "$APP_ID" != "$EXPECTED_STAGING_APP_ID" ]]; then
+                echo "Draft flows require an approved staging package and seeded exercise." >&2
+                exit 1
+              fi
+              if [[ "$FLOW" == "draft-lost-response" && ! "$DRAFT_FAULT_TITLE" =~ ^Mobile-draft-fault-[A-Za-z0-9-]{8,64}$ ]]; then
+                echo "Lost-response draft flow requires a unique pre-armed fault title." >&2
+                exit 1
+              fi
+              if [[ "$FLOW" == "draft-account-isolation" ]]; then
+                if [[ -z "$E2E_SECOND_EMAIL" || -z "$E2E_SECOND_PASSWORD" || "${E2E_EMAIL,,}" == "${E2E_SECOND_EMAIL,,}" ]]; then
+                  echo "Draft isolation requires two distinct disposable staging athletes." >&2
+                  exit 1
+                fi
+              fi
+            fi
             curl --fail --location --silent --show-error --max-time 240 \
               --proto '=https' --proto-redir '=https' \
               --max-filesize 250000000 \
@@ -149,13 +175,23 @@ jobs:
               reconcile-resume) FLOW_FILE=workout-reconcile-resume.yaml ;;
               reconcile-offline-android) FLOW_FILE=workout-reconcile-offline-android.yaml ;;
               reconcile-lost-response) FLOW_FILE=workout-reconcile-lost-response.yaml ;;
+              draft-resume) FLOW_FILE=workout-draft-resume.yaml ;;
+              draft-lost-response) FLOW_FILE=workout-draft-lost-response.yaml ;;
+              draft-account-isolation) FLOW_FILE=workout-draft-account-isolation.yaml ;;
               *) echo "Unsupported Maestro flow" >&2; exit 1 ;;
             esac
             WORKOUT_TITLE="Mobile-smoke-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
             if [[ "$FLOW" == reconcile-* ]]; then
               WORKOUT_TITLE="$STAGING_RECONCILE_WORKOUT_TITLE"
+            elif [[ "$FLOW" == "draft-lost-response" ]]; then
+              WORKOUT_TITLE="$DRAFT_FAULT_TITLE"
             fi
-            maestro test -e APP_ID="$APP_ID" -e E2E_EMAIL="$E2E_EMAIL" \
+            # Pass the second account only for the isolation flow.
+            SECOND_ACCOUNT_ARGS=()
+            if [[ "$FLOW" == "draft-account-isolation" ]]; then
+              SECOND_ACCOUNT_ARGS=(-e E2E_SECOND_EMAIL="$E2E_SECOND_EMAIL" -e E2E_SECOND_PASSWORD="$E2E_SECOND_PASSWORD")
+            fi
+            maestro test "${SECOND_ACCOUNT_ARGS[@]}" -e APP_ID="$APP_ID" -e E2E_EMAIL="$E2E_EMAIL" \
               -e E2E_PASSWORD="$E2E_PASSWORD" \
               -e E2E_EXERCISE_NAME="$E2E_EXERCISE_NAME" \
               -e E2E_WORKOUT_TITLE="$WORKOUT_TITLE" \

@@ -1,0 +1,20 @@
+# The receipt must already be persisted. Cleanup is local only.
+appId: ${APP_ID}
+---
+- extendedWaitUntil:
+    visible: Сервер підтвердив створення тренування.*
+    timeout: 30000
+- scrollUntilVisible:
+    element:
+      id: workout-draft-clear
+    direction: DOWN
+    timeout: 15000
+- assertNotVisible:
+    id: workout-draft-send
+- tapOn:
+    id: workout-draft-clear
+- assertVisible: Видалити локальну копію.*
+- tapOn: Очистити підтверджену чернетку
+- extendedWaitUntil:
+    visible: Локальну чернетку очищено.
+    timeout: 20000

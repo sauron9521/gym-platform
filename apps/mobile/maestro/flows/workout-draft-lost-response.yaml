@@ -1,0 +1,32 @@
+# Requires an isolated one-shot staging fault: commit first POST /workouts and
+# drop its response. A normal successful 201 cannot pass the pending assertion.
+# Operator must independently verify two requests, same key/body, one row.
+appId: ${APP_ID}
+---
+- runFlow: ../partials/save-new-draft.yaml
+- runFlow: ../partials/confirm-draft-send.yaml
+- scrollUntilVisible:
+    element:
+      text: Результат надсилання не підтверджено.*
+    direction: UP
+    timeout: 60000
+- assertNotVisible:
+    id: workout-draft-discard
+- assertNotVisible:
+    id: workout-draft-clear
+- stopApp
+- launchApp:
+    clearState: false
+- runFlow: ../partials/open-draft-form.yaml
+- extendedWaitUntil:
+    visible: Результат надсилання не підтверджено.*
+    timeout: 30000
+- assertNotVisible:
+    id: workout-draft-send
+- runFlow: ../partials/restore-saved-draft.yaml
+- assertVisible: Повторити надсилання
+- runFlow: ../partials/confirm-draft-send.yaml
+- extendedWaitUntil:
+    visible: Тренування створено на сервері.
+    timeout: 30000
+- runFlow: ../partials/clear-confirmed-draft.yaml

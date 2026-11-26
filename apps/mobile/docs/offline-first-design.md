@@ -260,3 +260,12 @@ The tests cover mocked native storage and transport; actual SQLCipher,
 filesystem, backup/restore, lost-response staging API and device restart
 acceptance are still required for #345. Offline login, unfinished-form/active
 set logs and automated sync remain outside this slice.
+
+### M10.5 — native acceptance handoff
+
+See [Offline draft native acceptance](native-staging-smoke.md#m105--offline-draft-native-acceptance-345)
+for the guarded Android dispatch and manual iOS Maestro flows (resume,
+commit-then-drop response, account isolation), the separate offline/SQLCipher/
+key lifecycle/backup/cleanup checks and the required private evidence.
+Prepared scenarios are not executed device evidence. Keep #345 open and
+native promotion NO-GO until all required checks pass.
