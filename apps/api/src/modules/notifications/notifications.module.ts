@@ -6,5 +6,6 @@ import { NotificationSettingsService } from './services/notification-settings.se
 @Module({
   controllers: [NotificationSettingsController],
   providers: [NotificationSettingsRepository, NotificationSettingsService],
+  exports: [NotificationSettingsService],
 })
 export class NotificationsModule {}
