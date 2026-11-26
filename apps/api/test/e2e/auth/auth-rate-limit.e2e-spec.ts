@@ -9,12 +9,14 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import { AuthController } from '../../../src/modules/auth/controllers/auth.controller.js';
 import { AdminCookieAuthService } from '../../../src/modules/auth/services/admin-cookie-auth.service.js';
+import { AdminSignInService } from '../../../src/modules/auth/public-api.js';
 import { EmailVerificationController } from '../../../src/modules/auth/controllers/email-verification.controller.js';
 import { TokensController } from '../../../src/modules/auth/controllers/tokens.controller.js';
 import { CredentialsService } from '../../../src/modules/auth/services/credentials.service.js';
 import { AuthNoStoreMiddleware } from '../../../src/modules/auth/middleware/auth-no-store.middleware.js';
 import { VerificationResendRateLimitGuard } from '../../../src/modules/auth/guards/verification-resend-rate-limit.guard.js';
 import { AuthAccountThrottleService } from '../../../src/modules/auth/services/auth-account-throttle.service.js';
+import { AuthHttpQuotaFacade } from '../../../src/modules/auth/public-api.js';
 import { DistributedThrottlerStorage } from '../../../src/common/rate-limit/distributed-throttler.storage.js';
 
 describe('Auth endpoint throttling (HTTP)', () => {
@@ -45,12 +47,14 @@ describe('Auth endpoint throttling (HTTP)', () => {
       ],
       controllers: [AuthController, EmailVerificationController, TokensController],
       providers: [
+        AdminSignInService,
         { provide: AdminCookieAuthService, useValue: { signIn: vi.fn() } },
         { provide: CredentialsService, useValue: credentials },
         { provide: SignInService, useValue: signIn },
         { provide: EmailVerificationService, useValue: verification },
         { provide: DistributedThrottlerStorage, useValue: { increment: vi.fn() } },
         AuthAccountThrottleService,
+        AuthHttpQuotaFacade,
         { provide: ConfigService, useValue: { getOrThrow: () => 'test-only' } },
         { provide: TokenService, useValue: tokens },
         { provide: APP_GUARD, useClass: ThrottlerGuard },

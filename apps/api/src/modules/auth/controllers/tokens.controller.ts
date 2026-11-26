@@ -9,15 +9,15 @@ import {
   UnauthorizedException,
   UseInterceptors,
 } from '@nestjs/common';
-import { AuthNoStoreInterceptor } from '../interceptors/auth-no-store.interceptor.js';
-import { StableHttpOperation } from '#src/common/http/stable-http-operation.decorator';
-import { CredentialsService } from '../services/index.js';
 import {
+  AuthNoStoreInterceptor,
+  CredentialsService,
   refreshTokenSchema,
   signInSchema,
   type RefreshTokenInput,
   type SignInInput,
-} from '../dto/auth.schemas.js';
+} from '../public-api.js';
+import { StableHttpOperation } from '#src/common/http/stable-http-operation.decorator';
 
 @Public()
 @UseInterceptors(AuthNoStoreInterceptor)

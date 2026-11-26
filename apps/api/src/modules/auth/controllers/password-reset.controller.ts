@@ -8,15 +8,15 @@ import {
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
-import { AuthNoStoreInterceptor } from '../interceptors/auth-no-store.interceptor.js';
-import { StableHttpOperation } from '#src/common/http/stable-http-operation.decorator';
 import {
+  AuthNoStoreInterceptor,
   emailSchema,
   resetPasswordSchema,
   type EmailInput,
   type ResetPasswordInput,
-} from '../dto/auth.schemas.js';
-import { AccountRecoveryRateLimitGuard } from '../guards/account-recovery-rate-limit.guard.js';
+  AccountRecoveryRateLimitGuard,
+} from '../public-api.js';
+import { StableHttpOperation } from '#src/common/http/stable-http-operation.decorator';
 
 @Public()
 @UseInterceptors(AuthNoStoreInterceptor)

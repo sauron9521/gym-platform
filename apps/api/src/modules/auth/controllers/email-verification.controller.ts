@@ -11,11 +11,14 @@ import {
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
-import { AuthNoStoreInterceptor } from '../interceptors/auth-no-store.interceptor.js';
+import {
+  AuthNoStoreInterceptor,
+  verificationTokenSchema,
+  type VerificationTokenInput,
+  type VerificationResendActor,
+  VerificationResendRateLimitGuard,
+} from '../public-api.js';
 import { StableHttpOperation } from '#src/common/http/stable-http-operation.decorator';
-import { verificationTokenSchema, type VerificationTokenInput } from '../dto/auth.schemas.js';
-import { VerificationResendRateLimitGuard } from '../guards/verification-resend-rate-limit.guard.js';
-import type { UserResponse } from '#src/modules/users/types/user-payload.types';
 
 @UseInterceptors(AuthNoStoreInterceptor)
 @Controller('auth/email')
@@ -46,7 +49,7 @@ export class EmailVerificationController {
   })
   @Post('verification')
   @HttpCode(202)
-  async resend(@CurrentUser() user: UserResponse): Promise<void> {
+  async resend(@CurrentUser() user: VerificationResendActor): Promise<void> {
     if (user.emailVerified) {
       throw new ConflictException('Email address already verified');
     }

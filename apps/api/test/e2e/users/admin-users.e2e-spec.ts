@@ -1,8 +1,16 @@
 import { createHash, randomUUID } from 'node:crypto';
 
-import { AuthenticationStorage, MfaService, PasswordHasher } from '@nestjs/authentication';
+import { AuthenticationStorage, MfaService, PasswordHasher, Public } from '@nestjs/authentication';
 import type { INestApplication } from '@nestjs/common';
-import { StandardSchemaValidationPipe } from '@nestjs/common';
+import {
+  StandardSchemaValidationPipe,
+  Body,
+  Controller,
+  HttpCode,
+  Module,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { Test } from '@nestjs/testing';
 import { ModulesContainer } from '@nestjs/core';
@@ -25,11 +33,44 @@ import {
   PrismaTokenStore,
 } from '../../../src/modules/auth/stores/index.js';
 import { AuthModule } from '../../../src/modules/auth/auth.module.js';
-import { AdminSessionFacade } from '../../../src/modules/auth/public-api.js';
+import {
+  AdminSessionFacade,
+  AdminSignInService,
+  CredentialsService,
+  AuthHttpQuotaFacade,
+  AccountRecoveryRateLimitGuard,
+  VerificationResendRateLimitGuard,
+} from '../../../src/modules/auth/public-api.js';
 import { TokenCleanupService } from '../../../src/modules/auth/services/token-cleanup.service.js';
 import { createMfaEncryptionOptions } from '../../../src/common/config/mfa-keyring.config.js';
 import { useTestDatabase } from '../../utility/test-db-helper.js';
 import { codeAt } from '../../utility/totp-code.js';
+
+// Test-only consumer: prove route-scoped guards resolve the exported facade
+// from AuthModule without re-registering Auth stores or throttle internals.
+@Controller('auth/boundary-probe')
+class AuthBoundaryProbeController {
+  constructor(
+    readonly credentials: CredentialsService,
+    readonly adminSignIn: AdminSignInService,
+    readonly sessions: AdminSessionFacade,
+  ) {}
+
+  @Public()
+  @UseGuards(AccountRecoveryRateLimitGuard)
+  @Post('recovery')
+  @HttpCode(204)
+  recovery(@Body() _body: { email: string }) {}
+
+  @Public()
+  @UseGuards(VerificationResendRateLimitGuard)
+  @Post('resend')
+  @HttpCode(204)
+  resend() {}
+}
+
+@Module({ imports: [AuthModule], controllers: [AuthBoundaryProbeController] })
+class AuthBoundaryProbeModule {}
 
 describe('GET /admin/users (HTTP + PostgreSQL)', () => {
   let app: INestApplication;
@@ -82,7 +123,7 @@ describe('GET /admin/users (HTTP + PostgreSQL)', () => {
     process.env.SUPERADMIN_USER_IDS = operatorId;
 
     const moduleRef = await Test.createTestingModule({
-      imports: [await ConfigModule.forRoot({ isGlobal: true }), AppModule],
+      imports: [await ConfigModule.forRoot({ isGlobal: true }), AppModule, AuthBoundaryProbeModule],
     })
       .overrideProvider(ThrottlerGuard)
       .useValue({ canActivate: () => true })
@@ -150,6 +191,34 @@ describe('GET /admin/users (HTTP + PostgreSQL)', () => {
     expect(app.select(AuthModule).get(AdminSessionFacade, { strict: true })).toBeInstanceOf(
       AdminSessionFacade,
     );
+  });
+
+  it('resolves exported credential and Admin commands and route guards in a separate consumer module', async () => {
+    const probe = app
+      .select(AuthBoundaryProbeModule)
+      .get(AuthBoundaryProbeController, { strict: true });
+    const auth = app.select(AuthModule);
+    expect(probe.credentials).toBe(auth.get(CredentialsService, { strict: true }));
+    expect(probe.adminSignIn).toBe(auth.get(AdminSignInService, { strict: true }));
+    expect(probe.sessions).toBe(auth.get(AdminSessionFacade, { strict: true }));
+    const modules = [...app.get(ModulesContainer).values()];
+    for (const provider of [CredentialsService, AdminSignInService, AuthHttpQuotaFacade]) {
+      expect(
+        modules.filter((module) => module.providers.has(provider)).map((module) => module.metatype),
+      ).toEqual([AuthModule]);
+    }
+    const email = `boundary-probe-${randomUUID()}@example.test`;
+    for (let i = 0; i < 5; i++) {
+      await request(app.getHttpServer())
+        .post('/auth/boundary-probe/recovery')
+        .send({ email })
+        .expect(204);
+    }
+    await request(app.getHttpServer())
+      .post('/auth/boundary-probe/recovery')
+      .send({ email })
+      .expect(429);
+    await request(app.getHttpServer()).post('/auth/boundary-probe/resend').expect(401);
   });
 
   const list = (cookie: string, query: Record<string, string> = {}) =>

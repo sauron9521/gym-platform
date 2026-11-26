@@ -7,6 +7,7 @@ import { ConfigService } from '@nestjs/config';
 import request from 'supertest';
 import { AuthController } from '../../../src/modules/auth/controllers/index.js';
 import { AdminCookieAuthService } from '../../../src/modules/auth/services/admin-cookie-auth.service.js';
+import { AdminSignInService } from '../../../src/modules/auth/public-api.js';
 import { CredentialsService } from '../../../src/modules/auth/services/index.js';
 
 describe('AuthController (HTTP)', () => {
@@ -31,6 +32,7 @@ describe('AuthController (HTTP)', () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       controllers: [AuthController],
       providers: [
+        AdminSignInService,
         { provide: AdminCookieAuthService, useValue: { signIn: vi.fn() } },
         {
           provide: ConfigService,

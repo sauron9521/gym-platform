@@ -19,6 +19,8 @@ import { AdminMfaRecoveryService } from './services/admin-mfa-recovery.service.j
 import { AdminMfaEnrollmentService } from './services/admin-mfa-enrollment.service.js';
 import { AdminCookieAuthService } from './services/admin-cookie-auth.service.js';
 import { AdminSessionFacade } from './services/admin-session.facade.js';
+import { AdminSignInService } from './services/admin-sign-in.service.js';
+import { AuthHttpQuotaFacade } from './services/auth-http-quota.facade.js';
 import { AccountRecoveryRateLimitGuard } from './guards/account-recovery-rate-limit.guard.js';
 import { VerificationResendRateLimitGuard } from './guards/verification-resend-rate-limit.guard.js';
 import { CredentialsService, TokenCleanupService } from './services/index.js';
@@ -44,6 +46,8 @@ import { PrismaMfaStore, PrismaSessionStore, PrismaTokenStore } from './stores/i
     SessionAuth,
     AdminCookieAuthService,
     AdminSessionFacade,
+    AdminSignInService,
+    AuthHttpQuotaFacade,
     AdminMfaEnrollmentService,
     AdminMfaChallengeService,
     AdminMfaRecoveryService,
@@ -60,6 +64,6 @@ import { PrismaMfaStore, PrismaSessionStore, PrismaTokenStore } from './stores/i
     TokenCleanupService,
     AuthCleanupLockService,
   ],
-  exports: [AdminSessionFacade],
+  exports: [AdminSessionFacade, AdminSignInService, CredentialsService, AuthHttpQuotaFacade],
 })
 export class AuthModule {}

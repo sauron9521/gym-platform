@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { DistributedThrottlerStorage } from '#src/common/rate-limit/distributed-throttler.storage';
 import { emailSchema } from '../dto/auth.schemas.js';
 import { AuthAccountThrottleService } from '../services/auth-account-throttle.service.js';
+import { AuthHttpQuotaFacade } from '../public-api.js';
 import {
   AccountRecoveryRateLimitGuard,
   RECOVERY_ACCOUNT_LIMIT,
@@ -18,7 +19,7 @@ describe('AccountRecoveryRateLimitGuard', () => {
     getOrThrow: vi.fn().mockReturnValue('local-test-HMAC-secret-with-32-or-more-characters'),
   };
   const guard = new AccountRecoveryRateLimitGuard(
-    new AuthAccountThrottleService(storage, config as never),
+    new AuthHttpQuotaFacade(new AuthAccountThrottleService(storage, config as never)),
   );
 
   function context(email: unknown): ExecutionContext {

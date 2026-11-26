@@ -2,10 +2,8 @@ import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
 import type { Request } from 'express';
 
 import { emailSchema } from '../dto/auth.schemas.js';
-import {
-  AuthAccountThrottleService,
-  AUTH_ACCOUNT_THROTTLE_POLICIES,
-} from '../services/auth-account-throttle.service.js';
+import { AUTH_ACCOUNT_THROTTLE_POLICIES } from '../services/auth-account-throttle.service.js';
+import { AuthHttpQuotaFacade } from '../services/auth-http-quota.facade.js';
 
 export const RECOVERY_ACCOUNT_LIMIT = AUTH_ACCOUNT_THROTTLE_POLICIES.passwordRecovery.limit;
 export const RECOVERY_ACCOUNT_TTL_MS = AUTH_ACCOUNT_THROTTLE_POLICIES.passwordRecovery.ttlMs;
@@ -17,7 +15,7 @@ export const RECOVERY_ACCOUNT_TTL_MS = AUTH_ACCOUNT_THROTTLE_POLICIES.passwordRe
  */
 @Injectable()
 export class AccountRecoveryRateLimitGuard implements CanActivate {
-  constructor(private readonly accountThrottle: AuthAccountThrottleService) {}
+  constructor(private readonly accountThrottle: AuthHttpQuotaFacade) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<Request>();
@@ -37,10 +35,7 @@ export class AccountRecoveryRateLimitGuard implements CanActivate {
       return true;
     }
 
-    await this.accountThrottle.assertAllowed(
-      parsed.data.email,
-      AUTH_ACCOUNT_THROTTLE_POLICIES.passwordRecovery,
-    );
+    await this.accountThrottle.assertPasswordRecovery(parsed.data.email);
 
     return true;
   }
