@@ -1,6 +1,6 @@
 # Account workout preferences — incremental rollout
 
-Status: proposed delivery contract; shared defaults merged in #898; server persistence and read/update merged in #899; conditional initialization implemented in this slice, client sync not enabled.
+Status: proposed delivery contract; shared defaults merged in #898; server persistence and read/update merged in #899; conditional initialization merged in #900; mobile synchronization boundary implemented in this slice, runtime sync not enabled.
 Baseline: mobile Zustand settings (#895) and timer scope (#892, #893, #896).
 
 ## Ownership
@@ -66,9 +66,16 @@ fields remain untouched. A no-op import does not update the account timestamp.
 2. Typed nullable persistence and authenticated read/partial update contract,
    migration and generated OpenAPI client; verify old locale clients and
    account isolation (#899).
-3. Conditional legacy initialization and concurrency tests (this slice).
-4. Mobile query/mutation integration and account-scoped offline fallback,
-   migration, stale-response and timer regressions.
+3. Conditional legacy initialization and concurrency tests (#900).
+4. Mobile synchronization in two reviewable slices:
+   - 4a. Typed GET query options and explicit online mutation transport,
+     strict response validation, explicit legacy codec and separate
+     account-scoped confirmed snapshot (this slice).
+   - 4b. Wire the verified-account runtime to the existing settings UI and
+     timer with serialized writes, cache cancellation/reconciliation,
+     durable snapshot ordering and reconnect/account-switch regressions.
+     The runtime must use the authenticated scoped API and not enable
+     synchronization until these integration gates pass.
 5. Web settings controls and parity; native acceptance and incremental rollout.
 
 Units and reset behavior need separate decisions and implementation. In

@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createStore } from 'zustand/vanilla';
 import { defaultWorkoutPreferences } from '@gym/domain';
+import { legacyWorkoutPreferenceKey } from './account-workout-preferences';
 
 import {
   defaultRestDuration,
@@ -36,7 +37,9 @@ type PreferenceKey =
   | 'rest-vibration'
   | 'keep-workout-screen-awake';
 const preferenceKey = (accountId: string, preference: PreferenceKey) =>
-  `gym-platform:app-settings:v1:${accountId}:${preference}`;
+  preference === 'auto-rest-timer' || preference === 'rest-duration'
+    ? legacyWorkoutPreferenceKey(accountId, preference)
+    : `gym-platform:app-settings:v1:${accountId}:${preference}`;
 
 const initial = (accountId: string | null): SettingsState => ({
   accountId,
