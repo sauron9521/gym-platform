@@ -82,3 +82,14 @@ for the schema, threat model, approval dependencies and native acceptance.
 M12.2 (SDK and symbolication) is blocked by #348 native build readiness and
 privacy/vendor review; do not install or enable Sentry ahead of those gates.
 Keep #350 open. Independent mobile features can proceed without telemetry.
+
+### M13 — notifications
+
+M13.1a prepares the secure notification-open policy without wiring a runtime
+Inbox or push handler. See [push notification design](push-notification-design.md).
+The authenticated Inbox (#567) and preferences (#565) contracts are still
+missing; #566 provides the dependent persisted Inbox model. Do not invent
+client DTOs, simulated production notifications or a duplicate delivery system.
+M13.1b (Inbox and unread/read state) and M13.2 (preferences) follow the
+reviewed generated API contracts. M13.3/4 (local reminders and push) require
+the corresponding settings/consent and native build/device gates.
