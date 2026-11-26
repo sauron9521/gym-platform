@@ -236,9 +236,8 @@ function checkApiControllerOwnership(root, modules, errors) {
   }
 
   for (const file of apiFiles.filter((path) => path.endsWith('.controller.spec.ts'))) {
-    const [audience, feature, test, folder, filename, ...extra] = relative(apiRoot, file).split(
-      sep,
-    );
+    const parts = relative(apiRoot, file).split(sep);
+    const [audience, feature, test, folder, filename, ...extra] = parts;
     if (
       test !== 'test' ||
       folder !== 'controllers' ||
