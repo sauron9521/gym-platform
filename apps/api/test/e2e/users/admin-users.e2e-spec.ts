@@ -1,6 +1,12 @@
 import { createHash, randomUUID } from 'node:crypto';
 
-import { AuthenticationStorage, MfaService, PasswordHasher, Public } from '@nestjs/authentication';
+import {
+  AuthenticationRegistry,
+  AuthenticationStorage,
+  MfaService,
+  PasswordHasher,
+  Public,
+} from '@nestjs/authentication';
 import type { INestApplication } from '@nestjs/common';
 import {
   StandardSchemaValidationPipe,
@@ -52,6 +58,17 @@ import {
   VerificationResendRateLimitGuard,
 } from '../../../src/modules/auth/public-api.js';
 import { TokenCleanupService } from '../../../src/modules/auth/services/token-cleanup.service.js';
+import { SessionAuth, JwtAuth } from '../../../src/modules/auth/providers/index.js';
+import { AdminSessionAuth } from '../../../src/modules/auth/providers/admin-session-auth.provider.js';
+import {
+  EmailVerificationMailer,
+  PasswordResetMailer,
+} from '../../../src/modules/auth/mailers/index.js';
+import { PasswordResetController } from '../../../src/api/public/auth/controllers/password-reset.controller.js';
+import { TokensController } from '../../../src/api/public/auth/controllers/tokens.controller.js';
+import { EmailVerificationController } from '../../../src/api/public/auth/controllers/email-verification.controller.js';
+import { EmailVerificationResendController } from '../../../src/api/shared/auth/controllers/email-verification-resend.controller.js';
+
 import { createMfaEncryptionOptions } from '../../../src/common/config/mfa-keyring.config.js';
 import { useTestDatabase } from '../../utility/test-db-helper.js';
 import { codeAt } from '../../utility/totp-code.js';
@@ -258,6 +275,66 @@ describe('GET /admin/users (HTTP + PostgreSQL)', () => {
     ] as const) {
       const denied = await request(app.getHttpServer())[method](path).expect(401);
       expect(denied.headers['cache-control']).toBe('no-store');
+    }
+  });
+
+  it('preserves all Auth audience owners and the actual ordered authentication registry', () => {
+    const modules = [...app.get(ModulesContainer).values()];
+    const core = app.select(AuthModule);
+    const owners = [
+      [
+        PublicAuthApiModule,
+        [
+          AuthController,
+          PasswordResetController,
+          TokensController,
+          EmailVerificationController,
+          SignOutController,
+        ],
+      ],
+      [SharedAuthApiModule, [EmailVerificationResendController, SessionsController]],
+      [AdminAuthApiModule, [AdminAuthController, AdminSessionsController]],
+    ] as const;
+    expect(modules.filter((module) => module.metatype === AuthModule)).toHaveLength(1);
+    expect(modules.find((module) => module.metatype === AuthModule)?.controllers.size).toBe(0);
+    for (const [owner, controllers] of owners) {
+      const instances = modules.filter((module) => module.metatype === owner);
+      expect(instances).toHaveLength(1);
+      expect(instances[0]?.controllers.size).toBe(controllers.length);
+      for (const controller of controllers) {
+        expect(
+          modules
+            .filter((module) => module.controllers.has(controller))
+            .map((module) => module.metatype),
+        ).toEqual([owner]);
+      }
+    }
+
+    const registry = app.get(AuthenticationRegistry);
+    const chain = [SessionAuth, JwtAuth, AdminSessionAuth] as const;
+    expect(registry.providers).toHaveLength(chain.length);
+    for (const [index, provider] of chain.entries()) {
+      expect(registry.providers[index]).toBe(core.get(provider, { strict: true }));
+      expect(
+        modules.filter((module) => module.providers.has(provider)).map((module) => module.metatype),
+      ).toEqual([AuthModule]);
+    }
+    expect(registry.handler('emailVerification')).toBe(
+      core.get(EmailVerificationMailer, { strict: true }),
+    );
+    expect(registry.handler('passwordReset')).toBe(core.get(PasswordResetMailer, { strict: true }));
+    const storage = app.get(AuthenticationStorage);
+    expect(storage.sessions).toBe(core.get(PrismaSessionStore, { strict: true }));
+    expect(storage.refreshTokens).toBe(core.get(PrismaTokenStore, { strict: true }));
+    expect(storage.emailTokens).toBe(core.get(PrismaTokenStore, { strict: true }));
+    expect(storage.mfa).toBe(core.get(PrismaMfaStore, { strict: true }));
+    for (const provider of [AuthenticationRegistry, AuthenticationStorage]) {
+      expect(modules.filter((module) => module.providers.has(provider))).toHaveLength(1);
+    }
+    for (const provider of [EmailVerificationMailer, PasswordResetMailer, TokenCleanupService]) {
+      expect(
+        modules.filter((module) => module.providers.has(provider)).map((module) => module.metatype),
+      ).toEqual([AuthModule]);
     }
   });
 
