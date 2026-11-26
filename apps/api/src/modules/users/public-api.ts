@@ -28,3 +28,6 @@ export { updateMyPreferencesSchema } from './dto/update-my-preferences.dto.js';
 export type { UpdateMyPreferencesDto } from './dto/update-my-preferences.dto.js';
 export { updateMyWorkoutPreferencesSchema } from './dto/update-my-workout-preferences.dto.js';
 export type { UpdateMyWorkoutPreferencesDto } from './dto/update-my-workout-preferences.dto.js';
+
+// Public avatar read contract; validation and storage remain private.
+export { AvatarPublicReadFacade } from './avatar/avatar-public-read.facade.js';

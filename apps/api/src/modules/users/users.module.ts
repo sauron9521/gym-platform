@@ -9,7 +9,7 @@ import { AvatarService } from './avatar/avatar.service.js';
 import { AvatarSelfFacade } from './avatar/avatar-self.facade.js';
 import { AvatarImageProcessor } from './avatar/avatar-image.processor.js';
 import { AvatarOrphanCleanupService } from './avatar/avatar-orphan-cleanup.service.js';
-import { AvatarPublicController } from './controllers/avatar-public.controller.js';
+import { AvatarPublicReadFacade } from './avatar/avatar-public-read.facade.js';
 
 @Module({
   providers: [
@@ -20,11 +20,18 @@ import { AvatarPublicController } from './controllers/avatar-public.controller.j
     AdminAccountStatusService,
     AvatarService,
     AvatarSelfFacade,
+    AvatarPublicReadFacade,
     AvatarDiskStorage,
     AvatarImageProcessor,
     AvatarOrphanCleanupService,
   ],
-  controllers: [AvatarPublicController],
-  exports: [UsersService, UsersAuthFacade, AdminUsersReadService, AvatarSelfFacade],
+  controllers: [],
+  exports: [
+    UsersService,
+    UsersAuthFacade,
+    AdminUsersReadService,
+    AvatarSelfFacade,
+    AvatarPublicReadFacade,
+  ],
 })
 export class UsersModule {}

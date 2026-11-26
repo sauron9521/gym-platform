@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 
 import { UsersRepository } from '../repositories/users.repository.js';
 import { AvatarSelfFacade } from '../avatar/avatar-self.facade.js';
+import { AvatarPublicReadFacade } from '../avatar/avatar-public-read.facade.js';
 import { AvatarService } from '../avatar/avatar.service.js';
 import { AvatarDiskStorage } from '../avatar/avatar-disk.storage.js';
 import { AvatarImageProcessor } from '../avatar/avatar-image.processor.js';
@@ -27,6 +28,8 @@ describe('UsersModule public dependency boundary', () => {
     expect(exportedProviders).toContain(AdminUsersReadService);
     expect(providers).toContain(AvatarSelfFacade);
     expect(exportedProviders).toContain(AvatarSelfFacade);
+    expect(providers).toContain(AvatarPublicReadFacade);
+    expect(exportedProviders).toContain(AvatarPublicReadFacade);
     for (const internal of [
       UsersRepository,
       AvatarService,
