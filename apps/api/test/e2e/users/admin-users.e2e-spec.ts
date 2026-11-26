@@ -588,6 +588,61 @@ describe('GET /admin/users (HTTP + PostgreSQL)', () => {
     ).toBe(true);
   });
 
+  it('rejects cross-realm cookie renaming and isolates mixed-account cookies', async () => {
+    const ordinary = await loginOperator('/auth/login');
+    const misplaced = await loginOperator('/auth/admin-login');
+    const http = request(app.getHttpServer());
+    await http
+      .get('/auth/admin-session')
+      .set('Cookie', ordinary.cookie.replace('__Host-sid=', '__Host-admin-sid='))
+      .expect(401);
+    await http
+      .get('/users/me')
+      .set('Cookie', misplaced.cookie.replace('__Host-admin-sid=', '__Host-sid='))
+      .expect(401);
+    // The ordinary library provider discards a rejected session. Use a
+    // separate Admin session to test valid coexistence and scoped logout.
+    expect(await prisma.session.findUnique({ where: { id: misplaced.id } })).toBeNull();
+    const elevated = await loginOperator('/auth/admin-login');
+    const athlete = await prisma.user.findFirstOrThrow({
+      where: { email: { contains: 'admin-list-athlete-' + suffix } },
+      select: { id: true },
+    });
+    const combined = cookies.athlete! + '; ' + elevated.cookie;
+    expect((await http.get('/users/me').set('Cookie', combined).expect(200)).body.id).toBe(
+      athlete.id,
+    );
+    expect(
+      (await http.get('/auth/admin-session').set('Cookie', combined).expect(200)).body.id,
+    ).toBe(operatorId);
+    await http.post('/auth/admin-sign-out').set('Cookie', combined).expect(204);
+    await http.get('/auth/admin-session').set('Cookie', elevated.cookie).expect(401);
+    expect((await http.get('/users/me').set('Cookie', cookies.athlete!).expect(200)).body.id).toBe(
+      athlete.id,
+    );
+    await http.get('/users/me').set('Cookie', ordinary.cookie).expect(200);
+  });
+
+  it('rechecks the operator allowlist on existing Admin sessions and fails closed on invalid config', async () => {
+    const config = app.get(ConfigService);
+    const previous = config.get('SUPERADMIN_USER_IDS');
+    try {
+      await list(cookies.operator!).expect(200);
+      for (const value of ['', operatorId + ',invalid']) {
+        config.set('SUPERADMIN_USER_IDS', value);
+        const denied = await list(cookies.operator!).expect(403);
+        expect(denied.headers['cache-control']).toContain('no-store');
+        await request(app.getHttpServer())
+          .get('/auth/admin-session')
+          .set('Cookie', cookies.operator!)
+          .expect(200);
+      }
+    } finally {
+      config.set('SUPERADMIN_USER_IDS', previous);
+    }
+    await list(cookies.operator!).expect(200);
+  });
+
   it('denies non-admin credentials and does not issue an elevated cookie', async () => {
     const athlete = await prisma.user.findFirstOrThrow({
       where: { email: { contains: 'admin-list-athlete-' + suffix } },
