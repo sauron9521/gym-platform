@@ -1,7 +1,7 @@
 import { CanActivate, ExecutionContext, ForbiddenException, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
-import type { Role } from '#prisma/client';
+import type { AdminUsersReadActor } from '#src/modules/users/public-api';
 import { hasAdminPermission } from '#src/common/rbac/admin-permissions';
 import { parseOperatorSuperAdminIds } from '#src/common/rbac/operator-superadmin-allowlist';
 
@@ -19,7 +19,7 @@ export class AdminUsersReadGuard implements CanActivate {
 
   canActivate(context: ExecutionContext): boolean {
     const user = context.switchToHttp().getRequest<{
-      user?: { id?: string; role?: Role };
+      user?: Partial<AdminUsersReadActor>;
     }>().user;
 
     const elevated = parseOperatorSuperAdminIds(this.config.get('SUPERADMIN_USER_IDS'));

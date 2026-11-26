@@ -5,11 +5,16 @@ import type { INestApplication } from '@nestjs/common';
 import { StandardSchemaValidationPipe } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { Test } from '@nestjs/testing';
+import { ModulesContainer } from '@nestjs/core';
 import { ThrottlerGuard } from '@nestjs/throttler';
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { AppModule } from '../../../src/app.module.js';
+import { AdminUsersApiModule } from '../../../src/api/admin/users/admin-users-api.module.js';
+import { AdminUsersController } from '../../../src/api/admin/users/controllers/admin-users.controller.js';
+import { UsersModule } from '../../../src/modules/users/users.module.js';
+import { AdminUsersReadService } from '../../../src/modules/users/public-api.js';
 import { PrismaService } from '../../../src/infra/database/index.js';
 import { AdminMfaChallengeService } from '../../../src/modules/auth/services/admin-mfa-challenge.service.js';
 import { AdminMfaEnrollmentService } from '../../../src/modules/auth/services/admin-mfa-enrollment.service.js';
@@ -103,6 +108,22 @@ describe('GET /admin/users (HTTP + PostgreSQL)', () => {
       else process.env.SUPERADMIN_USER_IDS = priorAllowlist;
     }
   }, 20_000);
+
+  it('registers the directory controller once in the Admin API module with a shared Users provider', () => {
+    const modules = app.get(ModulesContainer);
+    const owners = [...modules.values()].filter((module) =>
+      module.controllers.has(AdminUsersController),
+    );
+    expect(owners.map((module) => module.metatype)).toEqual([AdminUsersApiModule]);
+    const featureProvider = app.select(UsersModule).get(AdminUsersReadService, { strict: true });
+    expect(featureProvider).toBeInstanceOf(AdminUsersReadService);
+    expect(
+      app.select(AdminUsersApiModule).get(AdminUsersController, { strict: true }),
+    ).toBeInstanceOf(AdminUsersController);
+    expect([...modules.values()].filter((module) => module.metatype === UsersModule)).toHaveLength(
+      1,
+    );
+  });
 
   const list = (cookie: string, query: Record<string, string> = {}) =>
     request(app.getHttpServer()).get('/admin/users').query(query).set('Cookie', cookie);
