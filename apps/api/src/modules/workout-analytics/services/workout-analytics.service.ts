@@ -54,6 +54,23 @@ export class WorkoutAnalyticsService {
     return { asOf, exerciseCount: rows[0]?.exerciseCount ?? 0 };
   }
 
+  async previousSets(actor: WorkoutActor, exerciseId: string) {
+    assertWorkoutAthlete(await this.usersService.findMyCapabilities(actor.id));
+    const asOf = new Date();
+    const from = workoutAnalyticsWindow(asOf, workoutAnalyticsRangeDays['90d']);
+    const rows = await this.repository.readPreviousSets(actor.id, exerciseId, from, asOf);
+    return {
+      exerciseId,
+      workoutCompletedAt: rows[0]?.workoutCompletedAt ?? null,
+      sets: rows.map(({ setNumber, setType, actualReps, actualWeightKg }) => ({
+        setNumber,
+        setType,
+        actualReps,
+        actualWeightKg: actualWeightKg === null ? null : asNumber(actualWeightKg),
+      })),
+    };
+  }
+
   async exercise(actor: WorkoutActor, exerciseId: string, query: WorkoutAnalyticsQuery) {
     assertWorkoutAthlete(await this.usersService.findMyCapabilities(actor.id));
     const asOf = new Date();

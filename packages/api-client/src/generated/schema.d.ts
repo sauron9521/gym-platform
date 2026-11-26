@@ -852,6 +852,22 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/workout-analytics/exercises/{exerciseId}/previous-sets': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['WorkoutAnalyticsController_previousSets'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/workout-analytics/exercises/{exerciseId}': {
     parameters: {
       query?: never;
@@ -4554,6 +4570,39 @@ export interface operations {
             /** Format: date-time */
             asOf: string;
             exerciseCount: number;
+          };
+        };
+      };
+    };
+  };
+  WorkoutAnalyticsController_previousSets: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        exerciseId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** Format: uuid */
+            exerciseId: string;
+            /** Format: date-time */
+            workoutCompletedAt: string | null;
+            sets: {
+              setNumber: number;
+              /** @enum {string} */
+              setType: 'WARMUP' | 'WORKING' | 'DROP_SET' | 'AMRAP';
+              actualReps: number | null;
+              actualWeightKg: number | null;
+            }[];
           };
         };
       };

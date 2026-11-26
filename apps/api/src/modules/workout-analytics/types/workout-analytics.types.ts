@@ -22,3 +22,12 @@ export type ExerciseSnapshotRow = {
 export type PersonalRecordsRow = {
   exerciseCount: number;
 };
+
+/** Minimal prior completed strength-set projection. */
+export type PreviousWorkoutSetRow = {
+  workoutCompletedAt: Date;
+  setNumber: number;
+  setType: 'WARMUP' | 'WORKING' | 'DROP_SET' | 'AMRAP';
+  actualReps: number | null;
+  actualWeightKg: VolumeValue | null;
+};

@@ -58,6 +58,9 @@ describe('Workout Analytics (HTTP + PostgreSQL)', () => {
     actualReps?: number;
     actualWeightKg?: number;
     actualDurationSeconds?: number;
+    setType?: 'WARMUP' | 'WORKING' | 'DROP_SET' | 'AMRAP';
+    plannedReps?: number;
+    plannedWeightKg?: number;
   };
 
   async function workout(
@@ -98,7 +101,9 @@ describe('Workout Analytics (HTTP + PostgreSQL)', () => {
           data: {
             workoutExerciseId: exercise.id,
             setNumber: index + 1,
-            setType: 'WORKING',
+            setType: set.setType ?? 'WORKING',
+            plannedReps: set.plannedReps,
+            plannedWeightKg: set.plannedWeightKg,
             status: set.status,
             actualReps: set.actualReps,
             actualWeightKg: set.actualWeightKg,
@@ -371,6 +376,109 @@ describe('Workout Analytics (HTTP + PostgreSQL)', () => {
       .get('/workout-analytics/exercises/not-a-uuid')
       .set('Cookie', athleteCookie)
       .expect(400);
+  });
+
+  it('returns only the latest completed strength occurrence for the authenticated athlete', async () => {
+    const path = `/workout-analytics/exercises/${benchId}/previous-sets`;
+    const http = request(app.getHttpServer());
+    await http.get(path).expect(401);
+    const read = await http
+      .get(path)
+      .set('Cookie', athleteCookie)
+      .expect('Cache-Control', 'no-store')
+      .expect(200);
+    expect(read.body).toEqual({
+      exerciseId: benchId,
+      workoutCompletedAt: utcDate(1, 11).toISOString(),
+      sets: [{ setNumber: 1, setType: 'WORKING', actualReps: 5, actualWeightKg: 70 }],
+    });
+    for (const cookie of [otherCookie, trainerCookie]) {
+      expect((await http.get(path).set('Cookie', cookie).expect(200)).body).toEqual({
+        exerciseId: benchId,
+        workoutCompletedAt: null,
+        sets: [],
+      });
+    }
+    for (const id of [foreignExerciseId, cardioId, randomUUID()]) {
+      expect(
+        (
+          await http
+            .get(`/workout-analytics/exercises/${id}/previous-sets`)
+            .set('Cookie', athleteCookie)
+            .expect(200)
+        ).body,
+      ).toEqual({
+        exerciseId: id,
+        workoutCompletedAt: null,
+        sets: [],
+      });
+    }
+    await http
+      .get(path)
+      .query({ athleteId: anotherAthleteId })
+      .set('Cookie', athleteCookie)
+      .expect(400);
+    await http
+      .get('/workout-analytics/exercises/invalid/previous-sets')
+      .set('Cookie', athleteCookie)
+      .expect(400);
+  });
+
+  it('preserves set positions/types, ignores plans and skips, and never combines sessions', async () => {
+    const exercise = await prisma.exercise.create({
+      data: { name: 'Previous set fixture', source: 'GLOBAL', exerciseType: 'STRENGTH' },
+    });
+    const path = `/workout-analytics/exercises/${exercise.id}/previous-sets`;
+    const http = request(app.getHttpServer());
+    const block = (sets: SetInput[]) => ({
+      exerciseId: exercise.id,
+      name: 'Previous sets',
+      type: 'STRENGTH' as const,
+      sets,
+    });
+    const read = () => http.get(path).set('Cookie', athleteCookie).expect(200);
+    try {
+      await workout(athleteId, utcDate(100, 10), 'COMPLETED', [
+        block([{ status: 'COMPLETED', actualReps: 9, actualWeightKg: 100 }]),
+      ]);
+      expect((await read()).body.sets).toEqual([]);
+      await workout(athleteId, utcDate(4, 10), 'COMPLETED', [
+        block([{ status: 'COMPLETED', actualReps: 8, actualWeightKg: 200 }]),
+      ]);
+      await workout(athleteId, utcDate(3, 10), 'COMPLETED', [
+        block([
+          { status: 'COMPLETED', setType: 'WARMUP', actualReps: 12, actualWeightKg: 0 },
+          { status: 'SKIPPED', actualReps: 10, actualWeightKg: 300 },
+          { status: 'COMPLETED', actualWeightKg: 62.5 },
+          { status: 'COMPLETED', plannedReps: 10, plannedWeightKg: 90 },
+          { status: 'PENDING', actualReps: 10, actualWeightKg: 300 },
+          { status: 'COMPLETED', setType: 'AMRAP', actualReps: 11 },
+        ]),
+        block([{ status: 'COMPLETED', actualReps: 99, actualWeightKg: 999 }]),
+      ]);
+      expect((await read()).body).toEqual({
+        exerciseId: exercise.id,
+        workoutCompletedAt: utcDate(3, 10).toISOString(),
+        sets: [
+          { setNumber: 1, setType: 'WARMUP', actualReps: 12, actualWeightKg: 0 },
+          { setNumber: 3, setType: 'WORKING', actualReps: null, actualWeightKg: 62.5 },
+          { setNumber: 6, setType: 'AMRAP', actualReps: 11, actualWeightKg: null },
+        ],
+      });
+      await workout(athleteId, utcDate(2, 10), 'COMPLETED', [
+        block([{ status: 'SKIPPED', actualReps: 10, actualWeightKg: 100 }]),
+      ]);
+      expect((await read()).body).toEqual({
+        exerciseId: exercise.id,
+        workoutCompletedAt: null,
+        sets: [],
+      });
+    } finally {
+      await prisma.workout.deleteMany({
+        where: { athleteId, exercises: { some: { exerciseId: exercise.id } } },
+      });
+      await prisma.exercise.delete({ where: { id: exercise.id } });
+    }
   });
 
   it('uses the completed-at athlete/status index for bounded queries', async () => {

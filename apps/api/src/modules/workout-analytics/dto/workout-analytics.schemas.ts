@@ -16,3 +16,5 @@ export const workoutAnalyticsRangeDays: Record<WorkoutAnalyticsRange, number> = 
 };
 
 export const analyticsExerciseIdSchema = z.string().uuid();
+
+export const previousSetsQuerySchema = z.strictObject({});
