@@ -1,4 +1,4 @@
-import { fireEvent, render, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, render, waitFor } from '@testing-library/react-native';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { useExercisesQuery } from '@/features/exercises/model/exercises-query';
@@ -101,5 +101,36 @@ describe('Multi-exercise CreateWorkoutScreen (native)', () => {
     await fireEvent.press(view.getByTestId('create-workout-submit'));
     await waitFor(() => expect(mutateAsync).toHaveBeenCalledOnce());
     expect(back).not.toHaveBeenCalled();
+  });
+  it('blocks repeat submission while pending and preserves nested values for a manual retry after failure', async () => {
+    let reject: (error: Error) => void = () => undefined;
+    mutateAsync.mockReturnValueOnce(
+      new Promise<string>((_resolve, fail) => {
+        reject = fail;
+      }),
+    );
+    const view = await render(<CreateWorkoutScreen />);
+    await fireEvent.changeText(view.getByLabelText('Назва тренування'), 'Груди');
+    await fireEvent.press(view.getByTestId('workout-exercise-open'));
+    await fireEvent.press(view.getByRole('button', { name: 'Жим лежачи' }));
+    await fireEvent.changeText(view.getByLabelText('Планова вага, вправа 1, підхід 1'), '65');
+    await fireEvent.press(view.getByTestId('create-workout-submit'));
+    await waitFor(() => expect(mutateAsync).toHaveBeenCalledOnce());
+    expect(view.getByTestId('create-workout-submit').props.accessibilityState.disabled).toBe(true);
+    await fireEvent.press(view.getByTestId('create-workout-submit'));
+    expect(mutateAsync).toHaveBeenCalledOnce();
+    expect(back).not.toHaveBeenCalled();
+    await act(async () => reject(new Error('Lost response')));
+    await waitFor(() =>
+      expect(view.getByTestId('create-workout-submit').props.accessibilityState.disabled).toBe(
+        false,
+      ),
+    );
+    expect(view.getByLabelText('Назва тренування').props.value).toBe('Груди');
+    expect(view.getByLabelText('Планова вага, вправа 1, підхід 1').props.value).toBe('65');
+    await fireEvent.press(view.getByTestId('create-workout-submit'));
+    await waitFor(() => expect(back).toHaveBeenCalledOnce());
+    expect(mutateAsync).toHaveBeenCalledTimes(2);
+    expect(mutateAsync.mock.calls[1]?.[0]).toEqual(mutateAsync.mock.calls[0]?.[0]);
   });
 });

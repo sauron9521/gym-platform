@@ -47,11 +47,13 @@ test('create route is protected and mutation only navigates after success', () =
   const read = (p) => readFileSync(new URL(p, import.meta.url), 'utf8');
   const layout = read('../src/app/_layout.tsx');
   const screen = read('../src/screens/workouts/ui/create-workout-screen.tsx');
+  const controller = read('../src/screens/workouts/model/use-create-workout-form.ts');
   const model = read('../src/features/workouts/model/workout-create.ts');
   assert.match(layout, /name="workouts\/new"/);
   assert.ok(layout.includes('<Stack.Protected guard={hasAthleteAccess(capabilities)}>'));
-  assert.match(screen, /await createWorkout\.mutateAsync/);
-  assert.match(screen, /router\.back\(\)/);
+  assert.match(screen, /useCreateWorkoutForm\(\)/);
+  assert.match(controller, /await createWorkout\.mutateAsync/);
+  assert.match(controller, /router\.back\(\)/);
   assert.match(model, /api\.POST\('\/workouts'/);
   assert.match(model, /accountQueryKeys\.workouts/);
 });
@@ -77,12 +79,13 @@ test('same canonical workout reuses the original key after an uncertain response
 test('manual creation locks submission, sends idempotency header and refreshes scoped list', () => {
   const read = (path) => readFileSync(new URL(path, import.meta.url), 'utf8');
   const screen = read('../src/screens/workouts/ui/create-workout-screen.tsx');
+  const controller = read('../src/screens/workouts/model/use-create-workout-form.ts');
   const list = read('../src/screens/workouts/ui/workouts-screen.tsx');
   const model = read('../src/features/workouts/model/workout-create.ts');
 
-  assert.match(screen, /submitLock\.current/);
-  assert.match(screen, /if \(submitLock\.current\) return/);
-  assert.match(screen, /const disabled = isSubmitting \|\| createWorkout\.isPending/);
+  assert.match(controller, /submitLock\.current/);
+  assert.match(controller, /if \(submitLock\.current\) return/);
+  assert.match(controller, /const disabled = isSubmitting \|\| createWorkout\.isPending/);
   assert.match(screen, /disabled=\{disabled\}/);
   assert.match(model, /'Idempotency-Key': attempt\.current\.key/);
   assert.match(model, /retry: false/);
