@@ -1,12 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { EmailVerificationService, SignInService } from '@nestjs/authentication';
-import { ConfigService } from '@nestjs/config';
 import { Logger, UnauthorizedException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AuthController } from '../../controllers/auth.controller.js';
-import { AdminCookieAuthService } from '../../services/admin-cookie-auth.service.js';
-import { AdminSignInService } from '../../public-api.js';
-import { CredentialsService } from '../../services/index.js';
+import { CredentialsService } from '#src/modules/auth/public-api';
 
 describe('AuthController', () => {
   let controller: AuthController;
@@ -17,9 +14,6 @@ describe('AuthController', () => {
   };
 
   const signInService = { signIn: vi.fn() };
-  const adminCookieAuth = { signIn: vi.fn() };
-  const adminRequest = { headers: {}, method: 'POST' } as never;
-  const adminResponse = { append: vi.fn() } as never;
 
   const emailVerificationService = {
     send: vi.fn(),
@@ -31,14 +25,6 @@ describe('AuthController', () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [AuthController],
       providers: [
-        AdminSignInService,
-        { provide: AdminCookieAuthService, useValue: adminCookieAuth },
-        {
-          provide: ConfigService,
-          useValue: {
-            get: (key: string) => (key === 'APP_URL' ? 'http://localhost:3000' : undefined),
-          },
-        },
         {
           provide: CredentialsService,
           useValue: credentialsService,
@@ -122,43 +108,6 @@ describe('AuthController', () => {
 
       await expect(controller.signUp(input)).rejects.toThrow('Session storage failed');
       expect(emailVerificationService.send).not.toHaveBeenCalled();
-    });
-  });
-
-  describe('adminSignIn', () => {
-    const input = { email: 'admin@example.test', password: 'StrongPassword123!' };
-
-    it('marks only an authenticated ADMIN session and preserves the MFA challenge', async () => {
-      credentialsService.verify.mockResolvedValue({
-        id: 'operator-id',
-        email: input.email,
-        role: 'ADMIN',
-      });
-      adminCookieAuth.signIn.mockResolvedValue({ session: { mfa: 'pending' } });
-      await expect(controller.adminSignIn(input, adminRequest, adminResponse)).resolves.toEqual({
-        mfaRequired: true,
-      });
-      expect(adminCookieAuth.signIn).toHaveBeenCalledExactlyOnceWith(
-        'operator-id',
-        adminRequest,
-        adminResponse,
-      );
-      expect(signInService.signIn).not.toHaveBeenCalled();
-    });
-
-    it('refuses unknown credentials and non-admin roles identically without issuing a session', async () => {
-      for (const principal of [
-        null,
-        { id: 'athlete', role: 'ATHLETE' },
-        { id: 'trainer', role: 'TRAINER' },
-      ]) {
-        credentialsService.verify.mockResolvedValueOnce(principal);
-        await expect(controller.adminSignIn(input, adminRequest, adminResponse)).rejects.toThrow(
-          UnauthorizedException,
-        );
-      }
-      expect(adminCookieAuth.signIn).not.toHaveBeenCalled();
-      expect(signInService.signIn).not.toHaveBeenCalled();
     });
   });
 

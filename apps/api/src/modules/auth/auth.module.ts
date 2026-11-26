@@ -3,7 +3,6 @@ import { RateLimitStorageModule } from '#src/common/rate-limit/rate-limit-storag
 import { AdminSessionPurposeGuard } from '#src/common/auth/admin-session-purpose.guard';
 import { AdminOriginGuard } from '#src/common/auth/admin-origin.guard';
 import { UsersModule } from '#src/modules/users/users.module';
-import { AuthController } from './controllers/auth.controller.js';
 import { SessionsController } from './controllers/sessions.controller.js';
 
 import { EmailVerificationMailer, PasswordResetMailer } from './mailers/index.js';
@@ -25,7 +24,7 @@ import { PrismaMfaStore, PrismaSessionStore, PrismaTokenStore } from './stores/i
 
 @Module({
   imports: [UsersModule, RateLimitStorageModule],
-  controllers: [AuthController, SessionsController],
+  controllers: [SessionsController],
   providers: [
     AdminSessionPurposeGuard,
     AdminOriginGuard,
