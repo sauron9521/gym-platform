@@ -18,6 +18,8 @@ model User {
   status        AccountStatus @default(ACTIVE)
   authInvalidatedAt DateTime? @map("auth_invalidated_at") @db.Timestamptz(3)
   preferredLocale String?  @map("preferred_locale") @db.VarChar(10)
+  autoRestTimer Boolean? @map("auto_rest_timer")
+  restDurationSeconds Int? @map("rest_duration_seconds")
   createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt     DateTime  @updatedAt() @map("updated_at") @db.Timestamptz(3)
   deletedAt     DateTime? @map("deleted_at") @db.Timestamptz(3)

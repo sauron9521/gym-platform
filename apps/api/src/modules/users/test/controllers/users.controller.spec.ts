@@ -8,6 +8,8 @@ describe('UsersController', () => {
     findMyCapabilities: vi.fn(),
     updateMe: vi.fn(),
     updateMyPreferences: vi.fn(),
+    findMyWorkoutPreferences: vi.fn(),
+    updateMyWorkoutPreferences: vi.fn(),
   };
   const avatarService = {
     upload: vi.fn(),
@@ -53,6 +55,21 @@ describe('UsersController', () => {
     usersService.updateMyPreferences.mockResolvedValue({ id: actor.id, preferredLocale: 'uk' });
     await controller.updatePreferences(actor, body);
     expect(usersService.updateMyPreferences).toHaveBeenCalledExactlyOnceWith(actor.id, body);
+  });
+
+  it('reads and changes only the authenticated actor workout preferences', async () => {
+    const initial = { autoRestTimer: null, restDurationSeconds: null };
+    const updated = { autoRestTimer: false, restDurationSeconds: null };
+    usersService.findMyWorkoutPreferences.mockResolvedValue(initial);
+    usersService.updateMyWorkoutPreferences.mockResolvedValue(updated);
+    await expect(controller.myWorkoutPreferences(actor)).resolves.toEqual(initial);
+    await expect(
+      controller.updateWorkoutPreferences(actor, { autoRestTimer: false }),
+    ).resolves.toEqual(updated);
+    expect(usersService.findMyWorkoutPreferences).toHaveBeenCalledExactlyOnceWith(actor.id);
+    expect(usersService.updateMyWorkoutPreferences).toHaveBeenCalledExactlyOnceWith(actor.id, {
+      autoRestTimer: false,
+    });
   });
 
   it('forwards the multipart upload as-is to the avatar service', async () => {

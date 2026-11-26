@@ -12,9 +12,23 @@ The current-user endpoints are authenticated. Public avatar serving is intention
 | POST   | `/users/me/account-deletion-request` | Submit a confirmed account deletion request      |
 | PATCH  | `/users/me`                          | Update own profile                               |
 | PATCH  | `/users/me/preferences`              | Update own account preferences                   |
+| GET    | `/users/me/preferences/workouts`     | Read own stored workout preferences              |
+| PATCH  | `/users/me/preferences/workouts`     | Partially update own workout preferences         |
 | POST   | `/users/me/avatar`                   | Upload/replace avatar                            |
 | DELETE | `/users/me/avatar`                   | Remove avatar                                    |
 | GET    | `/avatars/:key`                      | Public avatar retrieval                          |
+
+## Account workout preferences
+
+The authenticated GET and PATCH resource returns only
+`{ autoRestTimer: boolean | null, restDurationSeconds: 60 | 90 | 120 | null }`
+with `Cache-Control: no-store`. Null represents an uninitialized field. PATCH
+accepts one or both non-null values, rejects unknown fields and empty patches,
+and atomically updates only supplied fields for the active session owner.
+No locale, profile, admin projection or device-local preference is modified.
+The PostgreSQL check constraint also rejects unsupported duration values.
+Clients must not start synchronization until conditional legacy initialization
+is implemented; see the [rollout contract](../../architecture/account-workout-preferences.md).
 
 ## Account deletion request intake (#297)
 

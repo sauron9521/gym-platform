@@ -3,6 +3,7 @@ import type { Prisma } from '#prisma/client';
 
 import { AvatarService } from '../avatar/avatar.service.js';
 import type { UpdateMyProfileDto } from '../dto/update-my-profile.dto.js';
+import type { UpdateMyWorkoutPreferencesDto } from '../dto/update-my-workout-preferences.dto.js';
 import type { UpdateMyPreferencesDto } from '../dto/update-my-preferences.dto.js';
 import { mapProfileUpdateInput, mapUserWithProfile } from '../mappers/user-profile.mapper.js';
 import { UsersRepository } from '../repositories/users.repository.js';
@@ -60,6 +61,16 @@ export class UsersService {
   async updateMyPreferences(userId: string, input: UpdateMyPreferencesDto) {
     const user = await this.usersRepository.updateMyPreferences(userId, input.preferredLocale);
     return mapUserWithProfile(user);
+  }
+
+  async findMyWorkoutPreferences(userId: string) {
+    const preferences = await this.usersRepository.findMyWorkoutPreferences(userId);
+    if (!preferences) throw new NotFoundException('User not found');
+    return preferences;
+  }
+
+  async updateMyWorkoutPreferences(userId: string, input: UpdateMyWorkoutPreferencesDto) {
+    return this.usersRepository.updateMyWorkoutPreferences(userId, input);
   }
 
   async updateMe(userId: string, input: UpdateMyProfileDto) {

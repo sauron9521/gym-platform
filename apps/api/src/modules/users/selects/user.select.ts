@@ -64,3 +64,9 @@ export const userEmailVerificationSelect = {
   email: true,
   emailVerified: true,
 } satisfies Prisma.UserSelect;
+
+/** Dedicated self-service projection: no profile, role, or credentials. */
+export const userWorkoutPreferencesSelect = {
+  autoRestTimer: true,
+  restDurationSeconds: true,
+} satisfies Prisma.UserSelect;

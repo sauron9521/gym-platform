@@ -1,6 +1,6 @@
 # Account workout preferences — incremental rollout
 
-Status: proposed delivery contract; this slice only shares the existing defaults.
+Status: proposed delivery contract; shared defaults merged in #898; server persistence and read/update implemented in this slice, client sync not enabled.
 Baseline: mobile Zustand settings (#895) and timer scope (#892, #893, #896).
 
 ## Ownership
@@ -20,7 +20,7 @@ query and mutation lifecycle belong to TanStack Query. Existing durable local
 preferences remain account scoped. A narrow adapter may expose effective values
 to the timer and offline fallback without creating a second remote authority.
 
-## Proposed API and storage
+## API and storage
 
 Use a dedicated authenticated current-user workout-preference resource,
 `GET /users/me/preferences/workouts` and `PATCH /users/me/preferences/workouts`.
@@ -57,10 +57,10 @@ overwrite an existing explicit account value even on concurrent first login.
 ## Delivery slices
 
 1. Shared pure domain defaults and allowed numeric presets; mobile consumes
-   them without changing storage, UI or behavior (this PR).
+   them without changing storage, UI or behavior (#898).
 2. Typed nullable persistence and authenticated read/partial update contract,
    migration and generated OpenAPI client; verify old locale clients and
-   account isolation.
+   account isolation (this slice).
 3. Conditional legacy initialization and concurrency tests.
 4. Mobile query/mutation integration and account-scoped offline fallback,
    migration, stale-response and timer regressions.
