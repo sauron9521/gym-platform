@@ -11,6 +11,8 @@ Reviewed against main and linked issues on 2026-11-24. Decision acceptance, impl
 | ADR-007 | [Pragmatic Clean Architecture](adr-007-pragmatic-clean-architecture.md)                   | Accepted; limited owner GO, 2026-11-24 | Selected complex writes only; CA06–CA08 verified, CA09 guidance merged, final acceptance pending ([#718](https://github.com/sauron9521/gym-platform/issues/718))                                   |
 | ADR-008 | [Unified Notifications](notifications.md)                                                 | Accepted target, 2026-11-21            | Design only; delivery implementation not established ([#563](https://github.com/sauron9521/gym-platform/issues/563))                                                                               |
 
+| ADR-009 | [Client state ownership and scoped store pilot](adr-009-client-state-management.md) | Proposed for owner review, 2026-11-26 | Mobile timer pilot proposed under [#325](https://github.com/sauron9521/gym-platform/issues/325); no dependency or runtime change |
+
 ADR-008 previously used the duplicate identifier ADR-006. Keep the existing `notifications.md` path and historical links; the number is a registry correction, not a new design decision. ADR-001–004 are not present in the current tracked architecture inventory; do not infer their contents or reuse their identifiers.
 
 ## ADR-007 implementation evidence
