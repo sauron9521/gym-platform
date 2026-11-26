@@ -28,7 +28,7 @@ pnpm --filter @gym/api test:e2e
 
 All HTTP test hosts that manually call `createNestApplication()` must register `StandardSchemaValidationPipe` to mirror production. Do not add the legacy `ValidationPipe`: request-body and query validation use module-owned Zod/Standard Schema contracts. Tests asserting invalid requests must validate the real HTTP `400` response, not only call Zod directly.
 
-Vitest discovers `test/**/*.e2e-spec.ts` recursively. **Moving files changes relative imports and migration inventory expectations**: record each legacy test relocation in `apps/api/test/relocations.json` without rewriting the frozen `apps/api/migration-source-inventory.json` (new, non-legacy tests have no historical entry). The migration-readiness gate also enforces the per-module test layout.
+Vitest discovers `test/**/*.e2e-spec.ts` recursively. **Moving files changes relative imports and migration inventory expectations**: record each legacy test relocation in `apps/api/test/relocations.json` without rewriting the frozen `apps/api/migration-source-inventory.json` (new, non-legacy tests have no historical entry). The migration-readiness gate also enforces the per-module test layout. For historical controllers and their co-located unit tests moved to audience adapters, record same-feature, same-filename moves in `apps/api/migration-source-relocations.json`. The frozen historical inventory remains unchanged.
 
 ## Contract, architecture and migration gates
 

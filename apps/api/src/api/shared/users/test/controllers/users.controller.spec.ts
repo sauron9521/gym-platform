@@ -1,6 +1,5 @@
 import { UsersController } from '../../controllers/users.controller.js';
-import { UsersService } from '../../services/users.service.js';
-import { AvatarService } from '../../avatar/avatar.service.js';
+import type { UsersService, AvatarSelfFacade } from '#src/modules/users/public-api';
 
 describe('UsersController', () => {
   const usersService = {
@@ -23,7 +22,7 @@ describe('UsersController', () => {
     vi.resetAllMocks();
     controller = new UsersController(
       usersService as unknown as UsersService,
-      avatarService as unknown as AvatarService,
+      avatarService as unknown as AvatarSelfFacade,
     );
   });
 
