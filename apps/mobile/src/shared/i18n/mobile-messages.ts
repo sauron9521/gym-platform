@@ -200,6 +200,12 @@ const navigationMessages = {
     en: 'For manual and automatic timers. Changes during a workout do not update this preference.',
   },
   'mobile.settings.seconds': { uk: '{seconds} с', en: '{seconds} s' },
+  'mobile.settings.restSound': { uk: 'Звуковий сигнал таймера', en: 'Rest timer sound' },
+  'mobile.settings.restVibration': { uk: 'Вібрація таймера', en: 'Rest timer vibration' },
+  'mobile.settings.restFeedbackHint': {
+    uk: 'Після завершення відпочинку або після повернення в застосунок.',
+    en: 'When rest ends, or when you return to the app.',
+  },
   'mobile.settings.pending': { uk: 'Зачекайте…', en: 'Please wait…' },
   'mobile.settings.storageError': {
     uk: 'Не вдалося зберегти або прочитати налаштування. Спробуйте ще раз.',

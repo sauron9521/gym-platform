@@ -132,6 +132,7 @@ export function useWorkoutDetails(id: string) {
     uncertain,
     restStart,
     restDuration: settings.restDuration,
+    restFeedback: { sound: settings.restSound, vibration: settings.restVibration },
     nextAction,
     actionDisabled,
     saveTitle,

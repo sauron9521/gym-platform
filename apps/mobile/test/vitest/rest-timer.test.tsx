@@ -4,11 +4,41 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { RestTimer } from '@/features/workouts/ui/rest-timer';
 
+const notify = vi.hoisted(() => vi.fn());
+vi.mock('@/features/workouts/lib/use-rest-feedback', () => ({ useRestFeedback: () => notify }));
+
 afterEach(() => {
   vi.restoreAllMocks();
 });
 
 describe('RestTimer (native)', () => {
+  it('signals one natural expiration after background reconciliation, never on reset or pause', async () => {
+    const clock = vi.spyOn(Date, 'now').mockReturnValue(100000);
+    let change: ((status: AppStateStatus) => void) | undefined;
+    vi.spyOn(AppState, 'addEventListener').mockImplementation((_event, listener) => {
+      change = listener as (status: AppStateStatus) => void;
+      return { remove: vi.fn() } as ReturnType<typeof AppState.addEventListener>;
+    });
+    const view = await render(
+      <RestTimer defaultDuration={60} feedback={{ sound: true, vibration: false }} />,
+    );
+    await fireEvent.press(view.getByRole('button', { name: 'Старт' }));
+    await fireEvent.press(view.getByRole('button', { name: 'Пауза' }));
+    expect(notify).not.toHaveBeenCalled();
+    await fireEvent.press(view.getByRole('button', { name: 'Скинути' }));
+    await fireEvent.press(view.getByRole('button', { name: 'Старт' }));
+    await act(async () => change?.('background'));
+    clock.mockReturnValue(161000);
+    await act(async () => change?.('active'));
+    await waitFor(() => expect(view.getByText('00:00')).toBeTruthy());
+    expect(notify).toHaveBeenCalledExactlyOnceWith({ sound: true, vibration: false });
+    await act(async () => change?.('active'));
+    await view.rerender(
+      <RestTimer defaultDuration={60} feedback={{ sound: false, vibration: true }} />,
+    );
+    expect(notify).toHaveBeenCalledTimes(1);
+  });
+
   it('applies a hydrated default before use and keeps an in-workout override', async () => {
     const view = await render(<RestTimer />);
     await view.rerender(<RestTimer defaultDuration={120} />);

@@ -20,6 +20,15 @@ test('Expo SDK 58 rejects removed new-architecture switch and preserves native a
     'expo-secure-store',
     'expo-localization',
     ['expo-sqlite', { useSQLCipher: true }],
+    [
+      'expo-audio',
+      {
+        microphonePermission: false,
+        recordAudioAndroid: false,
+        enableBackgroundRecording: false,
+        enableBackgroundPlayback: false,
+      },
+    ],
   ]);
   assert.equal(app.experiments.typedRoutes, true);
 });
