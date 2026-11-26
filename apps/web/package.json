@@ -18,6 +18,7 @@
   "dependencies": {
     "@gym/api-client": "workspace:*",
     "@gym/design-tokens": "workspace:*",
+    "@gym/domain": "workspace:*",
     "@gym/i18n": "workspace:*",
     "@gym/ui-web": "workspace:*",
     "@tanstack/react-query": "5.108.2",

@@ -1,6 +1,6 @@
 # Account workout preferences — incremental rollout
 
-Status: proposed delivery contract; shared defaults merged in #898; server persistence and read/update merged in #899; conditional initialization merged in #900; mobile synchronization boundary merged in #901; mobile runtime integration implemented in this slice; native acceptance and release remain pending.
+Status: proposed delivery contract; shared defaults merged in #898; server persistence and read/update merged in #899; conditional initialization merged in #900; mobile synchronization boundary merged in #901; mobile runtime integration merged in #902; Web account settings controls implemented in this slice. Native acceptance and release remain pending.
 Baseline: mobile Zustand settings (#895) and timer scope (#892, #893, #896).
 
 ## Ownership
@@ -74,14 +74,18 @@ fields remain untouched. A no-op import does not update the account timestamp.
    - 4b. Wire the verified-account runtime to the existing settings UI and
      timer with serialized writes, cache cancellation/reconciliation,
      durable snapshot ordering and reconnect/account-switch regressions.
-     (this slice). The runtime uses the authenticated scoped API, and stores
+     (#902). The runtime uses the authenticated scoped API, and stores
      only effective values in Zustand. It pins the verified session marker
      during the active scope and fences callbacks when that marker is removed.
      Device preferences remain writable offline. Account writes are disabled
      until an online canonical read; ambiguous writes reconcile by GET and
      are not replayed. Confirmed snapshots use a separate v2 key and serialize
      writes per account. Native acceptance remains a release gate.
-5. Web settings controls and parity; native acceptance and incremental rollout.
+5. Web account settings controls at /profile/settings (this slice), using
+   the same GET/PATCH resource and domain presets. No Web countdown exists yet;
+   the controls explicitly configure shared mobile preferences. Theme and
+   locale retain their existing controls. Native acceptance and incremental
+   rollout remain separate release gates.
 
 Units and reset behavior need separate decisions and implementation. In
 particular, a reset of device settings must not silently reset account-wide
