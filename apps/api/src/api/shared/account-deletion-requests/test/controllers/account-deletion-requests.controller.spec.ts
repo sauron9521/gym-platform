@@ -1,5 +1,5 @@
 import { AccountDeletionRequestsController } from '../../controllers/account-deletion-requests.controller.js';
-import type { AccountDeletionRequestsService } from '../../public-api.js';
+import type { AccountDeletionRequestsService } from '#src/modules/account-deletion-requests/public-api';
 
 describe('AccountDeletionRequestsController', () => {
   const service = { findOwn: vi.fn(), submit: vi.fn() };

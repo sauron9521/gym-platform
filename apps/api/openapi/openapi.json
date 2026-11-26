@@ -2130,6 +2130,134 @@
         "tags": ["Notifications"]
       }
     },
+    "/users/me/account-deletion-request": {
+      "get": {
+        "operationId": "AccountDeletionRequestsController_findOwn",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "request": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": ["REQUESTED"]
+                        },
+                        "requestedAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      },
+                      "required": ["id", "status", "requestedAt"],
+                      "additionalProperties": false,
+                      "nullable": true
+                    }
+                  },
+                  "required": ["request"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "accessToken": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "tags": ["Users"]
+      },
+      "post": {
+        "operationId": "AccountDeletionRequestsController_submit",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "confirm": {
+                    "type": "boolean",
+                    "enum": [true]
+                  },
+                  "password": {
+                    "type": "string",
+                    "minLength": 1,
+                    "pattern": "\\S",
+                    "writeOnly": true
+                  },
+                  "totpCode": {
+                    "type": "string",
+                    "pattern": "^[0-9]{6}$",
+                    "writeOnly": true
+                  }
+                },
+                "required": ["confirm", "password"],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "request": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": ["REQUESTED"]
+                        },
+                        "requestedAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      },
+                      "required": ["id", "status", "requestedAt"],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["request"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "accessToken": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "tags": ["Users"]
+      }
+    },
     "/avatars/{key}": {
       "get": {
         "operationId": "AvatarPublicController_get",
@@ -2564,134 +2692,6 @@
           }
         },
         "tags": ["Sessions"]
-      }
-    },
-    "/users/me/account-deletion-request": {
-      "get": {
-        "operationId": "AccountDeletionRequestsController_findOwn",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "request": {
-                      "type": "object",
-                      "properties": {
-                        "id": {
-                          "type": "string",
-                          "format": "uuid"
-                        },
-                        "status": {
-                          "type": "string",
-                          "enum": ["REQUESTED"]
-                        },
-                        "requestedAt": {
-                          "type": "string",
-                          "format": "date-time"
-                        }
-                      },
-                      "required": ["id", "status", "requestedAt"],
-                      "additionalProperties": false,
-                      "nullable": true
-                    }
-                  },
-                  "required": ["request"],
-                  "additionalProperties": false
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "accessToken": []
-          },
-          {
-            "sessionCookie": []
-          }
-        ],
-        "tags": ["Users"]
-      },
-      "post": {
-        "operationId": "AccountDeletionRequestsController_submit",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "confirm": {
-                    "type": "boolean",
-                    "enum": [true]
-                  },
-                  "password": {
-                    "type": "string",
-                    "minLength": 1,
-                    "pattern": "\\S",
-                    "writeOnly": true
-                  },
-                  "totpCode": {
-                    "type": "string",
-                    "pattern": "^[0-9]{6}$",
-                    "writeOnly": true
-                  }
-                },
-                "required": ["confirm", "password"],
-                "additionalProperties": false
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "request": {
-                      "type": "object",
-                      "properties": {
-                        "id": {
-                          "type": "string",
-                          "format": "uuid"
-                        },
-                        "status": {
-                          "type": "string",
-                          "enum": ["REQUESTED"]
-                        },
-                        "requestedAt": {
-                          "type": "string",
-                          "format": "date-time"
-                        }
-                      },
-                      "required": ["id", "status", "requestedAt"],
-                      "additionalProperties": false
-                    }
-                  },
-                  "required": ["request"],
-                  "additionalProperties": false
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "accessToken": []
-          },
-          {
-            "sessionCookie": []
-          }
-        ],
-        "tags": ["Users"]
       }
     },
     "/exercises": {

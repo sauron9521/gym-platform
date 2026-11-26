@@ -404,6 +404,22 @@ export interface paths {
     patch: operations['NotificationSettingsController_patch'];
     trace?: never;
   };
+  '/users/me/account-deletion-request': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['AccountDeletionRequestsController_findOwn'];
+    put?: never;
+    post: operations['AccountDeletionRequestsController_submit'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/avatars/{key}': {
     parameters: {
       query?: never;
@@ -558,22 +574,6 @@ export interface paths {
     get?: never;
     put?: never;
     post: operations['SessionsController_signOut'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/users/me/account-deletion-request': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get: operations['AccountDeletionRequestsController_findOwn'];
-    put?: never;
-    post: operations['AccountDeletionRequestsController_submit'];
     delete?: never;
     options?: never;
     head?: never;
@@ -2399,6 +2399,71 @@ export interface operations {
       };
     };
   };
+  AccountDeletionRequestsController_findOwn: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            request: {
+              /** Format: uuid */
+              id: string;
+              /** @enum {string} */
+              status: 'REQUESTED';
+              /** Format: date-time */
+              requestedAt: string;
+            } | null;
+          };
+        };
+      };
+    };
+  };
+  AccountDeletionRequestsController_submit: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          /** @enum {boolean} */
+          confirm: true;
+          password: string;
+          totpCode?: string;
+        };
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            request: {
+              /** Format: uuid */
+              id: string;
+              /** @enum {string} */
+              status: 'REQUESTED';
+              /** Format: date-time */
+              requestedAt: string;
+            };
+          };
+        };
+      };
+    };
+  };
   AvatarPublicController_get: {
     parameters: {
       query?: never;
@@ -2654,71 +2719,6 @@ export interface operations {
           [name: string]: unknown;
         };
         content?: never;
-      };
-    };
-  };
-  AccountDeletionRequestsController_findOwn: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': {
-            request: {
-              /** Format: uuid */
-              id: string;
-              /** @enum {string} */
-              status: 'REQUESTED';
-              /** Format: date-time */
-              requestedAt: string;
-            } | null;
-          };
-        };
-      };
-    };
-  };
-  AccountDeletionRequestsController_submit: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': {
-          /** @enum {boolean} */
-          confirm: true;
-          password: string;
-          totpCode?: string;
-        };
-      };
-    };
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': {
-            request: {
-              /** Format: uuid */
-              id: string;
-              /** @enum {string} */
-              status: 'REQUESTED';
-              /** Format: date-time */
-              requestedAt: string;
-            };
-          };
-        };
       };
     };
   };
