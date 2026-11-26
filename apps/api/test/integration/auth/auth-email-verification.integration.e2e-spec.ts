@@ -1,4 +1,6 @@
 import { randomUUID } from 'node:crypto';
+import { EmailVerificationService } from '@nestjs/authentication';
+import { ModulesContainer } from '@nestjs/core';
 import { StandardSchemaValidationPipe, type INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { Mailer } from '@nestjs/mail';
@@ -7,6 +9,15 @@ import request from 'supertest';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { PrismaService } from '../../../src/infra/database/index.js';
+import { PublicAuthApiModule } from '../../../src/api/public/auth/public-auth-api.module.js';
+import { EmailVerificationController } from '../../../src/api/public/auth/controllers/email-verification.controller.js';
+import { SharedAuthApiModule } from '../../../src/api/shared/auth/shared-auth-api.module.js';
+import { EmailVerificationResendController } from '../../../src/api/shared/auth/controllers/email-verification-resend.controller.js';
+import { AuthModule } from '../../../src/modules/auth/auth.module.js';
+import {
+  AuthHttpQuotaFacade,
+  VerificationResendRateLimitGuard,
+} from '../../../src/modules/auth/public-api.js';
 import { useTestDatabase } from '../../utility/test-db-helper.js';
 
 const password = 'StrongPassword123!';
@@ -141,6 +152,43 @@ describe('Email verification security (HTTP + PostgreSQL)', () => {
       }
     }
   }, 20_000);
+
+  it('owns email operations in distinct audience modules and rejects anonymous resend', async () => {
+    const modules = [...app.get(ModulesContainer).values()];
+    expect(
+      modules
+        .filter((module) => module.controllers.has(EmailVerificationController))
+        .map((module) => module.metatype),
+    ).toEqual([PublicAuthApiModule]);
+    expect(
+      modules
+        .filter((module) => module.controllers.has(EmailVerificationResendController))
+        .map((module) => module.metatype),
+    ).toEqual([SharedAuthApiModule]);
+    expect(modules.filter((module) => module.metatype === AuthModule)).toHaveLength(1);
+    expect(modules.filter((module) => module.providers.has(EmailVerificationService))).toHaveLength(
+      1,
+    );
+    expect(
+      modules
+        .filter((module) => module.providers.has(AuthHttpQuotaFacade))
+        .map((module) => module.metatype),
+    ).toEqual([AuthModule]);
+    expect(
+      modules
+        .filter((module) => module.injectables.has(VerificationResendRateLimitGuard))
+        .map((module) => module.metatype),
+    ).toEqual([SharedAuthApiModule]);
+    expect(
+      app.select(PublicAuthApiModule).get(EmailVerificationController, { strict: true }),
+    ).toBeInstanceOf(EmailVerificationController);
+    expect(
+      app.select(SharedAuthApiModule).get(EmailVerificationResendController, { strict: true }),
+    ).toBeInstanceOf(EmailVerificationResendController);
+    const denied = await request(app.getHttpServer()).post('/auth/email/verification').expect(401);
+    expect(denied.headers['cache-control']).toBe('no-store');
+    expect(mailer.send).not.toHaveBeenCalled();
+  });
 
   it('verifies only the token owner, never the other logged-in user, and forbids replay', async () => {
     const owner = await register();
