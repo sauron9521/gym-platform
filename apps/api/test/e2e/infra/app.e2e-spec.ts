@@ -6,7 +6,12 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { AppModule } from '../../../src/app.module.js';
 import { NotificationsModule } from '../../../src/modules/notifications/notifications.module.js';
-import { NotificationSettingsService } from '../../../src/modules/notifications/public-api.js';
+import {
+  NotificationInboxService,
+  NotificationSettingsService,
+} from '../../../src/modules/notifications/public-api.js';
+import { NotificationInboxRepository } from '../../../src/modules/notifications/repositories/notification-inbox.repository.js';
+import { NotificationInboxController } from '../../../src/api/shared/notifications/controllers/notification-inbox.controller.js';
 import { NotificationSettingsRepository } from '../../../src/modules/notifications/repositories/notification-settings.repository.js';
 import { NotificationSettingsController } from '../../../src/api/shared/notifications/controllers/notification-settings.controller.js';
 import { SharedNotificationsApiModule } from '../../../src/api/shared/notifications/shared-notifications-api.module.js';
@@ -90,7 +95,10 @@ class TrainerOnboardingBoundaryProbeModule {}
 
 @Injectable()
 class NotificationsBoundaryProbe {
-  constructor(readonly settings: NotificationSettingsService) {}
+  constructor(
+    readonly settings: NotificationSettingsService,
+    readonly inbox: NotificationInboxService,
+  ) {}
 }
 
 @Module({ imports: [NotificationsModule], providers: [NotificationsBoundaryProbe] })
@@ -255,7 +263,7 @@ describe('App (e2e)', () => {
     ).toEqual([AdminAuditModule]);
   });
 
-  it('resolves notification settings from an importing module without duplicating providers or routes', () => {
+  it('resolves notification settings and inbox from an importing module without duplicating providers or routes', () => {
     const modules = [...app.get(ModulesContainer).values()];
     const core = app.select(NotificationsModule);
     const probe = app
@@ -263,30 +271,38 @@ describe('App (e2e)', () => {
       .get(NotificationsBoundaryProbe, { strict: true });
     expect(modules.filter((module) => module.metatype === NotificationsModule)).toHaveLength(1);
     expect(probe.settings).toBe(core.get(NotificationSettingsService, { strict: true }));
+    expect(probe.inbox).toBe(core.get(NotificationInboxService, { strict: true }));
     expect(
       modules.find((module) => module.metatype === NotificationsModule)?.controllers.size,
     ).toBe(0);
     expect(
       modules.filter((module) => module.metatype === SharedNotificationsApiModule),
     ).toHaveLength(1);
-    expect(
-      modules.find((module) => module.metatype === SharedNotificationsApiModule)?.controllers.size,
-    ).toBe(1);
-    expect(
-      app
-        .select(SharedNotificationsApiModule)
-        .get(NotificationSettingsController, { strict: true }),
-    ).toBeInstanceOf(NotificationSettingsController);
-    for (const provider of [NotificationSettingsService, NotificationSettingsRepository]) {
+    const shared = modules.find((module) => module.metatype === SharedNotificationsApiModule);
+    expect([...shared!.controllers.keys()]).toEqual([
+      NotificationSettingsController,
+      NotificationInboxController,
+    ]);
+    for (const controller of [NotificationSettingsController, NotificationInboxController]) {
+      expect(
+        app.select(SharedNotificationsApiModule).get(controller, { strict: true }),
+      ).toBeInstanceOf(controller);
+      expect(
+        modules
+          .filter((module) => module.controllers.has(controller))
+          .map((module) => module.metatype),
+      ).toEqual([SharedNotificationsApiModule]);
+    }
+    for (const provider of [
+      NotificationSettingsService,
+      NotificationSettingsRepository,
+      NotificationInboxService,
+      NotificationInboxRepository,
+    ]) {
       expect(
         modules.filter((module) => module.providers.has(provider)).map((module) => module.metatype),
       ).toEqual([NotificationsModule]);
     }
-    expect(
-      modules
-        .filter((module) => module.controllers.has(NotificationSettingsController))
-        .map((module) => module.metatype),
-    ).toEqual([SharedNotificationsApiModule]);
   });
 
   it('resolves account deletion intake from an importing module with unique service, repository, quota and controller ownership', () => {
