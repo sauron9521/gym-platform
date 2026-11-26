@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { TrainerApplicationsController } from '../../controllers/trainer-applications.controller.js';
-import { TrainerApplicationsService } from '../../services/trainer-applications.service.js';
+import type { TrainerApplicationsService } from '#src/modules/trainer-onboarding/public-api';
 
 describe('TrainerApplicationsController', () => {
   const service = {

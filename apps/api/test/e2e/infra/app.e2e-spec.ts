@@ -26,7 +26,8 @@ import {
 } from '../../../src/modules/trainer-onboarding/public-api.js';
 import { TrainerApplicationsRepository } from '../../../src/modules/trainer-onboarding/repositories/trainer-applications.repository.js';
 import { TrainerReviewRepository } from '../../../src/modules/trainer-onboarding/repositories/trainer-review.repository.js';
-import { TrainerApplicationsController } from '../../../src/modules/trainer-onboarding/controllers/trainer-applications.controller.js';
+import { TrainerApplicationsController } from '../../../src/api/shared/trainer-onboarding/controllers/trainer-applications.controller.js';
+import { SharedTrainerOnboardingApiModule } from '../../../src/api/shared/trainer-onboarding/shared-trainer-onboarding-api.module.js';
 import { TrainerReviewController } from '../../../src/api/admin/trainer-onboarding/controllers/trainer-review.controller.js';
 import { AdminTrainerOnboardingApiModule } from '../../../src/api/admin/trainer-onboarding/admin-trainer-onboarding-api.module.js';
 import { AdminOriginGuard } from '../../../src/common/auth/admin-origin.guard.js';
@@ -108,6 +109,22 @@ describe('App (e2e)', () => {
       .get(TrainerOnboardingBoundaryProbe, { strict: true });
     expect(modules.filter((module) => module.metatype === TrainerOnboardingModule)).toHaveLength(1);
     expect(probe.applications).toBe(core.get(TrainerApplicationsService, { strict: true }));
+    expect(
+      modules.find((module) => module.metatype === TrainerOnboardingModule)?.controllers.size,
+    ).toBe(0);
+    expect(
+      app
+        .select(SharedTrainerOnboardingApiModule)
+        .get(TrainerApplicationsController, { strict: true }),
+    ).toBeInstanceOf(TrainerApplicationsController);
+    expect(
+      modules.find((module) => module.metatype === SharedTrainerOnboardingApiModule)?.controllers
+        .size,
+    ).toBe(1);
+    expect(
+      modules.find((module) => module.metatype === AdminTrainerOnboardingApiModule)?.controllers
+        .size,
+    ).toBe(1);
     expect(probe.review).toBe(core.get(TrainerReviewService, { strict: true }));
     for (const provider of [
       TrainerApplicationsService,
@@ -120,7 +137,7 @@ describe('App (e2e)', () => {
       ).toEqual([TrainerOnboardingModule]);
     }
     for (const [controller, owner] of [
-      [TrainerApplicationsController, TrainerOnboardingModule],
+      [TrainerApplicationsController, SharedTrainerOnboardingApiModule],
       [TrainerReviewController, AdminTrainerOnboardingApiModule],
     ] as const) {
       expect(

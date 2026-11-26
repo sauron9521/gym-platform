@@ -19,7 +19,7 @@ import {
   trainerApplicationInputSchema,
   type TrainerApplicationInput,
   TrainerApplicationsService,
-} from '../public-api.js';
+} from '#src/modules/trainer-onboarding/public-api';
 
 type Actor = { id: string };
 

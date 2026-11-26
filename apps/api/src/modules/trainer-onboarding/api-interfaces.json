@@ -1,1 +1,1 @@
-{ "audiences": ["admin"] }
+{ "audiences": ["admin", "shared"] }
