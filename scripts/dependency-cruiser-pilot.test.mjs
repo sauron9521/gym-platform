@@ -74,6 +74,38 @@ test.each([
     },
     'no-relative-cross-feature-api-imports',
   ],
+  [
+    'business modules importing API interfaces',
+    {
+      'apps/api/src/modules/users/users.module.js': "import '../../api/admin/users.js';",
+      'apps/api/src/api/admin/users.js': 'export const value = 1;',
+    },
+    'no-inward-to-api-interface-imports',
+  ],
+  [
+    'cross-audience API imports',
+    {
+      'apps/api/src/api/admin/users.js': "import '../shared/users.js';",
+      'apps/api/src/api/shared/users.js': 'export const value = 1;',
+    },
+    'no-cross-audience-api-imports',
+  ],
+  [
+    'API interfaces importing private repositories',
+    {
+      'apps/api/src/api/admin/users.js': "import '../../modules/users/repositories/users.js';",
+      'apps/api/src/modules/users/repositories/users.js': 'export const value = 1;',
+    },
+    'no-api-interface-private-feature-imports',
+  ],
+  [
+    'API interfaces importing database infrastructure',
+    {
+      'apps/api/src/api/admin/users.js': "import '../../infra/database/prisma.js';",
+      'apps/api/src/infra/database/prisma.js': 'export const value = 1;',
+    },
+    'no-api-interface-database-imports',
+  ],
 ])('dependency-cruiser rejects %s', (_description, files, rule) => {
   const result = cruise(files);
   assert.ifError(result.error);
@@ -97,4 +129,18 @@ test('dependency-cruiser pilot does not bypass existing API guards', () => {
   assert.doesNotMatch(diagnosticWorkflow, /pnpm architecture:cruise(?:\s|$)/m);
   assert.match(diagnosticWorkflow, /architecture-workspace-imports\.txt/);
   assert.doesNotMatch(diagnosticWorkflow, /architecture-cruise\.txt/);
+});
+
+test('dependency-cruiser accepts root composition and public feature contracts', () => {
+  const result = cruise({
+    'apps/api/src/api/api.module.js': "import './admin/users.js';",
+    'apps/api/src/api/admin/users.js': [
+      "import '../../modules/users/users.module.js';",
+      "import '../../modules/users/public-api.js';",
+    ].join('\n'),
+    'apps/api/src/modules/users/users.module.js': 'export const value = 1;',
+    'apps/api/src/modules/users/public-api.js': 'export const value = 2;',
+  });
+  assert.ifError(result.error);
+  assert.equal(result.status, 0, result.stdout + result.stderr);
 });
