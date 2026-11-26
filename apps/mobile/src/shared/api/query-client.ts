@@ -5,6 +5,8 @@ export const accountQueryKeys = {
   all: ['account'] as const,
   me: (userId: string) => ['account', 'me', userId] as const,
   workoutPreferences: (userId: string) => ['account', 'workout-preferences', userId] as const,
+  previousSets: (userId: string, workoutId: string, exerciseId: string) =>
+    ['account', 'previous-sets', userId, workoutId, exerciseId] as const,
   workouts: (userId: string) => ['account', 'workouts', userId] as const,
   workoutDetail: (userId: string, workoutId: string) =>
     ['account', 'workout', userId, workoutId] as const,

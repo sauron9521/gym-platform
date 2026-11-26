@@ -9,6 +9,7 @@ import {
   useWorkoutTransition,
 } from '@/features/workouts/model/workout-details-query';
 import { useCancelWorkout, useUpdateWorkoutTitle } from '@/features/workouts/model/workout-edit';
+import { usePreviousSetHints } from '@/features/workouts/model/previous-set-hints-query';
 import { WorkoutSetRow } from '@/screens/workouts/ui/workout-set-row';
 import { WorkoutDetailsScreen } from '@/screens/workouts/ui/workout-details-screen';
 
@@ -30,6 +31,9 @@ const render = (element: React.ReactElement) => nativeRender(element, { wrapper:
 vi.mock('@/features/workouts/model/workout-details-query', () => ({
   useWorkoutDetailsQuery: vi.fn(),
   useWorkoutTransition: vi.fn(),
+}));
+vi.mock('@/features/workouts/model/previous-set-hints-query', () => ({
+  usePreviousSetHints: vi.fn(() => new Map()),
 }));
 vi.mock('@/screens/workouts/ui/workout-set-row', () => ({
   WorkoutSetRow: vi.fn(() => null),
@@ -116,6 +120,67 @@ function prepareWorkout(
 describe('WorkoutDetailsScreen (real React Native renderer)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(usePreviousSetHints).mockReturnValue(new Map());
+  });
+
+  it('passes only matching strength history to pending rows', async () => {
+    prepareWorkout('IN_PROGRESS', 'PENDING');
+    const snapshot = vi.mocked(useWorkoutDetailsQuery)('workout-123');
+    if (!snapshot.data) throw new Error('Missing fixture workout');
+    const workout = snapshot.data;
+    const source = workout.exercises[0]!;
+    const exerciseId = '11111111-1111-4111-8111-111111111111';
+    const hint = { setNumber: 1, setType: 'WORKING' as const, actualReps: 8, actualWeightKg: 60 };
+    const pending = { ...source.sets[0]!, setNumber: 1, setType: 'WORKING' as const };
+    vi.mocked(useWorkoutDetailsQuery).mockReturnValue({
+      ...snapshot,
+      data: {
+        ...workout,
+        exercises: [
+          {
+            ...source,
+            exerciseId,
+            exerciseTypeSnapshot: 'STRENGTH',
+            sets: [
+              pending,
+              { ...pending, id: 'warmup', setType: 'WARMUP' },
+              { ...pending, id: 'saved', status: 'COMPLETED' },
+            ],
+          },
+          {
+            ...source,
+            id: 'cardio-exercise',
+            exerciseId,
+            exerciseTypeSnapshot: 'CARDIO',
+            sets: [{ ...pending, id: 'cardio-set' }],
+          },
+        ],
+      },
+    });
+    vi.mocked(usePreviousSetHints).mockReturnValue(
+      new Map([
+        [
+          exerciseId,
+          {
+            exerciseId,
+            workoutCompletedAt: '2026-11-24T12:00:00.000Z',
+            sets: [hint],
+          },
+        ],
+      ]),
+    );
+    const view = await render(<WorkoutDetailsScreen id="workout-123" />);
+    const row = (id: string) =>
+      vi
+        .mocked(WorkoutSetRow)
+        .mock.calls.filter(([props]) => props.set.id === id)
+        .at(-1)?.[0];
+    expect(row('set-1')?.previousHint).toEqual(hint);
+    for (const id of ['warmup', 'saved', 'cardio-set'])
+      expect(row(id)?.previousHint).toBeUndefined();
+    vi.mocked(usePreviousSetHints).mockReturnValue(new Map());
+    await view.rerender(<WorkoutDetailsScreen id="workout-123" />);
+    expect(row('set-1')?.previousHint).toBeUndefined();
   });
 
   it('requests keep-awake only for an in-progress workout with valid details', async () => {

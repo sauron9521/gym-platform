@@ -15,6 +15,7 @@ type SettingsState = {
   restSound: boolean;
   restVibration: boolean;
   keepWorkoutScreenAwake: boolean;
+  showPreviousSets: boolean;
   status: 'loading' | 'ready' | 'saving' | 'readError' | 'saveError';
   accountStatus: AccountPreferenceStatus;
 };
@@ -26,12 +27,14 @@ export type AppSettingsState = {
   setRestSound: (enabled: boolean) => Promise<void>;
   setRestVibration: (enabled: boolean) => Promise<void>;
   setKeepWorkoutScreenAwake: (enabled: boolean) => Promise<void>;
+  setShowPreviousSets: (enabled: boolean) => Promise<void>;
   reload: () => void;
   retryAccount: () => void;
   shouldAutoStartRestTimer: () => boolean;
 };
 
-type DeviceKey = 'rest-sound' | 'rest-vibration' | 'keep-workout-screen-awake';
+type DeviceKey =
+  'rest-sound' | 'rest-vibration' | 'keep-workout-screen-awake' | 'show-previous-sets';
 const preferenceKey = (accountId: string, preference: DeviceKey) =>
   `gym-platform:app-settings:v1:${accountId}:${preference}`;
 
@@ -42,6 +45,7 @@ const initial = (accountId: string | null): SettingsState => ({
   restSound: false,
   restVibration: false,
   keepWorkoutScreenAwake: false,
+  showPreviousSets: false,
   status: 'loading',
   accountStatus: 'loading',
 });
@@ -71,6 +75,7 @@ export function createAppSettingsStore(
           restSound: false,
           restVibration: false,
           keepWorkoutScreenAwake: false,
+          showPreviousSets: false,
           status: 'loading',
         },
       });
@@ -83,17 +88,19 @@ export function createAppSettingsStore(
             AsyncStorage.getItem(preferenceKey(accountId, 'rest-sound')),
             AsyncStorage.getItem(preferenceKey(accountId, 'rest-vibration')),
             AsyncStorage.getItem(preferenceKey(accountId, 'keep-workout-screen-awake')),
+            AsyncStorage.getItem(preferenceKey(accountId, 'show-previous-sets')),
           ]);
         })
         .then((values) => {
           if (!values || !active || generation !== revision) return;
-          const [sound, vibration, keepAwake] = values;
+          const [sound, vibration, keepAwake, previousSets] = values;
           set({
             settings: {
               ...get().settings,
               restSound: sound === null || sound === 'true',
               restVibration: vibration === null || vibration === 'true',
               keepWorkoutScreenAwake: keepAwake === null || keepAwake === 'true',
+              showPreviousSets: previousSets === 'true',
               status: 'ready',
             },
           });
@@ -108,7 +115,10 @@ export function createAppSettingsStore(
       preference: DeviceKey,
       value: boolean,
       changes: Partial<
-        Pick<SettingsState, 'restSound' | 'restVibration' | 'keepWorkoutScreenAwake'>
+        Pick<
+          SettingsState,
+          'restSound' | 'restVibration' | 'keepWorkoutScreenAwake' | 'showPreviousSets'
+        >
       >,
     ) => {
       if (!active || !accountId) return;
@@ -143,6 +153,8 @@ export function createAppSettingsStore(
         savePreference('keep-workout-screen-awake', keepWorkoutScreenAwake, {
           keepWorkoutScreenAwake,
         }),
+      setShowPreviousSets: (showPreviousSets) =>
+        savePreference('show-previous-sets', showPreviousSets, { showPreviousSets }),
       reload,
       retryAccount: () => runtime?.retry(),
       shouldAutoStartRestTimer: () => active && autoRestTimerEnabled(get()),

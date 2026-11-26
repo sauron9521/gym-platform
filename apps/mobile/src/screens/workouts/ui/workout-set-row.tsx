@@ -1,3 +1,5 @@
+import { useIntl } from 'react-intl';
+import type { PreviousSetHint } from '@/features/workouts/lib/previous-set-hints';
 import { Controller } from 'react-hook-form';
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
@@ -7,7 +9,33 @@ import {
 } from '@/features/workouts/model/use-workout-set-row';
 import { createThemedStyles } from '@/shared/config/theme-provider';
 
-export function WorkoutSetRow(options: WorkoutSetRowOptions) {
+function HistoricalSetHint({ hint, setId }: { hint: PreviousSetHint; setId: string }) {
+  const intl = useIntl();
+  const styles = useStyles();
+  const { actualReps, actualWeightKg } = hint;
+  const id =
+    actualReps === null
+      ? 'mobile.workout.previousSetWeight'
+      : actualWeightKg === null
+        ? 'mobile.workout.previousSetReps'
+        : 'mobile.workout.previousSet';
+  return (
+    <Text testID={`set-previous-${setId}`} style={styles.caption}>
+      {intl.formatMessage(
+        { id },
+        {
+          weight:
+            actualWeightKg === null
+              ? ''
+              : intl.formatNumber(actualWeightKg, { maximumFractionDigits: 2 }),
+          reps: actualReps === null ? '' : intl.formatNumber(actualReps),
+        },
+      )}
+    </Text>
+  );
+}
+
+export function WorkoutSetRow(options: WorkoutSetRowOptions & { previousHint?: PreviousSetHint }) {
   const styles = useStyles();
   const { set, editable, reconciling = false } = options;
   const {
@@ -68,6 +96,9 @@ export function WorkoutSetRow(options: WorkoutSetRowOptions) {
       <Text style={styles.caption}>
         План: {set.plannedReps ?? '—'} повт. · {set.plannedWeightKg ?? '—'} кг
       </Text>
+      {editable && !isSaved && options.previousHint ? (
+        <HistoricalSetHint hint={options.previousHint} setId={set.id} />
+      ) : null}
       {isSaved ? (
         <Text style={styles.caption}>
           Результат: {visibleSet.actualReps ?? '—'} повт. · {visibleSet.actualWeightKg ?? '—'} кг

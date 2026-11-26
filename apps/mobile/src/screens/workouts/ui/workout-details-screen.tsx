@@ -12,6 +12,8 @@ import {
 
 import { workoutTitleError } from '@/features/workouts/lib/workout-edit-policy';
 import { workoutStatusLabel } from '@/features/workouts/lib/workout-presentation';
+import { usePreviousSetHints } from '@/features/workouts/model/previous-set-hints-query';
+import { previousSetHint } from '@/features/workouts/lib/previous-set-hints';
 import { RestTimer } from '@/features/workouts/ui/rest-timer';
 import { useWorkoutDetails } from '../model/use-workout-details';
 import { createThemedStyles } from '@/shared/config/theme-provider';
@@ -75,6 +77,7 @@ export function WorkoutDetailsScreen({ id }: { id: string }) {
     saveTitle, confirmCancellation, runTransition, isSetActionBlocked,
     beginSetWrite, settleSetWrite, startRest,
   } = useWorkoutDetails(id);
+  const histories = usePreviousSetHints(details.isError ? undefined : workout);
 
   return (
     <ScrollView
@@ -163,6 +166,7 @@ export function WorkoutDetailsScreen({ id }: { id: string }) {
                   key={set.id}
                   workoutId={id}
                   set={set}
+                  previousHint={exercise.exerciseTypeSnapshot === 'STRENGTH' ? previousSetHint(histories.get(exercise.exerciseId), set) : undefined}
                   editable={workout.status === 'IN_PROGRESS'}
                   reconciling={reconciling}
                   actionBlocked={isSetActionBlocked(set.id)}

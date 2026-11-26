@@ -43,7 +43,14 @@ metrics; unknown/foreign IDs return the same empty result. No-store, live
 athlete capability, strict empty query and existing analytics throttle apply.
 The client must match set number AND set type, and show historical values
 separately from planned and actual inputs. No automatic form filling or writes.
-Mobile setting/UI integration is a subsequent slice.
+Mobile shows these hints only for pending strength sets in the active athlete
+workout, matching set number and type. The device-scoped, opt-in
+show-previous-sets preference defaults off and does not change account API
+preferences. The client requests at most 10 distinct strength exercises in
+workout order to leave headroom in the shared analytics throttle; no retries or
+automatic focus/reconnect refetches. Cache keys include account, workout and
+exercise. No disk history, no automatic input changes; absent/error results
+simply omit hints. Device acceptance remains a release gate.
 
 Keep statistics scoped to the authenticated principal and document precise aggregation rules in the code/tests, not in ad hoc frontend calculations.
 
