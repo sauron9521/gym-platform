@@ -17,13 +17,15 @@ import {
 } from '#src/modules/auth/public-api';
 import { PasswordResetController } from '../../controllers/password-reset.controller.js';
 import { TokensController } from '../../controllers/tokens.controller.js';
+import { EmailVerificationController } from '../../controllers/email-verification.controller.js';
 import { PublicAuthApiModule } from '../../public-auth-api.module.js';
 
 describe('PublicAuthApiModule controller registry', () => {
-  it('owns both public controllers and imports the existing AuthModule without registering it twice', () => {
+  it('owns all three public controllers and imports the existing AuthModule without registering it twice', () => {
     expect(Reflect.getMetadata(MODULE_METADATA.CONTROLLERS, PublicAuthApiModule)).toEqual([
       PasswordResetController,
       TokensController,
+      EmailVerificationController,
     ]);
     expect(Reflect.getMetadata(MODULE_METADATA.CONTROLLERS, AuthModule)).not.toContain(
       PasswordResetController,
@@ -104,6 +106,44 @@ describe('PublicAuthApiModule controller registry', () => {
       }
     },
   );
+
+  it('preserves public verification ownership, no-store, route and legacy counter', () => {
+    expect(Reflect.getMetadata(MODULE_METADATA.CONTROLLERS, AuthModule)).not.toContain(
+      EmailVerificationController,
+    );
+    expect(Reflect.getMetadata(PATH_METADATA, EmailVerificationController)).toBe('auth/email');
+    expect(Reflect.getMetadata(INTERCEPTORS_METADATA, EmailVerificationController)).toContain(
+      AuthNoStoreInterceptor,
+    );
+    expect(Object.getOwnPropertyNames(EmailVerificationController.prototype)).toEqual([
+      'constructor',
+      'verifyEmail',
+    ]);
+    const handler = Object.getOwnPropertyDescriptor(
+      EmailVerificationController.prototype,
+      'verifyEmail',
+    )?.value;
+    expect(Reflect.getMetadata(METHOD_METADATA, handler)).toBe(RequestMethod.POST);
+    expect(Reflect.getMetadata(PATH_METADATA, handler)).toBe('verify');
+    expect(Reflect.getMetadata(HTTP_CODE_METADATA, handler)).toBe(200);
+    expect(Reflect.getMetadata('THROTTLER:LIMITdefault', handler)).toBe(8);
+    expect(Reflect.getMetadata('THROTTLER:TTLdefault', handler)).toBe(60_000);
+    const key = Reflect.getMetadata(
+      'THROTTLER:KEY_GENERATORdefault',
+      handler,
+    ) as ThrottlerGenerateKeyFunction;
+    const moved = {
+      getClass: () => class RenamedController {},
+      getHandler: () => function renamedHandler() {},
+    } as unknown as ExecutionContext;
+    for (const tracker of ['127.0.0.1', '2001:db8::1']) {
+      expect(key(moved, tracker, 'default')).toBe(
+        createHash('sha256')
+          .update(`EmailVerificationController-verifyEmail-default-${tracker}`)
+          .digest('hex'),
+      );
+    }
+  });
 
   it('retains the secondary account guard only on forgot', () => {
     const forgot = Object.getOwnPropertyDescriptor(

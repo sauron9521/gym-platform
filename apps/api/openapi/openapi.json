@@ -202,49 +202,6 @@
         "tags": ["Authentication"]
       }
     },
-    "/auth/email/verify": {
-      "post": {
-        "operationId": "EmailVerificationController_verifyEmail",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "token": {
-                    "type": "string",
-                    "minLength": 1,
-                    "writeOnly": true
-                  }
-                },
-                "required": ["token"],
-                "additionalProperties": false
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "tags": ["EmailVerification"]
-      }
-    },
-    "/auth/email/verification": {
-      "post": {
-        "operationId": "EmailVerificationController_resend",
-        "parameters": [],
-        "responses": {
-          "202": {
-            "description": ""
-          }
-        },
-        "tags": ["EmailVerification"]
-      }
-    },
     "/auth/admin-session": {
       "get": {
         "operationId": "SessionsController_adminSession",
@@ -1227,6 +1184,18 @@
         "tags": ["Users"]
       }
     },
+    "/auth/email/verification": {
+      "post": {
+        "operationId": "EmailVerificationController_resend",
+        "parameters": [],
+        "responses": {
+          "202": {
+            "description": ""
+          }
+        },
+        "tags": ["EmailVerification"]
+      }
+    },
     "/avatars/{key}": {
       "get": {
         "operationId": "AvatarPublicController_get",
@@ -1468,6 +1437,37 @@
           }
         },
         "tags": ["Tokens"]
+      }
+    },
+    "/auth/email/verify": {
+      "post": {
+        "operationId": "EmailVerificationController_verifyEmail",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "token": {
+                    "type": "string",
+                    "minLength": 1,
+                    "writeOnly": true
+                  }
+                },
+                "required": ["token"],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": ["EmailVerification"]
       }
     },
     "/users/me/notification-settings": {
