@@ -6,7 +6,6 @@ import { UsersModule } from '#src/modules/users/users.module';
 import { AuthController } from './controllers/auth.controller.js';
 import { EmailVerificationController } from './controllers/email-verification.controller.js';
 import { SessionsController } from './controllers/sessions.controller.js';
-import { TokensController } from './controllers/tokens.controller.js';
 
 import { EmailVerificationMailer, PasswordResetMailer } from './mailers/index.js';
 import { JwtAuth, SessionAuth } from './providers/index.js';
@@ -28,7 +27,7 @@ import { PrismaMfaStore, PrismaSessionStore, PrismaTokenStore } from './stores/i
 
 @Module({
   imports: [UsersModule, RateLimitStorageModule],
-  controllers: [AuthController, EmailVerificationController, TokensController, SessionsController],
+  controllers: [AuthController, EmailVerificationController, SessionsController],
   providers: [
     AdminSessionPurposeGuard,
     AdminOriginGuard,

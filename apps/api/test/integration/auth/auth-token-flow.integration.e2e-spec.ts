@@ -1,11 +1,22 @@
 import { randomUUID } from 'node:crypto';
 import type { INestApplication } from '@nestjs/common';
 import { StandardSchemaValidationPipe } from '@nestjs/common';
-import { PasswordHasher } from '@nestjs/authentication';
+import { PasswordHasher, TokenService } from '@nestjs/authentication';
+import { ModulesContainer } from '@nestjs/core';
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { PrismaService } from '../../../src/infra/database/index.js';
+import { PublicAuthApiModule } from '../../../src/api/public/auth/public-auth-api.module.js';
+import { TokensController } from '../../../src/api/public/auth/controllers/tokens.controller.js';
+import { AuthModule } from '../../../src/modules/auth/auth.module.js';
+import { CredentialsService } from '../../../src/modules/auth/public-api.js';
+import {
+  PrismaSessionStore,
+  PrismaTokenStore,
+  PrismaMfaStore,
+} from '../../../src/modules/auth/stores/index.js';
+import { TokenCleanupService } from '../../../src/modules/auth/services/token-cleanup.service.js';
 import { useTestDatabase } from '../../utility/test-db-helper.js';
 import { ThrottlerGuard } from '@nestjs/throttler';
 
@@ -113,6 +124,31 @@ describe('Auth token flow (HTTP + PostgreSQL)', () => {
       }
     }
   }, 20_000);
+
+  it('registers the public token controller once with the existing Auth and token providers', () => {
+    const modules = [...app.get(ModulesContainer).values()];
+    expect(
+      modules
+        .filter((module) => module.controllers.has(TokensController))
+        .map((module) => module.metatype),
+    ).toEqual([PublicAuthApiModule]);
+    expect(modules.filter((module) => module.metatype === AuthModule)).toHaveLength(1);
+    for (const provider of [
+      CredentialsService,
+      PrismaSessionStore,
+      PrismaTokenStore,
+      PrismaMfaStore,
+      TokenCleanupService,
+    ]) {
+      expect(
+        modules.filter((module) => module.providers.has(provider)).map((module) => module.metatype),
+      ).toEqual([AuthModule]);
+    }
+    expect(modules.filter((module) => module.providers.has(TokenService))).toHaveLength(1);
+    expect(app.select(PublicAuthApiModule).get(TokensController, { strict: true })).toBeInstanceOf(
+      TokensController,
+    );
+  });
 
   it('rotates a refresh token and revokes its whole family when the old token is reused', async () => {
     const initial = await issueTokenPair();

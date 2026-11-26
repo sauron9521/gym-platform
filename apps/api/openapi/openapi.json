@@ -245,145 +245,6 @@
         "tags": ["EmailVerification"]
       }
     },
-    "/auth/token": {
-      "post": {
-        "operationId": "TokensController_issue",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "email": {
-                    "type": "string",
-                    "format": "email",
-                    "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
-                  },
-                  "password": {
-                    "type": "string",
-                    "minLength": 1,
-                    "pattern": "\\S",
-                    "writeOnly": true
-                  }
-                },
-                "required": ["email", "password"],
-                "additionalProperties": false
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "accessToken": {
-                      "type": "string"
-                    },
-                    "refreshToken": {
-                      "type": "string"
-                    },
-                    "expiresIn": {
-                      "type": "integer"
-                    }
-                  },
-                  "required": ["accessToken", "refreshToken", "expiresIn"],
-                  "additionalProperties": false
-                }
-              }
-            }
-          }
-        },
-        "tags": ["Tokens"]
-      }
-    },
-    "/auth/token/refresh": {
-      "post": {
-        "operationId": "TokensController_refresh",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "refreshToken": {
-                    "type": "string",
-                    "minLength": 1,
-                    "writeOnly": true
-                  }
-                },
-                "required": ["refreshToken"],
-                "additionalProperties": false
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "accessToken": {
-                      "type": "string"
-                    },
-                    "refreshToken": {
-                      "type": "string"
-                    },
-                    "expiresIn": {
-                      "type": "integer"
-                    }
-                  },
-                  "required": ["accessToken", "refreshToken", "expiresIn"],
-                  "additionalProperties": false
-                }
-              }
-            }
-          }
-        },
-        "tags": ["Tokens"]
-      }
-    },
-    "/auth/token/revoke": {
-      "post": {
-        "operationId": "TokensController_revoke",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "refreshToken": {
-                    "type": "string",
-                    "minLength": 1,
-                    "writeOnly": true
-                  }
-                },
-                "required": ["refreshToken"],
-                "additionalProperties": false
-              }
-            }
-          }
-        },
-        "responses": {
-          "204": {
-            "description": ""
-          }
-        },
-        "tags": ["Tokens"]
-      }
-    },
     "/auth/admin-session": {
       "get": {
         "operationId": "SessionsController_adminSession",
@@ -1468,6 +1329,145 @@
           }
         },
         "tags": ["PasswordReset"]
+      }
+    },
+    "/auth/token": {
+      "post": {
+        "operationId": "TokensController_issue",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+                  },
+                  "password": {
+                    "type": "string",
+                    "minLength": 1,
+                    "pattern": "\\S",
+                    "writeOnly": true
+                  }
+                },
+                "required": ["email", "password"],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "accessToken": {
+                      "type": "string"
+                    },
+                    "refreshToken": {
+                      "type": "string"
+                    },
+                    "expiresIn": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": ["accessToken", "refreshToken", "expiresIn"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "tags": ["Tokens"]
+      }
+    },
+    "/auth/token/refresh": {
+      "post": {
+        "operationId": "TokensController_refresh",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "refreshToken": {
+                    "type": "string",
+                    "minLength": 1,
+                    "writeOnly": true
+                  }
+                },
+                "required": ["refreshToken"],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "accessToken": {
+                      "type": "string"
+                    },
+                    "refreshToken": {
+                      "type": "string"
+                    },
+                    "expiresIn": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": ["accessToken", "refreshToken", "expiresIn"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "tags": ["Tokens"]
+      }
+    },
+    "/auth/token/revoke": {
+      "post": {
+        "operationId": "TokensController_revoke",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "refreshToken": {
+                    "type": "string",
+                    "minLength": 1,
+                    "writeOnly": true
+                  }
+                },
+                "required": ["refreshToken"],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "tags": ["Tokens"]
       }
     },
     "/users/me/notification-settings": {

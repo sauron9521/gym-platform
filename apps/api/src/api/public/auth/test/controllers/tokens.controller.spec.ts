@@ -2,7 +2,7 @@ import type { TokenService } from '@nestjs/authentication';
 import { UnauthorizedException } from '@nestjs/common';
 
 import { TokensController } from '../../controllers/tokens.controller.js';
-import type { CredentialsService } from '../../services/credentials.service.js';
+import type { CredentialsService } from '#src/modules/auth/public-api';
 
 describe('TokensController', () => {
   const credentials = { verify: vi.fn() };
