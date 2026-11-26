@@ -3156,6 +3156,355 @@
         "tags": ["Body Measurements"]
       }
     },
+    "/workout-analytics/summary": {
+      "get": {
+        "operationId": "WorkoutAnalyticsController_summary",
+        "parameters": [
+          {
+            "name": "range",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": "30d",
+              "type": "string",
+              "enum": ["7d", "30d", "90d"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "range": {
+                      "type": "string",
+                      "enum": ["7d", "30d", "90d"]
+                    },
+                    "from": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "asOf": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "workoutCount": {
+                      "type": "integer"
+                    },
+                    "activeDays": {
+                      "type": "integer"
+                    },
+                    "completedSets": {
+                      "type": "integer"
+                    },
+                    "strengthVolumeKg": {
+                      "type": "number"
+                    },
+                    "daily": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "date": {
+                            "type": "string",
+                            "format": "date"
+                          },
+                          "workoutCount": {
+                            "type": "integer"
+                          },
+                          "completedSets": {
+                            "type": "integer"
+                          },
+                          "strengthVolumeKg": {
+                            "type": "number"
+                          }
+                        },
+                        "required": ["date", "workoutCount", "completedSets", "strengthVolumeKg"],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "range",
+                    "from",
+                    "asOf",
+                    "workoutCount",
+                    "activeDays",
+                    "completedSets",
+                    "strengthVolumeKg",
+                    "daily"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "accessToken": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "tags": ["Workout Analytics"]
+      }
+    },
+    "/workout-analytics/personal-records": {
+      "get": {
+        "operationId": "WorkoutAnalyticsController_personalRecords",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "asOf": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "exerciseCount": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": ["asOf", "exerciseCount"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "accessToken": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "tags": ["Workout Analytics"]
+      }
+    },
+    "/workout-analytics/exercises/{exerciseId}/previous-sets": {
+      "get": {
+        "operationId": "WorkoutAnalyticsController_previousSets",
+        "parameters": [
+          {
+            "name": "exerciseId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "exerciseId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "workoutCompletedAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "nullable": true
+                    },
+                    "sets": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "setNumber": {
+                            "type": "integer"
+                          },
+                          "setType": {
+                            "type": "string",
+                            "enum": ["WARMUP", "WORKING", "DROP_SET", "AMRAP"]
+                          },
+                          "actualReps": {
+                            "type": "integer",
+                            "nullable": true
+                          },
+                          "actualWeightKg": {
+                            "type": "number",
+                            "nullable": true
+                          }
+                        },
+                        "required": ["setNumber", "setType", "actualReps", "actualWeightKg"],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": ["exerciseId", "workoutCompletedAt", "sets"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "accessToken": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "tags": ["Workout Analytics"]
+      }
+    },
+    "/workout-analytics/exercises/{exerciseId}": {
+      "get": {
+        "operationId": "WorkoutAnalyticsController_exercise",
+        "parameters": [
+          {
+            "name": "exerciseId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          },
+          {
+            "name": "range",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": "30d",
+              "type": "string",
+              "enum": ["7d", "30d", "90d"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "range": {
+                      "type": "string",
+                      "enum": ["7d", "30d", "90d"]
+                    },
+                    "from": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "asOf": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "exerciseId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "name": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "workoutCount": {
+                      "type": "integer"
+                    },
+                    "completedSets": {
+                      "type": "integer"
+                    },
+                    "strengthReps": {
+                      "type": "integer"
+                    },
+                    "strengthVolumeKg": {
+                      "type": "number"
+                    },
+                    "bestWeightKg": {
+                      "type": "number",
+                      "nullable": true
+                    },
+                    "daily": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "date": {
+                            "type": "string",
+                            "format": "date"
+                          },
+                          "workoutCount": {
+                            "type": "integer"
+                          },
+                          "completedSets": {
+                            "type": "integer"
+                          },
+                          "strengthVolumeKg": {
+                            "type": "number"
+                          },
+                          "strengthReps": {
+                            "type": "integer"
+                          },
+                          "bestWeightKg": {
+                            "type": "number",
+                            "nullable": true
+                          }
+                        },
+                        "required": [
+                          "date",
+                          "workoutCount",
+                          "completedSets",
+                          "strengthVolumeKg",
+                          "strengthReps",
+                          "bestWeightKg"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "range",
+                    "from",
+                    "asOf",
+                    "exerciseId",
+                    "name",
+                    "workoutCount",
+                    "completedSets",
+                    "strengthReps",
+                    "strengthVolumeKg",
+                    "bestWeightKg",
+                    "daily"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "accessToken": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "tags": ["Workout Analytics"]
+      }
+    },
     "/exercises": {
       "get": {
         "operationId": "ExercisesController_findMany",
@@ -9425,355 +9774,6 @@
           }
         ],
         "tags": ["Workouts"]
-      }
-    },
-    "/workout-analytics/summary": {
-      "get": {
-        "operationId": "WorkoutAnalyticsController_summary",
-        "parameters": [
-          {
-            "name": "range",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "default": "30d",
-              "type": "string",
-              "enum": ["7d", "30d", "90d"]
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "range": {
-                      "type": "string",
-                      "enum": ["7d", "30d", "90d"]
-                    },
-                    "from": {
-                      "type": "string",
-                      "format": "date-time"
-                    },
-                    "asOf": {
-                      "type": "string",
-                      "format": "date-time"
-                    },
-                    "workoutCount": {
-                      "type": "integer"
-                    },
-                    "activeDays": {
-                      "type": "integer"
-                    },
-                    "completedSets": {
-                      "type": "integer"
-                    },
-                    "strengthVolumeKg": {
-                      "type": "number"
-                    },
-                    "daily": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "date": {
-                            "type": "string",
-                            "format": "date"
-                          },
-                          "workoutCount": {
-                            "type": "integer"
-                          },
-                          "completedSets": {
-                            "type": "integer"
-                          },
-                          "strengthVolumeKg": {
-                            "type": "number"
-                          }
-                        },
-                        "required": ["date", "workoutCount", "completedSets", "strengthVolumeKg"],
-                        "additionalProperties": false
-                      }
-                    }
-                  },
-                  "required": [
-                    "range",
-                    "from",
-                    "asOf",
-                    "workoutCount",
-                    "activeDays",
-                    "completedSets",
-                    "strengthVolumeKg",
-                    "daily"
-                  ],
-                  "additionalProperties": false
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "accessToken": []
-          },
-          {
-            "sessionCookie": []
-          }
-        ],
-        "tags": ["Workout Analytics"]
-      }
-    },
-    "/workout-analytics/personal-records": {
-      "get": {
-        "operationId": "WorkoutAnalyticsController_personalRecords",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "asOf": {
-                      "type": "string",
-                      "format": "date-time"
-                    },
-                    "exerciseCount": {
-                      "type": "integer"
-                    }
-                  },
-                  "required": ["asOf", "exerciseCount"],
-                  "additionalProperties": false
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "accessToken": []
-          },
-          {
-            "sessionCookie": []
-          }
-        ],
-        "tags": ["Workout Analytics"]
-      }
-    },
-    "/workout-analytics/exercises/{exerciseId}/previous-sets": {
-      "get": {
-        "operationId": "WorkoutAnalyticsController_previousSets",
-        "parameters": [
-          {
-            "name": "exerciseId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "exerciseId": {
-                      "type": "string",
-                      "format": "uuid"
-                    },
-                    "workoutCompletedAt": {
-                      "type": "string",
-                      "format": "date-time",
-                      "nullable": true
-                    },
-                    "sets": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "setNumber": {
-                            "type": "integer"
-                          },
-                          "setType": {
-                            "type": "string",
-                            "enum": ["WARMUP", "WORKING", "DROP_SET", "AMRAP"]
-                          },
-                          "actualReps": {
-                            "type": "integer",
-                            "nullable": true
-                          },
-                          "actualWeightKg": {
-                            "type": "number",
-                            "nullable": true
-                          }
-                        },
-                        "required": ["setNumber", "setType", "actualReps", "actualWeightKg"],
-                        "additionalProperties": false
-                      }
-                    }
-                  },
-                  "required": ["exerciseId", "workoutCompletedAt", "sets"],
-                  "additionalProperties": false
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "accessToken": []
-          },
-          {
-            "sessionCookie": []
-          }
-        ],
-        "tags": ["Workout Analytics"]
-      }
-    },
-    "/workout-analytics/exercises/{exerciseId}": {
-      "get": {
-        "operationId": "WorkoutAnalyticsController_exercise",
-        "parameters": [
-          {
-            "name": "exerciseId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-            }
-          },
-          {
-            "name": "range",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "default": "30d",
-              "type": "string",
-              "enum": ["7d", "30d", "90d"]
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "range": {
-                      "type": "string",
-                      "enum": ["7d", "30d", "90d"]
-                    },
-                    "from": {
-                      "type": "string",
-                      "format": "date-time"
-                    },
-                    "asOf": {
-                      "type": "string",
-                      "format": "date-time"
-                    },
-                    "exerciseId": {
-                      "type": "string",
-                      "format": "uuid"
-                    },
-                    "name": {
-                      "type": "string",
-                      "nullable": true
-                    },
-                    "workoutCount": {
-                      "type": "integer"
-                    },
-                    "completedSets": {
-                      "type": "integer"
-                    },
-                    "strengthReps": {
-                      "type": "integer"
-                    },
-                    "strengthVolumeKg": {
-                      "type": "number"
-                    },
-                    "bestWeightKg": {
-                      "type": "number",
-                      "nullable": true
-                    },
-                    "daily": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "date": {
-                            "type": "string",
-                            "format": "date"
-                          },
-                          "workoutCount": {
-                            "type": "integer"
-                          },
-                          "completedSets": {
-                            "type": "integer"
-                          },
-                          "strengthVolumeKg": {
-                            "type": "number"
-                          },
-                          "strengthReps": {
-                            "type": "integer"
-                          },
-                          "bestWeightKg": {
-                            "type": "number",
-                            "nullable": true
-                          }
-                        },
-                        "required": [
-                          "date",
-                          "workoutCount",
-                          "completedSets",
-                          "strengthVolumeKg",
-                          "strengthReps",
-                          "bestWeightKg"
-                        ],
-                        "additionalProperties": false
-                      }
-                    }
-                  },
-                  "required": [
-                    "range",
-                    "from",
-                    "asOf",
-                    "exerciseId",
-                    "name",
-                    "workoutCount",
-                    "completedSets",
-                    "strengthReps",
-                    "strengthVolumeKg",
-                    "bestWeightKg",
-                    "daily"
-                  ],
-                  "additionalProperties": false
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "accessToken": []
-          },
-          {
-            "sessionCookie": []
-          }
-        ],
-        "tags": ["Workout Analytics"]
       }
     },
     "/training-programs/assignments": {
