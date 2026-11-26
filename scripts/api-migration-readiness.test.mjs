@@ -14,6 +14,7 @@ import {
   STAGING_BLOCKERS,
   verifySourceInventory,
   validateTestRelocations,
+  validateSourceRelocations,
 } from './api-migration-readiness.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
@@ -98,6 +99,33 @@ test('legacy path relocation map validates test-only destinations without changi
     assert.throws(() => validateTestRelocations(invalid, originalPaths));
   }
   assert.throws(() => validateTestRelocations([], originalPaths));
+});
+
+test('source relocation map permits only known feature controller paths and matching audience paths', () => {
+  const originalPaths = new Set(inventory.files.map((item) => item.path));
+  const controller = 'src/modules/users/controllers/users.controller.ts';
+  const spec = 'src/modules/users/test/controllers/users.controller.spec.ts';
+  const valid = {
+    [controller]: 'src/api/shared/users/controllers/users.controller.ts',
+    [spec]: 'src/api/shared/users/test/controllers/users.controller.spec.ts',
+  };
+  assert.deepEqual(validateSourceRelocations(valid, originalPaths), valid);
+  for (const invalid of [
+    { [controller]: 'src/api/shared/auth/controllers/users.controller.ts' },
+    { [controller]: 'src/api/shared/users/controllers/other.controller.ts' },
+    { [controller]: 'src/api/shared/users/test/controllers/users.controller.ts' },
+    { [controller]: 'src/api/shared/users/controllers/../users.controller.ts' },
+    { [controller]: controller },
+    { [controller]: 'test/e2e/users/users.e2e-spec.ts' },
+    {
+      'src/modules/users/controllers/missing.controller.ts':
+        'src/api/shared/users/controllers/missing.controller.ts',
+    },
+    { [controller]: 'src/api/unknown/users/controllers/users.controller.ts' },
+  ]) {
+    assert.throws(() => validateSourceRelocations(invalid, originalPaths));
+  }
+  assert.throws(() => validateSourceRelocations([], originalPaths));
 });
 
 test('required infrastructure is checked and staging omissions are explicit', () => {

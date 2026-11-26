@@ -5,11 +5,17 @@ import { StandardSchemaValidationPipe } from '@nestjs/common';
 import { PasswordHasher } from '@nestjs/authentication';
 import { ConfigModule } from '@nestjs/config';
 import { Test } from '@nestjs/testing';
+import { ModulesContainer } from '@nestjs/core';
 import { ThrottlerGuard } from '@nestjs/throttler';
 import request from 'supertest';
 import sharp from 'sharp';
 
 import { AppModule } from '../../../src/app.module.js';
+import { SharedUsersApiModule } from '../../../src/api/shared/users/shared-users-api.module.js';
+import { UsersController } from '../../../src/api/shared/users/controllers/users.controller.js';
+import { UsersModule } from '../../../src/modules/users/users.module.js';
+import { AvatarSelfFacade } from '../../../src/modules/users/public-api.js';
+import { AvatarOrphanCleanupService } from '../../../src/modules/users/avatar/avatar-orphan-cleanup.service.js';
 import { PrismaService } from '../../../src/infra/database/index.js';
 import { useTestDatabase } from '../../utility/test-db-helper.js';
 
@@ -92,6 +98,27 @@ describe('Users /me (HTTP + PostgreSQL)', () => {
     otherCookie = await login(otherEmail);
     adminCookie = await login(adminEmail);
   }, 30_000);
+
+  it('registers the shared controller once and keeps the Users and avatar cleanup providers singleton', () => {
+    const modules = [...app.get(ModulesContainer).values()];
+    expect(
+      modules
+        .filter((module) => module.controllers.has(UsersController))
+        .map((module) => module.metatype),
+    ).toEqual([SharedUsersApiModule]);
+    expect(modules.filter((module) => module.metatype === UsersModule)).toHaveLength(1);
+    expect(
+      modules
+        .filter((module) => module.providers.has(AvatarOrphanCleanupService))
+        .map((module) => module.metatype),
+    ).toEqual([UsersModule]);
+    expect(app.select(UsersModule).get(AvatarSelfFacade, { strict: true })).toBeInstanceOf(
+      AvatarSelfFacade,
+    );
+    expect(app.select(SharedUsersApiModule).get(UsersController, { strict: true })).toBeInstanceOf(
+      UsersController,
+    );
+  });
 
   afterAll(async () => {
     try {

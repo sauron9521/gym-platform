@@ -6,7 +6,7 @@ import { ExercisesController } from '#src/modules/exercises/controllers/exercise
 import { WorkoutsController } from '#src/modules/workouts/controllers/workouts.controller';
 import { WorkoutAnalyticsController } from '#src/modules/workout-analytics/controllers/workout-analytics.controller';
 import { AuthController } from '#src/modules/auth/controllers/auth.controller';
-import { UsersController } from '#src/modules/users/controllers/users.controller';
+import { UsersController } from '#src/api/shared/users/controllers/users.controller';
 import { TrainerApplicationsController } from '#src/modules/trainer-onboarding/controllers/trainer-applications.controller';
 import { TrainerReviewController } from '#src/modules/trainer-onboarding/controllers/trainer-review.controller';
 import { TrainerAthletesController } from '#src/modules/trainer-athletes/controllers/trainer-athletes.controller';

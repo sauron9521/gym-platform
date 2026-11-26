@@ -1,0 +1,4 @@
+{
+  "src/modules/users/controllers/users.controller.ts": "src/api/shared/users/controllers/users.controller.ts",
+  "src/modules/users/test/controllers/users.controller.spec.ts": "src/api/shared/users/test/controllers/users.controller.spec.ts"
+}

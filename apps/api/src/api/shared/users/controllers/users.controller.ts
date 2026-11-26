@@ -22,22 +22,20 @@ import {
 } from '@nestjs/swagger';
 import { restDurationPresets } from '@gym/domain';
 import { RateLimit } from '#src/common/rate-limit/rate-limit.policies';
-import { AvatarService } from '../avatar/avatar.service.js';
-import type { AvatarUploadFile } from '../avatar/avatar-validation.js';
-import { MAX_AVATAR_SIZE } from '../avatar/avatar-validation.js';
 import { Authenticate, CurrentUser } from '@nestjs/authentication';
 
-import { UsersService } from '../services/users.service.js';
-import { type UpdateMyProfileDto, updateMyProfileSchema } from '../dto/update-my-profile.dto.js';
 import {
-  type UpdateMyPreferencesDto,
+  AvatarSelfFacade,
+  MAX_AVATAR_SIZE,
+  UsersService,
+  updateMyProfileSchema,
   updateMyPreferencesSchema,
-} from '../dto/update-my-preferences.dto.js';
-
-import {
-  type UpdateMyWorkoutPreferencesDto,
   updateMyWorkoutPreferencesSchema,
-} from '../dto/update-my-workout-preferences.dto.js';
+  type AvatarUploadFile,
+  type UpdateMyProfileDto,
+  type UpdateMyPreferencesDto,
+  type UpdateMyWorkoutPreferencesDto,
+} from '#src/modules/users/public-api';
 
 type UserActor = { id: string };
 
@@ -66,7 +64,7 @@ const workoutPreferencesResponse = {
 export class UsersController {
   constructor(
     private readonly usersService: UsersService,
-    private readonly avatarService: AvatarService,
+    private readonly avatarService: AvatarSelfFacade,
   ) {}
 
   @Get('me/capabilities')

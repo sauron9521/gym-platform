@@ -110,6 +110,41 @@ export function validateTestRelocations(relocations, originalPaths) {
   return relocations;
 }
 
+// Source relocations are separate from historical E2E relocations. Preserve
+// feature ownership and filenames while allowing reviewed audience adapters.
+export function validateSourceRelocations(relocations, originalPaths) {
+  if (!relocations || typeof relocations !== 'object' || Array.isArray(relocations)) {
+    throw new Error('Invalid source relocation map');
+  }
+  const destinations = new Set();
+  for (const [legacyPath, currentPath] of Object.entries(relocations)) {
+    const legacy = /^src\/modules\/([a-z-]+)\/((?:test\/)?controllers\/[a-z0-9.-]+\.ts)$/.exec(
+      legacyPath,
+    );
+    const current =
+      typeof currentPath === 'string'
+        ? /^src\/api\/(?:public|shared|athlete|trainer|admin)\/([a-z-]+)\/((?:test\/)?controllers\/[a-z0-9.-]+\.ts)$/.exec(
+            currentPath,
+          )
+        : null;
+    if (
+      !safeInventoryPath(legacyPath) ||
+      !safeInventoryPath(currentPath) ||
+      !legacy ||
+      !current ||
+      legacy[1] !== current[1] ||
+      legacy[2] !== current[2] ||
+      !originalPaths.has(legacyPath) ||
+      originalPaths.has(currentPath) ||
+      destinations.has(currentPath)
+    ) {
+      throw new Error('Invalid or duplicate source relocation');
+    }
+    destinations.add(currentPath);
+  }
+  return relocations;
+}
+
 export function verifySourceInventory(inventory, checkoutRoot) {
   if (
     !inventory ||
@@ -122,11 +157,21 @@ export function verifySourceInventory(inventory, checkoutRoot) {
     throw new Error('Invalid migration inventory provenance');
   }
 
-  const relocationFile = join(checkoutRoot, 'apps/api/test/relocations.json');
-  const relocations = validateTestRelocations(
-    existsSync(relocationFile) ? JSON.parse(readFileSync(relocationFile, 'utf8')) : {},
-    new Set(inventory.files.map((item) => item.path)),
-  );
+  const originalPaths = new Set(inventory.files.map((item) => item.path));
+  const testRelocationFile = join(checkoutRoot, 'apps/api/test/relocations.json');
+  const sourceRelocationFile = join(checkoutRoot, 'apps/api/migration-source-relocations.json');
+  const relocations = {
+    ...validateTestRelocations(
+      existsSync(testRelocationFile) ? JSON.parse(readFileSync(testRelocationFile, 'utf8')) : {},
+      originalPaths,
+    ),
+    ...validateSourceRelocations(
+      existsSync(sourceRelocationFile)
+        ? JSON.parse(readFileSync(sourceRelocationFile, 'utf8'))
+        : {},
+      originalPaths,
+    ),
+  };
 
   const encountered = new Set();
   const counters = {
@@ -153,7 +198,7 @@ export function verifySourceInventory(inventory, checkoutRoot) {
       throw new Error('Source or test file missing: ' + item.path + ' -> ' + currentPath);
     }
     if (currentPath !== item.path && regularFile(join(checkoutRoot, 'apps/api', item.path))) {
-      throw new Error('Legacy test unexpectedly exists at both paths: ' + item.path);
+      throw new Error('Legacy file unexpectedly exists at both paths: ' + item.path);
     }
 
     const isSource = item.path.startsWith('src/');
