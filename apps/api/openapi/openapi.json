@@ -829,272 +829,6 @@
         "tags": ["Trainer moderation"]
       }
     },
-    "/trainer-applications/me": {
-      "get": {
-        "operationId": "TrainerApplicationsController_findMine",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "application": {
-                      "type": "object",
-                      "properties": {
-                        "id": {
-                          "type": "string",
-                          "format": "uuid"
-                        },
-                        "status": {
-                          "type": "string",
-                          "enum": ["PENDING", "APPROVED", "REJECTED", "REVOKED"]
-                        },
-                        "applicantNote": {
-                          "type": "string",
-                          "nullable": true
-                        },
-                        "reviewReason": {
-                          "type": "string",
-                          "nullable": true
-                        },
-                        "reviewedAt": {
-                          "type": "string",
-                          "format": "date-time",
-                          "nullable": true
-                        },
-                        "revokedAt": {
-                          "type": "string",
-                          "format": "date-time",
-                          "nullable": true
-                        },
-                        "createdAt": {
-                          "type": "string",
-                          "format": "date-time"
-                        },
-                        "updatedAt": {
-                          "type": "string",
-                          "format": "date-time"
-                        }
-                      },
-                      "required": [
-                        "id",
-                        "status",
-                        "applicantNote",
-                        "reviewReason",
-                        "reviewedAt",
-                        "revokedAt",
-                        "createdAt",
-                        "updatedAt"
-                      ],
-                      "additionalProperties": false,
-                      "nullable": true
-                    }
-                  },
-                  "required": ["application"],
-                  "additionalProperties": false
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "sessionCookie": []
-          },
-          {
-            "accessToken": []
-          }
-        ],
-        "tags": ["Trainer applications"]
-      },
-      "patch": {
-        "operationId": "TrainerApplicationsController_updateMine",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "applicantNote": {
-                    "type": "string",
-                    "minLength": 20,
-                    "maxLength": 1000
-                  }
-                },
-                "required": ["applicantNote"],
-                "additionalProperties": false
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "id": {
-                      "type": "string",
-                      "format": "uuid"
-                    },
-                    "status": {
-                      "type": "string",
-                      "enum": ["PENDING", "APPROVED", "REJECTED", "REVOKED"]
-                    },
-                    "applicantNote": {
-                      "type": "string",
-                      "nullable": true
-                    },
-                    "reviewReason": {
-                      "type": "string",
-                      "nullable": true
-                    },
-                    "reviewedAt": {
-                      "type": "string",
-                      "format": "date-time",
-                      "nullable": true
-                    },
-                    "revokedAt": {
-                      "type": "string",
-                      "format": "date-time",
-                      "nullable": true
-                    },
-                    "createdAt": {
-                      "type": "string",
-                      "format": "date-time"
-                    },
-                    "updatedAt": {
-                      "type": "string",
-                      "format": "date-time"
-                    }
-                  },
-                  "required": [
-                    "id",
-                    "status",
-                    "applicantNote",
-                    "reviewReason",
-                    "reviewedAt",
-                    "revokedAt",
-                    "createdAt",
-                    "updatedAt"
-                  ],
-                  "additionalProperties": false
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "sessionCookie": []
-          },
-          {
-            "accessToken": []
-          }
-        ],
-        "tags": ["Trainer applications"]
-      }
-    },
-    "/trainer-applications": {
-      "post": {
-        "operationId": "TrainerApplicationsController_submit",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "applicantNote": {
-                    "type": "string",
-                    "minLength": 20,
-                    "maxLength": 1000
-                  }
-                },
-                "required": ["applicantNote"],
-                "additionalProperties": false
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "id": {
-                      "type": "string",
-                      "format": "uuid"
-                    },
-                    "status": {
-                      "type": "string",
-                      "enum": ["PENDING", "APPROVED", "REJECTED", "REVOKED"]
-                    },
-                    "applicantNote": {
-                      "type": "string",
-                      "nullable": true
-                    },
-                    "reviewReason": {
-                      "type": "string",
-                      "nullable": true
-                    },
-                    "reviewedAt": {
-                      "type": "string",
-                      "format": "date-time",
-                      "nullable": true
-                    },
-                    "revokedAt": {
-                      "type": "string",
-                      "format": "date-time",
-                      "nullable": true
-                    },
-                    "createdAt": {
-                      "type": "string",
-                      "format": "date-time"
-                    },
-                    "updatedAt": {
-                      "type": "string",
-                      "format": "date-time"
-                    }
-                  },
-                  "required": [
-                    "id",
-                    "status",
-                    "applicantNote",
-                    "reviewReason",
-                    "reviewedAt",
-                    "revokedAt",
-                    "createdAt",
-                    "updatedAt"
-                  ],
-                  "additionalProperties": false
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "sessionCookie": []
-          },
-          {
-            "accessToken": []
-          }
-        ],
-        "tags": ["Trainer applications"]
-      }
-    },
     "/users/me/capabilities": {
       "get": {
         "operationId": "UsersController_myCapabilities",
@@ -1763,6 +1497,272 @@
           }
         },
         "tags": ["Sessions"]
+      }
+    },
+    "/trainer-applications/me": {
+      "get": {
+        "operationId": "TrainerApplicationsController_findMine",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "application": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": ["PENDING", "APPROVED", "REJECTED", "REVOKED"]
+                        },
+                        "applicantNote": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "reviewReason": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "reviewedAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "nullable": true
+                        },
+                        "revokedAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "nullable": true
+                        },
+                        "createdAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "updatedAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "status",
+                        "applicantNote",
+                        "reviewReason",
+                        "reviewedAt",
+                        "revokedAt",
+                        "createdAt",
+                        "updatedAt"
+                      ],
+                      "additionalProperties": false,
+                      "nullable": true
+                    }
+                  },
+                  "required": ["application"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "sessionCookie": []
+          },
+          {
+            "accessToken": []
+          }
+        ],
+        "tags": ["Trainer applications"]
+      },
+      "patch": {
+        "operationId": "TrainerApplicationsController_updateMine",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "applicantNote": {
+                    "type": "string",
+                    "minLength": 20,
+                    "maxLength": 1000
+                  }
+                },
+                "required": ["applicantNote"],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": ["PENDING", "APPROVED", "REJECTED", "REVOKED"]
+                    },
+                    "applicantNote": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "reviewReason": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "reviewedAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "nullable": true
+                    },
+                    "revokedAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "nullable": true
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "status",
+                    "applicantNote",
+                    "reviewReason",
+                    "reviewedAt",
+                    "revokedAt",
+                    "createdAt",
+                    "updatedAt"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "sessionCookie": []
+          },
+          {
+            "accessToken": []
+          }
+        ],
+        "tags": ["Trainer applications"]
+      }
+    },
+    "/trainer-applications": {
+      "post": {
+        "operationId": "TrainerApplicationsController_submit",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "applicantNote": {
+                    "type": "string",
+                    "minLength": 20,
+                    "maxLength": 1000
+                  }
+                },
+                "required": ["applicantNote"],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": ["PENDING", "APPROVED", "REJECTED", "REVOKED"]
+                    },
+                    "applicantNote": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "reviewReason": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "reviewedAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "nullable": true
+                    },
+                    "revokedAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "nullable": true
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "status",
+                    "applicantNote",
+                    "reviewReason",
+                    "reviewedAt",
+                    "revokedAt",
+                    "createdAt",
+                    "updatedAt"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "sessionCookie": []
+          },
+          {
+            "accessToken": []
+          }
+        ],
+        "tags": ["Trainer applications"]
       }
     },
     "/avatars/{key}": {

@@ -196,38 +196,6 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/trainer-applications/me': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get: operations['TrainerApplicationsController_findMine'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch: operations['TrainerApplicationsController_updateMine'];
-    trace?: never;
-  };
-  '/trainer-applications': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    post: operations['TrainerApplicationsController_submit'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
   '/users/me/capabilities': {
     parameters: {
       query?: never;
@@ -382,6 +350,38 @@ export interface paths {
     get?: never;
     put?: never;
     post: operations['SessionsController_signOutEverywhere'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/trainer-applications/me': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['TrainerApplicationsController_findMine'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch: operations['TrainerApplicationsController_updateMine'];
+    trace?: never;
+  };
+  '/trainer-applications': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['TrainerApplicationsController_submit'];
     delete?: never;
     options?: never;
     head?: never;
@@ -1771,122 +1771,6 @@ export interface operations {
       };
     };
   };
-  TrainerApplicationsController_findMine: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': {
-            application: {
-              /** Format: uuid */
-              id: string;
-              /** @enum {string} */
-              status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'REVOKED';
-              applicantNote: string | null;
-              reviewReason: string | null;
-              /** Format: date-time */
-              reviewedAt: string | null;
-              /** Format: date-time */
-              revokedAt: string | null;
-              /** Format: date-time */
-              createdAt: string;
-              /** Format: date-time */
-              updatedAt: string;
-            } | null;
-          };
-        };
-      };
-    };
-  };
-  TrainerApplicationsController_updateMine: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': {
-          applicantNote: string;
-        };
-      };
-    };
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': {
-            /** Format: uuid */
-            id: string;
-            /** @enum {string} */
-            status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'REVOKED';
-            applicantNote: string | null;
-            reviewReason: string | null;
-            /** Format: date-time */
-            reviewedAt: string | null;
-            /** Format: date-time */
-            revokedAt: string | null;
-            /** Format: date-time */
-            createdAt: string;
-            /** Format: date-time */
-            updatedAt: string;
-          };
-        };
-      };
-    };
-  };
-  TrainerApplicationsController_submit: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': {
-          applicantNote: string;
-        };
-      };
-    };
-    responses: {
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': {
-            /** Format: uuid */
-            id: string;
-            /** @enum {string} */
-            status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'REVOKED';
-            applicantNote: string | null;
-            reviewReason: string | null;
-            /** Format: date-time */
-            reviewedAt: string | null;
-            /** Format: date-time */
-            revokedAt: string | null;
-            /** Format: date-time */
-            createdAt: string;
-            /** Format: date-time */
-            updatedAt: string;
-          };
-        };
-      };
-    };
-  };
   UsersController_myCapabilities: {
     parameters: {
       query?: never;
@@ -2251,6 +2135,122 @@ export interface operations {
           [name: string]: unknown;
         };
         content?: never;
+      };
+    };
+  };
+  TrainerApplicationsController_findMine: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            application: {
+              /** Format: uuid */
+              id: string;
+              /** @enum {string} */
+              status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'REVOKED';
+              applicantNote: string | null;
+              reviewReason: string | null;
+              /** Format: date-time */
+              reviewedAt: string | null;
+              /** Format: date-time */
+              revokedAt: string | null;
+              /** Format: date-time */
+              createdAt: string;
+              /** Format: date-time */
+              updatedAt: string;
+            } | null;
+          };
+        };
+      };
+    };
+  };
+  TrainerApplicationsController_updateMine: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          applicantNote: string;
+        };
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'REVOKED';
+            applicantNote: string | null;
+            reviewReason: string | null;
+            /** Format: date-time */
+            reviewedAt: string | null;
+            /** Format: date-time */
+            revokedAt: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+          };
+        };
+      };
+    };
+  };
+  TrainerApplicationsController_submit: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          applicantNote: string;
+        };
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'REVOKED';
+            applicantNote: string | null;
+            reviewReason: string | null;
+            /** Format: date-time */
+            reviewedAt: string | null;
+            /** Format: date-time */
+            revokedAt: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+          };
+        };
       };
     };
   };
