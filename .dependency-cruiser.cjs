@@ -60,17 +60,7 @@ module.exports = {
       from: { path: '^apps/api/src/api/' },
       to: {
         path: '^apps/api/src/modules/',
-        pathNot: '^apps/api/src/modules/([^/]+)/(?:$1\\.module|public-api)\\.[cm]?[jt]s
-    // Analyze type-only imports before TypeScript compilation removes them.
-    tsPreCompilationDeps: true,
-    doNotFollow: { path: 'node_modules' },
-    // Source tests remain in scope: the legacy boundary guard scans them too.
-    exclude: {
-      path: '(^|/)(?:node_modules|\\.next|\\.expo|dist|build|coverage|generated)(/|$)',
-    },
-  },
-};
-,
+        pathNot: '^apps/api/src/modules/[^/]+/(?:[^/]+\\.module|public-api)\\.[cm]?[jt]s$',
       },
     },
     {
