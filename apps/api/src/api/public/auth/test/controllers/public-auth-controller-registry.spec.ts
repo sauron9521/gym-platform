@@ -18,14 +18,16 @@ import {
 import { PasswordResetController } from '../../controllers/password-reset.controller.js';
 import { TokensController } from '../../controllers/tokens.controller.js';
 import { EmailVerificationController } from '../../controllers/email-verification.controller.js';
+import { AuthController } from '../../controllers/auth.controller.js';
 import { PublicAuthApiModule } from '../../public-auth-api.module.js';
 
 describe('PublicAuthApiModule controller registry', () => {
-  it('owns all three public controllers and imports the existing AuthModule without registering it twice', () => {
+  it('owns all four public controllers and imports the existing AuthModule without registering it twice', () => {
     expect(Reflect.getMetadata(MODULE_METADATA.CONTROLLERS, PublicAuthApiModule)).toEqual([
       PasswordResetController,
       TokensController,
       EmailVerificationController,
+      AuthController,
     ]);
     expect(Reflect.getMetadata(MODULE_METADATA.CONTROLLERS, AuthModule)).not.toContain(
       PasswordResetController,
@@ -141,6 +143,43 @@ describe('PublicAuthApiModule controller registry', () => {
         createHash('sha256')
           .update(`EmailVerificationController-verifyEmail-default-${tracker}`)
           .digest('hex'),
+      );
+    }
+  });
+
+  it.each([
+    ['signUp', 'register', undefined],
+    ['signIn', 'login', 200],
+  ] as const)('preserves public credential operation %s', (name, path, status) => {
+    expect(Reflect.getMetadata(MODULE_METADATA.CONTROLLERS, AuthModule)).not.toContain(
+      AuthController,
+    );
+    expect(Reflect.getMetadata(PATH_METADATA, AuthController)).toBe('auth');
+    expect(Reflect.getMetadata(INTERCEPTORS_METADATA, AuthController)).toContain(
+      AuthNoStoreInterceptor,
+    );
+    expect(Object.getOwnPropertyNames(AuthController.prototype)).toEqual([
+      'constructor',
+      'signUp',
+      'signIn',
+    ]);
+    const handler = Object.getOwnPropertyDescriptor(AuthController.prototype, name)?.value;
+    expect(Reflect.getMetadata(METHOD_METADATA, handler)).toBe(RequestMethod.POST);
+    expect(Reflect.getMetadata(PATH_METADATA, handler)).toBe(path);
+    expect(Reflect.getMetadata(HTTP_CODE_METADATA, handler)).toBe(status);
+    expect(Reflect.getMetadata('THROTTLER:LIMITdefault', handler)).toBe(3);
+    expect(Reflect.getMetadata('THROTTLER:TTLdefault', handler)).toBe(60_000);
+    const generateKey = Reflect.getMetadata(
+      'THROTTLER:KEY_GENERATORdefault',
+      handler,
+    ) as ThrottlerGenerateKeyFunction;
+    const moved = {
+      getClass: () => class RenamedController {},
+      getHandler: () => function renamedHandler() {},
+    } as unknown as ExecutionContext;
+    for (const tracker of ['127.0.0.1', '2001:db8::1']) {
+      expect(generateKey(moved, tracker, 'default')).toBe(
+        createHash('sha256').update(`AuthController-${name}-default-${tracker}`).digest('hex'),
       );
     }
   });

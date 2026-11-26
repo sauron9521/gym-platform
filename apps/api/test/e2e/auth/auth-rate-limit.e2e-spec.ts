@@ -1,15 +1,15 @@
 import type { INestApplication } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
-import { ConfigService } from '@nestjs/config';
 import { Test } from '@nestjs/testing';
+import { ConfigService } from '@nestjs/config';
+import { AdminAuthController } from '../../../src/api/admin/auth/controllers/admin-auth.controller.js';
+import { AdminSignInService } from '../../../src/modules/auth/public-api.js';
 import { EmailVerificationService, SignInService, TokenService } from '@nestjs/authentication';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
-import { AuthController } from '../../../src/modules/auth/controllers/auth.controller.js';
-import { AdminCookieAuthService } from '../../../src/modules/auth/services/admin-cookie-auth.service.js';
-import { AdminSignInService } from '../../../src/modules/auth/public-api.js';
+import { AuthController } from '../../../src/api/public/auth/controllers/auth.controller.js';
 import { EmailVerificationController } from '../../../src/api/public/auth/controllers/email-verification.controller.js';
 import { TokensController } from '../../../src/api/public/auth/controllers/tokens.controller.js';
 import { CredentialsService } from '../../../src/modules/auth/services/credentials.service.js';
@@ -29,6 +29,7 @@ describe('Auth endpoint throttling (HTTP)', () => {
     verify: vi.fn().mockResolvedValue({ email: 'member@example.test' }),
     send: vi.fn().mockResolvedValue(undefined),
   };
+  const adminSignIn = { signIn: vi.fn().mockResolvedValue({ mfaRequired: true }) };
   const tokens = {
     refresh: vi.fn().mockResolvedValue({ accessToken: 'access', refreshToken: 'refresh' }),
     revoke: vi.fn().mockResolvedValue(undefined),
@@ -41,14 +42,24 @@ describe('Auth endpoint throttling (HTTP)', () => {
           throttlers: [{ limit: 100, ttl: 60000 }],
         }),
       ],
-      controllers: [AuthController, EmailVerificationController, TokensController],
+      controllers: [
+        AuthController,
+        EmailVerificationController,
+        TokensController,
+        AdminAuthController,
+      ],
       providers: [
-        AdminSignInService,
-        { provide: AdminCookieAuthService, useValue: { signIn: vi.fn() } },
         { provide: CredentialsService, useValue: credentials },
+        { provide: AdminSignInService, useValue: adminSignIn },
+        {
+          provide: ConfigService,
+          useValue: {
+            get: (key: string) =>
+              key === 'ADMIN_APP_URL' ? 'http://admin.example.test' : undefined,
+          },
+        },
         { provide: SignInService, useValue: signIn },
         { provide: EmailVerificationService, useValue: verification },
-        { provide: ConfigService, useValue: { getOrThrow: () => 'test-only' } },
         { provide: TokenService, useValue: tokens },
         { provide: APP_GUARD, useClass: ThrottlerGuard },
       ],
@@ -80,6 +91,24 @@ describe('Auth endpoint throttling (HTTP)', () => {
     expect(denied.headers['cache-control']).toBe('no-store');
 
     expect(credentials.register).toHaveBeenCalledTimes(3);
+  });
+
+  it('keeps a separate three-request IP bucket for Admin login', async () => {
+    const body = { email: 'admin@example.test', password: 'StrongPassword123!' };
+    for (let i = 0; i < 3; i++) {
+      await request(app.getHttpServer())
+        .post('/auth/admin-login')
+        .set('Origin', 'http://admin.example.test')
+        .send(body)
+        .expect(200);
+    }
+    const denied = await request(app.getHttpServer())
+      .post('/auth/admin-login')
+      .set('Origin', 'http://admin.example.test')
+      .send(body)
+      .expect(429);
+    expect(denied.headers['cache-control']).toBe('no-store');
+    expect(adminSignIn.signIn).toHaveBeenCalledTimes(3);
   });
 
   it('limits email verification to 8 requests/minute', async () => {

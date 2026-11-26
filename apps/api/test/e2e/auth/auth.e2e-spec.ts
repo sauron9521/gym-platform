@@ -3,11 +3,8 @@ import { Test, type TestingModule } from '@nestjs/testing';
 import type { INestApplication } from '@nestjs/common';
 import { StandardSchemaValidationPipe } from '@nestjs/common';
 import { EmailVerificationService, SignInService } from '@nestjs/authentication';
-import { ConfigService } from '@nestjs/config';
 import request from 'supertest';
-import { AuthController } from '../../../src/modules/auth/controllers/index.js';
-import { AdminCookieAuthService } from '../../../src/modules/auth/services/admin-cookie-auth.service.js';
-import { AdminSignInService } from '../../../src/modules/auth/public-api.js';
+import { AuthController } from '../../../src/api/public/auth/controllers/auth.controller.js';
 import { CredentialsService } from '../../../src/modules/auth/services/index.js';
 
 describe('AuthController (HTTP)', () => {
@@ -32,14 +29,6 @@ describe('AuthController (HTTP)', () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       controllers: [AuthController],
       providers: [
-        AdminSignInService,
-        { provide: AdminCookieAuthService, useValue: { signIn: vi.fn() } },
-        {
-          provide: ConfigService,
-          useValue: {
-            get: (key: string) => (key === 'APP_URL' ? 'http://localhost:3000' : undefined),
-          },
-        },
         {
           provide: CredentialsService,
           useValue: credentialsService,

@@ -19,6 +19,11 @@ import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { AppModule } from '../../../src/app.module.js';
+import { AdminAuthController } from '../../../src/api/admin/auth/controllers/admin-auth.controller.js';
+import { AdminAuthApiModule } from '../../../src/api/admin/auth/admin-auth-api.module.js';
+import { AuthController } from '../../../src/api/public/auth/controllers/auth.controller.js';
+import { PublicAuthApiModule } from '../../../src/api/public/auth/public-auth-api.module.js';
+import { AdminOriginGuard } from '../../../src/common/auth/admin-origin.guard.js';
 import { AdminUsersApiModule } from '../../../src/api/admin/users/admin-users-api.module.js';
 import { AdminUsersController } from '../../../src/api/admin/users/controllers/admin-users.controller.js';
 import { UsersModule } from '../../../src/modules/users/users.module.js';
@@ -171,6 +176,36 @@ describe('GET /admin/users (HTTP + PostgreSQL)', () => {
     expect([...modules.values()].filter((module) => module.metatype === UsersModule)).toHaveLength(
       1,
     );
+  });
+
+  it('owns ordinary and Admin login in distinct audience modules with one Admin sign-in provider', () => {
+    const modules = [...app.get(ModulesContainer).values()];
+    expect(
+      modules
+        .filter((module) => module.controllers.has(AuthController))
+        .map((module) => module.metatype),
+    ).toEqual([PublicAuthApiModule]);
+    expect(
+      modules
+        .filter((module) => module.controllers.has(AdminAuthController))
+        .map((module) => module.metatype),
+    ).toEqual([AdminAuthApiModule]);
+    expect(
+      modules
+        .filter((module) => module.providers.has(AdminSignInService))
+        .map((module) => module.metatype),
+    ).toEqual([AuthModule]);
+    expect(
+      app.select(AdminAuthApiModule).get(AdminAuthController, { strict: true }),
+    ).toBeInstanceOf(AdminAuthController);
+    expect(app.select(PublicAuthApiModule).get(AuthController, { strict: true })).toBeInstanceOf(
+      AuthController,
+    );
+    expect(
+      modules
+        .find((module) => module.metatype === AdminAuthApiModule)
+        ?.injectables.has(AdminOriginGuard),
+    ).toBe(true);
   });
 
   it('owns the Admin session facade and private Auth lifecycle providers exactly once', () => {

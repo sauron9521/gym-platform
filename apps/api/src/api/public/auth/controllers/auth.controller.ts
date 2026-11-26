@@ -5,7 +5,6 @@ import {
   Logger,
   Post,
   UnauthorizedException,
-  UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
 import {
@@ -15,20 +14,15 @@ import {
   type SignInInput,
   type SignUpInput,
   CredentialsService,
-  AdminSignInService,
-} from '../public-api.js';
+} from '#src/modules/auth/public-api';
 import { StableHttpOperation } from '#src/common/http/stable-http-operation.decorator';
 import { EmailVerificationService, Public, SignInService } from '@nestjs/authentication';
 import { RATE_LIMIT_POLICIES } from '#src/common/rate-limit/rate-limit.policies';
 import { ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
-import { AdminOriginGuard } from '#src/common/auth/admin-origin.guard';
 import {
   registrationResponseSchema,
   sessionSignInResponseSchema,
 } from '#src/infra/openapi/response-contracts';
-
-import { Req, Res } from '@nestjs/common';
-import type { Request, Response } from 'express';
 
 @Public()
 @ApiTags('Authentication')
@@ -41,7 +35,6 @@ export class AuthController {
     private readonly credentialsService: CredentialsService,
     private readonly signInService: SignInService,
     private readonly emailVerificationService: EmailVerificationService,
-    private readonly adminSignInService: AdminSignInService,
   ) {}
 
   @StableHttpOperation('AuthController', 'signUp', 'Authentication', RATE_LIMIT_POLICIES.auth)
@@ -64,24 +57,6 @@ export class AuthController {
     }
 
     return { ...user, verificationEmailStatus };
-  }
-
-  /**
-   * Explicitly issue an admin-purpose cookie only after fresh password proof.
-   * The session is still subject to MFA enrollment and CSRF origin checks.
-   * Use a generic failure for unknown credentials and non-admin users.
-   */
-  @StableHttpOperation('AuthController', 'adminSignIn', 'Authentication', RATE_LIMIT_POLICIES.auth)
-  @Post('admin-login')
-  @UseGuards(AdminOriginGuard)
-  @HttpCode(200)
-  @ApiOkResponse({ schema: sessionSignInResponseSchema })
-  async adminSignIn(
-    @Body({ schema: signInSchema }) body: SignInInput,
-    @Req() request: Request,
-    @Res({ passthrough: true }) response: Response,
-  ) {
-    return this.adminSignInService.signIn(body, request, response);
   }
 
   @StableHttpOperation('AuthController', 'signIn', 'Authentication', RATE_LIMIT_POLICIES.auth)

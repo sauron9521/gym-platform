@@ -8,5 +8,7 @@
   "src/modules/auth/controllers/tokens.controller.ts": "src/api/public/auth/controllers/tokens.controller.ts",
   "src/modules/auth/test/controllers/tokens.controller.spec.ts": "src/api/public/auth/test/controllers/tokens.controller.spec.ts",
   "src/modules/auth/controllers/email-verification.controller.ts": "src/api/public/auth/controllers/email-verification.controller.ts",
-  "src/modules/auth/test/controllers/email-verification.controller.spec.ts": "src/api/public/auth/test/controllers/email-verification.controller.spec.ts"
+  "src/modules/auth/test/controllers/email-verification.controller.spec.ts": "src/api/public/auth/test/controllers/email-verification.controller.spec.ts",
+  "src/modules/auth/controllers/auth.controller.ts": "src/api/public/auth/controllers/auth.controller.ts",
+  "src/modules/auth/test/controllers/auth.controller.spec.ts": "src/api/public/auth/test/controllers/auth.controller.spec.ts"
 }

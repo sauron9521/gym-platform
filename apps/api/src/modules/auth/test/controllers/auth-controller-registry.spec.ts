@@ -10,26 +10,22 @@ import {
   PATH_METADATA,
 } from '@nestjs/common/constants';
 
-import { AuthController } from '../../controllers/auth.controller.js';
 import { SessionsController } from '../../controllers/sessions.controller.js';
 import { AuthNoStoreInterceptor } from '../../interceptors/auth-no-store.interceptor.js';
 import { AuthModule } from '../../auth.module.js';
 
 describe('AuthModule controller registry', () => {
-  const controllers = [AuthController, SessionsController];
+  const controllers = [SessionsController];
 
-  it('preserves controller registration and two remaining legacy route prefixes', () => {
+  it('preserves controller registration and the remaining legacy route prefix', () => {
     const registered: unknown[] = Reflect.getMetadata(MODULE_METADATA.CONTROLLERS, AuthModule);
     expect(registered).toEqual(controllers);
     expect(controllers.map((controller) => Reflect.getMetadata(PATH_METADATA, controller))).toEqual(
-      ['auth', 'auth'],
+      ['auth'],
     );
   });
 
   it.each([
-    [AuthController, 'signUp', RequestMethod.POST, 'register', undefined],
-    [AuthController, 'signIn', RequestMethod.POST, 'login', 200],
-    [AuthController, 'adminSignIn', RequestMethod.POST, 'admin-login', 200],
     [SessionsController, 'adminSession', RequestMethod.GET, 'admin-session', undefined],
     [
       SessionsController,
@@ -54,22 +50,6 @@ describe('AuthModule controller registry', () => {
   });
 
   it.each([
-    [AuthController, 'signUp', 3],
-    [AuthController, 'signIn', 3],
-    [AuthController, 'adminSignIn', 3],
-  ] as const)('retains %s.%s rate limit', (controller, name, limit) => {
-    const handler = Object.getOwnPropertyDescriptor(controller.prototype, name)?.value as (
-      ...args: unknown[]
-    ) => unknown;
-
-    expect(Reflect.getMetadata('THROTTLER:LIMITdefault', handler)).toBe(limit);
-    expect(Reflect.getMetadata('THROTTLER:TTLdefault', handler)).toBe(60_000);
-  });
-
-  it.each([
-    [AuthController, 'signUp', 'AuthController-signUp'],
-    [AuthController, 'adminSignIn', 'AuthController-adminSignIn'],
-    [AuthController, 'signIn', 'AuthController-signIn'],
     [SessionsController, 'adminSession', 'SessionsController-adminSession'],
     [SessionsController, 'revokeAdminSessions', 'SessionsController-revokeAdminSessions'],
     [SessionsController, 'adminSignOut', 'SessionsController-adminSignOut'],
@@ -99,14 +79,14 @@ describe('AuthModule controller registry', () => {
     },
   );
 
-  it('retains the no-store interceptor on all two remaining controllers', () => {
+  it('retains the no-store interceptor on the remaining controller', () => {
     for (const controller of controllers) {
       const interceptors: unknown[] = Reflect.getMetadata(INTERCEPTORS_METADATA, controller);
       expect(interceptors).toContain(AuthNoStoreInterceptor);
     }
   });
 
-  it('registers exactly ten unique HTTP verb/path pairs', () => {
+  it('registers exactly seven unique HTTP verb/path pairs', () => {
     const routes = controllers.flatMap((controller) => {
       const prefix = Reflect.getMetadata(PATH_METADATA, controller) as string;
       return Object.getOwnPropertyNames(controller.prototype)
@@ -123,7 +103,7 @@ describe('AuthModule controller registry', () => {
         });
     });
 
-    expect(routes).toHaveLength(10);
+    expect(routes).toHaveLength(7);
     expect(new Set(routes).size).toBe(routes.length);
   });
 });
