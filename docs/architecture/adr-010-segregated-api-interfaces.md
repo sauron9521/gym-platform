@@ -89,7 +89,7 @@ Reassess a separate Admin API only with measured operational or release coupling
 3. ABI03 — add minimal composition and enforce boundaries through existing architecture checks.
 4. ABI04 — pilot Users/Admin Users separation without route or behavior changes; verify DI, OpenAPI parity, authorization and regression suites; [pilot review](adr-010-users-pilot-review.md) before expansion.
 5. ABI05 — [Auth boundary inventory](adr-010-auth-boundary-inventory.md); Auth/Admin Auth only after session/MFA and dependency review, with dedicated security regression coverage; [ABI05e review](adr-010-auth-migration-review.md) before expansion.
-6. ABI06 — remaining interfaces by small feature slice; keep shared routes single-owned. Start with [Trainer Onboarding boundary inventory](adr-010-trainer-onboarding-boundary-inventory.md).
+6. ABI06 — remaining interfaces by small feature slice; keep shared routes single-owned. Start with [Trainer Onboarding boundary inventory](adr-010-trainer-onboarding-boundary-inventory.md) and [ABI06a4 review](adr-010-trainer-onboarding-migration-review.md); continue with the refreshed ABI06b slices.
 7. ABI07 — simplify composition and evaluate audience OpenAPI views without changing canonical contracts.
 8. ABI08 — reconcile docs and evidence, verify architecture guardrails and document future extraction gates.
 
