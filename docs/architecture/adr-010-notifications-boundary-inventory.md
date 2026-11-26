@@ -24,3 +24,9 @@ Keep the original combined controller/service test assertions as a dedicated cor
 ## Next slice
 
 ABI06b1b moves the whole NotificationSettingsController and its adapter test into SharedNotificationsApiModule, with explicit audience manifest and zero core controllers. Keep the original controller class/handler names, all route metadata and stock rate-limit behavior. No frozen inventory paths are affected at this baseline. Verify canonical OpenAPI/client equivalence, unique real module ownership, existing HTTP owner isolation and concurrent consent/settings regressions, and all architecture/tooling gates. Do not change domain policy, repository transactions, schema, dependency versions or deployment topology in either slice.
+
+## ABI06b1b Shared API relocation
+
+[SharedNotificationsApiModule](../../apps/api/src/api/shared/notifications/shared-notifications-api.module.ts) owns the complete [NotificationSettingsController](../../apps/api/src/api/shared/notifications/controllers/notification-settings.controller.ts). The controller changes only its import of the existing public contract. Both original method names, authenticated owner selection, request/response schemas, cache headers, rate budgets and stock throttler identities are retained. NotificationsModule explicitly registers no controllers and still exports only NotificationSettingsService. Its repository, domain rules and transaction boundaries remain private and unchanged. The shared audience manifest, registry metadata tests and real Nest composition regression pin the sole controller owner and single service/repository instances. No frozen inventory paths need relocation.
+
+The module's two routes are now audience-owned. Continue with the account deletion boundary preparation after this slice passes contract, HTTP, architecture and CI checks; no notification delivery capability or production authorization is implied.

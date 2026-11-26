@@ -8,7 +8,7 @@ import {
   reminderLeadMinutes,
   type NotificationSettingsPatch,
   NotificationSettingsService,
-} from '../public-api.js';
+} from '#src/modules/notifications/public-api';
 
 const emptyQuery = z.strictObject({});
 const preference = (categories: string[], channel: string) => ({

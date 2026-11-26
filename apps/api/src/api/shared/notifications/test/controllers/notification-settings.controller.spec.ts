@@ -1,4 +1,4 @@
-import type { NotificationSettingsService } from '../../public-api.js';
+import type { NotificationSettingsService } from '#src/modules/notifications/public-api';
 import { NotificationSettingsController } from '../../controllers/notification-settings.controller.js';
 
 describe('NotificationSettingsController', () => {
