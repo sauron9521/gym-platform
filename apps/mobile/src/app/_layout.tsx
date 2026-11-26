@@ -24,6 +24,7 @@ import { OfflineBanner } from '@/shared/ui/offline-banner';
 import { MobileErrorBoundary } from '@/shared/ui/mobile-error-boundary';
 import { LocaleProvider } from '@/shared/i18n/locale-provider';
 import { AppSettingsProvider } from '@/features/app-settings/model/app-settings-context';
+import { offlineDraftLifecycle } from '@/features/workouts/model/offline-draft-lifecycle';
 import { AccountLocaleSync } from '@/features/profile/ui/account-locale-sync';
 
 function Navigation() {
@@ -137,7 +138,7 @@ function ThemedApp() {
         <LocaleProvider>
           <MobileQueryProvider>
             <MobileErrorBoundary>
-              <AuthProvider>
+              <AuthProvider privateData={offlineDraftLifecycle}>
                 <AccountLocaleSync />
                 <AppSettingsProvider>
                   <Navigation />

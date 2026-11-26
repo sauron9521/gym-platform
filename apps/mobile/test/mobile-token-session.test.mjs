@@ -108,6 +108,37 @@ test('invalid/reused refresh token erases session and reports invalidation', asy
   assert.equal(invalidations, 1);
 });
 
+test('rejected refresh locks private data before failed secure credential deletion settles', async () => {
+  const store = makeStore('refresh-old');
+  let startRemoval;
+  const removalStarted = new Promise((resolve) => {
+    startRemoval = resolve;
+  });
+  let rejectRemoval;
+  store.storage.remove = async () => {
+    startRemoval();
+    return new Promise((_resolve, reject) => {
+      rejectRemoval = reject;
+    });
+  };
+  let invalidations = 0;
+  const session = new MobileTokenSession(
+    store.storage,
+    async () => null,
+    async () => undefined,
+    () => invalidations++,
+  );
+  const pending = session.restore();
+  const rejected = assert.rejects(pending, /storage locked/);
+  await removalStarted;
+  assert.equal(invalidations, 1);
+  assert.equal(session.currentRefreshToken, null);
+  assert.equal(await session.getAccessToken(), null);
+  rejectRemoval(new Error('storage locked'));
+  await rejected;
+  assert.equal(invalidations, 1);
+});
+
 test('network failure preserves stored credential without automatic reuse', async () => {
   const store = makeStore('refresh-old');
   const session = new MobileTokenSession(

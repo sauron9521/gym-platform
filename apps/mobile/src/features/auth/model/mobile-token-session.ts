@@ -136,8 +136,9 @@ export class MobileTokenSession {
         return false;
       }
       if (!next) {
-        await this.clear();
+        const clearing = this.clear();
         this.onInvalidated();
+        await clearing;
         return false;
       }
 
@@ -154,8 +155,13 @@ export class MobileTokenSession {
       } catch {
         // A rotated token that cannot be persisted must never leave a usable
         // session in memory; revoke its successor on a best-effort basis.
-        await this.clear().catch(() => undefined);
+        if (this.generation !== revision) {
+          await this.revokeRequest(next.refreshToken).catch(() => undefined);
+          return false;
+        }
+        const clearing = this.clear().catch(() => undefined);
         this.onInvalidated();
+        await clearing;
         await this.revokeRequest(next.refreshToken).catch(() => undefined);
         return false;
       }
