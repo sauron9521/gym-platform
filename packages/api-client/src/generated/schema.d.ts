@@ -340,6 +340,22 @@ export interface paths {
     patch: operations['UsersController_updateWorkoutPreferences'];
     trace?: never;
   };
+  '/users/me/preferences/workouts/initialize': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['UsersController_initializeWorkoutPreferences'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/users/me/avatar': {
     parameters: {
       query?: never;
@@ -1905,6 +1921,44 @@ export interface operations {
     };
   };
   UsersController_updateWorkoutPreferences: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json':
+          | {
+              autoRestTimer: boolean;
+              /** @enum {number} */
+              restDurationSeconds?: 60 | 90 | 120;
+            }
+          | {
+              autoRestTimer?: boolean;
+              /** @enum {number} */
+              restDurationSeconds: 60 | 90 | 120;
+            };
+      };
+    };
+    responses: {
+      /** @description Stored account workout preferences; null means uninitialized. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            autoRestTimer: boolean | null;
+            /** @enum {integer|null} */
+            restDurationSeconds: 60 | 90 | 120 | null;
+          };
+        };
+      };
+    };
+  };
+  UsersController_initializeWorkoutPreferences: {
     parameters: {
       query?: never;
       header?: never;

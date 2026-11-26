@@ -73,6 +73,10 @@ export class UsersService {
     return this.usersRepository.updateMyWorkoutPreferences(userId, input);
   }
 
+  async initializeMyWorkoutPreferences(userId: string, input: UpdateMyWorkoutPreferencesDto) {
+    return this.usersRepository.initializeMyWorkoutPreferences(userId, input);
+  }
+
   async updateMe(userId: string, input: UpdateMyProfileDto) {
     const data = mapProfileUpdateInput(input);
 

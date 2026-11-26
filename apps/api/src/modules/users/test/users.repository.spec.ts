@@ -14,6 +14,7 @@ describe('UsersRepository', () => {
   let repository: UsersRepository;
 
   const prisma = {
+    $transaction: vi.fn(),
     user: {
       create: vi.fn(),
       findUnique: vi.fn(),
@@ -68,6 +69,76 @@ describe('UsersRepository', () => {
       prisma.user.update.mockRejectedValue(error);
       await expect(
         repository.updateMyWorkoutPreferences('actor-1', { autoRestTimer: true }),
+      ).rejects.toBe(error);
+    });
+  });
+
+  describe('conditional legacy workout preference initialization', () => {
+    const where = { id: 'actor-1', deletedAt: null, status: 'ACTIVE' };
+    const select = { autoRestTimer: true, restDurationSeconds: true };
+    const tx = { user: { updateMany: vi.fn(), findUnique: vi.fn() } };
+
+    beforeEach(() => {
+      prisma.$transaction.mockImplementation(async (work) => work(tx));
+      tx.user.updateMany.mockResolvedValue({ count: 1 });
+    });
+
+    it('conditions each supplied field independently on null in a single transaction', async () => {
+      const canonical = { autoRestTimer: false, restDurationSeconds: 90 };
+      tx.user.updateMany.mockResolvedValueOnce({ count: 1 }).mockResolvedValueOnce({ count: 0 });
+      tx.user.findUnique.mockResolvedValue(canonical);
+      await expect(
+        repository.initializeMyWorkoutPreferences('actor-1', {
+          autoRestTimer: false,
+          restDurationSeconds: 120,
+        }),
+      ).resolves.toEqual(canonical);
+      expect(prisma.$transaction).toHaveBeenCalledExactlyOnceWith(expect.any(Function), {
+        isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted,
+      });
+      expect(tx.user.updateMany).toHaveBeenNthCalledWith(1, {
+        where: { ...where, autoRestTimer: null },
+        data: { autoRestTimer: false },
+      });
+      expect(tx.user.updateMany).toHaveBeenNthCalledWith(2, {
+        where: { ...where, restDurationSeconds: null },
+        data: { restDurationSeconds: 120 },
+      });
+      expect(tx.user.findUnique).toHaveBeenCalledExactlyOnceWith({ where, select });
+    });
+
+    it('leaves omitted fields untouched and returns existing values on retry', async () => {
+      const canonical = { autoRestTimer: false, restDurationSeconds: null };
+      tx.user.updateMany.mockResolvedValue({ count: 0 });
+      tx.user.findUnique.mockResolvedValue(canonical);
+      await expect(
+        repository.initializeMyWorkoutPreferences('actor-1', { autoRestTimer: true }),
+      ).resolves.toEqual(canonical);
+      expect(tx.user.updateMany).toHaveBeenCalledExactlyOnceWith({
+        where: { ...where, autoRestTimer: null },
+        data: { autoRestTimer: true },
+      });
+    });
+
+    it('initializes only the duration when supplied alone', async () => {
+      tx.user.findUnique.mockResolvedValue({ autoRestTimer: null, restDurationSeconds: 60 });
+      await repository.initializeMyWorkoutPreferences('actor-1', { restDurationSeconds: 60 });
+      expect(tx.user.updateMany).toHaveBeenCalledExactlyOnceWith({
+        where: { ...where, restDurationSeconds: null },
+        data: { restDurationSeconds: 60 },
+      });
+    });
+
+    it('rejects inactive or missing actors and propagates transaction errors', async () => {
+      tx.user.updateMany.mockResolvedValue({ count: 0 });
+      tx.user.findUnique.mockResolvedValue(null);
+      await expect(
+        repository.initializeMyWorkoutPreferences('actor-1', { autoRestTimer: true }),
+      ).rejects.toBeInstanceOf(NotFoundException);
+      const error = new Error('unavailable');
+      tx.user.updateMany.mockRejectedValue(error);
+      await expect(
+        repository.initializeMyWorkoutPreferences('actor-1', { autoRestTimer: true }),
       ).rejects.toBe(error);
     });
   });

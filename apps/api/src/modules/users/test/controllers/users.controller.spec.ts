@@ -10,6 +10,7 @@ describe('UsersController', () => {
     updateMyPreferences: vi.fn(),
     findMyWorkoutPreferences: vi.fn(),
     updateMyWorkoutPreferences: vi.fn(),
+    initializeMyWorkoutPreferences: vi.fn(),
   };
   const avatarService = {
     upload: vi.fn(),
@@ -70,6 +71,17 @@ describe('UsersController', () => {
     expect(usersService.updateMyWorkoutPreferences).toHaveBeenCalledExactlyOnceWith(actor.id, {
       autoRestTimer: false,
     });
+  });
+
+  it('imports legacy workout preferences only for the authenticated actor', async () => {
+    const input = { autoRestTimer: false, restDurationSeconds: 120 as const };
+    const canonical = { autoRestTimer: true, restDurationSeconds: 120 };
+    usersService.initializeMyWorkoutPreferences.mockResolvedValue(canonical);
+    await expect(controller.initializeWorkoutPreferences(actor, input)).resolves.toEqual(canonical);
+    expect(usersService.initializeMyWorkoutPreferences).toHaveBeenCalledExactlyOnceWith(
+      actor.id,
+      input,
+    );
   });
 
   it('forwards the multipart upload as-is to the avatar service', async () => {

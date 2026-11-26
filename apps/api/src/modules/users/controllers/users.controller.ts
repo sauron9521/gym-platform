@@ -211,6 +211,18 @@ export class UsersController {
     return this.usersService.updateMyWorkoutPreferences(user.id, body);
   }
 
+  /** Retry-safe import of explicit device preferences; never replaces existing choices. */
+  @Post('me/preferences/workouts/initialize')
+  @HttpCode(HttpStatus.OK)
+  @Header('Cache-Control', 'no-store')
+  @ApiOkResponse(workoutPreferencesResponse)
+  initializeWorkoutPreferences(
+    @CurrentUser() user: UserActor,
+    @Body({ schema: updateMyWorkoutPreferencesSchema }) body: UpdateMyWorkoutPreferencesDto,
+  ) {
+    return this.usersService.initializeMyWorkoutPreferences(user.id, body);
+  }
+
   /** Multipart field: file. Returns the versioned, API-relative avatar URL. */
   @Post('me/avatar')
   @ApiConsumes('multipart/form-data')

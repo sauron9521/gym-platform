@@ -880,6 +880,91 @@ describe('Users /me (HTTP + PostgreSQL)', () => {
       .expect(200);
   });
 
+  it('initializes only missing explicit workout preferences, safely across retries and concurrent devices', async () => {
+    const path = '/users/me/preferences/workouts';
+    const http = request(app.getHttpServer());
+    const init = (body: object, cookie = otherCookie) =>
+      http
+        .post(path + '/initialize')
+        .set('Cookie', cookie)
+        .send(body);
+    const read = (cookie = otherCookie) => http.get(path).set('Cookie', cookie);
+    const patch = (body: object) => http.patch(path).set('Cookie', otherCookie).send(body);
+    const initial = { autoRestTimer: null, restDurationSeconds: null };
+    await http
+      .post(path + '/initialize')
+      .send({ autoRestTimer: false })
+      .expect(401);
+    expect((await read().expect(200)).body).toEqual(initial);
+    for (const body of [
+      {},
+      { autoRestTimer: null },
+      { autoRestTimer: 'false' },
+      { restDurationSeconds: '90' },
+      { restDurationSeconds: 91 },
+      { autoRestTimer: false, userId: athleteId },
+      { restSound: true },
+    ]) {
+      await init(body).expect(400);
+    }
+    expect((await read().expect(200)).body).toEqual(initial);
+    expect(
+      (await init({ autoRestTimer: false }).expect('Cache-Control', 'no-store').expect(200)).body,
+    ).toEqual({ autoRestTimer: false, restDurationSeconds: null });
+    const mixed = await init({ autoRestTimer: true, restDurationSeconds: 120 }).expect(200);
+    expect(mixed.body).toEqual({ autoRestTimer: false, restDurationSeconds: 120 });
+    const beforeRetry = await prisma.user.findUniqueOrThrow({
+      where: { id: otherId },
+      select: { updatedAt: true },
+    });
+    expect((await init({ autoRestTimer: true, restDurationSeconds: 60 }).expect(200)).body).toEqual(
+      mixed.body,
+    );
+    expect(
+      await prisma.user.findUniqueOrThrow({ where: { id: otherId }, select: { updatedAt: true } }),
+    ).toEqual(beforeRetry);
+    expect((await read(athleteCookie).expect(200)).body).toEqual({
+      autoRestTimer: true,
+      restDurationSeconds: 60,
+    });
+
+    // Reset only our test fixture to simulate two devices migrating simultaneously.
+    await prisma.user.update({ where: { id: otherId }, data: initial });
+    const [first, second] = await Promise.all([
+      init({ autoRestTimer: false, restDurationSeconds: 60 }).expect(200),
+      init({ autoRestTimer: true, restDurationSeconds: 120 }).expect(200),
+    ]);
+    expect(second.body).toEqual(first.body);
+    expect([
+      { autoRestTimer: false, restDurationSeconds: 60 },
+      { autoRestTimer: true, restDurationSeconds: 120 },
+    ]).toContainEqual(first.body);
+    expect((await read().expect(200)).body).toEqual(first.body);
+
+    await prisma.user.update({ where: { id: otherId }, data: initial });
+    await Promise.all([
+      init({ autoRestTimer: false }).expect(200),
+      init({ restDurationSeconds: 120 }).expect(200),
+    ]);
+    expect((await read().expect(200)).body).toEqual({
+      autoRestTimer: false,
+      restDurationSeconds: 120,
+    });
+
+    await prisma.user.update({ where: { id: otherId }, data: initial });
+    await Promise.all([
+      init({ autoRestTimer: false, restDurationSeconds: 60 }).expect(200),
+      patch({ autoRestTimer: true, restDurationSeconds: 90 }).expect(200),
+    ]);
+    expect((await read().expect(200)).body).toEqual({
+      autoRestTimer: true,
+      restDurationSeconds: 90,
+    });
+    expect(
+      (await init({ autoRestTimer: false, restDurationSeconds: 120 }).expect(200)).body,
+    ).toEqual({ autoRestTimer: true, restDurationSeconds: 90 });
+  });
+
   it('rejects a soft-deleted account even with an existing session', async () => {
     await prisma.user.update({
       where: { id: otherId },
@@ -894,6 +979,11 @@ describe('Users /me (HTTP + PostgreSQL)', () => {
       .expect(401);
     await request(app.getHttpServer())
       .patch('/users/me/preferences/workouts')
+      .set('Cookie', otherCookie)
+      .send({ autoRestTimer: false })
+      .expect(401);
+    await request(app.getHttpServer())
+      .post('/users/me/preferences/workouts/initialize')
       .set('Cookie', otherCookie)
       .send({ autoRestTimer: false })
       .expect(401);

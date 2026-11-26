@@ -12,6 +12,7 @@ describe('UsersService', () => {
     updateMyPreferences: vi.fn(),
     findMyWorkoutPreferences: vi.fn(),
     updateMyWorkoutPreferences: vi.fn(),
+    initializeMyWorkoutPreferences: vi.fn(),
     replaceAvatar: vi.fn(),
   };
   const avatarService = { removePrevious: vi.fn() };
@@ -33,6 +34,17 @@ describe('UsersService', () => {
     ).resolves.toEqual(updated);
     expect(repository.findMyWorkoutPreferences).toHaveBeenCalledExactlyOnceWith('user-1');
     expect(repository.updateMyWorkoutPreferences).toHaveBeenCalledExactlyOnceWith('user-1', {
+      autoRestTimer: false,
+    });
+  });
+
+  it('delegates legacy initialization without substituting defaults', async () => {
+    const canonical = { autoRestTimer: false, restDurationSeconds: null };
+    repository.initializeMyWorkoutPreferences.mockResolvedValue(canonical);
+    await expect(
+      service.initializeMyWorkoutPreferences('user-1', { autoRestTimer: false }),
+    ).resolves.toEqual(canonical);
+    expect(repository.initializeMyWorkoutPreferences).toHaveBeenCalledExactlyOnceWith('user-1', {
       autoRestTimer: false,
     });
   });

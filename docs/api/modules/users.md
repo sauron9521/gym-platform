@@ -4,19 +4,20 @@
 
 The current-user endpoints are authenticated. Public avatar serving is intentionally separate from authenticated profile mutations.
 
-| Method | Path                                 | Purpose                                          |
-| ------ | ------------------------------------ | ------------------------------------------------ |
-| GET    | `/users/me`                          | Read own profile (legacy contract unchanged)     |
-| GET    | `/users/me/capabilities`             | Read own current capability flags                |
-| GET    | `/users/me/account-deletion-request` | Read the current user's deletion request receipt |
-| POST   | `/users/me/account-deletion-request` | Submit a confirmed account deletion request      |
-| PATCH  | `/users/me`                          | Update own profile                               |
-| PATCH  | `/users/me/preferences`              | Update own account preferences                   |
-| GET    | `/users/me/preferences/workouts`     | Read own stored workout preferences              |
-| PATCH  | `/users/me/preferences/workouts`     | Partially update own workout preferences         |
-| POST   | `/users/me/avatar`                   | Upload/replace avatar                            |
-| DELETE | `/users/me/avatar`                   | Remove avatar                                    |
-| GET    | `/avatars/:key`                      | Public avatar retrieval                          |
+| Method | Path                                        | Purpose                                              |
+| ------ | ------------------------------------------- | ---------------------------------------------------- |
+| GET    | `/users/me`                                 | Read own profile (legacy contract unchanged)         |
+| GET    | `/users/me/capabilities`                    | Read own current capability flags                    |
+| GET    | `/users/me/account-deletion-request`        | Read the current user's deletion request receipt     |
+| POST   | `/users/me/account-deletion-request`        | Submit a confirmed account deletion request          |
+| PATCH  | `/users/me`                                 | Update own profile                                   |
+| PATCH  | `/users/me/preferences`                     | Update own account preferences                       |
+| GET    | `/users/me/preferences/workouts`            | Read own stored workout preferences                  |
+| PATCH  | `/users/me/preferences/workouts`            | Partially update own workout preferences             |
+| POST   | `/users/me/preferences/workouts/initialize` | Import explicit legacy values only into unset fields |
+| POST   | `/users/me/avatar`                          | Upload/replace avatar                                |
+| DELETE | `/users/me/avatar`                          | Remove avatar                                        |
+| GET    | `/avatars/:key`                             | Public avatar retrieval                              |
 
 ## Account workout preferences
 
@@ -27,8 +28,15 @@ accepts one or both non-null values, rejects unknown fields and empty patches,
 and atomically updates only supplied fields for the active session owner.
 No locale, profile, admin projection or device-local preference is modified.
 The PostgreSQL check constraint also rejects unsupported duration values.
-Clients must not start synchronization until conditional legacy initialization
-is implemented; see the [rollout contract](../../architecture/account-workout-preferences.md).
+The authenticated POST initialization resource accepts the same non-empty
+partial payload, but writes each field only if it remains NULL. It returns the
+canonical stored values with HTTP 200 and no-store, including when nothing was
+changed. A single transaction with conditional updates prevents a stale device
+or retry from overwriting an explicit server choice; a normal PATCH always
+wins over initialization for overlapping fields. Omitted fields remain untouched.
+Clients must send only valid explicit legacy values, never synthetic defaults.
+Client synchronization is still disabled; see the
+[rollout contract](../../architecture/account-workout-preferences.md).
 
 ## Account deletion request intake (#297)
 
