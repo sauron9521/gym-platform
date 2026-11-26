@@ -10,5 +10,6 @@ import { WorkoutAnalyticsController } from './controllers/workout-analytics.cont
   imports: [UsersModule],
   controllers: [WorkoutAnalyticsController],
   providers: [WorkoutAnalyticsRepository, WorkoutAnalyticsService],
+  exports: [WorkoutAnalyticsService],
 })
 export class WorkoutAnalyticsModule {}

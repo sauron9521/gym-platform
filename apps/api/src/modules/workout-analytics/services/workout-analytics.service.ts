@@ -1,9 +1,8 @@
 import { Injectable } from '@nestjs/common';
 
-import { UsersService } from '#src/modules/users/services/users.service';
+import { UsersService } from '#src/modules/users/public-api';
 
-import { assertWorkoutAthlete } from '#src/modules/workouts/public-api';
-import type { WorkoutActor } from '#src/modules/workouts/types/workout.types';
+import { assertWorkoutAthlete, type WorkoutActor } from '#src/modules/workouts/public-api';
 
 import {
   workoutAnalyticsRangeDays,

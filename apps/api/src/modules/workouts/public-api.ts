@@ -6,3 +6,6 @@
  * Calling the assertion does not perform DB reads on its own.
  */
 export { assertWorkoutAthlete } from './policies/workout-access.policy.js';
+
+// Type-only actor contract; no runtime provider or persistence export.
+export type { WorkoutActor } from './types/workout.types.js';

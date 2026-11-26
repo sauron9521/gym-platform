@@ -1,9 +1,9 @@
 import { ForbiddenException } from '@nestjs/common';
 import { describe, expect, it, vi } from 'vitest';
 
-import type { WorkoutActor } from '#src/modules/workouts/types/workout.types';
+import type { WorkoutActor } from '#src/modules/workouts/public-api';
 
-import { UsersService } from '#src/modules/users/services/users.service';
+import type { UsersService } from '#src/modules/users/public-api';
 import { WorkoutAnalyticsRepository } from '../repositories/workout-analytics.repository.js';
 import { WorkoutAnalyticsService } from '../services/workout-analytics.service.js';
 

@@ -56,7 +56,9 @@ import { SharedAccountDeletionRequestsApiModule } from '../../../src/api/shared/
 import { UsersAuthFacade } from '../../../src/modules/users/services/users-auth.facade.js';
 import { UsersService } from '../../../src/modules/users/services/users.service.js';
 import { WorkoutAnalyticsModule } from '../../../src/modules/workout-analytics/workout-analytics.module.js';
-import { WorkoutAnalyticsService } from '../../../src/modules/workout-analytics/services/workout-analytics.service.js';
+import { WorkoutAnalyticsService } from '../../../src/modules/workout-analytics/public-api.js';
+import { WorkoutAnalyticsRepository } from '../../../src/modules/workout-analytics/repositories/workout-analytics.repository.js';
+import { WorkoutAnalyticsController } from '../../../src/modules/workout-analytics/controllers/workout-analytics.controller.js';
 import { WorkoutsModule } from '../../../src/modules/workouts/workouts.module.js';
 import { WorkoutsService } from '../../../src/modules/workouts/services/workouts.service.js';
 
@@ -103,6 +105,14 @@ class BodyMeasurementsBoundaryProbe {
 @Module({ imports: [BodyMeasurementsModule], providers: [BodyMeasurementsBoundaryProbe] })
 class BodyMeasurementsBoundaryProbeModule {}
 
+@Injectable()
+class WorkoutAnalyticsBoundaryProbe {
+  constructor(readonly analytics: WorkoutAnalyticsService) {}
+}
+
+@Module({ imports: [WorkoutAnalyticsModule], providers: [WorkoutAnalyticsBoundaryProbe] })
+class WorkoutAnalyticsBoundaryProbeModule {}
+
 describe('App (e2e)', () => {
   let app: INestApplication;
 
@@ -114,6 +124,7 @@ describe('App (e2e)', () => {
         NotificationsBoundaryProbeModule,
         AccountDeletionRequestsBoundaryProbeModule,
         BodyMeasurementsBoundaryProbeModule,
+        WorkoutAnalyticsBoundaryProbeModule,
       ],
     }).compile();
 
@@ -335,6 +346,31 @@ describe('App (e2e)', () => {
         .filter((module) => module.controllers.has(BodyMeasurementsController))
         .map((module) => module.metatype),
     ).toEqual([AthleteBodyMeasurementsApiModule]);
+  });
+
+  it('resolves the analytics contract from an importing module without duplicate providers or controllers', () => {
+    const modules = [...app.get(ModulesContainer).values()];
+    const core = app.select(WorkoutAnalyticsModule);
+    const probe = app
+      .select(WorkoutAnalyticsBoundaryProbeModule)
+      .get(WorkoutAnalyticsBoundaryProbe, { strict: true });
+    expect(modules.filter((module) => module.metatype === WorkoutAnalyticsModule)).toHaveLength(1);
+    expect(probe.analytics).toBe(core.get(WorkoutAnalyticsService, { strict: true }));
+    for (const provider of [WorkoutAnalyticsService, WorkoutAnalyticsRepository]) {
+      expect(
+        modules.filter((module) => module.providers.has(provider)).map((module) => module.metatype),
+      ).toEqual([WorkoutAnalyticsModule]);
+    }
+    expect(
+      modules
+        .filter((module) => module.providers.has(UsersService))
+        .map((module) => module.metatype),
+    ).toEqual([UsersModule]);
+    expect(
+      modules
+        .filter((module) => module.controllers.has(WorkoutAnalyticsController))
+        .map((module) => module.metatype),
+    ).toEqual([WorkoutAnalyticsModule]);
   });
 
   it('resolves the same Prisma singleton from the declaring module and app context', () => {
