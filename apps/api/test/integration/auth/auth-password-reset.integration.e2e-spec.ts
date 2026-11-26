@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
-import { PasswordHasher } from '@nestjs/authentication';
+import { PasswordHasher, PasswordResetService } from '@nestjs/authentication';
+import { ModulesContainer } from '@nestjs/core';
 import { StandardSchemaValidationPipe, type INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { Mailer } from '@nestjs/mail';
@@ -8,6 +9,19 @@ import request from 'supertest';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { PrismaService } from '../../../src/infra/database/index.js';
+import { PublicAuthApiModule } from '../../../src/api/public/auth/public-auth-api.module.js';
+import { PasswordResetController } from '../../../src/api/public/auth/controllers/password-reset.controller.js';
+import { AuthModule } from '../../../src/modules/auth/auth.module.js';
+import {
+  AuthHttpQuotaFacade,
+  AccountRecoveryRateLimitGuard,
+} from '../../../src/modules/auth/public-api.js';
+import {
+  PrismaSessionStore,
+  PrismaTokenStore,
+  PrismaMfaStore,
+} from '../../../src/modules/auth/stores/index.js';
+import { TokenCleanupService } from '../../../src/modules/auth/services/token-cleanup.service.js';
 import { useTestDatabase } from '../../utility/test-db-helper.js';
 
 const originalEnv = {
@@ -133,6 +147,36 @@ describe('Password reset security (HTTP + PostgreSQL)', () => {
       }
     }
   }, 20_000);
+
+  it('owns Password Reset in the Public API and keeps Auth providers singletons', () => {
+    const modules = [...app.get(ModulesContainer).values()];
+    expect(
+      modules
+        .filter((module) => module.controllers.has(PasswordResetController))
+        .map((module) => module.metatype),
+    ).toEqual([PublicAuthApiModule]);
+    expect(modules.filter((module) => module.metatype === AuthModule)).toHaveLength(1);
+    for (const provider of [
+      AuthHttpQuotaFacade,
+      PrismaSessionStore,
+      PrismaTokenStore,
+      PrismaMfaStore,
+      TokenCleanupService,
+    ]) {
+      expect(
+        modules.filter((module) => module.providers.has(provider)).map((module) => module.metatype),
+      ).toEqual([AuthModule]);
+    }
+    expect(modules.filter((module) => module.providers.has(PasswordResetService))).toHaveLength(1);
+    expect(
+      modules
+        .filter((module) => module.injectables.has(AccountRecoveryRateLimitGuard))
+        .map((module) => module.metatype),
+    ).toEqual([PublicAuthApiModule]);
+    expect(
+      app.select(PublicAuthApiModule).get(PasswordResetController, { strict: true }),
+    ).toBeInstanceOf(PasswordResetController);
+  });
 
   it('returns the same safe 202 for existing and unknown addresses', async () => {
     const unknownEmail = `missing-${randomUUID()}@example.test`;

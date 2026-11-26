@@ -5,7 +5,6 @@ import { AdminOriginGuard } from '#src/common/auth/admin-origin.guard';
 import { UsersModule } from '#src/modules/users/users.module';
 import { AuthController } from './controllers/auth.controller.js';
 import { EmailVerificationController } from './controllers/email-verification.controller.js';
-import { PasswordResetController } from './controllers/password-reset.controller.js';
 import { SessionsController } from './controllers/sessions.controller.js';
 import { TokensController } from './controllers/tokens.controller.js';
 
@@ -21,7 +20,6 @@ import { AdminCookieAuthService } from './services/admin-cookie-auth.service.js'
 import { AdminSessionFacade } from './services/admin-session.facade.js';
 import { AdminSignInService } from './services/admin-sign-in.service.js';
 import { AuthHttpQuotaFacade } from './services/auth-http-quota.facade.js';
-import { AccountRecoveryRateLimitGuard } from './guards/account-recovery-rate-limit.guard.js';
 import { VerificationResendRateLimitGuard } from './guards/verification-resend-rate-limit.guard.js';
 import { CredentialsService, TokenCleanupService } from './services/index.js';
 import { AuthAccountThrottleService } from './services/auth-account-throttle.service.js';
@@ -30,18 +28,11 @@ import { PrismaMfaStore, PrismaSessionStore, PrismaTokenStore } from './stores/i
 
 @Module({
   imports: [UsersModule, RateLimitStorageModule],
-  controllers: [
-    AuthController,
-    PasswordResetController,
-    EmailVerificationController,
-    TokensController,
-    SessionsController,
-  ],
+  controllers: [AuthController, EmailVerificationController, TokensController, SessionsController],
   providers: [
     AdminSessionPurposeGuard,
     AdminOriginGuard,
     AuthAccountThrottleService,
-    AccountRecoveryRateLimitGuard,
     VerificationResendRateLimitGuard,
     SessionAuth,
     AdminCookieAuthService,

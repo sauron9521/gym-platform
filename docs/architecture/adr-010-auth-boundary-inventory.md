@@ -84,6 +84,10 @@ The Auth public-api exports four injected providers: AdminSessionFacade, AdminSi
 
 All five legacy controllers use the explicit boundary; no controller relocation or new production route is introduced. Guards remain in their existing file locations pending adapter migration; the leaf module can resolve its own guard enhancer using the imported quota facade. Keep the existing normalization, HMAC keys, policy budgets, no-store behavior, errors and session/MFA semantics. The test-only consumer module exercises real Nest DI and the recovery/resend guard behavior without adding production routes.
 
+### ABI05c1 Password Reset relocation
+
+[PublicAuthApiModule](../../apps/api/src/api/public/auth/public-auth-api.module.ts) owns [PasswordResetController](../../apps/api/src/api/public/auth/controllers/password-reset.controller.ts), imported once through PublicApiModule. Both public routes, stable operation and counter identity, validation, no-store, and recovery quota remain unchanged. The route-scoped recovery guard resolves AuthHttpQuotaFacade through AuthModule; remove its redundant legacy provider registration. AuthModule keeps all private stores, registry providers, mailers and cleanup. The historical controller and unit-test paths are recorded in the existing source relocation map. Keep the legacy controller barrel for remaining controllers only.
+
 ## Acceptance matrix before expansion
 
 | Concern                       | Required existing or additional evidence                                                                                                                                                                                            |

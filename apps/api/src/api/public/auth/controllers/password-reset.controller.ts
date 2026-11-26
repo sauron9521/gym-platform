@@ -15,7 +15,7 @@ import {
   type EmailInput,
   type ResetPasswordInput,
   AccountRecoveryRateLimitGuard,
-} from '../public-api.js';
+} from '#src/modules/auth/public-api';
 import { StableHttpOperation } from '#src/common/http/stable-http-operation.decorator';
 
 @Public()

@@ -11,7 +11,6 @@ import {
 } from '@nestjs/common/constants';
 
 import { AuthController } from '../../controllers/auth.controller.js';
-import { PasswordResetController } from '../../controllers/password-reset.controller.js';
 import { EmailVerificationController } from '../../controllers/email-verification.controller.js';
 import { TokensController } from '../../controllers/tokens.controller.js';
 import { SessionsController } from '../../controllers/sessions.controller.js';
@@ -21,17 +20,16 @@ import { AuthModule } from '../../auth.module.js';
 describe('AuthModule controller registry', () => {
   const controllers = [
     AuthController,
-    PasswordResetController,
     EmailVerificationController,
     TokensController,
     SessionsController,
   ];
 
-  it('preserves controller registration and five route prefixes', () => {
+  it('preserves controller registration and four remaining legacy route prefixes', () => {
     const registered: unknown[] = Reflect.getMetadata(MODULE_METADATA.CONTROLLERS, AuthModule);
     expect(registered).toEqual(controllers);
     expect(controllers.map((controller) => Reflect.getMetadata(PATH_METADATA, controller))).toEqual(
-      ['auth', 'auth/password-reset', 'auth/email', 'auth/token', 'auth'],
+      ['auth', 'auth/email', 'auth/token', 'auth'],
     );
   });
 
@@ -39,8 +37,6 @@ describe('AuthModule controller registry', () => {
     [AuthController, 'signUp', RequestMethod.POST, 'register', undefined],
     [AuthController, 'signIn', RequestMethod.POST, 'login', 200],
     [AuthController, 'adminSignIn', RequestMethod.POST, 'admin-login', 200],
-    [PasswordResetController, 'forgot', RequestMethod.POST, 'forgot', 202],
-    [PasswordResetController, 'reset', RequestMethod.POST, 'reset', 200],
     [EmailVerificationController, 'verifyEmail', RequestMethod.POST, 'verify', 200],
     [EmailVerificationController, 'resend', RequestMethod.POST, 'verification', 202],
     [TokensController, 'issue', RequestMethod.POST, '/', 200],
@@ -73,8 +69,6 @@ describe('AuthModule controller registry', () => {
     [AuthController, 'signUp', 3],
     [AuthController, 'signIn', 3],
     [AuthController, 'adminSignIn', 3],
-    [PasswordResetController, 'forgot', 3],
-    [PasswordResetController, 'reset', 3],
     [EmailVerificationController, 'verifyEmail', 8],
     [EmailVerificationController, 'resend', 3],
     [TokensController, 'issue', 3],
@@ -93,8 +87,6 @@ describe('AuthModule controller registry', () => {
     [AuthController, 'signUp', 'AuthController-signUp'],
     [AuthController, 'adminSignIn', 'AuthController-adminSignIn'],
     [AuthController, 'signIn', 'AuthController-signIn'],
-    [PasswordResetController, 'forgot', 'PasswordResetController-forgot'],
-    [PasswordResetController, 'reset', 'PasswordResetController-reset'],
     [EmailVerificationController, 'verifyEmail', 'EmailVerificationController-verifyEmail'],
     [EmailVerificationController, 'resend', 'EmailVerificationController-resend'],
     [TokensController, 'issue', 'TokensController-issue'],
@@ -129,14 +121,14 @@ describe('AuthModule controller registry', () => {
     },
   );
 
-  it('retains the no-store interceptor on all five controllers', () => {
+  it('retains the no-store interceptor on all four remaining controllers', () => {
     for (const controller of controllers) {
       const interceptors: unknown[] = Reflect.getMetadata(INTERCEPTORS_METADATA, controller);
       expect(interceptors).toContain(AuthNoStoreInterceptor);
     }
   });
 
-  it('registers exactly seventeen unique HTTP verb/path pairs', () => {
+  it('registers exactly fifteen unique HTTP verb/path pairs', () => {
     const routes = controllers.flatMap((controller) => {
       const prefix = Reflect.getMetadata(PATH_METADATA, controller) as string;
       return Object.getOwnPropertyNames(controller.prototype)
@@ -153,7 +145,7 @@ describe('AuthModule controller registry', () => {
         });
     });
 
-    expect(routes).toHaveLength(17);
+    expect(routes).toHaveLength(15);
     expect(new Set(routes).size).toBe(routes.length);
   });
 });

@@ -202,89 +202,6 @@
         "tags": ["Authentication"]
       }
     },
-    "/auth/password-reset/forgot": {
-      "post": {
-        "operationId": "PasswordResetController_forgot",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "email": {
-                    "type": "string"
-                  }
-                },
-                "required": ["email"],
-                "additionalProperties": false
-              }
-            }
-          }
-        },
-        "responses": {
-          "202": {
-            "description": ""
-          }
-        },
-        "tags": ["PasswordReset"]
-      }
-    },
-    "/auth/password-reset/reset": {
-      "post": {
-        "operationId": "PasswordResetController_reset",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "token": {
-                    "type": "string",
-                    "minLength": 1,
-                    "writeOnly": true
-                  },
-                  "password": {
-                    "type": "string",
-                    "minLength": 8,
-                    "allOf": [
-                      {
-                        "type": "string",
-                        "pattern": "[a-z]"
-                      },
-                      {
-                        "type": "string",
-                        "pattern": "[A-Z]"
-                      },
-                      {
-                        "type": "string",
-                        "pattern": "[0-9]"
-                      },
-                      {
-                        "type": "string",
-                        "pattern": "[^a-zA-Z0-9]"
-                      }
-                    ],
-                    "writeOnly": true
-                  }
-                },
-                "required": ["token", "password"],
-                "additionalProperties": false
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "tags": ["PasswordReset"]
-      }
-    },
     "/auth/email/verify": {
       "post": {
         "operationId": "EmailVerificationController_verifyEmail",
@@ -1468,6 +1385,89 @@
           }
         },
         "tags": ["AvatarPublic"]
+      }
+    },
+    "/auth/password-reset/forgot": {
+      "post": {
+        "operationId": "PasswordResetController_forgot",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string"
+                  }
+                },
+                "required": ["email"],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": ""
+          }
+        },
+        "tags": ["PasswordReset"]
+      }
+    },
+    "/auth/password-reset/reset": {
+      "post": {
+        "operationId": "PasswordResetController_reset",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "token": {
+                    "type": "string",
+                    "minLength": 1,
+                    "writeOnly": true
+                  },
+                  "password": {
+                    "type": "string",
+                    "minLength": 8,
+                    "allOf": [
+                      {
+                        "type": "string",
+                        "pattern": "[a-z]"
+                      },
+                      {
+                        "type": "string",
+                        "pattern": "[A-Z]"
+                      },
+                      {
+                        "type": "string",
+                        "pattern": "[0-9]"
+                      },
+                      {
+                        "type": "string",
+                        "pattern": "[^a-zA-Z0-9]"
+                      }
+                    ],
+                    "writeOnly": true
+                  }
+                },
+                "required": ["token", "password"],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": ["PasswordReset"]
       }
     },
     "/users/me/notification-settings": {
