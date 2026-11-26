@@ -250,6 +250,34 @@ const navigationMessages = {
     uk: 'Підходів: {total}',
     en: 'Sets: {total}',
   },
+  'mobile.settings.confirmWorkoutCompletion': {
+    uk: 'Підтверджувати завершення тренування',
+    en: 'Confirm workout completion',
+  },
+  'mobile.settings.confirmWorkoutCompletionHint': {
+    uk: 'Додаткове підтвердження перед завершенням. Перевірки підходів залишаються обов’язковими. Лише на цьому пристрої.',
+    en: 'Extra confirmation before finishing. Set validation is always required. On this device only.',
+  },
+  'mobile.workout.finishReviewTitle': {
+    uk: 'Завершити тренування?',
+    en: 'Finish workout?',
+  },
+  'mobile.workout.finishReviewSummary': {
+    uk: '{completed} виконано · {skipped} пропущено. Після завершення підходи недоступні для редагування на цьому екрані.',
+    en: '{completed} completed · {skipped} skipped. After finishing, sets can no longer be edited on this screen.',
+  },
+  'mobile.workout.finishReviewConfirm': {
+    uk: 'Так, завершити',
+    en: 'Yes, finish',
+  },
+  'mobile.workout.finishReviewCancel': {
+    uk: 'Повернутися до тренування',
+    en: 'Return to workout',
+  },
+  'mobile.workout.finishEditBlocked': {
+    uk: 'Збережіть або скасуйте редагування підходів перед завершенням.',
+    en: 'Save or cancel set edits before finishing.',
+  },
   'mobile.settings.pending': { uk: 'Зачекайте…', en: 'Please wait…' },
   'mobile.settings.storageError': {
     uk: 'Не вдалося зберегти або прочитати налаштування. Спробуйте ще раз.',
@@ -257,8 +285,8 @@ const navigationMessages = {
   },
   'mobile.settings.retry': { uk: 'Повторити', en: 'Retry' },
   'mobile.settings.deviceOnly': {
-    uk: 'Звук, вібрація, утримання екрана, підказки та згортання вправ зберігаються лише на цьому пристрої.',
-    en: 'Sound, vibration, screen wake, hints and exercise collapse are saved only on this device.',
+    uk: 'Звук, вібрація, утримання екрана, підказки, згортання вправ та підтвердження завершення зберігаються лише на цьому пристрої.',
+    en: 'Sound, vibration, screen wake, hints, exercise collapse and finish confirmation are saved only on this device.',
   },
   'mobile.settings.workoutAccount': {
     uk: 'Автотаймер і тривалість відпочинку синхронізуються з акаунтом.',

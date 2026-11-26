@@ -1,8 +1,9 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, fireEvent, render as nativeRender } from '@testing-library/react-native';
 import { useEffect, type PropsWithChildren } from 'react';
 import { RestTimerProvider } from '@/features/workouts/model/rest-timer-provider';
 import { Alert } from 'react-native';
+import { focusManager, onlineManager } from '@tanstack/react-query';
 import { IntlProvider } from 'react-intl';
 import { getMobileMessages } from '@/shared/i18n/mobile-messages';
 
@@ -15,7 +16,9 @@ import { usePreviousSetHints } from '@/features/workouts/model/previous-set-hint
 import { WorkoutSetRow } from '@/screens/workouts/ui/workout-set-row';
 import { WorkoutDetailsScreen } from '@/screens/workouts/ui/workout-details-screen';
 
-vi.mock('expo-router', () => ({ useFocusEffect: useEffect }));
+vi.mock('expo-router', () => ({
+  useFocusEffect: (callback: () => void | (() => void)) => useEffect(callback, [callback]),
+}));
 
 function Wrapper({ children }: PropsWithChildren) {
   return (
@@ -56,6 +59,7 @@ const notify = vi.hoisted(() => vi.fn());
 vi.mock('@/features/workouts/lib/use-rest-feedback', () => ({ useRestFeedback: () => notify }));
 
 const collapsePreference = vi.hoisted(() => ({ enabled: false }));
+const confirmationPreference = vi.hoisted(() => ({ enabled: false }));
 const shouldAutoStartRestTimer = vi.hoisted(() => vi.fn(() => true));
 vi.mock('@/features/app-settings/model/app-settings-context', () => ({
   useAppSettings: (select: (state: unknown) => unknown) =>
@@ -68,11 +72,13 @@ vi.mock('@/features/app-settings/model/app-settings-context', () => ({
         restVibration: true,
         keepWorkoutScreenAwake: true,
         autoCollapseExercises: collapsePreference.enabled,
+        confirmWorkoutCompletion: confirmationPreference.enabled,
       },
     }),
 }));
 
 const refetch = vi.fn();
+const currentSnapshot = vi.fn(() => true);
 const mutate = vi.fn();
 const mutateTitle = vi.fn();
 const mutateCancel = vi.fn();
@@ -102,6 +108,8 @@ function prepareWorkout(
     isPending: false,
     isError: false,
     canonicalReadVersion: 5,
+    dataUpdatedAt: 100,
+    captureCompletionGuard: () => currentSnapshot,
     refetch,
     error: null,
   } as unknown as ReturnType<typeof useWorkoutDetailsQuery>);
@@ -124,11 +132,110 @@ function prepareWorkout(
   } as unknown as ReturnType<typeof useCancelWorkout>);
 }
 
+beforeEach(() => {
+  confirmationPreference.enabled = false;
+  currentSnapshot.mockReset().mockReturnValue(true);
+  onlineManager.setOnline(true);
+  focusManager.setFocused(true);
+});
+afterEach(() => {
+  onlineManager.setOnline(true);
+  focusManager.setFocused(undefined);
+});
+
 describe('WorkoutDetailsScreen (real React Native renderer)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(usePreviousSetHints).mockReturnValue(new Map());
     collapsePreference.enabled = false;
+  });
+
+  it('shows a review by preference, permits cancellation and submits only once after explicit confirmation', async () => {
+    confirmationPreference.enabled = true;
+    prepareWorkout('IN_PROGRESS');
+    const view = await render(<WorkoutDetailsScreen id="workout-123" />);
+    await fireEvent.press(view.getByTestId('workout-status-action'));
+    expect(view.getByTestId('workout-completion-review')).toBeTruthy();
+    expect(view.getByText(/1 виконано · 0 пропущено/)).toBeTruthy();
+    expect(mutate).not.toHaveBeenCalled();
+    await fireEvent.press(view.getByTestId('workout-cancel-completion'));
+    expect(view.queryByTestId('workout-completion-review')).toBeNull();
+    expect(mutate).not.toHaveBeenCalled();
+    await fireEvent.press(view.getByTestId('workout-status-action'));
+    await fireEvent.press(view.getByTestId('workout-confirm-completion'));
+    await fireEvent.press(view.getByTestId('workout-status-action'));
+    expect(mutate).toHaveBeenCalledExactlyOnceWith(
+      'complete',
+      expect.objectContaining({ onSettled: expect.any(Function) }),
+    );
+  });
+
+  it('invalidates review on a newer canonical snapshot and rejects stale cache consent', async () => {
+    confirmationPreference.enabled = true;
+    prepareWorkout('IN_PROGRESS');
+    const view = await render(<WorkoutDetailsScreen id="workout-123" />);
+    await fireEvent.press(view.getByTestId('workout-status-action'));
+    vi.mocked(useWorkoutDetailsQuery).mockReturnValue({
+      ...vi.mocked(useWorkoutDetailsQuery)('workout-123'),
+      canonicalReadVersion: 6,
+    });
+    await view.rerender(<WorkoutDetailsScreen id="workout-123" />);
+    expect(view.queryByTestId('workout-completion-review')).toBeNull();
+    await fireEvent.press(view.getByTestId('workout-status-action'));
+    currentSnapshot.mockReturnValue(false);
+    await fireEvent.press(view.getByTestId('workout-confirm-completion'));
+    expect(mutate).not.toHaveBeenCalled();
+    expect(view.queryByTestId('workout-completion-review')).toBeNull();
+  });
+
+  it('invalidates review on background and network loss, without automatic submission', async () => {
+    confirmationPreference.enabled = true;
+    prepareWorkout('IN_PROGRESS');
+    const view = await render(<WorkoutDetailsScreen id="workout-123" />);
+    await fireEvent.press(view.getByTestId('workout-status-action'));
+    expect(view.getByTestId('workout-completion-review')).toBeTruthy();
+    await act(async () => focusManager.setFocused(false));
+    expect(view.queryByTestId('workout-completion-review')).toBeNull();
+    await act(async () => focusManager.setFocused(true));
+    await fireEvent.press(view.getByTestId('workout-status-action'));
+    expect(view.getByTestId('workout-completion-review')).toBeTruthy();
+    await act(async () => onlineManager.setOnline(false));
+    expect(view.queryByTestId('workout-completion-review')).toBeNull();
+    expect(view.getByTestId('workout-status-action').props.accessibilityState.disabled).toBe(true);
+    await act(async () => onlineManager.setOnline(true));
+    expect(mutate).not.toHaveBeenCalled();
+  });
+
+  it('blocks finishing with an open saved-set editor regardless of confirmation preference', async () => {
+    prepareWorkout('IN_PROGRESS');
+    const view = await render(<WorkoutDetailsScreen id="workout-123" />);
+    const row = () => vi.mocked(WorkoutSetRow).mock.calls.at(-1)![0];
+    await act(async () => {
+      expect(row().onEditStart?.('set-1')).toBe(true);
+    });
+    expect(view.getByTestId('workout-edit-blocked')).toBeTruthy();
+    expect(view.getByTestId('workout-status-action').props.accessibilityState.disabled).toBe(true);
+    await fireEvent.press(view.getByTestId('workout-status-action'));
+    expect(mutate).not.toHaveBeenCalled();
+    confirmationPreference.enabled = true;
+    await view.rerender(<WorkoutDetailsScreen id="workout-123" />);
+    expect(view.getByTestId('workout-status-action').props.accessibilityState.disabled).toBe(true);
+    await act(async () => row().onEditEnd?.('set-1'));
+    await fireEvent.press(view.getByTestId('workout-status-action'));
+    expect(view.getByTestId('workout-completion-review')).toBeTruthy();
+    await act(async () => {
+      expect(row().onEditStart?.('set-1')).toBe(true);
+    });
+    expect(view.queryByTestId('workout-completion-review')).toBeNull();
+    expect(mutate).not.toHaveBeenCalled();
+  });
+
+  it('does not bypass cache validation even with confirmation disabled', async () => {
+    prepareWorkout('IN_PROGRESS');
+    currentSnapshot.mockReturnValue(false);
+    const view = await render(<WorkoutDetailsScreen id="workout-123" />);
+    await fireEvent.press(view.getByTestId('workout-status-action'));
+    expect(mutate).not.toHaveBeenCalled();
   });
 
   it('passes only matching strength history to pending rows', async () => {

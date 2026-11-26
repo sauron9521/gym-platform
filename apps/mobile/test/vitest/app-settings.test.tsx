@@ -35,6 +35,7 @@ const state = vi.hoisted(() => ({
   getKeepAwake: vi.fn(),
   getPreviousSets: vi.fn(),
   getAutoCollapse: vi.fn(),
+  getConfirmCompletion: vi.fn(),
   patch: vi.fn(),
   setItem: vi.fn(),
   getRemote: vi.fn(),
@@ -46,21 +47,23 @@ const state = vi.hoisted(() => ({
 vi.mock('@react-native-async-storage/async-storage', () => ({
   default: {
     getItem: (key: string) =>
-      key.endsWith(':auto-collapse-exercises')
-        ? state.getAutoCollapse(key)
-        : key.endsWith(':show-previous-sets')
-          ? state.getPreviousSets(key)
-          : key.endsWith(':confirmed-workout-preferences')
-            ? state.getConfirmed(key)
-            : key.endsWith(':keep-workout-screen-awake')
-              ? state.getKeepAwake(key)
-              : key.endsWith(':rest-sound') || key.endsWith(':rest-vibration')
-                ? state.getFeedback(key)
-                : key.endsWith(':rest-duration')
-                  ? state.getDuration(key)
-                  : key.includes(':app-settings:')
-                    ? state.getItem(key)
-                    : Promise.resolve(null),
+      key.endsWith(':confirm-workout-completion')
+        ? state.getConfirmCompletion(key)
+        : key.endsWith(':auto-collapse-exercises')
+          ? state.getAutoCollapse(key)
+          : key.endsWith(':show-previous-sets')
+            ? state.getPreviousSets(key)
+            : key.endsWith(':confirmed-workout-preferences')
+              ? state.getConfirmed(key)
+              : key.endsWith(':keep-workout-screen-awake')
+                ? state.getKeepAwake(key)
+                : key.endsWith(':rest-sound') || key.endsWith(':rest-vibration')
+                  ? state.getFeedback(key)
+                  : key.endsWith(':rest-duration')
+                    ? state.getDuration(key)
+                    : key.includes(':app-settings:')
+                      ? state.getItem(key)
+                      : Promise.resolve(null),
     setItem: state.setItem,
   },
 }));
@@ -168,6 +171,7 @@ beforeEach(() => {
   state.getKeepAwake.mockReset().mockResolvedValue(null);
   state.getPreviousSets.mockReset().mockResolvedValue(null);
   state.getAutoCollapse.mockReset().mockResolvedValue(null);
+  state.getConfirmCompletion.mockReset().mockResolvedValue(null);
   state.setItem.mockReset().mockResolvedValue(undefined);
   state.patch
     .mockReset()
@@ -181,6 +185,56 @@ afterEach(async () => {
 });
 
 describe('App settings', () => {
+  it('defaults completion confirmation on, persists explicit false offline and isolates accounts', async () => {
+    onlineManager.setOnline(false);
+    const view = await render(<App />);
+    const setting = () => view.getByTestId('settings-confirm-workout-completion');
+    await waitFor(() => expect(setting().props.disabled).toBe(false));
+    expect(setting().props.value).toBe(true);
+    await fireEvent(setting(), 'valueChange', false);
+    await waitFor(() => expect(setting().props.value).toBe(false));
+    expect(state.setItem).toHaveBeenCalledWith(
+      'gym-platform:app-settings:v1:athlete-a:confirm-workout-completion',
+      'false',
+    );
+    expect(state.patchWorkout).not.toHaveBeenCalled();
+    await view.unmount();
+    state.getConfirmCompletion.mockResolvedValue('false');
+    const restored = await render(<App />);
+    await waitFor(() =>
+      expect(restored.getByTestId('settings-confirm-workout-completion').props.value).toBe(false),
+    );
+    state.account = { id: 'athlete-b' };
+    state.getConfirmCompletion.mockResolvedValue('corrupt');
+    await restored.rerender(<App />);
+    await waitFor(() =>
+      expect(restored.getByTestId('settings-confirm-workout-completion').props.disabled).toBe(
+        false,
+      ),
+    );
+    expect(restored.getByTestId('settings-confirm-workout-completion').props.value).toBe(true);
+  });
+
+  it('retains confirmation on failed disable write and unreadable storage', async () => {
+    const view = await render(<App />);
+    await waitFor(() =>
+      expect(view.getByTestId('settings-confirm-workout-completion').props.disabled).toBe(false),
+    );
+    state.setItem.mockRejectedValueOnce(new Error('disk full'));
+    await fireEvent(view.getByTestId('settings-confirm-workout-completion'), 'valueChange', false);
+    await waitFor(() =>
+      expect(view.getByTestId('settings-confirm-workout-completion').props.disabled).toBe(false),
+    );
+    expect(view.getByTestId('settings-confirm-workout-completion').props.value).toBe(true);
+    await view.unmount();
+    state.getConfirmCompletion.mockRejectedValueOnce(new Error('read failed'));
+    const restored = await render(<App />);
+    await waitFor(() =>
+      expect(restored.getByText('Could not save or read settings. Please try again.')).toBeTruthy(),
+    );
+    expect(restored.getByTestId('settings-confirm-workout-completion').props.value).toBe(true);
+  });
+
   it('persists optional exercise collapse offline, restores it per account and defaults corrupt values off', async () => {
     onlineManager.setOnline(false);
     const view = await render(<App />);

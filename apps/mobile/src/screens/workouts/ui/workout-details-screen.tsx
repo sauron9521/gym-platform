@@ -1,4 +1,6 @@
-import { useState } from 'react';
+import { useState, useSyncExternalStore } from 'react';
+import { useIntl } from 'react-intl';
+import { onlineManager } from '@tanstack/react-query';
 import {
   ActivityIndicator,
   Pressable,
@@ -69,13 +71,20 @@ function WorkoutTitleEditor({ title, disabled, pending, failure, onSave }: Title
   );
 }
 
+const subscribeOnline = (listener: () => void) => onlineManager.subscribe(listener);
+const getOnline = () => onlineManager.isOnline();
+
 // prettier-ignore
 export function WorkoutDetailsScreen({ id }: { id: string }) {
   const styles = useStyles();
+  const intl = useIntl();
+  const t = (key: string) => intl.formatMessage({ id: `mobile.workout.${key}` });
+  const online = useSyncExternalStore(subscribeOnline, getOnline, getOnline);
   const {
     details, transition, titleUpdate, cancellation, workout,
     progress, total, processed, percent, completionAllowed, reconciling,
     busy, pendingSet, uncertain, nextAction, actionDisabled,
+    editBlocked, openEdits, reviewCurrent, confirmCompletion, cancelCompletion, beginSetEdit, endSetEdit,
     saveTitle, confirmCancellation, runTransition, isSetActionBlocked,
     beginSetWrite, settleSetWrite, startRest,
   } = useWorkoutDetails(id);
@@ -158,6 +167,7 @@ export function WorkoutDetailsScreen({ id }: { id: string }) {
                   Для завершення потрібен хоча б один виконаний підхід і жодного незавершеного.
                 </Text>
               ) : null}
+              {editBlocked ? <Text testID="workout-edit-blocked" accessibilityLiveRegion="polite" style={styles.muted}>{t('finishEditBlocked')}</Text> : null}
               <RestTimer key={id} workoutId={id} />
             </>
           ) : null}
@@ -167,7 +177,7 @@ export function WorkoutDetailsScreen({ id }: { id: string }) {
               exercise={exercise}
               active={Boolean(accountId && workout.athleteId === accountId && workout.status === 'IN_PROGRESS')}
               autoCollapse={autoCollapse}
-              confirmed={!reconciling && !uncertain && !exercise.sets.some((set) => set.id === pendingSet)}
+              confirmed={!reconciling && !uncertain && !exercise.sets.some((set) => set.id === pendingSet || openEdits.has(set.id))}
             >
               {exercise.sets.map((set) => (
                 <WorkoutSetRow
@@ -178,6 +188,8 @@ export function WorkoutDetailsScreen({ id }: { id: string }) {
                   editable={workout.status === 'IN_PROGRESS'}
                   reconciling={reconciling}
                   actionBlocked={isSetActionBlocked(set.id)}
+                  onEditStart={beginSetEdit}
+                  onEditEnd={endSetEdit}
                   onWriteStart={beginSetWrite}
                   onWriteSettled={settleSetWrite}
                   onNewCompletion={startRest}
@@ -205,13 +217,31 @@ export function WorkoutDetailsScreen({ id }: { id: string }) {
               {cancellation.error.message}
             </Text>
           ) : null}
-          {nextAction ? (
+          {reviewCurrent ? (
+            <View testID="workout-completion-review" style={styles.review}>
+              <Text accessibilityRole="header" style={styles.reviewTitle}>{t('finishReviewTitle')}</Text>
+              <Text style={styles.muted}>{intl.formatMessage({ id: 'mobile.workout.finishReviewSummary' }, { completed: progress.completed, skipped: progress.skipped })}</Text>
+              <Pressable
+                accessibilityRole="button"
+                testID="workout-confirm-completion"
+                disabled={!online || actionDisabled}
+                accessibilityState={{ disabled: !online || actionDisabled }}
+                onPress={confirmCompletion}
+                style={styles.button}
+              >
+                <Text style={styles.buttonText}>{t('finishReviewConfirm')}</Text>
+              </Pressable>
+              <Pressable accessibilityRole="button" testID="workout-cancel-completion" onPress={cancelCompletion} style={styles.cancelButton}>
+                <Text style={styles.muted}>{t('finishReviewCancel')}</Text>
+              </Pressable>
+            </View>
+          ) : nextAction ? (
             <Pressable
               accessibilityRole="button"
               testID="workout-status-action"
               style={styles.button}
-              disabled={actionDisabled}
-              accessibilityState={{ disabled: actionDisabled }}
+              disabled={actionDisabled || (nextAction === 'complete' && !online)}
+              accessibilityState={{ disabled: actionDisabled || (nextAction === 'complete' && !online) }}
               onPress={runTransition}
             >
               <Text style={styles.buttonText}>
@@ -266,6 +296,15 @@ const useStyles = createThemedStyles((palette) =>
       minHeight: 48,
     },
     cancelText: { color: palette.error, fontWeight: '600' },
+    review: {
+      borderWidth: 1,
+      borderColor: palette.border,
+      borderRadius: 14,
+      padding: 16,
+      gap: 12,
+      backgroundColor: palette.surface,
+    },
+    reviewTitle: { color: palette.text, fontSize: 18, fontWeight: '600' },
     button: {
       backgroundColor: palette.primary,
       borderRadius: 12,

@@ -28,6 +28,8 @@ export type WorkoutSetRowOptions = {
   onWriteStart?: (setId: string) => boolean;
   onWriteSettled?: (setId: string, requiredReadVersion: number | null) => void;
   onNewCompletion?: () => void;
+  onEditStart?: (setId: string) => boolean;
+  onEditEnd?: (setId: string) => void;
 };
 
 export function useWorkoutSetRow({
@@ -41,6 +43,8 @@ export function useWorkoutSetRow({
   onWriteStart,
   onWriteSettled,
   onNewCompletion,
+  onEditStart,
+  onEditEnd,
 }: WorkoutSetRowOptions) {
   const mutation = useWorkoutSetMutation(workoutId);
   const submitLock = useRef(false);
@@ -64,6 +68,8 @@ export function useWorkoutSetRow({
     confirmedResult.snapshotAt === canonicalSnapshotAt
       ? confirmedResult.set
       : set;
+  useEffect(() => () => onEditEnd?.(set.id), [onEditEnd, set.id]);
+
   const isSaved = visibleSet.status !== 'PENDING';
   const isEditing = !isSaved || editing;
   const limited = retryAt !== null;
@@ -147,6 +153,7 @@ export function useWorkoutSetRow({
           set: updated,
         });
         setEditing(false);
+        onEditEnd?.(set.id);
         if (visibleSet.status === 'PENDING' && updated.status === 'COMPLETED') {
           onNewCompletion?.();
         }
@@ -184,6 +191,7 @@ export function useWorkoutSetRow({
         set: updated,
       });
       setEditing(false);
+      onEditEnd?.(set.id);
     } catch (error) {
       requiredReadVersion = captureWriteFailure(error, before);
     } finally {
@@ -202,6 +210,7 @@ export function useWorkoutSetRow({
       actualWeightKg: String(visibleSet.actualWeightKg ?? visibleSet.plannedWeightKg ?? ''),
     });
     setEditing(false);
+    onEditEnd?.(set.id);
   };
   const errorMessage = mutation.isError
     ? mutation.error instanceof WorkoutSetOutcomeUnknownError &&
@@ -226,7 +235,10 @@ export function useWorkoutSetRow({
     errors,
     saveCompleted,
     skipSet,
-    beginEditing: () => setEditing(true),
+    beginEditing: () => {
+      if (!editable || !isSaved || savingDisabled || (onEditStart && !onEditStart(set.id))) return;
+      setEditing(true);
+    },
     cancelEditing,
     errorMessage,
   };

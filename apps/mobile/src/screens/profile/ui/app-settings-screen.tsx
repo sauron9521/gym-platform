@@ -21,6 +21,7 @@ export function AppSettingsScreen() {
     setKeepWorkoutScreenAwake,
     setShowPreviousSets,
     setAutoCollapseExercises,
+    setConfirmWorkoutCompletion,
     reload,
     retryAccount,
   } = useAppSettings((state) => state);
@@ -159,6 +160,20 @@ export function AppSettingsScreen() {
             disabled={disabled}
             value={settings.autoCollapseExercises}
             onValueChange={(value) => void setAutoCollapseExercises(value)}
+            trackColor={{ false: palette.border, true: palette.primary }}
+          />
+        </View>
+        <View style={styles.row}>
+          <View style={styles.description}>
+            <Text style={styles.label}>{t('confirmWorkoutCompletion')}</Text>
+            <Text style={styles.hint}>{t('confirmWorkoutCompletionHint')}</Text>
+          </View>
+          <Switch
+            testID="settings-confirm-workout-completion"
+            accessibilityLabel={t('confirmWorkoutCompletion')}
+            disabled={disabled}
+            value={settings.confirmWorkoutCompletion}
+            onValueChange={(value) => void setConfirmWorkoutCompletion(value)}
             trackColor={{ false: palette.border, true: palette.primary }}
           />
         </View>
