@@ -1,11 +1,14 @@
 import { WorkoutAnalyticsController } from '../../controllers/workout-analytics.controller.js';
-import { WorkoutAnalyticsService } from '../../services/workout-analytics.service.js';
-import type { WorkoutAnalyticsQuery } from '../../dto/workout-analytics.schemas.js';
-import type { WorkoutActor } from '#src/modules/workouts/types/workout.types';
+import type {
+  WorkoutAnalyticsService,
+  WorkoutAnalyticsQuery,
+  WorkoutActor,
+} from '../../public-api.js';
 
 describe('WorkoutAnalyticsController', () => {
   const service = {
     summary: vi.fn(),
+    personalRecords: vi.fn(),
     exercise: vi.fn(),
     previousSets: vi.fn(),
   };
@@ -26,6 +29,13 @@ describe('WorkoutAnalyticsController', () => {
     expect(service.summary).toHaveBeenCalledTimes(1);
     expect(service.summary).toHaveBeenCalledWith(athlete, query);
     expect(service.exercise).not.toHaveBeenCalled();
+  });
+
+  it('delegates lifetime personal records with the authenticated actor only', async () => {
+    const response = { exerciseCount: 2, asOf: new Date() };
+    service.personalRecords.mockResolvedValue(response);
+    await expect(controller.personalRecords(athlete)).resolves.toBe(response);
+    expect(service.personalRecords).toHaveBeenCalledExactlyOnceWith(athlete);
   });
 
   it('delegates exercise history with the original actor, ID and range', async () => {

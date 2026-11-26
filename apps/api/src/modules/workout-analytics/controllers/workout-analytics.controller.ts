@@ -3,21 +3,18 @@ import { Authenticate, CurrentUser } from '@nestjs/authentication';
 import { Controller, Get, Header, Param, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiCookieAuth, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 
-import type { WorkoutActor } from '#src/modules/workouts/types/workout.types';
-
 import {
+  WorkoutAnalyticsService,
   analyticsExerciseIdSchema,
   previousSetsQuerySchema,
   workoutAnalyticsQuerySchema,
   type WorkoutAnalyticsQuery,
-} from '../dto/workout-analytics.schemas.js';
-import {
+  type WorkoutActor,
   previousWorkoutSetsResponseSchema,
   workoutAnalyticsExerciseResponseSchema,
   workoutAnalyticsPersonalRecordsResponseSchema,
   workoutAnalyticsSummaryResponseSchema,
-} from '../workout-analytics.responses.js';
-import { WorkoutAnalyticsService } from '../services/workout-analytics.service.js';
+} from '../public-api.js';
 
 @Authenticate()
 @ApiTags('Workout Analytics')
