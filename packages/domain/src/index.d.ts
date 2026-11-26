@@ -17,3 +17,12 @@ export declare function workoutSetProgress(sets: ReadonlyArray<{ status: Workout
   pending: number;
   total: number;
 };
+
+export declare const restDurationPresets: readonly [60, 90, 120];
+export type RestDuration = (typeof restDurationPresets)[number];
+export type WorkoutPreferences = {
+  autoRestTimer: boolean;
+  restDurationSeconds: RestDuration;
+};
+export declare const defaultWorkoutPreferences: Readonly<WorkoutPreferences>;
+export declare function isRestDuration(value: unknown): value is RestDuration;

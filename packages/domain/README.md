@@ -10,6 +10,9 @@ without exposing or importing a database model.
   authoritative set statuses under the workout row lock. Clients must still handle HTTP 409.
 - `workoutSetProgress` reports completed, skipped and pending set counts.
 
+- `restDurationPresets`, `isRestDuration` and `defaultWorkoutPreferences` define
+  shared account workout preference values. They do not persist or synchronize them.
+
 This package does **not** authorize transitions, mutate workout state or provide
 persistent data. The NestJS service/repository remains authoritative and keeps
 row-locking, permissions and concurrency control.
