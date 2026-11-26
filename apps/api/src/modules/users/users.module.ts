@@ -6,6 +6,7 @@ import { AdminAuditModule } from '#src/common/audit/admin-audit.module';
 import { AdminSessionPurposeGuard } from '#src/common/auth/admin-session-purpose.guard';
 import { AdminOriginGuard } from '#src/common/auth/admin-origin.guard';
 import { UsersRepository } from './repositories/users.repository.js';
+import { AdminUsersReadService } from './services/admin-users-read.service.js';
 import { UsersService } from './services/users.service.js';
 import { UsersAuthFacade } from './services/users-auth.facade.js';
 import { AdminAccountStatusService } from './services/admin-account-status.service.js';
@@ -22,6 +23,7 @@ import { AvatarPublicController } from './controllers/avatar-public.controller.j
     AdminSessionPurposeGuard,
     AdminOriginGuard,
     UsersRepository,
+    AdminUsersReadService,
     UsersService,
     UsersAuthFacade,
     AdminAccountStatusService,
@@ -31,6 +33,6 @@ import { AvatarPublicController } from './controllers/avatar-public.controller.j
     AvatarOrphanCleanupService,
   ],
   controllers: [UsersController, AvatarPublicController, AdminUsersController],
-  exports: [UsersService, UsersAuthFacade],
+  exports: [UsersService, UsersAuthFacade, AdminUsersReadService],
 })
 export class UsersModule {}

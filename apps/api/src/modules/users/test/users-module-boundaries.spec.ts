@@ -2,6 +2,7 @@ import { MODULE_METADATA } from '@nestjs/common/constants';
 import { describe, expect, it } from 'vitest';
 
 import { UsersRepository } from '../repositories/users.repository.js';
+import { AdminUsersReadService } from '../services/admin-users-read.service.js';
 import { UsersAuthFacade } from '../services/users-auth.facade.js';
 import { UsersService } from '../services/users.service.js';
 import { UsersModule } from '../users.module.js';
@@ -15,8 +16,10 @@ describe('UsersModule public dependency boundary', () => {
     ) as unknown[];
 
     expect(providers).toContain(UsersRepository);
+    expect(providers).toContain(AdminUsersReadService);
     expect(exportedProviders).toContain(UsersService);
     expect(exportedProviders).toContain(UsersAuthFacade);
+    expect(exportedProviders).toContain(AdminUsersReadService);
     expect(exportedProviders).not.toContain(UsersRepository);
   });
 });
