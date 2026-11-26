@@ -8,7 +8,8 @@ import type { MobileMultiWorkoutForm } from '../lib/create-workout-schema';
 import type { EncryptedOfflineDraftStorage } from './encrypted-draft-storage';
 import { OfflineDraftRepository } from './offline-draft-repository';
 
-type LifecycleState = 'locked' | 'preparing' | 'ready' | 'unavailable' | 'cleanup-required';
+export type DraftLifecycleState =
+  'locked' | 'preparing' | 'ready' | 'unavailable' | 'cleanup-required';
 
 /** One coordinator per application. Never open drafts from an unverified session. */
 export class OfflineDraftLifecycle implements PrivateDataLifecycle {
@@ -17,7 +18,23 @@ export class OfflineDraftLifecycle implements PrivateDataLifecycle {
   private generation = 0;
   private repositoryOwner: string | null = null;
   private cleanupRequired = false;
-  private state: LifecycleState = 'locked';
+  private state: DraftLifecycleState = 'locked';
+  private snapshot = { status: this.state as DraftLifecycleState, generation: 0 };
+  private readonly listeners = new Set<() => void>();
+
+  getSnapshot = () => this.snapshot;
+  subscribe = (listener: () => void) => {
+    this.listeners.add(listener);
+    return () => {
+      this.listeners.delete(listener);
+    };
+  };
+
+  private publish(status: DraftLifecycleState) {
+    this.state = status;
+    this.snapshot = { status, generation: this.generation };
+    for (const listener of this.listeners) listener();
+  }
 
   constructor(
     private readonly storage: EncryptedOfflineDraftStorage,
@@ -33,7 +50,7 @@ export class OfflineDraftLifecycle implements PrivateDataLifecycle {
   lock() {
     ++this.generation;
     this.repository.lock();
-    this.state = this.cleanupRequired ? 'cleanup-required' : 'locked';
+    this.publish(this.cleanupRequired ? 'cleanup-required' : 'locked');
   }
 
   private enqueue(operation: () => Promise<void>) {
@@ -57,12 +74,12 @@ export class OfflineDraftLifecycle implements PrivateDataLifecycle {
     this.lock();
     const generation = this.generation;
     if (!this.isForeground()) return Promise.resolve();
-    if (!this.cleanupRequired) this.state = 'preparing';
+    if (!this.cleanupRequired) this.publish('preparing');
     return this.enqueue(async () => {
       if (generation !== this.generation) return;
       try {
         if (this.cleanupRequired) {
-          this.state = 'cleanup-required';
+          this.publish('cleanup-required');
           return;
         }
         if (this.repositoryOwner && this.repositoryOwner !== ownerId) {
@@ -77,11 +94,11 @@ export class OfflineDraftLifecycle implements PrivateDataLifecycle {
         }
         this.repository.unlockVerifiedOwner(ownerId);
         this.repositoryOwner = ownerId;
-        this.state = 'ready';
+        this.publish('ready');
       } catch {
         this.repository.lock();
         if (generation === this.generation) {
-          this.state = this.cleanupRequired ? 'cleanup-required' : 'unavailable';
+          this.publish(this.cleanupRequired ? 'cleanup-required' : 'unavailable');
         }
       }
     });
@@ -92,13 +109,13 @@ export class OfflineDraftLifecycle implements PrivateDataLifecycle {
     this.lock();
     const generation = this.generation;
     this.cleanupRequired = true;
-    this.state = 'cleanup-required';
+    this.publish('cleanup-required');
     return this.enqueue(async () => {
       try {
         await this.cleanup();
-        if (generation === this.generation) this.state = 'locked';
+        if (generation === this.generation) this.publish('locked');
       } catch {
-        if (generation === this.generation) this.state = 'cleanup-required';
+        if (generation === this.generation) this.publish('cleanup-required');
       }
     });
   }

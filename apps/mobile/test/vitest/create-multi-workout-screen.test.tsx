@@ -1,5 +1,11 @@
 import { act, fireEvent, render, waitFor } from '@testing-library/react-native';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { IntlProvider } from 'react-intl';
+import { Alert } from 'react-native';
+import { getMobileMessages } from '@/shared/i18n/mobile-messages';
+import { OfflineDraftLifecycle } from '@/features/workouts/model/offline-draft-lifecycle';
+import type { EncryptedOfflineDraftStorage } from '@/features/workouts/model/encrypted-draft-storage';
+import { createOfflineWorkoutDraft } from '@/features/workouts/lib/offline-workout-draft';
 
 import { useExercisesQuery } from '@/features/exercises/model/exercises-query';
 import { useCreateMultiMobileWorkout } from '@/features/workouts/model/workout-create';
@@ -16,7 +22,53 @@ vi.mock('@/features/workouts/model/workout-create', () => ({
 }));
 
 const mutateAsync = vi.fn();
+const ownerId = '22222222-2222-4222-8222-222222222222';
+const grants = { athlete: true, trainer: false, admin: false };
 const exerciseId = '11111111-1111-4111-8111-111111111111';
+
+const renderScreen = (lifecycle?: OfflineDraftLifecycle) =>
+  render(
+    <IntlProvider locale="uk" messages={getMobileMessages('uk')}>
+      <CreateWorkoutScreen lifecycle={lifecycle} />
+    </IntlProvider>,
+  );
+
+async function draftHarness(initial: string | null = null) {
+  let value = initial;
+  const storage = {
+    read: vi.fn(async () => value),
+    write: vi.fn(async (_owner: string, next: string) => {
+      value = next;
+    }),
+    remove: vi.fn(async () => {
+      value = null;
+    }),
+    prepareVerifiedOwner: vi.fn(async () => undefined),
+    purgePersistedOwner: vi.fn(async () => {
+      value = null;
+    }),
+  } satisfies EncryptedOfflineDraftStorage;
+  const lifecycle = new OfflineDraftLifecycle(storage);
+  await lifecycle.verified(ownerId, grants);
+  return {
+    lifecycle,
+    storage,
+    get value() {
+      return value;
+    },
+  };
+}
+
+const storedForm = {
+  title: 'Локальні груди',
+  exercises: [{ exerciseId, sets: [{ reps: '12', weightKg: '65' }] }],
+};
+const persisted = JSON.stringify(createOfflineWorkoutDraft(ownerId, storedForm, 123));
+
+async function confirmAlert() {
+  const calls = vi.mocked(Alert.alert).mock.calls;
+  await act(async () => calls.at(-1)?.[2]?.[1]?.onPress?.());
+}
 
 function prepare() {
   vi.mocked(useExercisesQuery).mockReturnValue({
@@ -44,7 +96,7 @@ describe('Multi-exercise CreateWorkoutScreen (native)', () => {
   });
 
   it('adds and removes nested exercises and sets without deleting the final item', async () => {
-    const view = await render(<CreateWorkoutScreen />);
+    const view = await renderScreen();
 
     expect(view.getByRole('button', { name: 'Видалити вправу 1', disabled: true })).toBeTruthy();
     expect(
@@ -65,7 +117,7 @@ describe('Multi-exercise CreateWorkoutScreen (native)', () => {
   });
 
   it('submits validated nested form data and navigates only on mutation success', async () => {
-    const view = await render(<CreateWorkoutScreen />);
+    const view = await renderScreen();
 
     await fireEvent.changeText(view.getByLabelText('Назва тренування'), 'Спина');
     await fireEvent.press(view.getByTestId('workout-exercise-open'));
@@ -93,7 +145,7 @@ describe('Multi-exercise CreateWorkoutScreen (native)', () => {
 
   it('keeps the form open on a failed POST and does not navigate', async () => {
     mutateAsync.mockRejectedValueOnce(new Error('Мережа недоступна'));
-    const view = await render(<CreateWorkoutScreen />);
+    const view = await renderScreen();
 
     await fireEvent.changeText(view.getByLabelText('Назва тренування'), 'Спина');
     await fireEvent.press(view.getByTestId('workout-exercise-open'));
@@ -109,7 +161,7 @@ describe('Multi-exercise CreateWorkoutScreen (native)', () => {
         reject = fail;
       }),
     );
-    const view = await render(<CreateWorkoutScreen />);
+    const view = await renderScreen();
     await fireEvent.changeText(view.getByLabelText('Назва тренування'), 'Груди');
     await fireEvent.press(view.getByTestId('workout-exercise-open'));
     await fireEvent.press(view.getByRole('button', { name: 'Жим лежачи' }));
@@ -132,5 +184,198 @@ describe('Multi-exercise CreateWorkoutScreen (native)', () => {
     await waitFor(() => expect(back).toHaveBeenCalledOnce());
     expect(mutateAsync).toHaveBeenCalledTimes(2);
     expect(mutateAsync.mock.calls[1]?.[0]).toEqual(mutateAsync.mock.calls[0]?.[0]);
+  });
+  it('saves valid data locally, blocks duplicate POST, and requires explicit discard confirmation', async () => {
+    const h = await draftHarness();
+    const view = await renderScreen(h.lifecycle);
+    await waitFor(() =>
+      expect(view.getByTestId('workout-draft-save').props.accessibilityState.disabled).toBe(false),
+    );
+    await fireEvent.changeText(view.getByLabelText('Назва тренування'), 'Груди');
+    await fireEvent.press(view.getByTestId('workout-exercise-open'));
+    await fireEvent.press(view.getByRole('button', { name: 'Жим лежачи' }));
+    await fireEvent.press(view.getByTestId('workout-draft-save'));
+    await waitFor(() =>
+      expect(
+        view.getByText('Чернетку збережено на пристрої. Не надіслано на сервер.'),
+      ).toBeTruthy(),
+    );
+    expect(JSON.parse(h.value!).form.title).toBe('Груди');
+    expect(h.storage.write).toHaveBeenCalledOnce();
+    expect(view.getByTestId('create-workout-submit').props.accessibilityState.disabled).toBe(true);
+    await fireEvent.press(view.getByTestId('create-workout-submit'));
+    expect(mutateAsync).not.toHaveBeenCalled();
+    const alert = vi.spyOn(Alert, 'alert').mockImplementation(() => undefined);
+    try {
+      await fireEvent.press(view.getByTestId('workout-draft-discard'));
+      expect(h.storage.remove).not.toHaveBeenCalled();
+      await confirmAlert();
+      await waitFor(() => expect(view.getByText('Чернетку видалено.')).toBeTruthy());
+      expect(h.value).toBeNull();
+      expect(view.getByLabelText('Назва тренування').props.value).toBe('');
+      expect(mutateAsync).not.toHaveBeenCalled();
+    } finally {
+      alert.mockRestore();
+    }
+  });
+
+  it('requires explicit restore, clears restored form on lock and never submits it', async () => {
+    const h = await draftHarness(persisted);
+    const view = await renderScreen(h.lifecycle);
+    await waitFor(() => expect(view.getByTestId('workout-draft-restore')).toBeTruthy());
+    expect(view.getByLabelText('Назва тренування').props.value).toBe('');
+    expect(view.getByTestId('workout-draft-save').props.accessibilityState.disabled).toBe(true);
+    const alert = vi.spyOn(Alert, 'alert').mockImplementation(() => undefined);
+    try {
+      await fireEvent.press(view.getByTestId('workout-draft-restore'));
+      expect(view.getByLabelText('Назва тренування').props.value).toBe('');
+      await confirmAlert();
+      await waitFor(() =>
+        expect(view.getByLabelText('Назва тренування').props.value).toBe(storedForm.title),
+      );
+      expect(view.getByLabelText('Планова вага, вправа 1, підхід 1').props.value).toBe('65');
+      expect(view.getByTestId('create-workout-submit').props.accessibilityState.disabled).toBe(
+        true,
+      );
+      await act(async () => h.lifecycle.lock());
+      expect(view.queryByDisplayValue(storedForm.title)).toBeNull();
+      await act(async () => {
+        await h.lifecycle.verified(ownerId, grants);
+      });
+      await waitFor(() => expect(view.getByTestId('workout-draft-restore')).toBeTruthy());
+      expect(view.getByLabelText('Назва тренування').props.value).toBe('');
+      expect(mutateAsync).not.toHaveBeenCalled();
+      expect(h.value).toBe(persisted);
+    } finally {
+      alert.mockRestore();
+    }
+  });
+
+  it('does not save an invalid form or send an automatic mutation', async () => {
+    const h = await draftHarness();
+    const view = await renderScreen(h.lifecycle);
+    await waitFor(() =>
+      expect(view.getByTestId('workout-draft-save').props.accessibilityState.disabled).toBe(false),
+    );
+    await fireEvent.press(view.getByTestId('workout-draft-save'));
+    await waitFor(() =>
+      expect(
+        view.getByText('Заповніть назву, вправи та коректні підходи для збереження.'),
+      ).toBeTruthy(),
+    );
+    expect(h.storage.write).not.toHaveBeenCalled();
+    expect(mutateAsync).not.toHaveBeenCalled();
+  });
+
+  it('does not apply a confirmation from the old account generation', async () => {
+    const h = await draftHarness(persisted);
+    const view = await renderScreen(h.lifecycle);
+    await waitFor(() => expect(view.getByTestId('workout-draft-restore')).toBeTruthy());
+    const alert = vi.spyOn(Alert, 'alert').mockImplementation(() => undefined);
+    try {
+      await fireEvent.press(view.getByTestId('workout-draft-restore'));
+      await act(async () => {
+        h.lifecycle.lock();
+        await h.lifecycle.verified(ownerId, grants);
+      });
+      await confirmAlert();
+      expect(view.getByLabelText('Назва тренування').props.value).toBe('');
+      expect(mutateAsync).not.toHaveBeenCalled();
+    } finally {
+      alert.mockRestore();
+    }
+  });
+
+  it('does not convert an uncertain normal POST into a local draft', async () => {
+    const h = await draftHarness();
+    mutateAsync.mockRejectedValueOnce(new Error('Lost response'));
+    const view = await renderScreen(h.lifecycle);
+    await waitFor(() =>
+      expect(view.getByTestId('workout-draft-save').props.accessibilityState.disabled).toBe(false),
+    );
+    await fireEvent.changeText(view.getByLabelText('Назва тренування'), 'Груди');
+    await fireEvent.press(view.getByTestId('workout-exercise-open'));
+    await fireEvent.press(view.getByRole('button', { name: 'Жим лежачи' }));
+    await fireEvent.press(view.getByTestId('create-workout-submit'));
+    await waitFor(() => expect(mutateAsync).toHaveBeenCalledOnce());
+    await waitFor(() =>
+      expect(
+        view.getByText(
+          'Після спроби надсилання збереження чернетки заблоковане, щоб уникнути дублювання.',
+        ),
+      ).toBeTruthy(),
+    );
+    await fireEvent.press(view.getByTestId('workout-draft-save'));
+    expect(h.storage.write).not.toHaveBeenCalled();
+    expect(back).not.toHaveBeenCalled();
+  });
+
+  it('keeps normal online creation available when encrypted storage is unavailable', async () => {
+    const h = await draftHarness();
+    h.storage.prepareVerifiedOwner.mockRejectedValueOnce(new Error('native unavailable'));
+    await h.lifecycle.verified(ownerId, grants);
+    const view = await renderScreen(h.lifecycle);
+    expect(view.getByText('Захищене сховище недоступне на цьому пристрої.')).toBeTruthy();
+    expect(view.queryByTestId('workout-draft-save')).toBeNull();
+    await fireEvent.changeText(view.getByLabelText('Назва тренування'), 'Груди');
+    await fireEvent.press(view.getByTestId('workout-exercise-open'));
+    await fireEvent.press(view.getByRole('button', { name: 'Жим лежачи' }));
+    await fireEvent.press(view.getByTestId('create-workout-submit'));
+    await waitFor(() => expect(mutateAsync).toHaveBeenCalledOnce());
+    await waitFor(() => expect(back).toHaveBeenCalledOnce());
+  });
+  it('ignores a pending restore result after a session lock', async () => {
+    const h = await draftHarness(persisted);
+    const view = await renderScreen(h.lifecycle);
+    await waitFor(() => expect(view.getByTestId('workout-draft-restore')).toBeTruthy());
+    let finish: (value: string) => void = () => undefined;
+    h.storage.read.mockReturnValueOnce(
+      new Promise<string>((resolve) => {
+        finish = resolve;
+      }),
+    );
+    const alert = vi.spyOn(Alert, 'alert').mockImplementation(() => undefined);
+    try {
+      await fireEvent.press(view.getByTestId('workout-draft-restore'));
+      await confirmAlert();
+      await waitFor(() => expect(h.storage.read).toHaveBeenCalledTimes(2));
+      await act(async () => {
+        h.lifecycle.lock();
+        finish(persisted);
+      });
+      expect(view.queryByDisplayValue(storedForm.title)).toBeNull();
+      expect(view.getByLabelText('Назва тренування').props.value).toBe('');
+      expect(mutateAsync).not.toHaveBeenCalled();
+    } finally {
+      alert.mockRestore();
+    }
+  });
+
+  it('blocks POST after an uncertain local save until explicit discard clears the bound form', async () => {
+    const h = await draftHarness();
+    h.storage.write.mockRejectedValueOnce(new Error('private storage error'));
+    const view = await renderScreen(h.lifecycle);
+    await waitFor(() =>
+      expect(view.getByTestId('workout-draft-save').props.accessibilityState.disabled).toBe(false),
+    );
+    await fireEvent.changeText(view.getByLabelText('Назва тренування'), 'Груди');
+    await fireEvent.press(view.getByTestId('workout-exercise-open'));
+    await fireEvent.press(view.getByRole('button', { name: 'Жим лежачи' }));
+    await fireEvent.press(view.getByTestId('workout-draft-save'));
+    await waitFor(() => expect(view.getByTestId('workout-draft-retry')).toBeTruthy());
+    expect(view.queryByText('private storage error')).toBeNull();
+    expect(view.getByTestId('create-workout-submit').props.accessibilityState.disabled).toBe(true);
+    await fireEvent.press(view.getByTestId('workout-draft-retry'));
+    await waitFor(() => expect(view.getByText('Збереженої чернетки немає.')).toBeTruthy());
+    expect(view.getByTestId('create-workout-submit').props.accessibilityState.disabled).toBe(true);
+    const alert = vi.spyOn(Alert, 'alert').mockImplementation(() => undefined);
+    try {
+      await fireEvent.press(view.getByTestId('workout-draft-discard'));
+      await confirmAlert();
+      await waitFor(() => expect(view.getByLabelText('Назва тренування').props.value).toBe(''));
+      expect(mutateAsync).not.toHaveBeenCalled();
+    } finally {
+      alert.mockRestore();
+    }
   });
 });

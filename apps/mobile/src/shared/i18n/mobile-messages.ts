@@ -74,6 +74,67 @@ export function getMobileAuthErrorMessageId(code: string): string {
 }
 
 const navigationMessages = {
+  'mobile.draft.title': { uk: 'Локальна чернетка', en: 'Local draft' },
+  'mobile.draft.hint': {
+    uk: 'Зберігається лише на цьому пристрої. Для надсилання чернетки потрібен окремий підтверджений сценарій, який ще недоступний.',
+    en: 'Stored on this device only. Sending drafts requires a separate reviewed flow, not yet available.',
+  },
+  'mobile.draft.none': { uk: 'Збереженої чернетки немає.', en: 'No saved draft.' },
+  'mobile.draft.exists': {
+    uk: 'Є локальна чернетка. Відновіть або видаліть її перед створенням нового тренування.',
+    en: 'A local draft exists. Restore or discard it before creating a new workout.',
+  },
+  'mobile.draft.locked': { uk: 'Локальне сховище заблоковано.', en: 'Local storage is locked.' },
+  'mobile.draft.preparing': {
+    uk: 'Підготовка захищеного сховища…',
+    en: 'Preparing secure storage…',
+  },
+  'mobile.draft.unavailable': {
+    uk: 'Захищене сховище недоступне на цьому пристрої.',
+    en: 'Secure storage is unavailable on this device.',
+  },
+  'mobile.draft.cleanup-required': {
+    uk: 'Потрібне очищення попередніх локальних даних. Вийдіть і увійдіть знову.',
+    en: 'Previous local data needs cleanup. Sign out and sign in again.',
+  },
+  'mobile.draft.busy': {
+    uk: 'Перевірка або збереження локальних даних…',
+    en: 'Checking or saving local data…',
+  },
+  'mobile.draft.save': { uk: 'Зберегти чернетку', en: 'Save draft' },
+  'mobile.draft.restore': { uk: 'Відновити чернетку', en: 'Restore draft' },
+  'mobile.draft.discard': { uk: 'Видалити чернетку', en: 'Discard draft' },
+  'mobile.draft.cancel': { uk: 'Скасувати', en: 'Cancel' },
+  'mobile.draft.retry': { uk: 'Перевірити сховище повторно', en: 'Check storage again' },
+  'mobile.draft.restoreConfirm': {
+    uk: 'Поточна форма буде замінена збереженою чернеткою.',
+    en: 'The current form will be replaced by the saved draft.',
+  },
+  'mobile.draft.discardConfirm': {
+    uk: 'Локальні дані чернетки буде видалено. Відновити їх не вдасться.',
+    en: 'Local draft data will be deleted and cannot be restored.',
+  },
+  'mobile.draft.saved': {
+    uk: 'Чернетку збережено на пристрої. Не надіслано на сервер.',
+    en: 'Draft saved on this device. Not sent to the server.',
+  },
+  'mobile.draft.restored': {
+    uk: 'Чернетку відновлено. Перевірте вправи та підходи.',
+    en: 'Draft restored. Review exercises and sets.',
+  },
+  'mobile.draft.discarded': { uk: 'Чернетку видалено.', en: 'Draft discarded.' },
+  'mobile.draft.invalid': {
+    uk: 'Заповніть назву, вправи та коректні підходи для збереження.',
+    en: 'Enter a title, exercises and valid sets before saving.',
+  },
+  'mobile.draft.failed': {
+    uk: 'Не вдалося перевірити або зберегти чернетку. Повторіть перевірку або явно видаліть її.',
+    en: 'Could not check or save the draft. Retry the check or explicitly discard it.',
+  },
+  'mobile.draft.submissionStarted': {
+    uk: 'Після спроби надсилання збереження чернетки заблоковане, щоб уникнути дублювання.',
+    en: 'Draft saving is blocked after a submission attempt to prevent duplicates.',
+  },
   'mobile.theme.title': { uk: 'Тема оформлення', en: 'Appearance' },
   'mobile.theme.system': { uk: 'Системна', en: 'System' },
   'mobile.theme.light': { uk: 'Світла', en: 'Light' },
