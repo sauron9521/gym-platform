@@ -420,6 +420,134 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/trainer-athletes': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['TrainerAthletesController_findMany'];
+    put?: never;
+    post: operations['TrainerAthletesController_create'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/trainer-athletes/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['TrainerAthletesController_findOne'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/trainer-athletes/{id}/accept': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['TrainerAthletesController_accept'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/trainer-athletes/{id}/decline': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['TrainerAthletesController_decline'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/trainer-athletes/{id}/cancel': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['TrainerAthletesController_cancel'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/trainer-athletes/{id}/terminate': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['TrainerAthletesController_terminate'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/trainer-dashboard/overview': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['TrainerDashboardController_overview'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/trainer-dashboard/clients/{relationId}/progress': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['TrainerDashboardController_clientProgress'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/avatars/{key}': {
     parameters: {
       query?: never;
@@ -783,134 +911,6 @@ export interface paths {
     put?: never;
     post?: never;
     delete: operations['ExerciseTrainerAccessController_revoke'];
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/trainer-athletes': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get: operations['TrainerAthletesController_findMany'];
-    put?: never;
-    post: operations['TrainerAthletesController_create'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/trainer-athletes/{id}': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get: operations['TrainerAthletesController_findOne'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/trainer-athletes/{id}/accept': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    post: operations['TrainerAthletesController_accept'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/trainer-athletes/{id}/decline': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    post: operations['TrainerAthletesController_decline'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/trainer-athletes/{id}/cancel': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    post: operations['TrainerAthletesController_cancel'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/trainer-athletes/{id}/terminate': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    post: operations['TrainerAthletesController_terminate'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/trainer-dashboard/overview': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get: operations['TrainerDashboardController_overview'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/trainer-dashboard/clients/{relationId}/progress': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get: operations['TrainerDashboardController_clientProgress'];
-    put?: never;
-    post?: never;
-    delete?: never;
     options?: never;
     head?: never;
     patch?: never;
@@ -2464,6 +2464,779 @@ export interface operations {
       };
     };
   };
+  TrainerAthletesController_findMany: {
+    parameters: {
+      query?: {
+        page?: number;
+        limit?: number;
+        status?: 'PENDING' | 'ACTIVE' | 'DECLINED' | 'CANCELLED' | 'TERMINATED';
+        scope?: 'trainer';
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            data: (
+              | {
+                  /** Format: uuid */
+                  id: string;
+                  /** Format: uuid */
+                  trainerId: string;
+                  /** Format: uuid */
+                  athleteId: string;
+                  /** Format: uuid */
+                  initiatedById: string;
+                  /** @enum {string} */
+                  status: 'PENDING' | 'ACTIVE' | 'DECLINED' | 'CANCELLED' | 'TERMINATED';
+                  /** Format: date-time */
+                  respondedAt: string | null;
+                  /** Format: date-time */
+                  endedAt: string | null;
+                  /** Format: uuid */
+                  endedById: string | null;
+                  endReason: string | null;
+                  trainer: {
+                    /** Format: uuid */
+                    id: string;
+                    email: string;
+                    /** @enum {string} */
+                    role: 'ATHLETE' | 'TRAINER' | 'ADMIN';
+                  };
+                  athlete: {
+                    /** Format: uuid */
+                    id: string;
+                    email: string;
+                    /** @enum {string} */
+                    role: 'ATHLETE' | 'TRAINER' | 'ADMIN';
+                  };
+                  initiatedBy: {
+                    /** Format: uuid */
+                    id: string;
+                    email: string;
+                    /** @enum {string} */
+                    role: 'ATHLETE' | 'TRAINER' | 'ADMIN';
+                  };
+                  endedBy: {
+                    /** Format: uuid */
+                    id: string;
+                    email: string;
+                    /** @enum {string} */
+                    role: 'ATHLETE' | 'TRAINER' | 'ADMIN';
+                  } | null;
+                  /** Format: date-time */
+                  createdAt: string;
+                  /** Format: date-time */
+                  updatedAt: string;
+                }
+              | {
+                  /** Format: uuid */
+                  id: string;
+                  /** Format: uuid */
+                  trainerId: string;
+                  /** Format: uuid */
+                  athleteId: string;
+                  /** Format: uuid */
+                  initiatedById: string;
+                  /** @enum {string} */
+                  status: 'PENDING' | 'ACTIVE' | 'DECLINED' | 'CANCELLED' | 'TERMINATED';
+                  /** Format: date-time */
+                  respondedAt: string | null;
+                  /** Format: date-time */
+                  endedAt: string | null;
+                  /** Format: uuid */
+                  endedById: string | null;
+                  endReason: string | null;
+                  trainer: {
+                    /** Format: uuid */
+                    id: string;
+                    /** @enum {string} */
+                    role: 'ATHLETE' | 'TRAINER' | 'ADMIN';
+                  };
+                  athlete: {
+                    /** Format: uuid */
+                    id: string;
+                    /** @enum {string} */
+                    role: 'ATHLETE' | 'TRAINER' | 'ADMIN';
+                  };
+                  initiatedBy: {
+                    /** Format: uuid */
+                    id: string;
+                    /** @enum {string} */
+                    role: 'ATHLETE' | 'TRAINER' | 'ADMIN';
+                  };
+                  endedBy: {
+                    /** Format: uuid */
+                    id: string;
+                    /** @enum {string} */
+                    role: 'ATHLETE' | 'TRAINER' | 'ADMIN';
+                  } | null;
+                  /** Format: date-time */
+                  createdAt: string;
+                  /** Format: date-time */
+                  updatedAt: string;
+                }
+            )[];
+            meta: {
+              total: number;
+              skip: number;
+              take: number;
+              totalPages: number;
+            };
+          };
+        };
+      };
+    };
+  };
+  TrainerAthletesController_create: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          /** Format: uuid */
+          userId: string;
+        };
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            trainerId: string;
+            /** Format: uuid */
+            athleteId: string;
+            /** Format: uuid */
+            initiatedById: string;
+            /** @enum {string} */
+            status: 'PENDING' | 'ACTIVE' | 'DECLINED' | 'CANCELLED' | 'TERMINATED';
+            /** Format: date-time */
+            respondedAt: string | null;
+            /** Format: date-time */
+            endedAt: string | null;
+            /** Format: uuid */
+            endedById: string | null;
+            endReason: string | null;
+            trainer: {
+              /** Format: uuid */
+              id: string;
+              email: string;
+              /** @enum {string} */
+              role: 'ATHLETE' | 'TRAINER' | 'ADMIN';
+            };
+            athlete: {
+              /** Format: uuid */
+              id: string;
+              email: string;
+              /** @enum {string} */
+              role: 'ATHLETE' | 'TRAINER' | 'ADMIN';
+            };
+            initiatedBy: {
+              /** Format: uuid */
+              id: string;
+              email: string;
+              /** @enum {string} */
+              role: 'ATHLETE' | 'TRAINER' | 'ADMIN';
+            };
+            endedBy: {
+              /** Format: uuid */
+              id: string;
+              email: string;
+              /** @enum {string} */
+              role: 'ATHLETE' | 'TRAINER' | 'ADMIN';
+            } | null;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+          };
+        };
+      };
+    };
+  };
+  TrainerAthletesController_findOne: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** Format: uuid */
+                id: string;
+                /** Format: uuid */
+                trainerId: string;
+                /** Format: uuid */
+                athleteId: string;
+                /** Format: uuid */
+                initiatedById: string;
+                /** @enum {string} */
+                status: 'PENDING' | 'ACTIVE' | 'DECLINED' | 'CANCELLED' | 'TERMINATED';
+                /** Format: date-time */
+                respondedAt: string | null;
+                /** Format: date-time */
+                endedAt: string | null;
+                /** Format: uuid */
+                endedById: string | null;
+                endReason: string | null;
+                trainer: {
+                  /** Format: uuid */
+                  id: string;
+                  email: string;
+                  /** @enum {string} */
+                  role: 'ATHLETE' | 'TRAINER' | 'ADMIN';
+                };
+                athlete: {
+                  /** Format: uuid */
+                  id: string;
+                  email: string;
+                  /** @enum {string} */
+                  role: 'ATHLETE' | 'TRAINER' | 'ADMIN';
+                };
+                initiatedBy: {
+                  /** Format: uuid */
+                  id: string;
+                  email: string;
+                  /** @enum {string} */
+                  role: 'ATHLETE' | 'TRAINER' | 'ADMIN';
+                };
+                endedBy: {
+                  /** Format: uuid */
+                  id: string;
+                  email: string;
+                  /** @enum {string} */
+                  role: 'ATHLETE' | 'TRAINER' | 'ADMIN';
+                } | null;
+                /** Format: date-time */
+                createdAt: string;
+                /** Format: date-time */
+                updatedAt: string;
+              }
+            | {
+                /** Format: uuid */
+                id: string;
+                /** Format: uuid */
+                trainerId: string;
+                /** Format: uuid */
+                athleteId: string;
+                /** Format: uuid */
+                initiatedById: string;
+                /** @enum {string} */
+                status: 'PENDING' | 'ACTIVE' | 'DECLINED' | 'CANCELLED' | 'TERMINATED';
+                /** Format: date-time */
+                respondedAt: string | null;
+                /** Format: date-time */
+                endedAt: string | null;
+                /** Format: uuid */
+                endedById: string | null;
+                endReason: string | null;
+                trainer: {
+                  /** Format: uuid */
+                  id: string;
+                  /** @enum {string} */
+                  role: 'ATHLETE' | 'TRAINER' | 'ADMIN';
+                };
+                athlete: {
+                  /** Format: uuid */
+                  id: string;
+                  /** @enum {string} */
+                  role: 'ATHLETE' | 'TRAINER' | 'ADMIN';
+                };
+                initiatedBy: {
+                  /** Format: uuid */
+                  id: string;
+                  /** @enum {string} */
+                  role: 'ATHLETE' | 'TRAINER' | 'ADMIN';
+                };
+                endedBy: {
+                  /** Format: uuid */
+                  id: string;
+                  /** @enum {string} */
+                  role: 'ATHLETE' | 'TRAINER' | 'ADMIN';
+                } | null;
+                /** Format: date-time */
+                createdAt: string;
+                /** Format: date-time */
+                updatedAt: string;
+              };
+        };
+      };
+    };
+  };
+  TrainerAthletesController_accept: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            trainerId: string;
+            /** Format: uuid */
+            athleteId: string;
+            /** Format: uuid */
+            initiatedById: string;
+            /** @enum {string} */
+            status: 'PENDING' | 'ACTIVE' | 'DECLINED' | 'CANCELLED' | 'TERMINATED';
+            /** Format: date-time */
+            respondedAt: string | null;
+            /** Format: date-time */
+            endedAt: string | null;
+            /** Format: uuid */
+            endedById: string | null;
+            endReason: string | null;
+            trainer: {
+              /** Format: uuid */
+              id: string;
+              email: string;
+              /** @enum {string} */
+              role: 'ATHLETE' | 'TRAINER' | 'ADMIN';
+            };
+            athlete: {
+              /** Format: uuid */
+              id: string;
+              email: string;
+              /** @enum {string} */
+              role: 'ATHLETE' | 'TRAINER' | 'ADMIN';
+            };
+            initiatedBy: {
+              /** Format: uuid */
+              id: string;
+              email: string;
+              /** @enum {string} */
+              role: 'ATHLETE' | 'TRAINER' | 'ADMIN';
+            };
+            endedBy: {
+              /** Format: uuid */
+              id: string;
+              email: string;
+              /** @enum {string} */
+              role: 'ATHLETE' | 'TRAINER' | 'ADMIN';
+            } | null;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+          };
+        };
+      };
+    };
+  };
+  TrainerAthletesController_decline: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            trainerId: string;
+            /** Format: uuid */
+            athleteId: string;
+            /** Format: uuid */
+            initiatedById: string;
+            /** @enum {string} */
+            status: 'PENDING' | 'ACTIVE' | 'DECLINED' | 'CANCELLED' | 'TERMINATED';
+            /** Format: date-time */
+            respondedAt: string | null;
+            /** Format: date-time */
+            endedAt: string | null;
+            /** Format: uuid */
+            endedById: string | null;
+            endReason: string | null;
+            trainer: {
+              /** Format: uuid */
+              id: string;
+              email: string;
+              /** @enum {string} */
+              role: 'ATHLETE' | 'TRAINER' | 'ADMIN';
+            };
+            athlete: {
+              /** Format: uuid */
+              id: string;
+              email: string;
+              /** @enum {string} */
+              role: 'ATHLETE' | 'TRAINER' | 'ADMIN';
+            };
+            initiatedBy: {
+              /** Format: uuid */
+              id: string;
+              email: string;
+              /** @enum {string} */
+              role: 'ATHLETE' | 'TRAINER' | 'ADMIN';
+            };
+            endedBy: {
+              /** Format: uuid */
+              id: string;
+              email: string;
+              /** @enum {string} */
+              role: 'ATHLETE' | 'TRAINER' | 'ADMIN';
+            } | null;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+          };
+        };
+      };
+    };
+  };
+  TrainerAthletesController_cancel: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          reason?: string | null;
+        };
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** Format: uuid */
+                id: string;
+                /** Format: uuid */
+                trainerId: string;
+                /** Format: uuid */
+                athleteId: string;
+                /** Format: uuid */
+                initiatedById: string;
+                /** @enum {string} */
+                status: 'PENDING' | 'ACTIVE' | 'DECLINED' | 'CANCELLED' | 'TERMINATED';
+                /** Format: date-time */
+                respondedAt: string | null;
+                /** Format: date-time */
+                endedAt: string | null;
+                /** Format: uuid */
+                endedById: string | null;
+                endReason: string | null;
+                trainer: {
+                  /** Format: uuid */
+                  id: string;
+                  email: string;
+                  /** @enum {string} */
+                  role: 'ATHLETE' | 'TRAINER' | 'ADMIN';
+                };
+                athlete: {
+                  /** Format: uuid */
+                  id: string;
+                  email: string;
+                  /** @enum {string} */
+                  role: 'ATHLETE' | 'TRAINER' | 'ADMIN';
+                };
+                initiatedBy: {
+                  /** Format: uuid */
+                  id: string;
+                  email: string;
+                  /** @enum {string} */
+                  role: 'ATHLETE' | 'TRAINER' | 'ADMIN';
+                };
+                endedBy: {
+                  /** Format: uuid */
+                  id: string;
+                  email: string;
+                  /** @enum {string} */
+                  role: 'ATHLETE' | 'TRAINER' | 'ADMIN';
+                } | null;
+                /** Format: date-time */
+                createdAt: string;
+                /** Format: date-time */
+                updatedAt: string;
+              }
+            | {
+                /** Format: uuid */
+                id: string;
+                /** Format: uuid */
+                trainerId: string;
+                /** Format: uuid */
+                athleteId: string;
+                /** Format: uuid */
+                initiatedById: string;
+                /** @enum {string} */
+                status: 'PENDING' | 'ACTIVE' | 'DECLINED' | 'CANCELLED' | 'TERMINATED';
+                /** Format: date-time */
+                respondedAt: string | null;
+                /** Format: date-time */
+                endedAt: string | null;
+                /** Format: uuid */
+                endedById: string | null;
+                endReason: string | null;
+                trainer: {
+                  /** Format: uuid */
+                  id: string;
+                  /** @enum {string} */
+                  role: 'ATHLETE' | 'TRAINER' | 'ADMIN';
+                };
+                athlete: {
+                  /** Format: uuid */
+                  id: string;
+                  /** @enum {string} */
+                  role: 'ATHLETE' | 'TRAINER' | 'ADMIN';
+                };
+                initiatedBy: {
+                  /** Format: uuid */
+                  id: string;
+                  /** @enum {string} */
+                  role: 'ATHLETE' | 'TRAINER' | 'ADMIN';
+                };
+                endedBy: {
+                  /** Format: uuid */
+                  id: string;
+                  /** @enum {string} */
+                  role: 'ATHLETE' | 'TRAINER' | 'ADMIN';
+                } | null;
+                /** Format: date-time */
+                createdAt: string;
+                /** Format: date-time */
+                updatedAt: string;
+              };
+        };
+      };
+    };
+  };
+  TrainerAthletesController_terminate: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          reason?: string | null;
+        };
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** Format: uuid */
+                id: string;
+                /** Format: uuid */
+                trainerId: string;
+                /** Format: uuid */
+                athleteId: string;
+                /** Format: uuid */
+                initiatedById: string;
+                /** @enum {string} */
+                status: 'PENDING' | 'ACTIVE' | 'DECLINED' | 'CANCELLED' | 'TERMINATED';
+                /** Format: date-time */
+                respondedAt: string | null;
+                /** Format: date-time */
+                endedAt: string | null;
+                /** Format: uuid */
+                endedById: string | null;
+                endReason: string | null;
+                trainer: {
+                  /** Format: uuid */
+                  id: string;
+                  email: string;
+                  /** @enum {string} */
+                  role: 'ATHLETE' | 'TRAINER' | 'ADMIN';
+                };
+                athlete: {
+                  /** Format: uuid */
+                  id: string;
+                  email: string;
+                  /** @enum {string} */
+                  role: 'ATHLETE' | 'TRAINER' | 'ADMIN';
+                };
+                initiatedBy: {
+                  /** Format: uuid */
+                  id: string;
+                  email: string;
+                  /** @enum {string} */
+                  role: 'ATHLETE' | 'TRAINER' | 'ADMIN';
+                };
+                endedBy: {
+                  /** Format: uuid */
+                  id: string;
+                  email: string;
+                  /** @enum {string} */
+                  role: 'ATHLETE' | 'TRAINER' | 'ADMIN';
+                } | null;
+                /** Format: date-time */
+                createdAt: string;
+                /** Format: date-time */
+                updatedAt: string;
+              }
+            | {
+                /** Format: uuid */
+                id: string;
+                /** Format: uuid */
+                trainerId: string;
+                /** Format: uuid */
+                athleteId: string;
+                /** Format: uuid */
+                initiatedById: string;
+                /** @enum {string} */
+                status: 'PENDING' | 'ACTIVE' | 'DECLINED' | 'CANCELLED' | 'TERMINATED';
+                /** Format: date-time */
+                respondedAt: string | null;
+                /** Format: date-time */
+                endedAt: string | null;
+                /** Format: uuid */
+                endedById: string | null;
+                endReason: string | null;
+                trainer: {
+                  /** Format: uuid */
+                  id: string;
+                  /** @enum {string} */
+                  role: 'ATHLETE' | 'TRAINER' | 'ADMIN';
+                };
+                athlete: {
+                  /** Format: uuid */
+                  id: string;
+                  /** @enum {string} */
+                  role: 'ATHLETE' | 'TRAINER' | 'ADMIN';
+                };
+                initiatedBy: {
+                  /** Format: uuid */
+                  id: string;
+                  /** @enum {string} */
+                  role: 'ATHLETE' | 'TRAINER' | 'ADMIN';
+                };
+                endedBy: {
+                  /** Format: uuid */
+                  id: string;
+                  /** @enum {string} */
+                  role: 'ATHLETE' | 'TRAINER' | 'ADMIN';
+                } | null;
+                /** Format: date-time */
+                createdAt: string;
+                /** Format: date-time */
+                updatedAt: string;
+              };
+        };
+      };
+    };
+  };
+  TrainerDashboardController_overview: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** Format: date-time */
+            asOf: string;
+            /** Format: date-time */
+            windowStart: string;
+            activeClients: number;
+            activeProgramAssignments: number;
+            completedProgramWorkouts30d: number;
+          };
+        };
+      };
+    };
+  };
+  TrainerDashboardController_clientProgress: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        relationId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** Format: date-time */
+            asOf: string;
+            /** Format: date-time */
+            windowStart: string;
+            activeProgramAssignments: number;
+            completedProgramWorkouts30d: number;
+          };
+        };
+      };
+    };
+  };
   AvatarPublicController_get: {
     parameters: {
       query?: never;
@@ -3512,779 +4285,6 @@ export interface operations {
           [name: string]: unknown;
         };
         content?: never;
-      };
-    };
-  };
-  TrainerAthletesController_findMany: {
-    parameters: {
-      query?: {
-        page?: number;
-        limit?: number;
-        status?: 'PENDING' | 'ACTIVE' | 'DECLINED' | 'CANCELLED' | 'TERMINATED';
-        scope?: 'trainer';
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': {
-            data: (
-              | {
-                  /** Format: uuid */
-                  id: string;
-                  /** Format: uuid */
-                  trainerId: string;
-                  /** Format: uuid */
-                  athleteId: string;
-                  /** Format: uuid */
-                  initiatedById: string;
-                  /** @enum {string} */
-                  status: 'PENDING' | 'ACTIVE' | 'DECLINED' | 'CANCELLED' | 'TERMINATED';
-                  /** Format: date-time */
-                  respondedAt: string | null;
-                  /** Format: date-time */
-                  endedAt: string | null;
-                  /** Format: uuid */
-                  endedById: string | null;
-                  endReason: string | null;
-                  trainer: {
-                    /** Format: uuid */
-                    id: string;
-                    email: string;
-                    /** @enum {string} */
-                    role: 'ATHLETE' | 'TRAINER' | 'ADMIN';
-                  };
-                  athlete: {
-                    /** Format: uuid */
-                    id: string;
-                    email: string;
-                    /** @enum {string} */
-                    role: 'ATHLETE' | 'TRAINER' | 'ADMIN';
-                  };
-                  initiatedBy: {
-                    /** Format: uuid */
-                    id: string;
-                    email: string;
-                    /** @enum {string} */
-                    role: 'ATHLETE' | 'TRAINER' | 'ADMIN';
-                  };
-                  endedBy: {
-                    /** Format: uuid */
-                    id: string;
-                    email: string;
-                    /** @enum {string} */
-                    role: 'ATHLETE' | 'TRAINER' | 'ADMIN';
-                  } | null;
-                  /** Format: date-time */
-                  createdAt: string;
-                  /** Format: date-time */
-                  updatedAt: string;
-                }
-              | {
-                  /** Format: uuid */
-                  id: string;
-                  /** Format: uuid */
-                  trainerId: string;
-                  /** Format: uuid */
-                  athleteId: string;
-                  /** Format: uuid */
-                  initiatedById: string;
-                  /** @enum {string} */
-                  status: 'PENDING' | 'ACTIVE' | 'DECLINED' | 'CANCELLED' | 'TERMINATED';
-                  /** Format: date-time */
-                  respondedAt: string | null;
-                  /** Format: date-time */
-                  endedAt: string | null;
-                  /** Format: uuid */
-                  endedById: string | null;
-                  endReason: string | null;
-                  trainer: {
-                    /** Format: uuid */
-                    id: string;
-                    /** @enum {string} */
-                    role: 'ATHLETE' | 'TRAINER' | 'ADMIN';
-                  };
-                  athlete: {
-                    /** Format: uuid */
-                    id: string;
-                    /** @enum {string} */
-                    role: 'ATHLETE' | 'TRAINER' | 'ADMIN';
-                  };
-                  initiatedBy: {
-                    /** Format: uuid */
-                    id: string;
-                    /** @enum {string} */
-                    role: 'ATHLETE' | 'TRAINER' | 'ADMIN';
-                  };
-                  endedBy: {
-                    /** Format: uuid */
-                    id: string;
-                    /** @enum {string} */
-                    role: 'ATHLETE' | 'TRAINER' | 'ADMIN';
-                  } | null;
-                  /** Format: date-time */
-                  createdAt: string;
-                  /** Format: date-time */
-                  updatedAt: string;
-                }
-            )[];
-            meta: {
-              total: number;
-              skip: number;
-              take: number;
-              totalPages: number;
-            };
-          };
-        };
-      };
-    };
-  };
-  TrainerAthletesController_create: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': {
-          /** Format: uuid */
-          userId: string;
-        };
-      };
-    };
-    responses: {
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': {
-            /** Format: uuid */
-            id: string;
-            /** Format: uuid */
-            trainerId: string;
-            /** Format: uuid */
-            athleteId: string;
-            /** Format: uuid */
-            initiatedById: string;
-            /** @enum {string} */
-            status: 'PENDING' | 'ACTIVE' | 'DECLINED' | 'CANCELLED' | 'TERMINATED';
-            /** Format: date-time */
-            respondedAt: string | null;
-            /** Format: date-time */
-            endedAt: string | null;
-            /** Format: uuid */
-            endedById: string | null;
-            endReason: string | null;
-            trainer: {
-              /** Format: uuid */
-              id: string;
-              email: string;
-              /** @enum {string} */
-              role: 'ATHLETE' | 'TRAINER' | 'ADMIN';
-            };
-            athlete: {
-              /** Format: uuid */
-              id: string;
-              email: string;
-              /** @enum {string} */
-              role: 'ATHLETE' | 'TRAINER' | 'ADMIN';
-            };
-            initiatedBy: {
-              /** Format: uuid */
-              id: string;
-              email: string;
-              /** @enum {string} */
-              role: 'ATHLETE' | 'TRAINER' | 'ADMIN';
-            };
-            endedBy: {
-              /** Format: uuid */
-              id: string;
-              email: string;
-              /** @enum {string} */
-              role: 'ATHLETE' | 'TRAINER' | 'ADMIN';
-            } | null;
-            /** Format: date-time */
-            createdAt: string;
-            /** Format: date-time */
-            updatedAt: string;
-          };
-        };
-      };
-    };
-  };
-  TrainerAthletesController_findOne: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json':
-            | {
-                /** Format: uuid */
-                id: string;
-                /** Format: uuid */
-                trainerId: string;
-                /** Format: uuid */
-                athleteId: string;
-                /** Format: uuid */
-                initiatedById: string;
-                /** @enum {string} */
-                status: 'PENDING' | 'ACTIVE' | 'DECLINED' | 'CANCELLED' | 'TERMINATED';
-                /** Format: date-time */
-                respondedAt: string | null;
-                /** Format: date-time */
-                endedAt: string | null;
-                /** Format: uuid */
-                endedById: string | null;
-                endReason: string | null;
-                trainer: {
-                  /** Format: uuid */
-                  id: string;
-                  email: string;
-                  /** @enum {string} */
-                  role: 'ATHLETE' | 'TRAINER' | 'ADMIN';
-                };
-                athlete: {
-                  /** Format: uuid */
-                  id: string;
-                  email: string;
-                  /** @enum {string} */
-                  role: 'ATHLETE' | 'TRAINER' | 'ADMIN';
-                };
-                initiatedBy: {
-                  /** Format: uuid */
-                  id: string;
-                  email: string;
-                  /** @enum {string} */
-                  role: 'ATHLETE' | 'TRAINER' | 'ADMIN';
-                };
-                endedBy: {
-                  /** Format: uuid */
-                  id: string;
-                  email: string;
-                  /** @enum {string} */
-                  role: 'ATHLETE' | 'TRAINER' | 'ADMIN';
-                } | null;
-                /** Format: date-time */
-                createdAt: string;
-                /** Format: date-time */
-                updatedAt: string;
-              }
-            | {
-                /** Format: uuid */
-                id: string;
-                /** Format: uuid */
-                trainerId: string;
-                /** Format: uuid */
-                athleteId: string;
-                /** Format: uuid */
-                initiatedById: string;
-                /** @enum {string} */
-                status: 'PENDING' | 'ACTIVE' | 'DECLINED' | 'CANCELLED' | 'TERMINATED';
-                /** Format: date-time */
-                respondedAt: string | null;
-                /** Format: date-time */
-                endedAt: string | null;
-                /** Format: uuid */
-                endedById: string | null;
-                endReason: string | null;
-                trainer: {
-                  /** Format: uuid */
-                  id: string;
-                  /** @enum {string} */
-                  role: 'ATHLETE' | 'TRAINER' | 'ADMIN';
-                };
-                athlete: {
-                  /** Format: uuid */
-                  id: string;
-                  /** @enum {string} */
-                  role: 'ATHLETE' | 'TRAINER' | 'ADMIN';
-                };
-                initiatedBy: {
-                  /** Format: uuid */
-                  id: string;
-                  /** @enum {string} */
-                  role: 'ATHLETE' | 'TRAINER' | 'ADMIN';
-                };
-                endedBy: {
-                  /** Format: uuid */
-                  id: string;
-                  /** @enum {string} */
-                  role: 'ATHLETE' | 'TRAINER' | 'ADMIN';
-                } | null;
-                /** Format: date-time */
-                createdAt: string;
-                /** Format: date-time */
-                updatedAt: string;
-              };
-        };
-      };
-    };
-  };
-  TrainerAthletesController_accept: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': {
-            /** Format: uuid */
-            id: string;
-            /** Format: uuid */
-            trainerId: string;
-            /** Format: uuid */
-            athleteId: string;
-            /** Format: uuid */
-            initiatedById: string;
-            /** @enum {string} */
-            status: 'PENDING' | 'ACTIVE' | 'DECLINED' | 'CANCELLED' | 'TERMINATED';
-            /** Format: date-time */
-            respondedAt: string | null;
-            /** Format: date-time */
-            endedAt: string | null;
-            /** Format: uuid */
-            endedById: string | null;
-            endReason: string | null;
-            trainer: {
-              /** Format: uuid */
-              id: string;
-              email: string;
-              /** @enum {string} */
-              role: 'ATHLETE' | 'TRAINER' | 'ADMIN';
-            };
-            athlete: {
-              /** Format: uuid */
-              id: string;
-              email: string;
-              /** @enum {string} */
-              role: 'ATHLETE' | 'TRAINER' | 'ADMIN';
-            };
-            initiatedBy: {
-              /** Format: uuid */
-              id: string;
-              email: string;
-              /** @enum {string} */
-              role: 'ATHLETE' | 'TRAINER' | 'ADMIN';
-            };
-            endedBy: {
-              /** Format: uuid */
-              id: string;
-              email: string;
-              /** @enum {string} */
-              role: 'ATHLETE' | 'TRAINER' | 'ADMIN';
-            } | null;
-            /** Format: date-time */
-            createdAt: string;
-            /** Format: date-time */
-            updatedAt: string;
-          };
-        };
-      };
-    };
-  };
-  TrainerAthletesController_decline: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': {
-            /** Format: uuid */
-            id: string;
-            /** Format: uuid */
-            trainerId: string;
-            /** Format: uuid */
-            athleteId: string;
-            /** Format: uuid */
-            initiatedById: string;
-            /** @enum {string} */
-            status: 'PENDING' | 'ACTIVE' | 'DECLINED' | 'CANCELLED' | 'TERMINATED';
-            /** Format: date-time */
-            respondedAt: string | null;
-            /** Format: date-time */
-            endedAt: string | null;
-            /** Format: uuid */
-            endedById: string | null;
-            endReason: string | null;
-            trainer: {
-              /** Format: uuid */
-              id: string;
-              email: string;
-              /** @enum {string} */
-              role: 'ATHLETE' | 'TRAINER' | 'ADMIN';
-            };
-            athlete: {
-              /** Format: uuid */
-              id: string;
-              email: string;
-              /** @enum {string} */
-              role: 'ATHLETE' | 'TRAINER' | 'ADMIN';
-            };
-            initiatedBy: {
-              /** Format: uuid */
-              id: string;
-              email: string;
-              /** @enum {string} */
-              role: 'ATHLETE' | 'TRAINER' | 'ADMIN';
-            };
-            endedBy: {
-              /** Format: uuid */
-              id: string;
-              email: string;
-              /** @enum {string} */
-              role: 'ATHLETE' | 'TRAINER' | 'ADMIN';
-            } | null;
-            /** Format: date-time */
-            createdAt: string;
-            /** Format: date-time */
-            updatedAt: string;
-          };
-        };
-      };
-    };
-  };
-  TrainerAthletesController_cancel: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': {
-          reason?: string | null;
-        };
-      };
-    };
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json':
-            | {
-                /** Format: uuid */
-                id: string;
-                /** Format: uuid */
-                trainerId: string;
-                /** Format: uuid */
-                athleteId: string;
-                /** Format: uuid */
-                initiatedById: string;
-                /** @enum {string} */
-                status: 'PENDING' | 'ACTIVE' | 'DECLINED' | 'CANCELLED' | 'TERMINATED';
-                /** Format: date-time */
-                respondedAt: string | null;
-                /** Format: date-time */
-                endedAt: string | null;
-                /** Format: uuid */
-                endedById: string | null;
-                endReason: string | null;
-                trainer: {
-                  /** Format: uuid */
-                  id: string;
-                  email: string;
-                  /** @enum {string} */
-                  role: 'ATHLETE' | 'TRAINER' | 'ADMIN';
-                };
-                athlete: {
-                  /** Format: uuid */
-                  id: string;
-                  email: string;
-                  /** @enum {string} */
-                  role: 'ATHLETE' | 'TRAINER' | 'ADMIN';
-                };
-                initiatedBy: {
-                  /** Format: uuid */
-                  id: string;
-                  email: string;
-                  /** @enum {string} */
-                  role: 'ATHLETE' | 'TRAINER' | 'ADMIN';
-                };
-                endedBy: {
-                  /** Format: uuid */
-                  id: string;
-                  email: string;
-                  /** @enum {string} */
-                  role: 'ATHLETE' | 'TRAINER' | 'ADMIN';
-                } | null;
-                /** Format: date-time */
-                createdAt: string;
-                /** Format: date-time */
-                updatedAt: string;
-              }
-            | {
-                /** Format: uuid */
-                id: string;
-                /** Format: uuid */
-                trainerId: string;
-                /** Format: uuid */
-                athleteId: string;
-                /** Format: uuid */
-                initiatedById: string;
-                /** @enum {string} */
-                status: 'PENDING' | 'ACTIVE' | 'DECLINED' | 'CANCELLED' | 'TERMINATED';
-                /** Format: date-time */
-                respondedAt: string | null;
-                /** Format: date-time */
-                endedAt: string | null;
-                /** Format: uuid */
-                endedById: string | null;
-                endReason: string | null;
-                trainer: {
-                  /** Format: uuid */
-                  id: string;
-                  /** @enum {string} */
-                  role: 'ATHLETE' | 'TRAINER' | 'ADMIN';
-                };
-                athlete: {
-                  /** Format: uuid */
-                  id: string;
-                  /** @enum {string} */
-                  role: 'ATHLETE' | 'TRAINER' | 'ADMIN';
-                };
-                initiatedBy: {
-                  /** Format: uuid */
-                  id: string;
-                  /** @enum {string} */
-                  role: 'ATHLETE' | 'TRAINER' | 'ADMIN';
-                };
-                endedBy: {
-                  /** Format: uuid */
-                  id: string;
-                  /** @enum {string} */
-                  role: 'ATHLETE' | 'TRAINER' | 'ADMIN';
-                } | null;
-                /** Format: date-time */
-                createdAt: string;
-                /** Format: date-time */
-                updatedAt: string;
-              };
-        };
-      };
-    };
-  };
-  TrainerAthletesController_terminate: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': {
-          reason?: string | null;
-        };
-      };
-    };
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json':
-            | {
-                /** Format: uuid */
-                id: string;
-                /** Format: uuid */
-                trainerId: string;
-                /** Format: uuid */
-                athleteId: string;
-                /** Format: uuid */
-                initiatedById: string;
-                /** @enum {string} */
-                status: 'PENDING' | 'ACTIVE' | 'DECLINED' | 'CANCELLED' | 'TERMINATED';
-                /** Format: date-time */
-                respondedAt: string | null;
-                /** Format: date-time */
-                endedAt: string | null;
-                /** Format: uuid */
-                endedById: string | null;
-                endReason: string | null;
-                trainer: {
-                  /** Format: uuid */
-                  id: string;
-                  email: string;
-                  /** @enum {string} */
-                  role: 'ATHLETE' | 'TRAINER' | 'ADMIN';
-                };
-                athlete: {
-                  /** Format: uuid */
-                  id: string;
-                  email: string;
-                  /** @enum {string} */
-                  role: 'ATHLETE' | 'TRAINER' | 'ADMIN';
-                };
-                initiatedBy: {
-                  /** Format: uuid */
-                  id: string;
-                  email: string;
-                  /** @enum {string} */
-                  role: 'ATHLETE' | 'TRAINER' | 'ADMIN';
-                };
-                endedBy: {
-                  /** Format: uuid */
-                  id: string;
-                  email: string;
-                  /** @enum {string} */
-                  role: 'ATHLETE' | 'TRAINER' | 'ADMIN';
-                } | null;
-                /** Format: date-time */
-                createdAt: string;
-                /** Format: date-time */
-                updatedAt: string;
-              }
-            | {
-                /** Format: uuid */
-                id: string;
-                /** Format: uuid */
-                trainerId: string;
-                /** Format: uuid */
-                athleteId: string;
-                /** Format: uuid */
-                initiatedById: string;
-                /** @enum {string} */
-                status: 'PENDING' | 'ACTIVE' | 'DECLINED' | 'CANCELLED' | 'TERMINATED';
-                /** Format: date-time */
-                respondedAt: string | null;
-                /** Format: date-time */
-                endedAt: string | null;
-                /** Format: uuid */
-                endedById: string | null;
-                endReason: string | null;
-                trainer: {
-                  /** Format: uuid */
-                  id: string;
-                  /** @enum {string} */
-                  role: 'ATHLETE' | 'TRAINER' | 'ADMIN';
-                };
-                athlete: {
-                  /** Format: uuid */
-                  id: string;
-                  /** @enum {string} */
-                  role: 'ATHLETE' | 'TRAINER' | 'ADMIN';
-                };
-                initiatedBy: {
-                  /** Format: uuid */
-                  id: string;
-                  /** @enum {string} */
-                  role: 'ATHLETE' | 'TRAINER' | 'ADMIN';
-                };
-                endedBy: {
-                  /** Format: uuid */
-                  id: string;
-                  /** @enum {string} */
-                  role: 'ATHLETE' | 'TRAINER' | 'ADMIN';
-                } | null;
-                /** Format: date-time */
-                createdAt: string;
-                /** Format: date-time */
-                updatedAt: string;
-              };
-        };
-      };
-    };
-  };
-  TrainerDashboardController_overview: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': {
-            /** Format: date-time */
-            asOf: string;
-            /** Format: date-time */
-            windowStart: string;
-            activeClients: number;
-            activeProgramAssignments: number;
-            completedProgramWorkouts30d: number;
-          };
-        };
-      };
-    };
-  };
-  TrainerDashboardController_clientProgress: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        relationId: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': {
-            /** Format: date-time */
-            asOf: string;
-            /** Format: date-time */
-            windowStart: string;
-            activeProgramAssignments: number;
-            completedProgramWorkouts30d: number;
-          };
-        };
       };
     };
   };
