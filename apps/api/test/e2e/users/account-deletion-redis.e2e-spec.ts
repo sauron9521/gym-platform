@@ -151,4 +151,18 @@ redisDescribe('Account deletion quota (two real HTTP apps, PostgreSQL and Redis)
       }),
     ).toBe(2);
   }, 20_000);
+  it('shares ordinary sessions and immediate sign-out revocation across live replicas', async () => {
+    const [first, second] = apps as [INestApplication, INestApplication];
+    const a = request(first.getHttpServer());
+    const b = request(second.getHttpServer());
+    await a.get('/health/ready').expect(200);
+    await b.get('/health/ready').expect(200);
+    const cookie = await login(first, ownerId);
+    const other = await login(second, otherId);
+    expect((await b.get('/users/me').set('Cookie', cookie).expect(200)).body.id).toBe(ownerId);
+    await b.post('/auth/sign-out').set('Cookie', cookie).expect(204);
+    await a.get('/users/me').set('Cookie', cookie).expect(401);
+    await b.get('/users/me').set('Cookie', cookie).expect(401);
+    expect((await a.get('/users/me').set('Cookie', other).expect(200)).body.id).toBe(otherId);
+  }, 20_000);
 });

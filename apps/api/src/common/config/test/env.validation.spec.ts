@@ -26,10 +26,42 @@ describe('validateEnv', () => {
     const env = validateEnv(validDev);
     expect(env.NODE_ENV).toBe('development');
     expect(env.PORT).toBe(3000);
+    expect(env.DATABASE_POOL_MAX).toBe(10);
+    expect(env.DATABASE_POOL_CONNECT_TIMEOUT_MS).toBe(5_000);
+    expect(env.DATABASE_POOL_IDLE_TIMEOUT_MS).toBe(10_000);
     expect(env.ENABLE_OPENAPI).toBe(false);
     expect(env.LOG_LEVEL).toBe('log');
     expect(env.REDIS_URL).toBeUndefined();
     expect(env.TRUSTED_PROXY_CIDRS).toBeUndefined();
+  });
+
+  it('accepts bounded PostgreSQL pool settings from environment strings', () => {
+    expect(
+      validateEnv({
+        ...validDev,
+        DATABASE_POOL_MAX: '4',
+        DATABASE_POOL_CONNECT_TIMEOUT_MS: '1500',
+        DATABASE_POOL_IDLE_TIMEOUT_MS: '3000',
+      }),
+    ).toMatchObject({
+      DATABASE_POOL_MAX: 4,
+      DATABASE_POOL_CONNECT_TIMEOUT_MS: 1500,
+      DATABASE_POOL_IDLE_TIMEOUT_MS: 3000,
+    });
+  });
+
+  it.each([
+    { DATABASE_POOL_MAX: '0' },
+    { DATABASE_POOL_MAX: '51' },
+    { DATABASE_POOL_MAX: '2.5' },
+    { DATABASE_POOL_CONNECT_TIMEOUT_MS: '0' },
+    { DATABASE_POOL_CONNECT_TIMEOUT_MS: '30001' },
+    { DATABASE_POOL_IDLE_TIMEOUT_MS: '0' },
+    { DATABASE_POOL_IDLE_TIMEOUT_MS: '120001' },
+  ])('rejects unsafe pool configuration %j', (override) => {
+    expect(() => validateEnv({ ...validDev, ...override })).toThrow(
+      'Invalid environment configuration',
+    );
   });
 
   it('normalizes optional log level and rejects unsupported values', () => {

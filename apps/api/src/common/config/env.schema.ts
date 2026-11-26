@@ -83,6 +83,18 @@ function getOrigins(value: string): string[] | null {
 const baseEnvSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   DATABASE_URL: z.string().min(1).refine(isPostgresUrl, 'Must be a PostgreSQL connection URL'),
+  DATABASE_POOL_MAX: z.preprocess(
+    emptyToUndefined,
+    z.coerce.number().int().min(1).max(50).default(10),
+  ),
+  DATABASE_POOL_CONNECT_TIMEOUT_MS: z.preprocess(
+    emptyToUndefined,
+    z.coerce.number().int().min(250).max(30_000).default(5_000),
+  ),
+  DATABASE_POOL_IDLE_TIMEOUT_MS: z.preprocess(
+    emptyToUndefined,
+    z.coerce.number().int().min(1_000).max(120_000).default(10_000),
+  ),
   JWT_SECRET: z.string().min(1),
   // Reserved for the gated MFA rollout.
   MFA_ENCRYPTION_KEYS: z.preprocess(emptyToUndefined, z.string().max(512).optional()),

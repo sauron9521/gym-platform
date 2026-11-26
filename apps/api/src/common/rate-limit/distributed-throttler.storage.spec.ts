@@ -10,6 +10,21 @@ function withRedis(url?: string): DistributedThrottlerStorage {
 }
 
 describe('DistributedThrottlerStorage', () => {
+  it('bounds commands and disables automatic resend of ambiguous mutations', async () => {
+    const storage = withRedis('redis://127.0.0.1:6379');
+    try {
+      const redis = (storage as unknown as { redis: { options: unknown } }).redis;
+      expect(redis.options).toMatchObject({
+        commandTimeout: 2_000,
+        connectTimeout: 2_000,
+        enableOfflineQueue: false,
+        autoResendUnfulfilledCommands: false,
+      });
+    } finally {
+      await storage.onApplicationShutdown();
+    }
+  });
+
   it('reports readiness with the local in-memory throttler', async () => {
     const storage = withRedis();
     try {
