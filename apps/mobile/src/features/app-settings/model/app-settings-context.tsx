@@ -7,6 +7,8 @@ import {
   type PropsWithChildren,
 } from 'react';
 import { useStore } from 'zustand';
+import { useQueryClient } from '@tanstack/react-query';
+import { hasMobileAccess } from '@/features/auth/model/account-capabilities';
 
 import { useAuth } from '@/features/auth/model/auth-context';
 import {
@@ -19,12 +21,19 @@ const SettingsContext = createContext<AppSettingsStore | null>(null);
 
 /** Stable context transports the account-scoped store; consumers select their own values. */
 export function AppSettingsProvider({ children }: PropsWithChildren) {
-  const { account } = useAuth();
-  const accountId = account?.id ?? null;
+  const { account, capabilities, getScopedApi, signOut } = useAuth();
+  const queryClient = useQueryClient();
   const [pendingWrites] = useState(() => new Map<string, Promise<void>>());
+  const [pendingSnapshots] = useState(() => new Map<string, Promise<void>>());
   const instance = useMemo(
-    () => createAppSettingsStore(accountId, pendingWrites),
-    [accountId, pendingWrites],
+    () =>
+      createAppSettingsStore(
+        account && hasMobileAccess(capabilities) ? account.id : null,
+        pendingWrites,
+        { queryClient, getScopedApi, signOut },
+        pendingSnapshots,
+      ),
+    [account, capabilities, pendingWrites, queryClient, getScopedApi, signOut, pendingSnapshots],
   );
   useEffect(() => instance.activate(), [instance]);
   return <SettingsContext.Provider value={instance.store}>{children}</SettingsContext.Provider>;
