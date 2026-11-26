@@ -12,8 +12,15 @@ export function AppSettingsScreen() {
   const { palette } = useMobileTheme();
   const intl = useIntl();
   const t = (key: string) => intl.formatMessage({ id: `mobile.settings.${key}` });
-  const { settings, setAutoRestTimer, setRestDuration, setRestSound, setRestVibration, reload } =
-    useAppSettings();
+  const {
+    settings,
+    setAutoRestTimer,
+    setRestDuration,
+    setRestSound,
+    setRestVibration,
+    setKeepWorkoutScreenAwake,
+    reload,
+  } = useAppSettings();
   const disabled = settings.status !== 'ready' && settings.status !== 'saveError';
 
   return (
@@ -90,6 +97,20 @@ export function AppSettingsScreen() {
             />
           </View>
         ))}
+        <View style={styles.row}>
+          <View style={styles.description}>
+            <Text style={styles.label}>{t('keepWorkoutScreenAwake')}</Text>
+            <Text style={styles.hint}>{t('keepWorkoutScreenAwakeHint')}</Text>
+          </View>
+          <Switch
+            testID="settings-keep-workout-screen-awake"
+            accessibilityLabel={t('keepWorkoutScreenAwake')}
+            disabled={disabled}
+            value={settings.keepWorkoutScreenAwake}
+            onValueChange={(value) => void setKeepWorkoutScreenAwake(value)}
+            trackColor={{ false: palette.border, true: palette.primary }}
+          />
+        </View>
         {settings.status === 'loading' || settings.status === 'saving' ? (
           <Text accessibilityLiveRegion="polite" style={styles.hint}>
             {t('pending')}

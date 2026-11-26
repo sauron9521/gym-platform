@@ -22,6 +22,11 @@ vi.mock('@/features/workouts/model/workout-edit', () => ({
   useUpdateWorkoutTitle: vi.fn(),
 }));
 
+const keepAwake = vi.hoisted(() => vi.fn());
+vi.mock('@/features/workouts/lib/use-workout-keep-awake', () => ({
+  useWorkoutKeepAwake: keepAwake,
+}));
+
 const notify = vi.hoisted(() => vi.fn());
 vi.mock('@/features/workouts/lib/use-rest-feedback', () => ({ useRestFeedback: () => notify }));
 
@@ -29,7 +34,13 @@ const shouldAutoStartRestTimer = vi.hoisted(() => vi.fn(() => true));
 vi.mock('@/features/app-settings/model/app-settings-context', () => ({
   useAppSettings: () => ({
     shouldAutoStartRestTimer,
-    settings: { restDuration: 120, restSound: true, restVibration: true },
+    settings: {
+      accountId: 'athlete-a',
+      restDuration: 120,
+      restSound: true,
+      restVibration: true,
+      keepWorkoutScreenAwake: true,
+    },
   }),
 }));
 
@@ -87,6 +98,18 @@ function prepareWorkout(
 describe('WorkoutDetailsScreen (real React Native renderer)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  it('requests keep-awake only for an in-progress workout with valid details', async () => {
+    prepareWorkout('PLANNED');
+    const view = await render(<WorkoutDetailsScreen id="workout-123" />);
+    expect(keepAwake).toHaveBeenLastCalledWith(false);
+    prepareWorkout('IN_PROGRESS');
+    await view.rerender(<WorkoutDetailsScreen id="workout-123" />);
+    expect(keepAwake).toHaveBeenLastCalledWith(true);
+    prepareWorkout('COMPLETED');
+    await view.rerender(<WorkoutDetailsScreen id="workout-123" />);
+    expect(keepAwake).toHaveBeenLastCalledWith(false);
   });
 
   it('starts a planned workout by pressing the native action button', async () => {
