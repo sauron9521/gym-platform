@@ -45,3 +45,31 @@ export function groupScheduledWorkouts<T extends { scheduledAt: string }>(workou
   }
   return days;
 }
+
+export type CalendarPeriod = CalendarMonth | Readonly<{ weekStart: Date }>;
+
+/** Calendar arithmetic uses local dates, never fixed 24-hour durations (DST). */
+export function shiftCalendarDays(date: Date, days: number) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate() + days);
+}
+
+export function startCalendarWeek(date: Date) {
+  return shiftCalendarDays(date, -((date.getDay() + 6) % 7));
+}
+
+export function calendarWeekCells(date: Date) {
+  const start = startCalendarWeek(date);
+  return Array.from({ length: 7 }, (_, index) => {
+    const day = shiftCalendarDays(start, index);
+    return { date: day, key: localWorkoutDayKey(day), inMonth: true };
+  });
+}
+
+export function calendarPeriodBounds(period: CalendarPeriod) {
+  if (!('weekStart' in period)) return calendarMonthBounds(period);
+  const start = startCalendarWeek(period.weekStart);
+  return {
+    from: start.toISOString(),
+    to: new Date(shiftCalendarDays(start, 7).getTime() - 1).toISOString(),
+  };
+}

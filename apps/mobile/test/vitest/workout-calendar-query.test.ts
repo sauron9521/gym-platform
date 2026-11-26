@@ -3,6 +3,11 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   calendarMonthBounds,
   calendarMonthCells,
+  calendarPeriodBounds,
+  calendarWeekCells,
+  startCalendarWeek,
+  shiftCalendarDays,
+  type CalendarPeriod,
   groupScheduledWorkouts,
   localWorkoutDayKey,
   shiftCalendarMonth,
@@ -34,11 +39,11 @@ function harness(...responses: unknown[]) {
   const controller = new AbortController();
   const onExpired = vi.fn(async () => undefined);
   const isCurrent = vi.fn(() => true);
-  const run = () =>
+  const run = (period: CalendarPeriod = month) =>
     readWorkoutCalendar({
       api: { GET: get } as unknown as ReturnType<typeof createMobileApi>,
       ownerId,
-      month,
+      period,
       signal: controller.signal,
       isCurrent,
       onExpired,
@@ -131,5 +136,68 @@ describe('calendar bounded authenticated read', () => {
     const expired = harness({ response: { status: 401 } });
     await expect(expired.run()).rejects.toMatchObject({ name: 'MobileSessionExpiredError' });
     expect(expired.onExpired).toHaveBeenCalledOnce();
+  });
+});
+
+describe('calendar weekly boundaries and query', () => {
+  it('includes seven local days across the year boundary, Monday through Sunday', () => {
+    const sunday = new Date(2027, 0, 3, 23, 59);
+    expect(startCalendarWeek(sunday)).toEqual(new Date(2026, 11, 28));
+    const cells = calendarWeekCells(sunday);
+    expect(cells.map((cell) => cell.key)).toEqual([
+      '2026-12-28',
+      '2026-12-29',
+      '2026-12-30',
+      '2026-12-31',
+      '2027-01-01',
+      '2027-01-02',
+      '2027-01-03',
+    ]);
+    expect(cells.every((cell) => cell.inMonth)).toBe(true);
+    expect(shiftCalendarDays(sunday, 7)).toEqual(new Date(2027, 0, 10));
+  });
+
+  it('uses local midnight boundaries rather than fixed elapsed hours over DST transitions', () => {
+    for (const anchor of [new Date(2026, 2, 29, 12), new Date(2026, 9, 25, 12)]) {
+      const bounds = calendarPeriodBounds({ weekStart: anchor });
+      const start = startCalendarWeek(anchor);
+      expect(new Date(bounds.from)).toEqual(start);
+      expect(new Date(bounds.to).getTime()).toBe(shiftCalendarDays(start, 7).getTime() - 1);
+      expect(calendarWeekCells(anchor).map((cell) => cell.date.getHours())).toEqual(
+        Array(7).fill(0),
+      );
+    }
+  });
+
+  it('requests a single exact weekly range spanning two months and keeps keys distinct', async () => {
+    const period = { weekStart: new Date(2026, 11, 28) };
+    const first = { ...item(1), scheduledAt: new Date(2026, 11, 31, 23, 59).toISOString() };
+    const second = { ...item(2), scheduledAt: new Date(2027, 0, 1, 0, 1).toISOString() };
+    const h = harness(page([first, second], 2));
+    expect(await h.run(period)).toEqual([first, second]);
+    const bounds = calendarPeriodBounds(period);
+    expect(h.get).toHaveBeenCalledExactlyOnceWith('/workouts', {
+      signal: h.controller.signal,
+      params: {
+        query: {
+          page: 1,
+          limit: 100,
+          view: 'summary',
+          scheduledFrom: bounds.from,
+          scheduledTo: bounds.to,
+        },
+      },
+    });
+    expect(calendarQueryKey(ownerId, period)).not.toEqual(
+      calendarQueryKey(ownerId, { year: 2026, month: 11 }),
+    );
+    expect(calendarQueryKey(ownerId, period)).toEqual(
+      calendarQueryKey(ownerId, { weekStart: new Date(2027, 0, 3) }),
+    );
+    expect(calendarQueryKey(otherOwner, period)).not.toEqual(calendarQueryKey(ownerId, period));
+    const outside = harness(
+      page([{ ...first, scheduledAt: new Date(2027, 0, 4).toISOString() }], 1),
+    );
+    await expect(outside.run(period)).rejects.toMatchObject({ reason: 'incomplete' });
   });
 });

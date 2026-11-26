@@ -6,7 +6,7 @@ import { hasAthleteAccess } from '@/features/auth/model/account-capabilities';
 import { accountQueryKeys } from '@/shared/api/query-client';
 import { mobileReadError, MobileSessionExpiredError } from '@/shared/api/api-error-policy';
 import type { createMobileApi } from '@/shared/api/client';
-import { calendarMonthBounds, type CalendarMonth } from '../lib/calendar-month';
+import { calendarPeriodBounds, type CalendarPeriod } from '../lib/calendar-month';
 
 const PAGE_SIZE = 100;
 const MAX_PAGES = 10;
@@ -35,8 +35,8 @@ export class CalendarDataError extends Error {
   }
 }
 
-export const calendarQueryKey = (ownerId: string, month: CalendarMonth) => {
-  const { from, to } = calendarMonthBounds(month);
+export const calendarQueryKey = (ownerId: string, period: CalendarPeriod) => {
+  const { from, to } = calendarPeriodBounds(period);
   return [...accountQueryKeys.workouts(ownerId), 'calendar', from, to] as const;
 };
 
@@ -46,19 +46,19 @@ export const calendarQueryKey = (ownerId: string, month: CalendarMonth) => {
 export async function readWorkoutCalendar({
   api,
   ownerId,
-  month,
+  period,
   signal,
   isCurrent,
   onExpired,
 }: {
   api: ReturnType<typeof createMobileApi>;
   ownerId: string;
-  month: CalendarMonth;
+  period: CalendarPeriod;
   signal: AbortSignal;
   isCurrent: () => boolean;
   onExpired: () => Promise<void>;
 }): Promise<CalendarWorkout[]> {
-  const { from, to } = calendarMonthBounds(month);
+  const { from, to } = calendarPeriodBounds(period);
   const records = new Map<string, CalendarWorkout>();
   const checkScope = () => {
     if (signal.aborted || !isCurrent()) throw new CalendarDataError('scopeChanged');
@@ -112,12 +112,12 @@ export async function readWorkoutCalendar({
   throw new CalendarDataError('incomplete');
 }
 
-export function useWorkoutCalendarQuery(month: CalendarMonth) {
+export function useWorkoutCalendarQuery(period: CalendarPeriod) {
   const { account, capabilities, getScopedApi, signOut } = useAuth();
   const client = useQueryClient();
   const ownerId = account?.id;
   return useQuery({
-    queryKey: calendarQueryKey(ownerId ?? 'signed-out', month),
+    queryKey: calendarQueryKey(ownerId ?? 'signed-out', period),
     enabled: Boolean(ownerId && hasAthleteAccess(capabilities)),
     queryFn: async ({ signal }) => {
       const isCurrent = () =>
@@ -126,7 +126,7 @@ export function useWorkoutCalendarQuery(month: CalendarMonth) {
         throw new CalendarDataError('scopeChanged');
       const api = getScopedApi(isCurrent);
       if (!api) throw new CalendarDataError('scopeChanged');
-      return readWorkoutCalendar({ api, ownerId, month, signal, isCurrent, onExpired: signOut });
+      return readWorkoutCalendar({ api, ownerId, period, signal, isCurrent, onExpired: signOut });
     },
     retry: false,
     refetchOnWindowFocus: 'always',

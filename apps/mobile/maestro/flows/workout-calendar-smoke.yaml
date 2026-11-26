@@ -1,0 +1,88 @@
+# Read-only staging flow. Seed one uniquely named workout scheduled TODAY
+# in the device timezone; use a disposable verified Ukrainian athlete.
+appId: ${APP_ID}
+---
+- launchApp:
+    clearState: true
+- assertVisible: З поверненням!
+- tapOn:
+    id: sign-in-email
+- inputText: ${E2E_EMAIL}
+- tapOn:
+    id: sign-in-password
+- inputText: ${E2E_PASSWORD}
+- tapOn: Увійти
+- extendedWaitUntil:
+    visible:
+      id: mobile-tab-workouts
+    timeout: 30000
+- tapOn:
+    id: mobile-tab-workouts
+- scrollUntilVisible:
+    element:
+      id: workouts-calendar
+    direction: DOWN
+    timeout: 15000
+- tapOn:
+    id: workouts-calendar
+- extendedWaitUntil:
+    visible:
+      id: calendar-mode-month
+    timeout: 20000
+- tapOn:
+    id: calendar-today
+- scrollUntilVisible:
+    element:
+      text: ${E2E_WORKOUT_TITLE}
+    direction: DOWN
+    timeout: 30000
+- scrollUntilVisible:
+    element:
+      id: calendar-mode-week
+    direction: UP
+    timeout: 15000
+- tapOn:
+    id: calendar-mode-week
+- scrollUntilVisible:
+    element:
+      id: calendar-week-agenda
+    direction: DOWN
+    timeout: 30000
+- scrollUntilVisible:
+    element:
+      text: ${E2E_WORKOUT_TITLE}
+    direction: DOWN
+    timeout: 30000
+- scrollUntilVisible:
+    element:
+      id: calendar-previous
+    direction: UP
+    timeout: 15000
+- tapOn:
+    id: calendar-previous
+- scrollUntilVisible:
+    element:
+      id: calendar-week-agenda
+    direction: DOWN
+    timeout: 30000
+- assertNotVisible: ${E2E_WORKOUT_TITLE}
+- scrollUntilVisible:
+    element:
+      id: calendar-today
+    direction: UP
+    timeout: 15000
+- tapOn:
+    id: calendar-today
+- scrollUntilVisible:
+    element:
+      text: ${E2E_WORKOUT_TITLE}
+    direction: DOWN
+    timeout: 30000
+- tapOn: ${E2E_WORKOUT_TITLE}
+- extendedWaitUntil:
+    visible:
+      id: workout-details-scroll
+    timeout: 20000
+- extendedWaitUntil:
+    visible: ${E2E_WORKOUT_TITLE}
+    timeout: 20000

@@ -355,3 +355,36 @@ and iOS acceptance, encryption/key lifecycle, backup/restore and fault/cleanup
 evidence pass. Missing app identifiers, approved EAS builds, staging
 credentials, native tooling and an isolated fault fixture are operator
 dependencies. These flow contracts do not authorize production release.
+
+## M11 — Workout Calendar native acceptance (#340)
+
+The `calendar-read` manual workflow / `workout-calendar-smoke.yaml` scenario
+uses the existing protected staging environment, verified APK hash and
+approved staging package. It is **read-only for workouts**. Set
+`MOBILE_E2E_CALENDAR_WORKOUT_TITLE` to a unique synthetic workout owned by
+the disposable verified Ukrainian-locale athlete. Seed it for **today in
+the target device's local timezone**, away from midnight, with at least one
+exercise. Ensure the same title is absent from other workouts. Do not reuse
+a stale fixture after the local date changes. The workflow rejects a missing
+title or a mismatched staging app ID before downloading the APK.
+
+The scenario opens the monthly calendar, selects Today, finds the seeded
+workout, switches to Week, verifies the weekly agenda, navigates to the
+previous week, returns to Today and opens the actual workout details.
+The previous-week UI assertion is a smoke check, not independent proof
+of completeness. Verify both query bounds and returned fixture IDs with
+private staging evidence. On iOS run the same flow locally against an
+approved native build using Maestro 2.12.1 and `APP_ID`, `E2E_EMAIL`,
+`E2E_PASSWORD`, `E2E_WORKOUT_TITLE` as above.
+
+Additional acceptance on both platforms: verify week crossing month/year
+boundaries with workouts on both sides, local time around DST and midnight,
+all status markers, ordering, empty week/month, network error and recovery,
+no partial results on failed pagination, large-text/screen-reader navigation,
+light/dark themes and account switch isolation. Verify **zero workout POST,
+PATCH or DELETE** calls for the read-only journey. Use only disposable staging
+records and retain private build/device/fixture/request-count evidence.
+Do not expose tokens, credentials or user-bearing screenshots.
+
+Status: **prepared, NOT RUN**. Actual Android/iOS device runs remain necessary
+for #340; normal contract and component CI do not prove native acceptance.
