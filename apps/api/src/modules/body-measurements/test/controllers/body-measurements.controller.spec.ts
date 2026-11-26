@@ -1,6 +1,8 @@
 import { BodyMeasurementsController } from '../../controllers/body-measurements.controller.js';
-import { BodyMeasurementsService } from '../../services/body-measurements.service.js';
-import { BodyMeasurementStatisticsService } from '../../services/body-measurement-statistics.service.js';
+import type {
+  BodyMeasurementsService,
+  BodyMeasurementStatisticsService,
+} from '../../public-api.js';
 
 describe('BodyMeasurementsController', () => {
   const service = {

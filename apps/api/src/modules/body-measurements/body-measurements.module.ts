@@ -14,5 +14,6 @@ import { BodyMeasurementStatisticsRepository } from './repositories/body-measure
     BodyMeasurementStatisticsRepository,
     BodyMeasurementStatisticsService,
   ],
+  exports: [BodyMeasurementsService, BodyMeasurementStatisticsService],
 })
 export class BodyMeasurementsModule {}

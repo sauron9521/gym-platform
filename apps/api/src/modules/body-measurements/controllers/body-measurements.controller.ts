@@ -13,13 +13,11 @@ import {
 import { Authenticate, CurrentUser } from '@nestjs/authentication';
 import { ApiBearerAuth, ApiCookieAuth, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 
-import { BodyMeasurementsService } from '../services/body-measurements.service.js';
-import { BodyMeasurementStatisticsService } from '../services/body-measurement-statistics.service.js';
 import {
+  BodyMeasurementsService,
+  BodyMeasurementStatisticsService,
   bodyMeasurementStatisticsQuerySchema,
   type BodyMeasurementStatisticsQueryDto,
-} from '../dto/body-measurement-statistics.schemas.js';
-import {
   bodyMeasurementIdSchema,
   createBodyMeasurementSchema,
   queryBodyMeasurementsSchema,
@@ -27,7 +25,7 @@ import {
   type CreateBodyMeasurementDto,
   type QueryBodyMeasurementsDto,
   type UpdateBodyMeasurementDto,
-} from '../dto/body-measurement.schemas.js';
+} from '../public-api.js';
 
 type UserActor = { id: string };
 

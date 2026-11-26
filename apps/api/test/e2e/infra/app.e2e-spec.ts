@@ -19,7 +19,13 @@ import { PrismaService } from '../../../src/infra/database/prisma.service.js';
 import { AuthModule } from '../../../src/modules/auth/auth.module.js';
 import { CredentialsService } from '../../../src/modules/auth/services/credentials.service.js';
 import { BodyMeasurementsModule } from '../../../src/modules/body-measurements/body-measurements.module.js';
-import { BodyMeasurementsService } from '../../../src/modules/body-measurements/services/body-measurements.service.js';
+import {
+  BodyMeasurementsService,
+  BodyMeasurementStatisticsService,
+} from '../../../src/modules/body-measurements/public-api.js';
+import { BodyMeasurementsRepository } from '../../../src/modules/body-measurements/repositories/body-measurements.repository.js';
+import { BodyMeasurementStatisticsRepository } from '../../../src/modules/body-measurements/repositories/body-measurement-statistics.repository.js';
+import { BodyMeasurementsController } from '../../../src/modules/body-measurements/controllers/body-measurements.controller.js';
 import { ExercisesModule } from '../../../src/modules/exercises/exercises.module.js';
 import { ExercisesService } from '../../../src/modules/exercises/services/exercises.service.js';
 import { TrainerAthletesModule } from '../../../src/modules/trainer-athletes/trainer-athletes.module.js';
@@ -84,6 +90,17 @@ class AccountDeletionRequestsBoundaryProbe {
 })
 class AccountDeletionRequestsBoundaryProbeModule {}
 
+@Injectable()
+class BodyMeasurementsBoundaryProbe {
+  constructor(
+    readonly measurements: BodyMeasurementsService,
+    readonly statistics: BodyMeasurementStatisticsService,
+  ) {}
+}
+
+@Module({ imports: [BodyMeasurementsModule], providers: [BodyMeasurementsBoundaryProbe] })
+class BodyMeasurementsBoundaryProbeModule {}
+
 describe('App (e2e)', () => {
   let app: INestApplication;
 
@@ -94,6 +111,7 @@ describe('App (e2e)', () => {
         TrainerOnboardingBoundaryProbeModule,
         NotificationsBoundaryProbeModule,
         AccountDeletionRequestsBoundaryProbeModule,
+        BodyMeasurementsBoundaryProbeModule,
       ],
     }).compile();
 
@@ -273,6 +291,32 @@ describe('App (e2e)', () => {
         .filter((module) => module.controllers.has(AccountDeletionRequestsController))
         .map((module) => module.metatype),
     ).toEqual([SharedAccountDeletionRequestsApiModule]);
+  });
+
+  it('resolves both measurement contracts from an importing module without duplicating providers or controllers', () => {
+    const modules = [...app.get(ModulesContainer).values()];
+    const core = app.select(BodyMeasurementsModule);
+    const probe = app
+      .select(BodyMeasurementsBoundaryProbeModule)
+      .get(BodyMeasurementsBoundaryProbe, { strict: true });
+    expect(modules.filter((module) => module.metatype === BodyMeasurementsModule)).toHaveLength(1);
+    expect(probe.measurements).toBe(core.get(BodyMeasurementsService, { strict: true }));
+    expect(probe.statistics).toBe(core.get(BodyMeasurementStatisticsService, { strict: true }));
+    for (const provider of [
+      BodyMeasurementsService,
+      BodyMeasurementStatisticsService,
+      BodyMeasurementsRepository,
+      BodyMeasurementStatisticsRepository,
+    ]) {
+      expect(
+        modules.filter((module) => module.providers.has(provider)).map((module) => module.metatype),
+      ).toEqual([BodyMeasurementsModule]);
+    }
+    expect(
+      modules
+        .filter((module) => module.controllers.has(BodyMeasurementsController))
+        .map((module) => module.metatype),
+    ).toEqual([BodyMeasurementsModule]);
   });
 
   it('resolves the same Prisma singleton from the declaring module and app context', () => {
