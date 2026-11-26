@@ -69,7 +69,10 @@ function registeredControllers(source, file) {
         if (!property.name || property.name.getText(ast).replace(/['"]/g, '') !== 'controllers') {
           continue;
         }
-        if (!ts.isPropertyAssignment(property) || !ts.isArrayLiteralExpression(property.initializer)) {
+        if (
+          !ts.isPropertyAssignment(property) ||
+          !ts.isArrayLiteralExpression(property.initializer)
+        ) {
           literal = false;
           continue;
         }
@@ -233,7 +236,9 @@ function checkApiControllerOwnership(root, modules, errors) {
   }
 
   for (const file of apiFiles.filter((path) => path.endsWith('.controller.spec.ts'))) {
-    const [audience, feature, test, folder, filename, ...extra] = relative(apiRoot, file).split(sep);
+    const [audience, feature, test, folder, filename, ...extra] = relative(apiRoot, file).split(
+      sep,
+    );
     if (
       test !== 'test' ||
       folder !== 'controllers' ||
