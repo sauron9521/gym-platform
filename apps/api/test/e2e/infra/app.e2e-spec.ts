@@ -5,6 +5,10 @@ import { Test, type TestingModule } from '@nestjs/testing';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { AppModule } from '../../../src/app.module.js';
+import { NotificationsModule } from '../../../src/modules/notifications/notifications.module.js';
+import { NotificationSettingsService } from '../../../src/modules/notifications/public-api.js';
+import { NotificationSettingsRepository } from '../../../src/modules/notifications/repositories/notification-settings.repository.js';
+import { NotificationSettingsController } from '../../../src/modules/notifications/controllers/notification-settings.controller.js';
 import { AdminAuditLogger } from '../../../src/common/audit/admin-audit.logger.js';
 import { AdminAuditModule } from '../../../src/common/audit/admin-audit.module.js';
 import { DistributedThrottlerStorage } from '../../../src/common/rate-limit/distributed-throttler.storage.js';
@@ -57,12 +61,20 @@ class TrainerOnboardingBoundaryProbe {
 @Module({ imports: [TrainerOnboardingModule], providers: [TrainerOnboardingBoundaryProbe] })
 class TrainerOnboardingBoundaryProbeModule {}
 
+@Injectable()
+class NotificationsBoundaryProbe {
+  constructor(readonly settings: NotificationSettingsService) {}
+}
+
+@Module({ imports: [NotificationsModule], providers: [NotificationsBoundaryProbe] })
+class NotificationsBoundaryProbeModule {}
+
 describe('App (e2e)', () => {
   let app: INestApplication;
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [AppModule, TrainerOnboardingBoundaryProbeModule],
+      imports: [AppModule, TrainerOnboardingBoundaryProbeModule, NotificationsBoundaryProbeModule],
     }).compile();
 
     app = moduleFixture.createNestApplication();
@@ -165,6 +177,26 @@ describe('App (e2e)', () => {
         .filter((module) => module.providers.has(AdminAuditLogger))
         .map((module) => module.metatype),
     ).toEqual([AdminAuditModule]);
+  });
+
+  it('resolves notification settings from an importing module without duplicating providers or routes', () => {
+    const modules = [...app.get(ModulesContainer).values()];
+    const core = app.select(NotificationsModule);
+    const probe = app
+      .select(NotificationsBoundaryProbeModule)
+      .get(NotificationsBoundaryProbe, { strict: true });
+    expect(modules.filter((module) => module.metatype === NotificationsModule)).toHaveLength(1);
+    expect(probe.settings).toBe(core.get(NotificationSettingsService, { strict: true }));
+    for (const provider of [NotificationSettingsService, NotificationSettingsRepository]) {
+      expect(
+        modules.filter((module) => module.providers.has(provider)).map((module) => module.metatype),
+      ).toEqual([NotificationsModule]);
+    }
+    expect(
+      modules
+        .filter((module) => module.controllers.has(NotificationSettingsController))
+        .map((module) => module.metatype),
+    ).toEqual([NotificationsModule]);
   });
 
   it('resolves the same Prisma singleton from the declaring module and app context', () => {

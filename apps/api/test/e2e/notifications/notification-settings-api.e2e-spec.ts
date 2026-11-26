@@ -9,7 +9,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import { AppModule } from '../../../src/app.module.js';
 import { PrismaService } from '../../../src/infra/database/index.js';
-import { NotificationSettingsService } from '../../../src/modules/notifications/services/notification-settings.service.js';
+import { NotificationSettingsService } from '../../../src/modules/notifications/public-api.js';
 import { NotificationsModule } from '../../../src/modules/notifications/notifications.module.js';
 import {
   defaultNotificationSettings,
