@@ -17,9 +17,10 @@ import {
 } from '#src/infra/openapi/response-contracts';
 
 import { type AdminUsersQuery, adminUsersQuerySchema } from '../dto/admin-users-query.dto.js';
-import { UsersRepository } from '../repositories/users.repository.js';
-
-type Actor = { id: string };
+import {
+  AdminUsersReadService,
+  type AdminUsersReadActor,
+} from '../services/admin-users-read.service.js';
 
 @ApiTags('Admin users')
 @ApiCookieAuth('adminSessionCookie')
@@ -31,7 +32,7 @@ type Actor = { id: string };
 @UseGuards(AdminOriginGuard, AdminSessionPurposeGuard)
 export class AdminUsersController {
   constructor(
-    private readonly users: UsersRepository,
+    private readonly users: AdminUsersReadService,
     private readonly audit: AdminAuditLogger,
   ) {}
 
@@ -42,10 +43,10 @@ export class AdminUsersController {
   @ApiOkResponse({ schema: adminUserListResponseSchema })
   async list(
     @Query({ schema: adminUsersQuerySchema }) query: AdminUsersQuery,
-    @CurrentUser() actor: Actor,
+    @CurrentUser() actor: AdminUsersReadActor,
     @Req() request: Request,
   ) {
-    const result = await this.users.listForAdmin(query);
+    const result = await this.users.listForAdmin(query, actor);
     this.audit.record(
       { permission: 'admin.accounts.read', actorId: actor.id, outcome: 'allowed' },
       request,
@@ -61,10 +62,10 @@ export class AdminUsersController {
   @ApiNotFoundResponse({ description: 'Account not found or has been deleted.' })
   async detail(
     @Param('userId', { schema: z.uuid() }) userId: string,
-    @CurrentUser() actor: Actor,
+    @CurrentUser() actor: AdminUsersReadActor,
     @Req() request: Request,
   ) {
-    const user = await this.users.findForAdminDetails(userId);
+    const user = await this.users.findForAdminDetails(userId, actor);
     if (!user) throw new NotFoundException('User not found');
     this.audit.record(
       { permission: 'admin.accounts.read', actorId: actor.id, outcome: 'allowed' },

@@ -9,6 +9,7 @@ import { AdminSessionCookieProvider } from '#src/common/auth/admin-session-cooki
 
 const operatorId = 'f09d7567-626e-45d8-99f1-829ce4204fbd';
 const otherId = 'd09c7567-626e-45d8-99f1-829ce4204fbd';
+const operator = { id: operatorId, role: 'ADMIN' as const };
 
 function context(role: 'ATHLETE' | 'TRAINER' | 'ADMIN' | undefined, id: string): ExecutionContext {
   return {
@@ -54,8 +55,8 @@ describe('AdminUsersController security contract', () => {
     const query = { page: 1, limit: 20 };
     const request = {} as never;
 
-    await expect(controller.list(query, { id: operatorId }, request)).resolves.toEqual(result);
-    expect(users.listForAdmin).toHaveBeenCalledWith(query);
+    await expect(controller.list(query, operator, request)).resolves.toEqual(result);
+    expect(users.listForAdmin).toHaveBeenCalledWith(query, operator);
     expect(audit.record).toHaveBeenCalledExactlyOnceWith(
       { actorId: operatorId, permission: 'admin.accounts.read', outcome: 'allowed' },
       request,
@@ -67,7 +68,7 @@ describe('AdminUsersController security contract', () => {
     const audit = { record: vi.fn() };
     const controller = new AdminUsersController(users as never, audit as never);
     await expect(
-      controller.list({ page: 1, limit: 20 }, { id: operatorId }, {} as never),
+      controller.list({ page: 1, limit: 20 }, operator, {} as never),
     ).rejects.toThrow('DB unavailable');
     expect(audit.record).not.toHaveBeenCalled();
   });
@@ -83,8 +84,8 @@ describe('AdminUsersController security contract', () => {
     const audit = { record: vi.fn() };
     const controller = new AdminUsersController(users as never, audit as never);
     const req = {} as never;
-    await expect(controller.detail(otherId, { id: operatorId }, req)).resolves.toEqual(account);
-    expect(users.findForAdminDetails).toHaveBeenCalledExactlyOnceWith(otherId);
+    await expect(controller.detail(otherId, operator, req)).resolves.toEqual(account);
+    expect(users.findForAdminDetails).toHaveBeenCalledExactlyOnceWith(otherId, operator);
     expect(audit.record).toHaveBeenCalledExactlyOnceWith(
       { actorId: operatorId, permission: 'admin.accounts.read', outcome: 'allowed' },
       req,
@@ -95,11 +96,11 @@ describe('AdminUsersController security contract', () => {
     const users = { findForAdminDetails: vi.fn().mockResolvedValue(null) };
     const audit = { record: vi.fn() };
     const controller = new AdminUsersController(users as never, audit as never);
-    await expect(controller.detail(otherId, { id: operatorId }, {} as never)).rejects.toThrow(
+    await expect(controller.detail(otherId, operator, {} as never)).rejects.toThrow(
       'User not found',
     );
     users.findForAdminDetails.mockRejectedValueOnce(new Error('DB unavailable'));
-    await expect(controller.detail(otherId, { id: operatorId }, {} as never)).rejects.toThrow(
+    await expect(controller.detail(otherId, operator, {} as never)).rejects.toThrow(
       'DB unavailable',
     );
     expect(audit.record).not.toHaveBeenCalled();
