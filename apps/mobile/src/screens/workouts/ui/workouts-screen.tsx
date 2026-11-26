@@ -7,6 +7,7 @@ import { useAuth } from '@/features/auth/model/auth-context';
 import { hasAthleteAccess } from '@/features/auth/model/account-capabilities';
 import type { WorkoutState } from '@/features/workouts/lib/workout-presentation';
 import { useWorkoutsQuery, type WorkoutFilter } from '@/features/workouts/model/workouts-query';
+import { ActiveWorkoutCard } from '@/features/workouts/ui/active-workout-card';
 import { createThemedStyles } from '@/shared/config/theme-provider';
 import {
   MobileAccessDeniedError,
@@ -93,6 +94,7 @@ export function WorkoutsScreen() {
         <View style={styles.heading}>
           <Text style={styles.title}>{t('title')}</Text>
           <Text style={styles.subtitle}>{t('subtitle')}</Text>
+          {hasAthleteAccess(capabilities) ? <ActiveWorkoutCard /> : null}
           {hasAthleteAccess(capabilities) ? (
             <Pressable
               testID="workouts-create"

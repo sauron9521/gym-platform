@@ -1,11 +1,16 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, fireEvent, render } from '@testing-library/react-native';
+import { cleanup, fireEvent, render, waitFor } from '@testing-library/react-native';
 import type { Locale } from '@gym/i18n';
 import { getMobileMessages } from '@/shared/i18n/mobile-messages';
 import { IntlProvider } from 'react-intl';
 
 import { useAuth } from '@/features/auth/model/auth-context';
 import { useWorkoutsQuery } from '@/features/workouts/model/workouts-query';
+import { useEffect } from 'react';
+import {
+  RestTimerProvider,
+  useRestTimerStore,
+} from '@/features/workouts/model/rest-timer-provider';
 import { WorkoutsScreen } from '@/screens/workouts/ui/workouts-screen';
 import {
   MobileAccessDeniedError,
@@ -14,6 +19,9 @@ import {
 } from '@/shared/api/api-error-policy';
 
 const push = vi.fn();
+vi.mock('@/features/workouts/lib/use-rest-feedback', () => ({
+  useRestFeedback: () => () => undefined,
+}));
 const fetchNextPage = vi.fn();
 const refetch = vi.fn();
 
@@ -57,7 +65,13 @@ function prepare(
 function screenFor(locale: Locale) {
   return render(
     <IntlProvider locale={locale} defaultLocale="uk" messages={getMobileMessages(locale)}>
-      <WorkoutsScreen />
+      <RestTimerProvider
+        accountId={null}
+        defaultDuration={90}
+        feedback={{ sound: false, vibration: false }}
+      >
+        <WorkoutsScreen />
+      </RestTimerProvider>
     </IntlProvider>,
   );
 }
@@ -71,6 +85,33 @@ afterEach(async () => {
 });
 
 describe('WorkoutsScreen native pagination and localized copy', () => {
+  it('shows a localized continuation shortcut independently of the selected list filter', async () => {
+    function SeedWorkout() {
+      const store = useRestTimerStore();
+      useEffect(() => store.getState().selectWorkout('active-outside-list', 90), [store]);
+      return null;
+    }
+    const view = await render(
+      <IntlProvider locale="en" messages={getMobileMessages('en')}>
+        <RestTimerProvider
+          accountId="user-1"
+          defaultDuration={90}
+          feedback={{ sound: false, vibration: false }}
+        >
+          <SeedWorkout />
+          <WorkoutsScreen />
+        </RestTimerProvider>
+      </IntlProvider>,
+    );
+    await waitFor(() => expect(view.getByLabelText('Return to workout')).toBeTruthy());
+    await fireEvent.press(view.getByTestId('workouts-filter-COMPLETED'));
+    await fireEvent.press(view.getByTestId('active-workout-resume'));
+    expect(push).toHaveBeenCalledWith({
+      pathname: '/workouts/[id]',
+      params: { id: 'active-outside-list' },
+    });
+  });
+
   it('retains create, status filters and refresh without duplicate rows', async () => {
     const view = await screenFor('uk');
     expect(view.getByText('Мої тренування')).toBeTruthy();
@@ -154,7 +195,13 @@ describe('WorkoutsScreen native pagination and localized copy', () => {
     expect(useWorkoutsQuery).toHaveBeenCalledWith('COMPLETED');
     await view.rerender(
       <IntlProvider locale="uk" defaultLocale="uk" messages={getMobileMessages('uk')}>
-        <WorkoutsScreen />
+        <RestTimerProvider
+          accountId={null}
+          defaultDuration={90}
+          feedback={{ sound: false, vibration: false }}
+        >
+          <WorkoutsScreen />
+        </RestTimerProvider>
       </IntlProvider>,
     );
     expect(view.getByText('Мої тренування')).toBeTruthy();
@@ -189,7 +236,13 @@ describe('WorkoutsScreen native pagination and localized copy', () => {
     prepare('ATHLETE', false, { data: { pages: [] }, isPending: false, hasNextPage: false });
     await view.rerender(
       <IntlProvider locale="en" defaultLocale="uk" messages={getMobileMessages('en')}>
-        <WorkoutsScreen />
+        <RestTimerProvider
+          accountId={null}
+          defaultDuration={90}
+          feedback={{ sound: false, vibration: false }}
+        >
+          <WorkoutsScreen />
+        </RestTimerProvider>
       </IntlProvider>,
     );
     expect(view.getByText('No workouts match this filter.')).toBeTruthy();

@@ -11,6 +11,7 @@ import { useWorkoutSummary } from '@/features/progress/model/workout-summary-que
 import { workoutStatusLabel } from '@/features/workouts/lib/workout-presentation';
 import { useWorkoutsQuery } from '@/features/workouts/model/workouts-query';
 import { accountQueryKeys } from '@/shared/api/query-client';
+import { ActiveWorkoutCard } from '@/features/workouts/ui/active-workout-card';
 import { createThemedStyles } from '@/shared/config/theme-provider';
 import { AsyncResourceState } from '@/shared/ui/async-resource-state';
 
@@ -160,6 +161,8 @@ export function HomeScreen() {
           ? 'Ваші тренування та прогрес в одному місці.'
           : 'Відкрийте доступні розділи платформи.'}
       </Text>
+
+      {isAthlete ? <ActiveWorkoutCard /> : null}
 
       <Pressable
         testID="home-refresh"
