@@ -73,3 +73,12 @@ and account invalidation. A guarded read-only Maestro scenario is prepared
 for the manual native staging workflow; see native-staging-smoke.md.
 Keep #340 open until both modes and actual Android/iOS QA are verified. No new API, native library
 or date dependency is introduced.
+
+### M12 — crash monitoring
+
+M12.1 establishes the disabled-by-default, preview-only diagnostic port
+and minimal API response correlation. See [crash monitoring](crash-monitoring.md)
+for the schema, threat model, approval dependencies and native acceptance.
+M12.2 (SDK and symbolication) is blocked by #348 native build readiness and
+privacy/vendor review; do not install or enable Sentry ahead of those gates.
+Keep #350 open. Independent mobile features can proceed without telemetry.
