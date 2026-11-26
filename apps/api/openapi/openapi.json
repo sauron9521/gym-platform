@@ -1470,6 +1470,371 @@
         "tags": ["Health"]
       }
     },
+    "/users/me/notification-settings": {
+      "get": {
+        "operationId": "NotificationSettingsController_get",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Account preferences; consent does not imply delivery or OS permission. Null timezone means invalid stored timezone.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "quietHoursEnabled",
+                    "quietStartMinute",
+                    "quietEndMinute",
+                    "reminderLeadMinutes",
+                    "timezone",
+                    "preferences"
+                  ],
+                  "properties": {
+                    "quietHoursEnabled": {
+                      "type": "boolean"
+                    },
+                    "quietStartMinute": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 1439
+                    },
+                    "quietEndMinute": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 1439
+                    },
+                    "reminderLeadMinutes": {
+                      "type": "integer",
+                      "enum": [15, 60, 1440]
+                    },
+                    "timezone": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "preferences": {
+                      "type": "array",
+                      "minItems": 4,
+                      "maxItems": 4,
+                      "items": {
+                        "oneOf": [
+                          {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": ["category", "channel", "enabled", "consentedAt"],
+                            "properties": {
+                              "category": {
+                                "type": "string",
+                                "enum": ["TRAINER", "PROGRAM"]
+                              },
+                              "channel": {
+                                "type": "string",
+                                "enum": ["MOBILE_PUSH"]
+                              },
+                              "enabled": {
+                                "type": "boolean"
+                              },
+                              "consentedAt": {
+                                "type": "string",
+                                "format": "date-time",
+                                "nullable": true
+                              }
+                            }
+                          },
+                          {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": ["category", "channel", "enabled", "consentedAt"],
+                            "properties": {
+                              "category": {
+                                "type": "string",
+                                "enum": ["WORKOUT"]
+                              },
+                              "channel": {
+                                "type": "string",
+                                "enum": ["LOCAL_REMINDER"]
+                              },
+                              "enabled": {
+                                "type": "boolean"
+                              },
+                              "consentedAt": {
+                                "type": "string",
+                                "format": "date-time",
+                                "nullable": true
+                              }
+                            }
+                          },
+                          {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": ["category", "channel", "enabled", "consentedAt"],
+                            "properties": {
+                              "category": {
+                                "type": "string",
+                                "enum": ["ACCOUNT"]
+                              },
+                              "channel": {
+                                "type": "string",
+                                "enum": ["EMAIL"]
+                              },
+                              "enabled": {
+                                "type": "boolean"
+                              },
+                              "consentedAt": {
+                                "type": "string",
+                                "format": "date-time",
+                                "nullable": true
+                              }
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "accessToken": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "tags": ["Notifications"]
+      },
+      "patch": {
+        "operationId": "NotificationSettingsController_patch",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "quietHoursEnabled": {
+                    "type": "boolean"
+                  },
+                  "quietStartMinute": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 1439
+                  },
+                  "quietEndMinute": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 1439
+                  },
+                  "reminderLeadMinutes": {
+                    "type": "number",
+                    "enum": [15, 60, 1440]
+                  },
+                  "preferences": {
+                    "minItems": 1,
+                    "maxItems": 4,
+                    "type": "array",
+                    "items": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "category": {
+                              "type": "string",
+                              "enum": ["TRAINER", "PROGRAM"]
+                            },
+                            "channel": {
+                              "type": "string",
+                              "enum": ["MOBILE_PUSH"]
+                            },
+                            "enabled": {
+                              "type": "boolean"
+                            }
+                          },
+                          "required": ["category", "channel", "enabled"],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "category": {
+                              "type": "string",
+                              "enum": ["WORKOUT"]
+                            },
+                            "channel": {
+                              "type": "string",
+                              "enum": ["LOCAL_REMINDER"]
+                            },
+                            "enabled": {
+                              "type": "boolean"
+                            }
+                          },
+                          "required": ["category", "channel", "enabled"],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "category": {
+                              "type": "string",
+                              "enum": ["ACCOUNT"]
+                            },
+                            "channel": {
+                              "type": "string",
+                              "enum": ["EMAIL"]
+                            },
+                            "enabled": {
+                              "type": "boolean"
+                            }
+                          },
+                          "required": ["category", "channel", "enabled"],
+                          "additionalProperties": false
+                        }
+                      ]
+                    }
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Account preferences; consent does not imply delivery or OS permission. Null timezone means invalid stored timezone.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "quietHoursEnabled",
+                    "quietStartMinute",
+                    "quietEndMinute",
+                    "reminderLeadMinutes",
+                    "timezone",
+                    "preferences"
+                  ],
+                  "properties": {
+                    "quietHoursEnabled": {
+                      "type": "boolean"
+                    },
+                    "quietStartMinute": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 1439
+                    },
+                    "quietEndMinute": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 1439
+                    },
+                    "reminderLeadMinutes": {
+                      "type": "integer",
+                      "enum": [15, 60, 1440]
+                    },
+                    "timezone": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "preferences": {
+                      "type": "array",
+                      "minItems": 4,
+                      "maxItems": 4,
+                      "items": {
+                        "oneOf": [
+                          {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": ["category", "channel", "enabled", "consentedAt"],
+                            "properties": {
+                              "category": {
+                                "type": "string",
+                                "enum": ["TRAINER", "PROGRAM"]
+                              },
+                              "channel": {
+                                "type": "string",
+                                "enum": ["MOBILE_PUSH"]
+                              },
+                              "enabled": {
+                                "type": "boolean"
+                              },
+                              "consentedAt": {
+                                "type": "string",
+                                "format": "date-time",
+                                "nullable": true
+                              }
+                            }
+                          },
+                          {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": ["category", "channel", "enabled", "consentedAt"],
+                            "properties": {
+                              "category": {
+                                "type": "string",
+                                "enum": ["WORKOUT"]
+                              },
+                              "channel": {
+                                "type": "string",
+                                "enum": ["LOCAL_REMINDER"]
+                              },
+                              "enabled": {
+                                "type": "boolean"
+                              },
+                              "consentedAt": {
+                                "type": "string",
+                                "format": "date-time",
+                                "nullable": true
+                              }
+                            }
+                          },
+                          {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": ["category", "channel", "enabled", "consentedAt"],
+                            "properties": {
+                              "category": {
+                                "type": "string",
+                                "enum": ["ACCOUNT"]
+                              },
+                              "channel": {
+                                "type": "string",
+                                "enum": ["EMAIL"]
+                              },
+                              "enabled": {
+                                "type": "boolean"
+                              },
+                              "consentedAt": {
+                                "type": "string",
+                                "format": "date-time",
+                                "nullable": true
+                              }
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "accessToken": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "tags": ["Notifications"]
+      }
+    },
     "/users/me/account-deletion-request": {
       "get": {
         "operationId": "AccountDeletionRequestsController_findOwn",

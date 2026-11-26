@@ -47,7 +47,7 @@ A notification is a **read/navigation artifact**. It is not the source of truth 
 | `NotificationDelivery`   | notification/event identity, channel, optional device, state/attempt/retry timestamps and redacted error                                                                 | idempotency key per notification + channel + destination                                  |
 | `OutboxEvent`            | UUID ID, unique business event key, schema version, safe payload, available/lease/attempt/dead-letter state                                                              | same transaction as source business write; replay-safe                                    |
 
-**N02a settings foundation (#565, this slice):** additive
+**N02a settings foundation (#908):** additive
 `NotificationSettings` and `NotificationPreference` tables, no backfill.
 Quiet boundaries are integer minutes since local midnight (0–1439),
 start inclusive/end exclusive; equal endpoints are invalid even if disabled.
@@ -61,10 +61,17 @@ partial updates, merged quiet boundaries, timezone and actual-instant quiet
 classification including repeated/skipped DST minutes. Reminder candidates
 are absolute lead offsets; expired or quiet candidates are skipped.
 It does not schedule or send, prompt permissions, or register tokens.
-A later slice must implement authenticated atomic reads/writes with a
-user-row lock (including first-write races), server-generated consent
-timestamps, GET defaults without inserts and explicit ownership checks,
-then generated OpenAPI and clients. External-channel deferral, native
+N02b implements authenticated GET/PATCH /users/me/notification-settings
+with a repeatable-read snapshot for GET and serialized user-row locking
+for PATCH, including first-write races. GET returns defaults without inserts;
+PATCH changes only supplied fields, validates merged quiet boundaries and
+uses server-generated consent timestamps (idempotent enable preserves the
+timestamp; revocation clears it). The response contains four allowlisted
+preferences in stable order with consentedAt, and the current profile timezone
+(UTC when no profile; null for invalid legacy data). Unknown fields and query
+parameters are rejected. No user ID, timezone, consent timestamp or delivery
+state is accepted from clients. OpenAPI and generated client are updated.
+The endpoint records preferences only; clients and transport are later slices. External-channel deferral, native
 permission, device scheduling/dedup and security-mail routing remain gates.
 
 Candidate API surface (review and generate actual OpenAPI in [#567](https://github.com/sauron9521/gym-platform/issues/567)): `GET /notifications`, `GET /notifications/unread-count`, `GET /notifications/:id`, `PATCH /notifications/:id/read`, `POST /notifications/read-all`, `GET/PATCH /users/me/notification-settings`, `POST/DELETE /notifications/devices`. Privileged Admin read endpoints require their own authorization boundary. Notification details and deep-link targets are server-scoped, not arbitrary user-supplied URLs.
