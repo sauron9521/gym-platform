@@ -30,7 +30,7 @@ The cumulative interval also includes independent security test/documentation PR
 
 ## Business core organization
 
-The owner clarified that the existing `modules/` feature modules, after removing HTTP controllers, constitute the business core. Keep their feature-first layout and explicit public contracts. Do not introduce an aggregate CoreModule, rename the directory or create a packages/core package solely to express the core concept. API leaves import only required feature modules; infrastructure and common technical mechanisms retain their existing ownership. This does not imply that all existing feature implementations are framework- or persistence-independent. Any future worker composition or separate deployable needs evidence and a separate decision.
+During ABI01–ABI08, retain the existing feature-first `modules/` layout and explicit public contracts. Controller-free feature modules serve as the current business core in a conceptual sense; this does not imply framework or persistence independence. The owner explicitly deferred the final structural decision until after completion of all architecture migration stages. At that point, review the benefits, dependencies and composition trade-offs of retaining the current layout, introducing an aggregate CoreModule or a core directory, or extracting a separate package. None of those alternatives is approved or rejected by this review. API leaves continue importing only their required feature modules; infrastructure and common technical mechanisms retain their existing ownership. Future worker composition and separate deployables still require evidence and separate approval.
 
 ## Fresh validation
 
