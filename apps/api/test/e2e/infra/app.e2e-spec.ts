@@ -41,7 +41,9 @@ import { TrainerAthleteTerminationService } from '../../../src/modules/trainer-a
 import { TrainerAthleteExerciseCopyService } from '../../../src/modules/trainer-athletes/services/trainer-athlete-exercise-copy.service.js';
 import { TrainerAthletesController } from '../../../src/api/shared/trainer-athletes/controllers/trainer-athletes.controller.js';
 import { SharedTrainerAthletesApiModule } from '../../../src/api/shared/trainer-athletes/shared-trainer-athletes-api.module.js';
-import { TrainerDashboardController } from '../../../src/modules/trainer-athletes/controllers/trainer-dashboard.controller.js';
+import { TrainerDashboardController } from '../../../src/api/trainer/trainer-athletes/controllers/trainer-dashboard.controller.js';
+import { TrainerApiModule } from '../../../src/api/trainer/trainer-api.module.js';
+import { TrainerTrainerAthletesApiModule } from '../../../src/api/trainer/trainer-athletes/trainer-trainer-athletes-api.module.js';
 import { TrainerOnboardingModule } from '../../../src/modules/trainer-onboarding/trainer-onboarding.module.js';
 import {
   TrainerApplicationsService,
@@ -447,13 +449,21 @@ describe('App (e2e)', () => {
     ).toBe(1);
     expect(
       modules.find((module) => module.metatype === TrainerAthletesModule)?.controllers.size,
+    ).toBe(0);
+    expect(modules.filter((module) => module.metatype === TrainerApiModule)).toHaveLength(1);
+    expect(
+      modules.filter((module) => module.metatype === TrainerTrainerAthletesApiModule),
+    ).toHaveLength(1);
+    expect(
+      modules.find((module) => module.metatype === TrainerTrainerAthletesApiModule)?.controllers
+        .size,
     ).toBe(1);
     expect(
       app.select(SharedTrainerAthletesApiModule).get(TrainerAthletesController, { strict: true }),
     ).toBeInstanceOf(TrainerAthletesController);
-    expect(core.get(TrainerDashboardController, { strict: true })).toBeInstanceOf(
-      TrainerDashboardController,
-    );
+    expect(
+      app.select(TrainerTrainerAthletesApiModule).get(TrainerDashboardController, { strict: true }),
+    ).toBeInstanceOf(TrainerDashboardController);
     expect(
       modules
         .filter((module) => module.controllers.has(TrainerAthletesController))
@@ -463,7 +473,7 @@ describe('App (e2e)', () => {
       modules
         .filter((module) => module.controllers.has(TrainerDashboardController))
         .map((module) => module.metatype),
-    ).toEqual([TrainerAthletesModule]);
+    ).toEqual([TrainerTrainerAthletesApiModule]);
   });
 
   it('resolves the same Prisma singleton from the declaring module and app context', () => {

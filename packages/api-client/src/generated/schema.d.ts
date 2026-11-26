@@ -516,38 +516,6 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/trainer-dashboard/overview': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get: operations['TrainerDashboardController_overview'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/trainer-dashboard/clients/{relationId}/progress': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get: operations['TrainerDashboardController_clientProgress'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
   '/avatars/{key}': {
     parameters: {
       query?: never;
@@ -812,6 +780,38 @@ export interface paths {
       cookie?: never;
     };
     get: operations['WorkoutAnalyticsController_exercise'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/trainer-dashboard/overview': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['TrainerDashboardController_overview'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/trainer-dashboard/clients/{relationId}/progress': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['TrainerDashboardController_clientProgress'];
     put?: never;
     post?: never;
     delete?: never;
@@ -3182,61 +3182,6 @@ export interface operations {
       };
     };
   };
-  TrainerDashboardController_overview: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': {
-            /** Format: date-time */
-            asOf: string;
-            /** Format: date-time */
-            windowStart: string;
-            activeClients: number;
-            activeProgramAssignments: number;
-            completedProgramWorkouts30d: number;
-          };
-        };
-      };
-    };
-  };
-  TrainerDashboardController_clientProgress: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        relationId: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': {
-            /** Format: date-time */
-            asOf: string;
-            /** Format: date-time */
-            windowStart: string;
-            activeProgramAssignments: number;
-            completedProgramWorkouts30d: number;
-          };
-        };
-      };
-    };
-  };
   AvatarPublicController_get: {
     parameters: {
       query?: never;
@@ -3820,6 +3765,61 @@ export interface operations {
               strengthReps: number;
               bestWeightKg: number | null;
             }[];
+          };
+        };
+      };
+    };
+  };
+  TrainerDashboardController_overview: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** Format: date-time */
+            asOf: string;
+            /** Format: date-time */
+            windowStart: string;
+            activeClients: number;
+            activeProgramAssignments: number;
+            completedProgramWorkouts30d: number;
+          };
+        };
+      };
+    };
+  };
+  TrainerDashboardController_clientProgress: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        relationId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** Format: date-time */
+            asOf: string;
+            /** Format: date-time */
+            windowStart: string;
+            activeProgramAssignments: number;
+            completedProgramWorkouts30d: number;
           };
         };
       };
