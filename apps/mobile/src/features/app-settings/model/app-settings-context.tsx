@@ -9,23 +9,33 @@ import {
 } from 'react';
 
 import { useAuth } from '@/features/auth/model/auth-context';
+import {
+  defaultRestDuration,
+  parseRestDuration,
+  type RestDuration,
+} from '@/shared/config/rest-duration';
 
 type SettingsState = {
   accountId: string | null;
   enabled: boolean;
+  restDuration: RestDuration;
   status: 'loading' | 'ready' | 'saving' | 'readError' | 'saveError';
 };
 type SettingsContextValue = {
   settings: SettingsState;
   setAutoRestTimer: (enabled: boolean) => Promise<void>;
+  setRestDuration: (duration: RestDuration) => Promise<void>;
   reload: () => void;
   shouldAutoStartRestTimer: () => boolean;
 };
 const SettingsContext = createContext<SettingsContextValue | null>(null);
+const preferenceKey = (accountId: string, preference: 'auto-rest-timer' | 'rest-duration') =>
+  `gym-platform:app-settings:v1:${accountId}:${preference}`;
 
 const initial = (accountId: string | null): SettingsState => ({
   accountId,
   enabled: false,
+  restDuration: defaultRestDuration,
   status: 'loading',
 });
 
@@ -42,21 +52,26 @@ export function AppSettingsProvider({ children }: PropsWithChildren) {
 
   useEffect(() => {
     if (!accountId) return;
-    const key = `gym-platform:app-settings:v1:${accountId}:auto-rest-timer`;
     const scope = { accountId, state: initial(accountId) };
     scopeRef.current = scope;
     // A fast sign-out/sign-in must not read before an earlier save settles.
     const pendingWrite = pendingWrites.current.get(accountId);
+    const readPreferences = () =>
+      Promise.all([
+        AsyncStorage.getItem(preferenceKey(accountId, 'auto-rest-timer')),
+        AsyncStorage.getItem(preferenceKey(accountId, 'rest-duration')),
+      ]);
     const read = pendingWrite
-      ? pendingWrite.catch(() => undefined).then(() => AsyncStorage.getItem(key))
-      : AsyncStorage.getItem(key);
+      ? pendingWrite.catch(() => undefined).then(readPreferences)
+      : readPreferences();
     void read
-      .then((saved) => {
+      .then(([saved, duration]) => {
         if (scopeRef.current !== scope) return;
         // A corrupt value is safe-off and can be overwritten by the user.
         scope.state = {
           accountId,
           enabled: saved === null || saved === 'true',
+          restDuration: parseRestDuration(duration),
           status: 'ready',
         };
         setState(scope.state);
@@ -72,21 +87,24 @@ export function AppSettingsProvider({ children }: PropsWithChildren) {
   }, [accountId, revision]);
 
   const settings = state.accountId === accountId ? state : initial(accountId);
-  const setAutoRestTimer = async (enabled: boolean) => {
+  const savePreference = async (
+    preference: 'auto-rest-timer' | 'rest-duration',
+    value: string,
+    changes: Partial<Pick<SettingsState, 'enabled' | 'restDuration'>>,
+  ) => {
     const scope = scopeRef.current;
     if (!scope || scope.accountId !== accountId) return;
     if (scope.state.status !== 'ready' && scope.state.status !== 'saveError') return;
     scope.state = { ...scope.state, status: 'saving' };
     setState(scope.state);
-    const write = AsyncStorage.setItem(
-      `gym-platform:app-settings:v1:${scope.accountId}:auto-rest-timer`,
-      String(enabled),
+    const write = Promise.resolve().then(() =>
+      AsyncStorage.setItem(preferenceKey(scope.accountId, preference), value),
     );
     pendingWrites.current.set(scope.accountId, write);
     try {
       await write;
       if (scopeRef.current !== scope) return;
-      scope.state = { ...scope.state, enabled, status: 'ready' };
+      scope.state = { ...scope.state, ...changes, status: 'ready' };
     } catch {
       if (scopeRef.current !== scope) return;
       scope.state = { ...scope.state, status: 'saveError' };
@@ -114,7 +132,10 @@ export function AppSettingsProvider({ children }: PropsWithChildren) {
     <SettingsContext.Provider
       value={{
         settings,
-        setAutoRestTimer,
+        setAutoRestTimer: (enabled) =>
+          savePreference('auto-rest-timer', String(enabled), { enabled }),
+        setRestDuration: (restDuration) =>
+          savePreference('rest-duration', String(restDuration), { restDuration }),
         reload: () => {
           setState(initial(accountId));
           setRevision((value) => value + 1);

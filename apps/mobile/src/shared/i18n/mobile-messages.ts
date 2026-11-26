@@ -194,6 +194,12 @@ const navigationMessages = {
     uk: 'Запускати після завершення підходу. Ручний запуск завжди доступний.',
     en: 'Start after completing a set. Manual start is always available.',
   },
+  'mobile.settings.restDuration': { uk: 'Тривалість відпочинку', en: 'Default rest duration' },
+  'mobile.settings.restDurationHint': {
+    uk: 'Для ручного й автоматичного таймера. Зміну під час тренування не буде збережено тут.',
+    en: 'For manual and automatic timers. Changes during a workout do not update this preference.',
+  },
+  'mobile.settings.seconds': { uk: '{seconds} с', en: '{seconds} s' },
   'mobile.settings.pending': { uk: 'Зачекайте…', en: 'Please wait…' },
   'mobile.settings.storageError': {
     uk: 'Не вдалося зберегти або прочитати налаштування. Спробуйте ще раз.',

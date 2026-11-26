@@ -1,17 +1,21 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState, Pressable, StyleSheet, Text, View } from 'react-native';
 
+import {
+  defaultRestDuration,
+  restDurationPresets,
+  type RestDuration,
+} from '@/shared/config/rest-duration';
 import { createThemedStyles } from '@/shared/config/theme-provider';
 
 import { formatRestTime, secondsRemaining } from '../lib/rest-timer';
 
 type Countdown = {
-  duration: number;
+  duration: RestDuration;
+  used: boolean;
   remaining: number;
   deadline: number | null;
 };
-
-const PRESETS = [60, 90, 120] as const;
 
 /**
  * Client-only rest timer. The absolute deadline preserves elapsed time while
@@ -20,13 +24,22 @@ const PRESETS = [60, 90, 120] as const;
  */
 export type RestStart = { sequence: number; startedAt: number };
 
-export function RestTimer({ autoStart }: { autoStart?: RestStart | null } = {}) {
+export function RestTimer({
+  autoStart,
+  defaultDuration = defaultRestDuration,
+}: { autoStart?: RestStart | null; defaultDuration?: RestDuration } = {}) {
   const styles = useStyles();
   const [timer, setTimer] = useState<Countdown>({
-    duration: 90,
-    remaining: 90,
+    duration: defaultDuration,
+    remaining: defaultDuration,
+    used: false,
     deadline: null,
   });
+  // Hydration may finish after the screen mounts. Never reset a timer that
+  // has already been started or customized in this workout.
+  if (!timer.used && timer.duration !== defaultDuration) {
+    setTimer({ ...timer, duration: defaultDuration, remaining: defaultDuration });
+  }
   const [foreground, setForeground] = useState(true);
   const consumed = useRef<number | null>(null);
 
@@ -36,7 +49,7 @@ export function RestTimer({ autoStart }: { autoStart?: RestStart | null } = {}) 
     setTimer((current) => {
       const deadline = autoStart.startedAt + current.duration * 1000;
       const remaining = secondsRemaining(deadline, Date.now());
-      return { ...current, remaining, deadline: remaining > 0 ? deadline : null };
+      return { ...current, used: true, remaining, deadline: remaining > 0 ? deadline : null };
     });
   }, [autoStart]);
 
@@ -80,6 +93,7 @@ export function RestTimer({ autoStart }: { autoStart?: RestStart | null } = {}) 
       return {
         ...current,
         remaining,
+        used: true,
         deadline: Date.now() + remaining * 1000,
       };
     });
@@ -93,10 +107,10 @@ export function RestTimer({ autoStart }: { autoStart?: RestStart | null } = {}) 
     }));
   };
 
-  const selectPreset = (duration: number) => {
+  const selectPreset = (duration: RestDuration) => {
     setTimer((current) => {
       if (current.deadline !== null) return current;
-      return { duration, remaining: duration, deadline: null };
+      return { duration, remaining: duration, deadline: null, used: true };
     });
   };
 
@@ -112,7 +126,7 @@ export function RestTimer({ autoStart }: { autoStart?: RestStart | null } = {}) 
         {remainingText}
       </Text>
       <View style={styles.actions}>
-        {PRESETS.map((duration) => (
+        {restDurationPresets.map((duration) => (
           <Pressable
             key={duration}
             accessibilityRole="button"
