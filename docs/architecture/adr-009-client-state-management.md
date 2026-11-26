@@ -53,3 +53,5 @@ One additional dependency may be justified by timer continuity and independent c
 The timer uses an account-scoped vanilla Zustand store, provided above navigation. Its active workout scope changes when another in-progress workout is selected; returning to the same workout keeps the countdown and manual preset. Terminal workout cache updates and account changes clear the state. A single runtime handles foreground reconciliation and feedback, while only timer consumers subscribe to countdown ticks. The server-confirmed set mutation path remains unchanged. There is no disk persistence or OS-level background alarm: process termination clears the timer, and expiration while backgrounded is reconciled on foreground.
 
 The pilot is subject to CI, owner review, native device verification and a follow-up evaluation before any wider adoption.
+
+See the [SM05 pilot evaluation](adr-009-pilot-evaluation.md) for merged evidence, comparison with a scoped provider/reducer, proposed limited retention and remaining native acceptance. Owner decision remains pending.
