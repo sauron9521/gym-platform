@@ -67,9 +67,9 @@ describe('AdminUsersController security contract', () => {
     const users = { listForAdmin: vi.fn().mockRejectedValue(new Error('DB unavailable')) };
     const audit = { record: vi.fn() };
     const controller = new AdminUsersController(users as never, audit as never);
-    await expect(
-      controller.list({ page: 1, limit: 20 }, operator, {} as never),
-    ).rejects.toThrow('DB unavailable');
+    await expect(controller.list({ page: 1, limit: 20 }, operator, {} as never)).rejects.toThrow(
+      'DB unavailable',
+    );
     expect(audit.record).not.toHaveBeenCalled();
   });
   it('uses the same post-auth permission guard on detail and audits successful reads only', async () => {
