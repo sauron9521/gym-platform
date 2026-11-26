@@ -37,3 +37,14 @@ export function workoutSetProgress(sets) {
   const skipped = sets.filter((set) => set.status === 'SKIPPED').length;
   return { completed, skipped, pending: sets.length - completed - skipped, total: sets.length };
 }
+
+/** Account-level workout defaults; device feedback and wake locks are not included. */
+export const restDurationPresets = Object.freeze([60, 90, 120]);
+export const defaultWorkoutPreferences = Object.freeze({
+  autoRestTimer: true,
+  restDurationSeconds: 90,
+});
+
+export function isRestDuration(value) {
+  return restDurationPresets.includes(value);
+}

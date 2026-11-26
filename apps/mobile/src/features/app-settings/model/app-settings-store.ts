@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createStore } from 'zustand/vanilla';
+import { defaultWorkoutPreferences } from '@gym/domain';
 
 import {
   defaultRestDuration,
@@ -91,7 +92,7 @@ export function createAppSettingsStore(
           set({
             settings: {
               accountId,
-              enabled: saved === null || saved === 'true',
+              enabled: saved === null ? defaultWorkoutPreferences.autoRestTimer : saved === 'true',
               restDuration: parseRestDuration(duration),
               restSound: sound === null || sound === 'true',
               restVibration: vibration === null || vibration === 'true',

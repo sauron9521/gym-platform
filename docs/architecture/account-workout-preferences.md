@@ -1,0 +1,71 @@
+# Account workout preferences — incremental rollout
+
+Status: proposed delivery contract; this slice only shares the existing defaults.
+Baseline: mobile Zustand settings (#895) and timer scope (#892, #893, #896).
+
+## Ownership
+
+| Preference                                            | Authority after rollout                            | Current state               |
+| ----------------------------------------------------- | -------------------------------------------------- | --------------------------- |
+| Auto-start rest timer                                 | Account API                                        | Account/device AsyncStorage |
+| Default rest duration (60/90/120 seconds, default 90) | Account API                                        | Account/device AsyncStorage |
+| Account language                                      | Existing account API                               | Unchanged                   |
+| Theme                                                 | Existing device theme provider                     | Unchanged                   |
+| Timer sound, vibration, keep screen awake             | Device-local account-scoped Zustand + AsyncStorage | Unchanged                   |
+| In-progress countdown, manual workout preset          | Account/workout-scoped timer store                 | Unchanged                   |
+| Units                                                 | Future account preference                          | Not implemented             |
+
+Do not add a root store or move server entities into Zustand. The account preference
+query and mutation lifecycle belong to TanStack Query. Existing durable local
+preferences remain account scoped. A narrow adapter may expose effective values
+to the timer and offline fallback without creating a second remote authority.
+
+## Proposed API and storage
+
+Use a dedicated authenticated current-user workout-preference resource,
+`GET /users/me/preferences/workouts` and `PATCH /users/me/preferences/workouts`.
+Do not modify the locale-only PATCH response or public profile/admin selectors.
+The server derives identity from the authenticated actor; no client-supplied user
+identifier. Reject unknown fields and unsupported durations. Use independent
+nullable typed database fields initially; null means uninitialized, not false.
+Effective defaults come from `@gym/domain`; the server returns stored values
+and clients distinguish uninitialized fields from explicit choices.
+
+A normal PATCH changes only explicitly supplied, validated fields; no empty
+patch, implicit defaults for omitted fields, or unrelated device preferences.
+Keep updates atomic with active account checks. Define a conditional
+initialize-if-unset operation before migrating old device values; it must not
+overwrite an existing explicit account value even on concurrent first login.
+
+## Migration and failure behavior
+
+- Existing installations keep all five v1 keys; do not bulk-delete them.
+- For each uninitialized remote field, a valid explicit local value may initialize
+  that field once, atomically. Missing/corrupt local values must not initialize
+  the server. Never let an old device overwrite an already initialized field.
+- Preserve local operation offline using last confirmed account values and the
+  existing safe hydration rules. Until a dedicated offline mutation policy is
+  implemented, require connectivity to change account preferences and surface
+  failures instead of silently queuing or claiming success.
+- On acknowledged writes update the account-specific query; fence delayed
+  callbacks on logout/account switch and reconcile ambiguous outcomes by GET.
+  Do not restart or reset a running timer on preference hydration.
+- Keep legacy clients and the existing locale endpoint compatible. Do not
+  enable synchronization until the server contract and device migration tests
+  pass. No background notifications or server countdown are in scope.
+
+## Delivery slices
+
+1. Shared pure domain defaults and allowed numeric presets; mobile consumes
+   them without changing storage, UI or behavior (this PR).
+2. Typed nullable persistence and authenticated read/partial update contract,
+   migration and generated OpenAPI client; verify old locale clients and
+   account isolation.
+3. Conditional legacy initialization and concurrency tests.
+4. Mobile query/mutation integration and account-scoped offline fallback,
+   migration, stale-response and timer regressions.
+5. Web settings controls and parity; native acceptance and incremental rollout.
+
+Units and reset behavior need separate decisions and implementation. In
+particular, a reset of device settings must not silently reset account-wide
+preferences or modify another device.
