@@ -41,3 +41,7 @@ These refine ADR-008 and retain its implementation and security gates.
 ## Maintaining the register
 
 Assign a unique new identifier for each new decision, record its date, scope, owner review status, related issue and implementation evidence. Distinguish Proposed, Accepted, Superseded and Rejected decisions; keep evidence and partial delivery status separate. Preserve old document paths or update references deliberately. Do not overwrite the historical rationale, infer owner approval from a merge, or claim production readiness from architecture acceptance. Update this index in the same PR when an ADR or its status changes.
+
+## Scalability baseline
+
+- [SA01 — Architecture dependency and scalability baseline](sa01-scalability-baseline.md): dated static inventory for #918; exhaustive verification and follow-up remain open.
