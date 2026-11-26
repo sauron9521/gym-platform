@@ -65,6 +65,10 @@ export class DistributedThrottlerStorage implements ThrottlerStorage, OnApplicat
           enableOfflineQueue: false,
           maxRetriesPerRequest: 1,
           connectTimeout: 2_000,
+          commandTimeout: 2_000,
+          // A lost reply is ambiguous: do not resend a possibly applied INCR
+          // after reconnect. Requests fail closed; subsequent calls use Redis.
+          autoResendUnfulfilledCommands: false,
           retryStrategy: (attempt: number) => Math.min(attempt * 250, 2_000),
         })
       : null;

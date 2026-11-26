@@ -20,7 +20,7 @@ export class AvatarOrphanCleanupService {
     private readonly storage: AvatarDiskStorage,
   ) {}
 
-  @Cron('0 4 * * *', { timeZone: 'Europe/Kyiv' })
+  @Cron('0 4 * * *', { timeZone: 'Europe/Kyiv', waitForCompletion: true })
   async cleanup(): Promise<void> {
     const cutoff = new Date(Date.now() - GRACE_PERIOD_MS);
 
