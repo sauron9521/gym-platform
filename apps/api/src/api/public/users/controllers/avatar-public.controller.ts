@@ -2,12 +2,12 @@ import { Controller, Get, Param, Res, StreamableFile } from '@nestjs/common';
 import type { Response } from 'express';
 import { Public } from '@nestjs/authentication';
 
-import { AvatarService } from '../avatar/avatar.service.js';
+import { AvatarPublicReadFacade } from '#src/modules/users/public-api';
 
 @Public()
 @Controller('avatars')
 export class AvatarPublicController {
-  constructor(private readonly avatarService: AvatarService) {}
+  constructor(private readonly avatarService: AvatarPublicReadFacade) {}
 
   /** Public by unguessable key, but only while assigned to an active user. */
   @Get(':key')

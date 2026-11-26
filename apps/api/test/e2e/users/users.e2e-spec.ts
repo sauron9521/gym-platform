@@ -14,7 +14,9 @@ import { AppModule } from '../../../src/app.module.js';
 import { SharedUsersApiModule } from '../../../src/api/shared/users/shared-users-api.module.js';
 import { UsersController } from '../../../src/api/shared/users/controllers/users.controller.js';
 import { UsersModule } from '../../../src/modules/users/users.module.js';
-import { AvatarSelfFacade } from '../../../src/modules/users/public-api.js';
+import { AvatarSelfFacade, AvatarPublicReadFacade } from '../../../src/modules/users/public-api.js';
+import { PublicUsersApiModule } from '../../../src/api/public/users/public-users-api.module.js';
+import { AvatarPublicController } from '../../../src/api/public/users/controllers/avatar-public.controller.js';
 import { AvatarOrphanCleanupService } from '../../../src/modules/users/avatar/avatar-orphan-cleanup.service.js';
 import { PrismaService } from '../../../src/infra/database/index.js';
 import { useTestDatabase } from '../../utility/test-db-helper.js';
@@ -118,6 +120,29 @@ describe('Users /me (HTTP + PostgreSQL)', () => {
     expect(app.select(SharedUsersApiModule).get(UsersController, { strict: true })).toBeInstanceOf(
       UsersController,
     );
+  });
+
+  it('registers the public avatar controller once without duplicating Users or its private providers', () => {
+    const modules = [...app.get(ModulesContainer).values()];
+    expect(
+      modules
+        .filter((module) => module.controllers.has(AvatarPublicController))
+        .map((module) => module.metatype),
+    ).toEqual([PublicUsersApiModule]);
+    const core = modules.filter((module) => module.metatype === UsersModule);
+    expect(core).toHaveLength(1);
+    expect(core[0]?.controllers.size).toBe(0);
+    expect(
+      modules
+        .filter((module) => module.providers.has(AvatarOrphanCleanupService))
+        .map((module) => module.metatype),
+    ).toEqual([UsersModule]);
+    expect(app.select(UsersModule).get(AvatarPublicReadFacade, { strict: true })).toBeInstanceOf(
+      AvatarPublicReadFacade,
+    );
+    expect(
+      app.select(PublicUsersApiModule).get(AvatarPublicController, { strict: true }),
+    ).toBeInstanceOf(AvatarPublicController);
   });
 
   afterAll(async () => {

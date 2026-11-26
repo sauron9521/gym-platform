@@ -2,7 +2,7 @@ import { StreamableFile } from '@nestjs/common';
 import type { Response } from 'express';
 
 import { AvatarPublicController } from '../../controllers/avatar-public.controller.js';
-import { AvatarService } from '../../avatar/avatar.service.js';
+import type { AvatarPublicReadFacade } from '#src/modules/users/public-api';
 
 describe('AvatarPublicController', () => {
   const service = { readPublic: vi.fn() };
@@ -10,7 +10,7 @@ describe('AvatarPublicController', () => {
 
   beforeEach(() => {
     vi.resetAllMocks();
-    controller = new AvatarPublicController(service as unknown as AvatarService);
+    controller = new AvatarPublicController(service as unknown as AvatarPublicReadFacade);
   });
 
   it('serves only validated active avatar data with security and cache headers', async () => {

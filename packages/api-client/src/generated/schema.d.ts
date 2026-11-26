@@ -276,22 +276,6 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/avatars/{key}': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get: operations['AvatarPublicController_get'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
   '/health/live': {
     parameters: {
       query?: never;
@@ -447,6 +431,22 @@ export interface paths {
     put?: never;
     post: operations['UsersController_uploadAvatar'];
     delete: operations['UsersController_deleteAvatar'];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/avatars/{key}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['AvatarPublicController_get'];
+    put?: never;
+    post?: never;
+    delete?: never;
     options?: never;
     head?: never;
     patch?: never;
@@ -1772,25 +1772,6 @@ export interface operations {
       };
     };
   };
-  AvatarPublicController_get: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        key: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
   HealthController_liveness: {
     parameters: {
       query?: never;
@@ -2196,6 +2177,25 @@ export interface operations {
       query?: never;
       header?: never;
       path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  AvatarPublicController_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        key: string;
+      };
       cookie?: never;
     };
     requestBody?: never;

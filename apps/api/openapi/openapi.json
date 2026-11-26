@@ -589,27 +589,6 @@
         "tags": ["Sessions"]
       }
     },
-    "/avatars/{key}": {
-      "get": {
-        "operationId": "AvatarPublicController_get",
-        "parameters": [
-          {
-            "name": "key",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "tags": ["AvatarPublic"]
-      }
-    },
     "/health/live": {
       "get": {
         "operationId": "HealthController_liveness",
@@ -1468,6 +1447,27 @@
           }
         ],
         "tags": ["Users"]
+      }
+    },
+    "/avatars/{key}": {
+      "get": {
+        "operationId": "AvatarPublicController_get",
+        "parameters": [
+          {
+            "name": "key",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": ["AvatarPublic"]
       }
     },
     "/users/me/notification-settings": {
