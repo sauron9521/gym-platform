@@ -69,10 +69,7 @@ function registeredControllers(source, file) {
         if (!property.name || property.name.getText(ast).replace(/['"]/g, '') !== 'controllers') {
           continue;
         }
-        if (
-          !ts.isPropertyAssignment(property) ||
-          !ts.isArrayLiteralExpression(property.initializer)
-        ) {
+        if (!ts.isPropertyAssignment(property) || !ts.isArrayLiteralExpression(property.initializer)) {
           literal = false;
           continue;
         }
@@ -93,11 +90,8 @@ function controllerImportTarget(sourceRoot, file, specifier) {
     target = resolve(dirname(file), specifier);
   }
   if (!target) return null;
-  return target.endsWith('.js')
-    ? target.replace(/\.js$/, '.ts')
-    : target.endsWith('.ts')
-      ? target
-      : target + '.ts';
+  if (target.endsWith('.js')) return target.replace(/\.js$/, '.ts');
+  return target.endsWith('.ts') ? target : target + '.ts';
 }
 
 // A feature opts in only with a nonempty, reviewed audience declaration and
@@ -131,6 +125,8 @@ function checkApiControllerOwnership(root, modules, errors) {
   }
 
   const apiFiles = filesUnder(apiRoot);
+  if (apiFiles.length === 0 && declared.size === 0) return new Set();
+
   for (const file of apiFiles.filter((path) => path.endsWith('.controller.ts'))) {
     const [audience, feature, folder, filename, ...extra] = relative(apiRoot, file).split(sep);
     if (
@@ -140,7 +136,9 @@ function checkApiControllerOwnership(root, modules, errors) {
       !filename ||
       extra.length
     ) {
-      errors.push(display(file) + ': expected api/<audience>/<feature>/controllers/*.controller.ts');
+      errors.push(
+        display(file) + ': expected api/<audience>/<feature>/controllers/*.controller.ts',
+      );
       continue;
     }
     if (!declared.get(feature)?.includes(audience)) {
@@ -163,7 +161,11 @@ function checkApiControllerOwnership(root, modules, errors) {
     const spec = join(leaf, 'test', 'controllers', filename.replace(/\.ts$/, '.spec.ts'));
     if (!existsSync(spec)) errors.push(display(spec) + ': missing controller unit test');
     const registry = join(leaf, 'test', 'controllers');
-    if (!filesUnder(registry).some((path) => dirname(path) === registry && path.endsWith('controller-registry.spec.ts'))) {
+    if (
+      !filesUnder(registry).some(
+        (path) => dirname(path) === registry && path.endsWith('controller-registry.spec.ts'),
+      )
+    ) {
       errors.push(display(leaf) + ': expected test/controllers/*controller-registry.spec.ts');
     }
   }
@@ -237,15 +239,21 @@ function checkApiControllerOwnership(root, modules, errors) {
       folder !== 'controllers' ||
       !filename ||
       extra.length ||
-      !existsSync(join(apiRoot, audience, feature, 'controllers', filename.replace(/\.spec\.ts$/, '.ts')))
+      !existsSync(
+        join(apiRoot, audience, feature, 'controllers', filename.replace(/\.spec\.ts$/, '.ts')),
+      )
     ) {
       errors.push(display(file) + ': no matching API controller in controllers/');
     }
   }
 
-  return new Set([...declared].filter(([feature, audiences]) =>
-    audiences.every((audience) => moved.get(feature)?.has(audience)),
-  ).map(([feature]) => feature));
+  return new Set(
+    [...declared]
+      .filter(([feature, audiences]) =>
+        audiences.every((audience) => moved.get(feature)?.has(audience)),
+      )
+      .map(([feature]) => feature),
+  );
 }
 
 /**

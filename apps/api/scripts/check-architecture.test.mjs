@@ -303,7 +303,10 @@ test('ADR-010 accepts controller-free core only after explicit audience ownershi
     audienceFixture(write);
     rmSync(join(root, 'src/modules/example/controllers'), { recursive: true });
     rmSync(join(root, 'src/modules/example/test/controllers'), { recursive: true });
-    write('src/modules/example/example.module.ts', '@Module({ controllers: [] }) export class ExampleModule {}');
+    write(
+      'src/modules/example/example.module.ts',
+      '@Module({ controllers: [] }) export class ExampleModule {}',
+    );
     assert.deepEqual(check(), []);
     rmSync(join(root, 'src/modules/example/api-interfaces.json'));
     assert.match(check().join('\n'), /expected controllers\/\*\.controller\.ts/);
@@ -371,7 +374,10 @@ test('ADR-010 rejects misplaced controllers, phantom tests and root controller r
     audienceFixture(write);
     write('src/api/admin/example/misplaced.controller.ts', 'export class MisplacedController {}');
     write('src/api/admin/example/test/controllers/phantom.controller.spec.ts', '');
-    write('src/api/api.module.ts', '@Module({ controllers: [UnknownController] }) export class ApiModule {}');
+    write(
+      'src/api/api.module.ts',
+      '@Module({ controllers: [UnknownController] }) export class ApiModule {}',
+    );
     const errors = check().join('\n');
     assert.match(errors, /expected api\/<audience>\/<feature>\/controllers/);
     assert.match(errors, /no matching API controller/);
