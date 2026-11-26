@@ -65,6 +65,11 @@ supports date selection, today's date, previous/next months, status markers
 with accessible labels, localized loading/empty/error states and detail
 navigation in both themes.
 
-M11.2 adds weekly mode and device acceptance scenarios. Keep #340 open until
-both modes and actual Android/iOS QA are verified. No new API, native library
+M11.2 adds weekly mode with a seven-day bounded query across month/year
+boundaries, mode-specific navigation and an agenda grouped by local day.
+Switching modes preserves the selected date; week navigation preserves its
+weekday, and Today stays in the active mode. Both modes share read validation
+and account invalidation. A guarded read-only Maestro scenario is prepared
+for the manual native staging workflow; see native-staging-smoke.md.
+Keep #340 open until both modes and actual Android/iOS QA are verified. No new API, native library
 or date dependency is introduced.

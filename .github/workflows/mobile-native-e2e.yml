@@ -31,6 +31,7 @@ on:
           - draft-resume
           - draft-lost-response
           - draft-account-isolation
+          - calendar-read
       draft_fault_title:
         description: 'Only draft-lost-response: unique pre-armed Mobile-draft-fault-<suffix> title'
         required: false
@@ -100,6 +101,7 @@ jobs:
           E2E_EMAIL: ${{ secrets.MOBILE_E2E_EMAIL }}
           E2E_PASSWORD: ${{ secrets.MOBILE_E2E_PASSWORD }}
           E2E_EXERCISE_NAME: ${{ secrets.MOBILE_E2E_EXERCISE_NAME }}
+          STAGING_CALENDAR_WORKOUT_TITLE: ${{ secrets.MOBILE_E2E_CALENDAR_WORKOUT_TITLE }}
           STAGING_RECONCILE_WORKOUT_TITLE: ${{ secrets.MOBILE_E2E_RECONCILE_WORKOUT_TITLE }}
           E2E_SECOND_EMAIL: ${{ secrets.MOBILE_E2E_SECOND_EMAIL }}
           E2E_SECOND_PASSWORD: ${{ secrets.MOBILE_E2E_SECOND_PASSWORD }}
@@ -149,6 +151,12 @@ jobs:
                 fi
               fi
             fi
+            if [[ "$FLOW" == "calendar-read" ]]; then
+              if [[ -z "$STAGING_CALENDAR_WORKOUT_TITLE" || -z "$EXPECTED_STAGING_APP_ID" || "$APP_ID" != "$EXPECTED_STAGING_APP_ID" ]]; then
+                echo "Calendar flow requires an approved staging package and today's seeded workout." >&2
+                exit 1
+              fi
+            fi
             curl --fail --location --silent --show-error --max-time 240 \
               --proto '=https' --proto-redir '=https' \
               --max-filesize 250000000 \
@@ -178,6 +186,7 @@ jobs:
               draft-resume) FLOW_FILE=workout-draft-resume.yaml ;;
               draft-lost-response) FLOW_FILE=workout-draft-lost-response.yaml ;;
               draft-account-isolation) FLOW_FILE=workout-draft-account-isolation.yaml ;;
+              calendar-read) FLOW_FILE=workout-calendar-smoke.yaml ;;
               *) echo "Unsupported Maestro flow" >&2; exit 1 ;;
             esac
             WORKOUT_TITLE="Mobile-smoke-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
@@ -185,6 +194,8 @@ jobs:
               WORKOUT_TITLE="$STAGING_RECONCILE_WORKOUT_TITLE"
             elif [[ "$FLOW" == "draft-lost-response" ]]; then
               WORKOUT_TITLE="$DRAFT_FAULT_TITLE"
+            elif [[ "$FLOW" == "calendar-read" ]]; then
+              WORKOUT_TITLE="$STAGING_CALENDAR_WORKOUT_TITLE"
             fi
             # Pass the second account only for the isolation flow.
             SECOND_ACCOUNT_ARGS=()

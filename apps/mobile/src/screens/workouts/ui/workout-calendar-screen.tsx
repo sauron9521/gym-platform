@@ -11,6 +11,9 @@ import {
 } from '@/shared/api/api-error-policy';
 import {
   calendarMonthCells,
+  calendarWeekCells,
+  startCalendarWeek,
+  shiftCalendarDays,
   groupScheduledWorkouts,
   localWorkoutDayKey,
   monthOf,
@@ -41,9 +44,15 @@ export function WorkoutCalendarScreen() {
     const date = new Date();
     return { month: monthOf(date), date };
   });
+  const [mode, setMode] = useState<'month' | 'week'>('month');
   const { month, date } = selection;
-  const query = useWorkoutCalendarQuery(month);
-  const cells = useMemo(() => calendarMonthCells(month), [month]);
+  const weekly = mode === 'week';
+  const weekStart = startCalendarWeek(date);
+  const query = useWorkoutCalendarQuery(weekly ? { weekStart } : month);
+  const cells = useMemo(
+    () => (weekly ? calendarWeekCells(date) : calendarMonthCells(month)),
+    [weekly, date, month],
+  );
   const days = useMemo(
     () => groupScheduledWorkouts(query.isError ? [] : (query.data ?? [])),
     [query.data, query.isError],
@@ -52,17 +61,30 @@ export function WorkoutCalendarScreen() {
   const locale = intl.locale === 'en' ? 'en-US' : 'uk-UA';
   const formatDay = (value: Date) =>
     new Intl.DateTimeFormat(locale, { dateStyle: 'full' }).format(value);
-  const heading = new Intl.DateTimeFormat(locale, { month: 'long', year: 'numeric' }).format(
-    new Date(month.year, month.month, 1),
-  );
-  const changeMonth = (delta: number) =>
+  const weekFormat = new Intl.DateTimeFormat(locale, {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  });
+  const heading = weekly
+    ? `${weekFormat.format(weekStart)} – ${weekFormat.format(shiftCalendarDays(weekStart, 6))}`
+    : new Intl.DateTimeFormat(locale, { month: 'long', year: 'numeric' }).format(
+        new Date(month.year, month.month, 1),
+      );
+  const changePeriod = (delta: number) =>
     setSelection((current) => {
+      if (weekly) {
+        const nextDate = shiftCalendarDays(current.date, delta * 7);
+        return { date: nextDate, month: monthOf(nextDate) };
+      }
       const next = shiftCalendarMonth(current.month, delta);
       return { month: next, date: new Date(next.year, next.month, 1) };
     });
   const errorKey = () => {
     if (query.error instanceof CalendarDataError) {
-      return t(query.error.reason === 'tooMany' ? 'tooMany' : 'incomplete');
+      return t(
+        query.error.reason === 'tooMany' ? (weekly ? 'tooManyWeek' : 'tooMany') : 'incomplete',
+      );
     }
     const key =
       query.error instanceof MobileAccessDeniedError
@@ -83,13 +105,27 @@ export function WorkoutCalendarScreen() {
       testID="workout-calendar"
     >
       <Text style={styles.hint}>{t('description')}</Text>
+      <View style={styles.modeSwitch}>
+        {(['month', 'week'] as const).map((value) => (
+          <Pressable
+            key={value}
+            testID={`calendar-mode-${value}`}
+            accessibilityRole="button"
+            accessibilityState={{ selected: mode === value }}
+            style={[styles.modeButton, mode === value && styles.selected]}
+            onPress={() => setMode(value)}
+          >
+            <Text style={[styles.text, mode === value && styles.selectedText]}>{t(value)}</Text>
+          </Pressable>
+        ))}
+      </View>
       <View style={styles.navigation}>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={t('previous')}
+          accessibilityLabel={t(weekly ? 'previousWeek' : 'previous')}
           testID="calendar-previous"
           style={styles.navButton}
-          onPress={() => changeMonth(-1)}
+          onPress={() => changePeriod(-1)}
         >
           <Text style={styles.navText}>‹</Text>
         </Pressable>
@@ -98,10 +134,10 @@ export function WorkoutCalendarScreen() {
         </Text>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={t('next')}
+          accessibilityLabel={t(weekly ? 'nextWeek' : 'next')}
           testID="calendar-next"
           style={styles.navButton}
-          onPress={() => changeMonth(1)}
+          onPress={() => changePeriod(1)}
         >
           <Text style={styles.navText}>›</Text>
         </Pressable>
@@ -182,7 +218,7 @@ export function WorkoutCalendarScreen() {
                       accessibilityState={{ selected: isSelected, disabled: !cell.inMonth }}
                       disabled={!cell.inMonth}
                       style={[styles.day, isSelected && styles.selected]}
-                      onPress={() => setSelection({ month, date: cell.date })}
+                      onPress={() => setSelection({ month: monthOf(cell.date), date: cell.date })}
                     >
                       <Text
                         style={[
@@ -212,35 +248,55 @@ export function WorkoutCalendarScreen() {
               </Text>
             ))}
           </View>
-          {query.data.length === 0 ? <Text style={styles.hint}>{t('emptyMonth')}</Text> : null}
-          <Text style={styles.heading} accessibilityLiveRegion="polite">
-            {formatDay(date)}
-          </Text>
-          {(days.get(selected) ?? []).length === 0 ? (
-            <Text style={styles.hint}>{t('emptyDay')}</Text>
+          {query.data.length === 0 ? (
+            <Text style={styles.hint}>{t(weekly ? 'emptyWeek' : 'emptyMonth')}</Text>
           ) : null}
-          {(days.get(selected) ?? []).map((workout) => (
-            <Pressable
-              key={workout.id}
-              style={styles.card}
-              accessibilityRole="button"
-              accessibilityLabel={intl.formatMessage(
-                { id: 'mobile.workoutList.open' },
-                { title: workout.title },
-              )}
-              onPress={() =>
-                router.push({ pathname: '/workouts/[id]', params: { id: workout.id } })
-              }
-            >
-              <Text style={styles.cardTitle}>{workout.title}</Text>
-              <Text style={styles.hint}>
-                {new Intl.DateTimeFormat(locale, { hour: '2-digit', minute: '2-digit' }).format(
-                  new Date(workout.scheduledAt),
-                )}{' '}
-                · {intl.formatMessage({ id: `mobile.workoutList.${statusKeys[workout.status]}` })}
-              </Text>
-            </Pressable>
-          ))}
+          {weekly ? (
+            <Text style={styles.heading} testID="calendar-week-agenda">
+              {t('weekAgenda')}
+            </Text>
+          ) : null}
+          {(weekly ? cells : [{ date, key: selected }]).map((day) => {
+            const workouts = days.get(day.key) ?? [];
+            return (
+              <View
+                key={day.key}
+                testID={`calendar-agenda-${day.key}`}
+                style={[styles.agendaDay, weekly && day.key === selected && styles.agendaSelected]}
+              >
+                <Text style={styles.heading} accessibilityLiveRegion={weekly ? 'none' : 'polite'}>
+                  {formatDay(day.date)}
+                </Text>
+                {workouts.length === 0 ? <Text style={styles.hint}>{t('emptyDay')}</Text> : null}
+                {workouts.map((workout) => (
+                  <Pressable
+                    key={workout.id}
+                    style={styles.card}
+                    accessibilityRole="button"
+                    accessibilityLabel={intl.formatMessage(
+                      { id: 'mobile.workoutList.open' },
+                      { title: workout.title },
+                    )}
+                    onPress={() =>
+                      router.push({ pathname: '/workouts/[id]', params: { id: workout.id } })
+                    }
+                  >
+                    <Text style={styles.cardTitle}>{workout.title}</Text>
+                    <Text style={styles.hint}>
+                      {new Intl.DateTimeFormat(locale, {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      }).format(new Date(workout.scheduledAt))}
+                      {' · '}
+                      {intl.formatMessage({
+                        id: `mobile.workoutList.${statusKeys[workout.status]}`,
+                      })}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+            );
+          })}
           <Pressable
             accessibilityRole="button"
             testID="calendar-refresh"
@@ -260,7 +316,25 @@ const useStyles = createThemedStyles((palette) =>
   StyleSheet.create({
     container: { flex: 1, backgroundColor: palette.background },
     content: { padding: 12, gap: 16, paddingBottom: 32 },
-    navigation: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+    navigation: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: 8,
+    },
+    modeSwitch: { flexDirection: 'row', gap: 8 },
+    modeButton: {
+      flex: 1,
+      minHeight: 44,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: palette.border,
+      padding: 8,
+    },
+    agendaDay: { gap: 8, paddingVertical: 8 },
+    agendaSelected: { borderLeftWidth: 3, borderLeftColor: palette.primary, paddingLeft: 8 },
     heading: { flexShrink: 1, fontSize: 18, fontWeight: '700', color: palette.text },
     navButton: {
       minWidth: 44,
