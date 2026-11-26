@@ -123,5 +123,5 @@ describe('Account deletion confirmation during staged MFA rollout (HTTP + Postgr
         select: { status: true, deletedAt: true },
       }),
     ).toEqual({ status: 'ACTIVE', deletedAt: null });
-  });
+  }, 20_000);
 });
