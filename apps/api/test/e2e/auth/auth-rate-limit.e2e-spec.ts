@@ -11,7 +11,7 @@ import { AuthController } from '../../../src/modules/auth/controllers/auth.contr
 import { AdminCookieAuthService } from '../../../src/modules/auth/services/admin-cookie-auth.service.js';
 import { AdminSignInService } from '../../../src/modules/auth/public-api.js';
 import { EmailVerificationController } from '../../../src/modules/auth/controllers/email-verification.controller.js';
-import { TokensController } from '../../../src/modules/auth/controllers/tokens.controller.js';
+import { TokensController } from '../../../src/api/public/auth/controllers/tokens.controller.js';
 import { CredentialsService } from '../../../src/modules/auth/services/credentials.service.js';
 import { AuthNoStoreMiddleware } from '../../../src/modules/auth/middleware/auth-no-store.middleware.js';
 import { VerificationResendRateLimitGuard } from '../../../src/modules/auth/guards/verification-resend-rate-limit.guard.js';

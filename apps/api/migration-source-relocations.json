@@ -4,5 +4,7 @@
   "src/modules/users/controllers/avatar-public.controller.ts": "src/api/public/users/controllers/avatar-public.controller.ts",
   "src/modules/users/test/controllers/avatar-public.controller.spec.ts": "src/api/public/users/test/controllers/avatar-public.controller.spec.ts",
   "src/modules/auth/controllers/password-reset.controller.ts": "src/api/public/auth/controllers/password-reset.controller.ts",
-  "src/modules/auth/test/controllers/password-reset.controller.spec.ts": "src/api/public/auth/test/controllers/password-reset.controller.spec.ts"
+  "src/modules/auth/test/controllers/password-reset.controller.spec.ts": "src/api/public/auth/test/controllers/password-reset.controller.spec.ts",
+  "src/modules/auth/controllers/tokens.controller.ts": "src/api/public/auth/controllers/tokens.controller.ts",
+  "src/modules/auth/test/controllers/tokens.controller.spec.ts": "src/api/public/auth/test/controllers/tokens.controller.spec.ts"
 }

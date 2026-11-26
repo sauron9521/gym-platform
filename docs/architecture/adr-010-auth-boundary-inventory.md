@@ -88,6 +88,10 @@ All five legacy controllers use the explicit boundary; no controller relocation 
 
 [PublicAuthApiModule](../../apps/api/src/api/public/auth/public-auth-api.module.ts) owns [PasswordResetController](../../apps/api/src/api/public/auth/controllers/password-reset.controller.ts), imported once through PublicApiModule. Both public routes, stable operation and counter identity, validation, no-store, and recovery quota remain unchanged. The route-scoped recovery guard resolves AuthHttpQuotaFacade through AuthModule; remove its redundant legacy provider registration. AuthModule keeps all private stores, registry providers, mailers and cleanup. The historical controller and unit-test paths are recorded in the existing source relocation map. Keep the legacy controller barrel for remaining controllers only.
 
+### ABI05c2 Tokens relocation
+
+[PublicAuthApiModule](../../apps/api/src/api/public/auth/public-auth-api.module.ts) now also owns [TokensController](../../apps/api/src/api/public/auth/controllers/tokens.controller.ts), with three unchanged public token operations. The controller consumes CredentialsService through the Auth public boundary and the existing globally configured TokenService. No new authentication registration, store, schema or token policy; keep issuance password AMR, rotation/reuse detection, revocation and rate-limit identities. The historical controller and unit-test paths are mapped in the source relocation map. The legacy AuthModule retains three controllers (12 operations); the public leaf owns two controllers (five operations). Mixed controllers remain for ABI05d.
+
 ## Acceptance matrix before expansion
 
 | Concern                       | Required existing or additional evidence                                                                                                                                                                                            |

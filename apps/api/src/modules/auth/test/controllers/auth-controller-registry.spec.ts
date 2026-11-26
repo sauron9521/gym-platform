@@ -12,24 +12,18 @@ import {
 
 import { AuthController } from '../../controllers/auth.controller.js';
 import { EmailVerificationController } from '../../controllers/email-verification.controller.js';
-import { TokensController } from '../../controllers/tokens.controller.js';
 import { SessionsController } from '../../controllers/sessions.controller.js';
 import { AuthNoStoreInterceptor } from '../../interceptors/auth-no-store.interceptor.js';
 import { AuthModule } from '../../auth.module.js';
 
 describe('AuthModule controller registry', () => {
-  const controllers = [
-    AuthController,
-    EmailVerificationController,
-    TokensController,
-    SessionsController,
-  ];
+  const controllers = [AuthController, EmailVerificationController, SessionsController];
 
-  it('preserves controller registration and four remaining legacy route prefixes', () => {
+  it('preserves controller registration and three remaining legacy route prefixes', () => {
     const registered: unknown[] = Reflect.getMetadata(MODULE_METADATA.CONTROLLERS, AuthModule);
     expect(registered).toEqual(controllers);
     expect(controllers.map((controller) => Reflect.getMetadata(PATH_METADATA, controller))).toEqual(
-      ['auth', 'auth/email', 'auth/token', 'auth'],
+      ['auth', 'auth/email', 'auth'],
     );
   });
 
@@ -39,9 +33,6 @@ describe('AuthModule controller registry', () => {
     [AuthController, 'adminSignIn', RequestMethod.POST, 'admin-login', 200],
     [EmailVerificationController, 'verifyEmail', RequestMethod.POST, 'verify', 200],
     [EmailVerificationController, 'resend', RequestMethod.POST, 'verification', 202],
-    [TokensController, 'issue', RequestMethod.POST, '/', 200],
-    [TokensController, 'refresh', RequestMethod.POST, 'refresh', 200],
-    [TokensController, 'revoke', RequestMethod.POST, 'revoke', 204],
     [SessionsController, 'adminSession', RequestMethod.GET, 'admin-session', undefined],
     [
       SessionsController,
@@ -71,9 +62,6 @@ describe('AuthModule controller registry', () => {
     [AuthController, 'adminSignIn', 3],
     [EmailVerificationController, 'verifyEmail', 8],
     [EmailVerificationController, 'resend', 3],
-    [TokensController, 'issue', 3],
-    [TokensController, 'refresh', 20],
-    [TokensController, 'revoke', 10],
   ] as const)('retains %s.%s rate limit', (controller, name, limit) => {
     const handler = Object.getOwnPropertyDescriptor(controller.prototype, name)?.value as (
       ...args: unknown[]
@@ -89,9 +77,6 @@ describe('AuthModule controller registry', () => {
     [AuthController, 'signIn', 'AuthController-signIn'],
     [EmailVerificationController, 'verifyEmail', 'EmailVerificationController-verifyEmail'],
     [EmailVerificationController, 'resend', 'EmailVerificationController-resend'],
-    [TokensController, 'issue', 'TokensController-issue'],
-    [TokensController, 'refresh', 'TokensController-refresh'],
-    [TokensController, 'revoke', 'TokensController-revoke'],
     [SessionsController, 'adminSession', 'SessionsController-adminSession'],
     [SessionsController, 'revokeAdminSessions', 'SessionsController-revokeAdminSessions'],
     [SessionsController, 'adminSignOut', 'SessionsController-adminSignOut'],
@@ -121,14 +106,14 @@ describe('AuthModule controller registry', () => {
     },
   );
 
-  it('retains the no-store interceptor on all four remaining controllers', () => {
+  it('retains the no-store interceptor on all three remaining controllers', () => {
     for (const controller of controllers) {
       const interceptors: unknown[] = Reflect.getMetadata(INTERCEPTORS_METADATA, controller);
       expect(interceptors).toContain(AuthNoStoreInterceptor);
     }
   });
 
-  it('registers exactly fifteen unique HTTP verb/path pairs', () => {
+  it('registers exactly twelve unique HTTP verb/path pairs', () => {
     const routes = controllers.flatMap((controller) => {
       const prefix = Reflect.getMetadata(PATH_METADATA, controller) as string;
       return Object.getOwnPropertyNames(controller.prototype)
@@ -145,7 +130,7 @@ describe('AuthModule controller registry', () => {
         });
     });
 
-    expect(routes).toHaveLength(15);
+    expect(routes).toHaveLength(12);
     expect(new Set(routes).size).toBe(routes.length);
   });
 });
