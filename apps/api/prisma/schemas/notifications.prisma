@@ -27,3 +27,40 @@ model OutboxEvent {
   @@index([actorUserId])
   @@map("outbox_events")
 }
+
+// External-channel preferences only. Inbox and urgent auth mail are independent.
+enum NotificationCategory {
+  TRAINER
+  PROGRAM
+  WORKOUT
+  ACCOUNT
+}
+
+enum NotificationChannel {
+  MOBILE_PUSH
+  LOCAL_REMINDER
+  EMAIL
+}
+
+model NotificationSettings {
+  userId String @id @map("user_id")
+  quietHoursEnabled Boolean @default(true) @map("quiet_hours_enabled")
+  quietStartMinute Int @default(1320) @map("quiet_start_minute")
+  quietEndMinute Int @default(480) @map("quiet_end_minute")
+  reminderLeadMinutes Int @default(60) @map("reminder_lead_minutes")
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notification_settings")
+}
+
+model NotificationPreference {
+  userId String @map("user_id")
+  category NotificationCategory
+  channel NotificationChannel
+  enabled Boolean @default(false)
+  consentedAt DateTime? @map("consented_at") @db.Timestamptz(3)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, category, channel])
+  @@map("notification_preferences")
+}
