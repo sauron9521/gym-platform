@@ -304,6 +304,24 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
+  landing-docker:
+    name: Landing Docker / Node 24
+    needs: changes
+    if: needs.changes.outputs.landing == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+      - name: Build isolated Landing pilot
+        run: docker build -f apps/landing/Dockerfile -t gym-platform-landing:pilot .
+      - name: Smoke isolated Landing container
+        run: node apps/landing/scripts/docker-smoke.mjs gym-platform-landing:pilot
+
   quality-workspaces:
     name: Quality workspaces / Node 24
     needs: changes
@@ -498,6 +516,7 @@ jobs:
       - dependency-security
       - mobile-ios-dev-windows
       - landing-browser-e2e
+      - landing-docker
       - api-operations
       - api-staging-contracts
       - api-readiness
@@ -526,6 +545,7 @@ jobs:
           MOBILE_REQUIRED: ${{ needs.changes.outputs.mobile }}
           LANDING_REQUIRED: ${{ needs.changes.outputs.landing }}
           LANDING_E2E_RESULT: ${{ needs.landing-browser-e2e.result }}
+          LANDING_DOCKER_RESULT: ${{ needs.landing-docker.result }}
           MOBILE_IOS_DEV_RESULT: ${{ needs.mobile-ios-dev-windows.result }}
           API_REQUIRED: ${{ needs.changes.outputs.api }}
           API_OPERATIONS_RESULT: ${{ needs.api-operations.result }}
@@ -567,9 +587,11 @@ jobs:
           fi
           if [ "$LANDING_REQUIRED" = true ]; then
             test "$LANDING_E2E_RESULT" = success
+            test "$LANDING_DOCKER_RESULT" = success
           else
             test "$LANDING_REQUIRED" = false
             test "$LANDING_E2E_RESULT" = skipped
+            test "$LANDING_DOCKER_RESULT" = skipped
           fi
           if [ "$MOBILE_REQUIRED" = true ]; then
             test "$MOBILE_IOS_DEV_RESULT" = success

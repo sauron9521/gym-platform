@@ -27,6 +27,28 @@ pnpm --filter @gym/landing typecheck
 pnpm --filter @gym/landing build
 ```
 
+## DEP02 — Docker pilot
+
+From the repository root, build and test an isolated local image:
+
+```bash
+docker build -f apps/landing/Dockerfile -t gym-platform-landing:pilot .
+node apps/landing/scripts/docker-smoke.mjs gym-platform-landing:pilot
+```
+
+The image uses Node 24, a frozen filtered workspace install, standalone output
+with a monorepo tracing root, and a non-root runtime on port 3000. The smoke
+uses a disposable container with a random loopback port and removes it.
+The build requires network access for dependencies and existing next/font
+Google font assets. Ordinary local dev and Next start remain unchanged.
+
+This pilot enables the existing localized routes, leaves the site origin and
+analytics unset, and disables indexing. Do not override SEO/publication settings
+or promote this image to production: static metadata and public build-time
+configuration require independent release evidence (DEP08). Robots directives
+are not access control. No GHCR publish, DNS or live deployment is included.
+See the [full-stack plan](../../docs/operations/full-stack-deployment-plan.md).
+
 ## Публічні маршрути
 
 `/`, `/features`, `/for-athletes`, `/for-trainers`, `/apps`, `/apps/web`, `/apps/mobile`, `/about`. Локалізовані маршрути `/uk` та `/en` керуються налаштуванням публікації та готовністю перекладів; див. [політику локалізації](../../docs/landing/localization.md). Наявність сторінки не підтверджує публічну доступність продукту чи дозвіл на індексацію.

@@ -10,7 +10,7 @@ const landing = JSON.parse(read('../apps/landing/package.json'));
 
 const sections = workflow.split('  landing-browser-e2e:\n');
 const webSuite = sections[0].split('  web-browser-e2e:\n')[1];
-const landingSuite = sections[1].split('  quality-workspaces:\n')[0];
+const landingSuite = sections[1].split('  landing-docker:\n')[0];
 const integrationSuite = integration.split('  browser-api-suite:\n')[1];
 
 test('browser E2E jobs use identical pinned Playwright images', () => {

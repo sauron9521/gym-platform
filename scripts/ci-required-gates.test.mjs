@@ -78,6 +78,7 @@ test('required Quality gate fails closed for API errors and checks expected skip
     SECURITY_RESULT: 'skipped',
     LANDING_REQUIRED: 'false',
     LANDING_E2E_RESULT: 'skipped',
+    LANDING_DOCKER_RESULT: 'skipped',
     MOBILE_REQUIRED: 'false',
     MOBILE_IOS_DEV_RESULT: 'skipped',
     API_REQUIRED: String(ordinaryApi.api),
@@ -119,6 +120,13 @@ test('required Quality gate fails closed for API errors and checks expected skip
       assert.notEqual(exitStatus({ [status]: invalid }), 0, status + '=' + invalid);
     }
   }
+
+  const landingScope = { LANDING_REQUIRED: 'true', LANDING_E2E_RESULT: 'success' };
+  assert.equal(exitStatus({ ...landingScope, LANDING_DOCKER_RESULT: 'success' }), 0);
+  for (const invalid of ['failure', 'cancelled', 'skipped', '']) {
+    assert.notEqual(exitStatus({ ...landingScope, LANDING_DOCKER_RESULT: invalid }), 0);
+  }
+  assert.notEqual(exitStatus({ LANDING_DOCKER_RESULT: 'success' }), 0);
 
   const skipped = Object.fromEntries(apiJobs.map(([, status]) => [status, 'skipped']));
   assert.equal(exitStatus({ API_REQUIRED: 'false', ...skipped }), 0);
