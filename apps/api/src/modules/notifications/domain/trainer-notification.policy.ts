@@ -63,6 +63,7 @@ export function trainerInboxWhere(recipientId: string): Prisma.NotificationWhere
     type,
     category: 'TRAINER',
     templateKey: type,
+    trainerApplicationId: null,
     programAssignmentId: null,
     trainerRelationship: { is: trainerNotificationSourceWhere(type, recipientId) },
   }));

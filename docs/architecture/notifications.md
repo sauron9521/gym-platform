@@ -95,7 +95,7 @@ The shared authenticated API uses ordinary cookie or bearer credentials,
 never a caller-supplied recipient or scope. Foreign, ADMIN, expired,
 unsupported and nonexistent notifications are indistinguishable (404 on
 detail/mutation). All responses, including errors, are no-store.
-The allowlist includes generic ACCOUNT security-change, five TRAINER relationship notifications (#570) and four PROGRAM assignment notifications (#571).
+The allowlist includes generic ACCOUNT security-change, five TRAINER relationship notifications (#570) and four PROGRAM assignment notifications (#571), and applicant review/revocation notifications (#572).
 The response contains id, type, category, templateKey, createdAt and readAt.
 PROGRAM notices additionally expose a typed, currently authorized assignment target.
 No audit IDs, raw payloads or arbitrary navigation links are returned.

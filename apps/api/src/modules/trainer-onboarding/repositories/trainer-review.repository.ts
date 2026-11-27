@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 
 import { Prisma, type TrainerApplicationStatus } from '#prisma/client';
+import { publishOutboxEvent } from '#src/modules/notifications/public-api';
 import { PrismaService } from '#src/infra/database/index';
 
 import { trainerApplicationAdminSelect } from '../selects/trainer-application.admin-select.js';
@@ -135,6 +136,14 @@ export class TrainerReviewRepository {
         const record = await tx.trainerApplication.findUniqueOrThrow({
           where: { id: applicationId },
           select: trainerApplicationAdminSelect,
+        });
+        await publishOutboxEvent(tx, {
+          type:
+            action === 'REVOKE' ? 'trainer.application.revoked' : 'trainer.application.reviewed',
+          schemaVersion: 1,
+          actorUserId: reviewerId,
+          occurredAt: now,
+          payload: { aggregate: { kind: 'TrainerApplication', id: record.id } },
         });
         return { kind: 'ok', record } as const;
       },

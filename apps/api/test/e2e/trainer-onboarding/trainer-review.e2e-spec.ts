@@ -91,6 +91,12 @@ describe('Operator trainer review (HTTP + PostgreSQL)', () => {
   afterAll(async () => {
     try {
       if (prisma && users.length) {
+        await prisma.outboxEvent.deleteMany({
+          where: {
+            actorUserId: operatorId,
+            type: { in: ['trainer.application.reviewed', 'trainer.application.revoked'] },
+          },
+        });
         await prisma.trainerApplication.deleteMany({ where: { userId: { in: users } } });
         await prisma.trainerProfile.deleteMany({ where: { userId: { in: users } } });
         await prisma.user.deleteMany({ where: { id: { in: users } } });
@@ -122,6 +128,11 @@ describe('Operator trainer review (HTTP + PostgreSQL)', () => {
     });
     expect(anon.status).toBe(401);
     expect(anon.headers['cache-control']).toContain('no-store');
+    expect(
+      await prisma.outboxEvent.count({
+        where: { eventKey: `trainer-application:${pendingId}:trainer.application.reviewed:v1` },
+      }),
+    ).toBe(0);
   });
 
   it('does not review applications with an ordinary ADMIN login session', async () => {
@@ -256,6 +267,11 @@ describe('Operator trainer review (HTTP + PostgreSQL)', () => {
       .send({ reason });
     expect(again.status).toBe(200);
     expect(again.body.reviewedAt).toBe(response.body.reviewedAt);
+    expect(
+      await prisma.outboxEvent.count({
+        where: { eventKey: `trainer-application:${pendingId}:trainer.application.reviewed:v1` },
+      }),
+    ).toBe(1);
     const profile = await prisma.trainerProfile.findUnique({ where: { userId: users[2] } });
     expect(profile).toBeNull();
   });
@@ -384,11 +400,17 @@ describe('Operator trainer review (HTTP + PostgreSQL)', () => {
     });
     expect(application.status).toBe(approve.status === 200 ? 'APPROVED' : 'REJECTED');
     expect(application.reviewerId).toBe(operatorId);
+    expect(
+      await prisma.outboxEvent.count({
+        where: { eventKey: `trainer-application:${id}:trainer.application.reviewed:v1` },
+      }),
+    ).toBe(1);
     if (approve.status === 200) expect(profile?.isActive).toBe(true);
     else expect(profile).toBeNull();
   });
 
   it('refuses to review if the database administrator role has been removed', async () => {
+    const count = await prisma.outboxEvent.count({ where: { actorUserId: operatorId } });
     await prisma.user.update({ where: { id: operatorId }, data: { role: 'ATHLETE' } });
     try {
       const result = await request(app.getHttpServer())
@@ -396,6 +418,7 @@ describe('Operator trainer review (HTTP + PostgreSQL)', () => {
         .set('Cookie', asUser('operator'))
         .send({ reason: 'Attempts to use revoked admin status' });
       expect(result.status).toBe(403);
+      expect(await prisma.outboxEvent.count({ where: { actorUserId: operatorId } })).toBe(count);
     } finally {
       await prisma.user.update({ where: { id: operatorId }, data: { role: 'ADMIN' } });
     }

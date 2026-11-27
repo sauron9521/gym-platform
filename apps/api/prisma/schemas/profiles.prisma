@@ -84,6 +84,8 @@ model TrainerApplication {
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
 
+  notifications Notification[]
+
   @@unique([userId], where: raw("status = 'PENDING'"), map: "trainer_applications_one_pending_per_user_key")
   @@index([userId, createdAt(sort: Desc)])
   @@index([status, createdAt(sort: Desc)])
