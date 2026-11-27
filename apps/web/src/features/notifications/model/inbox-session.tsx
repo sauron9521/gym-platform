@@ -61,7 +61,7 @@ export function InboxSessionBoundary({ children }: { children: ReactNode }) {
   const active = shown && !!owner && !blocked && !profile.isFetching;
   const handleError = useCallback(
     (error: unknown) => {
-      if (!(error instanceof InboxRequestError || error instanceof ProfileRequestError)) return;
+      if (!(error instanceof InboxRequestError)) return;
       if (error.status === 401) {
         onAuthFailure(error);
         return;
@@ -102,8 +102,8 @@ export function InboxSessionBoundary({ children }: { children: ReactNode }) {
   }, [client, owner, blocked]);
 
   useEffect(() => {
-    handleError(profile.error);
-  }, [profile.error, handleError]);
+    if (profile.error instanceof ProfileRequestError) onAuthFailure(profile.error);
+  }, [profile.error, onAuthFailure]);
 
   return (
     <Context.Provider
