@@ -7,7 +7,7 @@ import {
 } from './native-notification-permission';
 import type { NativeReminderPort } from './native-reminder-reconciliation';
 
-/** Not connected to app lifecycle. No module load on web/Expo Go. The
+/** Native port used by the gated lifecycle. No module load on web/Expo Go. The
  * same narrow pinned SDK modules avoid the push auto-registration barrel. */
 export async function openNativeReminderPort(): Promise<NativeReminderPort | null> {
   if (Platform.OS !== 'android' && Platform.OS !== 'ios') return null;

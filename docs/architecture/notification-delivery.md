@@ -310,3 +310,19 @@ must not authorize scheduling. No runtime subscription, scheduler
 activation, new API endpoint or dependency is introduced. See the
 [Mobile evidence boundary](../../apps/mobile/docs/push-notification-design.md#n14d--fresh-reminder-evidence-342)
 for provisional bounds and limits of remote/offline reconciliation.
+
+## N14e — local reminder lifecycle composition (#342)
+
+The application composition root combines the existing private-data
+lifecycle with a generation-fenced reminder coordinator. Native cleanup
+is serialized with writes, while fresh network preparation stays outside
+the native queue to avoid a logout/401 dependency cycle. The release
+gate remains false: only managed cleanup at lifecycle boundaries is
+wired, no automatic scheduling or refresh subscription is enabled.
+Injected-port tests cover the future enabled path. A normal background
+transition preserves settled pending requests; active locks, resume,
+verification and logout require cleanup before new scheduling.
+The [Mobile lifecycle design](../../apps/mobile/docs/push-notification-design.md#n14e--lifecycle-composition-342)
+records the provisional conservative refresh behavior and native
+limitations. #342 remains open until LN06 device evidence and a
+separately reviewed activation decision.

@@ -1,5 +1,9 @@
 import '../../global.css';
 
+import { useMemo } from 'react';
+import { combinePrivateDataLifecycles } from '@/features/auth/model/private-data-lifecycle';
+import { offlineDraftLifecycle } from '@/features/workouts/model/offline-draft-lifecycle';
+
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import { useIntl } from 'react-intl';
 import { StatusBar } from 'expo-status-bar';
@@ -29,7 +33,10 @@ import {
   useAppSettings,
 } from '@/features/app-settings/model/app-settings-context';
 import { RestTimerProvider } from '@/features/workouts/model/rest-timer-provider';
-import { offlineDraftLifecycle } from '@/features/workouts/model/offline-draft-lifecycle';
+import {
+  ReminderRuntime,
+  useReminderLifecycle,
+} from '@/features/notifications/model/reminder-runtime';
 import { AccountLocaleSync } from '@/features/profile/ui/account-locale-sync';
 
 function Navigation() {
@@ -150,6 +157,23 @@ function WorkoutNavigation() {
   );
 }
 
+function AuthenticatedApp() {
+  const reminders = useReminderLifecycle();
+  const privateData = useMemo(
+    () => combinePrivateDataLifecycles(offlineDraftLifecycle, reminders),
+    [reminders],
+  );
+  return (
+    <AuthProvider privateData={privateData}>
+      <AccountLocaleSync />
+      <ReminderRuntime reminders={reminders} />
+      <AppSettingsProvider>
+        <WorkoutNavigation />
+      </AppSettingsProvider>
+    </AuthProvider>
+  );
+}
+
 function ThemedApp() {
   const { palette, preference, mode } = useMobileTheme();
   const base = mode === 'dark' ? DarkTheme : DefaultTheme;
@@ -172,12 +196,7 @@ function ThemedApp() {
         <LocaleProvider>
           <MobileQueryProvider>
             <MobileErrorBoundary>
-              <AuthProvider privateData={offlineDraftLifecycle}>
-                <AccountLocaleSync />
-                <AppSettingsProvider>
-                  <WorkoutNavigation />
-                </AppSettingsProvider>
-              </AuthProvider>
+              <AuthenticatedApp />
             </MobileErrorBoundary>
           </MobileQueryProvider>
         </LocaleProvider>

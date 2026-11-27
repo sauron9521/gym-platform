@@ -129,7 +129,7 @@ test('native permission foundation does not enable scheduling, token registratio
   assert.match(model, /await permission.refetch\(\)/);
 });
 
-test('native reminder reconciliation is prepared but not connected to application lifecycle', () => {
+test('native reminder reconciliation stays isolated from screens and auth', () => {
   const adapter = read('../src/features/notifications/lib/native-reminder-port.ts');
   const reconcile = read('../src/features/notifications/lib/native-reminder-reconciliation.ts');
   assert.match(adapter, /expo-notifications\/build\/scheduleNotificationAsync/);
@@ -153,7 +153,7 @@ test('native reminder reconciliation is prepared but not connected to applicatio
   }
 });
 
-test('fresh reminder evidence preparation remains unwired until account lifecycle is ready', () => {
+test('fresh reminder evidence remains separate from native scheduling', () => {
   const preparation = read('../src/features/notifications/model/prepare-local-reminders.ts');
   const snapshot = read('../src/features/notifications/services/reminder-snapshot.ts');
   assert.match(preparation, /readNotificationSettings/);
@@ -170,4 +170,26 @@ test('fresh reminder evidence preparation remains unwired until account lifecycl
   ]) {
     assert.doesNotMatch(read(file), /prepareLocalReminders/);
   }
+});
+
+test('reminder lifecycle is composed with private data, but scheduling is release-disabled', () => {
+  const root = read('../src/app/_layout.tsx');
+  const runtime = read('../src/features/notifications/model/reminder-runtime.tsx');
+  const lifecycle = read('../src/features/notifications/model/reminder-lifecycle.ts');
+  assert.match(root, /combinePrivateDataLifecycles\(offlineDraftLifecycle, reminders\)/);
+  assert.match(root, /<AuthProvider privateData=\{privateData\}>/);
+  assert.match(root, /<ReminderRuntime reminders=\{reminders\}/);
+  assert.match(runtime, /LOCAL_REMINDER_SCHEDULING_ENABLED = false/);
+  assert.match(runtime, /enabled: LOCAL_REMINDER_SCHEDULING_ENABLED/);
+  assert.match(runtime, /if \(!LOCAL_REMINDER_SCHEDULING_ENABLED \|\| !scope\) return/);
+  assert.match(runtime, /void reminders.end\(\)/);
+  assert.match(lifecycle, /if \(!this.deps.enabled/);
+  assert.doesNotMatch(
+    runtime,
+    /setInterval|registerTaskAsync|getExpoPushTokenAsync|requestPermissionsAsync/,
+  );
+  assert.doesNotMatch(
+    read('../src/features/auth/model/auth-context.tsx'),
+    /reminder-runtime|expo-notifications/,
+  );
 });
