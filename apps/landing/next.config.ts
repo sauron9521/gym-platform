@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'node:url';
 import type { NextConfig } from 'next';
 import createNextIntlPlugin from 'next-intl/plugin';
 
@@ -8,6 +9,12 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  ...(process.env.GYM_LANDING_STANDALONE === 'true'
+    ? {
+        output: 'standalone',
+        outputFileTracingRoot: fileURLToPath(new URL('../..', import.meta.url)),
+      }
+    : {}),
   reactStrictMode: true,
   poweredByHeader: false,
   async headers() {
