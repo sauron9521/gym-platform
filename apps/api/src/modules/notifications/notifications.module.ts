@@ -10,6 +10,9 @@ import { OutboxDispatchService } from './services/outbox-dispatch.service.js';
 
 import { NotificationDeliveryRepository } from './repositories/notification-delivery.repository.js';
 
+import { AdminNotificationInboxRepository } from './repositories/admin-notification-inbox.repository.js';
+import { AdminNotificationInboxService } from './services/admin-notification-inbox.service.js';
+
 @Module({
   controllers: [],
   providers: [
@@ -20,7 +23,9 @@ import { NotificationDeliveryRepository } from './repositories/notification-deli
     OutboxDispatchRepository,
     OutboxDispatchService,
     NotificationDeliveryRepository,
+    AdminNotificationInboxRepository,
+    AdminNotificationInboxService,
   ],
-  exports: [NotificationSettingsService, NotificationInboxService],
+  exports: [NotificationSettingsService, NotificationInboxService, AdminNotificationInboxService],
 })
 export class NotificationsModule {}

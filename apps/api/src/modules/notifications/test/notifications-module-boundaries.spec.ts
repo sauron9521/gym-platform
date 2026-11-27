@@ -4,6 +4,7 @@ import * as publicApi from '../public-api.js';
 import { OutboxDispatchRepository } from '../repositories/outbox-dispatch.repository.js';
 import { OutboxDispatchService } from '../services/outbox-dispatch.service.js';
 import { NotificationDeliveryRepository } from '../repositories/notification-delivery.repository.js';
+import { AdminNotificationInboxRepository } from '../repositories/admin-notification-inbox.repository.js';
 import { NotificationInboxRepository } from '../repositories/notification-inbox.repository.js';
 import { NotificationSettingsRepository } from '../repositories/notification-settings.repository.js';
 import {
@@ -21,17 +22,22 @@ describe('NotificationsModule public boundary', () => {
       OutboxDispatchRepository,
       OutboxDispatchService,
       NotificationDeliveryRepository,
+      AdminNotificationInboxRepository,
+      publicApi.AdminNotificationInboxService,
     ]);
     expect(Reflect.getMetadata(MODULE_METADATA.EXPORTS, NotificationsModule)).toEqual([
       publicApi.NotificationSettingsService,
       publicApi.NotificationInboxService,
+      publicApi.AdminNotificationInboxService,
     ]);
   });
 
   it('exposes settings and the transaction-local publication contract', () => {
     expect(Object.keys(publicApi).sort()).toEqual([
+      'AdminNotificationInboxService',
       'NotificationInboxService',
       'NotificationSettingsService',
+      'adminNotificationInboxQuerySchema',
       'inboxEventTypes',
       'notificationInboxQuerySchema',
       'notificationSettingsPatchSchema',

@@ -1,4 +1,5 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable, Optional } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import type { Prisma } from '#prisma/client';
 import { PrismaService } from '#src/infra/database/index';
 import {
@@ -13,6 +14,7 @@ import {
   outboxRetryDelayMs,
 } from '../domain/outbox-dispatch.policy.js';
 
+import { dispatchAdminReviewNotification } from './dispatch-admin-review-notification.js';
 import { resolveReviewNotification } from './resolve-review-notification.js';
 import { resolveProgramNotification } from './resolve-program-notification.js';
 import { resolveTrainerNotification } from './resolve-trainer-notification.js';
@@ -27,7 +29,10 @@ export type DispatchResult = 'processed' | 'skipped' | 'dead_letter' | 'lease_lo
 
 @Injectable()
 export class OutboxDispatchRepository {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Optional() @Inject(ConfigService) private readonly config?: ConfigService,
+  ) {}
 
   async claim(): Promise<Claim | null> {
     // One row per claim; no process-local coordination or external queue.
@@ -83,6 +88,15 @@ export class OutboxDispatchRepository {
           return this.finish(tx, claim.id, 'INVALID_EVENT', 'dead_letter');
         }
         const event = parsed.data;
+        if (event.type === 'admin.trainer.review.required') {
+          const result = await dispatchAdminReviewNotification(
+            tx,
+            claim.id,
+            event,
+            this.config?.get('SUPERADMIN_USER_IDS'),
+          );
+          return this.finish(tx, claim.id, result.code, result.result);
+        }
         let recipientId: string;
         let trainerRelationshipId: string | null = null;
         let programAssignmentId: string | null = null;

@@ -47,7 +47,7 @@ Legend: `I` = durable In-App; `P` = opt-in Mobile Push; `E` = optional transacti
 | `account.security.changed`                    | Auth/User                                                             | Affected account holder                                      | ACCOUNT / USER   | I; urgent security E policy                                                                          |
 | `trainer.application.reviewed`                | Trainer onboarding                                                    | Applicant (only after review committed)                      | ACCOUNT / USER   | I; optional E                                                                                        |
 | `trainer.application.revoked`                 | Trainer onboarding                                                    | Applicant                                                    | ACCOUNT / USER   | I                                                                                                    |
-| `admin.trainer.review.required`               | Trainer onboarding                                                    | Current permitted moderators/operators                       | ADMIN / ADMIN    | I; optional E later                                                                                  |
+| `admin.trainer.review.required`               | Trainer onboarding                                                    | Current permitted moderators/operators                       | ACCOUNT / ADMIN  | I; optional E later                                                                                  |
 | `admin.billing.approval.requested`            | Billing [#542](https://github.com/sauron9521/gym-platform/issues/542) | Current authorized Super Admin(s), filtered on read/delivery | ADMIN / ADMIN    | I via [#543](https://github.com/sauron9521/gym-platform/issues/543)                                  |
 | `admin.billing.approval.resolved`             | Billing                                                               | Proposal owner, subject to current access                    | ADMIN / ADMIN    | I via #543                                                                                           |
 | Marketing/news                                | Future campaign module                                                | Only explicit, revocable marketing opt-in                    | MARKETING / USER | **Deferred; no producer now**                                                                        |
@@ -197,5 +197,32 @@ flows are unchanged, including the narrow action-required quiet-hours
 exception.
 
 Separate ADMIN-scope pending review fanout and current-permission Inbox
-access remain N09b. No privilege expansion, admin API or new security
-email path is introduced by this slice. #572 stays open.
+access are implemented in N09b below. No privilege expansion or new security
+email path is introduced. #572 stays open until remaining verification.
+
+## N09b: pending-review Admin Inbox (#572)
+
+New trainer applications publish `admin.trainer.review.required` in
+the creation transaction, with the existing aggregate-only v1 contract
+and key `trainer-application:<applicationId>:admin.trainer.review.required:v1`.
+Editing the pending note does not publish a new event. The dispatcher
+validates the source owner and creation time, rechecks pending status and
+applicant eligibility, and fans out atomically to currently active,
+non-deleted ADMIN accounts in the validated operator allowlist with
+`admin.accounts.manage`. Invalid or empty allowlists fail closed.
+The allowlist is bounded by the existing 20-ID configuration policy.
+Replay preserves read state; conflicts dead-letter before inserting
+additional records. No retroactive backfill for newly authorized operators.
+
+The stored category is ACCOUNT (existing enum); ADMIN is the independent
+security scope. USER preferences do not apply to these records. The
+separate admin-cookie-only REST API rechecks current operator permission,
+database role/status, recipient identity, source eligibility and expiry
+on every list/count/detail/read operation. Ordinary browser cookies,
+bearer-only requests and foreign Admin origins are rejected. Decided or
+ineligible applications disappear, and foreign notification IDs return
+404 to authorized operators. Permission loss denies all Inbox operations.
+The safe projection contains no applicant ID, notes, review reason,
+resource ID or action link. Read mutations never approve or reject.
+The existing authorized trainer-review queue is the navigation destination
+and remains the source of truth. No Admin email/push or new privilege grants.

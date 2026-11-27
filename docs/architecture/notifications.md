@@ -100,7 +100,15 @@ The response contains id, type, category, templateKey, createdAt and readAt.
 PROGRAM notices additionally expose a typed, currently authorized assignment target.
 No audit IDs, raw payloads or arbitrary navigation links are returned.
 TRAINER and PROGRAM rows require current source state and recipient eligibility on every Inbox operation. Later event types require explicit projections and destination permission
-checks. No separate Admin API is introduced.
+checks. The USER API never includes ADMIN notifications.
+
+N09b adds a separate admin-cookie-only /admin/notifications API with the
+same five Inbox operations and strict limit/cursor/unread query. It requires
+current active ADMIN status and the existing admin.accounts.manage operator
+allowlist on every operation. Pending review alerts use ACCOUNT category
+and ADMIN scope; no new preference channel or privilege is granted.
+The source is the pending eligible trainer application, not the notification.
+No private applicant identifiers or notes are returned.
 
 List defaults to 20 rows, max 50; query fields are limit, cursor, category
 and unread (true/false). Pagination sorts by createdAt DESC, id DESC and

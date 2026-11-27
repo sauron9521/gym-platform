@@ -72,6 +72,17 @@ const trainerReviewEvent = z.strictObject({
   }),
 });
 
+export const adminReviewEventType = 'admin.trainer.review.required' as const;
+const adminReviewEvent = z.strictObject({
+  type: z.literal(adminReviewEventType),
+  schemaVersion: z.literal(1),
+  occurredAt: z.date(),
+  actorUserId: z.uuid(),
+  payload: z.strictObject({
+    aggregate: z.strictObject({ kind: z.literal('TrainerApplication'), id: z.uuid() }),
+  }),
+});
+
 export const inboxEventTypes = [
   'account.security.changed',
   ...trainerEventTypes,
@@ -85,6 +96,7 @@ export const outboxEventSchema = z
     trainerRelationshipEvent,
     programAssignmentEvent,
     trainerReviewEvent,
+    adminReviewEvent,
   ])
   .refine(
     (event) =>
@@ -117,5 +129,7 @@ export function isProgramAssignmentEvent(
 export function isTrainerReviewEvent(
   event: ValidatedOutboxEvent,
 ): event is Extract<ValidatedOutboxEvent, { type: ReviewEventType }> {
-  return event.payload.aggregate.kind === 'TrainerApplication';
+  return (
+    event.type === 'trainer.application.reviewed' || event.type === 'trainer.application.revoked'
+  );
 }
