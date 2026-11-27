@@ -706,7 +706,7 @@ test('dependency-security job is an enforced prerequisite of the protected Quali
   assert.ok(audit, 'Dependency security job must exist');
   assert.match(
     quality,
-    /needs:\n\s+- changes\n\s+- quality-workspaces\n\s+- tooling-contracts\n\s+- prepush-windows\n\s+- web-browser-e2e\n\s+- admin-browser-e2e\n\s+- dependency-security\n\s+- mobile-ios-dev-windows/,
+    /needs:\n\s+- changes\n\s+- quality-workspaces\n\s+- tooling-contracts\n\s+- prepush-windows\n\s+- web-browser-e2e\n\s+- web-docker\n\s+- admin-browser-e2e\n\s+- dependency-security\n\s+- mobile-ios-dev-windows/,
   );
   const admin = yaml.split('  admin-browser-e2e:\n')[1]?.split('\n  landing-browser-e2e:\n')[0];
   assert.ok(admin, 'Admin Chromium job must exist');
