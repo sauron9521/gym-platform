@@ -77,6 +77,8 @@ test('required Quality gate fails closed for API errors and checks expected skip
     TRAINER_DOCKER_RESULT: 'skipped',
     ADMIN_REQUIRED: String(ordinaryApi.adminBrowser),
     ADMIN_E2E_RESULT: 'skipped',
+    ADMIN_DOCKER_REQUIRED: 'false',
+    ADMIN_DOCKER_RESULT: 'skipped',
     DEPS_REQUIRED: 'false',
     SECURITY_RESULT: 'skipped',
     LANDING_REQUIRED: 'false',
@@ -138,6 +140,14 @@ test('required Quality gate fails closed for API errors and checks expected skip
   }
   assert.notEqual(exitStatus({ TRAINER_DOCKER_RESULT: 'success' }), 0);
   assert.notEqual(exitStatus({ TRAINER_REQUIRED: '' }), 0);
+
+  const adminDockerScope = { ADMIN_DOCKER_REQUIRED: 'true' };
+  assert.equal(exitStatus({ ...adminDockerScope, ADMIN_DOCKER_RESULT: 'success' }), 0);
+  for (const invalid of ['failure', 'cancelled', 'skipped', '']) {
+    assert.notEqual(exitStatus({ ...adminDockerScope, ADMIN_DOCKER_RESULT: invalid }), 0);
+  }
+  assert.notEqual(exitStatus({ ADMIN_DOCKER_RESULT: 'success' }), 0);
+  assert.notEqual(exitStatus({ ADMIN_DOCKER_REQUIRED: '' }), 0);
 
   const landingScope = { LANDING_REQUIRED: 'true', LANDING_E2E_RESULT: 'success' };
   assert.equal(exitStatus({ ...landingScope, LANDING_DOCKER_RESULT: 'success' }), 0);

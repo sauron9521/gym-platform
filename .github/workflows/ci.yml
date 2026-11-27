@@ -358,6 +358,24 @@ jobs:
       - name: Smoke trainer capability and session forwarding
         run: node apps/trainer/scripts/docker-smoke.mjs gym-platform-trainer:pilot
 
+  admin-docker:
+    name: Admin Web Docker / Node 24
+    needs: changes
+    if: needs.changes.outputs.admin == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+      - name: Build isolated Admin Web pilot
+        run: docker build -f apps/admin/Dockerfile -t gym-platform-admin:pilot .
+      - name: Smoke Admin session and operator boundaries
+        run: node apps/admin/scripts/docker-smoke.mjs gym-platform-admin:pilot
+
   quality-workspaces:
     name: Quality workspaces / Node 24
     needs: changes
@@ -555,6 +573,7 @@ jobs:
       - landing-browser-e2e
       - landing-docker
       - trainer-docker
+      - admin-docker
       - api-operations
       - api-staging-contracts
       - api-readiness
@@ -576,6 +595,8 @@ jobs:
           WEB_REQUIRED: ${{ needs.changes.outputs.web }}
           ADMIN_REQUIRED: ${{ needs.changes.outputs.admin_browser }}
           ADMIN_E2E_RESULT: ${{ needs.admin-browser-e2e.result }}
+          ADMIN_DOCKER_REQUIRED: ${{ needs.changes.outputs.admin }}
+          ADMIN_DOCKER_RESULT: ${{ needs.admin-docker.result }}
           DEPS_REQUIRED: ${{ needs.changes.outputs.deps }}
           WINDOWS_RESULT: ${{ needs.prepush-windows.result }}
           WEB_E2E_RESULT: ${{ needs.web-browser-e2e.result }}
@@ -627,6 +648,12 @@ jobs:
           else
             test "$ADMIN_REQUIRED" = false
             test "$ADMIN_E2E_RESULT" = skipped
+          fi
+          if [ "$ADMIN_DOCKER_REQUIRED" = true ]; then
+            test "$ADMIN_DOCKER_RESULT" = success
+          else
+            test "$ADMIN_DOCKER_REQUIRED" = false
+            test "$ADMIN_DOCKER_RESULT" = skipped
           fi
           if [ "$DEPS_REQUIRED" = true ]; then
             test "$SECURITY_RESULT" = success
