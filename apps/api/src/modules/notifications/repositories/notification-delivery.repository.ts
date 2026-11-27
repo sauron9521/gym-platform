@@ -150,6 +150,14 @@ export async function planNotificationEmail(
   tx: Prisma.TransactionClient,
   notificationId: string,
 ): Promise<'planned' | 'existing' | 'ineligible'> {
+  // Serialize planning with retention using the original durable event row.
+  // The dispatcher already holds this lock; direct planning takes it first.
+  const [event] = await tx.$queryRaw<{ emailRetiredAt: Date | null }[]>`
+    SELECT e.email_retired_at AS "emailRetiredAt"
+    FROM outbox_events e JOIN notifications n ON n.event_id = e.id
+    WHERE n.id = ${notificationId} FOR UPDATE OF e
+  `;
+  if (event?.emailRetiredAt) return 'existing';
   const now = await databaseNow(tx);
   const eligible = await emailEligibility(tx, notificationId, now);
   if (eligible.decision === 'denied') return 'ineligible';

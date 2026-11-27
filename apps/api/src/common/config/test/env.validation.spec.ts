@@ -32,6 +32,7 @@ describe('validateEnv', () => {
     expect(env.ENABLE_OPENAPI).toBe(false);
     expect(env.NOTIFICATION_DISPATCH_ENABLED).toBe(false);
     expect(env.NOTIFICATION_EMAIL_ENABLED).toBe(false);
+    expect(env.NOTIFICATION_RETENTION_MODE).toBe('off');
     expect(env.LOG_LEVEL).toBe('log');
     expect(env.REDIS_URL).toBeUndefined();
     expect(env.TRUSTED_PROXY_CIDRS).toBeUndefined();
@@ -63,6 +64,16 @@ describe('validateEnv', () => {
       expect(() => validateEnv({ ...validDev, ...extra })).toThrow(
         'Invalid environment configuration',
       );
+  });
+
+  it('requires explicit valid notification retention mode', () => {
+    for (const mode of ['off', 'preview', 'apply'] as const)
+      expect(
+        validateEnv({ ...validDev, NOTIFICATION_RETENTION_MODE: mode }).NOTIFICATION_RETENTION_MODE,
+      ).toBe(mode);
+    expect(() => validateEnv({ ...validDev, NOTIFICATION_RETENTION_MODE: 'true' })).toThrow(
+      'Invalid environment configuration',
+    );
   });
 
   it('accepts bounded PostgreSQL pool settings from environment strings', () => {

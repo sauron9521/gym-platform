@@ -11,6 +11,8 @@ import { OutboxDispatchService } from './services/outbox-dispatch.service.js';
 
 import { NotificationEmailSender } from './delivery/notification-email.sender.js';
 import { NotificationEmailDispatchService } from './services/notification-email-dispatch.service.js';
+import { NotificationRetentionRepository } from './repositories/notification-retention.repository.js';
+import { NotificationRetentionService } from './services/notification-retention.service.js';
 import { NotificationDeliveryRepository } from './repositories/notification-delivery.repository.js';
 
 import { AdminNotificationInboxRepository } from './repositories/admin-notification-inbox.repository.js';
@@ -27,6 +29,8 @@ import { AdminNotificationInboxService } from './services/admin-notification-inb
     OutboxDispatchRepository,
     OutboxDispatchService,
     NotificationDeliveryRepository,
+    NotificationRetentionRepository,
+    NotificationRetentionService,
     NotificationEmailSender,
     NotificationEmailDispatchService,
     AdminNotificationInboxRepository,
