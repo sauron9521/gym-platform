@@ -298,3 +298,15 @@ fresh scoped evidence and lifecycle cleanup before activation. Pending
 inventory is not proof of actual delivery, especially the iOS interval
 serialization. See the [Mobile reconciliation design](../../apps/mobile/docs/push-notification-design.md#n14c--native-reconciliation-primitive-342)
 for proposed bounds, error semantics and outstanding native gates.
+
+## N14d — fresh bounded reminder evidence (#342)
+
+Mobile prepares an owner-scoped reminder plan from actual GET responses,
+not cached or optimistic state. Reuse existing planned workout summary
+filters with one bounded page to avoid offset pagination drift. The
+short-lived preparation fence observes TanStack Query mutation and
+cache changes, connection, focus and account epoch. Invalidated evidence
+must not authorize scheduling. No runtime subscription, scheduler
+activation, new API endpoint or dependency is introduced. See the
+[Mobile evidence boundary](../../apps/mobile/docs/push-notification-design.md#n14d--fresh-reminder-evidence-342)
+for provisional bounds and limits of remote/offline reconciliation.

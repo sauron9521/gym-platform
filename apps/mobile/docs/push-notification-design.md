@@ -171,3 +171,35 @@ bounded workout snapshot acquisition and generation fencing, then logout,
 account switch, resume and revocation cleanup. Actual Android/iOS timing,
 permission/channel behavior, cancellation reliability and device-offline
 limitations remain mandatory #348/#349 acceptance gates.
+
+## N14d — fresh reminder evidence (#342)
+
+The unwired preparation service reads current OS permission, then the
+owner-fenced notification settings GET and a single planned workout
+summary page. It uses the existing /workouts API with status PLANNED,
+scheduledAtAsc, inclusive scheduled bounds and limit 100. The provisional
+horizon is seven elapsed days from the preparation anchor. Reject any
+overflow, partial/malformed metadata, foreign owner, duplicate ID,
+nonplanned status, invalid timestamp or out-of-range/unsorted row.
+Strip all unrelated workout fields. One page avoids cross-page offset
+drift but does not guarantee a transactionally consistent snapshot
+across settings and workout reads or against remote edits.
+
+No cached settings, optimistic state or cached workout list is treated
+as proof. The plan fence expires after 30 seconds, and is permanently
+invalidated by account epoch changes, relevant query cache success,
+invalidation/removal, local mutation admission, backgrounding, offline
+transition or caller abort. Reuse existing TanStack Query subscriptions
+and scoped API; no new event bus. Any local mutation is conservatively
+treated as possible evidence change. A future coordinator must dispose
+the fence after use, reacquire evidence after mutation settlement and
+serialize cancellation with reconciliation. This slice does not mount
+the coordinator, schedule notifications or perform periodic reads.
+
+Seven days, 100 rows and 30 seconds are proposed conservative bounds;
+overflow blocks rather than truncates. Concurrent remote edits can
+still occur after a successful read; an OS reminder cannot be revoked
+by a server while the device is offline or the app is not running.
+No freshness guarantee beyond the local evidence fence is implied.
+LN05 will handle lifecycle wiring and cancellation, with activation
+still gated on real Android/iOS QA (#348/#349).

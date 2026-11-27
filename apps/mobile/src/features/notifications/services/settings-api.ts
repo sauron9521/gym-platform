@@ -1,10 +1,11 @@
 import type { paths } from '@gym/api-client';
 import { onlineManager, queryOptions } from '@tanstack/react-query';
 import { parseNotificationSettings } from '../lib/settings-contract';
-export type { NotificationSettings } from '../lib/settings-contract';
 import { accountQueryKeys } from '@/shared/api/query-client';
 import { MobileSessionExpiredError, mobileReadError } from '@/shared/api/api-error-policy';
 import { assertInboxCurrent, type InboxScope } from './inbox-api';
+
+export type { NotificationSettings } from '../lib/settings-contract';
 
 const path = '/users/me/notification-settings' as const;
 type Resource = paths[typeof path];
@@ -28,13 +29,16 @@ async function confirmed(scope: InboxScope, status: number, data: unknown, signa
 }
 const headers = (scope: InboxScope) => ({ 'x-notification-owner': scope.ownerId });
 
+/** Fresh scoped GET, also used by the reminder preparation boundary. */
+export async function readNotificationSettings(scope: InboxScope, signal: AbortSignal) {
+  const result = await apiFor(scope, signal).GET(path, { headers: headers(scope), signal });
+  return confirmed(scope, result.response.status, result.data, signal);
+}
+
 export function notificationSettingsOptions(scope: InboxScope) {
   return queryOptions({
     queryKey: accountQueryKeys.notificationSettings(scope.ownerId),
-    queryFn: async ({ signal }) => {
-      const result = await apiFor(scope, signal).GET(path, { headers: headers(scope), signal });
-      return confirmed(scope, result.response.status, result.data, signal);
-    },
+    queryFn: ({ signal }) => readNotificationSettings(scope, signal),
     retry: false,
     staleTime: 0,
     gcTime: 0,

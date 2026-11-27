@@ -152,3 +152,22 @@ test('native reminder reconciliation is prepared but not connected to applicatio
     );
   }
 });
+
+test('fresh reminder evidence preparation remains unwired until account lifecycle is ready', () => {
+  const preparation = read('../src/features/notifications/model/prepare-local-reminders.ts');
+  const snapshot = read('../src/features/notifications/services/reminder-snapshot.ts');
+  assert.match(preparation, /readNotificationSettings/);
+  assert.match(preparation, /readReminderWorkouts/);
+  assert.match(snapshot, /sort: 'scheduledAtAsc'/);
+  assert.doesNotMatch(
+    preparation,
+    /reconcileNativeReminders|openNativeReminderPort|scheduleNotificationAsync/,
+  );
+  for (const file of [
+    '../src/app/_layout.tsx',
+    '../src/features/auth/model/auth-context.tsx',
+    '../src/features/notifications/ui/notification-settings-panel.tsx',
+  ]) {
+    assert.doesNotMatch(read(file), /prepareLocalReminders/);
+  }
+});

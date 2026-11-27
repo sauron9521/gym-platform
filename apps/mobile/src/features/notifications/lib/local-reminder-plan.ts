@@ -15,7 +15,7 @@ const workoutSchema = z.object({
 type BlockReason = 'scope' | 'permission' | 'snapshot' | 'settings' | 'consent';
 export type ReminderPlan =
   | { kind: 'blocked'; reason: BlockReason }
-  | { kind: 'ready'; reminders: ReadonlyArray<{ workoutId: string; dueAt: string }> };
+  | { kind: 'ready'; reminders: readonly { workoutId: string; dueAt: string }[] };
 
 // Proposed conservative per-installation ceiling, not an enabled OS policy.
 // Final lifecycle implementation must also account for other pending requests.
@@ -51,7 +51,7 @@ export function planLocalReminders(input: {
   const rows = z.array(workoutSchema).max(1000).safeParse(input.workouts);
   if (!rows.success) return blocked('snapshot');
   const seen = new Set<string>();
-  const reminders: Array<{ workoutId: string; dueAt: string }> = [];
+  const reminders: { workoutId: string; dueAt: string }[] = [];
   for (const row of rows.data) {
     const scheduledAt = parseInstant(row.scheduledAt);
     if (row.athleteId !== owner.data || seen.has(row.id.toLowerCase()) || !scheduledAt)
