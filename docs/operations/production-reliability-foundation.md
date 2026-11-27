@@ -35,8 +35,9 @@ session-level advisory lock connection.
 
 Measure pool waits/saturation, PostgreSQL active/idle connections, query
 latency and HTTP 5xx/429 under representative read/write load before changing
-capacity. Live pool gauges, slow-query instrumentation and thresholds remain
-follow-up evidence (#316); no speculative indexes or PgBouncer.
+capacity. Request-scoped driver-call timing is available below. Live pool gauges,
+measured slow-query thresholds and targeted indexes remain follow-up
+evidence (#316); no speculative indexes or PgBouncer.
 
 ## Redis and dependency health
 
@@ -85,3 +86,44 @@ Retain #922/#923 pending deployment-specific budget and remaining
 multi-instance scenarios (including write idempotency and storage).
 Actual staging, restore and rollback evidence remains in #351; Beta
 readiness and explicit approval remain #352.
+
+## Request-scoped database timing (#316)
+
+The HTTP completion and abort logs now include five fixed numeric
+fields, correlated with the existing server-generated request ID:
+
+| Field                  | Meaning                                                                  |
+| ---------------------- | ------------------------------------------------------------------------ |
+| databaseCallsStarted   | Adapter queryRaw/executeRaw calls started while the HTTP scope is active |
+| databaseCallsCompleted | Such calls settled before the response finished or closed                |
+| databaseCallsFailed    | Completed calls that rejected                                            |
+| databaseCallTotalMs    | Sum of completed adapter call wall times, rounded to 0.01 ms             |
+| databaseCallMaxMs      | Longest completed adapter call wall time, rounded to 0.01 ms             |
+
+Use Node AsyncLocalStorage to carry only a fixed-size accumulator;
+instrument the installed PrismaPg adapter's queryable methods on the
+pool adapter and returned transaction. There is no global SQL-event
+correlation, SQL/parameter/result/error inspection, new log event,
+request ID metric label, or change to the existing HTTP response.
+Unscoped cron and detached operations after response settlement are
+not included. The response snapshot is immutable after settlement.
+The adapter contract must be regression-tested when Prisma is upgraded.
+
+These are diagnostic **driver-call timings**, not SQL statement counts,
+PostgreSQL execution-plan timings or a complete DB trace. Calls can
+include pool acquisition, conversion and transaction control such as
+COMMIT; initial connection/BEGIN/isolation setup, direct pg clients,
+migration scripts and connection disposal are outside the measured
+methods. Parallel calls can make the sum larger than HTTP wall time.
+A shared single-flight operation is attributed to the async scope
+that actually starts it, not every waiting request. In-flight calls
+that have not settled at disconnect are counted as started only.
+Zero counts do not prove that a request performed no indirect DB work.
+
+The longest call identifies candidates for investigation alongside
+the existing safe request/exception logs; no raw statement fingerprint
+or guessed slow-query threshold is emitted. Do not use these fields as
+an alerting SLO or derive indexes from them alone. Measure overhead,
+pool saturation, query templates and EXPLAIN before/after on the same
+synthetic staging fixture. No indexes, additional telemetry libraries,
+new metric cardinality or production activation decision in this slice.

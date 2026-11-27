@@ -3,6 +3,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import type { NestMiddleware } from '@nestjs/common';
 import type { NextFunction, Request, Response } from 'express';
 import { HttpMetricsRegistry } from '../http-metrics/http-metrics.registry.js';
+import { createRequestDatabaseTiming } from './request-database-timing.js';
 
 /** Symbols prevent clients from overriding server-generated correlation IDs. */
 const REQUEST_ID = Symbol('gym-api.request-id');
@@ -24,6 +25,7 @@ export class RequestContextMiddleware implements NestMiddleware {
     (request as RequestWithId)[REQUEST_ID] = requestId;
     response.setHeader('X-Request-ID', requestId);
     const start = process.hrtime.bigint();
+    const databaseTiming = createRequestDatabaseTiming();
     // Instrument the entire request lifetime without retaining request details.
     // Never count our own scraper as traffic or as an aborted response.
     // Express routes are case-insensitive and allow one trailing slash by
@@ -44,6 +46,7 @@ export class RequestContextMiddleware implements NestMiddleware {
       const route = typeof path === 'string' ? path : 'unmatched';
 
       this.logger.log('HTTP request completed', {
+        ...databaseTiming.finish(),
         event: 'http.request.completed',
         requestId,
         method: request.method,
@@ -62,6 +65,7 @@ export class RequestContextMiddleware implements NestMiddleware {
       const path: unknown = request.route?.path;
       const route = typeof path === 'string' ? path : 'unmatched';
       this.logger.warn('HTTP response closed before finish', {
+        ...databaseTiming.finish(),
         event: 'http.request.aborted',
         requestId,
         method: request.method,
@@ -70,6 +74,6 @@ export class RequestContextMiddleware implements NestMiddleware {
       });
     });
 
-    next();
+    databaseTiming.run(next);
   }
 }

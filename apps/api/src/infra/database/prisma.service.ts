@@ -1,6 +1,6 @@
 import { Inject, Injectable, Logger, OnApplicationShutdown, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { PrismaPg } from '@prisma/adapter-pg';
+import { RequestTimedPrismaPg } from './request-timed-prisma-pg.js';
 import { PrismaClient } from '#prisma/client';
 import type { AppConfigService } from '#src/common/config/app-config.types';
 
@@ -9,7 +9,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnAppli
   private readonly logger = new Logger(PrismaService.name);
 
   constructor(@Inject(ConfigService) private readonly config: AppConfigService) {
-    const adapter = new PrismaPg({
+    const adapter = new RequestTimedPrismaPg({
       connectionString: config.getOrThrow('DATABASE_URL'),
       max: config.get('DATABASE_POOL_MAX') ?? 10,
       connectionTimeoutMillis: config.get('DATABASE_POOL_CONNECT_TIMEOUT_MS') ?? 5_000,
