@@ -181,3 +181,56 @@ test('manifest guard retains missing names and application dependencies in every
     }
   });
 });
+
+test('date library manifests must use the single datetime owner, including npm aliases', () => {
+  withFixture(({ root, web, domain }) => {
+    workspace(root, 'packages', 'datetime', '@gym/datetime', {
+      'date-fns': '4.4.0',
+      '@date-fns/tz': '1.5.0',
+    });
+    assert.deepEqual(checkWorkspaceBoundaries(root), []);
+    writeFileSync(
+      join(web, 'package.json'),
+      JSON.stringify({
+        name: '@gym/web',
+        dependencies: { 'date-fns': '4.4.0', clock: 'npm:dayjs@1.11.0' },
+      }),
+    );
+    writeFileSync(
+      join(domain, 'package.json'),
+      JSON.stringify({
+        name: '@gym/domain',
+        devDependencies: { luxon: '3.7.2' },
+        peerDependencies: { '@date-fns/utc': '2.1.1' },
+        optionalDependencies: { moment: '2.30.1' },
+      }),
+    );
+    writeFileSync(
+      join(root, 'package.json'),
+      JSON.stringify({ name: 'fixture', devDependencies: { 'date-fns-tz': '3.2.0' } }),
+    );
+    const errors = checkWorkspaceBoundaries(root);
+    assert.equal(errors.length, 6, errors.join('\n'));
+    for (const name of ['date-fns', 'clock', 'luxon', '@date-fns/utc', 'moment', 'date-fns-tz'])
+      assert.ok(
+        errors.some((message) => message.includes('date library ' + name + ' ')),
+        errors.join('\n'),
+      );
+  });
+});
+
+test('datetime cannot add alternate date libraries or workspace dependencies', () => {
+  withFixture(({ root }) => {
+    workspace(root, 'packages', 'datetime', '@gym/datetime', {
+      'date-fns': '4.4.0',
+      luxon: '3.7.2',
+      '@gym/domain': 'workspace:*',
+    });
+    const errors = checkWorkspaceBoundaries(root);
+    assert.equal(errors.length, 2, errors.join('\n'));
+    assert.ok(errors.some((message) => message.includes('date library luxon')));
+    assert.ok(
+      errors.some((message) => message.includes('must not depend on workspace @gym/domain')),
+    );
+  });
+});

@@ -144,3 +144,101 @@ test('dependency-cruiser accepts root composition and public feature contracts',
   assert.ifError(result.error);
   assert.equal(result.status, 0, result.stdout + result.stderr);
 });
+
+test('datetime owner may import date-fns and other workspaces may use its public API', () => {
+  const result = cruise({
+    'packages/datetime/src/index.js':
+      "import { addDays } from 'date-fns/addDays'; export { addDays };",
+    'apps/web/src/index.js': "import { addDays } from '@gym/datetime';",
+    'apps/web/src/native.js': 'export const now = new Date();',
+  });
+  assert.ifError(result.error);
+  assert.equal(result.status, 0, result.stdout + result.stderr);
+});
+
+test('datetime ownership rejects direct literal imports, reexports and dynamic imports of date libraries', () => {
+  const result = cruise({
+    'apps/web/src/index.js': "import { addDays } from 'date-fns/addDays';",
+    'apps/mobile/app/index.js': "import { TZDate } from '@date-fns/tz';",
+    'apps/api/src/test.ts': "export type { DateTime } from 'luxon';",
+    'apps/trainer/test/date.test.js': "const lib = import('dayjs');",
+    'apps/admin/src/date.js': "const lib = require('moment-timezone');",
+    'packages/domain/src/index.js': "import { Temporal } from '@js-temporal/polyfill';",
+    'packages/shared/src/date.js': "import 'date-fns-tz';",
+  });
+  assert.ifError(result.error);
+  assert.notEqual(result.status, 0, result.stdout + result.stderr);
+  for (const source of [
+    'apps/web/src/index.js',
+    'apps/mobile/app/index.js',
+    'apps/api/src/test.ts',
+    'apps/trainer/test/date.test.js',
+    'apps/admin/src/date.js',
+    'packages/domain/src/index.js',
+    'packages/shared/src/date.js',
+  ]) {
+    assert.ok(result.stdout.includes(source), result.stdout + result.stderr);
+  }
+  assert.match(result.stdout, /datetime-library-owner/);
+});
+
+test('datetime ownership also rejects installed direct library imports', () => {
+  const result = cruise({
+    'apps/web/src/index.js': "import { addDays } from 'date-fns/addDays';",
+    'apps/web/package.json': JSON.stringify({
+      name: '@gym/web',
+      type: 'module',
+      dependencies: { 'date-fns': '4.4.0' },
+    }),
+    'apps/web/node_modules/date-fns/package.json': JSON.stringify({
+      name: 'date-fns',
+      type: 'module',
+      version: '4.4.0',
+      exports: { './addDays': './addDays.js' },
+    }),
+    'apps/web/node_modules/date-fns/addDays.js': 'export const addDays = () => {};',
+  });
+  assert.ifError(result.error);
+  assert.notEqual(result.status, 0, result.stdout + result.stderr);
+  assert.match(result.stdout, /datetime-library-owner/);
+  assert.match(result.stdout, /node_modules\/date-fns\/addDays.js/);
+});
+
+test('datetime is a leaf and cannot import another shared workspace', () => {
+  const result = cruise({
+    'packages/datetime/src/index.js': "import '../../domain/src/index.js';",
+    'packages/domain/src/index.js': 'export const value = 1;',
+  });
+  assert.ifError(result.error);
+  assert.notEqual(result.status, 0, result.stdout + result.stderr);
+  assert.match(result.stdout, /datetime-no-outward-workspace-imports/);
+});
+
+test('datetime ownership rejects imports resolved from hoisted root node_modules', () => {
+  const result = cruise({
+    'apps/web/src/index.js': "import { addDays } from 'date-fns/addDays';",
+    'apps/web/package.json': JSON.stringify({ name: '@gym/web', type: 'module' }),
+    'node_modules/date-fns/package.json': JSON.stringify({
+      name: 'date-fns',
+      type: 'module',
+      version: '4.4.0',
+      exports: { './addDays': './addDays.js' },
+    }),
+    'node_modules/date-fns/addDays.js': 'export const addDays = () => {};',
+  });
+  assert.ifError(result.error);
+  assert.notEqual(result.status, 0, result.stdout + result.stderr);
+  assert.match(result.stdout, /datetime-library-owner/);
+  assert.match(result.stdout, /node_modules\/date-fns\/addDays.js/);
+});
+
+test('datetime itself cannot import competing date libraries', () => {
+  const result = cruise({
+    'packages/datetime/src/index.js': "import 'luxon'; import '@date-fns/utc';",
+    'packages/datetime/test/index.js': "import 'dayjs';",
+  });
+  assert.ifError(result.error);
+  assert.notEqual(result.status, 0, result.stdout + result.stderr);
+  assert.match(result.stdout, /datetime-no-competing-library/);
+  assert.match(result.stdout, /packages\/datetime\/test\/index.js/);
+});

@@ -119,8 +119,10 @@ The initial migration preserves existing device-local calendar semantics.
 Named-zone use on physical Hermes devices is not yet accepted; do not
 enable native reminders or install global Intl polyfills speculatively.
 
-DT02 moves month/week arithmetic and calendar grouping to direct Web/Mobile
-consumers of the same public package. Next slices: API timezone/quiet-hour
-policy; elapsed-time reminder lead and native capability verification.
+DT02–DT04 move calendar arithmetic, API timezone/quiet-hour projection
+and analytics windows to the same package. DT05 enforces date library
+ownership in existing manifest and Dependency Cruiser checks. The technical
+package is a leaf; no direct competing library imports or dependencies.
+Native capability verification and reminder scheduling remain separate gates.
 Keep session TTL, monotonic deadlines and SQL retention time sources
 unchanged. See [datetime adoption inventory](datetime-adoption.md).

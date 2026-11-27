@@ -26,6 +26,11 @@ timezone mutation. Uses date-fns 4.4.0 and @date-fns/tz 1.5.0.
 - `rollingDaysStart`: exactly N elapsed 24-hour periods before the anchor.
   Both reject invalid internal period inputs and return fresh dates.
 
+Import this public package rather than date-fns directly in consumers.
+Keep date library dependencies here; the existing CI manifest and graph
+checks enforce ownership of the approved library family.
+See the repository [adoption and time-contract rules](../../docs/architecture/datetime-adoption.md).
+
 Business rules belong in @gym/domain; timezone preferences and consent
 remain API-owned. This package does not schedule work, resolve ambiguous
 wall-clock input, authorize actions or implement retry/lease deadlines.

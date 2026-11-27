@@ -7,6 +7,38 @@
 module.exports = {
   forbidden: [
     {
+      name: 'datetime-library-owner',
+      severity: 'error',
+      comment: 'Use @gym/datetime instead of direct date library imports.',
+      from: {
+        path: '^(?:apps|packages|tooling)/[^/]+/(?:src|app|test|tests|e2e)/',
+        pathNot: '^packages/datetime/',
+      },
+      to: {
+        // Match resolved node_modules paths as well as unresolved specifiers.
+        path: '(?:^|(?:^|/)node_modules/)(?:date-fns(?:-tz)?|@date-fns/[^/]+|luxon|dayjs|moment(?:-timezone)?|@js-temporal/polyfill)(?:/|$)',
+      },
+    },
+    {
+      name: 'datetime-no-competing-library',
+      severity: 'error',
+      comment: 'The approved datetime implementation uses only date-fns and @date-fns/tz.',
+      from: { path: '^packages/datetime/(?:src|test|tests)/' },
+      to: {
+        path: '(?:^|(?:^|/)node_modules/)(?:date-fns-tz|@date-fns/(?!tz(?:/|$))[^/]+|luxon|dayjs|moment(?:-timezone)?|@js-temporal/polyfill)(?:/|$)',
+      },
+    },
+    {
+      name: 'datetime-no-outward-workspace-imports',
+      severity: 'error',
+      comment: 'Datetime is a leaf technical package; domain and apps depend on it.',
+      from: { path: '^packages/datetime/src/' },
+      to: {
+        path: '^(?:apps|packages|tooling)/[^/]+/(?:src|app|test|tests|e2e)/',
+        pathNot: '^packages/datetime/',
+      },
+    },
+    {
       name: 'no-cross-app-source-imports',
       severity: 'error',
       comment: 'Applications must not import source code from other applications.',
@@ -74,9 +106,10 @@ module.exports = {
     // Analyze type-only imports before TypeScript compilation removes them.
     tsPreCompilationDeps: true,
     doNotFollow: { path: 'node_modules' },
+    // Keep external dependency edges visible; doNotFollow stops traversal of node_modules.
     // Source tests remain in scope: the legacy boundary guard scans them too.
     exclude: {
-      path: '(^|/)(?:node_modules|\\.next|\\.expo|dist|build|coverage|generated)(/|$)',
+      path: '(^|/)(?:\\.next|\\.expo|dist|build|coverage|generated)(/|$)',
     },
   },
 };
