@@ -131,3 +131,43 @@ on account switch; no account-scoped delivery is granted by its result.
 If permission is permanently denied, the system settings must be used.
 Channel availability and native scheduling reconciliation remain separate
 gates. No physical Android/iOS acceptance is implied by JS tests/exports.
+
+## N14c — native reconciliation primitive (#342)
+
+This slice provides an unwired native port and reconciler, not a running
+scheduler. It accepts a fresh scoped plan from the future coordinator.
+It reads actual pending requests, removes obsolete managed identifiers,
+verifies cancellation, schedules missing candidates, and verifies the
+final inventory. Only the reserved ovranto.workout-reminder namespace
+is cancelled; unrelated OS requests are preserved. A single JS process
+lock prevents overlapping reconciliation and cleanup. Busy is not success:
+the future coordinator must revoke the generation fence and retry cleanup
+after an in-flight operation settles.
+
+Identifiers are deterministic SHA-256 digests of version, account, workout,
+due instant and localized generic copy, using existing expo-crypto. The OS
+content has no account/workout identifiers or private workout data. This is
+pseudonymization, not a cryptographic authorization boundary. The proposed
+32 managed / 48 total pending budget reserves capacity for other requests.
+A five-second admission margin avoids immediate presentation of expired
+requests. Round up to whole seconds because iOS DATE truncates milliseconds;
+skip if rounding crosses a minute boundary (quiet-hour classification).
+These conservative defaults are provisional until device QA.
+
+Use one-shot DATE and bestEffort delivery, never exact-alarm authorization.
+Require fresh OS grant and a usable Android channel (no DND bypass).
+The Android serializer reports the absolute timestamp, channel and delivery;
+iOS reports a non-repeating interval, not the original absolute deadline.
+Its deterministic identifier binds the intended instant, but listing
+cannot independently verify the actual fire time. Native acceptance is not
+delivery confirmation. An ambiguous error attempts managed cancellation,
+never blindly replays scheduling. Cancellation failure is explicitly a
+failure, not proof that pending notifications are gone.
+
+The port is not imported by runtime screens/providers yet. No permission
+prompt, token, background task, foreground handler, listener, automatic
+scheduling or logout integration is introduced here. Next implement fresh
+bounded workout snapshot acquisition and generation fencing, then logout,
+account switch, resume and revocation cleanup. Actual Android/iOS timing,
+permission/channel behavior, cancellation reliability and device-offline
+limitations remain mandatory #348/#349 acceptance gates.

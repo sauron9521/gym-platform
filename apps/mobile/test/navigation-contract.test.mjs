@@ -128,3 +128,27 @@ test('native permission foundation does not enable scheduling, token registratio
   assert.match(model, /requestNativeDevicePermission\(current, channelName\)/);
   assert.match(model, /await permission.refetch\(\)/);
 });
+
+test('native reminder reconciliation is prepared but not connected to application lifecycle', () => {
+  const adapter = read('../src/features/notifications/lib/native-reminder-port.ts');
+  const reconcile = read('../src/features/notifications/lib/native-reminder-reconciliation.ts');
+  assert.match(adapter, /expo-notifications\/build\/scheduleNotificationAsync/);
+  assert.match(adapter, /delivery: 'bestEffort'/);
+  assert.doesNotMatch(adapter, /(?:from\s+|import\()\s*['"]expo-notifications['"]/);
+  assert.doesNotMatch(
+    adapter,
+    /getExpoPushTokenAsync|getDevicePushTokenAsync|requestExactAlarmPermissionsAsync|registerTaskAsync|cancelAllScheduledNotificationsAsync/,
+  );
+  assert.doesNotMatch(reconcile, /cancelAllScheduledNotificationsAsync/);
+  for (const file of [
+    '../src/app/_layout.tsx',
+    '../src/app/profile/settings.tsx',
+    '../src/features/notifications/model/use-notification-settings.ts',
+    '../src/features/notifications/ui/notification-settings-panel.tsx',
+  ]) {
+    assert.doesNotMatch(
+      read(file),
+      /openNativeReminderPort|reconcileNativeReminders|cancelManagedNativeReminders/,
+    );
+  }
+});
