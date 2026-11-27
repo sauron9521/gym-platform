@@ -9,6 +9,8 @@ This index separates dated observations from current operating procedures. Revie
 | [Custom scripts replacement audit](custom-scripts-replacement-audit.md)        | 2026-11-24; pinned top-level script inventory and tool candidates            | Starting point for incremental evaluations, not current script counts or approval to replace gates |
 | [Turbo affected shadow evidence](turbo-affected-shadow-evidence-2026-11-24.md) | 2026-11-24; observed selector-versus-task-graph comparison                   | Preserve the recorded NO-GO for direct replacement; require new parity evidence for proposals      |
 
+[Platform audit and delivery reconciliation — 2026-11-27](ovranto-platform-audit-2026-11-27.md) — pinned current-platform review, milestone reconciliation and proposed next delivery sequence.
+
 ## Living guides and evidence in owning domains
 
 - [Development tooling diagnostics and follow-up runs](../development/tooling-audit.md) — repeatable commands and subsequent Knip/Turbo evidence; kept with the development workflow rather than duplicated here.
