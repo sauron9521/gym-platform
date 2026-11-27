@@ -137,7 +137,11 @@ describe('Optional email delivery state machine (PostgreSQL; no provider)', () =
     const claimed = a ?? b;
     expect([a, b].filter(Boolean)).toHaveLength(1);
     if (claimed?.kind !== 'claimed') throw new Error('Expected a claim');
-    expect(await first.beginSend(claimed.claim)).toBe('ready');
+    expect(await first.beginSend(claimed.claim)).toMatchObject({
+      kind: 'ready',
+      email: owner + '@example.test',
+      locale: 'uk',
+    });
     expect(await second.beginSend(claimed.claim)).toBe('lease_lost');
     expect(await second.complete(claimed.claim, 'accepted')).toBe('recorded');
     expect(await first.complete(claimed.claim, 'accepted')).toBe('lease_lost');
@@ -235,7 +239,11 @@ describe('Optional email delivery state machine (PostgreSQL; no provider)', () =
     const fresh = await claimFor(notification.id, second);
     expect(fresh.token).not.toBe(stale.token);
     expect(await first.beginSend(stale)).toBe('lease_lost');
-    expect(await second.beginSend(fresh)).toBe('ready');
+    expect(await second.beginSend(fresh)).toMatchObject({
+      kind: 'ready',
+      email: owner + '@example.test',
+      locale: 'uk',
+    });
     await prisma.notificationDelivery.update({
       where: { id: fresh.id },
       data: { leaseUntil: old },
@@ -255,7 +263,11 @@ describe('Optional email delivery state machine (PostgreSQL; no provider)', () =
     await first.planEmail(notification.id);
     for (let attempt = 1; attempt <= DELIVERY_MAX_ATTEMPTS; attempt++) {
       const claim = await claimFor(notification.id);
-      expect(await first.beginSend(claim)).toBe('ready');
+      expect(await first.beginSend(claim)).toMatchObject({
+        kind: 'ready',
+        email: owner + '@example.test',
+        locale: 'uk',
+      });
       expect(await first.complete(claim, 'not_sent_retryable')).toBe('recorded');
       const row = await delivery(notification.id);
       expect(row.attemptCount).toBe(attempt);
@@ -306,7 +318,11 @@ describe('Optional email delivery state machine (PostgreSQL; no provider)', () =
       const notification = await seed();
       await first.planEmail(notification.id);
       const claim = await claimFor(notification.id);
-      expect(await first.beginSend(claim)).toBe('ready');
+      expect(await first.beginSend(claim)).toMatchObject({
+        kind: 'ready',
+        email: owner + '@example.test',
+        locale: 'uk',
+      });
       expect(await first.complete(claim, outcome)).toBe('recorded');
       expect((await delivery(notification.id)).status).toBe(
         outcome === 'unknown' ? 'UNKNOWN' : 'DEAD_LETTER',

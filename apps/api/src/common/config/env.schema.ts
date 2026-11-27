@@ -136,6 +136,10 @@ const baseEnvSchema = z.object({
     .enum(['true', 'false'])
     .default('false')
     .transform((value) => value === 'true'),
+  NOTIFICATION_EMAIL_ENABLED: z
+    .enum(['true', 'false'])
+    .default('false')
+    .transform((value) => value === 'true'),
   HTTP_METRICS_ENABLED: z
     .enum(['true', 'false'])
     .default('false')
@@ -212,6 +216,14 @@ export const envSchema = baseEnvSchema.superRefine((env, ctx) => {
       code: 'custom',
       path: ['HTTP_METRICS_TOKEN'],
       message: 'A random base64url scrape token is required when HTTP metrics are enabled',
+    });
+  }
+  if (env.NOTIFICATION_EMAIL_ENABLED && (!env.NOTIFICATION_DISPATCH_ENABLED || !env.SMTP_URL)) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['NOTIFICATION_EMAIL_ENABLED'],
+      message:
+        'Optional notification email requires enabled dispatch and configured SMTP transport',
     });
   }
   if (env.NODE_ENV !== 'production') return;

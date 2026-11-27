@@ -31,6 +31,7 @@ describe('validateEnv', () => {
     expect(env.DATABASE_POOL_IDLE_TIMEOUT_MS).toBe(10_000);
     expect(env.ENABLE_OPENAPI).toBe(false);
     expect(env.NOTIFICATION_DISPATCH_ENABLED).toBe(false);
+    expect(env.NOTIFICATION_EMAIL_ENABLED).toBe(false);
     expect(env.LOG_LEVEL).toBe('log');
     expect(env.REDIS_URL).toBeUndefined();
     expect(env.TRUSTED_PROXY_CIDRS).toBeUndefined();
@@ -44,6 +45,24 @@ describe('validateEnv', () => {
     expect(() => validateEnv({ ...validDev, NOTIFICATION_DISPATCH_ENABLED: '1' })).toThrow(
       'Invalid environment configuration',
     );
+  });
+
+  it('requires both dispatch opt-in and actual SMTP for optional email', () => {
+    expect(
+      validateEnv({
+        ...validProd,
+        NOTIFICATION_DISPATCH_ENABLED: 'true',
+        NOTIFICATION_EMAIL_ENABLED: 'true',
+      }).NOTIFICATION_EMAIL_ENABLED,
+    ).toBe(true);
+    for (const extra of [
+      { NOTIFICATION_EMAIL_ENABLED: 'true' },
+      { NOTIFICATION_EMAIL_ENABLED: 'true', NOTIFICATION_DISPATCH_ENABLED: 'true' },
+      { NOTIFICATION_EMAIL_ENABLED: '1' },
+    ])
+      expect(() => validateEnv({ ...validDev, ...extra })).toThrow(
+        'Invalid environment configuration',
+      );
   });
 
   it('accepts bounded PostgreSQL pool settings from environment strings', () => {

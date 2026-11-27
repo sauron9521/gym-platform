@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { Injectable } from '@nestjs/common';
+import { z } from 'zod';
 import type { Prisma } from '#prisma/client';
 import { PrismaService } from '#src/infra/database/index';
 import {
@@ -10,6 +11,7 @@ import {
   OPTIONAL_EMAIL_TYPE,
   QUIET_RECHECK_MS,
   type DeliveryOutcome,
+  type EmailDestination,
 } from '../domain/notification-delivery.policy.js';
 import {
   defaultNotificationSettings,
@@ -18,10 +20,17 @@ import {
 } from '../domain/notification-settings.policy.js';
 import { outboxRetryDelayMs } from '../domain/outbox-dispatch.policy.js';
 
-type Claim = { id: string; token: string };
+export type EmailClaim = { id: string; token: string };
 type ClaimedRow = { id: string; status: 'CLAIMED' | 'CANCELLED' | 'UNKNOWN' };
 type Eligibility =
-  { decision: 'allowed' | 'quiet'; consentedAt: Date; expiresAt: Date } | { decision: 'denied' };
+  | ({ decision: 'allowed' | 'quiet'; consentedAt: Date; expiresAt: Date } & EmailDestination)
+  | { decision: 'denied' };
+
+export type EmailAdmission =
+  | ({ kind: 'ready'; remainingMs: number } & EmailDestination)
+  | 'deferred'
+  | 'cancelled'
+  | 'lease_lost';
 
 async function databaseNow(tx: Prisma.TransactionClient): Promise<Date> {
   const [row] = await tx.$queryRaw<
@@ -93,6 +102,8 @@ async function emailEligibility(
   const owner = await tx.user.findUniqueOrThrow({
     where: { id: notification.recipientId },
     select: {
+      email: true,
+      preferredLocale: true,
       profile: { select: { timezone: true } },
       notificationSettings: {
         select: {
@@ -108,6 +119,7 @@ async function emailEligibility(
       },
     },
   });
+  if (!z.email().safeParse(owner.email).success) return { decision: 'denied' };
   const preference = owner.notificationPreferences[0];
   // Do not backfill events created before the current consent epoch.
   if (
@@ -124,36 +136,48 @@ async function emailEligibility(
   if (!settings.success) return { decision: 'denied' };
   const quiet = quietHoursAt(evaluatedAt, owner.profile?.timezone ?? 'UTC', settings.data);
   if (quiet === 'invalid') return { decision: 'denied' };
-  return { decision: quiet, consentedAt: preference.consentedAt, expiresAt };
+  return {
+    decision: quiet,
+    consentedAt: preference.consentedAt,
+    expiresAt,
+    email: owner.email,
+    locale: owner.preferredLocale === 'en' ? 'en' : 'uk',
+  };
+}
+
+// The outbox calls this within its existing Inbox transaction. No SMTP here.
+export async function planNotificationEmail(
+  tx: Prisma.TransactionClient,
+  notificationId: string,
+): Promise<'planned' | 'existing' | 'ineligible'> {
+  const now = await databaseNow(tx);
+  const eligible = await emailEligibility(tx, notificationId, now);
+  if (eligible.decision === 'denied') return 'ineligible';
+  const result = await tx.notificationDelivery.createMany({
+    data: {
+      notificationId,
+      channel: 'EMAIL',
+      destinationKey: EMAIL_DESTINATION,
+      consentedAt: eligible.consentedAt,
+      expiresAt: eligible.expiresAt,
+      availableAt: now,
+    },
+    skipDuplicates: true,
+  });
+  return result.count === 1 ? 'planned' : 'existing';
 }
 
 @Injectable()
 export class NotificationDeliveryRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  // The review producer establishes the authoritative source FK. No caller
-  // is wired in production until the external channel rollout.
-  async planEmail(notificationId: string): Promise<'planned' | 'existing' | 'ineligible'> {
-    return this.prisma.$transaction(async (tx) => {
-      const now = await databaseNow(tx);
-      const eligible = await emailEligibility(tx, notificationId, now);
-      if (eligible.decision === 'denied') return 'ineligible';
-      const result = await tx.notificationDelivery.createMany({
-        data: {
-          notificationId,
-          channel: 'EMAIL',
-          destinationKey: EMAIL_DESTINATION,
-          consentedAt: eligible.consentedAt,
-          expiresAt: eligible.expiresAt,
-          availableAt: now,
-        },
-        skipDuplicates: true,
-      });
-      return result.count === 1 ? 'planned' : 'existing';
-    });
+  async planEmail(notificationId: string) {
+    return this.prisma.$transaction((tx) => planNotificationEmail(tx, notificationId));
   }
 
-  async claimEmail(): Promise<{ kind: 'claimed'; claim: Claim } | { kind: 'terminal' } | null> {
+  async claimEmail(): Promise<
+    { kind: 'claimed'; claim: EmailClaim } | { kind: 'terminal' } | null
+  > {
     const token = randomUUID();
     // Expired SENDING is ambiguous: never turn it back into PENDING.
     const [row] = await this.prisma.$queryRaw<ClaimedRow[]>`
@@ -184,7 +208,11 @@ export class NotificationDeliveryRepository {
       : { kind: 'terminal' };
   }
 
-  private async locked(tx: Prisma.TransactionClient, claim: Claim, status: 'CLAIMED' | 'SENDING') {
+  private async locked(
+    tx: Prisma.TransactionClient,
+    claim: EmailClaim,
+    status: 'CLAIMED' | 'SENDING',
+  ) {
     const rows = await tx.$queryRaw<{ id: string }[]>`
       SELECT id FROM notification_deliveries WHERE id = ${claim.id}
         AND channel = 'EMAIL' AND status = ${status}::"NotificationDeliveryStatus"
@@ -195,9 +223,9 @@ export class NotificationDeliveryRepository {
       : null;
   }
 
-  // A durable admission marker, NOT a provider send. Future adapter must
-  // resolve the current destination and invoke I/O immediately after admission.
-  async beginSend(claim: Claim): Promise<'ready' | 'deferred' | 'cancelled' | 'lease_lost'> {
+  // Return only the freshly verified destination in memory, never persisted.
+  // The caller must invoke the bounded transport immediately after commit.
+  async beginSend(claim: EmailClaim): Promise<EmailAdmission> {
     return this.prisma.$transaction(
       async (tx) => {
         const row = await this.locked(tx, claim, 'CLAIMED');
@@ -231,7 +259,11 @@ export class NotificationDeliveryRepository {
               ...release,
               status: 'PENDING',
               availableAt: new Date(
-                Math.min(row.expiresAt.getTime(), freshNow.getTime() + QUIET_RECHECK_MS),
+                Math.min(
+                  row.expiresAt.getTime(),
+                  eligible.expiresAt.getTime(),
+                  freshNow.getTime() + QUIET_RECHECK_MS,
+                ),
               ),
               lastErrorCode: 'QUIET_HOURS',
             },
@@ -260,13 +292,22 @@ export class NotificationDeliveryRepository {
             lastErrorCode: null,
           },
         });
-        return 'ready';
+        return {
+          kind: 'ready',
+          email: eligible.email,
+          locale: eligible.locale,
+          remainingMs: Math.min(
+            DELIVERY_LEASE_MS,
+            row.expiresAt.getTime() - freshNow.getTime(),
+            eligible.expiresAt.getTime() - freshNow.getTime(),
+          ),
+        };
       },
       { timeout: 10_000 },
     );
   }
 
-  async complete(claim: Claim, outcome: DeliveryOutcome): Promise<'recorded' | 'lease_lost'> {
+  async complete(claim: EmailClaim, outcome: DeliveryOutcome): Promise<'recorded' | 'lease_lost'> {
     return this.prisma.$transaction(async (tx) => {
       const row = await this.locked(tx, claim, 'SENDING');
       if (!row) return 'lease_lost';

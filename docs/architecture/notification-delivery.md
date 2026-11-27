@@ -1,6 +1,6 @@
 # Notifications — delivery, scheduling, failure and security policy
 
-- **Status:** Accepted target policy; PostgreSQL in-app dispatch and external delivery state foundation implemented; transports pending
+- **Status:** Accepted target policy; PostgreSQL in-app dispatch and external delivery state and gated optional SMTP email implemented; Mobile transports pending
 - **Parent:** [#563](https://github.com/sauron9521/gym-platform/issues/563)
 - **Related:** [architecture](notifications.md) · [events](notification-events.md) · [Mobile push safety design](../../apps/mobile/docs/push-notification-design.md)
 
@@ -65,11 +65,11 @@ The email destination is the constant `account-email`, never an email
 address. Mobile Push reserves opaque device UUID destinations; device
 registration, permission and token checks are not implemented here.
 Database checks constrain destination keys, attempts, leases and terminal
-timestamps. No backfill or automatic send scheduler is installed.
+timestamps. No backfill is performed. The N15 optional email scheduler is described below.
 
 The private repository currently supports planning optional email only
 for the documented `trainer.application.reviewed` ACCOUNT/USER event.
-The #572 applicant review producer and Inbox projection are implemented; the email planner remains unwired. Planning
+The #572 applicant review producer and Inbox projection are implemented. N15 wires the planner into the outbox transaction behind the email feature flag. Planning
 and admission re-read the current active, verified account, the owned
 approved/rejected application, notification expiration, current opt-in
 with a valid consent timestamp and timezone/settings. Consent must predate
@@ -93,23 +93,75 @@ State transitions:
   UNKNOWN never auto-retries. A stale token cannot finalize a newer claim.
 - Expired pending deliveries cancel. The provisional lifetime is at most
   24 hours from committed review, bounded by Inbox expiry.
-  The future channel rollout must review this lifetime.
+  The optional email channel retains this provisional lifetime; review during #579.
 
-The repository returns a durable admission marker, not a provider call
-or a guarantee that consent cannot change after commit. The future adapter
-must resolve the current verified destination, minimize the admission-to-send
-window, classify outcomes conservatively, enforce a provider deadline
-within the lease, and address revocation races before activation. No address,
-provider response or free-form error is persisted. Error codes are fixed.
+The repository returns a durable admission marker and the freshly verified
+destination in memory, not a provider call or a guarantee that consent
+cannot change after commit. No address, provider response or free-form
+error is persisted. Error codes are fixed.
 
 Integration tests use actual PostgreSQL and two independent clients,
 with simulated lease expiration and provider outcomes. They prove
 destination uniqueness, fencing, consent/source checks, quiet deferral,
-expiry, bounded retries, UNKNOWN behavior and cascade deletion. The
-existing Inbox and in-app dispatcher now resolve applicant review outcomes. A real transport,
-separate-process crash/restart, live staging, automatic email planning and
-Push/device authorization remain unverified. #569 remains open; channel
-work belongs to #343/#578 and operations/reconciliation to #579.
+expiry, bounded retries, UNKNOWN behavior and cascade deletion.
+Separate-process crash/restart, live staging and Push/device authorization
+remain unverified. #569 remains open; native channel work belongs to #343
+and operations/reconciliation to #579.
+
+## N15: optional transactional email (#578)
+
+The only optional email event is `trainer.application.reviewed`. Planning
+is atomic with the authorized Inbox insert and outbox completion. The
+existing unique delivery key prevents duplicate logical sends on replay.
+There is no scan or backfill of previously processed Inbox records.
+The domain review transaction and the canonical verification/recovery
+mailers remain independent of SMTP delivery and optional preferences.
+
+Both `NOTIFICATION_DISPATCH_ENABLED=true` and
+`NOTIFICATION_EMAIL_ENABLED=true` plus configured `SMTP_URL` are required.
+Both flags default to false; production retains the existing SMTPS and
+sender requirements. Optional email never uses the log transport.
+Do not enable staging or production delivery until owner approval and
+operational readiness (#579). Disabling the flag stops new claims and
+planning; existing records are re-evaluated on any later admission.
+
+A separate Nest cron tick (15 seconds, no overlap in one process) claims
+at most five deliveries sequentially via the existing PostgreSQL leases.
+Admission rechecks ownership, active/verified account, authoritative
+review, current consent epoch, timezone/quiet hours and expiration.
+The verified address and current locale (en, otherwise uk) are returned
+only in memory. SMTP I/O happens outside the transaction. A conservative
+20-second attempt budget includes admission time and is capped by
+remaining TTL, within the 30-second send lease. The mailer receives an
+abort signal, a stable delivery idempotency key and explicit
+`retry: false`; retries belong only to the durable delivery state machine.
+A definite negative SMTP reply may retry (4xx) or dead-letter (5xx).
+Known pre-connection failures can retry; ambiguous timeouts, disconnects
+and lost DATA acknowledgements become UNKNOWN, never automatic retries.
+On process/DB failure, an abandoned SENDING lease becomes UNKNOWN.
+A stable Message-ID is not a guarantee of physical exactly-once delivery.
+
+Templates contain only generic account-update copy, fixed subject,
+and the configured app origin's protected `/notifications` link. No
+business outcome, reviewer, application ID, note, token or user-provided
+HTML is included; the existing file template engine escapes link values.
+Authentication and current Inbox authorization remain required.
+Recipient addresses and SMTP replies are not stored in delivery rows
+or written to worker logs; batch logs contain only aggregate outcomes
+and a fixed failure code. Do not attach unredacted mail diagnostics.
+
+**Residual race:** consent, recipient email or account state can change
+after the admission transaction commits and before SMTP accepts. The
+worker starts immediately using the verified snapshot, with a bounded
+deadline, and rechecks before every retry. A message already admitted
+cannot be recalled; generic content minimizes disclosure. No database
+lock is held over network I/O. Staging SMTP, provider reconciliation,
+multi-process crash testing and operational acceptance remain open.
+
+CI uses a loopback SMTP peer with the actual mail transport and PostgreSQL
+to verify success, temporary/permanent refusals, lost DATA replies,
+deduplication, revoked consent and quiet hours. Local Mailpit smoke
+complements these checks; do not send to real user addresses during tests.
 
 ## Channel policy and quiet hours
 
