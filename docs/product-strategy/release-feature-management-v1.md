@@ -80,16 +80,16 @@ One Platform Management navigation: Release Management, API Version Analytics, F
 
 ## 11. Delivery coordination and open decisions
 
-| Scope | Canonical owners |
-| --- | --- |
-| Capacity, topology, replicas | [#313](https://github.com/sauron9521/gym-platform/issues/313), [#923](https://github.com/sauron9521/gym-platform/issues/923) |
-| URI contracts, oasdiff | [#909](https://github.com/sauron9521/gym-platform/issues/909), [#287](https://github.com/sauron9521/gym-platform/issues/287), [#711](https://github.com/sauron9521/gym-platform/issues/711) |
-| Release automation, affected builds | [#323](https://github.com/sauron9521/gym-platform/issues/323), [#335](https://github.com/sauron9521/gym-platform/issues/335), [#374](https://github.com/sauron9521/gym-platform/issues/374), #711 |
-| Version analytics, client updates, release history | [#1000](https://github.com/sauron9521/gym-platform/issues/1000) |
-| Feature rollout | [#1001](https://github.com/sauron9521/gym-platform/issues/1001) |
-| Notifications | [#563](https://github.com/sauron9521/gym-platform/issues/563) |
-| Migrations, backup, restore, release gates | [#317](https://github.com/sauron9521/gym-platform/issues/317), [#351](https://github.com/sauron9521/gym-platform/issues/351), [#352](https://github.com/sauron9521/gym-platform/issues/352), #923 |
-| Operations, status, incident evidence | [#1002](https://github.com/sauron9521/gym-platform/issues/1002), [#316](https://github.com/sauron9521/gym-platform/issues/316), [#350](https://github.com/sauron9521/gym-platform/issues/350), [#579](https://github.com/sauron9521/gym-platform/issues/579), [#393](https://github.com/sauron9521/gym-platform/issues/393) |
+| Scope                                              | Canonical owners                                                                                                                                                                                                                                                                                                            |
+| -------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Capacity, topology, replicas                       | [#313](https://github.com/sauron9521/gym-platform/issues/313), [#923](https://github.com/sauron9521/gym-platform/issues/923)                                                                                                                                                                                                |
+| URI contracts, oasdiff                             | [#909](https://github.com/sauron9521/gym-platform/issues/909), [#287](https://github.com/sauron9521/gym-platform/issues/287), [#711](https://github.com/sauron9521/gym-platform/issues/711)                                                                                                                                 |
+| Release automation, affected builds                | [#323](https://github.com/sauron9521/gym-platform/issues/323), [#335](https://github.com/sauron9521/gym-platform/issues/335), [#374](https://github.com/sauron9521/gym-platform/issues/374), #711                                                                                                                           |
+| Version analytics, client updates, release history | [#1000](https://github.com/sauron9521/gym-platform/issues/1000)                                                                                                                                                                                                                                                             |
+| Feature rollout                                    | [#1001](https://github.com/sauron9521/gym-platform/issues/1001)                                                                                                                                                                                                                                                             |
+| Notifications                                      | [#563](https://github.com/sauron9521/gym-platform/issues/563)                                                                                                                                                                                                                                                               |
+| Migrations, backup, restore, release gates         | [#317](https://github.com/sauron9521/gym-platform/issues/317), [#351](https://github.com/sauron9521/gym-platform/issues/351), [#352](https://github.com/sauron9521/gym-platform/issues/352), #923                                                                                                                           |
+| Operations, status, incident evidence              | [#1002](https://github.com/sauron9521/gym-platform/issues/1002), [#316](https://github.com/sauron9521/gym-platform/issues/316), [#350](https://github.com/sauron9521/gym-platform/issues/350), [#579](https://github.com/sauron9521/gym-platform/issues/579), [#393](https://github.com/sauron9521/gym-platform/issues/393) |
 
 Use existing issues and one independently reviewable PR at a time. Re-pin main, inspect open PRs, preserve existing P0/Beta priorities and verify evidence before marking done. No new competing implementation epic.
 
@@ -98,6 +98,7 @@ Open decisions: home/VPS final topology and capacity; Flagship validation and al
 ## Decision record
 
 All owner approvals are dated 2026-11-27 in #588:
+
 - [Initial release direction](https://github.com/sauron9521/gym-platform/issues/588#issuecomment-7226077197)
 - [Topology and API versioning](https://github.com/sauron9521/gym-platform/issues/588#issuecomment-7226307115)
 - [Application versions and release records](https://github.com/sauron9521/gym-platform/issues/588#issuecomment-7226444943)
