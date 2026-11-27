@@ -35,8 +35,10 @@ export type NativeReminderPort = {
   platform: 'android' | 'ios';
 };
 export type ReconcileResult =
-  { kind: 'ready'; pending: number } | { kind: 'blocked' | 'failed' | 'busy' };
+  | { kind: 'ready'; pending: number; verified?: readonly VerifiedReminder[] }
+  | { kind: 'blocked' | 'failed' | 'busy' };
 type Desired = { identifier: string; dueAt: number; title: string; body: string };
+export type VerifiedReminder = Readonly<Desired & { platform: NativeReminderPort['platform'] }>;
 
 function object(value: unknown): Record<string, unknown> | undefined {
   return value !== null && typeof value === 'object'
@@ -44,7 +46,11 @@ function object(value: unknown): Record<string, unknown> | undefined {
     : undefined;
 }
 
-function matches(row: PendingReminder, item: Desired, platform: NativeReminderPort['platform']) {
+export function matchesNativeReminder(
+  row: PendingReminder,
+  item: Desired,
+  platform: NativeReminderPort['platform'],
+) {
   const content = object(row.content);
   const trigger = object(row.trigger);
   const data = object(content?.data);
@@ -52,7 +58,12 @@ function matches(row: PendingReminder, item: Desired, platform: NativeReminderPo
     content?.title !== item.title ||
     content?.body !== item.body ||
     !data ||
+    Array.isArray(data) ||
     Object.keys(data).length !== 0 ||
+    (content.subtitle != null && content.subtitle !== '') ||
+    content.badge != null ||
+    (content.attachments != null &&
+      (!Array.isArray(content.attachments) || content.attachments.length !== 0)) ||
     trigger?.repeats !== false
   )
     return false;
@@ -100,7 +111,7 @@ async function clearManaged(port: NativeReminderPort) {
 }
 
 let inFlight = false;
-/** Unwired native reconciliation. Future coordinator must provide a fresh
+/** Native reconciliation. Coordinator must provide a fresh
  * owner/session/settings snapshot and revoke the fence before lifecycle
  * cleanup. A busy result is not success; caller must retry after settlement. */
 export async function reconcileNativeReminders(
@@ -178,7 +189,11 @@ export async function reconcileNativeReminders(
     for (const row of rows) {
       if (!ownId(row.identifier) || removed.has(row.identifier)) continue;
       const item = target.get(row.identifier);
-      if (item && counts.get(row.identifier) === 1 && matches(row, item, port.platform))
+      if (
+        item &&
+        counts.get(row.identifier) === 1 &&
+        matchesNativeReminder(row, item, port.platform)
+      )
         keep.add(row.identifier);
       else {
         await port.cancel(row.identifier);
@@ -214,11 +229,16 @@ export async function reconcileNativeReminders(
       new Set(final.map((row) => row.identifier)).size !== final.length ||
       final.some(
         (row) =>
-          !target.has(row.identifier) || !matches(row, target.get(row.identifier)!, port.platform),
+          !target.has(row.identifier) ||
+          !matchesNativeReminder(row, target.get(row.identifier)!, port.platform),
       )
     )
       throw new Error('Pending inventory mismatch');
-    return { kind: 'ready', pending: final.length };
+    return {
+      kind: 'ready',
+      pending: final.length,
+      verified: final.map((row) => ({ ...target.get(row.identifier)!, platform: port.platform })),
+    };
   } catch {
     // A rejected native call may have committed. Never replay the write;
     // attempt scoped cleanup, and report failure even when cleanup works.

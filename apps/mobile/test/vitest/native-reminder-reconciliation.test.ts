@@ -72,7 +72,10 @@ describe('native reminder reconciliation (not activated)', () => {
     'idempotent %s scheduling, generic localized payload, no account/workout IDs in native requests',
     async (platform) => {
       const f = fixture(platform);
-      expect(await reconcileNativeReminders(f.port, input)).toEqual({ kind: 'ready', pending: 1 });
+      expect(await reconcileNativeReminders(f.port, input)).toMatchObject({
+        kind: 'ready',
+        pending: 1,
+      });
       const scheduled = f.port.schedule.mock.calls[0]![0];
       expect(scheduled.identifier).toMatch(/^ovranto\.workout-reminder\.v1\.[a-f0-9]{64}$/);
       expect(JSON.stringify(scheduled)).not.toContain(ownerId);
@@ -82,11 +85,25 @@ describe('native reminder reconciliation (not activated)', () => {
         body: 'You have an upcoming workout.',
         dueAt: Date.parse(due(60)),
       });
-      expect(await reconcileNativeReminders(f.port, input)).toEqual({ kind: 'ready', pending: 1 });
+      expect(await reconcileNativeReminders(f.port, input)).toMatchObject({
+        kind: 'ready',
+        pending: 1,
+      });
       expect(f.port.schedule).toHaveBeenCalledTimes(1);
       expect(f.port.cancel).not.toHaveBeenCalled();
     },
   );
+  it('exports only the final verified descriptors for foreground admission', async () => {
+    const f = fixture();
+    const result = await reconcileNativeReminders(f.port, input);
+    expect(result).toEqual({
+      kind: 'ready',
+      pending: 1,
+      verified: [{ ...f.port.schedule.mock.calls[0]![0], platform: 'android' }],
+    });
+    expect(JSON.stringify(result)).not.toContain(ownerId);
+    expect(JSON.stringify(result)).not.toContain(workoutId(1));
+  });
   it('replaces changed time, locale and owner; cancels stale before scheduling', async () => {
     const f = fixture();
     await reconcileNativeReminders(f.port, input);
@@ -97,7 +114,7 @@ describe('native reminder reconciliation (not activated)', () => {
         locale: 'uk',
         plan: { kind: 'ready', reminders: [row(1, 120)] },
       }),
-    ).toEqual({ kind: 'ready', pending: 1 });
+    ).toMatchObject({ kind: 'ready', pending: 1 });
     expect(f.port.cancel).toHaveBeenCalledWith(first);
     expect(f.port.cancel.mock.invocationCallOrder[0]).toBeLessThan(
       f.port.schedule.mock.invocationCallOrder[1]!,
@@ -134,7 +151,7 @@ describe('native reminder reconciliation (not activated)', () => {
     const f = fixture();
     f.rows = Array.from({ length: 46 }, (_, i) => ({ ...unrelated, identifier: 'other-' + i }));
     const plan = { kind: 'ready' as const, reminders: [row(3, 90), row(1, 30), row(2, 60)] };
-    expect(await reconcileNativeReminders(f.port, { ...input, plan })).toEqual({
+    expect(await reconcileNativeReminders(f.port, { ...input, plan })).toMatchObject({
       kind: 'ready',
       pending: 2,
     });
@@ -155,7 +172,7 @@ describe('native reminder reconciliation (not activated)', () => {
         row(4, -1),
       ],
     };
-    expect(await reconcileNativeReminders(f.port, { ...input, plan })).toEqual({
+    expect(await reconcileNativeReminders(f.port, { ...input, plan })).toMatchObject({
       kind: 'ready',
       pending: 1,
     });
@@ -165,10 +182,16 @@ describe('native reminder reconciliation (not activated)', () => {
     const f = fixture();
     await reconcileNativeReminders(f.port, input);
     f.rows.push(structuredClone(f.rows[1]!));
-    expect(await reconcileNativeReminders(f.port, input)).toEqual({ kind: 'ready', pending: 1 });
+    expect(await reconcileNativeReminders(f.port, input)).toMatchObject({
+      kind: 'ready',
+      pending: 1,
+    });
     expect(f.rows).toHaveLength(2);
     (f.rows[1]!.trigger as { value: number }).value = base;
-    expect(await reconcileNativeReminders(f.port, input)).toEqual({ kind: 'ready', pending: 1 });
+    expect(await reconcileNativeReminders(f.port, input)).toMatchObject({
+      kind: 'ready',
+      pending: 1,
+    });
     expect(f.port.schedule).toHaveBeenCalledTimes(3);
   });
   it('cancellation failure blocks new scheduling and reports failure', async () => {
