@@ -16,6 +16,7 @@ const itemSchema = z.object({
   title: z.string(),
   status: z.enum(['PLANNED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED']),
   scheduledAt: z.iso.datetime({ offset: true }),
+  completedAt: z.iso.datetime({ offset: true }).nullable().optional(),
 });
 const pageSchema = z.object({
   data: z.array(itemSchema).max(PAGE_SIZE),

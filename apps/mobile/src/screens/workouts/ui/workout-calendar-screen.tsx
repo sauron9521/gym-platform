@@ -1,5 +1,6 @@
-import { useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useMemo, useState } from 'react';
+import { workoutCalendarStatus, type WorkoutCalendarStatus } from '@gym/domain';
+import { AppState, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useIntl } from 'react-intl';
 
@@ -30,8 +31,17 @@ const statusKeys = {
   IN_PROGRESS: 'statusActive',
   COMPLETED: 'statusCompleted',
   CANCELLED: 'statusCancelled',
+  MISSED: 'statusMissed',
+  COMPLETED_LATE: 'statusCompletedLate',
 } as const;
-const statusMarks = { PLANNED: '○', IN_PROGRESS: '▶', COMPLETED: '✓', CANCELLED: '×' } as const;
+const statusMarks = {
+  PLANNED: '○',
+  IN_PROGRESS: '▶',
+  COMPLETED: '✓',
+  CANCELLED: '×',
+  MISSED: '!',
+  COMPLETED_LATE: '✓!',
+} as const satisfies Record<WorkoutCalendarStatus, string>;
 const statuses = Object.keys(statusMarks) as (keyof typeof statusMarks)[];
 
 export function WorkoutCalendarScreen() {
@@ -44,6 +54,24 @@ export function WorkoutCalendarScreen() {
     const date = new Date();
     return { month: monthOf(date), date };
   });
+  const [now, setNow] = useState(() => new Date().toISOString());
+  useEffect(() => {
+    const refreshClock = () => setNow(new Date().toISOString());
+    const timer = setInterval(() => {
+      if (AppState.currentState === 'active') refreshClock();
+    }, 60_000);
+    const subscription = AppState.addEventListener('change', (state) => {
+      if (state === 'active') refreshClock();
+    });
+    return () => {
+      clearInterval(timer);
+      subscription.remove();
+    };
+  }, []);
+  const statusLabel = (status: WorkoutCalendarStatus) =>
+    status === 'MISSED' || status === 'COMPLETED_LATE'
+      ? t(statusKeys[status])
+      : intl.formatMessage({ id: `mobile.workoutList.${statusKeys[status]}` });
   const [mode, setMode] = useState<'month' | 'week'>('month');
   const { month, date } = selection;
   const weekly = mode === 'week';
@@ -54,8 +82,16 @@ export function WorkoutCalendarScreen() {
     [weekly, date, month],
   );
   const days = useMemo(
-    () => groupScheduledWorkouts(query.isError ? [] : (query.data ?? [])),
-    [query.data, query.isError],
+    () =>
+      groupScheduledWorkouts(
+        query.isError
+          ? []
+          : (query.data ?? []).map((workout) => ({
+              ...workout,
+              calendarStatus: workoutCalendarStatus(workout, now),
+            })),
+      ),
+    [query.data, query.isError, now],
   );
   const selected = localWorkoutDayKey(date);
   const locale = intl.locale === 'en' ? 'en-US' : 'uk-UA';
@@ -104,7 +140,9 @@ export function WorkoutCalendarScreen() {
       contentContainerStyle={styles.content}
       testID="workout-calendar"
     >
-      <Text style={styles.hint}>{t('description')}</Text>
+      <Text style={styles.hint}>
+        {t('description')} {t('zonePolicy')}
+      </Text>
       <View style={styles.modeSwitch}>
         {(['month', 'week'] as const).map((value) => (
           <Pressable
@@ -190,15 +228,15 @@ export function WorkoutCalendarScreen() {
                   const workouts = days.get(cell.key) ?? [];
                   const isSelected = cell.key === selected;
                   const present = statuses.filter((status) =>
-                    workouts.some((workout) => workout.status === status),
+                    workouts.some((workout) => workout.calendarStatus === status),
                   );
                   const markers = present.map((status) => statusMarks[status]).join('');
                   const summary = present
                     .map(
                       (status) =>
-                        intl.formatMessage({ id: `mobile.workoutList.${statusKeys[status]}` }) +
+                        statusLabel(status) +
                         ': ' +
-                        workouts.filter((workout) => workout.status === status).length,
+                        workouts.filter((workout) => workout.calendarStatus === status).length,
                     )
                     .join(', ');
                   return (
@@ -241,10 +279,7 @@ export function WorkoutCalendarScreen() {
           <View style={styles.legend}>
             {Object.entries(statusMarks).map(([status, mark]) => (
               <Text key={status} style={styles.hint}>
-                {mark}{' '}
-                {intl.formatMessage({
-                  id: `mobile.workoutList.${statusKeys[status as keyof typeof statusKeys]}`,
-                })}
+                {mark} {statusLabel(status as WorkoutCalendarStatus)}
               </Text>
             ))}
           </View>
@@ -288,9 +323,7 @@ export function WorkoutCalendarScreen() {
                         minute: '2-digit',
                       }).format(new Date(workout.scheduledAt))}
                       {' · '}
-                      {intl.formatMessage({
-                        id: `mobile.workoutList.${statusKeys[workout.status]}`,
-                      })}
+                      {statusLabel(workout.calendarStatus)}
                     </Text>
                   </Pressable>
                 ))}

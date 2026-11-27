@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { workoutCalendarStatus, type WorkoutCalendarStatus } from '@gym/domain';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useLocale, useTranslations } from 'next-intl';
@@ -12,11 +13,7 @@ import {
   shiftCalendarMonth,
   type CalendarMonth,
 } from '../lib/calendar-month';
-import {
-  getWorkoutListErrorKey,
-  type WorkoutStatus,
-  type WorkoutListItem,
-} from '../lib/workouts-list';
+import { getWorkoutListErrorKey, type WorkoutListItem } from '../lib/workouts-list';
 import { workoutCalendarQueryOptions, CalendarRequestError } from '../api/workout-calendar-query';
 import { Button } from '@/shared/ui/button';
 
@@ -34,7 +31,9 @@ const statusKeys = {
   IN_PROGRESS: 'statusInProgress',
   COMPLETED: 'statusCompleted',
   CANCELLED: 'statusCancelled',
-} as const satisfies Record<WorkoutStatus, string>;
+  MISSED: 'statusMissed',
+  COMPLETED_LATE: 'statusCompletedLate',
+} as const satisfies Record<WorkoutCalendarStatus, string>;
 
 export function WorkoutCalendar() {
   const t = useTranslations('web.workoutCalendar');
@@ -46,6 +45,18 @@ export function WorkoutCalendar() {
     const today = new Date();
     return { year: today.getFullYear(), month: today.getMonth() };
   });
+  const [now, setNow] = useState(() => new Date().toISOString());
+  useEffect(() => {
+    const refresh = () => {
+      if (document.visibilityState === 'visible') setNow(new Date().toISOString());
+    };
+    const timer = window.setInterval(refresh, 60_000);
+    document.addEventListener('visibilitychange', refresh);
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener('visibilitychange', refresh);
+    };
+  }, []);
   const query = useQuery(workoutCalendarQueryOptions(month));
   const unauthenticated = query.error instanceof CalendarRequestError && query.error.status === 401;
 
@@ -149,16 +160,22 @@ export function WorkoutCalendar() {
               className={`min-h-24 space-y-2 overflow-hidden rounded-lg border p-1 sm:min-h-32 sm:p-2 ${cell.inMonth ? 'bg-card' : 'bg-muted/30 text-muted-foreground'}`}
             >
               <span className="text-xs font-medium">{cell.day}</span>
-              {(days.get(cell.dateKey) ?? []).map((workout) => (
-                <Link
-                  key={workout.id}
-                  href={`/workouts/${workout.id}`}
-                  className="block min-w-0 rounded-md bg-secondary px-1 py-1 text-[10px] font-medium break-words hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring sm:px-2 sm:text-xs"
-                  title={`${workout.title}: ${t(statusKeys[workout.status])}`}
-                >
-                  {workout.title}
-                </Link>
-              ))}
+              {(days.get(cell.dateKey) ?? []).map((workout) => {
+                const status = workoutCalendarStatus(workout, now);
+                return (
+                  <Link
+                    key={workout.id}
+                    href={`/workouts/${workout.id}`}
+                    className="block min-w-0 rounded-md bg-secondary px-1 py-1 text-[10px] font-medium break-words hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring sm:px-2 sm:text-xs"
+                    title={`${workout.title}: ${t(statusKeys[status])}`}
+                  >
+                    {workout.title}
+                    {status === 'MISSED' || status === 'COMPLETED_LATE' ? (
+                      <span className="block text-xs font-normal">{t(statusKeys[status])}</span>
+                    ) : null}
+                  </Link>
+                );
+              })}
             </div>
           ))}
         </div>

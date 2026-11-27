@@ -26,3 +26,18 @@ export type WorkoutPreferences = {
 };
 export declare const defaultWorkoutPreferences: Readonly<WorkoutPreferences>;
 export declare function isRestDuration(value: unknown): value is RestDuration;
+
+export type WorkoutCalendarStatus = WorkoutStatus | 'MISSED' | 'COMPLETED_LATE';
+export declare function workoutCalendarDayKey(
+  instant: string | null | undefined,
+  timeZone?: string,
+): string | null;
+export declare function workoutCalendarStatus(
+  workout: Readonly<{
+    status: WorkoutStatus;
+    scheduledAt?: string | null;
+    completedAt?: string | null;
+  }>,
+  now: string,
+  timeZone?: string,
+): WorkoutCalendarStatus;

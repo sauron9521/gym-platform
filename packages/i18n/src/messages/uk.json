@@ -453,7 +453,7 @@
     "workoutCalendar": {
       "title": "Календар тренувань",
       "back": "Усі тренування",
-      "description": "Тренування зі збереженою датою планування",
+      "description": "Тренування зі збереженою датою планування. Часовий пояс пристрою. Пропущено — запланований день уже минув.",
       "previous": "Попередній місяць",
       "next": "Наступний місяць",
       "loading": "Завантаження календаря…",
@@ -471,7 +471,9 @@
       "statusPlanned": "Заплановано",
       "statusInProgress": "У процесі",
       "statusCompleted": "Завершено",
-      "statusCancelled": "Скасовано"
+      "statusCancelled": "Скасовано",
+      "statusMissed": "Пропущено",
+      "statusCompletedLate": "Завершено із запізненням"
     },
     "exerciseCatalog": {
       "library": "Бібліотека вправ",
