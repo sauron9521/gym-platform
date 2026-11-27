@@ -138,7 +138,26 @@ manual signed rehearsal requires real signed GHCR receipts.
 
 This is not external staging: no public DNS, certificate issuance, real SMTP,
 mobile device, privileged MFA, or full authenticated trainer/athlete journeys
-are claimed. Mail remains disabled and inaccessible. Real isolated staging
+are claimed. A local SMTPS sink is tested as described below. Real isolated staging
 requires owner-approved infrastructure, separate database and secrets, SMTP
 allowlist and actual HTTPS/native/end-to-end evidence under #351. Beta remains
 NO_GO. Do not use a production host or production data for this workflow.
+
+### DEP09b — isolated SMTPS transport
+
+The disposable full-stack rehearsal now creates a pinned Mailpit sink
+inside the existing private network. A short-lived test certificate is
+generated for the internal hostname; the API receives only its read-only
+public trust certificate. No TLS verification bypass, published port,
+external SMTP relay, real recipient or persistent mail store is configured.
+The runner allows only the exact generated read-only certificate mounts.
+
+The compiled production mail configuration is exercised in the API
+container using the actual Nest mail module. A synthetic message must be
+captured by Mailpit; non-allowlisted To, CC and BCC recipients must fail
+before transmission. The inbox must contain exactly one expected message.
+This verifies the transport and allowlist, not account verification links,
+password reset, browser authentication or real external provider delivery.
+Notification dispatch remains disabled. All mail and certificate resources
+are removed with the disposable rehearsal. External staging remains blocked
+on infrastructure and actual signed GHCR evidence.

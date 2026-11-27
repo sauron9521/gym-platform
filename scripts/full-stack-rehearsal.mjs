@@ -5,6 +5,7 @@ import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createMailOverlay, mailSettings, probeStagingMail } from './full-stack-staging-mail.mjs';
 import { probeStagingEdge } from './full-stack-staging-edge.mjs';
 
 export async function runFullStackRehearsal({ signedImages } = {}) {
@@ -25,9 +26,7 @@ export async function runFullStackRehearsal({ signedImages } = {}) {
     TRAINER_APP_URL: 'https://coach.rehearsal.invalid',
     CORS_ORIGINS:
       'https://app.rehearsal.invalid,https://admin.rehearsal.invalid,https://coach.rehearsal.invalid',
-    SMTP_URL: 'smtps://mail-disabled.invalid:465',
-    SMTP_RECIPIENT_ALLOWLIST: 'fixture@example.test',
-    MAIL_FROM: 'fixture@example.test',
+    ...mailSettings,
   };
   writeFileSync(
     envFile,
@@ -72,6 +71,10 @@ export async function runFullStackRehearsal({ signedImages } = {}) {
     '-f',
     'infra/docker/compose.rehearsal.yaml',
   ];
+  const mail = createMailOverlay(directory);
+  const mailOverlay = join(directory, 'mail.json');
+  writeFileSync(mailOverlay, JSON.stringify(mail.yaml), { mode: 0o600 });
+  args.push('-f', mailOverlay);
   const imageServices = ['api', 'landing', 'web', 'trainer', 'admin', 'migrate'];
   const expectedImages = Object.fromEntries(
     imageServices.map((service) => [
@@ -113,7 +116,15 @@ export async function runFullStackRehearsal({ signedImages } = {}) {
     for (const [name, service] of Object.entries(config.services)) {
       assert.ok(!service.ports?.length, name + ' publishes a port');
       assert.ok(!service.container_name, name + ' uses a fixed container name');
-      assert.ok(!service.volumes?.some((v) => v.type === 'bind'), name + ' has a host bind mount');
+      for (const v of service.volumes ?? []) {
+        if (v.type !== 'bind') continue;
+        const permitted =
+          (name === 'api' && v.source === mail.cert && v.target === '/run/rehearsal-smtp.crt') ||
+          (name === 'mailpit' &&
+            ((v.source === mail.cert && v.target === '/certs/smtp.crt') ||
+              (v.source === mail.key && v.target === '/certs/smtp.key')));
+        assert.ok(permitted && v.read_only === true, name + ' has an unexpected host bind mount');
+      }
     }
     for (const volume of Object.values(config.volumes)) {
       assert.ok(
@@ -138,7 +149,7 @@ export async function runFullStackRehearsal({ signedImages } = {}) {
     }
     validated = true;
     if (!signedImages) compose('--profile', 'ops', 'build', ...imageServices);
-    compose('up', '-d', '--wait', '--wait-timeout', '120', 'postgres', 'redis');
+    compose('up', '-d', '--wait', '--wait-timeout', '120', 'postgres', 'redis', 'mailpit');
     // Explicit one-shot migration into the new disposable database, never auto-seed.
     compose('--profile', 'ops', 'run', '--rm', '--no-deps', '--pull', 'never', 'migrate');
     compose('up', '-d', '--no-build', '--wait', '--wait-timeout', '180', ...services);
@@ -165,6 +176,7 @@ export async function runFullStackRehearsal({ signedImages } = {}) {
           "const assert=require('node:assert/strict');(async()=>{const r=await fetch('http://127.0.0.1:3000/backend/health/ready');assert.equal(r.status,200);assert.equal((await r.json()).status,'ok')})().catch(e=>{console.error(e);process.exit(1)})",
         );
     }
+    probeStagingMail(compose);
     await probeStagingEdge({ project, directory, compose, output, options });
     console.log(
       'Full-stack rehearsal PASS: five apps, disposable migrations, PostgreSQL/Redis readiness, three real API rewrites.',
