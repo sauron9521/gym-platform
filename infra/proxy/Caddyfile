@@ -1,0 +1,52 @@
+{
+	admin off
+	email {$OVRANTO_ACME_EMAIL}
+	auto_https disable_redirects
+	servers {
+		strict_sni_host on
+	}
+}
+
+# Candidate host proxy, exact allowlist. No Cloudflare IP trust by default.
+(upstream) {
+	@private path_regexp (?i)^/(backend/)?internal(/|$)
+	respond @private 404
+	reverse_proxy 127.0.0.1:{args[0]} {
+		header_up -Forwarded
+		header_up -CF-Connecting-IP
+		header_up -True-Client-IP
+		header_up -X-Real-IP
+		header_up -X-Forwarded-Port
+		header_up X-Forwarded-For {remote_host}
+		header_up X-Forwarded-Proto https
+		header_up X-Forwarded-Host {host}
+	}
+}
+
+http://ovranto.com, http://app.ovranto.com, http://coach.ovranto.com, http://admin.ovranto.com, http://api.ovranto.com {
+	redir https://{host}{uri} 308
+}
+
+http:// {
+	respond 421
+}
+
+ovranto.com {
+	import upstream 3002
+}
+
+app.ovranto.com {
+	import upstream 3000
+}
+
+coach.ovranto.com {
+	import upstream 3004
+}
+
+admin.ovranto.com {
+	import upstream 3003
+}
+
+api.ovranto.com {
+	import upstream 3001
+}
