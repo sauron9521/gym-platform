@@ -44,6 +44,20 @@ test('real Nest + PostgreSQL + Next Admin cookie lifecycle across two browsers',
 
     expect((await owner.request.get('/backend/auth/admin-session')).status()).toBe(401);
     await signIn(owner); // Admin sign-in 1/3.
+    await expect(owner.getByRole('link', { name: 'Непрочитані сповіщення: 1' })).toBeVisible();
+    await owner.getByRole('link', { name: 'Непрочитані сповіщення: 1' }).click();
+    await expect(
+      owner.getByRole('heading', { name: 'Заявка тренера потребує розгляду' }),
+    ).toBeVisible();
+    await expect(owner.locator('main')).not.toContainText('Private browser fixture note');
+    await expect(owner.locator('main')).not.toContainText('admin-browser-applicant@example.test');
+    await owner.getByRole('button', { name: 'Позначити прочитаним', exact: true }).click();
+    await expect(owner.getByRole('link', { name: 'Непрочитані сповіщення: 0' })).toBeVisible();
+    await expect(
+      owner.getByRole('heading', { name: 'Заявка тренера потребує розгляду' }),
+    ).toBeVisible();
+    await owner.getByRole('button', { name: 'Непрочитані', exact: true }).click();
+    await expect(owner.getByText('Немає сповіщень для перегляду.')).toBeVisible();
 
     const adminCookie = (await first.cookies(origin)).find(
       (entry) => entry.name === '__Host-admin-sid',
@@ -86,6 +100,11 @@ test('real Nest + PostgreSQL + Next Admin cookie lifecycle across two browsers',
     );
 
     await signIn(other); // Admin sign-in 2/3 in another browser/device.
+    await other.goto('/notifications');
+    await expect(
+      other.getByRole('heading', { name: 'Заявка тренера потребує розгляду' }),
+    ).toBeVisible();
+
     expect((await other.request.get('/backend/admin/users?page=1&limit=20')).status()).toBe(200);
 
     const signedOut = await owner.evaluate(async () => {
@@ -109,6 +128,11 @@ test('real Nest + PostgreSQL + Next Admin cookie lifecycle across two browsers',
     expect((await owner.request.get('/backend/admin/users?page=1&limit=20')).status()).toBe(401);
     expect((await other.request.get('/backend/admin/users?page=1&limit=20')).status()).toBe(401);
     expect((await owner.request.get('/backend/users/me')).status()).toBe(200);
+    await other.getByRole('button', { name: 'Оновити', exact: true }).click();
+    await expect(other.locator('main')).toContainText('Доступ до сповіщень змінився.');
+    await expect(
+      other.getByRole('heading', { name: 'Заявка тренера потребує розгляду' }),
+    ).toHaveCount(0);
     await other.reload();
     await expect(other.locator('main[role=alert]')).toBeVisible();
   } finally {

@@ -18,6 +18,11 @@ export default defineConfig({
     environment: 'happy-dom',
     include: ['test/components/**/*.test.tsx'],
     clearMocks: true,
+    server: {
+      deps: {
+        inline: [/use-intl/, /next-intl/, /@tanstack\/react-query/, /@radix-ui/, /@gym\/ui-web/],
+      },
+    },
     env: { GYM_VITEST_DOM_RENDERER: rendererPath },
     setupFiles: ['../../tooling/vitest/react-dom.setup.mjs'],
   },

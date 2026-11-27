@@ -859,6 +859,15 @@
               "type": "string",
               "enum": ["true", "false"]
             }
+          },
+          {
+            "name": "x-inbox-owner",
+            "required": false,
+            "in": "header",
+            "description": "Expected authenticated admin account ID; mismatch rejects before Inbox access.",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -921,6 +930,9 @@
                 }
               }
             }
+          },
+          "409": {
+            "description": "Expected account differs from authenticated admin account"
           }
         },
         "security": [
@@ -934,7 +946,17 @@
     "/admin/notifications/unread-count": {
       "get": {
         "operationId": "AdminNotificationInboxController_unreadCount",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "x-inbox-owner",
+            "required": false,
+            "in": "header",
+            "description": "Expected authenticated admin account ID; mismatch rejects before Inbox access.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "",
@@ -952,6 +974,9 @@
                 }
               }
             }
+          },
+          "409": {
+            "description": "Expected account differs from authenticated admin account"
           }
         },
         "security": [
@@ -975,6 +1000,15 @@
               "format": "uuid",
               "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
             }
+          },
+          {
+            "name": "x-inbox-owner",
+            "required": false,
+            "in": "header",
+            "description": "Expected authenticated admin account ID; mismatch rejects before Inbox access.",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -1016,6 +1050,9 @@
                 }
               }
             }
+          },
+          "409": {
+            "description": "Expected account differs from authenticated admin account"
           }
         },
         "security": [
@@ -1039,6 +1076,15 @@
               "format": "uuid",
               "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
             }
+          },
+          {
+            "name": "x-inbox-owner",
+            "required": false,
+            "in": "header",
+            "description": "Expected authenticated admin account ID; mismatch rejects before Inbox access.",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -1080,6 +1126,9 @@
                 }
               }
             }
+          },
+          "409": {
+            "description": "Expected account differs from authenticated admin account"
           }
         },
         "security": [
@@ -1093,10 +1142,23 @@
     "/admin/notifications/read-all": {
       "post": {
         "operationId": "AdminNotificationInboxController_markAllRead",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "x-inbox-owner",
+            "required": false,
+            "in": "header",
+            "description": "Expected authenticated admin account ID; mismatch rejects before Inbox access.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "204": {
             "description": ""
+          },
+          "409": {
+            "description": "Expected account differs from authenticated admin account"
           }
         },
         "security": [

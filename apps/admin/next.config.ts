@@ -7,7 +7,7 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   transpilePackages: ['@gym/api-client', '@gym/i18n', '@gym/ui-web'],
   async headers() {
-    return ['/users', '/users/:id'].map((source) => ({
+    return ['/users', '/users/:id', '/notifications'].map((source) => ({
       source,
       headers: [
         { key: 'Cache-Control', value: 'private, no-store, max-age=0' },

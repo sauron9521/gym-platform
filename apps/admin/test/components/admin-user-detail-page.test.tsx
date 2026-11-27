@@ -8,6 +8,9 @@ const { headersMock, cookiesMock, sessionMock, detailMock, locale } = vi.hoisted
   detailMock: vi.fn(),
   locale: { value: 'uk' as 'uk' | 'en' },
 }));
+vi.mock('@/features/notifications/ui/admin-inbox-bell', () => ({
+  AdminNotificationBell: () => null,
+}));
 vi.mock('next/headers', () => ({ headers: headersMock, cookies: cookiesMock }));
 vi.mock('@/shared/api/admin-session', () => ({ readAdminSession: sessionMock }));
 vi.mock('@/shared/api/admin-user-detail', () => ({ readAdminUserDetail: detailMock }));

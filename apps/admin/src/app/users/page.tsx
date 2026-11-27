@@ -12,6 +12,7 @@ import {
   type DirectoryResult,
 } from '@/shared/api/admin-directory';
 import { parseThemePreference, THEME_COOKIE_NAME } from '@/shared/lib/theme-preference';
+import { AdminNotificationBell } from '@/features/notifications/ui/admin-inbox-bell';
 import { LocaleSwitcher } from '@/shared/ui/locale-switcher';
 import { ThemeSwitcher } from '@/shared/ui/theme-switcher';
 
@@ -102,6 +103,7 @@ export default async function AdminUsersPage({
           <BrandLogo showTagline={false} />
         </Link>
         <div className="ml-auto flex flex-wrap items-center gap-2">
+          <AdminNotificationBell owner={session.id} />
           <LocaleSwitcher />
           <ThemeSwitcher
             initialTheme={theme}

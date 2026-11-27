@@ -6,6 +6,7 @@ import { getTranslations } from 'next-intl/server';
 import { readAdminSession } from '@/shared/api/admin-session';
 import { readAdminHealth } from '@/shared/api/admin-health';
 import { parseThemePreference, THEME_COOKIE_NAME } from '@/shared/lib/theme-preference';
+import { AdminNotificationBell } from '@/features/notifications/ui/admin-inbox-bell';
 import { LocaleSwitcher } from '@/shared/ui/locale-switcher';
 import { ThemeSwitcher } from '@/shared/ui/theme-switcher';
 
@@ -92,6 +93,7 @@ export default async function AdminHomePage() {
             {t('workspace')}
           </p>
           <div className="ml-auto flex flex-wrap items-center gap-2">
+            <AdminNotificationBell owner={session.id} />
             <LocaleSwitcher />
             <ThemeSwitcher
               initialTheme={theme}

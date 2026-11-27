@@ -1938,7 +1938,10 @@ export interface operations {
         cursor?: string;
         unread?: 'true' | 'false';
       };
-      header?: never;
+      header?: {
+        /** @description Expected authenticated admin account ID; mismatch rejects before Inbox access. */
+        'x-inbox-owner'?: string;
+      };
       path?: never;
       cookie?: never;
     };
@@ -1968,12 +1971,22 @@ export interface operations {
           };
         };
       };
+      /** @description Expected account differs from authenticated admin account */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
     };
   };
   AdminNotificationInboxController_unreadCount: {
     parameters: {
       query?: never;
-      header?: never;
+      header?: {
+        /** @description Expected authenticated admin account ID; mismatch rejects before Inbox access. */
+        'x-inbox-owner'?: string;
+      };
       path?: never;
       cookie?: never;
     };
@@ -1989,12 +2002,22 @@ export interface operations {
           };
         };
       };
+      /** @description Expected account differs from authenticated admin account */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
     };
   };
   AdminNotificationInboxController_detail: {
     parameters: {
       query?: never;
-      header?: never;
+      header?: {
+        /** @description Expected authenticated admin account ID; mismatch rejects before Inbox access. */
+        'x-inbox-owner'?: string;
+      };
       path: {
         id: string;
       };
@@ -2022,13 +2045,23 @@ export interface operations {
             readAt: string | null;
           };
         };
+      };
+      /** @description Expected account differs from authenticated admin account */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
       };
     };
   };
   AdminNotificationInboxController_markRead: {
     parameters: {
       query?: never;
-      header?: never;
+      header?: {
+        /** @description Expected authenticated admin account ID; mismatch rejects before Inbox access. */
+        'x-inbox-owner'?: string;
+      };
       path: {
         id: string;
       };
@@ -2057,18 +2090,35 @@ export interface operations {
           };
         };
       };
+      /** @description Expected account differs from authenticated admin account */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
     };
   };
   AdminNotificationInboxController_markAllRead: {
     parameters: {
       query?: never;
-      header?: never;
+      header?: {
+        /** @description Expected authenticated admin account ID; mismatch rejects before Inbox access. */
+        'x-inbox-owner'?: string;
+      };
       path?: never;
       cookie?: never;
     };
     requestBody?: never;
     responses: {
       204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Expected account differs from authenticated admin account */
+      409: {
         headers: {
           [name: string]: unknown;
         };

@@ -160,6 +160,27 @@ describe('Admin notification inbox (HTTP + PostgreSQL)', () => {
     expect((await get('operator', path + '/unread-count').expect(200)).body).toEqual({ count: 1 });
     await get('operator', path + '/' + other.id).expect(404);
     await get('second', path + '/' + own.id).expect(404);
+    // A stale browser owner must never read or mutate the new authenticated owner.
+    for (const url of [path, path + '/unread-count', path + '/' + other.id])
+      await get('second', url).set('x-inbox-owner', operatorId).expect(409);
+    await request(app.getHttpServer())
+      .patch(path + '/' + other.id + '/read')
+      .set('Cookie', asUser('second'))
+      .set('x-inbox-owner', operatorId)
+      .expect(409);
+    await request(app.getHttpServer())
+      .post(path + '/read-all')
+      .set('Cookie', asUser('second'))
+      .set('x-inbox-owner', operatorId)
+      .expect(409);
+    expect(
+      (
+        await get('second', path + '/unread-count')
+          .set('x-inbox-owner', secondOperator)
+          .expect(200)
+      ).body,
+    ).toEqual({ count: 1 });
+    await get('athlete', path).set('x-inbox-owner', operatorId).expect(401);
     const mark = () =>
       request(app.getHttpServer())
         .patch(path + '/' + own.id + '/read')
