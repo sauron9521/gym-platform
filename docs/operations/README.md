@@ -25,6 +25,8 @@ Canonical navigation for operator-controlled release evidence, staging, recovery
 
 ## Related guides
 
+- [OVRANTO transactional SMTP](cloudflare-smtp.md) — Cloudflare configuration and isolated staging recipient restriction.
+
 - [Production reliability foundation](production-reliability-foundation.md) — pool budget, dependency health, lifecycle and replica test boundaries.
 - [Production Compose baseline](../../infra/docker/production/README.md)
 - [Local development and Docker](../../infra/docker/README.md)

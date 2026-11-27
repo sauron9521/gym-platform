@@ -87,6 +87,7 @@ import { WorkoutAnalyticsModule } from '#src/modules/workout-analytics/workout-a
           {
             NODE_ENV: config.getOrThrow('NODE_ENV'),
             SMTP_URL: config.get('SMTP_URL'),
+            SMTP_RECIPIENT_ALLOWLIST: config.get('SMTP_RECIPIENT_ALLOWLIST'),
             MAIL_FROM: config.get('MAIL_FROM'),
           },
           join(import.meta.dirname, 'mail/templates'),
