@@ -27,6 +27,7 @@ model User {
   // Relation
   notificationSettings NotificationSettings?
   notificationPreferences NotificationPreference[]
+  notifications Notification[]
   profile                    Profile?
   trainerProfile             TrainerProfile?
   trainerApplications        TrainerApplication[] @relation("TrainerApplicationApplicant")

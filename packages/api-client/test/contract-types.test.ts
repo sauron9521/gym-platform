@@ -82,3 +82,14 @@ const wrongPair: Preference = { category: 'WORKOUT', channel: 'EMAIL', enabled: 
 const wrongTimezone: NotificationPatch = { timezone: 'UTC' };
 void wrongPair;
 void wrongTimezone;
+
+// The shared Inbox contract exposes only the authenticated account projection.
+void browser.GET('/notifications', { params: { query: { limit: '20', unread: 'true' } } });
+void native.GET('/notifications/unread-count');
+void native.GET('/notifications/{id}', { params: { path: { id: 'notification-id' } } });
+void browser.PATCH('/notifications/{id}/read', { params: { path: { id: 'notification-id' } } });
+void native.POST('/notifications/read-all');
+// @ts-expect-error - recipient selection is server-owned
+void native.GET('/notifications', { params: { query: { recipientId: 'other' } } });
+// @ts-expect-error - ADMIN scope is not a client-selectable category
+void browser.GET('/notifications', { params: { query: { category: 'ADMIN' } } });

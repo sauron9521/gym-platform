@@ -74,7 +74,41 @@ state is accepted from clients. OpenAPI and generated client are updated.
 The endpoint records preferences only; clients and transport are later slices. External-channel deferral, native
 permission, device scheduling/dedup and security-mail routing remain gates.
 
-Candidate API surface (review and generate actual OpenAPI in [#567](https://github.com/sauron9521/gym-platform/issues/567)): `GET /notifications`, `GET /notifications/unread-count`, `GET /notifications/:id`, `PATCH /notifications/:id/read`, `POST /notifications/read-all`, `GET/PATCH /users/me/notification-settings`, `POST/DELETE /notifications/devices`. Privileged Admin read endpoints require their own authorization boundary. Notification details and deep-link targets are server-scoped, not arbitrary user-supplied URLs.
+**N03/N04 Inbox foundation (#566/#567):** an additive `Notification`
+table uses the existing category enum and separate USER/ADMIN scope, a
+cascading recipient FK, unique event/recipient/scope key, descending
+recipient/scope/createdAt/id index, and unread lookup index. Outbox event
+IDs are opaque references without a foreign key so transport and Inbox
+retention can evolve independently. No historical backfill or dispatcher
+is activated. Metadata beyond the fixed template key is deliberately deferred
+until typed, event-specific safe projections are required.
+
+| Endpoint                        | Response                                     |
+| ------------------------------- | -------------------------------------------- |
+| GET /notifications              | `{ data, nextCursor }`                       |
+| GET /notifications/unread-count | `{ count }`                                  |
+| GET /notifications/:id          | One safe notification projection             |
+| PATCH /notifications/:id/read   | The same projection with stable readAt       |
+| POST /notifications/read-all    | 204; marks currently eligible unread records |
+
+The shared authenticated API uses ordinary cookie or bearer credentials,
+never a caller-supplied recipient or scope. Foreign, ADMIN, expired,
+unsupported and nonexistent notifications are indistinguishable (404 on
+detail/mutation). All responses, including errors, are no-store.
+The initial allowlist is the generic ACCOUNT security-change notification;
+the response contains only id, type, category, templateKey, createdAt and
+readAt. No audit IDs, payloads, resource IDs or navigation links are returned.
+Later event types require explicit projections and destination permission
+checks. No separate Admin API is introduced.
+
+List defaults to 20 rows, max 50; query fields are limit, cursor, category
+and unread (true/false). Pagination sorts by createdAt DESC, id DESC and
+uses a value cursor (UTC ISO timestamp plus ID); no row lookup or foreign
+cursor can grant access. Replaying a single read preserves the original
+read timestamp. Read-all uses a server-side cutoff and is safe to repeat;
+it never changes source business state. OpenAPI and generated client
+contracts are updated. Existing device registration, recipient resolution,
+dispatch and external channels remain later slices.
 
 ## Product ownership and permissions
 

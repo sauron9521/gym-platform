@@ -9,3 +9,9 @@ export {
 // Transaction-local publication contract for domain producers.
 export { publishOutboxEvent } from './services/publish-outbox-event.js';
 export type { OutboxEventInput } from './domain/outbox-event.policy.js';
+
+export { NotificationInboxService } from './services/notification-inbox.service.js';
+export {
+  notificationInboxQuerySchema,
+  type NotificationInboxQuery,
+} from './domain/notification-inbox.policy.js';

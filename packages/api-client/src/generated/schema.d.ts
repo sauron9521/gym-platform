@@ -404,6 +404,86 @@ export interface paths {
     patch: operations['NotificationSettingsController_patch'];
     trace?: never;
   };
+  '/notifications': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['NotificationInboxController_list'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/notifications/unread-count': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['NotificationInboxController_unreadCount'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/notifications/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['NotificationInboxController_detail'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/notifications/{id}/read': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch: operations['NotificationInboxController_markRead'];
+    trace?: never;
+  };
+  '/notifications/read-all': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['NotificationInboxController_markAllRead'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/users/me/account-deletion-request': {
     parameters: {
       query?: never;
@@ -2396,6 +2476,152 @@ export interface operations {
             )[];
           };
         };
+      };
+    };
+  };
+  NotificationInboxController_list: {
+    parameters: {
+      query?: {
+        limit?: string;
+        cursor?: string;
+        category?: 'TRAINER' | 'PROGRAM' | 'WORKOUT' | 'ACCOUNT';
+        unread?: 'true' | 'false';
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            data: {
+              /** Format: uuid */
+              id: string;
+              /** @enum {string} */
+              type: 'account.security.changed';
+              /** @enum {string} */
+              category: 'ACCOUNT';
+              /** @enum {string} */
+              templateKey: 'account.security.changed';
+              /** Format: date-time */
+              createdAt: string;
+              /** Format: date-time */
+              readAt: string | null;
+            }[];
+            nextCursor: string | null;
+          };
+        };
+      };
+    };
+  };
+  NotificationInboxController_unreadCount: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            count: number;
+          };
+        };
+      };
+    };
+  };
+  NotificationInboxController_detail: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            type: 'account.security.changed';
+            /** @enum {string} */
+            category: 'ACCOUNT';
+            /** @enum {string} */
+            templateKey: 'account.security.changed';
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            readAt: string | null;
+          };
+        };
+      };
+    };
+  };
+  NotificationInboxController_markRead: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            type: 'account.security.changed';
+            /** @enum {string} */
+            category: 'ACCOUNT';
+            /** @enum {string} */
+            templateKey: 'account.security.changed';
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            readAt: string | null;
+          };
+        };
+      };
+    };
+  };
+  NotificationInboxController_markAllRead: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
       };
     };
   };

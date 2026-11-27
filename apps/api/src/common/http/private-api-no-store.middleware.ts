@@ -8,6 +8,7 @@ import type { NextFunction, Request, Response } from 'express';
  */
 const SENSITIVE_API_ROOTS = new Set([
   'users',
+  'notifications',
   'workouts',
   'body-measurements',
   'trainer-athletes',

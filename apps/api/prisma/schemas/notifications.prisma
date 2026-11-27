@@ -64,3 +64,30 @@ model NotificationPreference {
   @@id([userId, category, channel])
   @@map("notification_preferences")
 }
+
+// Inbox retention is independent from the transport outbox.
+enum NotificationScope {
+  USER
+  ADMIN
+}
+
+model Notification {
+  id String @id @default(uuid(4))
+  eventId String @map("event_id")
+  recipientId String @map("recipient_id")
+  scope NotificationScope
+  type String @db.VarChar(100)
+  category NotificationCategory
+  templateKey String @map("template_key") @db.VarChar(100)
+  resourceType String? @map("resource_type") @db.VarChar(100)
+  resourceId String? @map("resource_id")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  readAt DateTime? @map("read_at") @db.Timestamptz(3)
+  expiresAt DateTime? @map("expires_at") @db.Timestamptz(3)
+  recipient User @relation(fields: [recipientId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, recipientId, scope])
+  @@index([recipientId, scope, createdAt(sort: Desc), id(sort: Desc)], map: "notifications_recipient_scope_cursor_idx")
+  @@index([recipientId, scope, readAt], map: "notifications_recipient_scope_read_idx")
+  @@map("notifications")
+}
