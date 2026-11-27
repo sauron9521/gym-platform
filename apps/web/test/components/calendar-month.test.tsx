@@ -2,9 +2,9 @@ import { describe, expect, it } from 'vitest';
 import {
   calendarMonthBounds,
   calendarMonthCells,
-  localWorkoutDayKey,
+  calendarDayKey,
   shiftCalendarMonth,
-} from '../../src/features/workouts/lib/calendar-month';
+} from '@gym/datetime';
 
 describe('workout calendar month utilities', () => {
   it('crosses year boundaries without skipping months', () => {
@@ -22,8 +22,8 @@ describe('workout calendar month utilities', () => {
   it('starts weeks on Monday and pads the grid with neighboring dates', () => {
     const cells = calendarMonthCells({ year: 2026, month: 10 });
     expect(cells.length % 7).toBe(0);
-    expect(cells.some((day) => day.dateKey === '2026-11-01' && day.inMonth)).toBe(true);
-    expect(cells[0].dateKey).toBe('2026-10-26');
+    expect(cells.some((day) => day.key === '2026-11-01' && day.inMonth)).toBe(true);
+    expect(cells[0].key).toBe('2026-10-26');
   });
 
   it('treats month upper bound as one millisecond before next local month', () => {
@@ -40,11 +40,11 @@ describe('workout calendar month utilities', () => {
 
   it('uses local day keys at midnight without slicing UTC timestamps', () => {
     const localMidnight = new Date(2026, 10, 15, 0, 0, 0).toISOString();
-    expect(localWorkoutDayKey(localMidnight)).toBe('2026-11-15');
+    expect(calendarDayKey(localMidnight)).toBe('2026-11-15');
   });
 
   it('rejects invalid scheduled timestamps', () => {
-    expect(localWorkoutDayKey('invalid')).toBeNull();
-    expect(localWorkoutDayKey('2026-11-15T12:00:00.000Z')).not.toBeNull();
+    expect(calendarDayKey('invalid')).toBeNull();
+    expect(calendarDayKey('2026-11-15T12:00:00.000Z')).not.toBeNull();
   });
 });

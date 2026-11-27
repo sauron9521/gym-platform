@@ -22,6 +22,7 @@
     "@gluestack-ui/core": "^5.0.15",
     "@gluestack-ui/utils": "^5.0.6",
     "@gym/api-client": "workspace:*",
+    "@gym/datetime": "workspace:*",
     "@gym/design-tokens": "workspace:*",
     "@gym/domain": "workspace:*",
     "@gym/i18n": "workspace:*",
