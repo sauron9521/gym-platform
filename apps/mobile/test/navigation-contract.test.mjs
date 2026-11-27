@@ -76,3 +76,20 @@ test('authenticated appearance and language controls live only in app settings',
     assert.ok(settings.includes(`<${component} />`));
   }
 });
+
+test('mobile inbox is athlete-protected and accessed from the header without a fifth tab', () => {
+  const layout = read('../src/app/_layout.tsx');
+  const athlete = layout
+    .split('<Stack.Protected guard={hasAthleteAccess(capabilities)}>')[1]
+    .split('</Stack.Protected>')[0];
+  assert.ok(athlete.includes('name="notifications/index"'));
+  const route = read('../src/app/notifications/index.tsx');
+  assert.match(route, /if \(!account \|\| !hasAthleteAccess\(capabilities\)\) return null/);
+  assert.match(route, /<InboxScreen key=\{account.id\}/);
+  const tabs = read('../src/app/(tabs)/_layout.tsx');
+  assert.match(tabs, /headerRight: hasAthleteAccess\(capabilities\)/);
+  assert.ok(!tabs.includes('name="notifications"'));
+  const queries = read('../src/features/notifications/model/inbox-query.ts');
+  assert.equal([...queries.matchAll(/refetchInterval: false/g)].length, 2);
+  assert.match(queries, /useFocusEffect/);
+});

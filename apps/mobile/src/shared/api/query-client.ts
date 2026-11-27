@@ -17,7 +17,7 @@ export const accountQueryKeys = {
 };
 
 export function createMobileQueryClient() {
-  return new QueryClient({
+  const client = new QueryClient({
     defaultOptions: {
       queries: {
         staleTime: 30_000,
@@ -29,4 +29,8 @@ export function createMobileQueryClient() {
       },
     },
   });
+  // The verified-account cache entry is also a session epoch for scoped writes.
+  // Auth explicitly clears it on logout, background and account changes.
+  client.setQueryDefaults(['account', 'me'], { gcTime: Infinity });
+  return client;
 }

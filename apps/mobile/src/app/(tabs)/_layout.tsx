@@ -3,12 +3,15 @@ import { useIntl } from 'react-intl';
 
 import { useAuth } from '@/features/auth/model/auth-context';
 import { hasAthleteAccess } from '@/features/auth/model/account-capabilities';
+import { useInboxCount } from '@/features/notifications/model/inbox-query';
+import { InboxBell } from '@/features/notifications/ui/inbox-bell';
 import { TabIcon } from '@/shared/ui/tab-icon';
 import { useMobileTheme } from '@/shared/config/theme-provider';
 
 export default function TabsLayout() {
   const { palette } = useMobileTheme();
   const { capabilities } = useAuth();
+  const { count } = useInboxCount();
   const intl = useIntl();
   const t = (id: string) => intl.formatMessage({ id });
   return (
@@ -17,6 +20,7 @@ export default function TabsLayout() {
         tabBarActiveTintColor: palette.primary,
         tabBarInactiveTintColor: palette.muted,
         tabBarStyle: { backgroundColor: palette.surface },
+        headerRight: hasAthleteAccess(capabilities) ? () => <InboxBell count={count} /> : undefined,
         headerStyle: { backgroundColor: palette.surface },
         headerTitleStyle: { color: palette.text },
       }}

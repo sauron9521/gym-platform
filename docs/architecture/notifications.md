@@ -175,3 +175,35 @@ Semantic program targets and trainer events navigate only to the existing
 authorized athlete programs/trainers lists. Exact assignment detail Web
 navigation is a follow-up; review/security notices are generic and never
 invent a decision or link. No ADMIN scope, push, SSE or arbitrary URLs.
+
+### N11: Athlete Mobile Inbox (#574)
+
+The four approved bottom tabs remain unchanged; Athlete-capable accounts
+have a bell and unread count in the tab header. The protected, account-keyed
+`/notifications` route provides the Inbox, category/unread filters, cursor
+pagination, pull-to-refresh and explicit read/read-all actions. UK/EN and
+the native design tokens support both themes. There is no polling interval,
+background job, push permission or device registration. Query refresh is
+driven by mount, focus, reconnect, explicit refresh and read mutations.
+Read-all affects every currently eligible Inbox item, not just the filter.
+
+The verified account cache entry is retained for the authenticated
+lifetime and removed by the existing AuthProvider clear on logout,
+background and re-verification. The Inbox captures the entry identity as
+an epoch; a replacement invalidates outstanding operations, even for
+the same account. Existing revision-scoped API tokens and the optional
+`x-inbox-owner` server fence prevent stale requests from attaching a
+different account. No extra profile requests or persistent notification
+storage. Offline read writes are not queued, never automatically retried,
+and invalidate server-authoritative list/count after an ambiguous result.
+Stale or denied data is suppressed rather than displayed from cache.
+
+The existing notification open coordinator accepts only an opaque UUID
+envelope, validates current Athlete scope, reads fresh authorized Inbox
+detail, then reads the actual assigned program with a scoped token and
+verifies its ID and athlete ownership. Navigation uses the fixed
+`/programs/[id]` route, not a URL from a payload or cached list.
+Blur, logout, background and session epoch replacement cancel or invalidate
+outstanding open intents. No unsupported trainer relationship or account
+deep link is invented. OS push listeners, native permissions and token
+registration remain #343; native device QA remains #348/#349.
