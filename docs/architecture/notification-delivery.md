@@ -231,5 +231,18 @@ expired leases, collection failure and unresolved terminal outcomes.
 See [notification operations](../operations/notifications.md) for thresholds,
 incident procedure, privacy and activation gates. Retention defaults remain
 a proposal; no data deletion, replay endpoint or operator mutation is
-introduced. N16b requires an approved deduplication and audit-preservation
-policy before scheduled cleanup.
+introduced in N16a. N16b adds the default-off implementation below.
+
+## N16b: bounded notification retention (#579)
+
+The default-off retention job implements read-only preview and explicit
+apply with proposed 90/30-day horizons, capped at 50 records per kind
+every 15 minutes. Only terminal, read, matching single-recipient ordinary
+Inbox events and old expired SENT/CANCELLED optional Email records are
+eligible. Preserve every OutboxEvent and immutable unique key; atomically
+mark Inbox or Email retirement with the corresponding delete. Dispatch
+and Email planning honor these markers using the same event-row lock.
+No security, financial or other business/audit evidence is pruned. The
+[operations runbook](../operations/notifications.md) specifies the
+conservative exclusions, rollout/rollback gates and remaining legal
+review. Do not enable apply until all workers honor the markers.

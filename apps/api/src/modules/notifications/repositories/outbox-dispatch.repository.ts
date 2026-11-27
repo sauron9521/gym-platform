@@ -88,6 +88,7 @@ export class OutboxDispatchRepository {
         if (!parsed.success || row.eventKey !== outboxEventKey(parsed.data)) {
           return this.finish(tx, claim.id, 'INVALID_EVENT', 'dead_letter');
         }
+        if (row.inboxRetiredAt) return this.finish(tx, claim.id, 'RETENTION_RETIRED', 'skipped');
         const event = parsed.data;
         if (event.type === 'admin.trainer.review.required') {
           const result = await dispatchAdminReviewNotification(

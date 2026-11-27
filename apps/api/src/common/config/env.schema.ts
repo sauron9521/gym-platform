@@ -140,6 +140,7 @@ const baseEnvSchema = z.object({
     .enum(['true', 'false'])
     .default('false')
     .transform((value) => value === 'true'),
+  NOTIFICATION_RETENTION_MODE: z.enum(['off', 'preview', 'apply']).default('off'),
   HTTP_METRICS_ENABLED: z
     .enum(['true', 'false'])
     .default('false')

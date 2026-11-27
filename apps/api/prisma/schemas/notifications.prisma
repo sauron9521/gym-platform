@@ -21,7 +21,11 @@ model OutboxEvent {
   lastAttemptAt DateTime? @map("last_attempt_at") @db.Timestamptz(3)
   processedAt DateTime? @map("processed_at") @db.Timestamptz(3)
   lastErrorCode String? @map("last_error_code") @db.VarChar(100)
+  // Durable no-replay markers; retain the original unique event key.
+  inboxRetiredAt DateTime? @map("inbox_retired_at") @db.Timestamptz(3)
+  emailRetiredAt DateTime? @map("email_retired_at") @db.Timestamptz(3)
 
+  @@index([status, processedAt], map: "outbox_events_retention_idx")
   @@index([status, availableAt])
   @@index([status, leaseUntil])
   @@index([actorUserId])
@@ -96,6 +100,7 @@ model Notification {
   trainerApplication TrainerApplication? @relation(fields: [trainerApplicationId], references: [id], onDelete: Cascade)
 
   @@unique([eventId, recipientId, scope])
+  @@index([scope, category, createdAt], map: "notifications_retention_idx")
   @@index([trainerApplicationId])
   @@index([recipientId, scope, createdAt(sort: Desc), id(sort: Desc)], map: "notifications_recipient_scope_cursor_idx")
   @@index([recipientId, scope, readAt], map: "notifications_recipient_scope_read_idx")
@@ -142,5 +147,6 @@ model NotificationDelivery {
   @@index([status, availableAt], map: "notification_deliveries_available_idx")
   @@index([status, leaseUntil], map: "notification_deliveries_lease_idx")
   @@index([status, expiresAt], map: "notification_deliveries_expiry_idx")
+  @@index([channel, status, finishedAt], map: "notification_deliveries_retention_idx")
   @@map("notification_deliveries")
 }

@@ -132,35 +132,87 @@ fence, preserve deduplication, and never call a business mutation. Never
 reset SENT, SENDING or UNKNOWN to PENDING. A safe reviewed reconciliation
 workflow is a separate scope.
 
-## Retention proposal — owner/legal review required
+## Retention — default off, owner/legal review required
 
-Proposed targets from #579: ordinary Inbox 90 days and technical transport
-history 30 days. These are not approved deletion horizons. The current
-unique outbox event key and delivery key are deduplication evidence;
-deleting terminal rows can allow replay to create new deliveries.
-Deleting Inbox rows cascades delivery rows. A 30-day transport deletion
-cannot safely proceed until logical delivery tombstones or an equivalent
-durable no-resend mechanism are designed and tested. Do not prune outbox
-keys based only on age.
+N16b implements a bounded scheduled job for the proposed 90-day ordinary
+Inbox and 30-day technical Email horizons. These are **not approved
+production deletion horizons**. Deployment configuration defaults to
+`NOTIFICATION_RETENTION_MODE=off`; do not enable apply just because this
+PR is merged.
 
-A later N16b should implement a bounded preview and approved, default-off
-cleanup with an explicit hold policy, terminal-state/lease exclusion,
-transactional fencing, preservation of deduplication evidence, and
-integration tests proving protected business and audit records survive.
-Exclude security/privileged notices, UNKNOWN/dead-letter evidence, active
-deliveries, billing records and security audit logs until their owners
-approve separate lifecycle policies. Keep audit retention independent of
-Inbox retention. No scheduled deletion or retention schema change is
-implemented in N16a. Confirm product/legal requirements and backup/restore
-implications before enabling cleanup.
+| Mode      | Effect                                                                      |
+| --------- | --------------------------------------------------------------------------- |
+| `off`     | No retention queries or deletes (default)                                   |
+| `preview` | Read-only, bounded eligible counts; no locks on candidate rows or mutations |
+| `apply`   | Deletes eligible rows and records no-replay markers atomically              |
+
+Every 15 minutes, an enabled tick considers at most 50 Inbox rows and
+50 Email deliveries. Counts are per batch, not complete backlog totals.
+Preview may differ from apply because apply skips locked rows. Apply
+uses one transaction-scoped advisory lock (1197030721, 579), row locks
+with SKIP LOCKED, a fresh eligibility read after locking and a bounded
+transaction (500 ms acquisition/lock timeout, 2 s statement timeout,
+10 s transaction budget). A failure rolls back the entire batch.
+Logs report aggregate counts and a fixed failure code; no IDs or payloads.
+There is no public cleanup/replay API or operator write endpoint.
+
+### Conservative hold policy
+
+- Inbox: only read USER notices from an exact successfully processed,
+  single-recipient v1 event and its matching terminal trainer relationship
+  or program assignment. Event, processing, creation **and read** dates
+  must be at least 90 days old. Active invitations/assignments, unread or
+  recently read notices, ADMIN/ACCOUNT notices, unfamiliar event types,
+  conflicting sources and any notice with a delivery are preserved.
+- Transport: only expired SENT/CANCELLED optional Email deliveries for a
+  matching processed trainer-review event, with creation and finish dates
+  at least 30 days old. Preserve the account Inbox and source review.
+  No deletion of PENDING/CLAIMED/SENDING/DEAD_LETTER/UNKNOWN, future TTLs,
+  revoked or mismatched review sources, or Mobile Push.
+- No outbox deletion, no protected billing/security/audit or other domain
+  table writes. Do not use this job as a user-erasure or legal-hold system.
+  For an incident or legal hold outside these exclusions, keep apply off
+  globally until its scope has been reviewed. Per-record legal hold and
+  independent audit retention remain separate decisions.
+
+### Durable deduplication and rollout
+
+The additive migration introduces nullable `inbox_retired_at` and
+`email_retired_at` on the original OutboxEvent and three candidate-search
+indexes. Original unique event keys and immutable event data remain.
+Inbox deletion and its marker, or Email history deletion and its marker,
+commit together. An Inbox replay skips a retired event; Email planning
+locks the original event before checking the email marker, including
+direct repository calls. No business mutation is re-executed. Future
+transport planners must use the same event-row fence and respect the
+retirement markers before adding any delivery. Do not delete or reset
+these markers to resolve an incident.
+
+1. Review the proposal and legal/operational hold requirements. Confirm
+   expected retention and backups with the owner; keep mode off otherwise.
+2. Rehearse the forward-only migration in isolated staging with realistic
+   row counts and query plans. Index builds can block writes; schedule
+   the deployment appropriately. Validate backup/restore and recovery
+   evidence, including preserved event markers.
+3. Deploy the marker-aware version to **all** workers before enabling
+   preview/apply. Inspect aggregate preview counts and sampled eligibility
+   using approved read-only tools. No production apply until explicit GO.
+4. After apply, an older binary that ignores markers must not process
+   notification outbox or Email work. If rollback is necessary, pause
+   both worker flags and retention; use a marker-aware rollback build or
+   forward fix. Restoring an older backup can lose markers and delivery
+   state; keep workers paused until reconciliation. No automatic restore
+   or replay guarantees.
 
 ## Verification and rollout
 
 The metrics registry and cache have unit tests; real PostgreSQL tests
 cover committed states, future availability, expired leases, TTL and
 saturated counts. HTTP tests cover the existing scrape authorization.
-Promtool evaluates the alert simulations offline. These tests are not
-evidence of live alerts, multi-process crash recovery, sustained worker
-load, production-safe deletion or mobile delivery. Validate on isolated
+Promtool evaluates the alert simulations offline. Retention integration
+tests cover read-only preview, eligible cleanup, preserved source and
+security evidence, replay, concurrent claims, SQL rollback and batch caps.
+These tests are not evidence of live alerts, multi-process crash recovery,
+sustained worker load, production-safe deletion or mobile delivery. Validate on isolated
 staging with representative queue volume and separate worker replicas,
 test the alert receiver and incident procedure, and record owner approval.
