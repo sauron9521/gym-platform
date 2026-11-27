@@ -453,7 +453,7 @@
     "workoutCalendar": {
       "title": "Workout calendar",
       "back": "All workouts",
-      "description": "Workouts with a scheduled date",
+      "description": "Workouts with a scheduled date. Device time zone. Missed means the scheduled day has ended.",
       "previous": "Previous month",
       "next": "Next month",
       "loading": "Loading calendar…",
@@ -471,7 +471,9 @@
       "statusPlanned": "Planned",
       "statusInProgress": "In progress",
       "statusCompleted": "Completed",
-      "statusCancelled": "Cancelled"
+      "statusCancelled": "Cancelled",
+      "statusMissed": "Missed",
+      "statusCompletedLate": "Completed late"
     },
     "exerciseCatalog": {
       "library": "Exercise library",

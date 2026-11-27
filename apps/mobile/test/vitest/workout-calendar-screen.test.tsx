@@ -70,6 +70,36 @@ describe('WorkoutCalendarScreen', () => {
     await fireEvent.press(view.getByText(workout.title));
     expect(push).toHaveBeenCalledWith({ pathname: '/workouts/[id]', params: { id: workout.id } });
   });
+  it('shows derived missed and completed-late labels without changing canonical status', async () => {
+    const yesterday = shiftCalendarDays(new Date(), -1);
+    yesterday.setHours(12, 0, 0, 0);
+    const missed = {
+      ...workout,
+      id: 'missed',
+      title: 'Missed session',
+      status: 'PLANNED',
+      scheduledAt: yesterday.toISOString(),
+    };
+    const late = {
+      ...workout,
+      id: 'late',
+      title: 'Late session',
+      status: 'COMPLETED',
+      scheduledAt: yesterday.toISOString(),
+      completedAt: new Date().toISOString(),
+    };
+    prepare({ data: [missed, late] });
+    const view = await screen('en');
+    // Navigate to the prior month when today is its first day.
+    if (monthOf(yesterday).month !== monthOf(new Date()).month)
+      await fireEvent.press(view.getByTestId('calendar-previous'));
+    await fireEvent.press(view.getByTestId(`calendar-day-${localWorkoutDayKey(yesterday)}`));
+    expect(view.getByText('Missed session')).toBeTruthy();
+    expect(view.getByText(/ · Missed$/)).toBeTruthy();
+    expect(view.getByText(/ · Completed late$/)).toBeTruthy();
+    expect(missed.status).toBe('PLANNED');
+    expect(late.status).toBe('COMPLETED');
+  });
   it('navigates months and returns to today', async () => {
     const view = await screen('en');
     await fireEvent.press(view.getByTestId('calendar-next'));

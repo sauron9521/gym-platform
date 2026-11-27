@@ -301,6 +301,12 @@ const navigationMessages = {
     en: 'Could not sync account workout preferences. Please try again.',
   },
   'mobile.navigation.workoutCalendar': { uk: 'Календар тренувань', en: 'Workout calendar' },
+  'mobile.calendar.statusMissed': { uk: 'Пропущено', en: 'Missed' },
+  'mobile.calendar.statusCompletedLate': { uk: 'Завершено із запізненням', en: 'Completed late' },
+  'mobile.calendar.zonePolicy': {
+    uk: 'Часовий пояс пристрою. Пропущено — запланований день уже минув.',
+    en: 'Device time zone. Missed means the scheduled day has ended.',
+  },
   'mobile.calendar.description': {
     uk: 'Тренування за запланованою датою. Незалежно від статусу.',
     en: 'Workouts by scheduled date, regardless of status.',
