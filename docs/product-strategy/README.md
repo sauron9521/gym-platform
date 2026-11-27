@@ -21,6 +21,10 @@ This directory is the **canonical home for owner-approved product strategy decis
 
 **S01–S11 are APPROVED + RECORDED in `main`; S12 B2B, Clubs & Marketplace v1.0 is OWNER APPROVED (publication pending owner's manual merge of this docs-only PR).** All 12 strategy topics are owner-approved; status **RECORDED for S12** requires manual owner merge and main verification. No implementation, payments, seller payouts, Beta/production/store GO, or post-S12 backlog audit is authorized by this document. Publishing this document is not an implementation or Beta acceptance claim.
 
+## Cross-cutting strategy supplements
+
+- [Release & Feature Management v1.0](release-feature-management-v1.md) — owner approved 2026-11-27; supplements S06 with versioning, release lifecycle, feature flags, update communication, rollout/rollback and incident management. Recording requires owner merge and main verification; no implementation or go-live authorization.
+
 ## Decision vs implementation
 
 Owner approval means the strategy is the authoritative basis for **future** product/billing/UX/analytics decisions. It is not evidence that features have shipped, Beta is safe, payment processing is authorized or a release has passed external go-live gates.
