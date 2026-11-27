@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useId, useRef, useSyncExternalStore } from 'react';
+import { useEffect, useId, useRef, useSyncExternalStore, type ReactNode } from 'react';
 import { useMutation, useQuery, useQueryClient, onlineManager } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
 import { defaultWorkoutPreferences, restDurationPresets } from '@gym/domain';
@@ -21,7 +21,13 @@ const serverOnline = () => true;
 
 type Write = { body: WorkoutPreferencesPatch; isCurrent: () => boolean };
 
-export function WorkoutPreferencesSettings({ accountId }: { accountId: string }) {
+export function WorkoutPreferencesSettings({
+  accountId,
+  children,
+}: {
+  accountId: string;
+  children?: ReactNode;
+}) {
   const t = useTranslations('web.appSettings');
   const client = useQueryClient();
   const onAuthFailure = useAuthFailure();
@@ -198,6 +204,7 @@ export function WorkoutPreferencesSettings({ accountId }: { accountId: string })
           </p>
         )}
       </section>
+      {children}
     </main>
   );
 }

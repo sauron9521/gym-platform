@@ -2562,7 +2562,10 @@ export interface operations {
   NotificationSettingsController_get: {
     parameters: {
       query?: never;
-      header?: never;
+      header?: {
+        /** @description Expected authenticated account ID; mismatch rejects settings access. */
+        'x-notification-owner'?: string;
+      };
       path?: never;
       cookie?: never;
     };
@@ -2613,12 +2616,22 @@ export interface operations {
           };
         };
       };
+      /** @description Expected account differs from authenticated account */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
     };
   };
   NotificationSettingsController_patch: {
     parameters: {
       query?: never;
-      header?: never;
+      header?: {
+        /** @description Expected authenticated account ID; mismatch rejects settings access. */
+        'x-notification-owner'?: string;
+      };
       path?: never;
       cookie?: never;
     };
@@ -2701,6 +2714,13 @@ export interface operations {
             )[];
           };
         };
+      };
+      /** @description Expected account differs from authenticated account */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
       };
     };
   };
