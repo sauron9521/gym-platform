@@ -274,3 +274,15 @@ No permission, token, native identifier or persistent schedule is created.
 Keep #342 open until Android/iOS device acceptance (#348/#349), including
 offline revocation limitations, logout/switch, edit, resume and timezone
 changes. Push remains gated on local scheduling evidence.
+
+## N14b — native permission boundary (#342)
+
+The pinned SDK-compatible expo-notifications library is integrated in
+Mobile with remote/background remote iOS plugin options disabled.
+Read-only device status and an explicit contextual permission action
+are separate from account consent. The adapter uses narrow permission
+and channel modules, checks current scope before requesting, and rereads
+OS state after the dialog. No push token, scheduling, exact-alarm request
+or native background job is enabled. See the [Mobile permission
+boundary](../../apps/mobile/docs/push-notification-design.md#n14b--native-permission-adapter-342)
+for the release-age decision, adapter limitations and device gates.

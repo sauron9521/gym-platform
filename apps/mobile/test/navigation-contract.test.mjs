@@ -105,3 +105,26 @@ test('notification preferences are composed into the existing protected profile 
     /expo-notifications|requestPermissionsAsync|scheduleNotificationAsync|getExpoPushTokenAsync/,
   );
 });
+
+test('native permission foundation does not enable scheduling, token registration or remote iOS entitlement', () => {
+  const config = JSON.parse(read('../app.json'));
+  const pkg = JSON.parse(read('../package.json'));
+  assert.equal(pkg.dependencies['expo-notifications'], '58.1.9');
+  assert.deepEqual(
+    config.expo.plugins.find((p) => Array.isArray(p) && p[0] === 'expo-notifications'),
+    [
+      'expo-notifications',
+      { enableRemoteNotifications: false, enableBackgroundRemoteNotifications: false },
+    ],
+  );
+  const adapter = read('../src/features/notifications/lib/native-notification-permission.ts');
+  assert.doesNotMatch(adapter, /(?:from\s+|import\()\s*['"]expo-notifications['"]/);
+  assert.doesNotMatch(
+    adapter,
+    /scheduleNotificationAsync|getExpoPushTokenAsync|getDevicePushTokenAsync|setAutoServerRegistrationEnabledAsync|requestExactAlarmPermissionsAsync|registerTaskAsync/,
+  );
+  assert.match(adapter, /expo-notifications\/build\/NotificationPermissions/);
+  const model = read('../src/features/notifications/model/use-notification-settings.ts');
+  assert.match(model, /requestNativeDevicePermission\(current, channelName\)/);
+  assert.match(model, /await permission.refetch\(\)/);
+});

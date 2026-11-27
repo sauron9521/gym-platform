@@ -99,3 +99,35 @@ development builds in a separate PR. The proposed cap of 32 candidates
 must be reconciled against actual OS capacity and a bounded query horizon.
 See [notification delivery](../../../docs/architecture/notification-delivery.md)
 for the cancellation, identity and device readiness gates.
+
+## N14b — native permission adapter (#342)
+
+Pin expo-notifications 58.1.9, the installed Expo SDK 58.0.26 manifest's
+compatible release. The online installer suggested 58.1.10 with an
+automatic minimum-release-age exception; that exception was removed
+and the older SDK-compatible patch installed under the existing policy.
+The config plugin explicitly disables remote and background remote
+notifications. No push credentials, token registration, background
+task, exact-alarm permission or OS schedule is enabled.
+
+The adapter uses narrow permission/channel modules of the pinned
+library to avoid the barrel's push auto-registration side effect.
+These internal module paths are intentionally isolated and must be
+reviewed on library upgrades. Web, Expo Go and missing native modules
+return unavailable without native prompts. Android and iOS permission
+responses are read on the settings screen and re-read on focus/resume.
+iOS provisional/ephemeral grants and disabled alerts do not authorize
+delivery. Android may report denied before the first request: use
+canAskAgain, not a guessed initial status.
+
+The separate permission button appears only with confirmed account
+WORKOUT/LOCAL_REMINDER consent and requestable OS status. It never
+changes account consent. The adapter checks foreground/session/screen
+and current settings evidence around asynchronous preparation, serializes
+prompts across remounts, creates a generic Android reminder channel
+only on explicit request, and reads status again instead of trusting
+the prompt result. Once an OS dialog has started it cannot be cancelled
+on account switch; no account-scoped delivery is granted by its result.
+If permission is permanently denied, the system settings must be used.
+Channel availability and native scheduling reconciliation remain separate
+gates. No physical Android/iOS acceptance is implied by JS tests/exports.

@@ -686,7 +686,10 @@
       "undetermined": "Not requested",
       "unavailable": "Unavailable",
       "deniedHint": "Your device blocks notifications. Account preferences do not override the device setting.",
-      "unavailableHint": "This build cannot read native notification permission yet. Delivery is not activated."
+      "unavailableHint": "Native notification permission is unavailable in this build or while verification is pending. Delivery is not activated.",
+      "requestPermission": "Allow workout reminder notifications",
+      "requestingPermission": "Checking device permission…",
+      "reminderChannel": "Workout reminders"
     },
     "notifications": {
       "title": "Notifications",

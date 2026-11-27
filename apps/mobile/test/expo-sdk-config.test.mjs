@@ -29,6 +29,10 @@ test('Expo SDK 58 rejects removed new-architecture switch and preserves native a
         enableBackgroundPlayback: false,
       },
     ],
+    [
+      'expo-notifications',
+      { enableRemoteNotifications: false, enableBackgroundRemoteNotifications: false },
+    ],
   ]);
   assert.equal(app.experiments.typedRoutes, true);
 });
