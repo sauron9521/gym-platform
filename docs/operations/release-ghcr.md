@@ -114,3 +114,31 @@ these exact signed artifacts. Production readiness remains NO_GO. Offline
 regressions exercise tamper and identity rejection; real GitHub signing,
 registry permissions and scanner results require separately authorized manual
 workflow runs. Neither workflow deploys or migrates a database.
+
+## DEP09 — signed full-stack staging rehearsal
+
+After the two manual release workflows have succeeded, an operator can run
+**Manual signed full-stack staging rehearsal** on main, with the source SHA,
+release run ID, publisher SHA/run ID and explicit
+`RUN_SIGNED_FULL_STACK_REHEARSAL` confirmation. The runner checks the exact
+successful builder and publisher runs, source CI, original manifest and signed
+receipt, all twelve OCI attestations and all six pulled image IDs. It rejects
+missing or substituted components before creating a database or containers.
+The digest-only overlay removes all application build definitions; no rebuild
+or deployment occurs. The API-only staging workflow is unchanged.
+
+A disposable network, fresh PostgreSQL/Redis, synthetic secrets and one-shot
+migration are reused from DEP06. Five synthetic hostnames terminate HTTPS at
+an isolated Caddy local CA, with certificate verification by a dedicated client.
+The rehearsal checks public pages, actual API rewrites, anonymous session
+rejection, internal metrics denial, and readiness failure/recovery on Redis
+stop/restart. It publishes no ports and deletes only its own resources.
+Local source-build rehearsal in full CI exercises the same edge checks;
+manual signed rehearsal requires real signed GHCR receipts.
+
+This is not external staging: no public DNS, certificate issuance, real SMTP,
+mobile device, privileged MFA, or full authenticated trainer/athlete journeys
+are claimed. Mail remains disabled and inaccessible. Real isolated staging
+requires owner-approved infrastructure, separate database and secrets, SMTP
+allowlist and actual HTTPS/native/end-to-end evidence under #351. Beta remains
+NO_GO. Do not use a production host or production data for this workflow.

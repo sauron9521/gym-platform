@@ -35,7 +35,7 @@ test('rehearsal isolates database, credentials, networking and one-shot migratio
   assert.match(runner, /--project-name/);
   assert.match(runner, /--env-file/);
   assert.match(runner, /validated = true/);
-  assert.match(runner, /'run', '--rm', '--no-deps', 'migrate'/);
+  assert.match(runner, /'run', '--rm', '--no-deps', '--pull', 'never', 'migrate'/);
   assert.match(runner, /'down', '--volumes', '--remove-orphans'/);
   assert.doesNotMatch(runner, /db:seed|db:reset|docker system prune/);
   assert.match(
