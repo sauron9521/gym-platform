@@ -8,6 +8,8 @@ import { NotificationInboxService } from './services/notification-inbox.service.
 import { OutboxDispatchRepository } from './repositories/outbox-dispatch.repository.js';
 import { OutboxDispatchService } from './services/outbox-dispatch.service.js';
 
+import { NotificationDeliveryRepository } from './repositories/notification-delivery.repository.js';
+
 @Module({
   controllers: [],
   providers: [
@@ -17,6 +19,7 @@ import { OutboxDispatchService } from './services/outbox-dispatch.service.js';
     NotificationInboxService,
     OutboxDispatchRepository,
     OutboxDispatchService,
+    NotificationDeliveryRepository,
   ],
   exports: [NotificationSettingsService, NotificationInboxService],
 })

@@ -3,6 +3,7 @@ import { NotificationsModule } from '../notifications.module.js';
 import * as publicApi from '../public-api.js';
 import { OutboxDispatchRepository } from '../repositories/outbox-dispatch.repository.js';
 import { OutboxDispatchService } from '../services/outbox-dispatch.service.js';
+import { NotificationDeliveryRepository } from '../repositories/notification-delivery.repository.js';
 import { NotificationInboxRepository } from '../repositories/notification-inbox.repository.js';
 import { NotificationSettingsRepository } from '../repositories/notification-settings.repository.js';
 import {
@@ -19,6 +20,7 @@ describe('NotificationsModule public boundary', () => {
       publicApi.NotificationInboxService,
       OutboxDispatchRepository,
       OutboxDispatchService,
+      NotificationDeliveryRepository,
     ]);
     expect(Reflect.getMetadata(MODULE_METADATA.EXPORTS, NotificationsModule)).toEqual([
       publicApi.NotificationSettingsService,
