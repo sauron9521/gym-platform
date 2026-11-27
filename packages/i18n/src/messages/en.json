@@ -652,6 +652,16 @@
     }
   },
   "mobile": {
+    "notificationSettings": {
+      "permissionTitle": "Device notification permission",
+      "permissionHint": "This is separate from your account consent. Changing preferences does not ask for OS permission or schedule notifications.",
+      "granted": "Granted",
+      "denied": "Denied",
+      "undetermined": "Not requested",
+      "unavailable": "Unavailable",
+      "deniedHint": "Your device blocks notifications. Account preferences do not override the device setting.",
+      "unavailableHint": "This build cannot read native notification permission yet. Delivery is not activated."
+    },
     "notifications": {
       "title": "Notifications",
       "description": "Updates about your account, coaching and training programs.",

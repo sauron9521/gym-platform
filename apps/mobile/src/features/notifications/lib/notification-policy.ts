@@ -49,3 +49,20 @@ export function parseSafePushEnvelope(value: unknown): SafePushEnvelope | null {
   const parsed = pushEnvelopeSchema.safeParse(value);
   return parsed.success ? parsed.data : null;
 }
+
+// Native permission is independent of account consent. The native adapter
+// will be supplied by #342/#343; never guess a grant from account settings.
+export const devicePermissionSchema = z.enum(['granted', 'denied', 'undetermined', 'unavailable']);
+export type DevicePermission = z.infer<typeof devicePermissionSchema>;
+export type ReadDevicePermission = () => Promise<unknown>;
+
+export async function readDevicePermission(
+  read: ReadDevicePermission = async () => 'unavailable',
+): Promise<DevicePermission> {
+  try {
+    const value = devicePermissionSchema.safeParse(await read());
+    return value.success ? value.data : 'unavailable';
+  } catch {
+    return 'unavailable';
+  }
+}

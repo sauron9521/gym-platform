@@ -93,3 +93,15 @@ test('mobile inbox is athlete-protected and accessed from the header without a f
   assert.equal([...queries.matchAll(/refetchInterval: false/g)].length, 2);
   assert.match(queries, /useFocusEffect/);
 });
+
+test('notification preferences are composed into the existing protected profile settings route', () => {
+  const route = read('../src/app/profile/settings.tsx');
+  assert.match(route, /<NotificationSettingsPanel\s*\/>/);
+  const panel = read('../src/features/notifications/ui/notification-settings-panel.tsx');
+  assert.match(panel, /hasAthleteAccess\(capabilities\)/);
+  assert.match(panel, /<SettingsContent key=\{account.id\}/);
+  assert.doesNotMatch(
+    panel,
+    /expo-notifications|requestPermissionsAsync|scheduleNotificationAsync|getExpoPushTokenAsync/,
+  );
+});

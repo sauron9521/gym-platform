@@ -259,3 +259,26 @@ disables offline/hidden writes, and never replays PATCH. Ambiguous writes
 reconcile via GET only. A current 401 clears private cache and redirects;
 403/409 require reopening the protected page. Existing locale/workout
 preferences and urgent account/security delivery remain independent.
+
+### N14: Athlete Mobile notification settings (#577)
+
+The protected profile settings route now composes the existing workout,
+theme and locale controls with account notification preferences. It uses
+the same four server-authoritative category/channel pairs, canonical
+timezone, local-minute quiet interval, and 15/60/1440-minute lead times
+as Web. Explicit consent changes and atomic time saves use the existing
+verified account epoch, revision-scoped token client and optional
+`x-notification-owner` header. No extra profile fetch, duplicate storage,
+polling, optimistic consent, offline mutation queue or PATCH retry.
+After an ambiguous response, GET-only reconciliation confirms the current
+state. Logout/account switch/background invalidate outstanding work;
+401 expires only the current verified session, 403/409 hide controls
+and require a fresh authorized read.
+
+Device permission is a separate read-only adapter contract with
+granted/denied/undetermined/unavailable states. Current builds have no
+native notification module and honestly show unavailable. No permission
+prompt, token registration, scheduler, native dependency or delivery
+is added. #342/#343 must supply the actual native status reader and
+opt-in/revocation lifecycle, with physical device verification #348/#349.
+The existing server consent UI never grants OS permission.

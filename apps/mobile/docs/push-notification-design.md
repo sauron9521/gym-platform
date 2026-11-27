@@ -72,3 +72,15 @@ cursor pagination, confirmed read/read-all writes, and the authenticated
 navigation adapter with session revocation and fresh resource access tests.
 Native #348/#349 proof remains a separate required gate. Keep #574 open;
 there is no OS permission request, push delivery or notification registration.
+
+## N14 — account preferences (#577)
+
+The earlier contract-only status above describes the historical foundation.
+The USER Inbox and account preference API are now implemented, and
+`/profile/settings` edits the four server allowlisted consent pairs,
+quiet hours and reminder lead. The legacy eligibility helper is not
+used by this UI or any delivery path. The new read-only permission
+contract intentionally returns unavailable in current builds without
+a native adapter. Injected permission-reader tests cover granted, denied,
+undetermined and unavailable. Actual native status reading and delivery
+remain #342/#343; device acceptance remains #348/#349.
