@@ -8,6 +8,7 @@ import { SkipThrottle } from '@nestjs/throttler';
 import type { Request } from 'express';
 
 import type { AppConfigService } from '#src/common/config/app-config.types';
+import { NotificationQueueMetricsService } from './notification-queue-metrics.service.js';
 import { HttpMetricsRegistry } from './http-metrics.registry.js';
 
 function validMetricsToken(candidate: unknown, secret: string): boolean {
@@ -31,12 +32,13 @@ export class HttpMetricsController {
   constructor(
     @Inject(ConfigService) private readonly config: AppConfigService,
     private readonly registry: HttpMetricsRegistry,
+    private readonly notifications: NotificationQueueMetricsService,
   ) {}
 
   @Get('metrics')
   @Header('Cache-Control', 'no-store')
   @Header('Content-Type', 'text/plain; version=0.0.4; charset=utf-8')
-  metrics(@Req() request: Request): string {
+  async metrics(@Req() request: Request): Promise<string> {
     const enabled = this.config.get('HTTP_METRICS_ENABLED');
     const secret = this.config.get('HTTP_METRICS_TOKEN');
     // Fail with an indistinguishable 404 for disabled/unauthorized access.
@@ -53,6 +55,6 @@ export class HttpMetricsController {
     ) {
       throw new NotFoundException();
     }
-    return this.registry.render();
+    return this.registry.render() + (await this.notifications.render());
   }
 }

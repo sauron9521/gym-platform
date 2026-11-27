@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { NotificationWorkerMetricsModule } from '#src/common/http-metrics/notification-worker-metrics.module';
 import { NotificationSettingsRepository } from './repositories/notification-settings.repository.js';
 import { NotificationSettingsService } from './services/notification-settings.service.js';
 
@@ -16,6 +17,7 @@ import { AdminNotificationInboxRepository } from './repositories/admin-notificat
 import { AdminNotificationInboxService } from './services/admin-notification-inbox.service.js';
 
 @Module({
+  imports: [NotificationWorkerMetricsModule],
   controllers: [],
   providers: [
     NotificationSettingsRepository,

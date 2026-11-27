@@ -14,13 +14,14 @@ Canonical navigation for operator-controlled release evidence, staging, recovery
 
 ## Production preparation and recovery
 
-| Runbook                                                                | Scope                                             |
-| ---------------------------------------------------------------------- | ------------------------------------------------- |
-| [Independent release readiness review](production-readiness-review.md) | Read-only release-chain review; not production GO |
-| [Digest-only Compose preflight](production-digest-preflight.md)        | Immutable verified image policy                   |
-| [Operator host preflight](production-host-preflight.md)                | Read-only host verification                       |
-| [Backup and restore](backup-restore-operations.md)                     | Opt-in backup, restore and recovery monitoring    |
-| [Production observability](production-observability.md)                | Opt-in host monitoring and offline verification   |
+| Runbook                                                                | Scope                                                        |
+| ---------------------------------------------------------------------- | ------------------------------------------------------------ |
+| [Independent release readiness review](production-readiness-review.md) | Read-only release-chain review; not production GO            |
+| [Digest-only Compose preflight](production-digest-preflight.md)        | Immutable verified image policy                              |
+| [Operator host preflight](production-host-preflight.md)                | Read-only host verification                                  |
+| [Backup and restore](backup-restore-operations.md)                     | Opt-in backup, restore and recovery monitoring               |
+| [Production observability](production-observability.md)                | Opt-in host monitoring and offline verification              |
+| [Notification operations](notifications.md)                            | Protected queue telemetry, incident and retention boundaries |
 
 ## Related guides
 

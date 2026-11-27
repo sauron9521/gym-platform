@@ -50,8 +50,8 @@ finish; no new claim starts after the shutdown hook.
 Structured batch logs expose only processed/skipped/dead-letter/retry/
 lease-lost counts and a generic batch failure code. Existing persisted
 outbox status, attempt counts and redacted error codes are inspectable
-by authorized operators. Queue depth/age gauges, alerts, safe operator
-replay and retention remain #579. The test suite exercises independent
+by authorized operators. N16a (#579) adds bounded queue depth/age gauges, alerts and a read-only
+incident procedure. Safe operator replay and retention cleanup remain gated. The test suite exercises independent
 PostgreSQL connections, simulated expired leases, stale writes, injected
 transaction rollback, bounded attempts, revocation and replay. Actual
 separate-process crash/restart and staging activation remain unverified.
@@ -220,3 +220,16 @@ On an eligible Mobile installation, the chosen workout reminder should have **on
 | #579 operations      | Metrics/alerts redaction, safe operator replay, retention tests and documented incident drill                                                   |
 
 No claims of production readiness until the **specific** channel and device tests have been run and recorded. This ADR records the policy and implementation boundaries.
+
+## N16a: notification operational telemetry (#579)
+
+The existing protected internal metrics endpoint includes a cached,
+bounded, read-only PostgreSQL queue snapshot, fixed-label process worker
+counters and optional SMTP adapter latency. Collection failure is explicit
+and omits stale queue gauges. Offline Prometheus rules cover backlog,
+expired leases, collection failure and unresolved terminal outcomes.
+See [notification operations](../operations/notifications.md) for thresholds,
+incident procedure, privacy and activation gates. Retention defaults remain
+a proposal; no data deletion, replay endpoint or operator mutation is
+introduced. N16b requires an approved deduplication and audit-preservation
+policy before scheduled cleanup.
