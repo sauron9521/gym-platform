@@ -79,3 +79,35 @@ Do not add Resend API keys or any real mail credentials to the example env files
 
 On Windows, start Docker Desktop with the Linux container backend
 before using these commands. The initialization shell script must use LF endings.
+
+## DEP06 — Full-stack Compose pilot
+
+The existing API-only production baseline and digest override are unchanged.
+Layer `compose.full-stack.yaml` after `compose.prod.yaml` to add Landing,
+Athlete Web, Trainer Web and Admin, with loopback-only ports, bounded
+resources and a shared private API alias. Explicit Admin/Trainer origins
+are required. This is not an approved production release: web images are
+local pilots, Landing is non-indexable, and TLS/proxy and signed web artifacts
+are pending DEP07/08. Do not combine the API-only digest override with this
+pilot as a release manifest.
+
+For a disposable rehearsal from the repository root (Docker Engine and
+Compose supporting the `!reset` tag, Node 24):
+
+```bash
+node scripts/full-stack-rehearsal.mjs
+```
+
+The runner creates a random project, private temporary synthetic credentials,
+an internal network, fresh PostgreSQL and Redis, and unique local image tags.
+It validates isolation before any migration, explicitly runs the one-shot
+migration against its own database, waits for five healthy applications,
+checks real NestJS readiness through the three web rewrites, and removes only
+the rehearsal containers, volumes, network and image tags. No host port,
+real SMTP, seed, DNS, production database, user records or feature activation.
+Existing development containers are untouched. Build needs registry access;
+runtime has no external network. The local HTTPS origin strings are synthetic,
+not actual TLS evidence; SMTP is deliberately unreachable. Do not run the
+rehearsal overlay directly. If interrupted, inspect only the random project
+before cleanup. No production authorization. See the
+[full-stack plan](../../docs/operations/full-stack-deployment-plan.md).
