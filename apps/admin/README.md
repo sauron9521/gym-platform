@@ -79,3 +79,24 @@ still needs independent staging/security checks.
 **Read-only operator UI only:** the existing Super Admin read permission does not
 authorize account mutations, role assignment, moderation CRUD, durable audit
 history or a production Admin release.
+
+## DEP05 — Docker pilot
+
+From the repository root:
+
+```bash
+docker build -f apps/admin/Dockerfile -t gym-platform-admin:pilot .
+node apps/admin/scripts/docker-smoke.mjs gym-platform-admin:pilot
+```
+
+Optional standalone build preserves normal local dev/start. The non-root
+container uses the fixed internal API alias `http://api:3000` at build and
+runtime; startup rejects conflicting configuration. Separate environments
+and distinct HTTPS hostnames remain mandatory. The disposable HTTP fixture
+tests admin-purpose cookie and Origin forwarding, pending MFA/session denial,
+operator directory access and revocation, private response headers and assets.
+It does not validate real MFA completion, API authorization, browser HTTPS
+cookie isolation or CSRF enforcement. Existing Admin browser/real API E2E,
+#290 and #351 remain required. No security feature activation, production
+release, DNS or GHCR promotion. See the
+[full-stack plan](../../docs/operations/full-stack-deployment-plan.md).
