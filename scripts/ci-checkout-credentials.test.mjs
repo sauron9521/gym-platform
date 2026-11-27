@@ -9,6 +9,8 @@ const targetWorkflows = [
   ['mobile-native-e2e.yml', 1],
   ['ovranto-visual-review.yml', 1],
   ['staging-live-smoke.yml', 1],
+  ['release-full-stack.yml', 2],
+  ['publish-full-stack-ghcr.yml', 1],
 ];
 
 function checkoutSteps(workflow) {

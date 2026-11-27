@@ -1,0 +1,107 @@
+name: Full-stack pilot release candidate
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: full-stack-release-${{ github.sha }}
+  cancel-in-progress: false
+jobs:
+  package:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    permissions:
+      contents: read
+      actions: read
+      checks: read
+      id-token: write
+      attestations: write
+      artifact-metadata: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: Require exact-commit successful main CI
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REF" = refs/heads/main
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          gh api "repos/$GITHUB_REPOSITORY/actions/workflows/ci.yml/runs?head_sha=$GITHUB_SHA&branch=main&event=push&per_page=100" > "$RUNNER_TEMP/main-ci.json"
+          node scripts/release-ci-gate.mjs "$RUNNER_TEMP/main-ci.json" "$GITHUB_REPOSITORY" "$GITHUB_SHA"
+      - name: Build six pilot images with immutable source labels
+        run: |
+          set -euo pipefail
+          base='node:24-trixie-slim@sha256:116b800c3754b440ee0aa3ed2f20f5bf3d99a554bfd9adeea09ea8017f6e85f5'
+          images=()
+          for component in runtime migrate landing web trainer admin; do
+            target=()
+            app="$component"
+            if [[ "$component" = runtime || "$component" = migrate ]]; then
+              app=api
+              target=(--target "$component")
+            fi
+            tag="gym-full-stack-$component:$GITHUB_SHA"
+            docker build --platform linux/amd64 -f "apps/$app/Dockerfile" "${target[@]}" \
+            --build-arg NODE_BASE_IMAGE="$base" \
+            --label "org.opencontainers.image.revision=$GITHUB_SHA" \
+            --label "org.opencontainers.image.source=https://github.com/$GITHUB_REPOSITORY" \
+            --label "org.ovranto.release.component=$component" \
+            --label "org.ovranto.release.profile=full-stack-pilot-noindex" -t "$tag" .
+            images+=("$tag")
+          done
+          install -d -m 0700 release
+          docker save "${images[@]}" | gzip -n -6 > release/images.tar.gz
+          node scripts/full-stack-release.mjs create "$GITHUB_REPOSITORY" "$GITHUB_SHA" "$GITHUB_RUN_ID" release
+          node scripts/full-stack-release.mjs verify "$GITHUB_REPOSITORY" "$GITHUB_SHA" "$GITHUB_RUN_ID" release
+          node scripts/full-stack-release.mjs verify-images "$GITHUB_REPOSITORY" "$GITHUB_SHA" "$GITHUB_RUN_ID" release
+      - name: Attest archive and full manifest
+        uses: actions/attest@v4
+        with:
+          subject-path: |
+            release/images.tar.gz
+            release/manifest.json
+      - uses: actions/upload-artifact@v7
+        with:
+          name: gym-full-stack-${{ github.sha }}-${{ github.run_id }}
+          path: release/
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 0
+  verify:
+    needs: package
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    permissions:
+      contents: read
+      actions: read
+      attestations: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - uses: actions/download-artifact@v8
+        with:
+          name: gym-full-stack-${{ github.sha }}-${{ github.run_id }}
+          path: release/
+      - name: Independently verify provenance and reload all six images
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          node scripts/full-stack-release.mjs verify "$GITHUB_REPOSITORY" "$GITHUB_SHA" "$GITHUB_RUN_ID" release
+          for file in release/images.tar.gz release/manifest.json; do
+            gh attestation verify "$file" --repo "$GITHUB_REPOSITORY" \
+            --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/release-full-stack.yml" \
+            --source-ref refs/heads/main --source-digest "$GITHUB_SHA"
+          done
+          docker load -i release/images.tar.gz
+          node scripts/full-stack-release.mjs verify-images "$GITHUB_REPOSITORY" "$GITHUB_SHA" "$GITHUB_RUN_ID" release
