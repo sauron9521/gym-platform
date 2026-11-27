@@ -5,14 +5,15 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useState,
   useSyncExternalStore,
   type ReactNode,
 } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuthFailure } from '@/shared/api/use-auth-failure';
-import { currentInboxOwner, InboxRequestError } from '../api/inbox';
+import { profileQueryOptions, ProfileRequestError } from '@/features/profile/api/profile-query';
+import { InboxRequestError } from '../api/inbox';
 
-const sessionKey = ['inbox-session'] as const;
 export const inboxKeys = {
   all: ['inbox'] as const,
   owner: (owner: string) => ['inbox', owner] as const,
@@ -44,80 +45,77 @@ export function InboxSessionBoundary({ children }: { children: ReactNode }) {
   const shown = useSyncExternalStore(subscribe, visible, serverVisible);
   const client = useQueryClient();
   const onAuthFailure = useAuthFailure();
-  const session = useQuery({
-    queryKey: sessionKey,
-    queryFn: ({ signal }) => currentInboxOwner(signal),
+  const options = profileQueryOptions();
+  // Share the canonical profile cache with the locale switcher and editor.
+  // The authenticated Inbox header fences every request, including writes.
+  const profile = useQuery({
+    ...options,
     enabled: shown,
-    gcTime: 0,
-    staleTime: 0,
-    retry: false,
-    refetchOnWindowFocus: 'always',
-    refetchOnReconnect: 'always',
+    staleTime: Infinity,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   });
-  const owner = session.isSuccess ? session.data : null;
-  const active = shown && !!owner && !session.isFetching;
+  const owner = profile.isSuccess && profile.data.role !== 'ADMIN' ? profile.data.id : null;
+  const [blockedOwner, setBlockedOwner] = useState<string | null>(null);
+  const blocked = !!owner && blockedOwner === owner;
+  const active = shown && !!owner && !blocked && !profile.isFetching;
   const handleError = useCallback(
     (error: unknown) => {
-      if (!(error instanceof InboxRequestError)) return;
-      if (error.accountChanged || error.status === 401 || error.status === 403) {
-        if (error.status === 401) onAuthFailure(error);
-        else if (error.accountChanged) void client.invalidateQueries({ queryKey: sessionKey });
-        else client.setQueryData(sessionKey, null);
+      if (!(error instanceof InboxRequestError || error instanceof ProfileRequestError)) return;
+      if (error.status === 401) {
+        onAuthFailure(error);
+        return;
+      }
+      if (
+        error instanceof InboxRequestError &&
+        (error.status === 403 || error.status === 409) &&
+        owner &&
+        blockedOwner !== owner
+      ) {
+        setBlockedOwner(owner);
+        void client.cancelQueries({ queryKey: inboxKeys.owner(owner) });
+        if (error.status === 409)
+          void client.invalidateQueries({ queryKey: profileQueryOptions().queryKey, exact: true });
       }
     },
-    [client, onAuthFailure],
+    [client, onAuthFailure, owner, blockedOwner],
   );
 
   useEffect(() => {
     const recheck = () => {
-      if (!visible()) return;
-      const previous = client.getQueryData<string>(sessionKey);
-      void client
-        .refetchQueries({ queryKey: sessionKey, type: 'active' }, { cancelRefetch: false })
-        .then(() => {
-          if (
-            visible() &&
-            previous &&
-            client.getQueryState(sessionKey)?.status === 'success' &&
-            client.getQueryData(sessionKey) === previous
-          ) {
-            return client.invalidateQueries(
-              { queryKey: inboxKeys.owner(previous) },
-              { cancelRefetch: false },
-            );
-          }
-        });
+      if (!visible() || !owner || blocked) return;
+      void client.invalidateQueries({ queryKey: inboxKeys.owner(owner) }, { cancelRefetch: false });
     };
     window.addEventListener('focus', recheck);
     return () => window.removeEventListener('focus', recheck);
-  }, [client]);
+  }, [client, owner, blocked]);
 
   useEffect(() => {
-    if (!shown) {
-      void client.cancelQueries({ queryKey: inboxKeys.all });
-      void client.cancelQueries({ queryKey: sessionKey });
-    }
+    if (!shown) void client.cancelQueries({ queryKey: inboxKeys.all });
   }, [client, shown]);
 
   useEffect(() => {
     client.removeQueries({
       queryKey: inboxKeys.all,
-      predicate: (query) => query.queryKey[1] !== owner,
+      predicate: (query) => query.queryKey[1] !== owner || blocked,
     });
-  }, [client, owner]);
+  }, [client, owner, blocked]);
 
   useEffect(() => {
-    handleError(session.error);
-  }, [session.error, handleError]);
+    handleError(profile.error);
+  }, [profile.error, handleError]);
 
   return (
     <Context.Provider
       value={{
         owner,
         active,
-        failed: session.isError || (session.isSuccess && !owner),
+        failed: profile.isError || blocked || (profile.isSuccess && !owner),
         retry: () => {
-          if (shown) void session.refetch();
+          if (shown) {
+            setBlockedOwner(null);
+            void profile.refetch();
+          }
         },
         handleError,
       }}

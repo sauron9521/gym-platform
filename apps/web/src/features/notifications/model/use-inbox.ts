@@ -18,11 +18,12 @@ export function useUnreadInbox() {
     refetchInterval: session.active ? 60_000 : false,
     refetchIntervalInBackground: false,
     refetchOnWindowFocus: false,
+    refetchOnReconnect: true,
   });
   useEffect(() => {
     handleError(query.error);
   }, [query.error, handleError]);
-  return { count: session.active && query.isSuccess ? query.data : undefined };
+  return { count: session.active && query.isSuccess && !query.isFetching ? query.data : undefined };
 }
 
 export function useInboxList(filters: InboxFilters) {
@@ -38,6 +39,7 @@ export function useInboxList(filters: InboxFilters) {
     retry: false,
     gcTime: 0,
     refetchOnWindowFocus: false,
+    refetchOnReconnect: true,
   });
   const client = useQueryClient();
   const mutation = useMutation({

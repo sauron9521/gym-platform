@@ -26,7 +26,11 @@ function InboxContent() {
   const items = [...new Map(rows.map((row) => [row.id, row])).values()];
   const error = query.error;
   const denied = error instanceof InboxRequestError && error.status === 403;
-  const showData = session.active && !query.isError && !query.isPending;
+  const showData =
+    session.active &&
+    !query.isError &&
+    !query.isPending &&
+    (!query.isFetching || query.isFetchingNextPage);
   return (
     <>
       <div className="flex flex-wrap items-end gap-3 rounded-xl border border-border bg-card p-4">
@@ -74,7 +78,7 @@ function InboxContent() {
           {t('saving')}
         </p>
       )}
-      {!session.active || query.isPending ? (
+      {!session.active || query.isPending || (query.isFetching && !query.isFetchingNextPage) ? (
         <p
           role="status"
           className="rounded-xl border border-border bg-card p-6 text-muted-foreground"

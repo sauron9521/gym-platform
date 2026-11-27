@@ -9,57 +9,32 @@ export type InboxFilters = {
   unread?: 'true';
 };
 export class InboxRequestError extends Error {
-  constructor(
-    readonly status?: number,
-    readonly accountChanged = false,
-  ) {
+  constructor(readonly status?: number) {
     super('Notification request failed');
   }
 }
 
-export async function currentInboxOwner(signal?: AbortSignal) {
+async function requestInbox<T>(request: () => Promise<T>, signal?: AbortSignal): Promise<T> {
   try {
-    const { response, data } = await webApi.GET('/users/me', { signal, cache: 'no-store' });
-    if (!response.ok || !data) throw new InboxRequestError(response.status);
-    if (data.role === 'ADMIN') throw new InboxRequestError(403);
-    return data.id;
+    signal?.throwIfAborted();
+    return await request();
   } catch (error) {
     if (error instanceof InboxRequestError || signal?.aborted) throw error;
     throw new InboxRequestError();
   }
 }
-
-async function forOwner<T>(
-  owner: string,
-  request: () => Promise<T>,
-  signal?: AbortSignal,
-): Promise<T> {
-  try {
-    if ((await currentInboxOwner(signal)) !== owner) throw new InboxRequestError(409, true);
-    signal?.throwIfAborted();
-    const result = await request();
-    if ((await currentInboxOwner(signal)) !== owner) throw new InboxRequestError(409, true);
-    signal?.throwIfAborted();
-    return result;
-  } catch (error) {
-    if (error instanceof InboxRequestError || signal?.aborted) throw error;
-    throw new InboxRequestError();
-  }
-}
+const ownerHeader = (owner: string) => ({ 'x-inbox-owner': owner });
 
 export function fetchUnread(owner: string, signal: AbortSignal) {
-  return forOwner(
-    owner,
-    async () => {
-      const { response, data } = await webApi.GET('/notifications/unread-count', {
-        signal,
-        cache: 'no-store',
-      });
-      if (!response.ok || !data) throw new InboxRequestError(response.status);
-      return data.count;
-    },
-    signal,
-  );
+  return requestInbox(async () => {
+    const { response, data } = await webApi.GET('/notifications/unread-count', {
+      signal,
+      cache: 'no-store',
+      headers: ownerHeader(owner),
+    });
+    if (!response.ok || !data) throw new InboxRequestError(response.status);
+    return data.count;
+  }, signal);
 }
 
 export function fetchInbox(
@@ -68,26 +43,26 @@ export function fetchInbox(
   cursor: string | null,
   signal: AbortSignal,
 ) {
-  return forOwner(
-    owner,
-    async () => {
-      const { response, data } = await webApi.GET('/notifications', {
-        signal,
-        cache: 'no-store',
-        params: { query: { limit: '20', ...filters, ...(cursor ? { cursor } : {}) } },
-      });
-      if (!response.ok || !data) throw new InboxRequestError(response.status);
-      return data;
-    },
-    signal,
-  );
+  return requestInbox(async () => {
+    const { response, data } = await webApi.GET('/notifications', {
+      signal,
+      cache: 'no-store',
+      headers: ownerHeader(owner),
+      params: { query: { limit: '20', ...filters, ...(cursor ? { cursor } : {}) } },
+    });
+    if (!response.ok || !data) throw new InboxRequestError(response.status);
+    return data;
+  }, signal);
 }
 
 export function markInboxRead(owner: string, id?: string) {
-  return forOwner(owner, async () => {
+  return requestInbox(async () => {
     const result = id
-      ? await webApi.PATCH('/notifications/{id}/read', { params: { path: { id } } })
-      : await webApi.POST('/notifications/read-all');
+      ? await webApi.PATCH('/notifications/{id}/read', {
+          params: { path: { id } },
+          headers: ownerHeader(owner),
+        })
+      : await webApi.POST('/notifications/read-all', { headers: ownerHeader(owner) });
     if (!result.response.ok) throw new InboxRequestError(result.response.status);
   });
 }

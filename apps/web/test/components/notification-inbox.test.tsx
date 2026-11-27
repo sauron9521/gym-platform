@@ -73,31 +73,36 @@ beforeEach(() => {
   onlineManager.setOnline(true);
   client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   replace.mockReset();
-  get
-    .mockReset()
-    .mockImplementation(
-      async (
-        path: string,
-        options?: { params?: { query?: { category?: string; unread?: string; cursor?: string } } },
-      ) => {
-        if (path === '/users/me')
-          return sessionStatus === 200 ? ok({ id: owner, role: 'ATHLETE' }) : fail(sessionStatus);
-        if (path === '/notifications/unread-count')
-          return ok({ count: rows.filter((row) => !row.readAt).length });
-        if (path === '/notifications') {
-          if (listStatus !== 200) return fail(listStatus);
-          const q = options?.params?.query;
-          const filtered = rows.filter(
-            (row) => (!q?.category || row.category === q.category) && (!q?.unread || !row.readAt),
-          );
-          return ok({
-            data: q?.cursor ? filtered.slice(1) : filtered.slice(0, 1),
-            nextCursor: !q?.cursor && filtered.length > 1 ? 'cursor-two' : null,
-          });
-        }
-        throw new Error('Unexpected request');
+  get.mockReset().mockImplementation(
+    async (
+      path: string,
+      options?: {
+        headers?: Record<string, string>;
+        params?: { query?: { category?: string; unread?: string; cursor?: string } };
       },
-    );
+    ) => {
+      if (path === '/users/me')
+        return sessionStatus === 200 ? ok({ id: owner, role: 'ATHLETE' }) : fail(sessionStatus);
+      if (path.startsWith('/notifications')) {
+        if (sessionStatus !== 200) return fail(sessionStatus);
+        if (options?.headers?.['x-inbox-owner'] !== owner) return fail(409);
+      }
+      if (path === '/notifications/unread-count')
+        return ok({ count: rows.filter((row) => !row.readAt).length });
+      if (path === '/notifications') {
+        if (listStatus !== 200) return fail(listStatus);
+        const q = options?.params?.query;
+        const filtered = rows.filter(
+          (row) => (!q?.category || row.category === q.category) && (!q?.unread || !row.readAt),
+        );
+        return ok({
+          data: q?.cursor ? filtered.slice(1) : filtered.slice(0, 1),
+          nextCursor: !q?.cursor && filtered.length > 1 ? 'cursor-two' : null,
+        });
+      }
+      throw new Error('Unexpected request');
+    },
+  );
   patch
     .mockReset()
     .mockImplementation(async (_path: string, options: { params: { path: { id: string } } }) => {
@@ -133,6 +138,7 @@ function mount(locale: 'en' | 'uk' = 'en') {
 }
 const countCalls = () =>
   get.mock.calls.filter(([path]) => path === '/notifications/unread-count').length;
+const profileCalls = () => get.mock.calls.filter(([path]) => path === '/users/me').length;
 const listCalls = () => get.mock.calls.filter(([path]) => path === '/notifications').length;
 async function loaded() {
   await screen.findByRole('heading', { name: 'A training program was assigned' });
@@ -247,11 +253,13 @@ describe('Athlete notifications', () => {
       });
       expect(screen.getByRole('link', { name: 'Notifications (2 unread)' })).toBeTruthy();
       const before = [countCalls(), listCalls()];
+      const beforeProfile = profileCalls();
       await act(async () => {
         await vi.advanceTimersByTimeAsync(60_000);
       });
       expect(countCalls()).toBe(before[0]! + 1);
       expect(listCalls()).toBe(before[1]);
+      expect(profileCalls()).toBe(beforeProfile);
       await act(async () => {
         visibility = 'hidden';
         document.dispatchEvent(new Event('visibilitychange'));

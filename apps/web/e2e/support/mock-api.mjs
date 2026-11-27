@@ -194,6 +194,13 @@ const server = createServer(async (request, response) => {
 
     if (!session) return send(response, 401, { message: 'Unauthenticated' });
 
+    if (
+      route.startsWith('/notifications') &&
+      request.headers['x-inbox-owner'] !== undefined &&
+      request.headers['x-inbox-owner'] !== session.account.id
+    ) {
+      return send(response, 409, { message: 'Notification account changed' });
+    }
     if (request.method === 'GET' && route === '/notifications/unread-count') {
       return send(response, 200, { count: 0 });
     }

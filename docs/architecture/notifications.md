@@ -159,15 +159,17 @@ read mutations invalidate the owner-scoped count/list without optimistic
 read changes. Mark-all applies to the entire currently eligible Inbox,
 not just the selected filter.
 
-Cache keys include the verified account ID. Browser identity checks before
-and after each Inbox request discard results if the cookie-backed account
-changes; these checks add two lightweight `/users/me` calls to a polling
-cycle and are not a separate polling loop. HTTP 401 uses the existing
-session-expiry/cache-clear handler; 403 suppresses data without logging
-out, and a changed identity revalidates the session and removes other
-account caches. These client checks mitigate ordinary cross-tab switches,
-not an atomic server-side session fence: the API remains the authority
-for every read and write. No notification content is persisted locally.
+Cache keys include the verified account ID and share the canonical profile
+query with the shell and profile editor. The Web client sends the expected
+owner in the optional `x-inbox-owner` header for every Inbox operation.
+The API compares it with the authenticated principal before accessing the
+Inbox; a mismatch returns 409 and never reads or mutates another account.
+The client hides stale data, revalidates the shared profile on mismatch
+and removes previous-owner queries. HTTP 401 clears private cache and
+redirects; 403 fails closed without logging out. Other clients may omit
+the header; existing authenticated recipient checks remain unchanged.
+Polling performs only the unread-count request, not additional profile
+requests. No notification content is persisted locally.
 
 Semantic program targets and trainer events navigate only to the existing
 authorized athlete programs/trainers lists. Exact assignment detail Web

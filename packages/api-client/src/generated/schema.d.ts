@@ -2712,7 +2712,10 @@ export interface operations {
         category?: 'TRAINER' | 'PROGRAM' | 'WORKOUT' | 'ACCOUNT';
         unread?: 'true' | 'false';
       };
-      header?: never;
+      header?: {
+        /** @description Expected authenticated account ID; mismatch rejects the request before any Inbox access. */
+        'x-inbox-owner'?: string;
+      };
       path?: never;
       cookie?: never;
     };
@@ -2772,12 +2775,22 @@ export interface operations {
           };
         };
       };
+      /** @description Expected account differs from authenticated account */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
     };
   };
   NotificationInboxController_unreadCount: {
     parameters: {
       query?: never;
-      header?: never;
+      header?: {
+        /** @description Expected authenticated account ID; mismatch rejects the request before any Inbox access. */
+        'x-inbox-owner'?: string;
+      };
       path?: never;
       cookie?: never;
     };
@@ -2793,12 +2806,22 @@ export interface operations {
           };
         };
       };
+      /** @description Expected account differs from authenticated account */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
     };
   };
   NotificationInboxController_detail: {
     parameters: {
       query?: never;
-      header?: never;
+      header?: {
+        /** @description Expected authenticated account ID; mismatch rejects the request before any Inbox access. */
+        'x-inbox-owner'?: string;
+      };
       path: {
         id: string;
       };
@@ -2856,13 +2879,23 @@ export interface operations {
             };
           };
         };
+      };
+      /** @description Expected account differs from authenticated account */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
       };
     };
   };
   NotificationInboxController_markRead: {
     parameters: {
       query?: never;
-      header?: never;
+      header?: {
+        /** @description Expected authenticated account ID; mismatch rejects the request before any Inbox access. */
+        'x-inbox-owner'?: string;
+      };
       path: {
         id: string;
       };
@@ -2921,18 +2954,35 @@ export interface operations {
           };
         };
       };
+      /** @description Expected account differs from authenticated account */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
     };
   };
   NotificationInboxController_markAllRead: {
     parameters: {
       query?: never;
-      header?: never;
+      header?: {
+        /** @description Expected authenticated account ID; mismatch rejects the request before any Inbox access. */
+        'x-inbox-owner'?: string;
+      };
       path?: never;
       cookie?: never;
     };
     requestBody?: never;
     responses: {
       204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Expected account differs from authenticated account */
+      409: {
         headers: {
           [name: string]: unknown;
         };

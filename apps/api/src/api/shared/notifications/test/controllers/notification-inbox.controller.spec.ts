@@ -51,4 +51,20 @@ describe('NotificationInboxController', () => {
     await expect(controller.markAllRead(actor, {})).resolves.toBeUndefined();
     expect(service.markAllRead).toHaveBeenCalledExactlyOnceWith(actor);
   });
+  it('rejects mismatched cache-owner fences before any service call', () => {
+    expect(() => controller.list(actor, {}, 'different')).toThrow('Notification account changed');
+    expect(() => controller.unreadCount(actor, {}, 'different')).toThrow(
+      'Notification account changed',
+    );
+    expect(() => controller.detail(actor, id, {}, 'different')).toThrow(
+      'Notification account changed',
+    );
+    expect(() => controller.markRead(actor, id, {}, 'different')).toThrow(
+      'Notification account changed',
+    );
+    expect(() => controller.markAllRead(actor, {}, 'different')).toThrow(
+      'Notification account changed',
+    );
+    for (const fn of Object.values(service)) expect(fn).not.toHaveBeenCalled();
+  });
 });
