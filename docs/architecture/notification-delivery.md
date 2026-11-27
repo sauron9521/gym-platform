@@ -326,3 +326,13 @@ The [Mobile lifecycle design](../../apps/mobile/docs/push-notification-design.md
 records the provisional conservative refresh behavior and native
 limitations. #342 remains open until LN06 device evidence and a
 separately reviewed activation decision.
+
+## N14f — controlled device QA (#342)
+
+An isolated internal EAS reminder-qa profile and versioned native config
+marker allow the local scheduling coordinator to be exercised with approved
+disposable staging accounts only. Ordinary build scheduling remains disabled;
+Web and Expo Go reject the QA mode. The operator must independently verify
+artifact identity, app IDs, signing and separate HTTPS staging/production
+targets. See the [device matrix and build safeguards](../../apps/mobile/docs/push-notification-design.md#n14f--controlled-reminder-qa-342).
+All device evidence remains NOT RUN; no release approval or push activation.

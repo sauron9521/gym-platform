@@ -691,7 +691,10 @@
       "requestingPermission": "Checking device permission…",
       "reminderChannel": "Workout reminders",
       "reminderNotificationTitle": "OVRANTO",
-      "reminderNotificationBody": "You have an upcoming workout."
+      "reminderNotificationBody": "You have an upcoming workout.",
+      "qaMode": "Internal reminder QA — disposable staging accounts only.",
+      "qaPermissionHint": "Account consent and OS permission are independent. This internal build may schedule workout reminders after both are verified.",
+      "qaConsentHint": "Only change consent for disposable staging accounts. You can revoke consent at any time."
     },
     "notifications": {
       "title": "Notifications",

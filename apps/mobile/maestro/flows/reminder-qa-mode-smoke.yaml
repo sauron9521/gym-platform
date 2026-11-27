@@ -1,0 +1,32 @@
+# Read-only QA-mode smoke. Use only a verified internal reminder-qa binary.
+# Do not clear an existing user's device data; install a fresh disposable build.
+appId: ${APP_ID}
+---
+- launchApp
+- assertVisible: З поверненням!
+- tapOn:
+    id: sign-in-email
+- inputText: ${E2E_EMAIL}
+- tapOn:
+    id: sign-in-password
+- inputText: ${E2E_PASSWORD}
+- tapOn: Увійти
+- tapOn:
+    id: mobile-tab-profile
+- tapOn:
+    id: profile-app-settings
+- scrollUntilVisible:
+    element:
+      id: notification-reminder-qa-mode
+    direction: DOWN
+- assertVisible:
+    id: notification-reminder-qa-mode
+- scrollUntilVisible:
+    element:
+      id: notification-consent-WORKOUT
+    direction: DOWN
+- assertVisible:
+    id: notification-consent-WORKOUT
+- back
+- tapOn: Вийти
+- assertVisible: З поверненням!

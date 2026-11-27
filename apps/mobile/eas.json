@@ -23,6 +23,17 @@
       "autoIncrement": true,
       "environment": "production",
       "channel": "production"
+    },
+    "reminder-qa": {
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      },
+      "environment": "preview",
+      "channel": "reminder-qa",
+      "env": {
+        "OVRANTO_REMINDER_QA": "1"
+      }
     }
   },
   "submit": {
