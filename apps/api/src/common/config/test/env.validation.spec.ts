@@ -30,9 +30,20 @@ describe('validateEnv', () => {
     expect(env.DATABASE_POOL_CONNECT_TIMEOUT_MS).toBe(5_000);
     expect(env.DATABASE_POOL_IDLE_TIMEOUT_MS).toBe(10_000);
     expect(env.ENABLE_OPENAPI).toBe(false);
+    expect(env.NOTIFICATION_DISPATCH_ENABLED).toBe(false);
     expect(env.LOG_LEVEL).toBe('log');
     expect(env.REDIS_URL).toBeUndefined();
     expect(env.TRUSTED_PROXY_CIDRS).toBeUndefined();
+  });
+
+  it('requires an explicit valid notification dispatch opt-in', () => {
+    expect(
+      validateEnv({ ...validProd, NOTIFICATION_DISPATCH_ENABLED: 'true' })
+        .NOTIFICATION_DISPATCH_ENABLED,
+    ).toBe(true);
+    expect(() => validateEnv({ ...validDev, NOTIFICATION_DISPATCH_ENABLED: '1' })).toThrow(
+      'Invalid environment configuration',
+    );
   });
 
   it('accepts bounded PostgreSQL pool settings from environment strings', () => {

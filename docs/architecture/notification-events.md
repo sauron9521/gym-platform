@@ -102,8 +102,8 @@ commit or delivery. Callers must propagate publication errors and use the
 same transaction as their domain mutation. The existing MFA producer uses
 this contract without changing its audit or authorization semantics.
 
-No notification dispatcher, recipient selection, Inbox endpoint, external
-send or replay operator endpoint is enabled. Inbox persistence and reads
-(#566/#567) precede dispatcher activation (#569); new event sources and
-retention remain separately owned. The event key deduplicates publication
+Inbox persistence and reads (#566/#567) are implemented. The #569 in-app
+dispatcher is implemented behind a default-off configuration flag and
+resolves the MFA audit owner only; external sends and operator replay
+remain disabled. New event sources and retention remain separately owned. The event key deduplicates publication
 of an already identified transition, not the domain operation itself.

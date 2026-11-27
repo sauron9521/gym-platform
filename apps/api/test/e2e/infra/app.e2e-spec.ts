@@ -10,6 +10,8 @@ import {
   NotificationInboxService,
   NotificationSettingsService,
 } from '../../../src/modules/notifications/public-api.js';
+import { OutboxDispatchRepository } from '../../../src/modules/notifications/repositories/outbox-dispatch.repository.js';
+import { OutboxDispatchService } from '../../../src/modules/notifications/services/outbox-dispatch.service.js';
 import { NotificationInboxRepository } from '../../../src/modules/notifications/repositories/notification-inbox.repository.js';
 import { NotificationInboxController } from '../../../src/api/shared/notifications/controllers/notification-inbox.controller.js';
 import { NotificationSettingsRepository } from '../../../src/modules/notifications/repositories/notification-settings.repository.js';
@@ -298,6 +300,8 @@ describe('App (e2e)', () => {
       NotificationSettingsRepository,
       NotificationInboxService,
       NotificationInboxRepository,
+      OutboxDispatchRepository,
+      OutboxDispatchService,
     ]) {
       expect(
         modules.filter((module) => module.providers.has(provider)).map((module) => module.metatype),

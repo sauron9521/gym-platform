@@ -1,6 +1,6 @@
 # Notifications — delivery, scheduling, failure and security policy
 
-- **Status:** Accepted target policy; implementation pending
+- **Status:** Accepted target policy; PostgreSQL in-app dispatch foundation implemented, external delivery pending
 - **Parent:** [#563](https://github.com/sauron9521/gym-platform/issues/563)
 - **Related:** [architecture](notifications.md) · [events](notification-events.md) · [Mobile push safety design](../../apps/mobile/docs/push-notification-design.md)
 
@@ -15,6 +15,53 @@
 7. Clicking a notification opens an authenticated, authorized resource read. Mark-as-read does **not** acknowledge the business action or payment/approval.
 
 Outbox processing, Inbox persistence, and each channel's attempts are **separate state machines**; never mark an entire domain event failed merely because a user's OS notification was denied.
+
+## N06a: in-app dispatcher (#569)
+
+The API scheduler polls every 15 seconds, only when the validated
+`NOTIFICATION_DISPATCH_ENABLED=true` setting is explicitly configured.
+The default is false in all environments. Do not enable production
+polling until the owner approves the deployment and operational checks.
+
+A tick handles at most 10 claims, sequentially, using the existing Prisma
+pool. Each claim is one atomic PostgreSQL UPDATE with a candidate selected
+using FOR UPDATE SKIP LOCKED. The database clock determines availability
+and the 30-second lease. The incremented attempt number and lease expiry
+fence late workers. Processing locks the claimed row and commits the
+Inbox insert and outbox completion in the same bounded transaction.
+A worker that stops after claiming leaves an expired lease recoverable
+by another instance. No external I/O is performed while holding a lock.
+
+The existing MFA publisher is the only supported source. Re-parse the
+strict v1 contract, match its deterministic event key and re-read the
+immutable MFA lifecycle audit (ID, account, action, occurrence time).
+Check active/non-deleted account under a user-row lock before inserting
+a generic ACCOUNT/USER notification. External preferences do not suppress
+in-app delivery. Unknown schema, malformed events, source mismatch or
+conflicting existing Inbox data dead-letter immediately. Ineligible
+recipients complete without an Inbox row and retain a safe skip code.
+Replay preserves the existing read timestamp and never repeats a source
+mutation. Transient processing failures retry up to five total attempts,
+with equal-jitter exponential delays (5-second initial ceiling, capped
+at 60 seconds); abandoned final claims also dead-letter. A failed retry
+write leaves the lease recoverable. On shutdown, the current claim may
+finish; no new claim starts after the shutdown hook.
+
+Structured batch logs expose only processed/skipped/dead-letter/retry/
+lease-lost counts and a generic batch failure code. Existing persisted
+outbox status, attempt counts and redacted error codes are inspectable
+by authorized operators. Queue depth/age gauges, alerts, safe operator
+replay and retention remain #579. The test suite exercises independent
+PostgreSQL connections, simulated expired leases, stale writes, injected
+transaction rollback, bounded attempts, revocation and replay. Actual
+separate-process crash/restart and staging activation remain unverified.
+
+The external `NotificationDelivery` model, destination idempotency,
+channel-specific leases/consent checks and adapters are explicitly
+deferred to a second #569 slice and channel work (#343/#578). No external
+sends, ADMIN scope fanout, automatic replay endpoint, new migration or
+queue service are added here. #569 remains open until its remaining
+acceptance criteria are verified.
 
 ## Channel policy and quiet hours
 
@@ -72,4 +119,4 @@ On an eligible Mobile installation, the chosen workout reminder should have **on
 | #543/#557 admin      | Super Admin/current permission checks, approved/pending/unread distinction, no action implied by notification, cross-domain tests               |
 | #579 operations      | Metrics/alerts redaction, safe operator replay, retention tests and documented incident drill                                                   |
 
-No claims of production readiness until the **specific** channel and device tests have been run and recorded. This ADR introduces no implementation itself.
+No claims of production readiness until the **specific** channel and device tests have been run and recorded. This ADR records the policy and implementation boundaries.

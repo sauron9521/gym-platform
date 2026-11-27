@@ -67,7 +67,8 @@ batching. Avatar cleanup is non-overlapping within one process; a global
 lock is deliberately not added while replicas may have separate local disk
 namespaces. Shared media storage and safe distributed avatar maintenance
 remain prerequisites for multi-replica deployment (#921/#923). Outbox
-dispatcher and worker leases stay in #568/#569.
+dispatcher and worker leases are implemented for in-app delivery in #569
+behind a default-off flag; external delivery remains deferred.
 
 ## Regression evidence and remaining gates
 
