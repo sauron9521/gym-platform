@@ -23,6 +23,8 @@ This directory is the **canonical home for owner-approved product strategy decis
 
 ## Cross-cutting strategy supplements
 
+- [Frontend Standardization v1.0](frontend-standardization-v1.md) — owner approved F01–F10 on 2026-11-27; client architecture, rendering, state, data, forms, UI, tables, feedback, performance, testing and enforcement. Publication evidence in #588; implementation and release gates remain separate.
+
 - [Release & Feature Management v1.0](release-feature-management-v1.md) — owner approved 2026-11-27; supplements S06 with versioning, release lifecycle, feature flags, update communication, rollout/rollback and incident management. Recording requires owner merge and main verification; no implementation or go-live authorization.
 
 ## Decision vs implementation
