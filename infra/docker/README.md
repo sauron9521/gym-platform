@@ -111,3 +111,9 @@ not actual TLS evidence; SMTP is deliberately unreachable. Do not run the
 rehearsal overlay directly. If interrupted, inspect only the random project
 before cleanup. No production authorization. See the
 [full-stack plan](../../docs/operations/full-stack-deployment-plan.md).
+
+## DEP07 — Reverse proxy candidate
+
+See [Caddy edge pilot](../proxy/README.md) for the fixed host routes,
+offline TLS smoke and separate production environment template. No public
+proxy is started by Compose or CI.
