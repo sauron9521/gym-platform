@@ -1,6 +1,10 @@
 import { isDeepStrictEqual } from 'node:util';
 import type { Prisma } from '#prisma/client';
-import { outboxEventSchema, type OutboxEventInput } from '../domain/outbox-event.policy.js';
+import {
+  outboxEventKey,
+  outboxEventSchema,
+  type OutboxEventInput,
+} from '../domain/outbox-event.policy.js';
 
 /**
  * Append within the caller's existing business transaction. A successful
@@ -14,7 +18,7 @@ export async function publishOutboxEvent(
   const parsed = outboxEventSchema.safeParse(input);
   if (!parsed.success) throw new Error('Invalid outbox event');
   const event = parsed.data;
-  const eventKey = `mfa-lifecycle:${event.payload.aggregate.id}:v1`;
+  const eventKey = outboxEventKey(event);
   // ON CONFLICT DO NOTHING avoids aborting the PostgreSQL transaction on
   // replay. Never overwrite a prior event or its processing state.
   const result = await tx.outboxEvent.createMany({

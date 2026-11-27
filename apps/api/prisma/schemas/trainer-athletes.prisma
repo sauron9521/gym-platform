@@ -19,6 +19,7 @@ model TrainerAthlete {
   respondedAt DateTime? @map("responded_at") @db.Timestamptz(3)
 
   trainingProgramAssignments TrainingProgramAssignment[]
+  notifications Notification[]
 
   // End of a relationship or cancellation
   endedAt   DateTime? @map("ended_at") @db.Timestamptz(3)

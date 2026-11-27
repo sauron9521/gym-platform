@@ -61,6 +61,33 @@ These are logical types. E11 [#342](https://github.com/sauron9521/gym-platform/i
 - Template keys and localized labels (uk/en) are separate from event routing data. Rendering must escape text and avoid leaking protected content through a stale push preview.
 - Timestamp comparisons use UTC instants; locale + existing Profile IANA timezone affect **presentation and future scheduling**, not event ID or order.
 
+## N07: relationship producers (#570)
+
+Invitation creation, acceptance, decline, cancellation and termination
+publish a strict v1 event in the existing source transaction. The key
+is `trainer-relationship:<relationshipId>:<eventType>:v1`. The payload
+contains only the TrainerAthlete aggregate UUID; actor and occurrence
+time are derived from the persisted transition. No emails, end reasons,
+participant names or caller-selected recipients are copied. Failed or
+conflicting transitions cannot publish; termination retains its
+existing assignment/access/copy transaction.
+
+Dispatch verifies the event key, source state, actor and timestamp.
+Invitation creation/cancellation target the non-initiator, acceptance
+and decline target the initiator, and termination targets the participant
+other than the ending actor. An obsolete state completes without fanout.
+For pending/active notices both parties must remain active and the
+trainer must have current capability. For terminal notices the recipient
+must remain eligible, including current trainer capability for a
+trainer-side recipient. The athlete may receive a generic terminal notice
+after trainer revocation. A nullable source FK lets all Inbox reads,
+counts and read mutations use the same current relationship policy;
+source deletion cascades. Old invitation/acceptance notices are hidden
+when the state advances. No source ID, contact detail, action URL or
+direct resource navigation is returned; future clients can open their
+authorized relationship list. No historical backfill or external sends
+are enabled.
+
 ## Replay, conflicts and ordering
 
 - Atomic producer event insertion uses unique `eventKey`; consumer creates one logical `Notification` per (`eventId`, `recipientId`, `scope`) even after restart/replay.

@@ -11,6 +11,7 @@ import {
   type AcceptInvitationCommand,
   type ClosePendingInvitationCommand,
 } from '../application/pending-invitation-transition.js';
+import { publishRelationshipTransition } from './publish-relationship-transition.js';
 import { fullRelationshipReadWhere } from '../policies/trainer-athlete-read.policy.js';
 import { Prisma } from '#prisma/client';
 import {
@@ -153,7 +154,7 @@ export class TrainerAthletesRepository {
         throw new ConflictException('Relationship participants are no longer eligible');
       }
 
-      return tx.trainerAthlete.create({
+      const relationship = await tx.trainerAthlete.create({
         data: {
           trainer: { connect: { id: trainerId } },
           athlete: { connect: { id: athleteId } },
@@ -161,6 +162,8 @@ export class TrainerAthletesRepository {
         },
         select: trainerAthleteSelect,
       });
+      await publishRelationshipTransition(tx, relationship);
+      return relationship;
     });
   }
 
@@ -210,10 +213,14 @@ export class TrainerAthletesRepository {
     redactForTrainer = false,
   ) {
     try {
-      return await this.prisma.trainerAthlete.update({
-        where,
-        data,
-        select: redactForTrainer ? trainerAthleteHistoricalSelect : trainerAthleteSelect,
+      return await this.prisma.$transaction(async (tx) => {
+        const relationship = await tx.trainerAthlete.update({
+          where,
+          data,
+          select: redactForTrainer ? trainerAthleteHistoricalSelect : trainerAthleteSelect,
+        });
+        await publishRelationshipTransition(tx, relationship);
+        return relationship;
       });
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {

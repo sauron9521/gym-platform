@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import type { Prisma } from '#prisma/client';
 import { publishOutboxEvent, type OutboxEventInput } from '../public-api.js';
 
-function input(): OutboxEventInput {
+function input(): Extract<OutboxEventInput, { type: 'account.security.changed' }> {
   const userId = randomUUID();
   return {
     type: 'account.security.changed',
@@ -18,12 +18,27 @@ function input(): OutboxEventInput {
 
 describe('publishOutboxEvent', () => {
   it.each([
-    (e: OutboxEventInput) => ({ ...e, schemaVersion: 2 }),
-    (e: OutboxEventInput) => ({ ...e, type: 'unknown' }),
-    (e: OutboxEventInput) => ({ ...e, actorUserId: randomUUID() }),
-    (e: OutboxEventInput) => ({ ...e, occurredAt: new Date(NaN) }),
-    (e: OutboxEventInput) => ({ ...e, payload: { ...e.payload, secret: 'private-proof' } }),
-    (e: OutboxEventInput) => ({
+    (e: Extract<OutboxEventInput, { type: 'account.security.changed' }>) => ({
+      ...e,
+      schemaVersion: 2,
+    }),
+    (e: Extract<OutboxEventInput, { type: 'account.security.changed' }>) => ({
+      ...e,
+      type: 'unknown',
+    }),
+    (e: Extract<OutboxEventInput, { type: 'account.security.changed' }>) => ({
+      ...e,
+      actorUserId: randomUUID(),
+    }),
+    (e: Extract<OutboxEventInput, { type: 'account.security.changed' }>) => ({
+      ...e,
+      occurredAt: new Date(NaN),
+    }),
+    (e: Extract<OutboxEventInput, { type: 'account.security.changed' }>) => ({
+      ...e,
+      payload: { ...e.payload, secret: 'private-proof' },
+    }),
+    (e: Extract<OutboxEventInput, { type: 'account.security.changed' }>) => ({
       ...e,
       payload: {
         ...e.payload,

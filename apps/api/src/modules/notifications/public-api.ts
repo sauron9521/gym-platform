@@ -15,3 +15,5 @@ export {
   notificationInboxQuerySchema,
   type NotificationInboxQuery,
 } from './domain/notification-inbox.policy.js';
+
+export { inboxEventTypes } from './domain/outbox-event.policy.js';
