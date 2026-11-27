@@ -1,4 +1,5 @@
 import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import type { ReactNode } from 'react';
 import { useIntl } from 'react-intl';
 
 import { AccountLocalePicker } from '@/features/profile/ui/account-locale-picker';
@@ -7,7 +8,7 @@ import { useAppSettings } from '@/features/app-settings/model/app-settings-conte
 import { restDurationPresets } from '@/shared/config/rest-duration';
 import { createThemedStyles, useMobileTheme } from '@/shared/config/theme-provider';
 
-export function AppSettingsScreen() {
+export function AppSettingsScreen({ children }: { children?: ReactNode }) {
   const styles = useStyles();
   const { palette } = useMobileTheme();
   const intl = useIntl();
@@ -194,6 +195,7 @@ export function AppSettingsScreen() {
         ) : null}
       </View>
       <Text style={styles.hint}>{t('deviceOnly')}</Text>
+      {children}
       <Text accessibilityRole="header" style={styles.heading}>
         {t('appearance')}
       </Text>
