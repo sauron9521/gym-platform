@@ -3,6 +3,7 @@ import type { Prisma } from '#prisma/client';
 import { PrismaService } from '#src/infra/database/index';
 import {
   isProgramAssignmentEvent,
+  isTrainerReviewEvent,
   outboxEventKey,
   outboxEventSchema,
 } from '../domain/outbox-event.policy.js';
@@ -12,6 +13,7 @@ import {
   outboxRetryDelayMs,
 } from '../domain/outbox-dispatch.policy.js';
 
+import { resolveReviewNotification } from './resolve-review-notification.js';
 import { resolveProgramNotification } from './resolve-program-notification.js';
 import { resolveTrainerNotification } from './resolve-trainer-notification.js';
 
@@ -84,6 +86,7 @@ export class OutboxDispatchRepository {
         let recipientId: string;
         let trainerRelationshipId: string | null = null;
         let programAssignmentId: string | null = null;
+        let trainerApplicationId: string | null = null;
         let category: 'ACCOUNT' | 'TRAINER' | 'PROGRAM';
         if (event.type === 'account.security.changed') {
           // Re-read authoritative source. Never use actor or client data alone
@@ -106,6 +109,13 @@ export class OutboxDispatchRepository {
       `;
           if (!owners.length) return this.finish(tx, claim.id, 'RECIPIENT_INELIGIBLE', 'skipped');
           recipientId = audit.userId;
+          category = 'ACCOUNT';
+        } else if (isTrainerReviewEvent(event)) {
+          const resolved = await resolveReviewNotification(tx, event);
+          if (resolved.result !== 'resolved')
+            return this.finish(tx, claim.id, resolved.code, resolved.result);
+          recipientId = resolved.recipientId;
+          trainerApplicationId = resolved.trainerApplicationId;
           category = 'ACCOUNT';
         } else if (isProgramAssignmentEvent(event)) {
           const resolved = await resolveProgramNotification(tx, event);
@@ -133,6 +143,7 @@ export class OutboxDispatchRepository {
             templateKey: event.type,
             trainerRelationshipId,
             programAssignmentId,
+            trainerApplicationId,
           },
           skipDuplicates: true,
         });
@@ -153,6 +164,7 @@ export class OutboxDispatchRepository {
               resourceId: true,
               trainerRelationshipId: true,
               programAssignmentId: true,
+              trainerApplicationId: true,
             },
           });
           if (
@@ -162,6 +174,7 @@ export class OutboxDispatchRepository {
             existing.templateKey !== event.type ||
             existing.trainerRelationshipId !== trainerRelationshipId ||
             existing.programAssignmentId !== programAssignmentId ||
+            existing.trainerApplicationId !== trainerApplicationId ||
             existing.resourceType !== null ||
             existing.resourceId !== null
           ) {

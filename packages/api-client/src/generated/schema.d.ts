@@ -2513,7 +2513,9 @@ export interface operations {
                 | 'program.assigned'
                 | 'program.assignment.cancelled'
                 | 'program.assignment.terminated'
-                | 'program.assignment.completed';
+                | 'program.assignment.completed'
+                | 'trainer.application.reviewed'
+                | 'trainer.application.revoked';
               /** @enum {string} */
               category: 'ACCOUNT' | 'TRAINER' | 'PROGRAM';
               /** @enum {string} */
@@ -2527,7 +2529,9 @@ export interface operations {
                 | 'program.assigned'
                 | 'program.assignment.cancelled'
                 | 'program.assignment.terminated'
-                | 'program.assignment.completed';
+                | 'program.assignment.completed'
+                | 'trainer.application.reviewed'
+                | 'trainer.application.revoked';
               /** Format: date-time */
               createdAt: string;
               /** Format: date-time */
@@ -2596,7 +2600,9 @@ export interface operations {
               | 'program.assigned'
               | 'program.assignment.cancelled'
               | 'program.assignment.terminated'
-              | 'program.assignment.completed';
+              | 'program.assignment.completed'
+              | 'trainer.application.reviewed'
+              | 'trainer.application.revoked';
             /** @enum {string} */
             category: 'ACCOUNT' | 'TRAINER' | 'PROGRAM';
             /** @enum {string} */
@@ -2610,7 +2616,9 @@ export interface operations {
               | 'program.assigned'
               | 'program.assignment.cancelled'
               | 'program.assignment.terminated'
-              | 'program.assignment.completed';
+              | 'program.assignment.completed'
+              | 'trainer.application.reviewed'
+              | 'trainer.application.revoked';
             /** Format: date-time */
             createdAt: string;
             /** Format: date-time */
@@ -2656,7 +2664,9 @@ export interface operations {
               | 'program.assigned'
               | 'program.assignment.cancelled'
               | 'program.assignment.terminated'
-              | 'program.assignment.completed';
+              | 'program.assignment.completed'
+              | 'trainer.application.reviewed'
+              | 'trainer.application.revoked';
             /** @enum {string} */
             category: 'ACCOUNT' | 'TRAINER' | 'PROGRAM';
             /** @enum {string} */
@@ -2670,7 +2680,9 @@ export interface operations {
               | 'program.assigned'
               | 'program.assignment.cancelled'
               | 'program.assignment.terminated'
-              | 'program.assignment.completed';
+              | 'program.assignment.completed'
+              | 'trainer.application.reviewed'
+              | 'trainer.application.revoked';
             /** Format: date-time */
             createdAt: string;
             /** Format: date-time */

@@ -54,6 +54,7 @@ export function programInboxWhere(recipientId: string): Prisma.NotificationWhere
     type,
     category: 'PROGRAM',
     templateKey: type,
+    trainerApplicationId: null,
     trainerRelationshipId: null,
     programAssignment: { is: programNotificationSourceWhere(type, recipientId) },
     resourceId: null,

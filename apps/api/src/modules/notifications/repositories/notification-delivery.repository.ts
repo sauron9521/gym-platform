@@ -45,6 +45,9 @@ async function emailEligibility(
       category: true,
       templateKey: true,
       recipientId: true,
+      trainerApplicationId: true,
+      trainerRelationshipId: true,
+      programAssignmentId: true,
       resourceType: true,
       resourceId: true,
       createdAt: true,
@@ -57,35 +60,36 @@ async function emailEligibility(
     notification.category !== 'ACCOUNT' ||
     notification.type !== OPTIONAL_EMAIL_TYPE ||
     notification.templateKey !== OPTIONAL_EMAIL_TYPE ||
-    notification.resourceType !== 'TrainerApplication' ||
-    !notification.resourceId ||
+    notification.resourceType !== null ||
+    notification.resourceId !== null ||
+    !notification.trainerApplicationId ||
+    notification.trainerRelationshipId !== null ||
+    notification.programAssignmentId !== null ||
     notification.createdAt > now
   )
     return { decision: 'denied' };
+  const applications = await tx.$queryRaw<{ id: string; reviewedAt: Date }[]>`
+    SELECT id, reviewed_at AS "reviewedAt" FROM trainer_applications
+    WHERE id = ${notification.trainerApplicationId} AND user_id = ${notification.recipientId}
+      AND status IN ('APPROVED','REJECTED') AND reviewed_at IS NOT NULL
+      AND reviewed_at <= ${notification.createdAt} AND revoked_at IS NULL FOR SHARE
+  `;
+  const application = applications[0];
+  if (!application) return { decision: 'denied' };
+  // Lifetime and consent start at committed review time, not delayed dispatch.
   const expiresAt = new Date(
     Math.min(
-      notification.createdAt.getTime() + DELIVERY_TTL_MS,
+      application.reviewedAt.getTime() + DELIVERY_TTL_MS,
       notification.expiresAt?.getTime() ?? Infinity,
     ),
   );
   if (expiresAt <= now) return { decision: 'denied' };
-
-  // Settings mutations already serialize on this same user row.
   const owners = await tx.$queryRaw<{ id: string }[]>`
     SELECT id FROM users WHERE id = ${notification.recipientId}
-      AND status = 'ACTIVE' AND deleted_at IS NULL AND email_verified = true FOR SHARE
+      AND status = 'ACTIVE' AND deleted_at IS NULL AND email_verified = true
+      AND role <> 'ADMIN' FOR SHARE
   `;
   if (!owners.length) return { decision: 'denied' };
-
-  // Source is not the Inbox payload. Re-read current reviewed application;
-  // revoked/pending or foreign applications must never authorize email.
-  const applications = await tx.$queryRaw<{ id: string }[]>`
-    SELECT id FROM trainer_applications
-    WHERE id = ${notification.resourceId} AND user_id = ${notification.recipientId}
-      AND status IN ('APPROVED','REJECTED') AND reviewed_at IS NOT NULL
-      AND reviewed_at <= ${notification.createdAt} AND revoked_at IS NULL FOR SHARE
-  `;
-  if (!applications.length) return { decision: 'denied' };
   const owner = await tx.user.findUniqueOrThrow({
     where: { id: notification.recipientId },
     select: {
@@ -109,7 +113,7 @@ async function emailEligibility(
   if (
     !preference?.enabled ||
     !preference.consentedAt ||
-    preference.consentedAt > notification.createdAt
+    preference.consentedAt > application.reviewedAt
   )
     return { decision: 'denied' };
   const evaluatedAt = await databaseNow(tx);
@@ -127,8 +131,8 @@ async function emailEligibility(
 export class NotificationDeliveryRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  // No caller is wired in production yet. The future reviewed-event producer
-  // must establish the authoritative notification and its resource projection.
+  // The review producer establishes the authoritative source FK. No caller
+  // is wired in production until the external channel rollout.
   async planEmail(notificationId: string): Promise<'planned' | 'existing' | 'ineligible'> {
     return this.prisma.$transaction(async (tx) => {
       const now = await databaseNow(tx);

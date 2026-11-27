@@ -46,6 +46,7 @@ Legend: `I` = durable In-App; `P` = opt-in Mobile Push; `E` = optional transacti
 | `workout.reminder.due`                        | Schedule/Workout                                                      | Workout athlete with PLANNED future schedule                 | WORKOUT / USER   | **L** from mobile schedule; server-side reminders only if explicitly designed with per-device dedupe |
 | `account.security.changed`                    | Auth/User                                                             | Affected account holder                                      | ACCOUNT / USER   | I; urgent security E policy                                                                          |
 | `trainer.application.reviewed`                | Trainer onboarding                                                    | Applicant (only after review committed)                      | ACCOUNT / USER   | I; optional E                                                                                        |
+| `trainer.application.revoked`                 | Trainer onboarding                                                    | Applicant                                                    | ACCOUNT / USER   | I                                                                                                    |
 | `admin.trainer.review.required`               | Trainer onboarding                                                    | Current permitted moderators/operators                       | ADMIN / ADMIN    | I; optional E later                                                                                  |
 | `admin.billing.approval.requested`            | Billing [#542](https://github.com/sauron9521/gym-platform/issues/542) | Current authorized Super Admin(s), filtered on read/delivery | ADMIN / ADMIN    | I via [#543](https://github.com/sauron9521/gym-platform/issues/543)                                  |
 | `admin.billing.approval.resolved`             | Billing                                                               | Proposal owner, subject to current access                    | ADMIN / ADMIN    | I via #543                                                                                           |
@@ -171,6 +172,30 @@ this contract without changing its audit or authorization semantics.
 
 Inbox persistence and reads (#566/#567) are implemented. The #569 in-app
 dispatcher is implemented behind a default-off configuration flag and
-resolves the MFA audit owner only; external sends and operator replay
+resolves supported MFA, relationship, assignment and applicant review events; external sends and operator replay
 remain disabled. New event sources and retention remain separately owned. The event key deduplicates publication
 of an already identified transition, not the domain operation itself.
+
+## N09a: applicant review outcome notifications (#572)
+
+The existing authorized moderation transaction publishes one aggregate-only
+`trainer.application.reviewed` event on approval or rejection and one
+`trainer.application.revoked` event on revocation. The key is
+`trainer-application:<applicationId>:<type>:v1`. Denied transitions,
+conflicts and identical decision retries do not publish. Publication failure
+rolls back application and trainer capability writes.
+
+The dispatcher verifies persisted actor, transition time and source state
+and selects only the active non-admin applicant. A source FK protects
+all USER Inbox operations; revoked approvals become invisible. No reviewer
+identity, notes, reason, source ID or arbitrary URL is exposed. The
+optional-email admission policy uses the same source FK and committed
+review time for consent and expiry; revocation before admission cancels
+the queued email. The planner is not wired to production and sends no
+messages. Existing Auth MFA events and canonical verification/reset SMTP
+flows are unchanged, including the narrow action-required quiet-hours
+exception.
+
+Separate ADMIN-scope pending review fanout and current-permission Inbox
+access remain N09b. No privilege expansion, admin API or new security
+email path is introduced by this slice. #572 stays open.

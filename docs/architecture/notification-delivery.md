@@ -69,11 +69,11 @@ timestamps. No backfill or automatic send scheduler is installed.
 
 The private repository currently supports planning optional email only
 for the documented `trainer.application.reviewed` ACCOUNT/USER event.
-This event has no production producer or Inbox projection yet. Planning
+The #572 applicant review producer and Inbox projection are implemented; the email planner remains unwired. Planning
 and admission re-read the current active, verified account, the owned
 approved/rejected application, notification expiration, current opt-in
 with a valid consent timestamp and timezone/settings. Consent must predate
-or equal the notification creation time; admission also matches the
+or equal the committed review time (not delayed Inbox creation); admission also matches the
 original consent epoch. Auth security-change mail stays in the existing
 Auth flow; it is not an optional-email candidate. Unknown types, revoked
 sources, foreign or inactive accounts and invalid settings fail closed.
@@ -92,7 +92,7 @@ State transitions:
 - SENDING -> UNKNOWN on ambiguous outcome or abandoned sending lease.
   UNKNOWN never auto-retries. A stale token cannot finalize a newer claim.
 - Expired pending deliveries cancel. The provisional lifetime is at most
-  24 hours from notification creation, bounded by Inbox expiry.
+  24 hours from committed review, bounded by Inbox expiry.
   The future channel rollout must review this lifetime.
 
 The repository returns a durable admission marker, not a provider call
@@ -106,8 +106,8 @@ Integration tests use actual PostgreSQL and two independent clients,
 with simulated lease expiration and provider outcomes. They prove
 destination uniqueness, fencing, consent/source checks, quiet deferral,
 expiry, bounded retries, UNKNOWN behavior and cascade deletion. The
-existing Inbox and in-app dispatcher remain unchanged. A real transport,
-separate-process crash/restart, live staging, reviewed-event producer and
+existing Inbox and in-app dispatcher now resolve applicant review outcomes. A real transport,
+separate-process crash/restart, live staging, automatic email planning and
 Push/device authorization remain unverified. #569 remains open; channel
 work belongs to #343/#578 and operations/reconciliation to #579.
 

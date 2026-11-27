@@ -2200,7 +2200,9 @@
                               "program.assigned",
                               "program.assignment.cancelled",
                               "program.assignment.terminated",
-                              "program.assignment.completed"
+                              "program.assignment.completed",
+                              "trainer.application.reviewed",
+                              "trainer.application.revoked"
                             ]
                           },
                           "category": {
@@ -2219,7 +2221,9 @@
                               "program.assigned",
                               "program.assignment.cancelled",
                               "program.assignment.terminated",
-                              "program.assignment.completed"
+                              "program.assignment.completed",
+                              "trainer.application.reviewed",
+                              "trainer.application.revoked"
                             ]
                           },
                           "createdAt": {
@@ -2354,7 +2358,9 @@
                         "program.assigned",
                         "program.assignment.cancelled",
                         "program.assignment.terminated",
-                        "program.assignment.completed"
+                        "program.assignment.completed",
+                        "trainer.application.reviewed",
+                        "trainer.application.revoked"
                       ]
                     },
                     "category": {
@@ -2373,7 +2379,9 @@
                         "program.assigned",
                         "program.assignment.cancelled",
                         "program.assignment.terminated",
-                        "program.assignment.completed"
+                        "program.assignment.completed",
+                        "trainer.application.reviewed",
+                        "trainer.application.revoked"
                       ]
                     },
                     "createdAt": {
@@ -2458,7 +2466,9 @@
                         "program.assigned",
                         "program.assignment.cancelled",
                         "program.assignment.terminated",
-                        "program.assignment.completed"
+                        "program.assignment.completed",
+                        "trainer.application.reviewed",
+                        "trainer.application.revoked"
                       ]
                     },
                     "category": {
@@ -2477,7 +2487,9 @@
                         "program.assigned",
                         "program.assignment.cancelled",
                         "program.assignment.terminated",
-                        "program.assignment.completed"
+                        "program.assignment.completed",
+                        "trainer.application.reviewed",
+                        "trainer.application.revoked"
                       ]
                     },
                     "createdAt": {

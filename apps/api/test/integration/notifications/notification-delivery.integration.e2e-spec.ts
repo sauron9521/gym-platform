@@ -106,8 +106,7 @@ describe('Optional email delivery state machine (PostgreSQL; no provider)', () =
         category: 'ACCOUNT',
         type: 'trainer.application.reviewed',
         templateKey: 'trainer.application.reviewed',
-        resourceType: 'TrainerApplication',
-        resourceId: application.id,
+        trainerApplicationId: application.id,
         createdAt,
       },
     });
@@ -321,12 +320,12 @@ describe('Optional email delivery state machine (PostgreSQL; no provider)', () =
     await first.planEmail(notification.id);
     const claim = await claimFor(notification.id);
     await prisma.trainerApplication.update({
-      where: { id: notification.resourceId! },
+      where: { id: notification.trainerApplicationId! },
       data: { status: 'PENDING', reviewedAt: null, reviewerId: null, reviewReason: null },
     });
     expect(await first.beginSend(claim)).toBe('cancelled');
     await prisma.trainerApplication.update({
-      where: { id: notification.resourceId! },
+      where: { id: notification.trainerApplicationId! },
       data: {
         status: 'REJECTED',
         reviewedAt: notification.createdAt,

@@ -57,10 +57,26 @@ const programAssignmentEvent = z.strictObject({
   }),
 });
 
+export const reviewEventTypes = [
+  'trainer.application.reviewed',
+  'trainer.application.revoked',
+] as const;
+export type ReviewEventType = (typeof reviewEventTypes)[number];
+const trainerReviewEvent = z.strictObject({
+  type: z.enum(reviewEventTypes),
+  schemaVersion: z.literal(1),
+  occurredAt: z.date(),
+  actorUserId: z.uuid(),
+  payload: z.strictObject({
+    aggregate: z.strictObject({ kind: z.literal('TrainerApplication'), id: z.uuid() }),
+  }),
+});
+
 export const inboxEventTypes = [
   'account.security.changed',
   ...trainerEventTypes,
   ...programEventTypes,
+  ...reviewEventTypes,
 ] as const;
 
 export const outboxEventSchema = z
@@ -68,6 +84,7 @@ export const outboxEventSchema = z
     accountSecurityEvent,
     trainerRelationshipEvent,
     programAssignmentEvent,
+    trainerReviewEvent,
   ])
   .refine(
     (event) =>
@@ -86,11 +103,19 @@ export function outboxEventKey(event: ValidatedOutboxEvent): string {
     ? `mfa-lifecycle:${event.payload.aggregate.id}:v1`
     : event.payload.aggregate.kind === 'TrainerAthlete'
       ? `trainer-relationship:${event.payload.aggregate.id}:${event.type}:v1`
-      : `program-assignment:${event.payload.aggregate.id}:${event.type}:v1`;
+      : event.payload.aggregate.kind === 'TrainerApplication'
+        ? `trainer-application:${event.payload.aggregate.id}:${event.type}:v1`
+        : `program-assignment:${event.payload.aggregate.id}:${event.type}:v1`;
 }
 
 export function isProgramAssignmentEvent(
   event: ValidatedOutboxEvent,
 ): event is Extract<ValidatedOutboxEvent, { type: ProgramEventType }> {
   return event.payload.aggregate.kind === 'TrainingProgramAssignment';
+}
+
+export function isTrainerReviewEvent(
+  event: ValidatedOutboxEvent,
+): event is Extract<ValidatedOutboxEvent, { type: ReviewEventType }> {
+  return event.payload.aggregate.kind === 'TrainerApplication';
 }

@@ -7,6 +7,7 @@ import {
   type NotificationInboxQuery,
 } from '../domain/notification-inbox.policy.js';
 
+import { reviewInboxWhere } from '../domain/review-notification.policy.js';
 import { programInboxWhere } from '../domain/program-notification.policy.js';
 import { trainerInboxWhere } from '../domain/trainer-notification.policy.js';
 
@@ -36,9 +37,11 @@ function visible(recipientId: string, now: Date): Prisma.NotificationWhereInput 
             templateKey: 'account.security.changed',
             trainerRelationshipId: null,
             programAssignmentId: null,
+            trainerApplicationId: null,
           },
           ...trainerInboxWhere(recipientId),
           ...programInboxWhere(recipientId),
+          ...reviewInboxWhere(recipientId),
         ],
       },
     ],
