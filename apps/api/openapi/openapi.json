@@ -829,6 +829,284 @@
         "tags": ["Trainer moderation"]
       }
     },
+    "/admin/notifications": {
+      "get": {
+        "operationId": "AdminNotificationInboxController_list",
+        "parameters": [
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "pattern": "^(?:[1-9]|[1-4][0-9]|50)$"
+            }
+          },
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 100
+            }
+          },
+          {
+            "name": "unread",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["true", "false"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "type": {
+                            "type": "string",
+                            "enum": ["admin.trainer.review.required"]
+                          },
+                          "category": {
+                            "type": "string",
+                            "enum": ["ACCOUNT"]
+                          },
+                          "templateKey": {
+                            "type": "string",
+                            "enum": ["admin.trainer.review.required"]
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "readAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "nullable": true
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "type",
+                          "category",
+                          "templateKey",
+                          "createdAt",
+                          "readAt"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "nextCursor": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  },
+                  "required": ["data", "nextCursor"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "adminSessionCookie": []
+          }
+        ],
+        "tags": ["Admin notifications"]
+      }
+    },
+    "/admin/notifications/unread-count": {
+      "get": {
+        "operationId": "AdminNotificationInboxController_unreadCount",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "count": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": ["count"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "adminSessionCookie": []
+          }
+        ],
+        "tags": ["Admin notifications"]
+      }
+    },
+    "/admin/notifications/{id}": {
+      "get": {
+        "operationId": "AdminNotificationInboxController_detail",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "type": {
+                      "type": "string",
+                      "enum": ["admin.trainer.review.required"]
+                    },
+                    "category": {
+                      "type": "string",
+                      "enum": ["ACCOUNT"]
+                    },
+                    "templateKey": {
+                      "type": "string",
+                      "enum": ["admin.trainer.review.required"]
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "readAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "nullable": true
+                    }
+                  },
+                  "required": ["id", "type", "category", "templateKey", "createdAt", "readAt"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "adminSessionCookie": []
+          }
+        ],
+        "tags": ["Admin notifications"]
+      }
+    },
+    "/admin/notifications/{id}/read": {
+      "patch": {
+        "operationId": "AdminNotificationInboxController_markRead",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "type": {
+                      "type": "string",
+                      "enum": ["admin.trainer.review.required"]
+                    },
+                    "category": {
+                      "type": "string",
+                      "enum": ["ACCOUNT"]
+                    },
+                    "templateKey": {
+                      "type": "string",
+                      "enum": ["admin.trainer.review.required"]
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "readAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "nullable": true
+                    }
+                  },
+                  "required": ["id", "type", "category", "templateKey", "createdAt", "readAt"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "adminSessionCookie": []
+          }
+        ],
+        "tags": ["Admin notifications"]
+      }
+    },
+    "/admin/notifications/read-all": {
+      "post": {
+        "operationId": "AdminNotificationInboxController_markAllRead",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "adminSessionCookie": []
+          }
+        ],
+        "tags": ["Admin notifications"]
+      }
+    },
     "/users/me/capabilities": {
       "get": {
         "operationId": "UsersController_myCapabilities",

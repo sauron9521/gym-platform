@@ -1,3 +1,6 @@
+import { AdminNotificationInboxRepository } from '../../../src/modules/notifications/repositories/admin-notification-inbox.repository.js';
+import { AdminNotificationInboxController } from '../../../src/api/admin/notifications/controllers/admin-notification-inbox.controller.js';
+import { AdminNotificationsApiModule } from '../../../src/api/admin/notifications/admin-notifications-api.module.js';
 import { Injectable, Module, type INestApplication } from '@nestjs/common';
 import { ModulesContainer } from '@nestjs/core';
 import { ConfigService } from '@nestjs/config';
@@ -7,6 +10,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { AppModule } from '../../../src/app.module.js';
 import { NotificationsModule } from '../../../src/modules/notifications/notifications.module.js';
 import {
+  AdminNotificationInboxService,
   NotificationInboxService,
   NotificationSettingsService,
 } from '../../../src/modules/notifications/public-api.js';
@@ -281,6 +285,18 @@ describe('App (e2e)', () => {
     expect(
       modules.filter((module) => module.metatype === SharedNotificationsApiModule),
     ).toHaveLength(1);
+    const admin = modules.find((module) => module.metatype === AdminNotificationsApiModule);
+    expect([...admin!.controllers.keys()]).toEqual([AdminNotificationInboxController]);
+    expect(
+      app
+        .select(AdminNotificationsApiModule)
+        .get(AdminNotificationInboxController, { strict: true }),
+    ).toBeInstanceOf(AdminNotificationInboxController);
+    expect(
+      modules
+        .filter((module) => module.controllers.has(AdminNotificationInboxController))
+        .map((module) => module.metatype),
+    ).toEqual([AdminNotificationsApiModule]);
     const shared = modules.find((module) => module.metatype === SharedNotificationsApiModule);
     expect([...shared!.controllers.keys()]).toEqual([
       NotificationSettingsController,
@@ -304,6 +320,8 @@ describe('App (e2e)', () => {
       OutboxDispatchRepository,
       OutboxDispatchService,
       NotificationDeliveryRepository,
+      AdminNotificationInboxService,
+      AdminNotificationInboxRepository,
     ]) {
       expect(
         modules.filter((module) => module.providers.has(provider)).map((module) => module.metatype),

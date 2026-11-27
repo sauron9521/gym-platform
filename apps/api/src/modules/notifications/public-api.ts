@@ -19,3 +19,9 @@ export {
 export { inboxEventTypes } from './domain/outbox-event.policy.js';
 
 export { publishProgramAssignmentTransition } from './services/publish-program-assignment-transition.js';
+
+export { AdminNotificationInboxService } from './services/admin-notification-inbox.service.js';
+export {
+  adminNotificationInboxQuerySchema,
+  type AdminNotificationInboxQuery,
+} from './domain/notification-inbox.policy.js';

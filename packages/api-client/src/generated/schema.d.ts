@@ -196,6 +196,86 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/admin/notifications': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['AdminNotificationInboxController_list'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/admin/notifications/unread-count': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['AdminNotificationInboxController_unreadCount'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/admin/notifications/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['AdminNotificationInboxController_detail'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/admin/notifications/{id}/read': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch: operations['AdminNotificationInboxController_markRead'];
+    trace?: never;
+  };
+  '/admin/notifications/read-all': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['AdminNotificationInboxController_markAllRead'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/users/me/capabilities': {
     parameters: {
       query?: never;
@@ -1848,6 +1928,151 @@ export interface operations {
             updatedAt: string;
           };
         };
+      };
+    };
+  };
+  AdminNotificationInboxController_list: {
+    parameters: {
+      query?: {
+        limit?: string;
+        cursor?: string;
+        unread?: 'true' | 'false';
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            data: {
+              /** Format: uuid */
+              id: string;
+              /** @enum {string} */
+              type: 'admin.trainer.review.required';
+              /** @enum {string} */
+              category: 'ACCOUNT';
+              /** @enum {string} */
+              templateKey: 'admin.trainer.review.required';
+              /** Format: date-time */
+              createdAt: string;
+              /** Format: date-time */
+              readAt: string | null;
+            }[];
+            nextCursor: string | null;
+          };
+        };
+      };
+    };
+  };
+  AdminNotificationInboxController_unreadCount: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            count: number;
+          };
+        };
+      };
+    };
+  };
+  AdminNotificationInboxController_detail: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            type: 'admin.trainer.review.required';
+            /** @enum {string} */
+            category: 'ACCOUNT';
+            /** @enum {string} */
+            templateKey: 'admin.trainer.review.required';
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            readAt: string | null;
+          };
+        };
+      };
+    };
+  };
+  AdminNotificationInboxController_markRead: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            type: 'admin.trainer.review.required';
+            /** @enum {string} */
+            category: 'ACCOUNT';
+            /** @enum {string} */
+            templateKey: 'admin.trainer.review.required';
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            readAt: string | null;
+          };
+        };
+      };
+    };
+  };
+  AdminNotificationInboxController_markAllRead: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
       };
     };
   };

@@ -35,3 +35,8 @@ export function decodeInboxCursor(cursor: string) {
 export function encodeInboxCursor(row: { createdAt: Date; id: string }) {
   return row.createdAt.toISOString() + '|' + row.id;
 }
+
+export const adminNotificationInboxQuerySchema = notificationInboxQuerySchema.omit({
+  category: true,
+});
+export type AdminNotificationInboxQuery = z.infer<typeof adminNotificationInboxQuerySchema>;

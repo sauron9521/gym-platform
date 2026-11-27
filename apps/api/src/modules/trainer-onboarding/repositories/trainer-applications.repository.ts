@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 
+import { publishOutboxEvent } from '#src/modules/notifications/public-api';
 import { PrismaService } from '#src/infra/database/index';
 
 import { trainerApplicationOwnSelect } from '../selects/trainer-application.select.js';
@@ -43,9 +44,19 @@ export class TrainerApplicationsRepository {
   }
 
   create(userId: string, applicantNote: string) {
-    return this.prisma.trainerApplication.create({
-      data: { userId, applicantNote },
-      select: trainerApplicationOwnSelect,
+    return this.prisma.$transaction(async (tx) => {
+      const application = await tx.trainerApplication.create({
+        data: { userId, applicantNote },
+        select: trainerApplicationOwnSelect,
+      });
+      await publishOutboxEvent(tx, {
+        type: 'admin.trainer.review.required',
+        schemaVersion: 1,
+        actorUserId: userId,
+        occurredAt: application.createdAt,
+        payload: { aggregate: { kind: 'TrainerApplication', id: application.id } },
+      });
+      return application;
     });
   }
 
