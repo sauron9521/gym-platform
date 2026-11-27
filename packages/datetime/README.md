@@ -16,6 +16,12 @@ timezone mutation. Uses date-fns 4.4.0 and @date-fns/tz 1.5.0.
 - `groupByCalendarDay`: stable chronological grouping of offset-bearing
   timestamps, skipping missing or malformed dates without mutating rows.
 
+- `minuteOfDayInTimezone`: direct Intl civil minute projection in a
+  verified account zone. No implicit local fallback.
+- `isMinuteInDailyWindow`: half-open same-day or midnight-wrapping window.
+- `subtractElapsedMinutes`: date-fns elapsed arithmetic; 1440 minutes
+  always means 24 hours, not one civil day.
+
 Business rules belong in @gym/domain; timezone preferences and consent
 remain API-owned. This package does not schedule work, resolve ambiguous
 wall-clock input, authorize actions or implement retry/lease deadlines.

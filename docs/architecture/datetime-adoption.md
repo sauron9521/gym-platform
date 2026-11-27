@@ -11,15 +11,15 @@ date library. The initial search for Date construction/parsing/Intl
 found 132 tracked source files across apps/packages, including tests.
 This is a candidate inventory, not a count of code to replace.
 
-| Area                                                            | Decision                                                                               |
-| --------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
-| Domain workout calendar status (#341)                           | Adopt strict parse and civil day via shared datetime; keep business rule               |
-| Web and Mobile calendar-month helpers                           | DT02: shared month/week arithmetic and DST boundaries                                  |
-| API notification settings and delivery policy                   | Separate slice: named-zone and quiet-hour classification, preserve fail-closed consent |
-| Mobile reminders (#342)                                         | Absolute elapsed-time lead; permission and device evidence before scheduling           |
-| Progress, body measurement statistics, Trainer dashboard        | Review interval semantics and query boundaries before migration                        |
-| Admin and dashboard formatting                                  | Review existing locale formatting; keep Intl/next-intl when sufficient                 |
-| Auth session TTL, database lease/retention, monotonic deadlines | Keep existing clocks and absolute/SQL arithmetic; no cosmetic replacement              |
+| Area                                                            | Decision                                                                       |
+| --------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| Domain workout calendar status (#341)                           | Adopt strict parse and civil day via shared datetime; keep business rule       |
+| Web and Mobile calendar-month helpers                           | DT02: shared month/week arithmetic and DST boundaries                          |
+| API notification settings and delivery policy                   | DT03: shared named-zone and daily-window helpers; preserve fail-closed consent |
+| Mobile reminders (#342)                                         | Absolute elapsed-time lead; permission and device evidence before scheduling   |
+| Progress, body measurement statistics, Trainer dashboard        | Review interval semantics and query boundaries before migration                |
+| Admin and dashboard formatting                                  | Review existing locale formatting; keep Intl/next-intl when sufficient         |
+| Auth session TTL, database lease/retention, monotonic deadlines | Keep existing clocks and absolute/SQL arithmetic; no cosmetic replacement      |
 
 The initial package is tested with UTC, Kyiv DST boundaries, negative
 and non-hour offsets, local day keys and invalid input. `parseISO`
@@ -54,6 +54,22 @@ DST, midnight gaps, year transitions and non-hour offsets.
 Historical skipped whole civil dates and physical device timezone
 changes are not part of the supported acceptance matrix; native QA
 remains #348/#349. No new external dependencies or OS permission work.
+
+## DT03 — account timezone and quiet hours
+
+The profile DTO and notification settings projection use the same public
+`isIanaTimezone` validator. Shared datetime helpers project an actual
+instant into a named-zone civil minute via Intl (without constructing
+ambiguous wall-clock dates), classify half-open daily windows and use
+date-fns `subMinutes` for elapsed reminder lead. Keep Intl field
+projection rather than introducing a second timezone conversion for
+hour/minute fields. Invalid projection fails closed, including when
+quiet hours are disabled. Existing UTC default for an absent profile
+remains; a corrupt stored zone is not silently converted to UTC.
+Profile trimming, consent, settings validation, source eligibility,
+database clock, lease and transport decisions remain API-owned.
+1440 minutes means exactly 24 elapsed hours across DST. No scheduling
+or provider activation is introduced.
 
 ## Other library candidates — not approved
 

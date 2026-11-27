@@ -6,6 +6,7 @@ import { endOfWeek } from 'date-fns/endOfWeek';
 import { startOfDay } from 'date-fns/startOfDay';
 import { startOfMonth } from 'date-fns/startOfMonth';
 import { startOfWeek } from 'date-fns/startOfWeek';
+import { subMinutes } from 'date-fns/subMinutes';
 import { format } from 'date-fns/format';
 import { isValid } from 'date-fns/isValid';
 import { parseISO } from 'date-fns/parseISO';
@@ -174,4 +175,55 @@ export function groupByCalendarDay(items, getInstant) {
     else groups.set(key, [item]);
   }
   return groups;
+}
+
+/** Project a real instant into a verified named zone, not an ambiguous
+ * wall-clock date. Intl supplies civil fields directly, including DST folds
+ * and historical offsets with seconds. Never fall back to the device zone. */
+export function minuteOfDayInTimezone(instant, timeZone) {
+  if (!(instant instanceof Date) || !isValid(instant) || !isIanaTimezone(timeZone)) return null;
+  try {
+    const parts = new Intl.DateTimeFormat('en-GB', {
+      timeZone,
+      hour: '2-digit',
+      minute: '2-digit',
+      hourCycle: 'h23',
+      calendar: 'gregory',
+      numberingSystem: 'latn',
+    }).formatToParts(instant);
+    const hour = Number(parts.find((part) => part.type === 'hour')?.value);
+    const minute = Number(parts.find((part) => part.type === 'minute')?.value);
+    return Number.isInteger(hour) &&
+      hour >= 0 &&
+      hour < 24 &&
+      Number.isInteger(minute) &&
+      minute >= 0 &&
+      minute < 60
+      ? hour * 60 + minute
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Membership in a half-open daily window. A wrapping window crosses
+ * midnight; equal endpoints are ambiguous. Null means invalid evidence. */
+export function isMinuteInDailyWindow(minute, start, end) {
+  const valid = (value) => Number.isInteger(value) && value >= 0 && value < 1440;
+  if (!valid(minute) || !valid(start) || !valid(end) || start === end) return null;
+  return start < end ? minute >= start && minute < end : minute >= start || minute < end;
+}
+
+/** Elapsed minutes, not calendar days: 1440 always means exactly 24 hours,
+ * even when the local day is shorter or longer. Return a fresh plain Date. */
+export function subtractElapsedMinutes(instant, minutes) {
+  if (
+    !(instant instanceof Date) ||
+    !isValid(instant) ||
+    !Number.isSafeInteger(minutes) ||
+    minutes < 0
+  )
+    return null;
+  const result = subMinutes(new Date(instant.getTime()), minutes);
+  return isValid(result) ? result : null;
 }

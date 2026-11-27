@@ -7,8 +7,8 @@ import {
   mergeNotificationSettings,
   quietHoursAt,
   localReminderCandidate,
-  isNotificationTimezone,
 } from '../domain/notification-settings.policy.js';
+import { isIanaTimezone } from '@gym/datetime';
 
 describe('notification preferences', () => {
   it('defaults every external pair off with a 22–08 quiet window and one hour lead', () => {
@@ -101,9 +101,16 @@ describe('quiet hours at a real instant', () => {
     expect(at('2026-03-08T06:59:00Z', 'America/New_York', window)).toBe('quiet');
     expect(at('2026-03-08T07:00:00Z', 'America/New_York', window)).toBe('allowed');
   });
+  it('projects non-hour offsets and a midnight DST gap without using the process timezone', () => {
+    const midday = { ...defaults, quietStartMinute: 720, quietEndMinute: 780 };
+    expect(at('2026-11-27T06:15:00Z', 'Asia/Kathmandu', midday)).toBe('quiet');
+    expect(at('2026-11-27T07:15:00Z', 'Asia/Kathmandu', midday)).toBe('allowed');
+    const midnight = { ...defaults, quietStartMinute: 0, quietEndMinute: 60 };
+    expect(at('2018-11-04T03:00:00Z', 'America/Sao_Paulo', midnight)).toBe('allowed');
+  });
   it('fails closed for invalid dates, timezone, offsets or settings even if disabled', () => {
     for (const zone of ['Mars/Olympus', '+02:00', 'EST', '', undefined])
-      expect(isNotificationTimezone(zone)).toBe(false);
+      expect(isIanaTimezone(zone)).toBe(false);
     expect(at('invalid')).toBe('invalid');
     expect(at('2026-11-26T12:00:00Z', 'invalid', { ...defaults, quietHoursEnabled: false })).toBe(
       'invalid',
@@ -111,7 +118,7 @@ describe('quiet hours at a real instant', () => {
     expect(at('2026-11-26T12:00:00Z', 'UTC', { ...defaults, quietEndMinute: 1320 })).toBe(
       'invalid',
     );
-    expect(isNotificationTimezone('Europe/Kyiv')).toBe(true);
+    expect(isIanaTimezone('Europe/Kyiv')).toBe(true);
   });
 });
 
@@ -139,6 +146,20 @@ describe('local reminder candidate (no scheduling)', () => {
     expect(
       localReminderCandidate({ ...input, scheduledAt: new Date('2026-11-28T08:30:00Z') }),
     ).toBeNull();
+  });
+  it.each([
+    ['2026-03-29T12:00:00Z', '2026-03-28T12:00:00.000Z'],
+    ['2026-10-25T12:00:00Z', '2026-10-24T12:00:00.000Z'],
+  ])('uses 1440 elapsed minutes across DST, not one civil day: %s', (scheduled, expected) => {
+    expect(
+      localReminderCandidate({
+        ...input,
+        scheduledAt: new Date(scheduled),
+        now: new Date('2026-03-01T00:00:00Z'),
+        timezone: 'Europe/Kyiv',
+        settings: { ...defaults, reminderLeadMinutes: 1440, quietHoursEnabled: false },
+      })?.toISOString(),
+    ).toBe(expected);
   });
   it('never grants permission or accepts a wrong category, nonplanned state or invalid input', () => {
     for (const status of ['IN_PROGRESS', 'COMPLETED', 'CANCELLED'])

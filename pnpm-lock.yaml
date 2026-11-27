@@ -287,6 +287,9 @@ importers:
 
   apps/api:
     dependencies:
+      '@gym/datetime':
+        specifier: workspace:*
+        version: link:../../packages/datetime
       '@gym/domain':
         specifier: workspace:*
         version: link:../../packages/domain
