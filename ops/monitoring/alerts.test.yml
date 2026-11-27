@@ -394,3 +394,120 @@ tests:
       - eval_time: 8m
         alertname: GymApiDockerSignalsSnapshotStale
         exp_alerts: []
+
+  - name: 'notification queue age alerts require enabled workers and sustained backlog'
+    interval: 1m
+    input_series:
+      - series: 'gym_api_notification_oldest_due_seconds{job="api",instance="active",queue="outbox"}'
+        values: '400+0x10'
+      - series: 'gym_api_notification_oldest_due_seconds{job="api",instance="paused",queue="outbox"}'
+        values: '400+0x10'
+      - series: 'gym_api_notification_worker_enabled{job="api",instance="active",worker="outbox"}'
+        values: '1+0x10'
+      - series: 'gym_api_notification_worker_enabled{job="api",instance="paused",worker="outbox"}'
+        values: '0+0x10'
+      - series: 'gym_api_notification_oldest_due_seconds{job="api",instance="active",queue="delivery"}'
+        values: '700+0x10'
+      - series: 'gym_api_notification_worker_enabled{job="api",instance="active",worker="email"}'
+        values: '0+0x10'
+    alert_rule_test:
+      - eval_time: 4m
+        alertname: GymNotificationOutboxBacklog
+        exp_alerts: []
+      - eval_time: 6m
+        alertname: GymNotificationOutboxBacklog
+        exp_alerts:
+          - exp_labels: { severity: warning, job: api, instance: active, queue: outbox }
+            exp_annotations:
+              summary: 'Notification outbox has been overdue for more than five minutes'
+      - eval_time: 6m
+        alertname: GymNotificationDeliveryBacklog
+        exp_alerts: []
+
+  - name: 'notification worker delivery backlog and expired leases alert without private labels'
+    interval: 1m
+    input_series:
+      - series: 'gym_api_notification_oldest_due_seconds{job="api",instance="one",queue="delivery"}'
+        values: '700+0x10'
+      - series: 'gym_api_notification_worker_enabled{job="api",instance="one",worker="email"}'
+        values: '1+0x10'
+      - series: 'gym_api_notification_expired_leases{job="api",instance="one",queue="delivery"}'
+        values: '1+0x10'
+    alert_rule_test:
+      - eval_time: 1m
+        alertname: GymNotificationExpiredLeases
+        exp_alerts: []
+      - eval_time: 3m
+        alertname: GymNotificationExpiredLeases
+        exp_alerts:
+          - exp_labels: { severity: warning, job: api, instance: one, queue: delivery }
+            exp_annotations:
+              summary: 'Notification worker leases remain expired'
+      - eval_time: 6m
+        alertname: GymNotificationDeliveryBacklog
+        exp_alerts:
+          - exp_labels: { severity: warning, job: api, instance: one, queue: delivery }
+            exp_annotations:
+              summary: 'Notification delivery has been overdue for more than ten minutes'
+
+  - name: 'notification collection failure and unresolved terminal outcomes remain visible'
+    interval: 1m
+    input_series:
+      - series: gym_api_notification_queue_snapshot_success
+        values: '0+0x5'
+      - series: 'gym_api_notification_queue_rows{queue="outbox",state="dead_letter"}'
+        values: '1+0x5'
+      - series: 'gym_api_notification_queue_rows{queue="delivery",state="unknown"}'
+        values: '1+0x5'
+      - series: 'gym_api_notification_worker_batch_failures_total{worker="outbox"}'
+        values: '0 0 1 1 1 1'
+    alert_rule_test:
+      - eval_time: 1m
+        alertname: GymNotificationQueueSnapshotFailed
+        exp_alerts: []
+      - eval_time: 3m
+        alertname: GymNotificationQueueSnapshotFailed
+        exp_alerts:
+          - exp_labels: { severity: warning }
+            exp_annotations:
+              summary: 'Notification queue metrics cannot be collected'
+      - eval_time: 3m
+        alertname: GymNotificationDeadLetter
+        exp_alerts:
+          - exp_labels: { severity: warning, queue: outbox, state: dead_letter }
+            exp_annotations:
+              summary: 'Notification queue contains dead-letter work requiring review'
+      - eval_time: 3m
+        alertname: GymNotificationUnknownDelivery
+        exp_alerts:
+          - exp_labels: { severity: warning, queue: delivery, state: unknown }
+            exp_annotations:
+              summary: 'Notification delivery outcome is ambiguous; do not retry blindly'
+      - eval_time: 3m
+        alertname: GymNotificationWorkerBatchFailed
+        exp_alerts:
+          - exp_labels: { severity: warning, worker: outbox }
+            exp_annotations:
+              summary: 'Notification worker reported a batch failure'
+
+  - name: 'notification healthy or absent optional metrics do not create new alerts'
+    interval: 1m
+    input_series:
+      - series: gym_api_notification_queue_snapshot_success
+        values: '1+0x10'
+      - series: 'gym_api_notification_oldest_due_seconds{queue="outbox"}'
+        values: '0+0x10'
+      - series: 'gym_api_notification_worker_enabled{worker="outbox"}'
+        values: '1+0x10'
+      - series: 'gym_api_notification_queue_rows{queue="delivery",state="unknown"}'
+        values: '0+0x10'
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: GymNotificationQueueSnapshotFailed
+        exp_alerts: []
+      - eval_time: 10m
+        alertname: GymNotificationOutboxBacklog
+        exp_alerts: []
+      - eval_time: 10m
+        alertname: GymNotificationUnknownDelivery
+        exp_alerts: []

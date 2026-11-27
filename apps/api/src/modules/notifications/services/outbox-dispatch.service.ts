@@ -1,6 +1,7 @@
-import { Inject, Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
+import { Inject, Injectable, Logger, OnModuleDestroy, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Cron } from '@nestjs/schedule';
+import { NotificationWorkerMetricsRegistry } from '#src/common/http-metrics/notification-worker-metrics.registry';
 import type { AppConfigService } from '#src/common/config/app-config.types';
 import { OUTBOX_BATCH_LIMIT } from '../domain/outbox-dispatch.policy.js';
 import { OutboxDispatchRepository } from '../repositories/outbox-dispatch.repository.js';
@@ -13,6 +14,7 @@ export class OutboxDispatchService implements OnModuleDestroy {
   constructor(
     private readonly repository: OutboxDispatchRepository,
     @Inject(ConfigService) private readonly config: AppConfigService,
+    @Optional() private readonly metrics?: NotificationWorkerMetricsRegistry,
   ) {}
 
   onModuleDestroy() {
@@ -39,8 +41,10 @@ export class OutboxDispatchService implements OnModuleDestroy {
       }
     } catch {
       // Leases expire even when the DB is unavailable for the retry write.
+      this.metrics?.batchFailed('outbox');
       this.logger.error('NOTIFICATION_DISPATCH_BATCH_FAILED');
     } finally {
+      this.metrics?.recordOutbox(counts);
       if (Object.values(counts).some((count) => count > 0)) {
         this.logger.log({ event: 'NOTIFICATION_DISPATCH_BATCH', ...counts });
       }

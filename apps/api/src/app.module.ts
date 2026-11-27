@@ -19,6 +19,8 @@ import { PublicApiModule } from '#src/api/public/public-api.module';
 import { RolesGuard } from '#src/common/guards/roles.guard';
 import { PermissionsGuard } from '#src/common/rbac/permissions.guard';
 import { RequestContextMiddleware } from '#src/common/request-context/request-context.middleware';
+import { NotificationWorkerMetricsModule } from '#src/common/http-metrics/notification-worker-metrics.module';
+import { NotificationQueueMetricsService } from '#src/common/http-metrics/notification-queue-metrics.service';
 import { HttpMetricsRegistry } from '#src/common/http-metrics/http-metrics.registry';
 import { HttpMetricsController } from '#src/common/http-metrics/http-metrics.controller';
 import { DistributedThrottlerStorage } from '#src/common/rate-limit/distributed-throttler.storage';
@@ -91,6 +93,7 @@ import { WorkoutAnalyticsModule } from '#src/modules/workout-analytics/workout-a
         ),
     }),
     PrismaModule,
+    NotificationWorkerMetricsModule,
     HealthModule,
     ThrottlerModule.forRootAsync({
       imports: [RateLimitStorageModule],
@@ -120,6 +123,7 @@ import { WorkoutAnalyticsModule } from '#src/modules/workout-analytics/workout-a
   controllers: [HttpMetricsController],
   providers: [
     HttpMetricsRegistry,
+    NotificationQueueMetricsService,
     { provide: APP_FILTER, useClass: ApiExceptionFilter },
     {
       provide: APP_GUARD,

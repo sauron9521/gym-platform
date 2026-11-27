@@ -1,5 +1,6 @@
 import { Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { NotificationWorkerMetricsRegistry } from '#src/common/http-metrics/notification-worker-metrics.registry';
 import type { AppEnv } from '#src/common/config/env.schema';
 import {
   OUTBOX_BATCH_LIMIT,
@@ -17,11 +18,13 @@ function setup(enabled = true) {
     process: vi.fn().mockResolvedValue('processed'),
     retry: vi.fn().mockResolvedValue('retry'),
   };
+  const metrics = new NotificationWorkerMetricsRegistry();
   const service = new OutboxDispatchService(
     repository as unknown as OutboxDispatchRepository,
     new ConfigService<AppEnv, true>({ NOTIFICATION_DISPATCH_ENABLED: enabled }),
+    metrics,
   );
-  return { service, repository };
+  return { service, repository, metrics };
 }
 
 describe('OutboxDispatchService', () => {
@@ -54,7 +57,7 @@ describe('OutboxDispatchService', () => {
   });
 
   it('routes processing failures to bounded retry and never logs payload or raw errors', async () => {
-    const { service, repository } = setup();
+    const { service, repository, metrics } = setup();
     const log = vi.spyOn(Logger.prototype, 'log').mockImplementation(() => undefined);
     const error = vi.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
     repository.claim.mockResolvedValueOnce(claim).mockResolvedValueOnce(null);
@@ -63,17 +66,23 @@ describe('OutboxDispatchService', () => {
     expect(repository.retry).toHaveBeenCalledExactlyOnceWith(claim);
     expect(log).toHaveBeenCalledWith(expect.objectContaining({ retry: 1, processed: 0 }));
     expect(error).not.toHaveBeenCalled();
+    expect(metrics.render()).toContain(
+      'gym_api_notification_outbox_results_total{outcome="retry"} 1',
+    );
     expect(JSON.stringify(log.mock.calls)).not.toContain('private failure payload');
   });
 
   it('does not spin when the database cannot persist retry', async () => {
-    const { service, repository } = setup();
+    const { service, repository, metrics } = setup();
     const error = vi.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
     repository.process.mockRejectedValueOnce(new Error('private failure'));
     repository.retry.mockRejectedValueOnce(new Error('database unavailable'));
     await expect(service.dispatch()).resolves.toBeUndefined();
     expect(repository.claim).toHaveBeenCalledOnce();
     expect(error).toHaveBeenCalledExactlyOnceWith('NOTIFICATION_DISPATCH_BATCH_FAILED');
+    expect(metrics.render()).toContain(
+      'gym_api_notification_worker_batch_failures_total{worker="outbox"} 1',
+    );
   });
 
   it('reports exhausted claims without invoking the processor', async () => {

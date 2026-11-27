@@ -4,6 +4,7 @@ import { createServer, get } from 'node:http';
 import type { INestApplication } from '@nestjs/common';
 import type { Request, Response } from 'express';
 
+import { NotificationWorkerMetricsRegistry } from '../../../src/common/http-metrics/notification-worker-metrics.registry.js';
 import { HttpMetricsRegistry } from '../../../src/common/http-metrics/http-metrics.registry.js';
 import { RequestContextMiddleware } from '../../../src/common/request-context/request-context.middleware.js';
 import { Test } from '@nestjs/testing';
@@ -71,6 +72,19 @@ describe('HTTP metrics (real Nest middleware, controller and test DB)', () => {
       .get('/internal/metrics')
       .set('Authorization', 'Bearer ' + TOKEN)
       .expect(200);
+  });
+
+  it('exposes only authenticated bounded queue and worker telemetry', async () => {
+    app.get(NotificationWorkerMetricsRegistry).recordOutbox({ processed: 3 });
+    const result = await metrics();
+    expect(sample(result, 'gym_api_notification_queue_snapshot_success')).toBe(1);
+    expect(sample(result, 'gym_api_notification_outbox_results_total{outcome="processed"}')).toBe(
+      3,
+    );
+    expect(sample(result, 'gym_api_notification_worker_enabled{worker="outbox"}')).toBe(0);
+    expect(result).not.toMatch(
+      /recipient_id=|destination_key=|claim_token=|event_id=|last_error_code=/,
+    );
   });
 
   it('counts real completed responses including unauthenticated failures', async () => {

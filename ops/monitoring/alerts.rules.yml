@@ -199,3 +199,73 @@ groups:
           severity: warning
         annotations:
           summary: 'Gym API CPU cgroup is throttled in at least 20 percent of periods'
+
+  # Opt-in authenticated internal API scrape. Queue gauges describe a shared
+  # database; never sum them across API replicas.
+  - name: gym-notification-queues
+    interval: 30s
+    rules:
+      - alert: GymNotificationQueueSnapshotFailed
+        expr: gym_api_notification_queue_snapshot_success == 0
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: 'Notification queue metrics cannot be collected'
+
+      - alert: GymNotificationOutboxBacklog
+        expr: |
+          gym_api_notification_oldest_due_seconds{queue="outbox"} > 300
+          and on(job, instance) gym_api_notification_worker_enabled{worker="outbox"} == 1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: 'Notification outbox has been overdue for more than five minutes'
+
+      - alert: GymNotificationDeliveryBacklog
+        expr: |
+          gym_api_notification_oldest_due_seconds{queue="delivery"} > 600
+          and on(job, instance) gym_api_notification_worker_enabled{worker="email"} == 1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: 'Notification delivery has been overdue for more than ten minutes'
+
+      - alert: GymNotificationExpiredLeases
+        expr: |
+          (gym_api_notification_expired_leases{queue="outbox"} > 0
+            and on(job, instance) gym_api_notification_worker_enabled{worker="outbox"} == 1)
+          or
+          (gym_api_notification_expired_leases{queue="delivery"} > 0
+            and on(job, instance) gym_api_notification_worker_enabled{worker="email"} == 1)
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: 'Notification worker leases remain expired'
+
+      - alert: GymNotificationDeadLetter
+        expr: gym_api_notification_queue_rows{state="dead_letter"} > 0
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: 'Notification queue contains dead-letter work requiring review'
+
+      - alert: GymNotificationUnknownDelivery
+        expr: gym_api_notification_queue_rows{queue="delivery",state="unknown"} > 0
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: 'Notification delivery outcome is ambiguous; do not retry blindly'
+
+      - alert: GymNotificationWorkerBatchFailed
+        expr: increase(gym_api_notification_worker_batch_failures_total[5m]) > 0
+        for: 0m
+        labels:
+          severity: warning
+        annotations:
+          summary: 'Notification worker reported a batch failure'

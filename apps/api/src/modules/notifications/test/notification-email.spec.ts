@@ -8,6 +8,7 @@ import {
   MailTimeoutError,
   type Mailer,
 } from '@nestjs/mail';
+import { NotificationWorkerMetricsRegistry } from '#src/common/http-metrics/notification-worker-metrics.registry';
 import type { AppEnv } from '#src/common/config/env.schema';
 import {
   classifyEmailFailure,
@@ -121,12 +122,14 @@ describe('NotificationEmailDispatchService', () => {
       complete: vi.fn().mockResolvedValue('recorded'),
     };
     const sender = { send: vi.fn().mockResolvedValue('accepted') };
+    const metrics = new NotificationWorkerMetricsRegistry();
     const service = new NotificationEmailDispatchService(
       repository as unknown as NotificationDeliveryRepository,
       sender as unknown as NotificationEmailSender,
       config(overrides),
+      metrics,
     );
-    return { repository, sender, service };
+    return { repository, sender, service, metrics };
   }
   afterEach(() => vi.restoreAllMocks());
 
@@ -143,12 +146,18 @@ describe('NotificationEmailDispatchService', () => {
   });
 
   it('sends admitted work only, records the outcome and bounds the batch', async () => {
-    const { repository, sender, service } = setup();
+    const { repository, sender, service, metrics } = setup();
     await service.dispatch();
     expect(repository.claimEmail).toHaveBeenCalledTimes(EMAIL_BATCH_LIMIT);
     expect(sender.send).toHaveBeenCalledTimes(EMAIL_BATCH_LIMIT);
     expect(sender.send).toHaveBeenCalledWith(claim.id, ready, expect.any(AbortSignal));
     expect(repository.complete).toHaveBeenCalledWith(claim, 'accepted');
+    expect(metrics.render()).toContain(
+      'gym_api_notification_email_results_total{outcome="accepted"} ' + EMAIL_BATCH_LIMIT,
+    );
+    expect(metrics.render()).toContain(
+      'gym_api_notification_email_attempt_duration_seconds_count ' + EMAIL_BATCH_LIMIT,
+    );
     service.onModuleDestroy();
     await service.dispatch();
     expect(repository.claimEmail).toHaveBeenCalledTimes(EMAIL_BATCH_LIMIT);
@@ -186,7 +195,7 @@ describe('NotificationEmailDispatchService', () => {
   });
 
   it('never repeats an ambiguous send after completion fails and logs no PII', async () => {
-    const { repository, sender, service } = setup();
+    const { repository, sender, service, metrics } = setup();
     const log = vi.spyOn(Logger.prototype, 'log').mockImplementation(() => undefined);
     const error = vi.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
     sender.send.mockResolvedValueOnce('unknown');
@@ -195,6 +204,13 @@ describe('NotificationEmailDispatchService', () => {
     expect(sender.send).toHaveBeenCalledOnce();
     expect(repository.claimEmail).toHaveBeenCalledOnce();
     expect(error).toHaveBeenCalledExactlyOnceWith('NOTIFICATION_EMAIL_BATCH_FAILED');
+    expect(metrics.render()).toContain(
+      'gym_api_notification_worker_batch_failures_total{worker="email"} 1',
+    );
+    expect(metrics.render()).toContain(
+      'gym_api_notification_email_attempt_duration_seconds_count 1',
+    );
+    expect(metrics.render()).not.toContain('recipient@example.test');
     expect(JSON.stringify([log.mock.calls, error.mock.calls])).not.toContain(
       'recipient@example.test',
     );
