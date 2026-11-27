@@ -121,6 +121,35 @@ describe('validateEnv', () => {
     expect(validateEnv(validProd).SMTP_URL).toBe(validProd.SMTP_URL);
   });
 
+  it('accepts the Cloudflare SMTPS configuration and optional staging allowlist', () => {
+    const SMTP_URL = 'smtps://api_token:fixture-only@smtp.mx.cloudflare.net:465';
+    const MAIL_FROM = 'OVRANTO <noreply@notify.ovranto.com>';
+    const SMTP_RECIPIENT_ALLOWLIST = 'tester@example.test, other@example.test';
+    expect(
+      validateEnv({ ...validProd, SMTP_URL, MAIL_FROM, SMTP_RECIPIENT_ALLOWLIST }),
+    ).toMatchObject({
+      SMTP_URL,
+      MAIL_FROM,
+      SMTP_RECIPIENT_ALLOWLIST,
+    });
+    expect(validateEnv(validProd).SMTP_RECIPIENT_ALLOWLIST).toBeUndefined();
+  });
+
+  it.each([' ', '*', 'tester@example.test,', 'Display <tester@example.test>'])(
+    'rejects malformed recipient allowlist %j',
+    (SMTP_RECIPIENT_ALLOWLIST) => {
+      expect(() => validateEnv({ ...validProd, SMTP_RECIPIENT_ALLOWLIST })).toThrow(
+        /SMTP_RECIPIENT_ALLOWLIST/,
+      );
+    },
+  );
+
+  it('rejects a recipient allowlist without SMTP', () => {
+    expect(() =>
+      validateEnv({ ...validDev, SMTP_RECIPIENT_ALLOWLIST: 'tester@example.test' }),
+    ).toThrow(/SMTP_RECIPIENT_ALLOWLIST/);
+  });
+
   it('accepts named or exact trusted proxies and Redis TLS URL', () => {
     const env = validateEnv({
       ...validDev,

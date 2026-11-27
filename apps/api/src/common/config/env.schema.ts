@@ -115,6 +115,21 @@ const baseEnvSchema = z.object({
     emptyToUndefined,
     z.string().trim().refine(isSmtpUrl, 'Must be an smtp:// or smtps:// URL').optional(),
   ),
+  SMTP_RECIPIENT_ALLOWLIST: z.preprocess(
+    emptyToUndefined,
+    z
+      .string()
+      .trim()
+      .max(4096)
+      .refine(
+        (value) =>
+          value
+            .split(',')
+            .every((address) => /^[^\s<>@,]+@[^\s<>@,]+\.[^\s<>@,]+$/.test(address.trim())),
+        'Must be a comma-separated list of bare email addresses',
+      )
+      .optional(),
+  ),
   MAIL_FROM: z.preprocess(
     emptyToUndefined,
     z
@@ -225,6 +240,13 @@ export const envSchema = baseEnvSchema.superRefine((env, ctx) => {
       path: ['NOTIFICATION_EMAIL_ENABLED'],
       message:
         'Optional notification email requires enabled dispatch and configured SMTP transport',
+    });
+  }
+  if (env.SMTP_RECIPIENT_ALLOWLIST && !env.SMTP_URL) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['SMTP_RECIPIENT_ALLOWLIST'],
+      message: 'SMTP recipient allowlist requires configured SMTP transport',
     });
   }
   if (env.NODE_ENV !== 'production') return;
