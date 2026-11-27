@@ -1,6 +1,22 @@
-import { Body, Controller, Get, Header, Patch, Query } from '@nestjs/common';
+import {
+  Body,
+  ConflictException,
+  Controller,
+  Get,
+  Header,
+  Headers,
+  Patch,
+  Query,
+} from '@nestjs/common';
 import { Authenticate, CurrentUser } from '@nestjs/authentication';
-import { ApiBearerAuth, ApiCookieAuth, ApiOkResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiConflictResponse,
+  ApiCookieAuth,
+  ApiHeader,
+  ApiOkResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { z } from 'zod';
 import { RateLimit } from '#src/common/rate-limit/rate-limit.policies';
 import {
@@ -58,7 +74,20 @@ const response = {
   },
 };
 
+function assertOwner(id: string, expected?: string) {
+  if (expected !== undefined && expected !== id)
+    throw new ConflictException('Notification account changed');
+}
+
+const ApiSettingsOwner = () =>
+  ApiHeader({
+    name: 'x-notification-owner',
+    required: false,
+    description: 'Expected authenticated account ID; mismatch rejects settings access.',
+  });
+
 @ApiTags('Notifications')
+@ApiConflictResponse({ description: 'Expected account differs from authenticated account' })
 @ApiCookieAuth('sessionCookie')
 @ApiBearerAuth('accessToken')
 @Controller('users/me/notification-settings')
@@ -67,24 +96,30 @@ export class NotificationSettingsController {
   constructor(private readonly service: NotificationSettingsService) {}
 
   @Get()
+  @ApiSettingsOwner()
   @RateLimit('read')
   @Header('Cache-Control', 'no-store')
   @ApiOkResponse(response)
   get(
     @CurrentUser() user: { id: string },
     @Query({ schema: emptyQuery }) _query: Record<string, never>,
+    @Headers('x-notification-owner') expectedOwner?: string,
   ) {
+    assertOwner(user.id, expectedOwner);
     return this.service.get(user.id);
   }
 
   @Patch()
+  @ApiSettingsOwner()
   @Header('Cache-Control', 'no-store')
   @ApiOkResponse(response)
   patch(
     @CurrentUser() user: { id: string },
     @Body({ schema: notificationSettingsPatchSchema }) body: NotificationSettingsPatch,
     @Query({ schema: emptyQuery }) _query: Record<string, never>,
+    @Headers('x-notification-owner') expectedOwner?: string,
   ) {
+    assertOwner(user.id, expectedOwner);
     return this.service.patch(user.id, body);
   }
 }

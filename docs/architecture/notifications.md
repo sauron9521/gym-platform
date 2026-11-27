@@ -238,3 +238,24 @@ Termination removes obsolete targets. Program-assignment notifications
 are athlete-owned; Trainer shows generic personal notices without claiming
 trainer access to the assignment. No trainer-specific program event
 or editor destination is invented.
+
+### N13: Athlete Web notification settings (#576)
+
+The existing protected `/profile/settings` page contains an account-owned
+notification settings panel. It uses generated API contracts, the four
+allowlisted category/channel pairs, server-projected IANA timezone and
+15/60/1440-minute reminder lead times. Time inputs are local wall-clock
+minutes; equal/invalid endpoints cannot be submitted and both endpoints
+are sent atomically, including overnight intervals. Consent toggles send
+one pair and update only after a validated server response. Time edits are
+explicitly unsaved until Save. Quiet-hour edits remain available when
+quiet hours are disabled. No native permission request or marketing UI.
+
+The optional `x-notification-owner` header fences GET/PATCH to the
+authenticated account without adding profile polling or selecting a
+recipient. Existing clients may omit it. Account-scoped TanStack Query
+state is not persisted; the form suppresses stale or denied responses,
+disables offline/hidden writes, and never replays PATCH. Ambiguous writes
+reconcile via GET only. A current 401 clears private cache and redirects;
+403/409 require reopening the protected page. Existing locale/workout
+preferences and urgent account/security delivery remain independent.

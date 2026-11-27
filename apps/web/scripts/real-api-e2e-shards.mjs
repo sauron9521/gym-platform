@@ -11,6 +11,7 @@ const specSeconds = new Map([
   ['live-capability-route-guards.spec.ts', 11],
   ['mobile-token-capabilities.spec.ts', 8],
   ['real-api.spec.ts', 10],
+  ['notification-settings.spec.ts', 12],
   ['trainer-athlete-decline.spec.ts', 11],
   ['trainer-athlete-lifecycle.spec.ts', 11],
   ['trainer-program-create.spec.ts', 12],

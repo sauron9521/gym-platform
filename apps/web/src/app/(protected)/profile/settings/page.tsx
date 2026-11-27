@@ -3,6 +3,7 @@ import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 
+import { NotificationSettingsPanel } from '@/features/notifications/ui/notification-settings-panel';
 import { WorkoutPreferencesSettings } from '@/features/app-settings/ui/workout-preferences-settings';
 import { verifyServerSession } from '@/shared/api/server-session';
 
@@ -24,5 +25,9 @@ export default async function AppSettingsPage() {
       </main>
     );
   }
-  return <WorkoutPreferencesSettings key={session.user.id} accountId={session.user.id} />;
+  return (
+    <WorkoutPreferencesSettings key={session.user.id} accountId={session.user.id}>
+      <NotificationSettingsPanel accountId={session.user.id} />
+    </WorkoutPreferencesSettings>
+  );
 }

@@ -306,4 +306,18 @@ describe('account notification settings HTTP + PostgreSQL', () => {
     }
     expect(await prisma.notificationSettings.count({ where: { userId: other } })).toBe(0);
   });
+  it('fences settings reads and consent writes against a switched browser account', async () => {
+    await get(otherCookie).set('x-notification-owner', owner).expect(409);
+    await patch(otherCookie)
+      .set('x-notification-owner', owner)
+      .send({ preferences: [{ ...pair, enabled: true }] })
+      .expect(409);
+    expect(await prisma.notificationPreference.count({ where: { userId: other } })).toBe(0);
+    expect((await get().set('x-notification-owner', owner).expect(200)).body).toEqual(expected);
+    await patch()
+      .set('x-notification-owner', owner)
+      .send({ preferences: [{ ...pair, enabled: true }] })
+      .expect(200);
+    expect((await get(otherCookie).expect(200)).body).toEqual(expected);
+  });
 });

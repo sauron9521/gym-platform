@@ -2046,7 +2046,17 @@
     "/users/me/notification-settings": {
       "get": {
         "operationId": "NotificationSettingsController_get",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "x-notification-owner",
+            "required": false,
+            "in": "header",
+            "description": "Expected authenticated account ID; mismatch rejects settings access.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Account preferences; consent does not imply delivery or OS permission. Null timezone means invalid stored timezone.",
@@ -2167,6 +2177,9 @@
                 }
               }
             }
+          },
+          "409": {
+            "description": "Expected account differs from authenticated account"
           }
         },
         "security": [
@@ -2181,7 +2194,17 @@
       },
       "patch": {
         "operationId": "NotificationSettingsController_patch",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "x-notification-owner",
+            "required": false,
+            "in": "header",
+            "description": "Expected authenticated account ID; mismatch rejects settings access.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -2395,6 +2418,9 @@
                 }
               }
             }
+          },
+          "409": {
+            "description": "Expected account differs from authenticated account"
           }
         },
         "security": [

@@ -25,4 +25,12 @@ describe('NotificationSettingsController', () => {
     await expect(controller.patch(actor, input, {})).resolves.toBe(expected);
     expect(patch).toHaveBeenCalledExactlyOnceWith(actor.id, input);
   });
+  it('rejects another expected account before any read or write', () => {
+    expect(() => controller.get(actor, {}, 'other')).toThrow('Notification account changed');
+    expect(() => controller.patch(actor, { quietHoursEnabled: false }, {}, 'other')).toThrow(
+      'Notification account changed',
+    );
+    expect(get).not.toHaveBeenCalled();
+    expect(patch).not.toHaveBeenCalled();
+  });
 });

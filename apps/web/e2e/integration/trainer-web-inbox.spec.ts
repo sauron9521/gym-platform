@@ -20,7 +20,7 @@ test('Trainer Inbox shares read state, protects live client targets and revokes 
   const personal = randomUUID();
   await page.context().addCookies([{ name: 'gym-locale', value: 'en', url: trainer }]);
   await page.goto(trainer + '/workspace/notifications');
-  await expect(page.getByRole('alert')).toContainText('You do not have access');
+  await expect(page.getByRole('main').getByRole('alert')).toContainText('You do not have access');
   await expect(page.getByRole('link', { name: /Notifications \(/ })).toHaveCount(0);
   const register = await page.request.post(trainer + '/backend/auth/register', {
     data: { email, password },
@@ -95,10 +95,29 @@ test('Trainer Inbox shares read state, protects live client targets and revokes 
     await expect(
       page.getByRole('list', { name: 'Notifications' }).getByRole('listitem'),
     ).toHaveCount(1);
-    await page.getByRole('combobox', { name: 'Theme' }).selectOption('light');
-    await expectNoAxeWcagViolations(page);
-    await page.getByRole('combobox', { name: 'Theme' }).selectOption('dark');
-    await expectNoAxeWcagViolations(page);
+    const theme = page.getByRole('combobox', { name: 'Theme' });
+    const readAll = page.getByRole('button', { name: 'Mark all as read' });
+    const readOne = page.getByRole('button', {
+      name: 'Mark as read: Coaching invitation accepted',
+    });
+    for (const [mode, background, foreground] of [
+      ['light', 'rgb(245, 240, 233)', 'rgb(41, 39, 36)'],
+      ['dark', 'rgb(17, 25, 24)', 'rgb(245, 242, 237)'],
+      ['light', 'rgb(245, 240, 233)', 'rgb(41, 39, 36)'],
+      ['dark', 'rgb(17, 25, 24)', 'rgb(245, 242, 237)'],
+    ] as const) {
+      await theme.selectOption(mode);
+      await expect(page.locator('html')).toHaveClass(new RegExp('\\b' + mode + '\\b'));
+      for (const button of [readAll, readOne]) {
+        // Theme changes must not interpolate contrasting foreground/background colors.
+        expect(
+          await button.evaluate((element) => getComputedStyle(element).transitionProperty),
+        ).toBe('box-shadow');
+        await expect(button).toHaveCSS('background-color', background);
+        await expect(button).toHaveCSS('color', foreground);
+      }
+      await expectNoAxeWcagViolations(page);
+    }
     await page.getByRole('button', { name: 'Mark as read: Coaching invitation accepted' }).click();
     await expect(page.getByRole('link', { name: 'Notifications (20 unread)' })).toBeVisible();
     // Use the Athlete origin and its independent cookie to prove cross-app parity.

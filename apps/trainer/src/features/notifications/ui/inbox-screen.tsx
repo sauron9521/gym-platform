@@ -121,7 +121,7 @@ function InboxContent() {
         <Button
           variant="outline"
           size="touch"
-          className="ml-auto"
+          className="ml-auto transition-shadow"
           disabled={!ready || busy}
           onClick={() => mutation.mutate(undefined)}
         >
@@ -146,7 +146,11 @@ function InboxContent() {
       {query.isError ? (
         <Card className="p-5 space-y-3">
           <p role="alert">{t('loadError')}</p>
-          <Button variant="outline" onClick={() => void query.refetch()}>
+          <Button
+            variant="outline"
+            className="transition-shadow"
+            onClick={() => void query.refetch()}
+          >
             {t('retry')}
           </Button>
         </Card>
@@ -186,6 +190,7 @@ function InboxContent() {
                   <Button
                     size="touch"
                     variant="outline"
+                    className="transition-shadow"
                     disabled={busy}
                     aria-label={t('readItem', { title: t(titleKey(item)) })}
                     onClick={() => mutation.mutate(item.id)}
@@ -199,7 +204,7 @@ function InboxContent() {
                   variant="link"
                   size="touch"
                   disabled={busy}
-                  className="mt-2 px-0"
+                  className="mt-2 px-0 transition-shadow"
                   onClick={() => void open(item)}
                 >
                   {local('openClient')}
@@ -213,6 +218,7 @@ function InboxContent() {
         <Button
           variant="outline"
           size="touch"
+          className="transition-shadow"
           disabled={query.isFetching}
           onClick={() => void query.fetchNextPage()}
         >
@@ -237,7 +243,7 @@ export function TrainerInboxScreen() {
       {session.failed ? (
         <Card className="p-5 space-y-3">
           <p role="alert">{t('sessionError')}</p>
-          <Button variant="outline" onClick={session.retry}>
+          <Button variant="outline" className="transition-shadow" onClick={session.retry}>
             {t('retry')}
           </Button>
         </Card>
