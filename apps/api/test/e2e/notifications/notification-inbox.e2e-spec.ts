@@ -7,6 +7,10 @@ import request from 'supertest';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { AppModule } from '../../../src/app.module.js';
 import { PrismaService } from '../../../src/infra/database/index.js';
+import { recordMfaSecurityEvent } from '../../../src/modules/auth/services/record-mfa-security-event.js';
+import { NotificationsModule } from '../../../src/modules/notifications/notifications.module.js';
+import { OutboxDispatchRepository } from '../../../src/modules/notifications/repositories/outbox-dispatch.repository.js';
+import { OutboxDispatchService } from '../../../src/modules/notifications/services/outbox-dispatch.service.js';
 import { useTestDatabase } from '../../utility/test-db-helper.js';
 
 describe('Notification inbox HTTP + PostgreSQL', () => {
@@ -262,6 +266,46 @@ describe('Notification inbox HTTP + PostgreSQL', () => {
       expect(await prisma.notification.findUnique({ where: { id: row.id } })).toBeNull();
     } finally {
       await prisma.user.deleteMany({ where: { id: temporaryOwner } });
+    }
+  });
+  it('publishes a real lifecycle event and exposes it through the authenticated Inbox only after dispatch', async () => {
+    const core = app.select(NotificationsModule);
+    const repository = core.get(OutboxDispatchRepository, { strict: true });
+    const scheduler = core.get(OutboxDispatchService, { strict: true });
+    try {
+      await prisma.$transaction((tx) => recordMfaSecurityEvent(tx, owner, 'FIRST_TOTP_CONFIRMED'));
+      const event = await prisma.outboxEvent.findFirstOrThrow({ where: { actorUserId: owner } });
+      await prisma.outboxEvent.update({
+        where: { id: event.id },
+        data: { availableAt: new Date('2000-01-01T00:00:00.000Z') },
+      });
+      // Default-off must leave even an available event untouched.
+      await scheduler.dispatch();
+      expect((await get(path + '/unread-count').expect(200)).body).toEqual({ count: 0 });
+      expect((await prisma.outboxEvent.findUniqueOrThrow({ where: { id: event.id } })).status).toBe(
+        'PENDING',
+      );
+      const claim = await repository.claim();
+      expect(claim?.id).toBe(event.id);
+      expect(await repository.process(claim!)).toBe('processed');
+      const inbox = (await get().expect(200)).body;
+      expect(inbox.data).toEqual([
+        {
+          id: expect.any(String),
+          type: 'account.security.changed',
+          category: 'ACCOUNT',
+          templateKey: 'account.security.changed',
+          createdAt: expect.any(String),
+          readAt: null,
+        },
+      ]);
+      expect((await get(path + '/unread-count').expect(200)).body).toEqual({ count: 1 });
+      await mark(inbox.data[0].id).expect(200);
+      expect((await get(path + '/unread-count').expect(200)).body).toEqual({ count: 0 });
+    } finally {
+      await prisma.notification.deleteMany({ where: { recipientId: owner } });
+      await prisma.outboxEvent.deleteMany({ where: { actorUserId: owner } });
+      await prisma.mfaLifecycleAudit.deleteMany({ where: { userId: owner } });
     }
   });
 });

@@ -1,6 +1,8 @@
 import { MODULE_METADATA } from '@nestjs/common/constants';
 import { NotificationsModule } from '../notifications.module.js';
 import * as publicApi from '../public-api.js';
+import { OutboxDispatchRepository } from '../repositories/outbox-dispatch.repository.js';
+import { OutboxDispatchService } from '../services/outbox-dispatch.service.js';
 import { NotificationInboxRepository } from '../repositories/notification-inbox.repository.js';
 import { NotificationSettingsRepository } from '../repositories/notification-settings.repository.js';
 import {
@@ -15,6 +17,8 @@ describe('NotificationsModule public boundary', () => {
       publicApi.NotificationSettingsService,
       NotificationInboxRepository,
       publicApi.NotificationInboxService,
+      OutboxDispatchRepository,
+      OutboxDispatchService,
     ]);
     expect(Reflect.getMetadata(MODULE_METADATA.EXPORTS, NotificationsModule)).toEqual([
       publicApi.NotificationSettingsService,

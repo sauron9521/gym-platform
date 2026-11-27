@@ -5,6 +5,9 @@ import { NotificationSettingsService } from './services/notification-settings.se
 import { NotificationInboxRepository } from './repositories/notification-inbox.repository.js';
 import { NotificationInboxService } from './services/notification-inbox.service.js';
 
+import { OutboxDispatchRepository } from './repositories/outbox-dispatch.repository.js';
+import { OutboxDispatchService } from './services/outbox-dispatch.service.js';
+
 @Module({
   controllers: [],
   providers: [
@@ -12,6 +15,8 @@ import { NotificationInboxService } from './services/notification-inbox.service.
     NotificationSettingsService,
     NotificationInboxRepository,
     NotificationInboxService,
+    OutboxDispatchRepository,
+    OutboxDispatchService,
   ],
   exports: [NotificationSettingsService, NotificationInboxService],
 })
