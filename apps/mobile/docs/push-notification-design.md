@@ -386,3 +386,63 @@ changes cannot be guaranteed current without a fresh device observation.
 Record these limits and actual foreground/background, timeout, logout,
 cold start, duplicate and lock-screen results in the LN06 matrix.
 Device testing and ordinary release activation remain NOT RUN / NO-GO.
+
+## N14h — final local reminder code audit and cleanup (#342)
+
+**Code review completed for the current local reminder slices; native
+acceptance remains NOT RUN.** Reviewed consent and OS permission,
+bounded fresh workout evidence, quiet-hour/date handling, pending
+inventory reconciliation, lifecycle generation fences, foreground
+admission and isolated QA configuration. The main review baseline
+was f19b245 (#995); the PR's CI run was cancelled and Web E2E passed.
+This is not a claim of full release readiness.
+
+The audit identified a gap: cancelling scheduled requests cannot
+remove notifications already delivered to the notification center.
+Use narrow Expo presented-list and dismiss modules in the same
+native port. Full cleanup on ownership boundaries (including startup,
+logout, verified account changes and resume), disabled/offline and
+blocked evidence paths attempts pending cancellation and presented
+dismissal independently. Only reserved ovranto.workout-reminder
+identifiers are affected; never use global cancellation or dismissal.
+Read back both inventories; errors or remaining managed entries mean
+failure, not successful cleanup. A failed full cleanup remains required
+before future scheduling. Ordinary active refresh of an eligible plan
+uses pending-only cleanup, preserving already delivered reminders.
+A full cleanup request arriving during a pending-only pass is queued
+separately. The existing generation fences prevent old writes.
+
+The two inventories are not an atomic OS transaction. An OS delivery
+racing the final read, a stalled native call or process death can
+still leave a record. A displayed notification may already have been
+seen before dismissal. Verify both pending and presented cleanup on
+real devices, including logout, consent revocation and account switch.
+A fresh resume/reverification can dismiss previously delivered reminders;
+this conservative behavior is provisional for QA.
+
+### Audit disposition and next gate
+
+- Code-level consent, scoped reads, UTC/elapsed lead and IANA quiet-hour
+  checks, generic payload, deterministic IDs and foreground generation
+  admission have automated coverage.
+- Pending and presented cleanup are implemented and covered by injected
+  port tests; actual native serialization and removal are unverified.
+- Best-effort timing, OS permission/channel behavior, actual foreground
+  presentation, Expo timeout fallback, notification center and lock
+  screen behavior, device clock/timezone changes and offline remote
+  edits remain open device cases. The foreground same-minute policy may
+  suppress delayed valid alerts; do not treat it as a native security
+  boundary.
+- Conservative refresh churn and horizon/capacity limits still need
+  measurement. No claim that a continuously open or offline device
+  learns remote schedule changes immediately; no polling added.
+- QA profile, signing, actual staging/production origins, disposable
+  test accounts and native inspection evidence still need operator
+  verification. The N14f matrix is the acceptance checklist. No
+  native build, deployment, push registration or ordinary release
+  activation in this slice.
+
+**Decision: NO-GO for ordinary release activation.** #342, #348 and
+#349 remain open. Do not start live push delivery (#343) from this
+evidence. Next obtain the approved QA inputs and execute the device
+matrix; fix measured failures before separately reviewed activation.

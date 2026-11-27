@@ -22,6 +22,7 @@ const unrelated = { identifier: 'unrelated', content: { title: 'Other' }, trigge
 function fixture(platform: NativeReminderPort['platform'] = 'android') {
   let pending: PendingReminder[] = [unrelated];
   let now = base;
+  let presented: string[] = [];
   // Stable opaque fake digest; the native port test verifies SHA-256 delegation.
   const hashes = new Map<string, string>();
   const port = {
@@ -34,6 +35,10 @@ function fixture(platform: NativeReminderPort['platform'] = 'android') {
     list: vi.fn(async () => pending.map((row) => structuredClone(row))),
     cancel: vi.fn(async (id: string) => {
       pending = pending.filter((row) => row.identifier !== id);
+    }),
+    listPresented: vi.fn(async () => [...presented]),
+    dismiss: vi.fn(async (id: string) => {
+      presented = presented.filter((value) => value !== id);
     }),
     canSchedule: vi.fn(async () => true),
     schedule: vi.fn(async (item: Parameters<NativeReminderPort['schedule']>[0]) => {
@@ -61,6 +66,12 @@ function fixture(platform: NativeReminderPort['platform'] = 'android') {
     },
     set rows(value) {
       pending = value;
+    },
+    get presented() {
+      return presented;
+    },
+    set presented(value: string[]) {
+      presented = value;
     },
     setNow(value: number) {
       now = value;
@@ -93,6 +104,47 @@ describe('native reminder reconciliation (not activated)', () => {
       expect(f.port.cancel).not.toHaveBeenCalled();
     },
   );
+  it('removes pending and presented managed records, preserving unrelated notifications', async () => {
+    const f = fixture();
+    await reconcileNativeReminders(f.port, input);
+    const id = f.rows[1]!.identifier;
+    f.presented = [id, REMINDER_PREFIX + 'legacy', 'other'];
+    expect(await cancelManagedNativeReminders(f.port)).toEqual({ kind: 'ready', pending: 0 });
+    expect(f.rows).toEqual([unrelated]);
+    expect(f.presented).toEqual(['other']);
+    expect(f.port.dismiss).toHaveBeenCalledTimes(2);
+  });
+  it('ordinary pending-only cleanup preserves displayed reminders', async () => {
+    const f = fixture();
+    f.presented = [REMINDER_PREFIX + 'legacy', 'other'];
+    expect(await cancelManagedNativeReminders(f.port, false)).toEqual({
+      kind: 'ready',
+      pending: 0,
+    });
+    expect(f.port.listPresented).not.toHaveBeenCalled();
+    expect(f.port.dismiss).not.toHaveBeenCalled();
+  });
+  it('still attempts presented cleanup if pending inventory fails and reports failure', async () => {
+    const f = fixture();
+    f.presented = [REMINDER_PREFIX + 'legacy', 'other'];
+    f.port.list.mockRejectedValueOnce(new Error('native unavailable'));
+    expect(await cancelManagedNativeReminders(f.port)).toEqual({ kind: 'failed' });
+    expect(f.presented).toEqual(['other']);
+  });
+  it('verifies tray removal, handles ambiguous dismissal, and rejects malformed inventory', async () => {
+    const f = fixture();
+    f.presented = [REMINDER_PREFIX + 'legacy'];
+    f.port.dismiss.mockResolvedValueOnce(undefined);
+    expect(await cancelManagedNativeReminders(f.port)).toEqual({ kind: 'failed' });
+    const dismiss = f.port.dismiss.getMockImplementation()!;
+    f.port.dismiss.mockImplementationOnce(async (id) => {
+      await dismiss(id);
+      throw new Error('ambiguous');
+    });
+    expect(await cancelManagedNativeReminders(f.port)).toEqual({ kind: 'ready', pending: 0 });
+    f.port.listPresented.mockResolvedValueOnce([null] as never);
+    expect(await cancelManagedNativeReminders(f.port)).toEqual({ kind: 'failed' });
+  });
   it('exports only the final verified descriptors for foreground admission', async () => {
     const f = fixture();
     const result = await reconcileNativeReminders(f.port, input);

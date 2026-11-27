@@ -214,3 +214,15 @@ test('foreground reminder handler is QA-only and never enables push or ordinary 
   assert.match(lifecycle, /this.admission.clear\(\)/);
   assert.match(lifecycle, /this.admission.replace\(result.verified/);
 });
+
+test('reminder cleanup owns both pending and presented inventories without global dismiss', () => {
+  const port = read('../src/features/notifications/lib/native-reminder-port.ts');
+  const reconcile = read('../src/features/notifications/lib/native-reminder-reconciliation.ts');
+  const lifecycle = read('../src/features/notifications/model/reminder-lifecycle.ts');
+  assert.match(port, /expo-notifications\/build\/getPresentedNotificationsAsync/);
+  assert.match(port, /expo-notifications\/build\/dismissNotificationAsync/);
+  assert.doesNotMatch(port, /dismissAllNotificationsAsync|cancelAllScheduledNotificationsAsync/);
+  assert.match(reconcile, /presentedIds\(port\)/);
+  assert.match(lifecycle, /requestCleanup\(false\)/);
+  assert.match(lifecycle, /presentedCleanupRequired/);
+});

@@ -26,7 +26,7 @@ type Dependencies = {
       isCurrent: () => boolean;
     },
   ) => Promise<ReconcileResult>;
-  cancel: (port: NativeReminderPort) => Promise<ReconcileResult>;
+  cancel: (port: NativeReminderPort, includePresented: boolean) => Promise<ReconcileResult>;
 };
 
 /** Network preparation is outside the native queue: a current 401 can await
@@ -41,7 +41,8 @@ export class ReminderLifecycle implements PrivateDataLifecycle {
   private cleanupRequired = true;
   private pendingRefresh = false;
   private preparing = false;
-  private queuedCleanup: Promise<void> | null = null;
+  private queuedCleanup: { promise: Promise<void>; full: boolean } | null = null;
+  private presentedCleanupRequired = true;
   private foregroundHandlerReady = false;
   private readonly admission = new ForegroundReminderAdmission();
 
@@ -84,27 +85,34 @@ export class ReminderLifecycle implements PrivateDataLifecycle {
     return result;
   }
 
-  private async cleanup(port?: NativeReminderPort) {
+  private async cleanup(port?: NativeReminderPort, includePresented = true) {
+    if (includePresented) this.presentedCleanupRequired = true;
     this.cleanupRequired = true;
     try {
       const native = port ?? (await this.deps.openPort());
       if (!native) return;
-      const result = await this.deps.cancel(native);
+      const full = this.presentedCleanupRequired;
+      const result = await this.deps.cancel(native, full);
       this.cleanupRequired = result.kind !== 'ready' || result.pending !== 0;
+      if (full && !this.cleanupRequired) this.presentedCleanupRequired = false;
     } catch {
       // Retry cleanup on the next lifecycle event, never report false success.
     }
   }
 
-  private requestCleanup() {
+  private requestCleanup(includePresented = true) {
     this.cleanupRequired = true;
-    if (this.queuedCleanup) return this.queuedCleanup;
-    const result = this.enqueue(() => this.cleanup());
-    this.queuedCleanup = result;
-    void result.finally(() => {
-      if (this.queuedCleanup === result) this.queuedCleanup = null;
+    if (includePresented) this.presentedCleanupRequired = true;
+    const full = this.presentedCleanupRequired;
+    // Full cleanup must not coalesce into an in-flight pending-only pass.
+    if (this.queuedCleanup && (!full || this.queuedCleanup.full)) return this.queuedCleanup.promise;
+    const promise = this.enqueue(() => this.cleanup(undefined, full));
+    const queued = { promise, full };
+    this.queuedCleanup = queued;
+    void promise.finally(() => {
+      if (this.queuedCleanup === queued) this.queuedCleanup = null;
     });
-    return result;
+    return promise;
   }
 
   lock() {
@@ -150,7 +158,6 @@ export class ReminderLifecycle implements PrivateDataLifecycle {
   refresh() {
     this.invalidate();
     if (!this.deps.foreground()) return;
-    void this.requestCleanup();
     if (
       !this.deps.enabled ||
       !this.foregroundHandlerReady ||
@@ -158,8 +165,10 @@ export class ReminderLifecycle implements PrivateDataLifecycle {
       !this.context ||
       !this.deps.online()
     ) {
+      void this.requestCleanup();
       return;
     }
+    void this.requestCleanup(false);
     this.pendingRefresh = true;
     if (!this.preparing) void this.drain();
   }
