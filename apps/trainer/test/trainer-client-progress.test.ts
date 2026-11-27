@@ -135,6 +135,9 @@ describe('Trainer individual client progress boundary', () => {
       { ...progress, completedProgramWorkouts30d: 2.5 },
       { ...progress, completedProgramWorkouts30d: Number.MAX_SAFE_INTEGER + 1 },
       { ...progress, windowStart: progress.asOf },
+      { ...progress, asOf: '2026-11-21T12:00:00', windowStart: '2026-10-22T12:00:00' },
+      { ...progress, asOf: '2026-02-30T12:00:00Z', windowStart: '2026-01-31T12:00:00Z' },
+      { ...progress, windowStart: '2026-10-23T12:00:00.000Z' },
       { ...progress, asOf: 'invalid' },
       { asOf: progress.asOf },
     ];

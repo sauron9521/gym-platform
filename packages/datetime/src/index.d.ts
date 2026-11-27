@@ -28,3 +28,6 @@ export declare function isMinuteInDailyWindow(
   end: number,
 ): boolean | null;
 export declare function subtractElapsedMinutes(instant: Date, minutes: number): Date | null;
+
+export declare function utcCalendarDaysStart(asOf: Date, days: number): Date;
+export declare function rollingDaysStart(asOf: Date, days: number): Date;

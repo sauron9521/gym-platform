@@ -1,6 +1,6 @@
+import { parseInstant, rollingDaysStart } from '@gym/datetime';
 import { createTrainerServerApiClient } from './trainer-server-api';
 
-const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 const RELATION_ID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export type TrainerClientProgressResult =
@@ -13,14 +13,6 @@ export type TrainerClientProgressResult =
       completedProgramWorkouts30d: number;
     }
   | { kind: 'unauthenticated' | 'forbidden' | 'not_found' | 'unavailable' };
-
-function isValidDate(value: unknown): value is string {
-  return (
-    typeof value === 'string' &&
-    /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(value) &&
-    Number.isFinite(Date.parse(value))
-  );
-}
 
 function isValidCount(value: unknown): value is number {
   return typeof value === 'number' && Number.isSafeInteger(value) && value >= 0;
@@ -53,10 +45,14 @@ export async function loadTrainerClientProgress(
 
     const { asOf, windowStart, activeProgramAssignments, completedProgramWorkouts30d } =
       progress.data;
+    const end = parseInstant(asOf);
+    const start = parseInstant(windowStart);
     if (
-      !isValidDate(asOf) ||
-      !isValidDate(windowStart) ||
-      Date.parse(asOf) - Date.parse(windowStart) !== THIRTY_DAYS_MS ||
+      typeof asOf !== 'string' ||
+      typeof windowStart !== 'string' ||
+      !end ||
+      !start ||
+      rollingDaysStart(end, 30).getTime() !== start.getTime() ||
       !isValidCount(activeProgramAssignments) ||
       !isValidCount(completedProgramWorkouts30d)
     ) {

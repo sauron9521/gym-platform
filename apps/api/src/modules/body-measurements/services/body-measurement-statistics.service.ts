@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { rollingDaysStart } from '@gym/datetime';
 
 import {
   statisticsRangeDays,
@@ -29,7 +30,7 @@ export class BodyMeasurementStatisticsService {
     const changes = Object.fromEntries(
       (['7d', '30d', '90d'] as const).map((range) => {
         const baseline = mapMetricPoint(baselines[range], query.metric);
-        const cutoff = asOf.getTime() - statisticsRangeDays[range] * 86_400_000;
+        const cutoff = rollingDaysStart(asOf, statisticsRangeDays[range]).getTime();
         const recent =
           latestPoint && latestPoint.measuredAt.getTime() >= cutoff ? latestPoint : null;
         return [

@@ -227,3 +227,22 @@ export function subtractElapsedMinutes(instant, minutes) {
   const result = subMinutes(new Date(instant.getTime()), minutes);
   return isValid(result) ? result : null;
 }
+
+/** Start of the last N UTC calendar dates, including the UTC date of asOf.
+ * Unlike rollingDaysStart, this anchors at midnight UTC. */
+export function utcCalendarDaysStart(asOf, days) {
+  if (!(asOf instanceof Date) || !isValid(asOf) || !Number.isSafeInteger(days) || days < 1)
+    throw new RangeError('Invalid UTC calendar period');
+  const midnight = startOfDay(asOf, { in: tz('UTC') });
+  const result = subtractElapsedMinutes(midnight, (days - 1) * 1440);
+  if (!result) throw new RangeError('Invalid UTC calendar period');
+  return result;
+}
+
+/** Start of an exact elapsed N * 24-hour window ending at asOf. */
+export function rollingDaysStart(asOf, days) {
+  if (!Number.isSafeInteger(days) || days < 1) throw new RangeError('Invalid rolling period');
+  const result = subtractElapsedMinutes(asOf, days * 1440);
+  if (!result) throw new RangeError('Invalid rolling period');
+  return result;
+}
