@@ -11,6 +11,7 @@ const targetWorkflows = [
   ['staging-live-smoke.yml', 1],
   ['release-full-stack.yml', 2],
   ['publish-full-stack-ghcr.yml', 1],
+  ['staging-full-stack.yml', 1],
 ];
 
 function checkoutSteps(workflow) {

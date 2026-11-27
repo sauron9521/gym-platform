@@ -1,0 +1,67 @@
+name: Manual signed full-stack staging rehearsal
+on:
+  workflow_dispatch:
+    inputs:
+      source_sha:
+        description: Exact source main SHA
+        required: true
+        type: string
+      release_run_id:
+        description: Successful full-stack candidate run
+        required: true
+        type: string
+      publish_sha:
+        description: Exact publisher main SHA
+        required: true
+        type: string
+      publish_run_id:
+        description: Successful full-stack publisher run
+        required: true
+        type: string
+      confirm_staging:
+        description: Authorize disposable runner-only rehearsal
+        required: true
+        default: NO_STAGING_RUN
+        type: choice
+        options:
+          - NO_STAGING_RUN
+          - RUN_SIGNED_FULL_STACK_REHEARSAL
+permissions:
+  contents: read
+jobs:
+  staging:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      actions: read
+      packages: read
+      attestations: read
+    env:
+      SOURCE_SHA: ${{ inputs.source_sha }}
+      RELEASE_RUN_ID: ${{ inputs.release_run_id }}
+      PUBLISH_SHA: ${{ inputs.publish_sha }}
+      PUBLISH_RUN_ID: ${{ inputs.publish_run_id }}
+      CONFIRM_STAGING: ${{ inputs.confirm_staging }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: Verify identities and authenticate read-only registry access
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          node --input-type=module -e "import {validateRequest} from './scripts/full-stack-signed-staging.mjs';validateRequest(process.env)"
+          printf '%s' "$GH_TOKEN" | docker login ghcr.io --username "$GITHUB_ACTOR" --password-stdin
+      - name: Verify signed receipt, pull exact digests and rehearse locally
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/full-stack-signed-staging.mjs
+      - name: Remove registry credentials
+        if: always()
+        run: docker logout ghcr.io
