@@ -247,3 +247,23 @@ in the browser-regression trigger.
 - Related milestones: #364 dashboard/client read models, #365 focused three-pane Program Builder, #366 assignment and feedback scope, #369 browser E2E/release gates. The implemented client progress, assignment reads and single-attempt assignment above are not evidence that all work in those milestones is complete.
 
 Architecture: [ADR-005](../../docs/architecture/adr-005-product-ownership-trainer-migration.md). Visual design: OVRANTO Premium Athletic Minimal, full Light/Dark, responsive sidebar; builder remains a separate step.
+
+## DEP04 — Docker pilot
+
+From the repository root:
+
+```bash
+docker build -f apps/trainer/Dockerfile -t gym-platform-trainer:pilot .
+node apps/trainer/scripts/docker-smoke.mjs gym-platform-trainer:pilot
+```
+
+Optional standalone build preserves local dev/start. The non-root container
+uses the fixed internal API alias `http://api:3000` at build and runtime;
+startup rejects a conflicting runtime upstream. Use separate isolated networks
+for staging and production. Disposable fixture smoke checks session cookie
+and Origin transport, noindex, assets, fresh trainer capability, denied
+athlete/admin access, revocation and invalid/unavailable capability responses.
+It is not real NestJS authorization, browser HTTPS or CSRF acceptance.
+Existing real API E2E and #351 remain required. No production release,
+DNS changes or GHCR promotion. See the
+[full-stack plan](../../docs/operations/full-stack-deployment-plan.md).

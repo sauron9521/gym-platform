@@ -340,6 +340,24 @@ jobs:
       - name: Smoke fixed upstream and session forwarding
         run: node apps/web/scripts/docker-smoke.mjs gym-platform-web:pilot
 
+  trainer-docker:
+    name: Trainer Web Docker / Node 24
+    needs: changes
+    if: needs.changes.outputs.trainer == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+      - name: Build isolated Trainer Web pilot
+        run: docker build -f apps/trainer/Dockerfile -t gym-platform-trainer:pilot .
+      - name: Smoke trainer capability and session forwarding
+        run: node apps/trainer/scripts/docker-smoke.mjs gym-platform-trainer:pilot
+
   quality-workspaces:
     name: Quality workspaces / Node 24
     needs: changes
@@ -536,6 +554,7 @@ jobs:
       - mobile-ios-dev-windows
       - landing-browser-e2e
       - landing-docker
+      - trainer-docker
       - api-operations
       - api-staging-contracts
       - api-readiness
@@ -561,6 +580,8 @@ jobs:
           WINDOWS_RESULT: ${{ needs.prepush-windows.result }}
           WEB_E2E_RESULT: ${{ needs.web-browser-e2e.result }}
           WEB_DOCKER_RESULT: ${{ needs.web-docker.result }}
+          TRAINER_REQUIRED: ${{ needs.changes.outputs.trainer }}
+          TRAINER_DOCKER_RESULT: ${{ needs.trainer-docker.result }}
           SECURITY_RESULT: ${{ needs.dependency-security.result }}
           MOBILE_REQUIRED: ${{ needs.changes.outputs.mobile }}
           LANDING_REQUIRED: ${{ needs.changes.outputs.landing }}
@@ -594,6 +615,12 @@ jobs:
             test "$WEB_REQUIRED" = false
             test "$WEB_E2E_RESULT" = skipped
             test "$WEB_DOCKER_RESULT" = skipped
+          fi
+          if [ "$TRAINER_REQUIRED" = true ]; then
+            test "$TRAINER_DOCKER_RESULT" = success
+          else
+            test "$TRAINER_REQUIRED" = false
+            test "$TRAINER_DOCKER_RESULT" = skipped
           fi
           if [ "$ADMIN_REQUIRED" = true ]; then
             test "$ADMIN_E2E_RESULT" = success
