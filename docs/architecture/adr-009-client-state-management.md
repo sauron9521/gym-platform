@@ -1,6 +1,7 @@
 # ADR-009: Client state ownership and scoped store pilot
 
-- Status: Proposed for owner review (2026-11-26)
+- Status: Owner approved limited state ownership direction and retention of existing Mobile stores via F03 (2026-11-27); native device acceptance pending.
+- Owner decision: [F03 #380](https://github.com/sauron9521/gym-platform/issues/380#issuecomment-7227845781); [Frontend Standardization v1.0](../product-strategy/frontend-standardization-v1.md). Original proposal and evaluation below are historical evidence, not authorization for wider rollout.
 - Baseline: main `7cea736` (#889)
 - Related: [#325](https://github.com/sauron9521/gym-platform/issues/325), [#324](https://github.com/sauron9521/gym-platform/issues/324), [#711](https://github.com/sauron9521/gym-platform/issues/711)
 
@@ -54,7 +55,7 @@ The timer uses an account-scoped vanilla Zustand store, provided above navigatio
 
 The pilot is subject to CI, owner review, native device verification and a follow-up evaluation before any wider adoption.
 
-See the [SM05 pilot evaluation](adr-009-pilot-evaluation.md) for merged evidence, comparison with a scoped provider/reducer, proposed limited retention and remaining native acceptance. Owner decision remains pending.
+See the [SM05 pilot evaluation](adr-009-pilot-evaluation.md) for merged evidence, comparison with a scoped provider/reducer, proposed limited retention and remaining native acceptance. The F03 owner decision approves limited retention, not physical-device acceptance or wider rollout.
 
 ## SM06: app settings selector boundaries
 
