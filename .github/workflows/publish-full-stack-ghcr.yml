@@ -1,0 +1,309 @@
+name: Publish verified full-stack pilot to GHCR
+on:
+  workflow_dispatch:
+    inputs:
+      release_run_id:
+        description: Successful full-stack release candidate run ID
+        required: true
+        type: string
+      source_sha:
+        description: Exact source main commit SHA
+        required: true
+        type: string
+      confirm_publish:
+        description: Explicit pilot publication authorization
+        required: true
+        type: choice
+        default: NO_PUBLISH
+        options:
+          - NO_PUBLISH
+          - PUBLISH_VERIFIED_FULL_STACK_PILOT
+permissions:
+  contents: read
+concurrency:
+  group: full-stack-publish-${{ inputs.release_run_id }}
+  cancel-in-progress: false
+jobs:
+  publish:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    permissions:
+      contents: read
+      actions: read
+      checks: read
+      attestations: write
+      id-token: write
+      artifact-metadata: write
+      packages: write
+    env:
+      SOURCE_SHA: ${{ inputs.source_sha }}
+      RELEASE_RUN_ID: ${{ inputs.release_run_id }}
+      PUBLISH_CONFIRM: ${{ inputs.confirm_publish }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: Require explicit confirmation and exact verified source
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REF" = refs/heads/main
+          test "$PUBLISH_CONFIRM" = PUBLISH_VERIFIED_FULL_STACK_PILOT
+          [[ "$SOURCE_SHA" =~ ^[a-f0-9]{40}$ ]]
+          [[ "$RELEASE_RUN_ID" =~ ^[1-9][0-9]{0,15}$ ]]
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$RELEASE_RUN_ID" > "$RUNNER_TEMP/release-run.json"
+          node scripts/full-stack-release.mjs validate-run "$GITHUB_REPOSITORY" "$SOURCE_SHA" "$RELEASE_RUN_ID" release "$RUNNER_TEMP/release-run.json"
+          gh api "repos/$GITHUB_REPOSITORY/actions/workflows/ci.yml/runs?head_sha=$SOURCE_SHA&branch=main&event=push&per_page=100" > "$RUNNER_TEMP/main-ci.json"
+          node scripts/release-ci-gate.mjs "$RUNNER_TEMP/main-ci.json" "$GITHUB_REPOSITORY" "$SOURCE_SHA"
+          mkdir -p release
+          gh run download "$RELEASE_RUN_ID" --repo "$GITHUB_REPOSITORY" --name "gym-full-stack-$SOURCE_SHA-$RELEASE_RUN_ID" --dir release
+          node scripts/full-stack-release.mjs verify "$GITHUB_REPOSITORY" "$SOURCE_SHA" "$RELEASE_RUN_ID" release
+          for file in release/images.tar.gz release/manifest.json; do
+            gh attestation verify "$file" --repo "$GITHUB_REPOSITORY" \
+            --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/release-full-stack.yml" \
+            --source-ref refs/heads/main --source-digest "$SOURCE_SHA"
+          done
+          docker load -i release/images.tar.gz
+          node scripts/full-stack-release.mjs verify-images "$GITHUB_REPOSITORY" "$SOURCE_SHA" "$RELEASE_RUN_ID" release
+      - name: Generate runtime SPDX inventory
+        uses: anchore/sbom-action@v0
+        with:
+          image: gym-full-stack-runtime:${{ inputs.source_sha }}
+          format: spdx-json
+          output-file: release/runtime.spdx.json
+          upload-artifact: false
+          upload-release-assets: false
+      - name: Scan runtime for critical vulnerabilities
+        uses: anchore/scan-action@v7
+        with:
+          sbom: release/runtime.spdx.json
+          fail-build: true
+          severity-cutoff: critical
+          output-format: json
+          output-file: release/runtime.grype.json
+      - name: Generate migrate SPDX inventory
+        uses: anchore/sbom-action@v0
+        with:
+          image: gym-full-stack-migrate:${{ inputs.source_sha }}
+          format: spdx-json
+          output-file: release/migrate.spdx.json
+          upload-artifact: false
+          upload-release-assets: false
+      - name: Scan migrate for critical vulnerabilities
+        uses: anchore/scan-action@v7
+        with:
+          sbom: release/migrate.spdx.json
+          fail-build: true
+          severity-cutoff: critical
+          output-format: json
+          output-file: release/migrate.grype.json
+      - name: Generate landing SPDX inventory
+        uses: anchore/sbom-action@v0
+        with:
+          image: gym-full-stack-landing:${{ inputs.source_sha }}
+          format: spdx-json
+          output-file: release/landing.spdx.json
+          upload-artifact: false
+          upload-release-assets: false
+      - name: Scan landing for critical vulnerabilities
+        uses: anchore/scan-action@v7
+        with:
+          sbom: release/landing.spdx.json
+          fail-build: true
+          severity-cutoff: critical
+          output-format: json
+          output-file: release/landing.grype.json
+      - name: Generate web SPDX inventory
+        uses: anchore/sbom-action@v0
+        with:
+          image: gym-full-stack-web:${{ inputs.source_sha }}
+          format: spdx-json
+          output-file: release/web.spdx.json
+          upload-artifact: false
+          upload-release-assets: false
+      - name: Scan web for critical vulnerabilities
+        uses: anchore/scan-action@v7
+        with:
+          sbom: release/web.spdx.json
+          fail-build: true
+          severity-cutoff: critical
+          output-format: json
+          output-file: release/web.grype.json
+      - name: Generate trainer SPDX inventory
+        uses: anchore/sbom-action@v0
+        with:
+          image: gym-full-stack-trainer:${{ inputs.source_sha }}
+          format: spdx-json
+          output-file: release/trainer.spdx.json
+          upload-artifact: false
+          upload-release-assets: false
+      - name: Scan trainer for critical vulnerabilities
+        uses: anchore/scan-action@v7
+        with:
+          sbom: release/trainer.spdx.json
+          fail-build: true
+          severity-cutoff: critical
+          output-format: json
+          output-file: release/trainer.grype.json
+      - name: Generate admin SPDX inventory
+        uses: anchore/sbom-action@v0
+        with:
+          image: gym-full-stack-admin:${{ inputs.source_sha }}
+          format: spdx-json
+          output-file: release/admin.spdx.json
+          upload-artifact: false
+          upload-release-assets: false
+      - name: Scan admin for critical vulnerabilities
+        uses: anchore/scan-action@v7
+        with:
+          sbom: release/admin.spdx.json
+          fail-build: true
+          severity-cutoff: critical
+          output-format: json
+          output-file: release/admin.grype.json
+      - name: Validate all six security reports before any push
+        run: node scripts/full-stack-release.mjs security "$GITHUB_REPOSITORY" "$SOURCE_SHA" "$RELEASE_RUN_ID" release
+      - name: Preserve scanner evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: full-stack-security-${{ inputs.source_sha }}-${{ inputs.release_run_id }}
+          path: |
+            release/*.spdx.json
+            release/*.grype.json
+            release/security-summary.json
+          if-no-files-found: ignore
+          retention-days: 30
+      - name: Publish verified images without rebuilding
+        id: published
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          printf '%s' "$GH_TOKEN" | docker login ghcr.io --username "$GITHUB_ACTOR" --password-stdin
+          node scripts/full-stack-release.mjs preflight "$GITHUB_REPOSITORY" "$SOURCE_SHA" "$RELEASE_RUN_ID" release
+          lower_repo="$(printf '%s' "$GITHUB_REPOSITORY" | tr '[:upper:]' '[:lower:]')"
+          for component in runtime migrate landing web trainer admin; do
+            tag="ghcr.io/$lower_repo-full-stack-$component:sha-$SOURCE_SHA-run-$RELEASE_RUN_ID"
+            docker tag "gym-full-stack-$component:$SOURCE_SHA" "$tag"
+            docker push "$tag"
+            docker pull "$tag"
+          done
+          node scripts/full-stack-release.mjs receipt "$GITHUB_REPOSITORY" "$SOURCE_SHA" "$RELEASE_RUN_ID" release "$GITHUB_SHA" "$GITHUB_RUN_ID" "$GITHUB_OUTPUT"
+      - name: Sign runtime OCI provenance
+        uses: actions/attest@v4
+        with:
+          subject-name: ${{ steps.published.outputs.runtime_name }}
+          subject-digest: ${{ steps.published.outputs.runtime_digest }}
+          push-to-registry: true
+      - name: Sign runtime OCI SPDX
+        uses: actions/attest@v4
+        with:
+          subject-name: ${{ steps.published.outputs.runtime_name }}
+          subject-digest: ${{ steps.published.outputs.runtime_digest }}
+          push-to-registry: true
+          sbom-path: release/runtime.spdx.json
+      - name: Sign migrate OCI provenance
+        uses: actions/attest@v4
+        with:
+          subject-name: ${{ steps.published.outputs.migrate_name }}
+          subject-digest: ${{ steps.published.outputs.migrate_digest }}
+          push-to-registry: true
+      - name: Sign migrate OCI SPDX
+        uses: actions/attest@v4
+        with:
+          subject-name: ${{ steps.published.outputs.migrate_name }}
+          subject-digest: ${{ steps.published.outputs.migrate_digest }}
+          push-to-registry: true
+          sbom-path: release/migrate.spdx.json
+      - name: Sign landing OCI provenance
+        uses: actions/attest@v4
+        with:
+          subject-name: ${{ steps.published.outputs.landing_name }}
+          subject-digest: ${{ steps.published.outputs.landing_digest }}
+          push-to-registry: true
+      - name: Sign landing OCI SPDX
+        uses: actions/attest@v4
+        with:
+          subject-name: ${{ steps.published.outputs.landing_name }}
+          subject-digest: ${{ steps.published.outputs.landing_digest }}
+          push-to-registry: true
+          sbom-path: release/landing.spdx.json
+      - name: Sign web OCI provenance
+        uses: actions/attest@v4
+        with:
+          subject-name: ${{ steps.published.outputs.web_name }}
+          subject-digest: ${{ steps.published.outputs.web_digest }}
+          push-to-registry: true
+      - name: Sign web OCI SPDX
+        uses: actions/attest@v4
+        with:
+          subject-name: ${{ steps.published.outputs.web_name }}
+          subject-digest: ${{ steps.published.outputs.web_digest }}
+          push-to-registry: true
+          sbom-path: release/web.spdx.json
+      - name: Sign trainer OCI provenance
+        uses: actions/attest@v4
+        with:
+          subject-name: ${{ steps.published.outputs.trainer_name }}
+          subject-digest: ${{ steps.published.outputs.trainer_digest }}
+          push-to-registry: true
+      - name: Sign trainer OCI SPDX
+        uses: actions/attest@v4
+        with:
+          subject-name: ${{ steps.published.outputs.trainer_name }}
+          subject-digest: ${{ steps.published.outputs.trainer_digest }}
+          push-to-registry: true
+          sbom-path: release/trainer.spdx.json
+      - name: Sign admin OCI provenance
+        uses: actions/attest@v4
+        with:
+          subject-name: ${{ steps.published.outputs.admin_name }}
+          subject-digest: ${{ steps.published.outputs.admin_digest }}
+          push-to-registry: true
+      - name: Sign admin OCI SPDX
+        uses: actions/attest@v4
+        with:
+          subject-name: ${{ steps.published.outputs.admin_name }}
+          subject-digest: ${{ steps.published.outputs.admin_digest }}
+          push-to-registry: true
+          sbom-path: release/admin.spdx.json
+      - name: Verify every OCI provenance and SBOM attestation
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          node scripts/full-stack-release.mjs verify-receipt "$GITHUB_REPOSITORY" "$SOURCE_SHA" "$RELEASE_RUN_ID" release "$GITHUB_SHA" "$GITHUB_RUN_ID"
+          for component in runtime migrate landing web trainer admin; do
+            ref="$(jq -er --arg c "$component" '.images[$c].ref' release/receipt.json)"
+            for predicate in https://slsa.dev/provenance/v1 https://spdx.dev/Document/v2.3; do
+              gh attestation verify "oci://$ref" --repo "$GITHUB_REPOSITORY" \
+            --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/publish-full-stack-ghcr.yml" \
+            --source-ref refs/heads/main --source-digest "$GITHUB_SHA" --predicate-type "$predicate"
+            done
+          done
+      - name: Attest complete digest receipt
+        uses: actions/attest@v4
+        with:
+          subject-path: release/receipt.json
+      - name: Verify signed receipt
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh attestation verify release/receipt.json --repo "$GITHUB_REPOSITORY" \
+            --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/publish-full-stack-ghcr.yml" \
+            --source-ref refs/heads/main --source-digest "$GITHUB_SHA"
+      - name: Preserve complete signed receipt and original manifest
+        uses: actions/upload-artifact@v7
+        with:
+          name: full-stack-digests-${{ inputs.source_sha }}-${{ inputs.release_run_id }}
+          path: |
+            release/receipt.json
+            release/manifest.json
+          if-no-files-found: error
+          retention-days: 30

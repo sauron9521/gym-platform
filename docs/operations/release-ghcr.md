@@ -71,3 +71,46 @@ The CI quality job runs offline regression tests for the release manifest,
 GHCR promotion, SBOM validation and CI source gate. It never attests or
 publishes images. This does **not** substitute for a first manual release
 and GHCR dry run with real GitHub attestations/package permissions.
+
+## DEP08 — separate full-stack pilot release
+
+The API-only workflows and v1 receipts above remain supported and unchanged.
+The new **Full-stack pilot release candidate** workflow is manually dispatched
+on protected main, requires green CI for the exact commit, and builds six
+linux/amd64 images using a pinned Node base: runtime, migrate, Landing,
+Athlete Web, Trainer Web and Admin. All have source, component and profile
+labels. The archive and strict six-component manifest are attested, then
+independently re-downloaded, verified and loaded. The manifest includes the
+archive SHA-256 and byte length, image config IDs, source SHA/run, platform,
+base digest and fixed build profile `full-stack-pilot-noindex`.
+
+Only after a successful candidate run may an authorized operator manually
+request **Publish verified full-stack pilot to GHCR** with the source SHA,
+release run ID and `PUBLISH_VERIFIED_FULL_STACK_PILOT`. It verifies both
+source attestations and exact image IDs without rebuilding. All six SPDX
+inventories and Grype scans must pass before any registry push; critical
+findings or scanner failure block publication. Separate package names
+`ghcr.io/OWNER/REPO-full-stack-COMPONENT` prevent legacy receipt confusion.
+Tags are checked for absence; published images are pulled back and checked
+against the source manifest. All six registry digests receive provenance
+and SPDX attestations, then all twelve attestations are verified. A signed
+receipt binds the source manifest hash, publisher SHA/run and six exact
+registry digest references to their original config IDs.
+
+Only the complete signed receipt plus original signed manifest from a
+successful publisher run is eligible for later staging verification. Partial
+pushes are not atomic and are not a valid release; investigate and create a
+new candidate run rather than overwriting existing tags. A receipt's JSON
+schema alone is not cryptographic evidence: verify the source and publication
+attestations, exact successful runs, registry digests and loaded config IDs.
+Use digest references only, never mutable tags. The legacy staging and
+production preflight intentionally do not accept this new pilot receipt.
+
+The Landing image still disables indexing and uses the pilot build inputs;
+Web/Trainer/Admin use the fixed internal API alias. No production promotion
+or environment-specific rebuild is authorized. DEP09 must implement/verify
+full-stack staging consumption, real HTTPS, SMTP and critical journeys using
+these exact signed artifacts. Production readiness remains NO_GO. Offline
+regressions exercise tamper and identity rejection; real GitHub signing,
+registry permissions and scanner results require separately authorized manual
+workflow runs. Neither workflow deploys or migrates a database.
