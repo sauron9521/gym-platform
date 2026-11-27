@@ -32,6 +32,7 @@ describe('NotificationsModule public boundary', () => {
     expect(Object.keys(publicApi).sort()).toEqual([
       'NotificationInboxService',
       'NotificationSettingsService',
+      'inboxEventTypes',
       'notificationInboxQuerySchema',
       'notificationSettingsPatchSchema',
       'publishOutboxEvent',

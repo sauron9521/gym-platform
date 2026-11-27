@@ -1,3 +1,4 @@
+import { publishRelationshipTransition } from '../repositories/publish-relationship-transition.js';
 import { PrismaService } from '#src/infra/database/index';
 
 import {
@@ -6,6 +7,10 @@ import {
 } from '../selects/trainer-athlete.select.js';
 import { TrainerAthleteTerminationService } from '../services/trainer-athlete-termination.service.js';
 import { TrainerAthleteExerciseCopyService } from '../services/trainer-athlete-exercise-copy.service.js';
+
+vi.mock('../repositories/publish-relationship-transition.js', () => ({
+  publishRelationshipTransition: vi.fn(),
+}));
 
 describe('TrainerAthleteTerminationService', () => {
   const tx = {
@@ -80,6 +85,10 @@ describe('TrainerAthleteTerminationService', () => {
       relationship: { id: relationship.id, status: 'TERMINATED' },
     });
     expect(prisma.$transaction).toHaveBeenCalledOnce();
+    expect(publishRelationshipTransition).toHaveBeenCalledExactlyOnceWith(
+      tx,
+      expect.objectContaining({ status: 'TERMINATED' }),
+    );
     expect(exerciseCopyService.copyRelevantExercises).toHaveBeenCalledWith(
       tx,
       relationship,
@@ -139,6 +148,7 @@ describe('TrainerAthleteTerminationService', () => {
       }),
     ).rejects.toBe(dbError);
     expect(tx.exerciseTrainerAccess.updateMany).not.toHaveBeenCalled();
+    expect(publishRelationshipTransition).not.toHaveBeenCalled();
   });
 
   it('uses full response only for an athlete and falls back to relationship creation date', async () => {

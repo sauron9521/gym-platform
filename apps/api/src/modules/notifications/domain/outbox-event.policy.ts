@@ -1,7 +1,6 @@
 import { z } from 'zod';
 
-// The only event currently emitted. Add new types as explicit versioned
-// variants with their own deterministic key and bounded routing payload.
+// Explicit versioned variants with bounded routing payloads.
 const securityAction = z.enum([
   'FIRST_TOTP_CONFIRMED',
   'ADMIN_RECOVERY_CHALLENGE_VERIFIED',
@@ -21,10 +20,43 @@ const accountSecurityEvent = z.strictObject({
   }),
 });
 
+export const trainerEventTypes = [
+  'trainer.invitation.created',
+  'trainer.invitation.accepted',
+  'trainer.invitation.declined',
+  'trainer.invitation.cancelled',
+  'trainer.relationship.terminated',
+] as const;
+export type TrainerEventType = (typeof trainerEventTypes)[number];
+
+const trainerRelationshipEvent = z.strictObject({
+  type: z.enum(trainerEventTypes),
+  schemaVersion: z.literal(1),
+  occurredAt: z.date(),
+  actorUserId: z.uuid(),
+  payload: z.strictObject({
+    aggregate: z.strictObject({ kind: z.literal('TrainerAthlete'), id: z.uuid() }),
+  }),
+});
+
+export const inboxEventTypes = ['account.security.changed', ...trainerEventTypes] as const;
+
 export const outboxEventSchema = z
-  .discriminatedUnion('type', [accountSecurityEvent])
-  .refine((event) => event.actorUserId === event.payload.context.userId, {
-    message: 'Event actor and account must match',
-  });
+  .discriminatedUnion('type', [accountSecurityEvent, trainerRelationshipEvent])
+  .refine(
+    (event) =>
+      event.type !== 'account.security.changed' ||
+      event.actorUserId === event.payload.context.userId,
+    {
+      message: 'Event actor and account must match',
+    },
+  );
 
 export type OutboxEventInput = z.input<typeof outboxEventSchema>;
+export type ValidatedOutboxEvent = z.output<typeof outboxEventSchema>;
+
+export function outboxEventKey(event: ValidatedOutboxEvent): string {
+  return event.type === 'account.security.changed'
+    ? `mfa-lifecycle:${event.payload.aggregate.id}:v1`
+    : `trainer-relationship:${event.payload.aggregate.id}:${event.type}:v1`;
+}

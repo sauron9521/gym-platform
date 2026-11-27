@@ -2503,11 +2503,23 @@ export interface operations {
               /** Format: uuid */
               id: string;
               /** @enum {string} */
-              type: 'account.security.changed';
+              type:
+                | 'account.security.changed'
+                | 'trainer.invitation.created'
+                | 'trainer.invitation.accepted'
+                | 'trainer.invitation.declined'
+                | 'trainer.invitation.cancelled'
+                | 'trainer.relationship.terminated';
               /** @enum {string} */
-              category: 'ACCOUNT';
+              category: 'ACCOUNT' | 'TRAINER';
               /** @enum {string} */
-              templateKey: 'account.security.changed';
+              templateKey:
+                | 'account.security.changed'
+                | 'trainer.invitation.created'
+                | 'trainer.invitation.accepted'
+                | 'trainer.invitation.declined'
+                | 'trainer.invitation.cancelled'
+                | 'trainer.relationship.terminated';
               /** Format: date-time */
               createdAt: string;
               /** Format: date-time */
@@ -2560,11 +2572,23 @@ export interface operations {
             /** Format: uuid */
             id: string;
             /** @enum {string} */
-            type: 'account.security.changed';
+            type:
+              | 'account.security.changed'
+              | 'trainer.invitation.created'
+              | 'trainer.invitation.accepted'
+              | 'trainer.invitation.declined'
+              | 'trainer.invitation.cancelled'
+              | 'trainer.relationship.terminated';
             /** @enum {string} */
-            category: 'ACCOUNT';
+            category: 'ACCOUNT' | 'TRAINER';
             /** @enum {string} */
-            templateKey: 'account.security.changed';
+            templateKey:
+              | 'account.security.changed'
+              | 'trainer.invitation.created'
+              | 'trainer.invitation.accepted'
+              | 'trainer.invitation.declined'
+              | 'trainer.invitation.cancelled'
+              | 'trainer.relationship.terminated';
             /** Format: date-time */
             createdAt: string;
             /** Format: date-time */
@@ -2594,11 +2618,23 @@ export interface operations {
             /** Format: uuid */
             id: string;
             /** @enum {string} */
-            type: 'account.security.changed';
+            type:
+              | 'account.security.changed'
+              | 'trainer.invitation.created'
+              | 'trainer.invitation.accepted'
+              | 'trainer.invitation.declined'
+              | 'trainer.invitation.cancelled'
+              | 'trainer.relationship.terminated';
             /** @enum {string} */
-            category: 'ACCOUNT';
+            category: 'ACCOUNT' | 'TRAINER';
             /** @enum {string} */
-            templateKey: 'account.security.changed';
+            templateKey:
+              | 'account.security.changed'
+              | 'trainer.invitation.created'
+              | 'trainer.invitation.accepted'
+              | 'trainer.invitation.declined'
+              | 'trainer.invitation.cancelled'
+              | 'trainer.relationship.terminated';
             /** Format: date-time */
             createdAt: string;
             /** Format: date-time */

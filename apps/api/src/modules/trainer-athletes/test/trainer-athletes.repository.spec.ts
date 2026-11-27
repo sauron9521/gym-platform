@@ -1,3 +1,4 @@
+import { publishRelationshipTransition } from '../repositories/publish-relationship-transition.js';
 import { ConflictException } from '@nestjs/common';
 
 import { PrismaService } from '#src/infra/database/index';
@@ -11,6 +12,10 @@ import {
   trainerAthleteHistoricalSelect,
   trainerAthleteSelect,
 } from '../selects/trainer-athlete.select.js';
+
+vi.mock('../repositories/publish-relationship-transition.js', () => ({
+  publishRelationshipTransition: vi.fn(),
+}));
 
 describe('TrainerAthletesRepository', () => {
   let repository: TrainerAthletesRepository;
@@ -30,6 +35,7 @@ describe('TrainerAthletesRepository', () => {
   beforeEach(() => {
     vi.resetAllMocks();
 
+    prisma.$transaction.mockImplementation(async (callback) => callback(prisma));
     repository = new TrainerAthletesRepository(prisma as unknown as PrismaService);
   });
 
@@ -389,6 +395,7 @@ describe('TrainerAthletesRepository', () => {
       const result = await repository.createWithCurrentCapabilities(invitation);
 
       expect(result).toMatchObject({ status: 'PENDING', ...invitation });
+      expect(publishRelationshipTransition).toHaveBeenCalledExactlyOnceWith(tx, result);
       expect(tx.$queryRaw).toHaveBeenCalledTimes(2);
       expect(tx.$queryRaw.mock.calls[0]?.[0].join('')).toContain('FOR UPDATE');
       expect(tx.$queryRaw.mock.calls[0]?.[1].values).toEqual(['athlete-1', 'trainer-1']);
@@ -517,6 +524,7 @@ describe('TrainerAthletesRepository', () => {
       prisma.trainerAthlete.update.mockResolvedValueOnce(accepted);
 
       await expect(repository.acceptPendingInvitation(command)).resolves.toBe(accepted);
+      expect(publishRelationshipTransition).toHaveBeenCalledExactlyOnceWith(prisma, accepted);
 
       expect(prisma.trainerAthlete.update).toHaveBeenCalledExactlyOnceWith({
         where: {
@@ -579,6 +587,7 @@ describe('TrainerAthletesRepository', () => {
           redactForTrainer: false,
         }),
       ).resolves.toBe(declined);
+      expect(publishRelationshipTransition).toHaveBeenCalledExactlyOnceWith(prisma, declined);
 
       expect(prisma.trainerAthlete.update).toHaveBeenCalledExactlyOnceWith({
         where: { id: relationshipId, status: 'PENDING' },
@@ -601,6 +610,7 @@ describe('TrainerAthletesRepository', () => {
           redactForTrainer: true,
         }),
       ).resolves.toBe(cancelled);
+      expect(publishRelationshipTransition).toHaveBeenCalledExactlyOnceWith(prisma, cancelled);
 
       expect(prisma.trainerAthlete.update).toHaveBeenCalledExactlyOnceWith({
         where: { id: relationshipId, status: 'PENDING' },

@@ -1,12 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import type { Prisma } from '#prisma/client';
 import { PrismaService } from '#src/infra/database/index';
-import { outboxEventSchema } from '../domain/outbox-event.policy.js';
+import { outboxEventKey, outboxEventSchema } from '../domain/outbox-event.policy.js';
 import {
   OUTBOX_LEASE_MS,
   OUTBOX_MAX_ATTEMPTS,
   outboxRetryDelayMs,
 } from '../domain/outbox-dispatch.policy.js';
+
+import { resolveTrainerNotification } from './resolve-trainer-notification.js';
 
 type Claim = {
   id: string;
@@ -70,41 +72,51 @@ export class OutboxDispatchRepository {
           actorUserId: row.actorUserId,
           payload: row.payload,
         });
-        if (
-          !parsed.success ||
-          row.eventKey !== `mfa-lifecycle:${parsed.data.payload.aggregate.id}:v1`
-        ) {
+        if (!parsed.success || row.eventKey !== outboxEventKey(parsed.data)) {
           return this.finish(tx, claim.id, 'INVALID_EVENT', 'dead_letter');
         }
         const event = parsed.data;
-        // Re-read authoritative source. Never use actor or client data alone
-        // to select a recipient. The audit record is immutable.
-        const audit = await tx.mfaLifecycleAudit.findUnique({
-          where: { id: event.payload.aggregate.id },
-        });
-        if (
-          !audit ||
-          audit.userId !== event.payload.context.userId ||
-          audit.action !== event.payload.context.action ||
-          audit.occurredAt.getTime() !== event.occurredAt.getTime()
-        ) {
-          return this.finish(tx, claim.id, 'SOURCE_MISMATCH', 'dead_letter');
-        }
-        // Serialize the eligibility check against account suspension/deletion.
-        const owners = await tx.$queryRaw<{ id: string }[]>`
+        let recipientId: string;
+        let trainerRelationshipId: string | null = null;
+        if (event.type === 'account.security.changed') {
+          // Re-read authoritative source. Never use actor or client data alone
+          // to select a recipient. The audit record is immutable.
+          const audit = await tx.mfaLifecycleAudit.findUnique({
+            where: { id: event.payload.aggregate.id },
+          });
+          if (
+            !audit ||
+            audit.userId !== event.payload.context.userId ||
+            audit.action !== event.payload.context.action ||
+            audit.occurredAt.getTime() !== event.occurredAt.getTime()
+          ) {
+            return this.finish(tx, claim.id, 'SOURCE_MISMATCH', 'dead_letter');
+          }
+          // Serialize the eligibility check against account suspension/deletion.
+          const owners = await tx.$queryRaw<{ id: string }[]>`
         SELECT id FROM users WHERE id = ${audit.userId}
           AND status = 'ACTIVE' AND deleted_at IS NULL FOR SHARE
       `;
-        if (!owners.length) return this.finish(tx, claim.id, 'RECIPIENT_INELIGIBLE', 'skipped');
+          if (!owners.length) return this.finish(tx, claim.id, 'RECIPIENT_INELIGIBLE', 'skipped');
+          recipientId = audit.userId;
+        } else {
+          const resolved = await resolveTrainerNotification(tx, event);
+          if (resolved.result !== 'resolved')
+            return this.finish(tx, claim.id, resolved.code, resolved.result);
+          recipientId = resolved.recipientId;
+          trainerRelationshipId = resolved.trainerRelationshipId;
+        }
+        const category = event.type === 'account.security.changed' ? 'ACCOUNT' : 'TRAINER';
 
         const inserted = await tx.notification.createMany({
           data: {
             eventId: claim.id,
-            recipientId: audit.userId,
+            recipientId,
             scope: 'USER',
-            type: 'account.security.changed',
-            category: 'ACCOUNT',
-            templateKey: 'account.security.changed',
+            type: event.type,
+            category,
+            templateKey: event.type,
+            trainerRelationshipId,
           },
           skipDuplicates: true,
         });
@@ -113,7 +125,7 @@ export class OutboxDispatchRepository {
             where: {
               eventId_recipientId_scope: {
                 eventId: claim.id,
-                recipientId: audit.userId,
+                recipientId,
                 scope: 'USER',
               },
             },
@@ -123,13 +135,15 @@ export class OutboxDispatchRepository {
               templateKey: true,
               resourceType: true,
               resourceId: true,
+              trainerRelationshipId: true,
             },
           });
           if (
             !existing ||
-            existing.type !== 'account.security.changed' ||
-            existing.category !== 'ACCOUNT' ||
-            existing.templateKey !== 'account.security.changed' ||
+            existing.type !== event.type ||
+            existing.category !== category ||
+            existing.templateKey !== event.type ||
+            existing.trainerRelationshipId !== trainerRelationshipId ||
             existing.resourceType !== null ||
             existing.resourceId !== null
           ) {

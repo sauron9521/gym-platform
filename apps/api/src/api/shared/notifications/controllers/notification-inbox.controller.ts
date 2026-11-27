@@ -11,6 +11,7 @@ import { z } from 'zod';
 import { RateLimit } from '#src/common/rate-limit/rate-limit.policies';
 import {
   NotificationInboxService,
+  inboxEventTypes,
   notificationInboxQuerySchema,
   type NotificationInboxQuery,
 } from '#src/modules/notifications/public-api';
@@ -27,9 +28,9 @@ import {
 const emptyQuery = z.strictObject({});
 const notification = objectSchema({
   id: uuidSchema,
-  type: { type: 'string', enum: ['account.security.changed'] },
-  category: { type: 'string', enum: ['ACCOUNT'] },
-  templateKey: { type: 'string', enum: ['account.security.changed'] },
+  type: { type: 'string', enum: [...inboxEventTypes] },
+  category: { type: 'string', enum: ['ACCOUNT', 'TRAINER'] },
+  templateKey: { type: 'string', enum: [...inboxEventTypes] },
   createdAt: dateTimeSchema,
   readAt: nullable(dateTimeSchema),
 });

@@ -2190,15 +2190,29 @@
                           },
                           "type": {
                             "type": "string",
-                            "enum": ["account.security.changed"]
+                            "enum": [
+                              "account.security.changed",
+                              "trainer.invitation.created",
+                              "trainer.invitation.accepted",
+                              "trainer.invitation.declined",
+                              "trainer.invitation.cancelled",
+                              "trainer.relationship.terminated"
+                            ]
                           },
                           "category": {
                             "type": "string",
-                            "enum": ["ACCOUNT"]
+                            "enum": ["ACCOUNT", "TRAINER"]
                           },
                           "templateKey": {
                             "type": "string",
-                            "enum": ["account.security.changed"]
+                            "enum": [
+                              "account.security.changed",
+                              "trainer.invitation.created",
+                              "trainer.invitation.accepted",
+                              "trainer.invitation.declined",
+                              "trainer.invitation.cancelled",
+                              "trainer.relationship.terminated"
+                            ]
                           },
                           "createdAt": {
                             "type": "string",
@@ -2307,15 +2321,29 @@
                     },
                     "type": {
                       "type": "string",
-                      "enum": ["account.security.changed"]
+                      "enum": [
+                        "account.security.changed",
+                        "trainer.invitation.created",
+                        "trainer.invitation.accepted",
+                        "trainer.invitation.declined",
+                        "trainer.invitation.cancelled",
+                        "trainer.relationship.terminated"
+                      ]
                     },
                     "category": {
                       "type": "string",
-                      "enum": ["ACCOUNT"]
+                      "enum": ["ACCOUNT", "TRAINER"]
                     },
                     "templateKey": {
                       "type": "string",
-                      "enum": ["account.security.changed"]
+                      "enum": [
+                        "account.security.changed",
+                        "trainer.invitation.created",
+                        "trainer.invitation.accepted",
+                        "trainer.invitation.declined",
+                        "trainer.invitation.cancelled",
+                        "trainer.relationship.terminated"
+                      ]
                     },
                     "createdAt": {
                       "type": "string",
@@ -2374,15 +2402,29 @@
                     },
                     "type": {
                       "type": "string",
-                      "enum": ["account.security.changed"]
+                      "enum": [
+                        "account.security.changed",
+                        "trainer.invitation.created",
+                        "trainer.invitation.accepted",
+                        "trainer.invitation.declined",
+                        "trainer.invitation.cancelled",
+                        "trainer.relationship.terminated"
+                      ]
                     },
                     "category": {
                       "type": "string",
-                      "enum": ["ACCOUNT"]
+                      "enum": ["ACCOUNT", "TRAINER"]
                     },
                     "templateKey": {
                       "type": "string",
-                      "enum": ["account.security.changed"]
+                      "enum": [
+                        "account.security.changed",
+                        "trainer.invitation.created",
+                        "trainer.invitation.accepted",
+                        "trainer.invitation.declined",
+                        "trainer.invitation.cancelled",
+                        "trainer.relationship.terminated"
+                      ]
                     },
                     "createdAt": {
                       "type": "string",

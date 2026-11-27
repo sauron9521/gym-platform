@@ -86,10 +86,13 @@ model Notification {
   expiresAt DateTime? @map("expires_at") @db.Timestamptz(3)
   recipient User @relation(fields: [recipientId], references: [id], onDelete: Cascade)
   deliveries NotificationDelivery[]
+  trainerRelationshipId String? @map("trainer_relationship_id")
+  trainerRelationship TrainerAthlete? @relation(fields: [trainerRelationshipId], references: [id], onDelete: Cascade)
 
   @@unique([eventId, recipientId, scope])
   @@index([recipientId, scope, createdAt(sort: Desc), id(sort: Desc)], map: "notifications_recipient_scope_cursor_idx")
   @@index([recipientId, scope, readAt], map: "notifications_recipient_scope_read_idx")
+  @@index([trainerRelationshipId])
   @@map("notifications")
 }
 

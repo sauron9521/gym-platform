@@ -7,8 +7,9 @@ import {
   type NotificationInboxQuery,
 } from '../domain/notification-inbox.policy.js';
 
-// Only the first supported semantic event is visible. Extend this allowlist
-// with each reviewed producer and its authorized target projection.
+import { trainerInboxWhere } from '../domain/trainer-notification.policy.js';
+
+// A single visibility predicate also protects count and mutations.
 const projection = {
   id: true,
   type: true,
@@ -23,10 +24,20 @@ function visible(recipientId: string, now: Date): Prisma.NotificationWhereInput 
     recipientId,
     scope: 'USER',
     recipient: { status: 'ACTIVE', deletedAt: null },
-    type: 'account.security.changed',
-    category: 'ACCOUNT',
-    templateKey: 'account.security.changed',
-    OR: [{ expiresAt: null }, { expiresAt: { gt: now } }],
+    AND: [
+      { OR: [{ expiresAt: null }, { expiresAt: { gt: now } }] },
+      {
+        OR: [
+          {
+            type: 'account.security.changed',
+            category: 'ACCOUNT',
+            templateKey: 'account.security.changed',
+            trainerRelationshipId: null,
+          },
+          ...trainerInboxWhere(recipientId),
+        ],
+      },
+    ],
   };
 }
 

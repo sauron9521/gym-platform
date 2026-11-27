@@ -14,7 +14,7 @@ describe('Transactional outbox publisher (PostgreSQL)', () => {
   let prisma: PrismaService;
   const owner = randomUUID();
 
-  function event(): OutboxEventInput {
+  function event(): Extract<OutboxEventInput, { type: 'account.security.changed' }> {
     return {
       type: 'account.security.changed',
       schemaVersion: 1,

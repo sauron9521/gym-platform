@@ -6,6 +6,7 @@ import type {
   RelationshipTerminationResult,
   TerminateRelationshipCommand,
 } from '../application/terminate-relationship.js';
+import { publishRelationshipTransition } from '../repositories/publish-relationship-transition.js';
 import { TrainerAthleteExerciseCopyService } from './trainer-athlete-exercise-copy.service.js';
 import {
   trainerAthleteHistoricalSelect,
@@ -167,9 +168,9 @@ export class TrainerAthleteTerminationService {
         },
         select: input.redactForTrainer ? trainerAthleteHistoricalSelect : trainerAthleteSelect,
       });
-      return terminated
-        ? { status: 'TERMINATED', relationship: terminated }
-        : { status: 'STATE_CHANGED' };
+      if (!terminated) throw new Error('Terminated relationship missing');
+      await publishRelationshipTransition(tx, terminated);
+      return { status: 'TERMINATED', relationship: terminated };
     });
   }
 }

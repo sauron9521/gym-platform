@@ -95,10 +95,10 @@ The shared authenticated API uses ordinary cookie or bearer credentials,
 never a caller-supplied recipient or scope. Foreign, ADMIN, expired,
 unsupported and nonexistent notifications are indistinguishable (404 on
 detail/mutation). All responses, including errors, are no-store.
-The initial allowlist is the generic ACCOUNT security-change notification;
+The allowlist includes generic ACCOUNT security-change and five TRAINER relationship notifications (#570);
 the response contains only id, type, category, templateKey, createdAt and
 readAt. No audit IDs, payloads, resource IDs or navigation links are returned.
-Later event types require explicit projections and destination permission
+TRAINER rows require current source state and counterpart eligibility on every Inbox operation. Later event types require explicit projections and destination permission
 checks. No separate Admin API is introduced.
 
 List defaults to 20 rows, max 50; query fields are limit, cursor, category
