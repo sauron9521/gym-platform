@@ -85,9 +85,51 @@ model Notification {
   readAt DateTime? @map("read_at") @db.Timestamptz(3)
   expiresAt DateTime? @map("expires_at") @db.Timestamptz(3)
   recipient User @relation(fields: [recipientId], references: [id], onDelete: Cascade)
+  deliveries NotificationDelivery[]
 
   @@unique([eventId, recipientId, scope])
   @@index([recipientId, scope, createdAt(sort: Desc), id(sort: Desc)], map: "notifications_recipient_scope_cursor_idx")
   @@index([recipientId, scope, readAt], map: "notifications_recipient_scope_read_idx")
   @@map("notifications")
+}
+
+// Server transports only; local reminders have device-owned scheduling.
+enum NotificationDeliveryChannel {
+  EMAIL
+  MOBILE_PUSH
+}
+
+enum NotificationDeliveryStatus {
+  PENDING
+  CLAIMED
+  SENDING
+  SENT
+  CANCELLED
+  DEAD_LETTER
+  UNKNOWN
+}
+
+model NotificationDelivery {
+  id String @id @default(uuid(4))
+  notificationId String @map("notification_id")
+  channel NotificationDeliveryChannel
+  destinationKey String @map("destination_key") @db.VarChar(100)
+  status NotificationDeliveryStatus @default(PENDING)
+  consentedAt DateTime @map("consented_at") @db.Timestamptz(3)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  expiresAt DateTime @map("expires_at") @db.Timestamptz(3)
+  availableAt DateTime @default(now()) @map("available_at") @db.Timestamptz(3)
+  claimToken String? @map("claim_token")
+  leaseUntil DateTime? @map("lease_until") @db.Timestamptz(3)
+  attemptCount Int @default(0) @map("attempt_count")
+  lastAttemptAt DateTime? @map("last_attempt_at") @db.Timestamptz(3)
+  finishedAt DateTime? @map("finished_at") @db.Timestamptz(3)
+  lastErrorCode String? @map("last_error_code") @db.VarChar(100)
+  notification Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+
+  @@unique([notificationId, channel, destinationKey], map: "notification_deliveries_destination_key")
+  @@index([status, availableAt], map: "notification_deliveries_available_idx")
+  @@index([status, leaseUntil], map: "notification_deliveries_lease_idx")
+  @@index([status, expiresAt], map: "notification_deliveries_expiry_idx")
+  @@map("notification_deliveries")
 }

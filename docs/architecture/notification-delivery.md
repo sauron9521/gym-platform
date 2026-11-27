@@ -1,6 +1,6 @@
 # Notifications — delivery, scheduling, failure and security policy
 
-- **Status:** Accepted target policy; PostgreSQL in-app dispatch foundation implemented, external delivery pending
+- **Status:** Accepted target policy; PostgreSQL in-app dispatch and external delivery state foundation implemented; transports pending
 - **Parent:** [#563](https://github.com/sauron9521/gym-platform/issues/563)
 - **Related:** [architecture](notifications.md) · [events](notification-events.md) · [Mobile push safety design](../../apps/mobile/docs/push-notification-design.md)
 
@@ -56,12 +56,60 @@ PostgreSQL connections, simulated expired leases, stale writes, injected
 transaction rollback, bounded attempts, revocation and replay. Actual
 separate-process crash/restart and staging activation remain unverified.
 
-The external `NotificationDelivery` model, destination idempotency,
-channel-specific leases/consent checks and adapters are explicitly
-deferred to a second #569 slice and channel work (#343/#578). No external
-sends, ADMIN scope fanout, automatic replay endpoint, new migration or
-queue service are added here. #569 remains open until its remaining
-acceptance criteria are verified.
+## N06b: external delivery state foundation (#569)
+
+The additive `notification_deliveries` table is independent of outbox
+processing. Each row is unique by notification, server channel and opaque
+destination key; deletion of the notification cascades to its deliveries.
+The email destination is the constant `account-email`, never an email
+address. Mobile Push reserves opaque device UUID destinations; device
+registration, permission and token checks are not implemented here.
+Database checks constrain destination keys, attempts, leases and terminal
+timestamps. No backfill or automatic send scheduler is installed.
+
+The private repository currently supports planning optional email only
+for the documented `trainer.application.reviewed` ACCOUNT/USER event.
+This event has no production producer or Inbox projection yet. Planning
+and admission re-read the current active, verified account, the owned
+approved/rejected application, notification expiration, current opt-in
+with a valid consent timestamp and timezone/settings. Consent must predate
+or equal the notification creation time; admission also matches the
+original consent epoch. Auth security-change mail stays in the existing
+Auth flow; it is not an optional-email candidate. Unknown types, revoked
+sources, foreign or inactive accounts and invalid settings fail closed.
+
+State transitions:
+
+- PENDING -> CLAIMED: one atomic PostgreSQL claim with a new UUID fence,
+  using SKIP LOCKED and a 30-second database-clock lease.
+- CLAIMED -> SENDING: re-check eligibility immediately before admission;
+  increment send attempts only on admission. Quiet hours defer with a
+  15-minute recheck (never beyond expiry); ineligibility cancels.
+- Expired CLAIMED leases may be reclaimed with a different token.
+- SENDING -> SENT means provider acceptance, not guaranteed delivery.
+  Definite non-send failures may retry with bounded jittered backoff
+  (five total attempts); definite permanent failures dead-letter.
+- SENDING -> UNKNOWN on ambiguous outcome or abandoned sending lease.
+  UNKNOWN never auto-retries. A stale token cannot finalize a newer claim.
+- Expired pending deliveries cancel. The provisional lifetime is at most
+  24 hours from notification creation, bounded by Inbox expiry.
+  The future channel rollout must review this lifetime.
+
+The repository returns a durable admission marker, not a provider call
+or a guarantee that consent cannot change after commit. The future adapter
+must resolve the current verified destination, minimize the admission-to-send
+window, classify outcomes conservatively, enforce a provider deadline
+within the lease, and address revocation races before activation. No address,
+provider response or free-form error is persisted. Error codes are fixed.
+
+Integration tests use actual PostgreSQL and two independent clients,
+with simulated lease expiration and provider outcomes. They prove
+destination uniqueness, fencing, consent/source checks, quiet deferral,
+expiry, bounded retries, UNKNOWN behavior and cascade deletion. The
+existing Inbox and in-app dispatcher remain unchanged. A real transport,
+separate-process crash/restart, live staging, reviewed-event producer and
+Push/device authorization remain unverified. #569 remains open; channel
+work belongs to #343/#578 and operations/reconciliation to #579.
 
 ## Channel policy and quiet hours
 
