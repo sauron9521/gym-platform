@@ -4,6 +4,8 @@ import { cookies } from 'next/headers';
 
 import { parseSidebarCollapsed, SIDEBAR_COOKIE_NAME } from '@/shared/lib/sidebar-preference';
 import { parseThemePreference, THEME_COOKIE_NAME } from '@/shared/lib/theme-preference';
+import { InboxSessionBoundary } from '@/features/notifications/model/inbox-session';
+import { InboxBell } from '@/features/notifications/ui/inbox-bell';
 import { AthleteShell } from '@/widgets/athlete-shell/ui/athlete-shell';
 
 /**
@@ -20,19 +22,22 @@ export default async function ProtectedLayout({ children }: Readonly<{ children:
   const initialCollapsed = parseSidebarCollapsed(cookieStore.get(SIDEBAR_COOKIE_NAME)?.value);
 
   return (
-    <AthleteShell
-      locale={locale}
-      initialPreference={preference}
-      initialCollapsed={initialCollapsed}
-      navigationLabel={t('accountNav')}
-      links={[
-        { href: '/dashboard', label: t('dashboard') },
-        { href: '/workouts', label: t('workouts') },
-        { href: '/exercises', label: t('exercises') },
-        { href: '/profile', label: t('profile') },
-      ]}
-    >
-      {children}
-    </AthleteShell>
+    <InboxSessionBoundary>
+      <AthleteShell
+        notificationSlot={<InboxBell />}
+        locale={locale}
+        initialPreference={preference}
+        initialCollapsed={initialCollapsed}
+        navigationLabel={t('accountNav')}
+        links={[
+          { href: '/dashboard', label: t('dashboard') },
+          { href: '/workouts', label: t('workouts') },
+          { href: '/exercises', label: t('exercises') },
+          { href: '/profile', label: t('profile') },
+        ]}
+      >
+        {children}
+      </AthleteShell>
+    </InboxSessionBoundary>
   );
 }

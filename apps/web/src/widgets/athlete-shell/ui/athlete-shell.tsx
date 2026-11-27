@@ -35,6 +35,7 @@ type AthleteShellProps = {
   locale: string;
   initialPreference: ThemePreference;
   initialCollapsed: boolean;
+  notificationSlot?: ReactNode;
 };
 
 export function isCurrentNavigationLink(pathname: string, href: string): boolean {
@@ -59,6 +60,7 @@ export function AthleteShell({
   locale,
   initialPreference,
   initialCollapsed,
+  notificationSlot,
 }: AthleteShellProps) {
   const pathname = usePathname() ?? '';
   const [openedOnPath, setOpenedOnPath] = useState<string | null>(null);
@@ -209,6 +211,7 @@ export function AthleteShell({
           </div>
 
           <div className="flex items-center justify-end gap-2 border-t border-border/60 px-4 py-2 lg:border-t-0 lg:px-8">
+            {notificationSlot}
             <ThemeSwitcher initialPreference={initialPreference} locale={locale} />
             <AccountLocaleSwitcher />
           </div>

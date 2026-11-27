@@ -397,4 +397,30 @@ describe('Notification inbox HTTP + PostgreSQL', () => {
       await prisma.user.update({ where: { id: other }, data: { role: 'ATHLETE' } });
     }
   });
+  it('fences all Inbox operations to the expected authenticated owner without changing authorization', async () => {
+    const item = await seed();
+    const header = 'x-inbox-owner';
+    await get().set(header, other).expect(409);
+    await get(path + '/unread-count')
+      .set(header, other)
+      .expect(409);
+    await get(path + '/' + item.id)
+      .set(header, other)
+      .expect(409);
+    await mark(item.id).set(header, other).expect(409);
+    await http()
+      .post(path + '/read-all')
+      .set('Cookie', cookie)
+      .set(header, other)
+      .expect(409);
+    expect(
+      (await prisma.notification.findUniqueOrThrow({ where: { id: item.id } })).readAt,
+    ).toBeNull();
+    await get().set(header, owner).expect(200);
+    await get(path + '/' + item.id)
+      .set(header, owner)
+      .expect(200);
+    await mark(item.id).set(header, owner).expect(200);
+    await http().get(path).set(header, owner).expect(401);
+  });
 });
