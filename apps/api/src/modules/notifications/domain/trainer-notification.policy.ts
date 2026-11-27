@@ -22,8 +22,8 @@ const trainer: Prisma.UserWhereInput = {
   ],
 };
 
-// One predicate for dispatch and all Inbox reads/writes. No source IDs or
-// contact information are projected, even for historical relationships.
+// One predicate for dispatch and all Inbox reads/writes. Historical notices
+// have no target; the projection may expose only an active owner-trainer target.
 export function trainerNotificationSourceWhere(
   type: TrainerEventType,
   recipientId: string,

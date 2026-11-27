@@ -8,17 +8,25 @@ import { useState, type ReactNode } from 'react';
 
 import { getTrainerCopy } from '@/shared/i18n/copy';
 import type { ThemePreference } from '@/shared/lib/theme-preference';
+import { TrainerInboxProvider } from '@/features/notifications/model/inbox-session';
+import { InboxBell } from '@/features/notifications/ui/inbox-bell';
 import { Preferences } from '@/shared/ui/preferences';
 
-export function TrainerShell({
-  children,
-  locale,
-  initialTheme,
-}: {
-  children: ReactNode;
-  locale: Locale;
-  initialTheme: ThemePreference;
-}) {
+type ShellProps = { children: ReactNode; locale: Locale; initialTheme: ThemePreference };
+
+export function TrainerShell(props: ShellProps) {
+  const pathname = usePathname();
+  const workspace = pathname === '/workspace' || pathname.startsWith('/workspace/');
+  return workspace ? (
+    <TrainerInboxProvider>
+      <Shell {...props} workspace />
+    </TrainerInboxProvider>
+  ) : (
+    <Shell {...props} workspace={false} />
+  );
+}
+
+function Shell({ children, locale, initialTheme, workspace }: ShellProps & { workspace: boolean }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const pathname = usePathname();
   const t = getTrainerCopy(locale);
@@ -51,7 +59,7 @@ export function TrainerShell({
       <aside className="hidden border-r border-border bg-card p-5 lg:flex lg:min-h-screen lg:flex-col">
         <Link
           href="/"
-          aria-label="OVRANTO"
+          aria-label="OVRANTO PERFORMANCE PLATFORM"
           className="mb-10 rounded-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
         >
           <BrandLogo />
@@ -78,7 +86,10 @@ export function TrainerShell({
           <p className="hidden text-sm font-semibold text-muted-foreground lg:block">
             {t.pageEyebrow}
           </p>
-          <Preferences locale={locale} initialTheme={initialTheme} />
+          <div className="flex flex-wrap items-center gap-3">
+            {workspace && <InboxBell />}
+            <Preferences locale={locale} initialTheme={initialTheme} />
+          </div>
         </header>
         <div
           id="trainer-mobile-navigation"

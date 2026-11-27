@@ -2715,6 +2715,8 @@ export interface operations {
       header?: {
         /** @description Expected authenticated account ID; mismatch rejects the request before any Inbox access. */
         'x-inbox-owner'?: string;
+        /** @description Optional trainer surface guard. When trainer is supplied, current trainer capability is required; records remain USER-scoped. */
+        'x-inbox-audience'?: 'trainer';
       };
       path?: never;
       cookie?: never;
@@ -2766,7 +2768,7 @@ export interface operations {
               readAt: string | null;
               target?: {
                 /** @enum {string} */
-                kind: 'PROGRAM_ASSIGNMENT';
+                kind: 'PROGRAM_ASSIGNMENT' | 'TRAINER_RELATIONSHIP';
                 /** Format: uuid */
                 id: string;
               };
@@ -2774,6 +2776,13 @@ export interface operations {
             nextCursor: string | null;
           };
         };
+      };
+      /** @description Current trainer capability is required for trainer audience */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
       };
       /** @description Expected account differs from authenticated account */
       409: {
@@ -2790,6 +2799,8 @@ export interface operations {
       header?: {
         /** @description Expected authenticated account ID; mismatch rejects the request before any Inbox access. */
         'x-inbox-owner'?: string;
+        /** @description Optional trainer surface guard. When trainer is supplied, current trainer capability is required; records remain USER-scoped. */
+        'x-inbox-audience'?: 'trainer';
       };
       path?: never;
       cookie?: never;
@@ -2806,6 +2817,13 @@ export interface operations {
           };
         };
       };
+      /** @description Current trainer capability is required for trainer audience */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
       /** @description Expected account differs from authenticated account */
       409: {
         headers: {
@@ -2821,6 +2839,8 @@ export interface operations {
       header?: {
         /** @description Expected authenticated account ID; mismatch rejects the request before any Inbox access. */
         'x-inbox-owner'?: string;
+        /** @description Optional trainer surface guard. When trainer is supplied, current trainer capability is required; records remain USER-scoped. */
+        'x-inbox-audience'?: 'trainer';
       };
       path: {
         id: string;
@@ -2873,12 +2893,19 @@ export interface operations {
             readAt: string | null;
             target?: {
               /** @enum {string} */
-              kind: 'PROGRAM_ASSIGNMENT';
+              kind: 'PROGRAM_ASSIGNMENT' | 'TRAINER_RELATIONSHIP';
               /** Format: uuid */
               id: string;
             };
           };
         };
+      };
+      /** @description Current trainer capability is required for trainer audience */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
       };
       /** @description Expected account differs from authenticated account */
       409: {
@@ -2895,6 +2922,8 @@ export interface operations {
       header?: {
         /** @description Expected authenticated account ID; mismatch rejects the request before any Inbox access. */
         'x-inbox-owner'?: string;
+        /** @description Optional trainer surface guard. When trainer is supplied, current trainer capability is required; records remain USER-scoped. */
+        'x-inbox-audience'?: 'trainer';
       };
       path: {
         id: string;
@@ -2947,12 +2976,19 @@ export interface operations {
             readAt: string | null;
             target?: {
               /** @enum {string} */
-              kind: 'PROGRAM_ASSIGNMENT';
+              kind: 'PROGRAM_ASSIGNMENT' | 'TRAINER_RELATIONSHIP';
               /** Format: uuid */
               id: string;
             };
           };
         };
+      };
+      /** @description Current trainer capability is required for trainer audience */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
       };
       /** @description Expected account differs from authenticated account */
       409: {
@@ -2969,6 +3005,8 @@ export interface operations {
       header?: {
         /** @description Expected authenticated account ID; mismatch rejects the request before any Inbox access. */
         'x-inbox-owner'?: string;
+        /** @description Optional trainer surface guard. When trainer is supplied, current trainer capability is required; records remain USER-scoped. */
+        'x-inbox-audience'?: 'trainer';
       };
       path?: never;
       cookie?: never;
@@ -2976,6 +3014,13 @@ export interface operations {
     requestBody?: never;
     responses: {
       204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Current trainer capability is required for trainer audience */
+      403: {
         headers: {
           [name: string]: unknown;
         };

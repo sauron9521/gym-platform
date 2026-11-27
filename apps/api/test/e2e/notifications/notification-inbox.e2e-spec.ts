@@ -423,4 +423,62 @@ describe('Notification inbox HTTP + PostgreSQL', () => {
     await mark(item.id).set(header, owner).expect(200);
     await http().get(path).set(header, owner).expect(401);
   });
+  it('trainer audience requires live approval, shares USER read state, and rejects stale relation targets', async () => {
+    const notice = await seed();
+    const h = 'x-inbox-audience';
+    const requestAll = () => [
+      get().set(h, 'trainer'),
+      get(path + '/unread-count').set(h, 'trainer'),
+      get(path + '/' + notice.id).set(h, 'trainer'),
+      mark(notice.id).set(h, 'trainer'),
+      http()
+        .post(path + '/read-all')
+        .set('Cookie', cookie)
+        .set(h, 'trainer'),
+    ];
+    for (const request of requestAll()) await request.expect(403);
+    expect(
+      (await prisma.notification.findUniqueOrThrow({ where: { id: notice.id } })).readAt,
+    ).toBeNull();
+    await prisma.user.update({ where: { id: owner }, data: { role: 'TRAINER' } });
+    const relation = await prisma.trainerAthlete.create({
+      data: { trainerId: owner, athleteId: other, initiatedById: owner, status: 'ACTIVE' },
+    });
+    try {
+      const item = await prisma.notification.create({
+        data: {
+          eventId: randomUUID(),
+          recipientId: owner,
+          scope: 'USER',
+          category: 'TRAINER',
+          type: 'trainer.invitation.accepted',
+          templateKey: 'trainer.invitation.accepted',
+          trainerRelationshipId: relation.id,
+        },
+      });
+      expect(
+        (
+          await get(path + '/' + item.id)
+            .set(h, 'trainer')
+            .expect(200)
+        ).body.target,
+      ).toEqual({ kind: 'TRAINER_RELATIONSHIP', id: relation.id });
+      const read = (await mark(item.id).set(h, 'trainer').expect(200)).body;
+      expect((await get(path + '/' + item.id).expect(200)).body.readAt).toEqual(read.readAt);
+      await prisma.trainerAthlete.update({
+        where: { id: relation.id },
+        data: { status: 'TERMINATED', endedAt: new Date(), endedById: other },
+      });
+      await get(path + '/' + item.id)
+        .set(h, 'trainer')
+        .expect(404);
+      await mark(item.id).set(h, 'trainer').expect(404);
+      await prisma.user.update({ where: { id: owner }, data: { role: 'ATHLETE' } });
+      for (const request of requestAll()) await request.expect(403);
+      await get(path + '/' + notice.id).expect(200);
+    } finally {
+      await prisma.trainerAthlete.delete({ where: { id: relation.id } });
+      await prisma.user.update({ where: { id: owner }, data: { role: 'ATHLETE' } });
+    }
+  });
 });

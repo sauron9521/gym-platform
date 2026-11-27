@@ -8,6 +8,7 @@ import {
 } from '@nestjs/common/constants';
 import { NotificationInboxController } from '../../controllers/notification-inbox.controller.js';
 import { NotificationSettingsController } from '../../controllers/notification-settings.controller.js';
+import { UsersModule } from '#src/modules/users/users.module';
 import { NotificationsModule } from '#src/modules/notifications/notifications.module';
 import { ADMIN_COOKIE_ROUTE } from '#src/common/auth/admin-cookie-route';
 import { SharedNotificationsApiModule } from '../../shared-notifications-api.module.js';
@@ -23,6 +24,7 @@ describe('SharedNotificationsApiModule controller registry', () => {
     );
     expect(Reflect.getMetadata(MODULE_METADATA.IMPORTS, SharedNotificationsApiModule)).toEqual([
       NotificationsModule,
+      UsersModule,
     ]);
     expect(Reflect.getMetadata(MODULE_METADATA.CONTROLLERS, NotificationsModule)).toEqual([]);
     expect(

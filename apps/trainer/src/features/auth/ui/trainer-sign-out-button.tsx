@@ -25,6 +25,7 @@ export function TrainerSignOutButton() {
 
     try {
       if ((await signOutTrainer()) === 'signedOut') {
+        window.dispatchEvent(new Event('trainer-session-ended'));
         router.replace('/login');
         router.refresh();
         // Keep the control disabled until unmount/navigation.

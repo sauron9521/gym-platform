@@ -51,6 +51,13 @@
     "tooSmall": "The value is too small.",
     "tooBig": "The value is too large."
   },
+  "trainer": {
+    "notifications": {
+      "description": "Updates for your account and coaching relationships. Read status is shared with your other OVRANTO apps.",
+      "openClient": "Open client",
+      "openError": "This notification or client is no longer available."
+    }
+  },
   "web": {
     "notifications": {
       "title": "Notifications",

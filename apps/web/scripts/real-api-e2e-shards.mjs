@@ -24,6 +24,7 @@ const specSeconds = new Map([
   ['trainer-program-workout-create.spec.ts', 13],
   ['trainer-program-workout-edit-delete.spec.ts', 13],
   ['trainer-web-auth.spec.ts', 23],
+  ['trainer-web-inbox.spec.ts', 23],
   ['workout-writes.spec.ts', 13],
 ]);
 

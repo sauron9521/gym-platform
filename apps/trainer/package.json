@@ -16,6 +16,7 @@
     "@gym/design-tokens": "workspace:*",
     "@gym/i18n": "workspace:*",
     "@gym/ui-web": "workspace:*",
+    "@tanstack/react-query": "5.108.2",
     "next": "16.4.6",
     "next-intl": "4.15.3",
     "react": "19.3.1",

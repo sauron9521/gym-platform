@@ -207,3 +207,34 @@ Blur, logout, background and session epoch replacement cancel or invalidate
 outstanding open intents. No unsupported trainer relationship or account
 deep link is invented. OS push listeners, native permissions and token
 registration remain #343; native device QA remains #348/#349.
+
+### N12: Trainer Web Inbox (#575)
+
+Trainer workspace mounts a single TanStack Query provider (the same pinned
+version as Athlete Web). Public routes do not mount it; confirmed sign-out
+clears its cache before navigation. The header bell and protected Inbox
+share USER records and read state with Athlete and Mobile; dual-role users
+can see their own eligible personal notices, not another athlete's notices
+or ADMIN records. The client reads the account once per workspace mount
+and again on an owner mismatch. Only the count polls every 60 seconds in
+the visible tab; focus/reconnect and writes invalidate the relevant queries.
+No additional profile polling, external delivery or notification storage.
+
+All five shared Inbox operations accept an optional
+`x-inbox-audience: trainer` header, requiring a fresh trainer capability
+check after the existing authenticated-owner fence. This is an additional
+restriction, not a new permission or recipient selector. Existing USER
+authorization and visibility remain authoritative; the capability check
+is not a cross-operation transaction fence. A 401 clears private cache,
+403 suppresses the Trainer Inbox and 409 revalidates identity. Existing
+Athlete and Mobile callers can omit the audience header.
+
+Only an accepted, currently ACTIVE relationship whose recipient is its
+trainer has a typed `TRAINER_RELATIONSHIP` target. It exposes no athlete
+contact data. Before opening, the client fetches fresh detail and checks
+the existing owner-scoped progress endpoint, then navigates to the
+fixed Trainer client route, whose SSR guards recheck independently.
+Termination removes obsolete targets. Program-assignment notifications
+are athlete-owned; Trainer shows generic personal notices without claiming
+trainer access to the assignment. No trainer-specific program event
+or editor destination is invented.

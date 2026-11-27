@@ -2456,6 +2456,16 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "x-inbox-audience",
+            "required": false,
+            "in": "header",
+            "description": "Optional trainer surface guard. When trainer is supplied, current trainer capability is required; records remain USER-scoped.",
+            "schema": {
+              "type": "string",
+              "enum": ["trainer"]
+            }
           }
         ],
         "responses": {
@@ -2527,7 +2537,7 @@
                             "properties": {
                               "kind": {
                                 "type": "string",
-                                "enum": ["PROGRAM_ASSIGNMENT"]
+                                "enum": ["PROGRAM_ASSIGNMENT", "TRAINER_RELATIONSHIP"]
                               },
                               "id": {
                                 "type": "string",
@@ -2560,6 +2570,9 @@
               }
             }
           },
+          "403": {
+            "description": "Current trainer capability is required for trainer audience"
+          },
           "409": {
             "description": "Expected account differs from authenticated account"
           }
@@ -2587,6 +2600,16 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "x-inbox-audience",
+            "required": false,
+            "in": "header",
+            "description": "Optional trainer surface guard. When trainer is supplied, current trainer capability is required; records remain USER-scoped.",
+            "schema": {
+              "type": "string",
+              "enum": ["trainer"]
+            }
           }
         ],
         "responses": {
@@ -2606,6 +2629,9 @@
                 }
               }
             }
+          },
+          "403": {
+            "description": "Current trainer capability is required for trainer audience"
           },
           "409": {
             "description": "Expected account differs from authenticated account"
@@ -2644,6 +2670,16 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "x-inbox-audience",
+            "required": false,
+            "in": "header",
+            "description": "Optional trainer surface guard. When trainer is supplied, current trainer capability is required; records remain USER-scoped.",
+            "schema": {
+              "type": "string",
+              "enum": ["trainer"]
+            }
           }
         ],
         "responses": {
@@ -2710,7 +2746,7 @@
                       "properties": {
                         "kind": {
                           "type": "string",
-                          "enum": ["PROGRAM_ASSIGNMENT"]
+                          "enum": ["PROGRAM_ASSIGNMENT", "TRAINER_RELATIONSHIP"]
                         },
                         "id": {
                           "type": "string",
@@ -2726,6 +2762,9 @@
                 }
               }
             }
+          },
+          "403": {
+            "description": "Current trainer capability is required for trainer audience"
           },
           "409": {
             "description": "Expected account differs from authenticated account"
@@ -2764,6 +2803,16 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "x-inbox-audience",
+            "required": false,
+            "in": "header",
+            "description": "Optional trainer surface guard. When trainer is supplied, current trainer capability is required; records remain USER-scoped.",
+            "schema": {
+              "type": "string",
+              "enum": ["trainer"]
+            }
           }
         ],
         "responses": {
@@ -2830,7 +2879,7 @@
                       "properties": {
                         "kind": {
                           "type": "string",
-                          "enum": ["PROGRAM_ASSIGNMENT"]
+                          "enum": ["PROGRAM_ASSIGNMENT", "TRAINER_RELATIONSHIP"]
                         },
                         "id": {
                           "type": "string",
@@ -2846,6 +2895,9 @@
                 }
               }
             }
+          },
+          "403": {
+            "description": "Current trainer capability is required for trainer audience"
           },
           "409": {
             "description": "Expected account differs from authenticated account"
@@ -2874,11 +2926,24 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "x-inbox-audience",
+            "required": false,
+            "in": "header",
+            "description": "Optional trainer surface guard. When trainer is supplied, current trainer capability is required; records remain USER-scoped.",
+            "schema": {
+              "type": "string",
+              "enum": ["trainer"]
+            }
           }
         ],
         "responses": {
           "204": {
             "description": ""
+          },
+          "403": {
+            "description": "Current trainer capability is required for trainer audience"
           },
           "409": {
             "description": "Expected account differs from authenticated account"

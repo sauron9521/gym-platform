@@ -40,7 +40,7 @@ for (const spec of selectedSpecs) {
       stdio: 'inherit',
       shell: process.platform === 'win32',
       // Start the independent Trainer app only for its own browser spec.
-      env: { ...process.env, WEB_E2E_TRAINER: spec === 'trainer-web-auth.spec.ts' ? '1' : '0' },
+      env: { ...process.env, WEB_E2E_TRAINER: spec.startsWith('trainer-web-') ? '1' : '0' },
     },
   );
 
