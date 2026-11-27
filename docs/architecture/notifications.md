@@ -144,3 +144,32 @@ dispatch and external channels remain later slices.
 This is documentation only: **no migrations, API endpoints, job runners, client routes, push credentials, SMTP template updates, production enabling, or completed QA claims**. Web Push, marketing campaigns and native behavior not verified on devices are explicitly outside its completion criteria.
 
 See [event taxonomy](notification-events.md) and [delivery policy](notification-delivery.md) before implementing an event producer or transport adapter.
+
+### N10: Athlete Web Inbox (#573)
+
+The Athlete shell mounts a single notification session boundary and
+unread-count bell. The authenticated `/notifications` page uses the
+existing browser session API client and FSD notification feature
+(`api/model/ui`), shared design tokens and uk/en catalog. Only the
+unread-count query has a 60-second foreground interval. Hidden tabs
+disable queries and cancel outstanding reads; focus/reconnect revalidate
+the account. List fetching is page-driven (20 items per cursor), with
+category/unread filters and explicit load more. Successful or ambiguous
+read mutations invalidate the owner-scoped count/list without optimistic
+read changes. Mark-all applies to the entire currently eligible Inbox,
+not just the selected filter.
+
+Cache keys include the verified account ID. Browser identity checks before
+and after each Inbox request discard results if the cookie-backed account
+changes; these checks add two lightweight `/users/me` calls to a polling
+cycle and are not a separate polling loop. HTTP 401 uses the existing
+session-expiry/cache-clear handler; 403 suppresses data without logging
+out, and a changed identity revalidates the session and removes other
+account caches. These client checks mitigate ordinary cross-tab switches,
+not an atomic server-side session fence: the API remains the authority
+for every read and write. No notification content is persisted locally.
+
+Semantic program targets and trainer events navigate only to the existing
+authorized athlete programs/trainers lists. Exact assignment detail Web
+navigation is a follow-up; review/security notices are generic and never
+invent a decision or link. No ADMIN scope, push, SSE or arbitrary URLs.

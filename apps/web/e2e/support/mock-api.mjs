@@ -194,6 +194,12 @@ const server = createServer(async (request, response) => {
 
     if (!session) return send(response, 401, { message: 'Unauthenticated' });
 
+    if (request.method === 'GET' && route === '/notifications/unread-count') {
+      return send(response, 200, { count: 0 });
+    }
+    if (request.method === 'GET' && route === '/notifications') {
+      return send(response, 200, { data: [], nextCursor: null });
+    }
     if (request.method === 'GET' && route === '/users/me') {
       return send(response, 200, accountResponse(session));
     }
