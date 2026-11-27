@@ -31,6 +31,13 @@
           "enableBackgroundRecording": false,
           "enableBackgroundPlayback": false
         }
+      ],
+      [
+        "expo-notifications",
+        {
+          "enableRemoteNotifications": false,
+          "enableBackgroundRemoteNotifications": false
+        }
       ]
     ],
     "experiments": {

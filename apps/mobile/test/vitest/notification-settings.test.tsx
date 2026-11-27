@@ -17,7 +17,17 @@ import {
 } from '@/features/notifications/lib/notification-policy';
 import { formatMinute, parseMinute } from '@/features/notifications/model/settings-time';
 
-const mocks = vi.hoisted(() => ({ get: vi.fn(), patch: vi.fn(), signOut: vi.fn() }));
+const mocks = vi.hoisted(() => ({
+  get: vi.fn(),
+  patch: vi.fn(),
+  signOut: vi.fn(),
+  nativeRead: vi.fn(),
+  nativeRequest: vi.fn(),
+}));
+vi.mock('@/features/notifications/lib/native-notification-permission', () => ({
+  readNativeDevicePermission: mocks.nativeRead,
+  requestNativeDevicePermission: mocks.nativeRequest,
+}));
 vi.mock('@/features/auth/model/auth-context', () => ({ useAuth: vi.fn() }));
 vi.mock('expo-router', () => ({
   useFocusEffect: (callback: () => void | (() => void)) => useEffect(callback, [callback]),
@@ -77,6 +87,8 @@ async function ready(view: View) {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mocks.nativeRead.mockResolvedValue({ status: 'unavailable', canRequest: false });
+  mocks.nativeRequest.mockResolvedValue(undefined);
   focusManager.setFocused(true);
   onlineManager.setOnline(true);
   client = createMobileQueryClient();
@@ -142,6 +154,40 @@ describe('Mobile notification settings', () => {
       headers: { 'x-notification-owner': owner },
       signal: expect.any(AbortSignal),
     });
+  });
+
+  it('requires a separate explicit permission action after confirmed local reminder consent, then rereads OS status', async () => {
+    mocks.nativeRead.mockResolvedValue({ status: 'undetermined', canRequest: true });
+    mocks.nativeRequest.mockImplementation(async (isCurrent: () => boolean) => {
+      expect(isCurrent()).toBe(true);
+      mocks.nativeRead.mockResolvedValue({ status: 'granted', canRequest: false });
+    });
+    const view = await render(tree());
+    await ready(view);
+    await waitFor(() => expect(view.getByText('Not requested')).toBeTruthy());
+    expect(view.queryByTestId('notification-request-permission')).toBeNull();
+    expect(mocks.nativeRequest).not.toHaveBeenCalled();
+    await fireEvent(toggle(view, 'WORKOUT'), 'valueChange', true);
+    await waitFor(() => expect(toggle(view, 'WORKOUT').props.value).toBe(true));
+    await ready(view);
+    expect(mocks.nativeRequest).not.toHaveBeenCalled();
+    await fireEvent.press(view.getByTestId('notification-request-permission'));
+    expect(mocks.nativeRequest).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(view.getByText('Granted')).toBeTruthy());
+    expect(mocks.patch).toHaveBeenCalledTimes(1);
+    expect(view.queryByTestId('notification-request-permission')).toBeNull();
+  });
+
+  it('does not treat non-requestable denied permission as a reason to prompt', async () => {
+    mocks.nativeRead.mockResolvedValue({ status: 'denied', canRequest: false });
+    const view = await render(tree());
+    await ready(view);
+    await fireEvent(toggle(view, 'WORKOUT'), 'valueChange', true);
+    await waitFor(() => expect(toggle(view, 'WORKOUT').props.value).toBe(true));
+    await ready(view);
+    expect(view.getByText('Denied')).toBeTruthy();
+    expect(view.queryByTestId('notification-request-permission')).toBeNull();
+    expect(mocks.nativeRequest).not.toHaveBeenCalled();
   });
 
   it('saves one consent pair only, persists across remount and revokes without changing other preferences', async () => {

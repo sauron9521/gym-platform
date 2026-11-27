@@ -118,7 +118,15 @@ function SettingsContent({ readPermission }: { readPermission?: ReadDevicePermis
   const local = (key: string) => intl.formatMessage({ id: 'mobile.notificationSettings.' + key });
   const { data, disabled, connected, foreground, query, mutation, denied, change, reload } =
     useNotificationSettings();
-  const permission = useDevicePermission(readPermission);
+  const {
+    status: permission,
+    canRequest,
+    requesting,
+    request,
+  } = useDevicePermission(readPermission);
+  const reminderConsent = data?.preferences.some(
+    (pair) => pair.category === 'WORKOUT' && pair.channel === 'LOCAL_REMINDER' && pair.enabled,
+  );
   const error = mutation.error ?? query.error;
   const toggle = (
     label: string,
@@ -130,10 +138,12 @@ function SettingsContent({ readPermission }: { readPermission?: ReadDevicePermis
       testID={testID}
       accessibilityRole="switch"
       accessibilityLabel={label}
-      accessibilityState={{ checked: value, disabled }}
+      accessibilityState={{ checked: value, disabled: disabled || requesting }}
       value={value}
-      disabled={disabled}
-      onValueChange={onChange}
+      disabled={disabled || requesting}
+      onValueChange={(value) => {
+        if (!requesting) onChange(value);
+      }}
       trackColor={{ false: palette.border, true: palette.primary }}
     />
   );
@@ -156,6 +166,20 @@ function SettingsContent({ readPermission }: { readPermission?: ReadDevicePermis
         ) : null}
         {permission === 'unavailable' ? (
           <Text style={styles.hint}>{local('unavailableHint')}</Text>
+        ) : null}
+        {reminderConsent && !readPermission && (canRequest || requesting) ? (
+          <Pressable
+            testID="notification-request-permission"
+            accessibilityRole="button"
+            accessibilityState={{ disabled: disabled || requesting }}
+            disabled={disabled || requesting}
+            style={[styles.button, (disabled || requesting) && styles.disabled]}
+            onPress={() => void request(local('reminderChannel'))}
+          >
+            <Text style={styles.label}>
+              {local(requesting ? 'requestingPermission' : 'requestPermission')}
+            </Text>
+          </Pressable>
         ) : null}
         {data ? (
           <>
@@ -200,7 +224,7 @@ function SettingsContent({ readPermission }: { readPermission?: ReadDevicePermis
             <QuietTimes
               key={data.quietStartMinute + ':' + data.quietEndMinute}
               data={data}
-              disabled={disabled}
+              disabled={disabled || requesting}
               change={change}
             />
             <Text accessibilityRole="header" style={styles.label}>
@@ -212,15 +236,18 @@ function SettingsContent({ readPermission }: { readPermission?: ReadDevicePermis
                   key={minutes}
                   testID={'notification-lead-' + minutes}
                   accessibilityRole="radio"
-                  accessibilityState={{ checked: data.reminderLeadMinutes === minutes, disabled }}
-                  disabled={disabled}
+                  accessibilityState={{
+                    checked: data.reminderLeadMinutes === minutes,
+                    disabled: disabled || requesting,
+                  }}
+                  disabled={disabled || requesting}
                   style={[
                     styles.button,
                     data.reminderLeadMinutes === minutes && styles.selected,
-                    disabled && styles.disabled,
+                    (disabled || requesting) && styles.disabled,
                   ]}
                   onPress={() => {
-                    if (data.reminderLeadMinutes !== minutes)
+                    if (!requesting && data.reminderLeadMinutes !== minutes)
                       void change({ reminderLeadMinutes: minutes });
                   }}
                 >

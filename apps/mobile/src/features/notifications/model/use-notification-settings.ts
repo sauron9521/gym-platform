@@ -1,4 +1,4 @@
-import { useCallback, useRef, useSyncExternalStore } from 'react';
+import { useCallback, useRef, useState, useSyncExternalStore } from 'react';
 import { useFocusEffect } from 'expo-router';
 import {
   onlineManager,
@@ -21,6 +21,12 @@ import {
 } from '../services/settings-api';
 import { assertInboxCurrent, type InboxScope } from '../services/inbox-api';
 import { readDevicePermission, type ReadDevicePermission } from '../lib/notification-policy';
+import {
+  readNativeDevicePermission,
+  requestNativeDevicePermission,
+} from '../lib/native-notification-permission';
+import { parseInstant } from '@gym/datetime';
+import { notificationSettingsSchema } from '../lib/settings-contract';
 
 const subscribeOnline = (callback: () => void) => onlineManager.subscribe(callback);
 const isOnline = () => onlineManager.isOnline();
@@ -138,7 +144,7 @@ export function useNotificationSettings() {
   };
 }
 
-/** Device status is read-only and deliberately not a delivery eligibility grant. */
+/** Device permission is independent of account consent and not a delivery eligibility grant. */
 export function useDevicePermission(read?: ReadDevicePermission) {
   const scope = useInboxScope();
   const client = useQueryClient();
@@ -147,16 +153,21 @@ export function useDevicePermission(read?: ReadDevicePermission) {
     'notification-device-permission',
     scope?.ownerId ?? 'signed-out',
   ] as const;
+  const [requesting, setRequesting] = useState(false);
+  const active = useRef(false);
+  const foreground = useSyncExternalStore(subscribeFocus, isFocused, isFocused);
   const permission = useQuery({
     queryKey,
     queryFn: async ({ signal }) => {
-      if (!scope) return 'unavailable' as const;
+      if (!scope) return { status: 'unavailable' as const, canRequest: false };
       assertInboxCurrent(scope, signal);
-      const status = await readDevicePermission(read);
+      const result = read
+        ? { status: await readDevicePermission(read), canRequest: false }
+        : await readNativeDevicePermission();
       assertInboxCurrent(scope, signal);
-      return status;
+      return result;
     },
-    enabled: !!scope,
+    enabled: !!scope && foreground && !requesting,
     networkMode: 'always',
     retry: false,
     gcTime: 0,
@@ -166,14 +177,62 @@ export function useDevicePermission(read?: ReadDevicePermission) {
   });
   useFocusEffect(
     useCallback(() => {
+      active.current = true;
       if (scope?.isCurrent())
         void client.invalidateQueries(
           { queryKey: ['account', 'notification-device-permission', scope.ownerId], exact: true },
           { cancelRefetch: false },
         );
+      return () => {
+        active.current = false;
+      };
     }, [client, scope]),
   );
-  return scope?.isCurrent() && permission.isSuccess && !permission.isFetching
-    ? permission.data
-    : 'unavailable';
+  const snapshot =
+    scope?.isCurrent() &&
+    foreground &&
+    !requesting &&
+    permission.isSuccess &&
+    !permission.isFetching
+      ? permission.data
+      : { status: 'unavailable' as const, canRequest: false };
+  async function request(channelName: string) {
+    if (read || requesting || !snapshot.canRequest || !scope?.isCurrent()) return;
+    const settingsKey = accountQueryKeys.notificationSettings(scope.ownerId);
+    const entry = client.getQueryCache().find({ queryKey: settingsKey, exact: true });
+    const data = entry?.state.data;
+    const current = () => {
+      if (
+        !active.current ||
+        !scope.isCurrent() ||
+        !isOnline() ||
+        !isFocused() ||
+        !entry ||
+        client.getQueryCache().find({ queryKey: settingsKey, exact: true }) !== entry ||
+        entry.state.data !== data ||
+        entry.state.status !== 'success' ||
+        entry.state.isInvalidated ||
+        entry.state.fetchStatus !== 'idle'
+      )
+        return false;
+      const parsed = notificationSettingsSchema.safeParse(data);
+      if (!parsed.success) return false;
+      const consent = parsed.data.preferences.find(
+        (p) => p.category === 'WORKOUT' && p.channel === 'LOCAL_REMINDER',
+      );
+      const at = parseInstant(consent?.consentedAt);
+      return consent?.enabled === true && !!at && at.getTime() <= Date.now();
+    };
+    if (!current()) return;
+    setRequesting(true);
+    try {
+      await requestNativeDevicePermission(current, channelName);
+    } finally {
+      // The system dialog may have backgrounded the app or the account changed.
+      // Never use the result; a fresh scoped GET on resume is authoritative.
+      if (scope.isCurrent() && active.current) await permission.refetch();
+      setRequesting(false);
+    }
+  }
+  return { ...snapshot, requesting, request };
 }
