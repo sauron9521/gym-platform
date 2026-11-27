@@ -14,11 +14,13 @@ export async function openNativeReminderPort(): Promise<NativeReminderPort | nul
   const platform = Platform.OS;
   try {
     if ((await import('expo')).isRunningInExpoGo()) return null;
-    const [list, cancel, schedule, crypto] = await Promise.all([
+    const [list, cancel, schedule, crypto, presented, dismiss] = await Promise.all([
       import('expo-notifications/build/getAllScheduledNotificationsAsync'),
       import('expo-notifications/build/cancelScheduledNotificationAsync'),
       import('expo-notifications/build/scheduleNotificationAsync'),
       import('expo-crypto'),
+      import('expo-notifications/build/getPresentedNotificationsAsync'),
+      import('expo-notifications/build/dismissNotificationAsync'),
     ]);
     return {
       platform,
@@ -26,6 +28,11 @@ export async function openNativeReminderPort(): Promise<NativeReminderPort | nul
       digest: (value) => crypto.digestStringAsync(crypto.CryptoDigestAlgorithm.SHA256, value),
       list: list.getAllScheduledNotificationsAsync,
       cancel: cancel.cancelScheduledNotificationAsync,
+      async listPresented() {
+        const rows = await presented.getPresentedNotificationsAsync();
+        return rows.map((row) => row.request.identifier);
+      },
+      dismiss: dismiss.dismissNotificationAsync,
       async canSchedule() {
         if ((await readNativeDevicePermission()).status !== 'granted') return false;
         if (platform === 'ios' || Number(Platform.Version) < 26) return true;

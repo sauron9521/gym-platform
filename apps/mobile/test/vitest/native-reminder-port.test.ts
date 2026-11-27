@@ -10,6 +10,8 @@ const mocks = vi.hoisted(() => ({
   cancel: vi.fn(),
   schedule: vi.fn(),
   digest: vi.fn(),
+  presented: vi.fn(),
+  dismiss: vi.fn(),
 }));
 vi.mock('react-native', () => ({ Platform: mocks.platform }));
 vi.mock('expo', () => ({ isRunningInExpoGo: mocks.expoGo }));
@@ -29,6 +31,12 @@ vi.mock('expo-notifications/build/cancelScheduledNotificationAsync', () => ({
 vi.mock('expo-notifications/build/scheduleNotificationAsync', () => ({
   scheduleNotificationAsync: mocks.schedule,
 }));
+vi.mock('expo-notifications/build/getPresentedNotificationsAsync', () => ({
+  getPresentedNotificationsAsync: mocks.presented,
+}));
+vi.mock('expo-notifications/build/dismissNotificationAsync', () => ({
+  dismissNotificationAsync: mocks.dismiss,
+}));
 vi.mock('expo-crypto', () => ({
   CryptoDigestAlgorithm: { SHA256: 'SHA-256' },
   digestStringAsync: mocks.digest,
@@ -40,6 +48,7 @@ beforeEach(() => {
   mocks.read.mockResolvedValue({ status: 'granted' });
   mocks.channel.mockResolvedValue({ importance: 3, bypassDnd: false });
   mocks.list.mockResolvedValue([]);
+  mocks.presented.mockResolvedValue([{ request: { identifier: 'managed' } }]);
   mocks.schedule.mockResolvedValue('managed');
 });
 describe('native reminder port boundary', () => {
@@ -74,6 +83,9 @@ describe('native reminder port boundary', () => {
       await port.list();
       await port.digest('input');
       await port.cancel('managed');
+      expect(await port.listPresented()).toEqual(['managed']);
+      await port.dismiss('managed');
+      expect(mocks.dismiss).toHaveBeenCalledWith('managed');
       await port.schedule({
         identifier: 'managed',
         dueAt: 1700000000000,

@@ -23,6 +23,8 @@ export type PendingReminder = {
 export type NativeReminderPort = {
   list(): Promise<readonly PendingReminder[]>;
   cancel(identifier: string): Promise<void>;
+  listPresented(): Promise<readonly string[]>;
+  dismiss(identifier: string): Promise<void>;
   schedule(input: {
     identifier: string;
     dueAt: number;
@@ -95,19 +97,51 @@ async function inventory(port: NativeReminderPort) {
   return rows;
 }
 
-async function clearManaged(port: NativeReminderPort) {
-  // No cancelAll: leave unrelated pending requests untouched.
-  const ids = new Set(
-    (await inventory(port)).filter((row) => ownId(row.identifier)).map((row) => row.identifier),
-  );
-  for (const id of ids) {
+async function presentedIds(port: NativeReminderPort) {
+  const ids = await port.listPresented();
+  if (!Array.isArray(ids) || ids.some((id) => typeof id !== 'string' || !id))
+    throw new Error('Invalid presented inventory');
+  return ids;
+}
+
+async function clearManaged(port: NativeReminderPort, includePresented = false) {
+  // Independent attempts: pending inventory failure must not skip tray cleanup.
+  let pendingClear = false;
+  let presentedClear = !includePresented;
+  try {
+    const ids = new Set(
+      (await inventory(port)).filter((row) => ownId(row.identifier)).map((row) => row.identifier),
+    );
+    for (const id of ids) {
+      try {
+        await port.cancel(id);
+      } catch {
+        /* Verify actual state below. */
+      }
+    }
+    pendingClear = !(await inventory(port)).some((row) => ownId(row.identifier));
+  } catch {
+    /* No proof of pending cleanup. */
+  }
+  if (includePresented) {
     try {
-      await port.cancel(id);
+      const ids = new Set((await presentedIds(port)).filter(ownId));
+      for (const id of ids) {
+        try {
+          await port.dismiss(id);
+        } catch {
+          /* Verify actual state below. */
+        }
+      }
+      presentedClear = !(await presentedIds(port)).some(ownId);
+      // A request may have moved from pending to presented while clearing.
+      // Recheck both inventories; never claim atomic OS removal.
+      pendingClear = pendingClear && !(await inventory(port)).some((row) => ownId(row.identifier));
     } catch {
-      /* Continue cleanup, verify below. */
+      presentedClear = false;
     }
   }
-  return !(await inventory(port)).some((row) => ownId(row.identifier));
+  return pendingClear && presentedClear;
 }
 
 let inFlight = false;
@@ -255,11 +289,14 @@ export async function reconcileNativeReminders(
 
 export async function cancelManagedNativeReminders(
   port: NativeReminderPort,
+  includePresented = true,
 ): Promise<ReconcileResult> {
   if (inFlight) return { kind: 'busy' };
   inFlight = true;
   try {
-    return (await clearManaged(port)) ? { kind: 'ready', pending: 0 } : { kind: 'failed' };
+    return (await clearManaged(port, includePresented))
+      ? { kind: 'ready', pending: 0 }
+      : { kind: 'failed' };
   } catch {
     return { kind: 'failed' };
   } finally {

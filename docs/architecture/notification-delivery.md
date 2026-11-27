@@ -349,3 +349,14 @@ Expo SDK 58.1.9 defaults to presentation on handler timeout; native
 suppression cannot be guaranteed and actual device evidence is mandatory.
 See the [foreground presentation boundary](../../apps/mobile/docs/push-notification-design.md#n14g--foreground-presentation-boundary-342)
 for the provisional delay policy and limitations.
+
+## N14h — delivered reminder cleanup and QA gate (#342)
+
+Full managed cleanup now cancels pending requests and dismisses
+presented notifications, with independent attempts and read-back
+verification. Ordinary active refresh remains pending-only; a
+failed full cleanup blocks subsequent scheduling and logout cannot
+coalesce into an incomplete pending-only pass. No global dismiss,
+push registration or release activation. See the
+[final code audit and device gate](../../apps/mobile/docs/push-notification-design.md#n14h--final-local-reminder-code-audit-and-cleanup-342)
+for outstanding OS limitations and operator prerequisites.

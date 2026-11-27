@@ -24,7 +24,10 @@ function fixture(enabled = true, handlerReady = true) {
     online = true;
   const port = {} as NativeReminderPort;
   const openPort = vi.fn(async () => port as NativeReminderPort | null);
-  const cancel = vi.fn(async (_port: NativeReminderPort): Promise<ReconcileResult> => ready);
+  const cancel = vi.fn(
+    async (_port: NativeReminderPort, _includePresented: boolean): Promise<ReconcileResult> =>
+      ready,
+  );
   const disposed = vi.fn();
   const prepare = vi.fn(
     async (_scope: InboxScope, signal: AbortSignal): Promise<PreparedReminderPlan> => ({
@@ -89,6 +92,46 @@ describe('reminder lifecycle coordinator', () => {
     expect(f.cancel).toHaveBeenCalled();
     expect(f.prepare).not.toHaveBeenCalled();
     expect(f.reconcile).not.toHaveBeenCalled();
+  });
+  it('uses pending-only refresh after verified ownership, full cleanup on logout', async () => {
+    const f = fixture();
+    await f.connect();
+    await vi.waitFor(() => expect(f.disposed).toHaveBeenCalledOnce());
+    expect(f.cancel.mock.calls.map((call) => call[1])).toContain(false);
+    await f.lifecycle.end();
+    expect(f.cancel.mock.calls.at(-1)?.[1]).toBe(true);
+  });
+  it('escalates logout during an in-flight pending-only cleanup', async () => {
+    const f = fixture();
+    await f.connect();
+    await vi.waitFor(() => expect(f.disposed).toHaveBeenCalledOnce());
+    const entered = deferred(),
+      release = deferred();
+    f.cancel.mockImplementationOnce(async (_port, full) => {
+      expect(full).toBe(false);
+      entered.resolve();
+      await release.promise;
+      return ready;
+    });
+    f.lifecycle.refresh();
+    await entered.promise;
+    const ending = f.lifecycle.end();
+    release.resolve();
+    await ending;
+    expect(f.cancel.mock.calls.at(-1)?.[1]).toBe(true);
+    expect(f.lifecycle.admitForeground({})).toBe(false);
+  });
+  it('failed full cleanup is sticky across ordinary refresh', async () => {
+    const f = fixture();
+    f.cancel.mockResolvedValue({ kind: 'failed' });
+    await f.connect();
+    await vi.waitFor(() => expect(f.disposed).toHaveBeenCalledOnce());
+    expect(f.reconcile).not.toHaveBeenCalled();
+    f.cancel.mockResolvedValue(ready);
+    f.lifecycle.refresh();
+    await vi.waitFor(() => expect(f.reconcile).toHaveBeenCalledOnce());
+    expect(f.cancel.mock.calls.at(-1)?.[1]).toBe(true);
+    await f.lifecycle.end();
   });
   it('does not prepare until foreground handler installation succeeds', async () => {
     const f = fixture(true, false);
