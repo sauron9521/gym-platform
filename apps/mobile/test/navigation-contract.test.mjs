@@ -180,9 +180,13 @@ test('reminder lifecycle is composed with private data, but scheduling is releas
   assert.match(root, /<AuthProvider privateData=\{privateData\}>/);
   assert.match(root, /<ReminderRuntime reminders=\{reminders\}/);
   assert.match(runtime, /LOCAL_REMINDER_SCHEDULING_ENABLED = false/);
-  assert.match(runtime, /enabled: LOCAL_REMINDER_SCHEDULING_ENABLED/);
-  assert.match(runtime, /if \(!LOCAL_REMINDER_SCHEDULING_ENABLED \|\| !scope\) return/);
+  assert.match(runtime, /enabled: LOCAL_REMINDER_SCHEDULING_ENABLED \|\| REMINDER_QA_ENABLED/);
+  assert.match(
+    runtime,
+    /if \(!\(LOCAL_REMINDER_SCHEDULING_ENABLED \|\| REMINDER_QA_ENABLED\) \|\| !scope\) return/,
+  );
   assert.match(runtime, /void reminders.end\(\)/);
+  assert.match(runtime, /accountQueryKeys.notificationDevicePermission\(scope.ownerId\)/);
   assert.match(lifecycle, /if \(!this.deps.enabled/);
   assert.doesNotMatch(
     runtime,

@@ -247,3 +247,102 @@ cancellation, foreground presentation behavior, permission changes,
 timezone and clock changes, remote/offline limitations and recovery
 from failed cleanup. A separate reviewed activation decision is
 required; do not flip the gate merely because JS tests pass.
+
+## N14f — controlled reminder QA (#342)
+
+**Status: configuration and test preparation; device acceptance NOT RUN.**
+Normal development, preview and production builds retain the false release
+gate. Only the explicitly selected internal EAS `reminder-qa` profile can
+embed the versioned QA marker. Its channel is separate, environment is
+preview, Android output is APK, and OTA updates are disabled. The dynamic
+Expo config strips any marker from ordinary builds and refuses QA opt-in
+outside that profile. Runtime requires the marker, matching native platform,
+configured QA application ID, embedded HTTPS API URL and native standalone
+or bare environment. Web and Expo Go fail closed.
+
+This is a build configuration safeguard, not authentication or proof of
+artifact provenance. The owner must supply and independently verify a
+separate app ID, Expo project/signing, staging API and production API.
+No actual infrastructure values are committed. No remote flag, automatic
+release, or public debug toggle is added. The QA settings panel shows a
+localized test-only label; real consent and OS permission are still required.
+A successful device-permission read triggers fresh preparation even if the
+Android system prompt never caused an app focus transition; removing its
+settings-screen cache entry is not treated as permission revocation.
+
+### Operator preflight and build
+
+Use only reviewed main and a disposable installation. Configure the EAS
+preview environment with the approved public HTTPS staging API as
+`EXPO_PUBLIC_API_URL`, the same exact value as
+`OVRANTO_REMINDER_QA_API_URL`, and the independently approved production
+HTTPS API as `OVRANTO_PRODUCTION_API_URL` (different origin). Set
+`OVRANTO_REMINDER_QA_PLATFORM` to exactly android or ios and
+`OVRANTO_REMINDER_QA_APP_ID` to the owned separate identifier ending
+in .reminderqa for that platform. These values are public configuration,
+not secrets. Keep the QA opt-in in the dedicated profile only.
+For local config inspection, set the same values in the shell, including
+EAS_BUILD_PROFILE=reminder-qa and OVRANTO_REMINDER_QA=1; unset them after
+the inspection. If the EAS CLI does not resolve the profile name locally,
+pass EAS_BUILD_PROFILE=reminder-qa explicitly for the dedicated command only.
+The actual remote build must resolve the same platform and configuration.
+Do not reuse production signing or distribute a QA build to ordinary users.
+
+From apps/mobile, inspect the resolved public config with
+`pnpm exec expo config --type public` before building. Verify name
+OVRANTO Reminder QA, the chosen package/bundle ID, distinct scheme,
+matching marker and staging target, disabled updates and remote notification
+plugin options. Review the EAS project link, native signing and account
+ownership separately. Then, only after operator approval, request
+`eas build --profile reminder-qa --platform android` (or ios).
+Verify the resulting artifact belongs to the correct project, reviewed commit,
+native identifier, signing and embedded API; independently hash the artifact
+and install it on an authorized disposable device. The existing ordinary
+preview preflight remains unchanged and still requires reviewed app IDs.
+No EAS build or installation was executed in this PR.
+
+### Device acceptance matrix
+
+Use distinct disposable verified athlete accounts A and B, Ukrainian and
+English locales, no prior consent, and synthetic workouts only. Seed one
+PLANNED workout with a due reminder at least two minutes in the future
+(account lead 15 minutes; scheduledAt = desired due + 15 minutes).
+Choose a time outside quiet hours for the positive case; verify server
+canonical settings and workout status. Use fresh fixtures for each run.
+The local Maestro flow `reminder-qa-mode-smoke.yaml` checks login, the QA
+label, settings and logout. It does not grant permission, mutate consent,
+or prove delivery. Run on the verified installed QA binary using APP_ID,
+E2E_EMAIL and E2E_PASSWORD; scroll/system UI behavior needs real execution.
+Do not use the ordinary preview workflow for this QA artifact.
+
+| Check                            | Required observation on Android and iOS                                                                                                              |
+| -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Default / denial                 | No managed pending requests before consent and explicit OS grant; denied or provisional iOS authorization does not schedule                          |
+| Positive                         | Exactly one managed request; generic localized payload, actual notification near intended time while backgrounded                                    |
+| Idempotence                      | Repeated refresh/resume leaves at most one request per candidate; no unrelated requests cancelled                                                    |
+| Edit / completion / cancellation | Old pending request removed; only a still-eligible changed workout can have a new request                                                            |
+| Settings / revocation            | Consent off, quiet hours, lead change, OS permission and Android channel change reconcile correctly                                                  |
+| Account lifecycle                | Logout, A to B, expired session, cold relaunch and failed reverify do not retain A's pending requests                                                |
+| Background / offline             | Settled eligible requests survive normal backgrounding; offline remote change limitation documented; reconcile on return                             |
+| Clock / timezone                 | Record profile IANA zone and device zone, DST and clock changes; no quiet-window delivery or unexpected early trigger                                |
+| Capacity / error                 | Verify 32 managed / 48 total, missing channel, ambiguous write and failed cleanup behavior without false success                                     |
+| Foreground / locked device       | Observe actual foreground presentation and lock-screen privacy; no handler is implemented yet, so missing foreground delivery is a blocker, not PASS |
+| Ordinary release                 | Same staging fixture in ordinary preview never schedules; no QA marker or remote push registration                                                   |
+
+Record private evidence for each platform: reviewed commit and build hash,
+verified package/bundle ID and staging origin, OS/device version, locale,
+profile and device timezones, fixture labels, expected UTC due time, actual
+delivery time, pending managed count before/after, observed consent/permission,
+and PASS/FAIL/NOT RUN. Use the native pending inventory from an authorized
+read-only inspection harness; Android system diagnostics may contain private
+data, and iOS interval listing alone cannot establish absolute fire time.
+Never expose identifiers, tokens, credentials, raw payloads or personal data.
+If native inspection, timing observation or cleanup evidence is unavailable,
+record NOT RUN. Do not mark a case passed based on the Maestro mode smoke,
+Vitest, Expo config or Metro alone. Clear managed test reminders, revoke
+consent, log out, remove test fixtures and uninstall the QA build afterward.
+
+**Activation remains NO-GO** until #348/#349 actual device evidence,
+all required cases pass, any foreground/channel/reconciliation gaps are
+resolved, and the owner explicitly approves activation. #342 stays open.
+Push #343 remains gated. No ordinary release activation in N14f.

@@ -12,6 +12,7 @@ import {
   reconcileNativeReminders,
 } from '../lib/native-reminder-reconciliation';
 import { readNativeDevicePermission } from '../lib/native-notification-permission';
+import { REMINDER_QA_ENABLED } from '../lib/reminder-qa-mode';
 
 // Release gate: change only in a reviewed native QA/activation slice.
 // Disabled still attempts managed cleanup at auth boundaries.
@@ -22,7 +23,7 @@ export function useReminderLifecycle() {
   const [reminders] = useState(
     () =>
       new ReminderLifecycle({
-        enabled: LOCAL_REMINDER_SCHEDULING_ENABLED,
+        enabled: LOCAL_REMINDER_SCHEDULING_ENABLED || REMINDER_QA_ENABLED,
         foreground: () => AppState.currentState === 'active' && focusManager.isFocused(),
         online: () => onlineManager.isOnline(),
         openPort: openNativeReminderPort,
@@ -53,7 +54,7 @@ export function ReminderRuntime({ reminders }: { reminders: ReminderLifecycle })
   }, [reminders, scope, locale]);
 
   useEffect(() => {
-    if (!LOCAL_REMINDER_SCHEDULING_ENABLED || !scope) return;
+    if (!(LOCAL_REMINDER_SCHEDULING_ENABLED || REMINDER_QA_ENABLED) || !scope) return;
     const prefixes = [
       accountQueryKeys.me(scope.ownerId),
       accountQueryKeys.workouts(scope.ownerId),
@@ -62,6 +63,17 @@ export function ReminderRuntime({ reminders }: { reminders: ReminderLifecycle })
     const refresh = () => reminders.refresh();
     const unsubscribe = [
       client.getQueryCache().subscribe((event) => {
+        const permissionKey = accountQueryKeys.notificationDevicePermission(scope.ownerId);
+        if (
+          event.query.queryKey.length === permissionKey.length &&
+          permissionKey.every((part, i) => event.query.queryKey[i] === part)
+        ) {
+          // Re-read after explicit OS prompt even when Android never emits
+          // a background/foreground transition. Closing Settings is not revocation.
+          if (event.type === 'updated' && event.action.type === 'success') refresh();
+          return;
+        }
+
         if (!prefixes.some((prefix) => prefix.every((part, i) => event.query.queryKey[i] === part)))
           return;
         if (

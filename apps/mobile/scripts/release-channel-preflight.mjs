@@ -10,6 +10,7 @@ export function validateMobileReleaseChannels(eas) {
   const development = eas?.build?.development;
   const preview = eas?.build?.preview;
   const production = eas?.build?.production;
+  const qa = eas?.build?.['reminder-qa'];
 
   if (eas?.cli?.appVersionSource !== 'remote') {
     problems.push('EAS appVersionSource must be remote.');
@@ -35,9 +36,28 @@ export function validateMobileReleaseChannels(eas) {
     problems.push('Production requires auto-increment and store distribution.');
   }
 
-  const channels = [development?.channel, preview?.channel, production?.channel];
-  if (channels.some((channel) => typeof channel !== 'string') || new Set(channels).size !== 3) {
-    problems.push('Development, preview and production channels must be distinct.');
+  if (
+    qa?.environment !== 'preview' ||
+    qa?.channel !== 'reminder-qa' ||
+    qa?.distribution !== 'internal' ||
+    qa?.android?.buildType !== 'apk' ||
+    qa?.env?.OVRANTO_REMINDER_QA !== '1' ||
+    qa?.extends ||
+    qa?.developmentClient
+  ) {
+    problems.push('Reminder QA must use its own internal APK profile and preview environment.');
+  }
+  for (const [name, profile] of Object.entries(eas?.build ?? {})) {
+    if (
+      name !== 'reminder-qa' &&
+      ((profile?.env?.OVRANTO_REMINDER_QA && profile.env.OVRANTO_REMINDER_QA !== '0') ||
+        profile?.extends === 'reminder-qa')
+    )
+      problems.push('Reminder QA opt-in must not leak to other build profiles.');
+  }
+  const channels = [development?.channel, preview?.channel, production?.channel, qa?.channel];
+  if (channels.some((channel) => typeof channel !== 'string') || new Set(channels).size !== 4) {
+    problems.push('Development, preview, production and reminder QA channels must be distinct.');
   }
   return problems;
 }

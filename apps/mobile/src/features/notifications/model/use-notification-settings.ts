@@ -148,11 +148,7 @@ export function useNotificationSettings() {
 export function useDevicePermission(read?: ReadDevicePermission) {
   const scope = useInboxScope();
   const client = useQueryClient();
-  const queryKey = [
-    'account',
-    'notification-device-permission',
-    scope?.ownerId ?? 'signed-out',
-  ] as const;
+  const queryKey = accountQueryKeys.notificationDevicePermission(scope?.ownerId ?? 'signed-out');
   const [requesting, setRequesting] = useState(false);
   const active = useRef(false);
   const foreground = useSyncExternalStore(subscribeFocus, isFocused, isFocused);
@@ -180,7 +176,7 @@ export function useDevicePermission(read?: ReadDevicePermission) {
       active.current = true;
       if (scope?.isCurrent())
         void client.invalidateQueries(
-          { queryKey: ['account', 'notification-device-permission', scope.ownerId], exact: true },
+          { queryKey: accountQueryKeys.notificationDevicePermission(scope.ownerId), exact: true },
           { cancelRefetch: false },
         );
       return () => {

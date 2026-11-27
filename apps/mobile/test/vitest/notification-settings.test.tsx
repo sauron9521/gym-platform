@@ -23,10 +23,16 @@ const mocks = vi.hoisted(() => ({
   signOut: vi.fn(),
   nativeRead: vi.fn(),
   nativeRequest: vi.fn(),
+  qaEnabled: false,
 }));
 vi.mock('@/features/notifications/lib/native-notification-permission', () => ({
   readNativeDevicePermission: mocks.nativeRead,
   requestNativeDevicePermission: mocks.nativeRequest,
+}));
+vi.mock('@/features/notifications/lib/reminder-qa-mode', () => ({
+  get REMINDER_QA_ENABLED() {
+    return mocks.qaEnabled;
+  },
 }));
 vi.mock('@/features/auth/model/auth-context', () => ({ useAuth: vi.fn() }));
 vi.mock('expo-router', () => ({
@@ -87,6 +93,7 @@ async function ready(view: View) {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mocks.qaEnabled = false;
   mocks.nativeRead.mockResolvedValue({ status: 'unavailable', canRequest: false });
   mocks.nativeRequest.mockResolvedValue(undefined);
   focusManager.setFocused(true);
@@ -154,6 +161,19 @@ describe('Mobile notification settings', () => {
       headers: { 'x-notification-owner': owner },
       signal: expect.any(AbortSignal),
     });
+  });
+
+  it('labels internal QA only in the gated build, without a permission prompt', async () => {
+    mocks.qaEnabled = true;
+    const view = await render(tree());
+    await ready(view);
+    expect(view.getByTestId('notification-reminder-qa-mode')).toBeTruthy();
+    expect(mocks.nativeRequest).not.toHaveBeenCalled();
+    await view.unmount();
+    mocks.qaEnabled = false;
+    const ordinary = await render(tree());
+    await ready(ordinary);
+    expect(ordinary.queryByTestId('notification-reminder-qa-mode')).toBeNull();
   });
 
   it('requires a separate explicit permission action after confirmed local reminder consent, then rereads OS status', async () => {

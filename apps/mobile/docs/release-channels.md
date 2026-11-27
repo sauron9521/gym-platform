@@ -49,3 +49,11 @@ updates URLs and add real-device rollback/recovery tests. An OTA channel must
 never be used to deliver JS that requires a different native binary.
 
 **No automatic publish, EAS submit, or OTA workflow is introduced here.**
+
+## Internal local reminder QA profile
+
+The dedicated `reminder-qa` profile uses the preview environment and a
+separate channel, app identity and explicit staging/production API comparison.
+The dynamic Expo config refuses cross-profile opt-in; normal release scheduling
+stays disabled. Follow the [reminder QA setup and device matrix](push-notification-design.md#n14f--controlled-reminder-qa-342).
+This is NOT an authorization to build, publish, or activate production.

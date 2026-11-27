@@ -691,7 +691,10 @@
       "requestingPermission": "Перевіряємо дозвіл пристрою…",
       "reminderChannel": "Нагадування про тренування",
       "reminderNotificationTitle": "OVRANTO",
-      "reminderNotificationBody": "Наближається час тренування."
+      "reminderNotificationBody": "Наближається час тренування.",
+      "qaMode": "Внутрішнє тестування нагадувань — лише тестові акаунти staging.",
+      "qaPermissionHint": "Згода акаунта та дозвіл ОС незалежні. Ця внутрішня збірка може планувати нагадування після перевірки обох.",
+      "qaConsentHint": "Змінюйте згоду лише для тестових акаунтів staging. Згоду можна відкликати будь-коли."
     },
     "notifications": {
       "title": "Сповіщення",

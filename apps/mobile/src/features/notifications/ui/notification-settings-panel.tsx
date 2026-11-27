@@ -9,6 +9,7 @@ import { useDevicePermission, useNotificationSettings } from '../model/use-notif
 import { formatMinute, parseMinute } from '../model/settings-time';
 import type { NotificationSettings, SettingsPatch } from '../services/settings-api';
 import type { ReadDevicePermission } from '../lib/notification-policy';
+import { REMINDER_QA_ENABLED } from '../lib/reminder-qa-mode';
 
 type Change = (body: SettingsPatch) => Promise<void>;
 function consentPatch(
@@ -158,7 +159,18 @@ function SettingsContent({ readPermission }: { readPermission?: ReadDevicePermis
         <Text accessibilityLiveRegion="polite" style={styles.label}>
           {local(permission)}
         </Text>
-        <Text style={styles.hint}>{local('permissionHint')}</Text>
+        {REMINDER_QA_ENABLED ? (
+          <Text
+            testID="notification-reminder-qa-mode"
+            accessibilityRole="alert"
+            style={styles.hint}
+          >
+            {local('qaMode')}
+          </Text>
+        ) : null}
+        <Text style={styles.hint}>
+          {local(REMINDER_QA_ENABLED ? 'qaPermissionHint' : 'permissionHint')}
+        </Text>
         {permission === 'denied' ? (
           <Text accessibilityRole="alert" style={styles.error}>
             {local('deniedHint')}
@@ -186,7 +198,9 @@ function SettingsContent({ readPermission }: { readPermission?: ReadDevicePermis
             <Text accessibilityRole="header" style={styles.label}>
               {t('channels')}
             </Text>
-            <Text style={styles.hint}>{t('consentHint')}</Text>
+            <Text style={styles.hint}>
+              {REMINDER_QA_ENABLED ? local('qaConsentHint') : t('consentHint')}
+            </Text>
             {data.preferences.map((pair) => (
               <View key={pair.category} style={styles.row}>
                 <View style={styles.description}>
