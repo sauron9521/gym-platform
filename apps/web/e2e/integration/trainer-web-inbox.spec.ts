@@ -20,7 +20,7 @@ test('Trainer Inbox shares read state, protects live client targets and revokes 
   const personal = randomUUID();
   await page.context().addCookies([{ name: 'gym-locale', value: 'en', url: trainer }]);
   await page.goto(trainer + '/workspace/notifications');
-  await expect(page.getByRole('alert')).toContainText('You do not have access');
+  await expect(page.getByRole('main').getByRole('alert')).toContainText('You do not have access');
   await expect(page.getByRole('link', { name: /Notifications \(/ })).toHaveCount(0);
   const register = await page.request.post(trainer + '/backend/auth/register', {
     data: { email, password },
