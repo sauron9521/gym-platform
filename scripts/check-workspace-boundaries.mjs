@@ -10,6 +10,33 @@ const dependencyFields = [
   'peerDependencies',
   'optionalDependencies',
 ];
+// Explicit library family; transitive lockfile entries are intentionally allowed.
+const dateLibrary =
+  /^(?:date-fns(?:-tz)?|@date-fns\/[^/]+|luxon|dayjs|moment(?:-timezone)?|@js-temporal\/polyfill)$/;
+const datetimeDependencies = new Set(['date-fns', '@date-fns/tz']);
+
+function checkDateLibraryDependencies(manifest, isOwner, errors) {
+  for (const field of dependencyFields) {
+    for (const [dependency, version] of Object.entries(manifest[field] ?? {})) {
+      // npm aliases must not bypass the explicit dependency ownership rule.
+      const alias =
+        typeof version === 'string'
+          ? /^npm:((?:@[^/]+\/)?[^@]+)(?:@|$)/.exec(version)?.[1]
+          : undefined;
+      if (isOwner && field === 'dependencies' && datetimeDependencies.has(dependency) && !alias)
+        continue;
+      if (dateLibrary.test(dependency) || (alias && dateLibrary.test(alias))) {
+        errors.push(
+          manifest.name +
+            ': date library ' +
+            dependency +
+            ' must be owned by @gym/datetime (dependencies)',
+        );
+      }
+    }
+  }
+}
+
 // Source imports are validated by the required dependency-cruiser graph gate.
 // This file deliberately reads manifests only; do not reintroduce source parsing.
 
@@ -46,11 +73,23 @@ export function checkWorkspaceBoundaries(repositoryRoot) {
     workspaces.filter((w) => w.kind !== 'apps').map((w) => [w.name, new Set()]),
   );
 
+  const rootManifest = join(root, 'package.json');
+  if (existsSync(rootManifest)) {
+    checkDateLibraryDependencies(JSON.parse(readFileSync(rootManifest, 'utf8')), false, errors);
+  }
   for (const workspace of workspaces) {
+    const isDatetime =
+      workspace.kind === 'packages' &&
+      relative(root, workspace.directory).replaceAll('\\', '/') === 'packages/datetime' &&
+      workspace.name === '@gym/datetime';
+    checkDateLibraryDependencies(workspace.manifest, isDatetime, errors);
     for (const field of dependencyFields) {
       for (const dependency of Object.keys(workspace.manifest[field] ?? {})) {
         const target = byName.get(dependency);
         if (!target) continue;
+        if (isDatetime) {
+          errors.push('@gym/datetime: must not depend on workspace ' + dependency);
+        }
         if (target.kind === 'apps') {
           errors.push(
             workspace.name + ': must not depend on app ' + dependency + ' (' + field + ')',

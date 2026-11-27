@@ -93,6 +93,73 @@ not a change to legitimate API responses. No dependency version change.
 UTC dates for birthday, SQL clock/retention, session and lease arithmetic
 remain separate contracts and are intentionally not migrated here.
 
+## DT05 — ownership, verification and remaining scope
+
+The approved date library family is date-fns and @date-fns/tz in
+`packages/datetime` only. Direct dependencies and literal imports
+of the named competing libraries (date-fns-tz, other @date-fns
+packages, Luxon, Day.js, Moment and the Temporal polyfill) are not
+permitted without a reviewed architecture decision. Use the public
+`@gym/datetime` exports instead. Keep this package a technical leaf;
+it cannot depend on other workspaces. Transitive dependencies of
+third-party packages may still occur in the lockfile.
+
+The existing manifest contract and required Dependency Cruiser graph
+gate enforce this ownership. They check all four dependency fields,
+npm aliases, root/workspace manifests and resolved/unresolved literal
+imports under src, app, test, tests and e2e directories. Dependency
+edges into node_modules remain visible, but third-party implementation
+code is not traversed. Computed imports and arbitrary new libraries
+outside the named family are not exhaustively detected. Code review
+remains responsible for semantic correctness and dependency approval.
+
+### Choose a time contract before implementing
+
+| Need                                   | Use                                                |
+| -------------------------------------- | -------------------------------------------------- |
+| Absolute API timestamp evidence        | parseInstant; require explicit offset              |
+| Local calendar navigation and grouping | calendarMonth/Week helpers and groupByCalendarDay  |
+| Explicit named-zone civil date/minute  | calendarDayKey and minuteOfDayInTimezone           |
+| Quiet window                           | isMinuteInDailyWindow; consent stays in API policy |
+| Elapsed lead                           | subtractElapsedMinutes                             |
+| UTC chart buckets                      | utcCalendarDaysStart                               |
+| Rolling 24-hour comparisons            | rollingDaysStart                                   |
+| Date-only profile birthday             | Existing validated YYYY-MM-DD contract             |
+| Localized display                      | Intl / next-intl / react-intl                      |
+| Session TTL, lease, retry, retention   | Existing absolute, monotonic or database clock     |
+
+Do not globally ban Date, Intl, SQL time functions or elapsed
+millisecond arithmetic. Do not interpret an absolute timestamp as a
+local wall clock or use UTC string slicing for a local calendar date.
+New shared time operations require a focused test and explicit
+timezone/elapsed/calendar semantics. Never infer a zone for corrupt
+account data or guess how to resolve an ambiguous local appointment.
+
+### Final inventory and follow-ups
+
+DT01–DT04 migrated the targeted workout calendars/status, profile
+timezone validation, quiet hours, reminder lead and analytics windows.
+The manifest scan at main 88851ec found date-fns 4.4.0 and @date-fns/tz
+1.5.0 declared only by datetime; no competing direct dependency.
+The remaining day-sized constants in notification delivery TTL and
+avatar cleanup are intentionally elapsed durations, not civil days.
+
+Existing Admin directory/detail/inbox and Trainer program-selector
+response date validation, Mobile calendar range validation and Web
+next-planned-workout comparisons still contain Date.parse or native
+Date. These are separate response-contract candidates, not proof
+of a defect; review their accepted wire formats and tests before
+changing them. Date-only birthday and simple localized display are
+not migration targets. Historical imported API utility paths remain
+thin adapters to avoid weakening the migration inventory.
+
+The foundational adoption is ready for review, not a claim that every
+date call has been migrated. Native named-zone support and native
+timezone-change behavior remain device QA gates (#348/#349). Do not
+install global polyfills or activate reminders without native evidence.
+Next: #342 local reminder lifecycle, followed by #343 push only after
+local scheduling is proven. No production readiness approval here.
+
 ## Other library candidates — not approved
 
 - Expo Notifications: existing #342/#343 owns native permission,
