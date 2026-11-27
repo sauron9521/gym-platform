@@ -2196,12 +2196,16 @@
                               "trainer.invitation.accepted",
                               "trainer.invitation.declined",
                               "trainer.invitation.cancelled",
-                              "trainer.relationship.terminated"
+                              "trainer.relationship.terminated",
+                              "program.assigned",
+                              "program.assignment.cancelled",
+                              "program.assignment.terminated",
+                              "program.assignment.completed"
                             ]
                           },
                           "category": {
                             "type": "string",
-                            "enum": ["ACCOUNT", "TRAINER"]
+                            "enum": ["ACCOUNT", "TRAINER", "PROGRAM"]
                           },
                           "templateKey": {
                             "type": "string",
@@ -2211,7 +2215,11 @@
                               "trainer.invitation.accepted",
                               "trainer.invitation.declined",
                               "trainer.invitation.cancelled",
-                              "trainer.relationship.terminated"
+                              "trainer.relationship.terminated",
+                              "program.assigned",
+                              "program.assignment.cancelled",
+                              "program.assignment.terminated",
+                              "program.assignment.completed"
                             ]
                           },
                           "createdAt": {
@@ -2222,6 +2230,21 @@
                             "type": "string",
                             "format": "date-time",
                             "nullable": true
+                          },
+                          "target": {
+                            "type": "object",
+                            "properties": {
+                              "kind": {
+                                "type": "string",
+                                "enum": ["PROGRAM_ASSIGNMENT"]
+                              },
+                              "id": {
+                                "type": "string",
+                                "format": "uuid"
+                              }
+                            },
+                            "required": ["kind", "id"],
+                            "additionalProperties": false
                           }
                         },
                         "required": [
@@ -2327,12 +2350,16 @@
                         "trainer.invitation.accepted",
                         "trainer.invitation.declined",
                         "trainer.invitation.cancelled",
-                        "trainer.relationship.terminated"
+                        "trainer.relationship.terminated",
+                        "program.assigned",
+                        "program.assignment.cancelled",
+                        "program.assignment.terminated",
+                        "program.assignment.completed"
                       ]
                     },
                     "category": {
                       "type": "string",
-                      "enum": ["ACCOUNT", "TRAINER"]
+                      "enum": ["ACCOUNT", "TRAINER", "PROGRAM"]
                     },
                     "templateKey": {
                       "type": "string",
@@ -2342,7 +2369,11 @@
                         "trainer.invitation.accepted",
                         "trainer.invitation.declined",
                         "trainer.invitation.cancelled",
-                        "trainer.relationship.terminated"
+                        "trainer.relationship.terminated",
+                        "program.assigned",
+                        "program.assignment.cancelled",
+                        "program.assignment.terminated",
+                        "program.assignment.completed"
                       ]
                     },
                     "createdAt": {
@@ -2353,6 +2384,21 @@
                       "type": "string",
                       "format": "date-time",
                       "nullable": true
+                    },
+                    "target": {
+                      "type": "object",
+                      "properties": {
+                        "kind": {
+                          "type": "string",
+                          "enum": ["PROGRAM_ASSIGNMENT"]
+                        },
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        }
+                      },
+                      "required": ["kind", "id"],
+                      "additionalProperties": false
                     }
                   },
                   "required": ["id", "type", "category", "templateKey", "createdAt", "readAt"],
@@ -2408,12 +2454,16 @@
                         "trainer.invitation.accepted",
                         "trainer.invitation.declined",
                         "trainer.invitation.cancelled",
-                        "trainer.relationship.terminated"
+                        "trainer.relationship.terminated",
+                        "program.assigned",
+                        "program.assignment.cancelled",
+                        "program.assignment.terminated",
+                        "program.assignment.completed"
                       ]
                     },
                     "category": {
                       "type": "string",
-                      "enum": ["ACCOUNT", "TRAINER"]
+                      "enum": ["ACCOUNT", "TRAINER", "PROGRAM"]
                     },
                     "templateKey": {
                       "type": "string",
@@ -2423,7 +2473,11 @@
                         "trainer.invitation.accepted",
                         "trainer.invitation.declined",
                         "trainer.invitation.cancelled",
-                        "trainer.relationship.terminated"
+                        "trainer.relationship.terminated",
+                        "program.assigned",
+                        "program.assignment.cancelled",
+                        "program.assignment.terminated",
+                        "program.assignment.completed"
                       ]
                     },
                     "createdAt": {
@@ -2434,6 +2488,21 @@
                       "type": "string",
                       "format": "date-time",
                       "nullable": true
+                    },
+                    "target": {
+                      "type": "object",
+                      "properties": {
+                        "kind": {
+                          "type": "string",
+                          "enum": ["PROGRAM_ASSIGNMENT"]
+                        },
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        }
+                      },
+                      "required": ["kind", "id"],
+                      "additionalProperties": false
                     }
                   },
                   "required": ["id", "type", "category", "templateKey", "createdAt", "readAt"],

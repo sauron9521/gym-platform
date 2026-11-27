@@ -1,3 +1,4 @@
+import { publishProgramAssignmentTransition } from '#src/modules/notifications/public-api';
 import { Prisma } from '#prisma/client';
 import { AssignmentCancellationStateChanged } from '../application/assignment-cancellation.js';
 import { AssignmentCreationError } from '../application/assignment-creation.js';
@@ -8,6 +9,10 @@ import {
   trainingProgramAssignmentDetailsSelect,
   trainingProgramAssignmentSummarySelect,
 } from '../selects/training-program-assignment.select.js';
+
+vi.mock('#src/modules/notifications/public-api', () => ({
+  publishProgramAssignmentTransition: vi.fn(),
+}));
 
 describe('TrainingProgramAssignmentRepository', () => {
   const models = {
@@ -330,6 +335,7 @@ describe('TrainingProgramAssignmentRepository', () => {
       expect(queries[4]).toContain('FROM "trainer_profiles"');
       expect(queries[4]).toContain('FOR UPDATE');
 
+      expect(publishProgramAssignmentTransition).toHaveBeenCalledWith(tx, assignment);
       expect(tx.trainingProgramAssignment.create).toHaveBeenCalledWith({
         data: {
           version: { connect: { id: input.versionId } },

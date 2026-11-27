@@ -308,4 +308,93 @@ describe('Notification inbox HTTP + PostgreSQL', () => {
       await prisma.mfaLifecycleAudit.deleteMany({ where: { userId: owner } });
     }
   });
+  it('exposes only an authorized semantic program target and suppresses it after revocation', async () => {
+    await prisma.user.update({ where: { id: other }, data: { role: 'TRAINER' } });
+    const relationship = await prisma.trainerAthlete.create({
+      data: {
+        trainerId: other,
+        athleteId: owner,
+        initiatedById: other,
+        status: 'ACTIVE',
+        respondedAt: new Date(),
+      },
+    });
+    const program = await prisma.trainingProgram.create({
+      data: {
+        trainerId: other,
+        status: 'PUBLISHED',
+        versions: {
+          create: {
+            title: 'Private title',
+            version: 1,
+            status: 'PUBLISHED',
+            publishedAt: new Date(),
+          },
+        },
+      },
+      include: { versions: true },
+    });
+    try {
+      const assignment = await prisma.trainingProgramAssignment.create({
+        data: {
+          versionId: program.versions[0]!.id,
+          trainerAthleteId: relationship.id,
+          athleteId: owner,
+          assignedById: other,
+        },
+      });
+      const item = await prisma.notification.create({
+        data: {
+          eventId: randomUUID(),
+          recipientId: owner,
+          scope: 'USER',
+          category: 'PROGRAM',
+          type: 'program.assigned',
+          templateKey: 'program.assigned',
+          programAssignmentId: assignment.id,
+        },
+      });
+      const expected = {
+        id: item.id,
+        type: 'program.assigned',
+        category: 'PROGRAM',
+        templateKey: 'program.assigned',
+        createdAt: item.createdAt.toISOString(),
+        readAt: null,
+        target: { kind: 'PROGRAM_ASSIGNMENT', id: assignment.id },
+      };
+      expect((await get(path + '?category=PROGRAM').expect(200)).body).toEqual({
+        data: [expected],
+        nextCursor: null,
+      });
+      expect(
+        (
+          await http()
+            .get(path + '/' + item.id)
+            .set('Authorization', bearer)
+            .expect(200)
+        ).body,
+      ).toEqual(expected);
+      expect((await mark(item.id).expect(200)).body).toEqual({
+        ...expected,
+        readAt: expect.any(String),
+      });
+      await prisma.trainerProfile.create({ data: { userId: other, isActive: false } });
+      await get(path + '/' + item.id).expect(404);
+      await mark(item.id).expect(404);
+      expect((await get(path + '?category=PROGRAM').expect(200)).body).toEqual({
+        data: [],
+        nextCursor: null,
+      });
+    } finally {
+      await prisma.trainingProgramAssignment.deleteMany({
+        where: { trainerAthleteId: relationship.id },
+      });
+      await prisma.trainingProgramVersion.deleteMany({ where: { programId: program.id } });
+      await prisma.trainingProgram.delete({ where: { id: program.id } });
+      await prisma.trainerAthlete.delete({ where: { id: relationship.id } });
+      await prisma.trainerProfile.deleteMany({ where: { userId: other } });
+      await prisma.user.update({ where: { id: other }, data: { role: 'ATHLETE' } });
+    }
+  });
 });

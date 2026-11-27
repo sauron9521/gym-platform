@@ -32,7 +32,7 @@ Inbox insert and outbox completion in the same bounded transaction.
 A worker that stops after claiming leaves an expired lease recoverable
 by another instance. No external I/O is performed while holding a lock.
 
-The existing MFA publisher and five relationship transitions (#570) are supported sources. For MFA, re-parse the
+The existing MFA publisher, five relationship transitions (#570) and four assignment transitions (#571) are supported sources. For MFA, re-parse the
 strict v1 contract, match its deterministic event key and re-read the
 immutable MFA lifecycle audit (ID, account, action, occurrence time).
 Check active/non-deleted account under a user-row lock before inserting

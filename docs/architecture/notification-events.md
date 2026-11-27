@@ -42,6 +42,7 @@ Legend: `I` = durable In-App; `P` = opt-in Mobile Push; `E` = optional transacti
 | `trainer.relationship.terminated`             | TrainerAthlete                                                        | Other participant(s) with safe redacted status               | TRAINER / USER   | I; P later                                                                                           |
 | `program.assigned`                            | TrainingProgramAssignment                                             | Assigned athlete                                             | PROGRAM / USER   | I; P later                                                                                           |
 | `program.assignment.cancelled` / `terminated` | TrainingProgramAssignment                                             | Affected athlete                                             | PROGRAM / USER   | I                                                                                                    |
+| `program.assignment.completed`                | TrainingProgramAssignment                                             | Assigned athlete (completion receipt)                        | PROGRAM / USER   | I                                                                                                    |
 | `workout.reminder.due`                        | Schedule/Workout                                                      | Workout athlete with PLANNED future schedule                 | WORKOUT / USER   | **L** from mobile schedule; server-side reminders only if explicitly designed with per-device dedupe |
 | `account.security.changed`                    | Auth/User                                                             | Affected account holder                                      | ACCOUNT / USER   | I; urgent security E policy                                                                          |
 | `trainer.application.reviewed`                | Trainer onboarding                                                    | Applicant (only after review committed)                      | ACCOUNT / USER   | I; optional E                                                                                        |
@@ -87,6 +88,45 @@ when the state advances. No source ID, contact detail, action URL or
 direct resource navigation is returned; future clients can open their
 authorized relationship list. No historical backfill or external sends
 are enabled.
+
+## N08: assignment producers (#571)
+
+Creation, cancellation, completion and relationship-driven termination
+publish `program.assigned`, `program.assignment.cancelled`,
+`program.assignment.completed` and `program.assignment.terminated`
+respectively inside the source transaction. The event key is
+`program-assignment:<assignmentId>:<eventType>:v1`; payload is the
+aggregate UUID alone. Bulk relationship termination publishes only the
+assignments actually changed, and copy failures roll back the entire
+transition and its events. First workout start is not a new assignment.
+
+Only the athlete receives these notices. Completion and athlete-initiated
+termination are explicit self-receipts, not a trainer activity feed.
+Dispatcher matches current assignment status, authoritative actor/time,
+relationship participants and program owner; stale events skip. Active
+assignment visibility requires current trainer approval and active
+collaboration. Terminal notices remain in the athlete's own history.
+A source FK and the same eligibility predicate protect every Inbox
+operation, including counts and read mutations. Cancellation/termination/
+completion suppress the old assignment notice. There is no program
+external delivery planner yet, so no program push or email can be
+queued. Future channel work must recheck this policy before every send.
+
+The authenticated Inbox returns a typed target only for PROGRAM notices:
+`{ kind: 'PROGRAM_ASSIGNMENT', id: <assignment UUID> }`.
+It never returns program title, workout details, raw event payload or
+a caller-controlled URL. Destination mapping for the future client Inbox:
+
+| Client         | Existing destination                                                           |
+| -------------- | ------------------------------------------------------------------------------ |
+| Athlete Mobile | `/programs/[id]` with assignment UUID                                          |
+| Athlete Web    | `/athlete/programs` (authorized list; individual detail route not implemented) |
+| Trainer Web    | No delivery for this athlete-only event; own client workflow remains separate  |
+
+Resource GET `/training-programs/assignments/{assignmentId}` remains
+authoritative; receiving a notice never grants access. UI navigation,
+exact Web assignment-detail deep link, and external delivery supersession
+tests remain follow-ups, not completed #571 acceptance criteria.
 
 ## Replay, conflicts and ordering
 

@@ -93,3 +93,16 @@ void native.POST('/notifications/read-all');
 void native.GET('/notifications', { params: { query: { recipientId: 'other' } } });
 // @ts-expect-error - ADMIN scope is not a client-selectable category
 void browser.GET('/notifications', { params: { query: { category: 'ADMIN' } } });
+
+type InboxItem =
+  paths['/notifications/{id}']['get']['responses'][200]['content']['application/json'];
+const programTarget: NonNullable<InboxItem['target']> = {
+  kind: 'PROGRAM_ASSIGNMENT',
+  id: 'assignment-id',
+};
+// @ts-expect-error - arbitrary links are not a valid target
+const unsafeTarget: NonNullable<InboxItem['target']> = { kind: 'URL', id: 'https://example.test' };
+const programType: InboxItem['type'] = 'program.assignment.completed';
+void programTarget;
+void unsafeTarget;
+void programType;

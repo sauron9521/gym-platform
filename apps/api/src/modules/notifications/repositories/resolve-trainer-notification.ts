@@ -1,12 +1,12 @@
 import type { Prisma } from '#prisma/client';
 import { Prisma as PrismaSql } from '#prisma/client';
-import type { ValidatedOutboxEvent } from '../domain/outbox-event.policy.js';
+import type { TrainerEventType, ValidatedOutboxEvent } from '../domain/outbox-event.policy.js';
 import {
   trainerEventStatus,
   trainerNotificationSourceWhere,
 } from '../domain/trainer-notification.policy.js';
 
-type Event = Exclude<ValidatedOutboxEvent, { type: 'account.security.changed' }>;
+type Event = Extract<ValidatedOutboxEvent, { type: TrainerEventType }>;
 
 export async function resolveTrainerNotification(tx: Prisma.TransactionClient, event: Event) {
   const id = event.payload.aggregate.id;

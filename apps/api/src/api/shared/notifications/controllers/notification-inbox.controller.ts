@@ -26,14 +26,24 @@ import {
 } from '#src/infra/openapi/response-contracts';
 
 const emptyQuery = z.strictObject({});
-const notification = objectSchema({
+const baseNotification = objectSchema({
   id: uuidSchema,
   type: { type: 'string', enum: [...inboxEventTypes] },
-  category: { type: 'string', enum: ['ACCOUNT', 'TRAINER'] },
+  category: { type: 'string', enum: ['ACCOUNT', 'TRAINER', 'PROGRAM'] },
   templateKey: { type: 'string', enum: [...inboxEventTypes] },
   createdAt: dateTimeSchema,
   readAt: nullable(dateTimeSchema),
 });
+const notification = {
+  ...baseNotification,
+  properties: {
+    ...baseNotification.properties,
+    target: objectSchema({
+      kind: { type: 'string', enum: ['PROGRAM_ASSIGNMENT'] },
+      id: uuidSchema,
+    }),
+  },
+};
 
 @ApiTags('Notifications')
 @ApiCookieAuth('sessionCookie')

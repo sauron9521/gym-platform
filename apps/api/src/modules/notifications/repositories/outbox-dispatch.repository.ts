@@ -1,13 +1,18 @@
 import { Injectable } from '@nestjs/common';
 import type { Prisma } from '#prisma/client';
 import { PrismaService } from '#src/infra/database/index';
-import { outboxEventKey, outboxEventSchema } from '../domain/outbox-event.policy.js';
+import {
+  isProgramAssignmentEvent,
+  outboxEventKey,
+  outboxEventSchema,
+} from '../domain/outbox-event.policy.js';
 import {
   OUTBOX_LEASE_MS,
   OUTBOX_MAX_ATTEMPTS,
   outboxRetryDelayMs,
 } from '../domain/outbox-dispatch.policy.js';
 
+import { resolveProgramNotification } from './resolve-program-notification.js';
 import { resolveTrainerNotification } from './resolve-trainer-notification.js';
 
 type Claim = {
@@ -78,6 +83,8 @@ export class OutboxDispatchRepository {
         const event = parsed.data;
         let recipientId: string;
         let trainerRelationshipId: string | null = null;
+        let programAssignmentId: string | null = null;
+        let category: 'ACCOUNT' | 'TRAINER' | 'PROGRAM';
         if (event.type === 'account.security.changed') {
           // Re-read authoritative source. Never use actor or client data alone
           // to select a recipient. The audit record is immutable.
@@ -99,14 +106,22 @@ export class OutboxDispatchRepository {
       `;
           if (!owners.length) return this.finish(tx, claim.id, 'RECIPIENT_INELIGIBLE', 'skipped');
           recipientId = audit.userId;
+          category = 'ACCOUNT';
+        } else if (isProgramAssignmentEvent(event)) {
+          const resolved = await resolveProgramNotification(tx, event);
+          if (resolved.result !== 'resolved')
+            return this.finish(tx, claim.id, resolved.code, resolved.result);
+          recipientId = resolved.recipientId;
+          programAssignmentId = resolved.programAssignmentId;
+          category = 'PROGRAM';
         } else {
           const resolved = await resolveTrainerNotification(tx, event);
           if (resolved.result !== 'resolved')
             return this.finish(tx, claim.id, resolved.code, resolved.result);
           recipientId = resolved.recipientId;
           trainerRelationshipId = resolved.trainerRelationshipId;
+          category = 'TRAINER';
         }
-        const category = event.type === 'account.security.changed' ? 'ACCOUNT' : 'TRAINER';
 
         const inserted = await tx.notification.createMany({
           data: {
@@ -117,6 +132,7 @@ export class OutboxDispatchRepository {
             category,
             templateKey: event.type,
             trainerRelationshipId,
+            programAssignmentId,
           },
           skipDuplicates: true,
         });
@@ -136,6 +152,7 @@ export class OutboxDispatchRepository {
               resourceType: true,
               resourceId: true,
               trainerRelationshipId: true,
+              programAssignmentId: true,
             },
           });
           if (
@@ -144,6 +161,7 @@ export class OutboxDispatchRepository {
             existing.category !== category ||
             existing.templateKey !== event.type ||
             existing.trainerRelationshipId !== trainerRelationshipId ||
+            existing.programAssignmentId !== programAssignmentId ||
             existing.resourceType !== null ||
             existing.resourceId !== null
           ) {

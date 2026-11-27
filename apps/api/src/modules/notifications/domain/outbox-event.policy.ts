@@ -39,10 +39,36 @@ const trainerRelationshipEvent = z.strictObject({
   }),
 });
 
-export const inboxEventTypes = ['account.security.changed', ...trainerEventTypes] as const;
+export const programEventTypes = [
+  'program.assigned',
+  'program.assignment.cancelled',
+  'program.assignment.terminated',
+  'program.assignment.completed',
+] as const;
+export type ProgramEventType = (typeof programEventTypes)[number];
+
+const programAssignmentEvent = z.strictObject({
+  type: z.enum(programEventTypes),
+  schemaVersion: z.literal(1),
+  occurredAt: z.date(),
+  actorUserId: z.uuid(),
+  payload: z.strictObject({
+    aggregate: z.strictObject({ kind: z.literal('TrainingProgramAssignment'), id: z.uuid() }),
+  }),
+});
+
+export const inboxEventTypes = [
+  'account.security.changed',
+  ...trainerEventTypes,
+  ...programEventTypes,
+] as const;
 
 export const outboxEventSchema = z
-  .discriminatedUnion('type', [accountSecurityEvent, trainerRelationshipEvent])
+  .discriminatedUnion('type', [
+    accountSecurityEvent,
+    trainerRelationshipEvent,
+    programAssignmentEvent,
+  ])
   .refine(
     (event) =>
       event.type !== 'account.security.changed' ||
@@ -58,5 +84,13 @@ export type ValidatedOutboxEvent = z.output<typeof outboxEventSchema>;
 export function outboxEventKey(event: ValidatedOutboxEvent): string {
   return event.type === 'account.security.changed'
     ? `mfa-lifecycle:${event.payload.aggregate.id}:v1`
-    : `trainer-relationship:${event.payload.aggregate.id}:${event.type}:v1`;
+    : event.payload.aggregate.kind === 'TrainerAthlete'
+      ? `trainer-relationship:${event.payload.aggregate.id}:${event.type}:v1`
+      : `program-assignment:${event.payload.aggregate.id}:${event.type}:v1`;
+}
+
+export function isProgramAssignmentEvent(
+  event: ValidatedOutboxEvent,
+): event is Extract<ValidatedOutboxEvent, { type: ProgramEventType }> {
+  return event.payload.aggregate.kind === 'TrainingProgramAssignment';
 }

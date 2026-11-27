@@ -2509,9 +2509,13 @@ export interface operations {
                 | 'trainer.invitation.accepted'
                 | 'trainer.invitation.declined'
                 | 'trainer.invitation.cancelled'
-                | 'trainer.relationship.terminated';
+                | 'trainer.relationship.terminated'
+                | 'program.assigned'
+                | 'program.assignment.cancelled'
+                | 'program.assignment.terminated'
+                | 'program.assignment.completed';
               /** @enum {string} */
-              category: 'ACCOUNT' | 'TRAINER';
+              category: 'ACCOUNT' | 'TRAINER' | 'PROGRAM';
               /** @enum {string} */
               templateKey:
                 | 'account.security.changed'
@@ -2519,11 +2523,21 @@ export interface operations {
                 | 'trainer.invitation.accepted'
                 | 'trainer.invitation.declined'
                 | 'trainer.invitation.cancelled'
-                | 'trainer.relationship.terminated';
+                | 'trainer.relationship.terminated'
+                | 'program.assigned'
+                | 'program.assignment.cancelled'
+                | 'program.assignment.terminated'
+                | 'program.assignment.completed';
               /** Format: date-time */
               createdAt: string;
               /** Format: date-time */
               readAt: string | null;
+              target?: {
+                /** @enum {string} */
+                kind: 'PROGRAM_ASSIGNMENT';
+                /** Format: uuid */
+                id: string;
+              };
             }[];
             nextCursor: string | null;
           };
@@ -2578,9 +2592,13 @@ export interface operations {
               | 'trainer.invitation.accepted'
               | 'trainer.invitation.declined'
               | 'trainer.invitation.cancelled'
-              | 'trainer.relationship.terminated';
+              | 'trainer.relationship.terminated'
+              | 'program.assigned'
+              | 'program.assignment.cancelled'
+              | 'program.assignment.terminated'
+              | 'program.assignment.completed';
             /** @enum {string} */
-            category: 'ACCOUNT' | 'TRAINER';
+            category: 'ACCOUNT' | 'TRAINER' | 'PROGRAM';
             /** @enum {string} */
             templateKey:
               | 'account.security.changed'
@@ -2588,11 +2606,21 @@ export interface operations {
               | 'trainer.invitation.accepted'
               | 'trainer.invitation.declined'
               | 'trainer.invitation.cancelled'
-              | 'trainer.relationship.terminated';
+              | 'trainer.relationship.terminated'
+              | 'program.assigned'
+              | 'program.assignment.cancelled'
+              | 'program.assignment.terminated'
+              | 'program.assignment.completed';
             /** Format: date-time */
             createdAt: string;
             /** Format: date-time */
             readAt: string | null;
+            target?: {
+              /** @enum {string} */
+              kind: 'PROGRAM_ASSIGNMENT';
+              /** Format: uuid */
+              id: string;
+            };
           };
         };
       };
@@ -2624,9 +2652,13 @@ export interface operations {
               | 'trainer.invitation.accepted'
               | 'trainer.invitation.declined'
               | 'trainer.invitation.cancelled'
-              | 'trainer.relationship.terminated';
+              | 'trainer.relationship.terminated'
+              | 'program.assigned'
+              | 'program.assignment.cancelled'
+              | 'program.assignment.terminated'
+              | 'program.assignment.completed';
             /** @enum {string} */
-            category: 'ACCOUNT' | 'TRAINER';
+            category: 'ACCOUNT' | 'TRAINER' | 'PROGRAM';
             /** @enum {string} */
             templateKey:
               | 'account.security.changed'
@@ -2634,11 +2666,21 @@ export interface operations {
               | 'trainer.invitation.accepted'
               | 'trainer.invitation.declined'
               | 'trainer.invitation.cancelled'
-              | 'trainer.relationship.terminated';
+              | 'trainer.relationship.terminated'
+              | 'program.assigned'
+              | 'program.assignment.cancelled'
+              | 'program.assignment.terminated'
+              | 'program.assignment.completed';
             /** Format: date-time */
             createdAt: string;
             /** Format: date-time */
             readAt: string | null;
+            target?: {
+              /** @enum {string} */
+              kind: 'PROGRAM_ASSIGNMENT';
+              /** Format: uuid */
+              id: string;
+            };
           };
         };
       };
