@@ -2,7 +2,7 @@ import type { AdminNotificationInboxService } from '#src/modules/notifications/p
 import { AdminNotificationInboxController } from '../../controllers/admin-notification-inbox.controller.js';
 
 describe('AdminNotificationInboxController', () => {
-  it('forwards only the authenticated identity, validated query and notification ID', () => {
+  it('forwards only the authenticated identity, validated query and notification ID', async () => {
     const service = {
       list: vi.fn(),
       unreadCount: vi.fn(),
@@ -13,11 +13,11 @@ describe('AdminNotificationInboxController', () => {
     const controller = new AdminNotificationInboxController(
       service as unknown as AdminNotificationInboxService,
     );
-    controller.list('operator', { limit: '10' });
-    controller.unreadCount('operator', {});
-    controller.detail('operator', 'notice', {});
-    controller.markRead('operator', 'notice', {});
-    controller.markAllRead('operator', {});
+    await controller.list('operator', { limit: '10' });
+    await controller.unreadCount('operator', {});
+    await controller.detail('operator', 'notice', {});
+    await controller.markRead('operator', 'notice', {});
+    await controller.markAllRead('operator', {});
     expect(service.list).toHaveBeenCalledExactlyOnceWith('operator', { limit: '10' });
     expect(service.unreadCount).toHaveBeenCalledExactlyOnceWith('operator');
     expect(service.detail).toHaveBeenCalledExactlyOnceWith('operator', 'notice');
