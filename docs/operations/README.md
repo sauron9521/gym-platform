@@ -2,6 +2,10 @@
 
 Canonical navigation for operator-controlled release evidence, staging, recovery and production diagnostics. All existing production NO-GO, independent verification and manual approval gates remain in force. These guides do not authorize deployment, run commands or grant access to live infrastructure.
 
+## Full-stack deployment planning
+
+- [Full-stack deployment plan](full-stack-deployment-plan.md) — proposed web containers, host routing, artifact promotion and staging sequence; no deployment authorization.
+
 ## Signed releases and staging
 
 | Runbook                                                             | Scope                                                                                       |
