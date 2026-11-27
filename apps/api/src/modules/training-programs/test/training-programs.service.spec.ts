@@ -9,7 +9,7 @@ import { AssignmentCreationError } from '../application/assignment-creation.js';
 import { DraftVersionCreationConflict } from '../application/draft-version-creation.js';
 import { TrainingProgramsService } from '../services/training-programs.service.js';
 import type { TrainingProgramActor } from '../types/training-program.types.js';
-import { ExercisesService } from '#src/modules/exercises/services/exercises.service';
+import { ExercisesService } from '#src/modules/exercises/public-api';
 import { TrainerAthletesService } from '#src/modules/trainer-athletes/public-api';
 import { TrainingProgramAccessService } from '../services/training-program-access.service.js';
 import { TrainingProgramWorkoutService } from '../services/training-program-workout.service.js';

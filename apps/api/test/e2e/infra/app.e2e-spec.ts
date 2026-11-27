@@ -45,7 +45,14 @@ import { BodyMeasurementsController } from '../../../src/api/athlete/body-measur
 import { AthleteBodyMeasurementsApiModule } from '../../../src/api/athlete/body-measurements/athlete-body-measurements-api.module.js';
 import { AthleteApiModule } from '../../../src/api/athlete/athlete-api.module.js';
 import { ExercisesModule } from '../../../src/modules/exercises/exercises.module.js';
-import { ExercisesService } from '../../../src/modules/exercises/services/exercises.service.js';
+import {
+  ExercisesService,
+  ExerciseTrainerAccessService,
+} from '../../../src/modules/exercises/public-api.js';
+import { ExercisesRepository } from '../../../src/modules/exercises/repositories/exercises.repository.js';
+import { ExerciseTrainerAccessRepository } from '../../../src/modules/exercises/repositories/exercise-trainer-access.repository.js';
+import { ExercisesController } from '../../../src/modules/exercises/controllers/exercises.controller.js';
+import { ExerciseTrainerAccessController } from '../../../src/modules/exercises/controllers/exercise-trainer-access.controller.js';
 import { TrainerAthletesModule } from '../../../src/modules/trainer-athletes/trainer-athletes.module.js';
 import {
   TrainerAthletesService,
@@ -156,6 +163,17 @@ class TrainerAthletesBoundaryProbe {
 @Module({ imports: [TrainerAthletesModule], providers: [TrainerAthletesBoundaryProbe] })
 class TrainerAthletesBoundaryProbeModule {}
 
+@Injectable()
+class ExercisesBoundaryProbe {
+  constructor(
+    readonly exercises: ExercisesService,
+    readonly access: ExerciseTrainerAccessService,
+  ) {}
+}
+
+@Module({ imports: [ExercisesModule], providers: [ExercisesBoundaryProbe] })
+class ExercisesBoundaryProbeModule {}
+
 describe('App (e2e)', () => {
   let app: INestApplication;
 
@@ -169,6 +187,7 @@ describe('App (e2e)', () => {
         BodyMeasurementsBoundaryProbeModule,
         WorkoutAnalyticsBoundaryProbeModule,
         TrainerAthletesBoundaryProbeModule,
+        ExercisesBoundaryProbeModule,
       ],
     }).compile();
 
@@ -522,6 +541,44 @@ describe('App (e2e)', () => {
         .filter((module) => module.controllers.has(TrainerDashboardController))
         .map((module) => module.metatype),
     ).toEqual([TrainerTrainerAthletesApiModule]);
+  });
+
+  it('resolves both exercise contracts without duplicating repositories or relationship providers', () => {
+    const modules = [...app.get(ModulesContainer).values()];
+    const core = app.select(ExercisesModule);
+    const probe = app
+      .select(ExercisesBoundaryProbeModule)
+      .get(ExercisesBoundaryProbe, { strict: true });
+    expect(modules.filter((module) => module.metatype === ExercisesModule)).toHaveLength(1);
+    expect(probe.exercises).toBe(core.get(ExercisesService, { strict: true }));
+    expect(probe.access).toBe(core.get(ExerciseTrainerAccessService, { strict: true }));
+    for (const provider of [
+      ExercisesService,
+      ExerciseTrainerAccessService,
+      ExercisesRepository,
+      ExerciseTrainerAccessRepository,
+    ]) {
+      expect(
+        modules.filter((module) => module.providers.has(provider)).map((module) => module.metatype),
+      ).toEqual([ExercisesModule]);
+    }
+    expect(
+      modules
+        .filter((module) => module.providers.has(TrainerAthletesService))
+        .map((module) => module.metatype),
+    ).toEqual([TrainerAthletesModule]);
+    expect(
+      modules
+        .filter((module) => module.providers.has(UsersService))
+        .map((module) => module.metatype),
+    ).toEqual([UsersModule]);
+    for (const controller of [ExercisesController, ExerciseTrainerAccessController]) {
+      expect(
+        modules
+          .filter((module) => module.controllers.has(controller))
+          .map((module) => module.metatype),
+      ).toEqual([ExercisesModule]);
+    }
   });
 
   it('resolves the same Prisma singleton from the declaring module and app context', () => {

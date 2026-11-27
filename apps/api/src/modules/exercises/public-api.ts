@@ -12,4 +12,17 @@ export { buildExerciseVisibilityWhere } from './policies/exercise-access.policy.
 export { workoutExerciseReferenceSelect } from './selects/exercise.select.js';
 
 // Type-only relationship visibility context; no new runtime dependency.
-export type { ExerciseAccessContext } from './types/exercise.types.js';
+export type { ExerciseAccessContext, ExerciseActor } from './types/exercise.types.js';
+
+// Existing application services and HTTP adapter contracts.
+export { ExercisesService } from './services/exercises.service.js';
+export { ExerciseTrainerAccessService } from './services/exercise-trainer-access.service.js';
+export { exerciseIdSchema } from './dto/exercise.schemas.js';
+export { createExerciseSchema, type CreateExerciseDto } from './dto/create-exercise.dto.js';
+export { updateExerciseSchema, type UpdateExerciseDto } from './dto/update-exercise.dto.js';
+export { queryExercisesSchema, type QueryExercisesDto } from './dto/query-exercises.dto.js';
+export {
+  exerciseTrainerAccessIdSchema,
+  grantExerciseTrainerAccessSchema,
+  type GrantExerciseTrainerAccessDto,
+} from './dto/exercise-trainer-access.dto.js';

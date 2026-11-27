@@ -16,17 +16,18 @@ import {
   exerciseTaxonomyListResponseSchema,
 } from '#src/infra/openapi/response-contracts';
 
-import { ExercisesService } from '../services/exercises.service.js';
-
-import type { ExerciseAccessContext, ExerciseActor } from '../types/exercise.types.js';
-
-import { type CreateExerciseDto, createExerciseSchema } from '../dto/create-exercise.dto.js';
-
-import { type UpdateExerciseDto, updateExerciseSchema } from '../dto/update-exercise.dto.js';
-
-import { type QueryExercisesDto, queryExercisesSchema } from '../dto/query-exercises.dto.js';
-
-import { exerciseIdSchema } from '../dto/exercise.schemas.js';
+import {
+  ExercisesService,
+  type ExerciseAccessContext,
+  type ExerciseActor,
+  type CreateExerciseDto,
+  createExerciseSchema,
+  type UpdateExerciseDto,
+  updateExerciseSchema,
+  type QueryExercisesDto,
+  queryExercisesSchema,
+  exerciseIdSchema,
+} from '../public-api.js';
 import { TrainerAthletesService } from '#src/modules/trainer-athletes/public-api';
 
 const EMPTY_ACCESS_CONTEXT: ExerciseAccessContext = {

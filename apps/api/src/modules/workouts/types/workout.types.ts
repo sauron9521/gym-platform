@@ -2,7 +2,7 @@ import type { Prisma, WorkoutSetType, WorkoutStatus } from '#prisma/client';
 import type { workoutSelect } from '../selects/workout.select.js';
 
 import type { WorkoutSetResultInput } from '../application/workout-set-result.js';
-import type { ExerciseActor } from '#src/modules/exercises/types/exercise.types';
+import type { ExerciseActor } from '#src/modules/exercises/public-api';
 
 export type WorkoutActor = ExerciseActor;
 
