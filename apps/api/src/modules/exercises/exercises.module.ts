@@ -18,6 +18,6 @@ import { UsersModule } from '#src/modules/users/users.module';
     ExerciseTrainerAccessRepository,
     ExerciseTrainerAccessService,
   ],
-  exports: [ExercisesService],
+  exports: [ExercisesService, ExerciseTrainerAccessService],
 })
 export class ExercisesModule {}

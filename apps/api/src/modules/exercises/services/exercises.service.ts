@@ -8,7 +8,7 @@ import {
 import { Prisma } from '#prisma/client';
 
 import { ExercisesRepository } from '../repositories/exercises.repository.js';
-import { UsersService } from '#src/modules/users/services/users.service';
+import { UsersService } from '#src/modules/users/public-api';
 import {
   assertCanManageExercise,
   buildExerciseManagementLookupWhere,

@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 
 import { Prisma } from '#prisma/client';
-import { ExercisesService } from '#src/modules/exercises/services/exercises.service';
+import { ExercisesService } from '#src/modules/exercises/public-api';
 
 import { TrainingProgramExerciseRepository } from '../repositories/training-program-exercise.repository.js';
 import { TrainingProgramAccessService } from './training-program-access.service.js';

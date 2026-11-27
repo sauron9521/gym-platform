@@ -2,8 +2,7 @@ import { RequestMethod } from '@nestjs/common';
 import { HTTP_CODE_METADATA, METHOD_METADATA, PATH_METADATA } from '@nestjs/common/constants';
 
 import { ExerciseTrainerAccessController } from '../../controllers/exercise-trainer-access.controller.js';
-import { ExerciseTrainerAccessService } from '../../services/exercise-trainer-access.service.js';
-import type { ExerciseActor } from '../../types/exercise.types.js';
+import type { ExerciseTrainerAccessService, ExerciseActor } from '../../public-api.js';
 
 describe('ExerciseTrainerAccessController', () => {
   const service = {

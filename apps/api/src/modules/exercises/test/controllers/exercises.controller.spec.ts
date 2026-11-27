@@ -1,14 +1,15 @@
 import { Test, TestingModule } from '@nestjs/testing';
 
 import { ExercisesController } from '../../controllers/exercises.controller.js';
-import { ExercisesService } from '../../services/exercises.service.js';
-
 import { TrainerAthletesService } from '#src/modules/trainer-athletes/public-api';
-
-import type { ExerciseAccessContext, ExerciseActor } from '../../types/exercise.types.js';
-import type { CreateExerciseDto } from '../../dto/create-exercise.dto.js';
-import type { UpdateExerciseDto } from '../../dto/update-exercise.dto.js';
-import type { QueryExercisesDto } from '../../dto/query-exercises.dto.js';
+import {
+  ExercisesService,
+  type ExerciseAccessContext,
+  type ExerciseActor,
+  type CreateExerciseDto,
+  type UpdateExerciseDto,
+  type QueryExercisesDto,
+} from '../../public-api.js';
 
 describe('ExercisesController', () => {
   let controller: ExercisesController;

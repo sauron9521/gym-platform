@@ -2,7 +2,7 @@ import { BadRequestException, ForbiddenException, NotFoundException } from '@nes
 
 import { ExercisesService } from '../services/exercises.service.js';
 import { ExercisesRepository } from '../repositories/exercises.repository.js';
-import { UsersService } from '#src/modules/users/services/users.service';
+import { UsersService } from '#src/modules/users/public-api';
 
 import type {
   CreateExerciseInput,

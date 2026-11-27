@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { Prisma } from '#prisma/client';
 import { canTransitionWorkout, workoutCompletionFailure } from '@gym/domain';
-import { ExercisesService } from '#src/modules/exercises/services/exercises.service';
+import { ExercisesService } from '#src/modules/exercises/public-api';
 import { UsersService } from '#src/modules/users/services/users.service';
 import { WorkoutCreationUniqueConflict } from '../application/workout-creation.js';
 import { WorkoutCompletionStateChanged } from '../application/workout-completion.js';
