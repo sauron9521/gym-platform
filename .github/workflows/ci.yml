@@ -322,6 +322,24 @@ jobs:
       - name: Smoke isolated Landing container
         run: node apps/landing/scripts/docker-smoke.mjs gym-platform-landing:pilot
 
+  web-docker:
+    name: Athlete Web Docker / Node 24
+    needs: changes
+    if: needs.changes.outputs.web == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+      - name: Build isolated Athlete Web pilot
+        run: docker build -f apps/web/Dockerfile -t gym-platform-web:pilot .
+      - name: Smoke fixed upstream and session forwarding
+        run: node apps/web/scripts/docker-smoke.mjs gym-platform-web:pilot
+
   quality-workspaces:
     name: Quality workspaces / Node 24
     needs: changes
@@ -512,6 +530,7 @@ jobs:
       - tooling-contracts
       - prepush-windows
       - web-browser-e2e
+      - web-docker
       - admin-browser-e2e
       - dependency-security
       - mobile-ios-dev-windows
@@ -541,6 +560,7 @@ jobs:
           DEPS_REQUIRED: ${{ needs.changes.outputs.deps }}
           WINDOWS_RESULT: ${{ needs.prepush-windows.result }}
           WEB_E2E_RESULT: ${{ needs.web-browser-e2e.result }}
+          WEB_DOCKER_RESULT: ${{ needs.web-docker.result }}
           SECURITY_RESULT: ${{ needs.dependency-security.result }}
           MOBILE_REQUIRED: ${{ needs.changes.outputs.mobile }}
           LANDING_REQUIRED: ${{ needs.changes.outputs.landing }}
@@ -569,9 +589,11 @@ jobs:
           fi
           if [ "$WEB_REQUIRED" = true ]; then
             test "$WEB_E2E_RESULT" = success
+            test "$WEB_DOCKER_RESULT" = success
           else
             test "$WEB_REQUIRED" = false
             test "$WEB_E2E_RESULT" = skipped
+            test "$WEB_DOCKER_RESULT" = skipped
           fi
           if [ "$ADMIN_REQUIRED" = true ]; then
             test "$ADMIN_E2E_RESULT" = success

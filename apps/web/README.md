@@ -496,3 +496,24 @@ Development without the variable retains the `http://localhost:3001` default.
 ## Shared OVRANTO theme
 
 Athlete Web imports `@gym/design-tokens/ovranto.css`, the same canonical palette as Trainer, Admin and Landing. Use semantic utilities instead of duplicating surface, text or primary values in `globals.css`. System follows the OS preference; explicit Light/Dark choices are persisted in the host-only `ovranto-theme` cookie. The server root layout applies the initial class before hydration. See the [shared design tokens guide](../../packages/design-tokens/README.md).
+
+## DEP03 — Docker pilot
+
+From the repository root:
+
+```bash
+docker build -f apps/web/Dockerfile -t gym-platform-web:pilot .
+node apps/web/scripts/docker-smoke.mjs gym-platform-web:pilot
+```
+
+Optional standalone build preserves ordinary local Next dev/start. The image
+uses a non-root runtime and the fixed internal API alias `http://api:3000`
+at both build and startup. A different runtime upstream fails closed to
+prevent a compiled rewrite and SSR session check from disagreeing. Use an
+isolated network per environment; never connect staging to production API.
+The image is not a production release. The smoke uses a synthetic HTTP fixture
+on a disposable network, verifies transport of cookies and origin, SSR and
+compiled assets. It does not prove real NestJS CSRF enforcement, browser
+cookie behavior over HTTPS or actual staging authorization; existing real API
+E2E and #351 remain required. No live DNS, credentials or deployment.
+See the [full-stack plan](../../docs/operations/full-stack-deployment-plan.md).
