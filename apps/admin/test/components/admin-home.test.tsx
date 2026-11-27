@@ -9,6 +9,9 @@ const { headersMock, cookiesMock, sessionMock, healthMock, localeState } = vi.ho
   localeState: { current: 'uk' as 'uk' | 'en' },
 }));
 
+vi.mock('@/features/notifications/ui/admin-inbox-bell', () => ({
+  AdminNotificationBell: () => null,
+}));
 vi.mock('next/headers', () => ({ headers: headersMock, cookies: cookiesMock }));
 vi.mock('@/shared/ui/locale-switcher', () => ({ LocaleSwitcher: () => null }));
 vi.mock('@/shared/ui/theme-switcher', () => ({ ThemeSwitcher: () => null }));

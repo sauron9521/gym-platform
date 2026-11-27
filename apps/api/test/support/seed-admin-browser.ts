@@ -44,6 +44,43 @@ try {
       deletedAt: null,
     },
   });
+  const applicantId = '00000000-0000-4000-8000-000000000098';
+  const applicationId = '00000000-0000-4000-8000-000000000097';
+  const noticeId = '00000000-0000-4000-8000-000000000096';
+  await prisma.user.upsert({
+    where: { id: applicantId },
+    create: {
+      id: applicantId,
+      email: 'admin-browser-applicant@example.test',
+      passwordHash,
+      emailVerified: true,
+    },
+    update: { role: 'ATHLETE', status: 'ACTIVE', deletedAt: null, emailVerified: true },
+  });
+  await prisma.trainerApplication.upsert({
+    where: { id: applicationId },
+    create: {
+      id: applicationId,
+      userId: applicantId,
+      status: 'PENDING',
+      applicantNote: 'Private browser fixture note',
+    },
+    update: { status: 'PENDING' },
+  });
+  await prisma.notification.upsert({
+    where: { id: noticeId },
+    create: {
+      id: noticeId,
+      eventId: 'admin-browser-review-fixture',
+      recipientId: '00000000-0000-4000-8000-000000000099',
+      scope: 'ADMIN',
+      category: 'ACCOUNT',
+      type: 'admin.trainer.review.required',
+      templateKey: 'admin.trainer.review.required',
+      trainerApplicationId: applicationId,
+    },
+    update: { readAt: null, expiresAt: null },
+  });
   // No ID, tokens, credentials or DB URL in logs.
   process.stdout.write('Disposable Admin browser account seeded.\n');
 } finally {

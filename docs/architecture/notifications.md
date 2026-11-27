@@ -294,3 +294,25 @@ the protected Athlete Inbox without revealing the review result or
 application data. Verification and recovery mail remain canonical Auth
 flows. See [delivery policy](notification-delivery.md) for deadlines,
 retry classification, privacy and rollout limits.
+
+### N18: Admin notification shell (#581)
+
+Authorized Admin pages reuse a shared header bell and account-keyed,
+memory-only TanStack Query provider. The dedicated protected
+`/notifications` page checks the admin-purpose session before rendering;
+every subsequent API read/write enforces current operator permission
+and the optional expected-account fence `x-inbox-owner`. Only the
+allowlisted moderation review notification projection is accepted.
+Foreground-only 60-second polling and focus/reconnect reconciliation
+replace any need for SSE at this stage. Hidden/offline states suppress
+private content; 401/403/409 stop access until a fresh page verification.
+A permission change is enforced immediately by the next API request;
+the UI cannot detect a server-side change before revalidation.
+
+Unread status is separate from pending action. Marking read changes
+only Inbox state, never a review decision or financial approval. The
+dedicated trainer-review action route is not yet available in Admin,
+so the current generic notice has no fabricated target or approval
+control. Future deep links must revalidate current source and permissions.
+Billing and Owner queues remain owned by #543/#557; no additional
+notification store is created. SSE #580 remains evidence-gated.
