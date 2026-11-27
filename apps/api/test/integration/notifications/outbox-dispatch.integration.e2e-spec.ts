@@ -179,7 +179,8 @@ describe('PostgreSQL notification dispatch', () => {
     });
     await prisma.outboxEvent.update({
       where: { id: event.id },
-      data: { status: 'PROCESSING', leaseUntil: old },
+      // Simulate an abandoned claim that is due before unrelated queued events.
+      data: { status: 'PROCESSING', leaseUntil: old, availableAt: old },
     });
     expect(await second.claim()).toMatchObject({
       id: event.id,
