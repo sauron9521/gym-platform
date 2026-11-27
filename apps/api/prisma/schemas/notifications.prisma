@@ -89,9 +89,13 @@ model Notification {
   trainerRelationshipId String? @map("trainer_relationship_id")
   trainerRelationship TrainerAthlete? @relation(fields: [trainerRelationshipId], references: [id], onDelete: Cascade)
 
+  programAssignmentId String? @map("program_assignment_id")
+  programAssignment TrainingProgramAssignment? @relation(fields: [programAssignmentId], references: [id], onDelete: Cascade)
+
   @@unique([eventId, recipientId, scope])
   @@index([recipientId, scope, createdAt(sort: Desc), id(sort: Desc)], map: "notifications_recipient_scope_cursor_idx")
   @@index([recipientId, scope, readAt], map: "notifications_recipient_scope_read_idx")
+  @@index([programAssignmentId])
   @@index([trainerRelationshipId])
   @@map("notifications")
 }

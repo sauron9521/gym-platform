@@ -36,6 +36,7 @@ describe('NotificationsModule public boundary', () => {
       'notificationInboxQuerySchema',
       'notificationSettingsPatchSchema',
       'publishOutboxEvent',
+      'publishProgramAssignmentTransition',
       'reminderLeadMinutes',
     ]);
     expect(publicApi.notificationSettingsPatchSchema).toBe(notificationSettingsPatchSchema);

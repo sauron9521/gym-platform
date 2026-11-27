@@ -1,3 +1,4 @@
+import { publishProgramAssignmentTransition } from '#src/modules/notifications/public-api';
 import { TrainingProgramAssignmentRepository } from '../repositories/training-program-assignment.repository.js';
 import { assignmentFullReadWhere } from '../policies/training-program-assignment-read.policy.js';
 import {
@@ -5,6 +6,10 @@ import {
   trainingProgramAssignmentSelect,
   trainingProgramAssignmentSummarySelect,
 } from '../selects/training-program-assignment.select.js';
+
+vi.mock('#src/modules/notifications/public-api', () => ({
+  publishProgramAssignmentTransition: vi.fn(),
+}));
 
 describe('TrainingProgramAssignmentRepository privacy and completion', () => {
   const prisma = {
@@ -535,6 +540,7 @@ describe('TrainingProgramAssignmentRepository privacy and completion', () => {
       expect(tx.$queryRaw.mock.invocationCallOrder[0]).toBeLessThan(
         tx.$queryRaw.mock.invocationCallOrder[1]!,
       );
+      expect(publishProgramAssignmentTransition).toHaveBeenCalledWith(tx, assignment);
       expect(tx.trainingProgramAssignment.create).toHaveBeenCalledWith({
         data: {
           version: { connect: { id: input.versionId } },

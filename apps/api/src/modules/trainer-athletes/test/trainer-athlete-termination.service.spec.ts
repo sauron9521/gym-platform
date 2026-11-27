@@ -21,7 +21,7 @@ describe('TrainerAthleteTerminationService', () => {
     },
     trainingProgramAssignment: {
       findMany: vi.fn(),
-      updateMany: vi.fn(),
+      updateManyAndReturn: vi.fn(),
     },
     exerciseAthleteAssignment: { updateMany: vi.fn() },
     exerciseTrainerAccess: { updateMany: vi.fn() },
@@ -51,7 +51,7 @@ describe('TrainerAthleteTerminationService', () => {
       status: 'TERMINATED',
     });
     tx.trainingProgramAssignment.findMany.mockResolvedValue([]);
-    tx.trainingProgramAssignment.updateMany.mockResolvedValue({ count: 0 });
+    tx.trainingProgramAssignment.updateManyAndReturn.mockResolvedValue([]);
     tx.exerciseAthleteAssignment.updateMany.mockResolvedValue({ count: 0 });
     tx.exerciseTrainerAccess.updateMany.mockResolvedValue({ count: 0 });
 
@@ -95,13 +95,23 @@ describe('TrainerAthleteTerminationService', () => {
       relationship.respondedAt,
       ['exercise-1', 'exercise-2'],
     );
-    expect(tx.trainingProgramAssignment.updateMany).toHaveBeenCalledWith({
+    expect(tx.trainingProgramAssignment.updateManyAndReturn).toHaveBeenCalledWith({
       where: { trainerAthleteId: relationship.id, status: 'ACTIVE' },
       data: {
         status: 'TERMINATED',
         endedAt: expect.any(Date),
         endedById: relationship.trainerId,
         endReason: 'Cooperation ended',
+      },
+      select: {
+        id: true,
+        status: true,
+        athleteId: true,
+        assignedById: true,
+        assignedAt: true,
+        completedAt: true,
+        endedAt: true,
+        endedById: true,
       },
     });
     expect(tx.exerciseAthleteAssignment.updateMany).toHaveBeenCalledOnce();
@@ -133,7 +143,7 @@ describe('TrainerAthleteTerminationService', () => {
         redactForTrainer: false,
       }),
     ).toEqual({ status: 'STATE_CHANGED' });
-    expect(tx.trainingProgramAssignment.updateMany).not.toHaveBeenCalled();
+    expect(tx.trainingProgramAssignment.updateManyAndReturn).not.toHaveBeenCalled();
     expect(exerciseCopyService.copyRelevantExercises).not.toHaveBeenCalled();
   });
 

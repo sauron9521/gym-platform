@@ -6,6 +6,7 @@ import type {
   RelationshipTerminationResult,
   TerminateRelationshipCommand,
 } from '../application/terminate-relationship.js';
+import { publishProgramAssignmentTransition } from '#src/modules/notifications/public-api';
 import { publishRelationshipTransition } from '../repositories/publish-relationship-transition.js';
 import { TrainerAthleteExerciseCopyService } from './trainer-athlete-exercise-copy.service.js';
 import {
@@ -109,7 +110,7 @@ export class TrainerAthleteTerminationService {
 
       // 3. Terminate all active program assignments
       // associated with this trainer-athlete relationship.
-      await tx.trainingProgramAssignment.updateMany({
+      const terminatedAssignments = await tx.trainingProgramAssignment.updateManyAndReturn({
         where: {
           trainerAthleteId: relationship.id,
           status: 'ACTIVE',
@@ -120,7 +121,21 @@ export class TrainerAthleteTerminationService {
           endedById: input.actorId,
           endReason: input.reason ?? null,
         },
+        select: {
+          id: true,
+          status: true,
+          athleteId: true,
+          assignedById: true,
+          assignedAt: true,
+          completedAt: true,
+          endedAt: true,
+          endedById: true,
+        },
       });
+
+      for (const assignment of terminatedAssignments) {
+        await publishProgramAssignmentTransition(tx, assignment);
+      }
 
       const activeFrom = relationship.respondedAt ?? relationship.createdAt;
 

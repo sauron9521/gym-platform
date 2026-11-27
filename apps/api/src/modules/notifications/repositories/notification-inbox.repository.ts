@@ -7,6 +7,7 @@ import {
   type NotificationInboxQuery,
 } from '../domain/notification-inbox.policy.js';
 
+import { programInboxWhere } from '../domain/program-notification.policy.js';
 import { trainerInboxWhere } from '../domain/trainer-notification.policy.js';
 
 // A single visibility predicate also protects count and mutations.
@@ -17,6 +18,7 @@ const projection = {
   templateKey: true,
   createdAt: true,
   readAt: true,
+  programAssignmentId: true,
 } as const;
 
 function visible(recipientId: string, now: Date): Prisma.NotificationWhereInput {
@@ -33,12 +35,23 @@ function visible(recipientId: string, now: Date): Prisma.NotificationWhereInput 
             category: 'ACCOUNT',
             templateKey: 'account.security.changed',
             trainerRelationshipId: null,
+            programAssignmentId: null,
           },
           ...trainerInboxWhere(recipientId),
+          ...programInboxWhere(recipientId),
         ],
       },
     ],
   };
+}
+
+function toInboxItem({
+  programAssignmentId,
+  ...row
+}: Prisma.NotificationGetPayload<{ select: typeof projection }>) {
+  return programAssignmentId
+    ? { ...row, target: { kind: 'PROGRAM_ASSIGNMENT' as const, id: programAssignmentId } }
+    : row;
 }
 
 @Injectable()
@@ -75,7 +88,10 @@ export class NotificationInboxRepository {
       select: projection,
     });
     const data = rows.slice(0, limit);
-    return { data, nextCursor: rows.length > limit ? encodeInboxCursor(data.at(-1)!) : null };
+    return {
+      data: data.map(toInboxItem),
+      nextCursor: rows.length > limit ? encodeInboxCursor(data.at(-1)!) : null,
+    };
   }
 
   async unreadCount(recipientId: string) {
@@ -92,7 +108,7 @@ export class NotificationInboxRepository {
       select: projection,
     });
     if (!row) throw new NotFoundException('Notification not found');
-    return row;
+    return toInboxItem(row);
   }
 
   async markRead(recipientId: string, id: string) {
@@ -105,7 +121,7 @@ export class NotificationInboxRepository {
       });
       const row = await tx.notification.findFirst({ where, select: projection });
       if (!row) throw new NotFoundException('Notification not found');
-      return row;
+      return toInboxItem(row);
     });
   }
 

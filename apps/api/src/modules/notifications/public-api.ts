@@ -17,3 +17,5 @@ export {
 } from './domain/notification-inbox.policy.js';
 
 export { inboxEventTypes } from './domain/outbox-event.policy.js';
+
+export { publishProgramAssignmentTransition } from './services/publish-program-assignment-transition.js';

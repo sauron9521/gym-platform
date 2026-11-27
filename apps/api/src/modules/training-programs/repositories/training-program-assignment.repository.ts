@@ -13,6 +13,7 @@ import {
   AssignmentCreationError,
   type CreateProgramAssignment,
 } from '../application/assignment-creation.js';
+import { publishProgramAssignmentTransition } from '#src/modules/notifications/public-api';
 import { deriveAccountCapabilities } from '#src/modules/users/public-api';
 import { assignmentFullReadWhere } from '../policies/training-program-assignment-read.policy.js';
 import {
@@ -371,7 +372,7 @@ export class TrainingProgramAssignmentRepository {
 
       // Build the references from checked identifiers; callers cannot
       // validate one version and insert an assignment for another.
-      return tx.trainingProgramAssignment.create({
+      const assignment = await tx.trainingProgramAssignment.create({
         data: {
           version: { connect: { id: input.versionId } },
           trainerAthlete: { connect: { id: input.trainerAthleteId } },
@@ -380,6 +381,8 @@ export class TrainingProgramAssignmentRepository {
         },
         select: trainingProgramAssignmentSelect,
       });
+      await publishProgramAssignmentTransition(tx, assignment);
+      return assignment;
     });
   }
 
@@ -464,7 +467,7 @@ export class TrainingProgramAssignmentRepository {
         return null;
       }
 
-      return tx.trainingProgramAssignment.update({
+      const assignment = await tx.trainingProgramAssignment.update({
         where: { id: input.assignmentId, status: 'ACTIVE' },
         data: {
           status: 'CANCELLED',
@@ -474,6 +477,8 @@ export class TrainingProgramAssignmentRepository {
         },
         select: trainingProgramAssignmentSelect,
       });
+      await publishProgramAssignmentTransition(tx, assignment);
+      return assignment;
     });
   }
 
@@ -527,6 +532,7 @@ export class TrainingProgramAssignmentRepository {
         select: trainingProgramAssignmentSelect,
       });
 
+      await publishProgramAssignmentTransition(tx, assignment);
       return {
         status: 'COMPLETED' as const,
         assignment,
