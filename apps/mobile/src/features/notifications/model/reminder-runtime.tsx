@@ -13,6 +13,7 @@ import {
 } from '../lib/native-reminder-reconciliation';
 import { readNativeDevicePermission } from '../lib/native-notification-permission';
 import { REMINDER_QA_ENABLED } from '../lib/reminder-qa-mode';
+import { installReminderForegroundHandler } from '../lib/native-reminder-foreground';
 
 // Release gate: change only in a reviewed native QA/activation slice.
 // Disabled still attempts managed cleanup at auth boundaries.
@@ -48,6 +49,21 @@ export function ReminderRuntime({ reminders }: { reminders: ReminderLifecycle })
   useEffect(() => {
     void reminders.end();
   }, [reminders]);
+  useEffect(() => {
+    if (!REMINDER_QA_ENABLED) return;
+    let mounted = true;
+    void installReminderForegroundHandler(
+      (notification) => reminders.admitForeground(notification),
+      () => mounted,
+    ).then((ready) => {
+      if (mounted) reminders.setForegroundHandlerReady(ready);
+    });
+    return () => {
+      mounted = false;
+      reminders.setForegroundHandlerReady(false);
+    };
+  }, [reminders]);
+
   useEffect(() => {
     reminders.update(scope ? { scope, locale } : null);
     return () => reminders.update(null);

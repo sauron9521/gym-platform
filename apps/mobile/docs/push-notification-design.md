@@ -315,19 +315,19 @@ or prove delivery. Run on the verified installed QA binary using APP_ID,
 E2E_EMAIL and E2E_PASSWORD; scroll/system UI behavior needs real execution.
 Do not use the ordinary preview workflow for this QA artifact.
 
-| Check                            | Required observation on Android and iOS                                                                                                              |
-| -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Default / denial                 | No managed pending requests before consent and explicit OS grant; denied or provisional iOS authorization does not schedule                          |
-| Positive                         | Exactly one managed request; generic localized payload, actual notification near intended time while backgrounded                                    |
-| Idempotence                      | Repeated refresh/resume leaves at most one request per candidate; no unrelated requests cancelled                                                    |
-| Edit / completion / cancellation | Old pending request removed; only a still-eligible changed workout can have a new request                                                            |
-| Settings / revocation            | Consent off, quiet hours, lead change, OS permission and Android channel change reconcile correctly                                                  |
-| Account lifecycle                | Logout, A to B, expired session, cold relaunch and failed reverify do not retain A's pending requests                                                |
-| Background / offline             | Settled eligible requests survive normal backgrounding; offline remote change limitation documented; reconcile on return                             |
-| Clock / timezone                 | Record profile IANA zone and device zone, DST and clock changes; no quiet-window delivery or unexpected early trigger                                |
-| Capacity / error                 | Verify 32 managed / 48 total, missing channel, ambiguous write and failed cleanup behavior without false success                                     |
-| Foreground / locked device       | Observe actual foreground presentation and lock-screen privacy; no handler is implemented yet, so missing foreground delivery is a blocker, not PASS |
-| Ordinary release                 | Same staging fixture in ordinary preview never schedules; no QA marker or remote push registration                                                   |
+| Check                            | Required observation on Android and iOS                                                                                            |
+| -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| Default / denial                 | No managed pending requests before consent and explicit OS grant; denied or provisional iOS authorization does not schedule        |
+| Positive                         | Exactly one managed request; generic localized payload, actual notification near intended time while backgrounded                  |
+| Idempotence                      | Repeated refresh/resume leaves at most one request per candidate; no unrelated requests cancelled                                  |
+| Edit / completion / cancellation | Old pending request removed; only a still-eligible changed workout can have a new request                                          |
+| Settings / revocation            | Consent off, quiet hours, lead change, OS permission and Android channel change reconcile correctly                                |
+| Account lifecycle                | Logout, A to B, expired session, cold relaunch and failed reverify do not retain A's pending requests                              |
+| Background / offline             | Settled eligible requests survive normal backgrounding; offline remote change limitation documented; reconcile on return           |
+| Clock / timezone                 | Record profile IANA zone and device zone, DST and clock changes; no quiet-window delivery or unexpected early trigger              |
+| Capacity / error                 | Verify 32 managed / 48 total, missing channel, ambiguous write and failed cleanup behavior without false success                   |
+| Foreground / locked device       | Observe actual foreground presentation and lock-screen privacy using N14g; missing or unauthorized delivery is a blocker, not PASS |
+| Ordinary release                 | Same staging fixture in ordinary preview never schedules; no QA marker or remote push registration                                 |
 
 Record private evidence for each platform: reviewed commit and build hash,
 verified package/bundle ID and staging origin, OS/device version, locale,
@@ -346,3 +346,43 @@ consent, log out, remove test fixtures and uninstall the QA build afterward.
 all required cases pass, any foreground/channel/reconciliation gaps are
 resolved, and the owner explicitly approves activation. #342 stays open.
 Push #343 remains gated. No ordinary release activation in N14f.
+
+## N14g — foreground presentation boundary (#342)
+
+Install the narrow Expo NotificationsHandler module only in the internal
+reminder QA runtime. Ordinary build scheduling stays disabled. Scheduling
+cannot proceed before handler installation succeeds. A native reconciliation
+returns the verified final opaque descriptors (identifier, due instant,
+generic localized content and platform), not account/workout IDs. Keep
+only those descriptors in process memory; the lifecycle synchronously
+clears admission on generation invalidation, account lock/end, refresh
+or handler removal. The handler also checks the current owner scope,
+foreground, connectivity and cleanup state. Only matching one-shot
+local requests with verified generic content and empty data are allowed;
+no badges, unexpected subtitle or attachments. Consume the entry once.
+No network, native reads, cryptography or storage during the callback.
+
+The provisional policy accepts delivery at or after the intended instant
+but only within the same UTC minute; this conservative cutoff avoids a
+late alert crossing the planned quiet-hour minute. It can suppress a
+legitimate delayed notification, especially near a minute boundary.
+Actual banner/sound behavior is OS-controlled. Sound is requested for
+admitted reminders (Android Expo notes silent behavior suppresses the
+drop-down alert); the QA channel and system settings still apply.
+No foreground notification tap routing, badge updates or remote push
+support. Re-evaluate this policy with device evidence before activation.
+
+Important SDK 58.1.9 limitation: importing NotificationsHandler installs
+a default-show handler before replacement; Expo also defaults to showing
+when JS does not answer within three seconds. The in-memory callback
+normally returns immediately, but cannot guarantee suppression under
+JS stalls, before installation, after native failure, or when the OS
+delivers outside the foreground callback. Keep a suppressing callback on
+unmount rather than restoring the default, and fence superseded installs.
+This is not a security boundary for OS delivery. Already presented
+notifications are not removed by pending-queue cancellation. No private
+workout content is included. Remote edits, clock changes and OS permission
+changes cannot be guaranteed current without a fresh device observation.
+Record these limits and actual foreground/background, timeout, logout,
+cold start, duplicate and lock-screen results in the LN06 matrix.
+Device testing and ordinary release activation remain NOT RUN / NO-GO.

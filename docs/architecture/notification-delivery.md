@@ -336,3 +336,16 @@ Web and Expo Go reject the QA mode. The operator must independently verify
 artifact identity, app IDs, signing and separate HTTPS staging/production
 targets. See the [device matrix and build safeguards](../../apps/mobile/docs/push-notification-design.md#n14f--controlled-reminder-qa-342).
 All device evidence remains NOT RUN; no release approval or push activation.
+
+## N14g — foreground reminder admission (#342)
+
+The internal QA runtime installs a narrow Expo foreground handler before
+scheduling. Admit only a one-shot matching request from the verified
+native inventory in the current generation and intended due minute.
+Consume the in-memory admission once, revoke it on lifecycle invalidation,
+and do not perform network/native reads in the handler. No badge, push
+registration, new dependencies or ordinary release activation.
+Expo SDK 58.1.9 defaults to presentation on handler timeout; native
+suppression cannot be guaranteed and actual device evidence is mandatory.
+See the [foreground presentation boundary](../../apps/mobile/docs/push-notification-design.md#n14g--foreground-presentation-boundary-342)
+for the provisional delay policy and limitations.

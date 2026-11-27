@@ -187,7 +187,7 @@ test('reminder lifecycle is composed with private data, but scheduling is releas
   );
   assert.match(runtime, /void reminders.end\(\)/);
   assert.match(runtime, /accountQueryKeys.notificationDevicePermission\(scope.ownerId\)/);
-  assert.match(lifecycle, /if \(!this.deps.enabled/);
+  assert.match(lifecycle, /if \(\s*!this.deps.enabled/);
   assert.doesNotMatch(
     runtime,
     /setInterval|registerTaskAsync|getExpoPushTokenAsync|requestPermissionsAsync/,
@@ -196,4 +196,21 @@ test('reminder lifecycle is composed with private data, but scheduling is releas
     read('../src/features/auth/model/auth-context.tsx'),
     /reminder-runtime|expo-notifications/,
   );
+});
+
+test('foreground reminder handler is QA-only and never enables push or ordinary scheduling', () => {
+  const runtime = read('../src/features/notifications/model/reminder-runtime.tsx');
+  const handler = read('../src/features/notifications/lib/native-reminder-foreground.ts');
+  const lifecycle = read('../src/features/notifications/model/reminder-lifecycle.ts');
+  assert.match(runtime, /if \(!REMINDER_QA_ENABLED\) return/);
+  assert.match(runtime, /installReminderForegroundHandler\(/);
+  assert.match(runtime, /reminders.setForegroundHandlerReady\(false\)/);
+  assert.match(handler, /expo-notifications\/build\/NotificationsHandler/);
+  assert.doesNotMatch(handler, /(?:from\s+|import\()\s*['"]expo-notifications['"]/);
+  assert.doesNotMatch(
+    handler,
+    /getExpoPushTokenAsync|getDevicePushTokenAsync|registerTaskAsync|fetch\(|setNotificationHandler\(null\)/,
+  );
+  assert.match(lifecycle, /this.admission.clear\(\)/);
+  assert.match(lifecycle, /this.admission.replace\(result.verified/);
 });

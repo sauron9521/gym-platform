@@ -19,7 +19,7 @@ function deferred() {
   });
   return { promise, resolve };
 }
-function fixture(enabled = true) {
+function fixture(enabled = true, handlerReady = true) {
   let foreground = true,
     online = true;
   const port = {} as NativeReminderPort;
@@ -48,6 +48,7 @@ function fixture(enabled = true) {
     prepare,
     reconcile,
   });
+  lifecycle.setForegroundHandlerReady(handlerReady);
   const scope = (ownerId = first) =>
     ({ ownerId, capabilities: grants, isCurrent: () => true }) as InboxScope;
   const connect = async (ownerId = first) => {
@@ -89,6 +90,50 @@ describe('reminder lifecycle coordinator', () => {
     expect(f.prepare).not.toHaveBeenCalled();
     expect(f.reconcile).not.toHaveBeenCalled();
   });
+  it('does not prepare until foreground handler installation succeeds', async () => {
+    const f = fixture(true, false);
+    await f.connect();
+    expect(f.prepare).not.toHaveBeenCalled();
+    f.lifecycle.setForegroundHandlerReady(true);
+    await vi.waitFor(() => expect(f.reconcile).toHaveBeenCalledOnce());
+    await f.lifecycle.end();
+  });
+
+  it('only admits verified native inventory and synchronously revokes on refresh/logout', async () => {
+    const f = fixture();
+    const entry = {
+      identifier: 'ovranto.workout-reminder.v1.' + 'a'.repeat(64),
+      dueAt: Date.parse('2026-11-27T12:00:30Z'),
+      title: 'OVRANTO',
+      body: 'You have an upcoming workout.',
+      platform: 'android' as const,
+    };
+    const notice = {
+      request: {
+        identifier: entry.identifier,
+        content: { title: entry.title, body: entry.body, data: {} },
+        trigger: {
+          type: 'date',
+          value: entry.dueAt,
+          channelId: 'workout-reminders',
+          delivery: 'bestEffort',
+          repeats: false,
+        },
+      },
+    };
+    f.reconcile.mockResolvedValue({ kind: 'ready', pending: 1, verified: [entry] });
+    await f.connect();
+    await vi.waitFor(() => expect(f.disposed).toHaveBeenCalledOnce());
+    expect(f.lifecycle.admitForeground(notice, entry.dueAt)).toBe(true);
+    expect(f.lifecycle.admitForeground(notice, entry.dueAt)).toBe(false);
+    f.lifecycle.refresh();
+    expect(f.lifecycle.admitForeground(notice, entry.dueAt)).toBe(false);
+    await vi.waitFor(() => expect(f.disposed).toHaveBeenCalledTimes(2));
+    const ending = f.lifecycle.end();
+    expect(f.lifecycle.admitForeground(notice, entry.dueAt)).toBe(false);
+    await ending;
+  });
+
   it('verifies cleanup before scheduling and disposes each evidence fence', async () => {
     const f = fixture();
     await f.connect();
