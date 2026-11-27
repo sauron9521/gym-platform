@@ -226,3 +226,15 @@ The safe projection contains no applicant ID, notes, review reason,
 resource ID or action link. Read mutations never approve or reject.
 The existing authorized trainer-review queue is the navigation destination
 and remains the source of truth. No Admin email/push or new privilege grants.
+
+## N12: Trainer workspace navigation (#575)
+
+An accepted ACTIVE relationship now exposes a typed
+`TRAINER_RELATIONSHIP` target only to the recipient who owns that
+relationship as trainer. Other relationship events retain their
+generic projection, including historical termination notices.
+Program assignment targets remain athlete-owned. The Trainer
+client rechecks notification detail and scoped client progress
+before navigation; the destination checks current authorization
+independently. The optional trainer audience header restricts access
+to existing USER Inbox operations, never to a different recipient.

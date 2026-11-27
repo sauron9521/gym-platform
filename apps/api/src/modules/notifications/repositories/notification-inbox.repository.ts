@@ -20,6 +20,7 @@ const projection = {
   createdAt: true,
   readAt: true,
   programAssignmentId: true,
+  trainerRelationship: { select: { id: true, trainerId: true, status: true } },
 } as const;
 
 function visible(recipientId: string, now: Date): Prisma.NotificationWhereInput {
@@ -48,13 +49,27 @@ function visible(recipientId: string, now: Date): Prisma.NotificationWhereInput 
   };
 }
 
-function toInboxItem({
-  programAssignmentId,
-  ...row
-}: Prisma.NotificationGetPayload<{ select: typeof projection }>) {
-  return programAssignmentId
-    ? { ...row, target: { kind: 'PROGRAM_ASSIGNMENT' as const, id: programAssignmentId } }
-    : row;
+function toInboxItem(
+  {
+    programAssignmentId,
+    trainerRelationship,
+    ...row
+  }: Prisma.NotificationGetPayload<{ select: typeof projection }>,
+  recipientId: string,
+) {
+  if (programAssignmentId)
+    return { ...row, target: { kind: 'PROGRAM_ASSIGNMENT' as const, id: programAssignmentId } };
+  if (
+    row.type === 'trainer.invitation.accepted' &&
+    trainerRelationship?.status === 'ACTIVE' &&
+    trainerRelationship.trainerId === recipientId
+  ) {
+    return {
+      ...row,
+      target: { kind: 'TRAINER_RELATIONSHIP' as const, id: trainerRelationship.id },
+    };
+  }
+  return row;
 }
 
 @Injectable()
@@ -92,7 +107,7 @@ export class NotificationInboxRepository {
     });
     const data = rows.slice(0, limit);
     return {
-      data: data.map(toInboxItem),
+      data: data.map((row) => toInboxItem(row, recipientId)),
       nextCursor: rows.length > limit ? encodeInboxCursor(data.at(-1)!) : null,
     };
   }
@@ -111,7 +126,7 @@ export class NotificationInboxRepository {
       select: projection,
     });
     if (!row) throw new NotFoundException('Notification not found');
-    return toInboxItem(row);
+    return toInboxItem(row, recipientId);
   }
 
   async markRead(recipientId: string, id: string) {
@@ -124,7 +139,7 @@ export class NotificationInboxRepository {
       });
       const row = await tx.notification.findFirst({ where, select: projection });
       if (!row) throw new NotFoundException('Notification not found');
-      return toInboxItem(row);
+      return toInboxItem(row, recipientId);
     });
   }
 

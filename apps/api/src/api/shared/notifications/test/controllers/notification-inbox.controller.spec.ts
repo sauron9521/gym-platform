@@ -1,3 +1,4 @@
+import type { UsersService } from '#src/modules/users/public-api';
 import type { NotificationInboxService } from '#src/modules/notifications/public-api';
 import { NotificationInboxController } from '../../controllers/notification-inbox.controller.js';
 
@@ -9,8 +10,10 @@ describe('NotificationInboxController', () => {
     markRead: vi.fn(),
     markAllRead: vi.fn(),
   };
+  const users = { findMyCapabilities: vi.fn() };
   const controller = new NotificationInboxController(
     service as unknown as NotificationInboxService,
+    users as unknown as UsersService,
   );
   const actor = 'authenticated-owner';
   const id = '11111111-1111-4111-8111-111111111111';
@@ -66,5 +69,25 @@ describe('NotificationInboxController', () => {
       'Notification account changed',
     );
     for (const fn of Object.values(service)) expect(fn).not.toHaveBeenCalled();
+  });
+  it('checks current trainer grant for every opt-in audience operation, without changing the recipient', async () => {
+    users.findMyCapabilities.mockResolvedValue({ athlete: true, trainer: false, admin: false });
+    const requests = [
+      () => controller.list(actor, {}, actor, 'trainer'),
+      () => controller.unreadCount(actor, {}, actor, 'trainer'),
+      () => controller.detail(actor, id, {}, actor, 'trainer'),
+      () => controller.markRead(actor, id, {}, actor, 'trainer'),
+      () => controller.markAllRead(actor, {}, actor, 'trainer'),
+    ];
+    for (const request of requests)
+      await expect(request()).rejects.toThrow('Current trainer approval is required');
+    for (const fn of Object.values(service)) expect(fn).not.toHaveBeenCalled();
+    users.findMyCapabilities.mockResolvedValue({ athlete: true, trainer: true, admin: false });
+    await Promise.all(requests.map((request) => request()));
+    expect(service.list).toHaveBeenCalledWith(actor, {});
+    expect(service.markRead).toHaveBeenCalledWith(actor, id);
+    expect(() => controller.list(actor, {}, actor, 'admin')).toThrow(
+      'Invalid notification audience',
+    );
   });
 });

@@ -93,14 +93,14 @@ test('Trainer browser requires live approval, protects Origin/cookies, and revok
     await login();
     await expect(page).toHaveURL(`${trainerOrigin}/workspace`);
     await expect(page.getByRole('heading', { name: 'Trainer dashboard' })).toBeVisible();
-    await expect(page.getByText('No active clients yet.')).toBeVisible();
+    await expect(page.getByRole('main').getByText('No active clients yet.')).toBeVisible();
     await page.goto(`${trainerOrigin}/workspace/clients/${dashboardRelationId}`);
     await expect(page.getByRole('heading', { name: 'Client not found' })).toBeVisible();
     await page.goto(`${trainerOrigin}/workspace/clients/${dashboardRelationId}/select-program`);
     await expect(page.getByRole('heading', { name: 'Client not found' })).toBeVisible();
     await page.goto(`${trainerOrigin}/workspace`);
     await expect(page.getByRole('heading', { name: 'Recent programs' })).toBeVisible();
-    await expect(page.getByText('No programs yet.')).toBeVisible();
+    await expect(page.getByRole('main').getByText('No programs yet.')).toBeVisible();
     await expect(page.getByRole('region', { name: 'Active clients' })).toContainText('0');
     await expect(page.getByRole('region', { name: 'Programs', exact: true })).toContainText('0');
     await expect(page.getByRole('region', { name: 'Progress' })).toContainText('0');
@@ -155,14 +155,14 @@ test('Trainer browser requires live approval, protects Origin/cookies, and revok
     });
     await page.goto(`${trainerOrigin}/workspace`);
     await expect(page.getByRole('heading', { name: 'My clients' })).toBeVisible();
-    await expect(page.getByText(dashboardAthleteEmail)).toBeVisible();
+    await expect(page.getByRole('main').getByText(dashboardAthleteEmail)).toBeVisible();
     await expect(page.getByRole('region', { name: 'Active clients' })).toContainText('1');
     await expect(page.getByRole('region', { name: 'Programs', exact: true })).toContainText('0');
     await expect(page.getByRole('region', { name: 'Progress' })).toContainText('0');
     await expect(page.getByText(otherTrainerEmail)).toHaveCount(0);
-    await expect(page.getByText(ownProgramTitle)).toBeVisible();
+    await expect(page.getByRole('main').getByText(ownProgramTitle)).toBeVisible();
     await expect(page.getByText(foreignProgramTitle)).toHaveCount(0);
-    await expect(page.getByText('Total programs:')).toBeVisible();
+    await expect(page.getByRole('main').getByText('Total programs:')).toBeVisible();
     await expect(page.getByText('No programs yet.')).toHaveCount(0);
     await expect(page.getByText('No active clients yet.')).toHaveCount(0);
 
@@ -171,24 +171,28 @@ test('Trainer browser requires live approval, protects Origin/cookies, and revok
     await page.getByRole('link', { name: 'View progress' }).click();
     await expect(page).toHaveURL(`${trainerOrigin}/workspace/clients/${dashboardRelationId}`);
     await expect(page.getByRole('heading', { name: 'Client progress' })).toBeVisible();
-    await expect(page.getByText(dashboardAthleteEmail)).toBeVisible();
+    await expect(page.getByRole('main').getByText(dashboardAthleteEmail)).toBeVisible();
     await expect(page.getByRole('region', { name: 'Active assignments' })).toContainText('0');
     await expect(page.getByRole('region', { name: 'Completed workouts (30 days)' })).toContainText(
       '0',
     );
     await expect(
-      page.getByText(
-        'No active assignments or completed assigned-program workouts in the last 30 days.',
-      ),
+      page
+        .getByRole('main')
+        .getByText(
+          'No active assignments or completed assigned-program workouts in the last 30 days.',
+        ),
     ).toBeVisible();
     await expect(page.getByText(otherTrainerEmail)).toHaveCount(0);
     await expect(
-      page.getByText('No programs have been assigned to this client yet.'),
+      page.getByRole('main').getByText('No programs have been assigned to this client yet.'),
     ).toBeVisible();
     // A current trainer with an ACTIVE client still cannot choose DRAFT programs.
     await page.getByRole('link', { name: 'Choose program' }).click();
     await expect(page.getByRole('heading', { name: 'Choose a client program' })).toBeVisible();
-    await expect(page.getByText('You have no published programs yet.')).toBeVisible();
+    await expect(
+      page.getByRole('main').getByText('You have no published programs yet.'),
+    ).toBeVisible();
     await expect(page.getByText(foreignProgramTitle)).toHaveCount(0);
     await page.goto(`${trainerOrigin}/workspace/clients/${dashboardRelationId}`);
     await page.goto(`${trainerOrigin}/workspace/clients/${otherRelationId}`);
@@ -229,14 +233,16 @@ test('Trainer browser requires live approval, protects Origin/cookies, and revok
     await expect(page).toHaveURL(choicePath);
     await expect(page.getByRole('heading', { name: 'Choose a client program' })).toBeVisible();
     await expect(
-      page.getByText(
-        'This only selects a program and version. Nothing has been assigned to the client.',
-      ),
+      page
+        .getByRole('main')
+        .getByText(
+          'This only selects a program and version. Nothing has been assigned to the client.',
+        ),
     ).toBeVisible();
     await expect(
       page.getByRole('list', { name: 'Published programs' }).getByRole('listitem'),
     ).toHaveCount(1);
-    await expect(page.getByText(ownDraftVersionTitle)).toBeVisible();
+    await expect(page.getByRole('main').getByText(ownDraftVersionTitle)).toBeVisible();
     await expect(page.getByText(foreignProgramTitle)).toHaveCount(0);
     await page.getByRole('link', { name: 'View versions' }).click({ timeout: 10_000 });
     const selectableVersions = page.getByRole('list', { name: 'Published versions' });
@@ -258,9 +264,9 @@ test('Trainer browser requires live approval, protects Origin/cookies, and revok
     await selectableVersions
       .getByRole('link', { name: 'Select version' })
       .click({ timeout: 10_000 });
-    await expect(page.getByText('Selected version:', { exact: false })).toContainText(
-      ownProgramTitle,
-    );
+    await expect(
+      page.getByRole('main').getByText('Selected version:', { exact: false }),
+    ).toContainText(ownProgramTitle);
     await expect(page.getByRole('status')).toContainText('No assignment has been created.');
     await expect(page.getByRole('button', { name: 'Assign version to client' })).toBeEnabled();
     await expect(page.getByText(foreignProgramTitle)).toHaveCount(0);
@@ -270,7 +276,9 @@ test('Trainer browser requires live approval, protects Origin/cookies, and revok
 
     // A crafted foreign program ID must never cause cross-trainer version reads.
     await page.goto(`${choicePath}?page=1&programId=${foreignProgramId}`);
-    await expect(page.getByText('This program is unavailable on the current page.')).toBeVisible();
+    await expect(
+      page.getByRole('main').getByText('This program is unavailable on the current page.'),
+    ).toBeVisible();
     await expect(page.getByText(foreignProgramTitle)).toHaveCount(0);
     await page.goto(`${choicePath}?page=invalid`);
     await expect(
@@ -367,8 +375,8 @@ test('Trainer browser requires live approval, protects Origin/cookies, and revok
     await expect(page.getByRole('region', { name: 'Active assignments' })).toContainText('1');
     const ownAssignedList = page.getByRole('list', { name: 'Assigned programs' });
     await expect(ownAssignedList.getByRole('listitem')).toHaveCount(8);
-    await expect(page.getByText('Total assignments:')).toBeVisible();
-    await expect(page.getByText('9', { exact: true })).toBeVisible();
+    await expect(page.getByRole('main').getByText('Total assignments:')).toBeVisible();
+    await expect(page.getByRole('main').getByText('9', { exact: true })).toBeVisible();
     await expect(ownAssignedList.getByText('Active', { exact: true })).toHaveCount(1);
     await expect(ownAssignedList.getByText('Completed', { exact: true })).toHaveCount(7);
     await expect(ownAssignedList.getByText(ownProgramTitle)).toHaveCount(8);
@@ -394,7 +402,7 @@ test('Trainer browser requires live approval, protects Origin/cookies, and revok
       `${trainerOrigin}/workspace/clients/${dashboardRelationId}?assignmentsPage=100`,
     );
     await expect(
-      page.getByText('No assignments on this page. Return to an earlier page.'),
+      page.getByRole('main').getByText('No assignments on this page. Return to an earlier page.'),
     ).toBeVisible();
     await page.goto(
       `${trainerOrigin}/workspace/clients/${dashboardRelationId}?assignmentsPage=invalid`,
@@ -469,7 +477,7 @@ test('Trainer browser requires live approval, protects Origin/cookies, and revok
       ]);
     });
     await page.goto(`${trainerOrigin}/workspace/clients/${dashboardRelationId}`);
-    await expect(page.getByText(dashboardAthleteEmail)).toBeVisible();
+    await expect(page.getByRole('main').getByText(dashboardAthleteEmail)).toBeVisible();
     await withDisposableDatabase(async (db) => {
       await db.query(
         'UPDATE "trainer_athletes" SET "status" = $1, "updated_at" = NOW() WHERE "id" = $2',

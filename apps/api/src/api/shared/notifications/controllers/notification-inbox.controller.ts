@@ -1,5 +1,7 @@
 import { Authenticate, CurrentUser } from '@nestjs/authentication';
 import {
+  BadRequestException,
+  ForbiddenException,
   ConflictException,
   Controller,
   Get,
@@ -15,11 +17,13 @@ import {
   ApiCookieAuth,
   ApiHeader,
   ApiConflictResponse,
+  ApiForbiddenResponse,
   ApiNoContentResponse,
   ApiOkResponse,
   ApiTags,
 } from '@nestjs/swagger';
 import { z } from 'zod';
+import { UsersService } from '#src/modules/users/public-api';
 import { RateLimit } from '#src/common/rate-limit/rate-limit.policies';
 import {
   NotificationInboxService,
@@ -51,7 +55,7 @@ const notification = {
   properties: {
     ...baseNotification.properties,
     target: objectSchema({
-      kind: { type: 'string', enum: ['PROGRAM_ASSIGNMENT'] },
+      kind: { type: 'string', enum: ['PROGRAM_ASSIGNMENT', 'TRAINER_RELATIONSHIP'] },
       id: uuidSchema,
     }),
   },
@@ -73,17 +77,47 @@ const ApiInboxOwner = () =>
       'Expected authenticated account ID; mismatch rejects the request before any Inbox access.',
   });
 
+const ApiInboxAudience = () =>
+  ApiHeader({
+    name: 'x-inbox-audience',
+    required: false,
+    description:
+      'Optional trainer surface guard. When trainer is supplied, current trainer capability is required; records remain USER-scoped.',
+    enum: ['trainer'],
+  });
+
 @ApiTags('Notifications')
+@ApiForbiddenResponse({
+  description: 'Current trainer capability is required for trainer audience',
+})
 @ApiConflictResponse({ description: 'Expected account differs from authenticated account' })
 @ApiCookieAuth('sessionCookie')
 @ApiBearerAuth('accessToken')
 @Controller('notifications')
 @Authenticate()
 export class NotificationInboxController {
-  constructor(private readonly service: NotificationInboxService) {}
+  constructor(
+    private readonly service: NotificationInboxService,
+    private readonly users: UsersService,
+  ) {}
+
+  private withAudience<T>(
+    userId: string,
+    audience: string | undefined,
+    run: () => Promise<T>,
+  ): Promise<T> {
+    if (audience === undefined) return run();
+    if (audience !== 'trainer') throw new BadRequestException('Invalid notification audience');
+    return this.users.findMyCapabilities(userId).then((grants) => {
+      if (!grants.trainer || grants.admin)
+        throw new ForbiddenException('Current trainer approval is required');
+      return run();
+    });
+  }
 
   @Get()
   @ApiInboxOwner()
+  @ApiInboxAudience()
   @RateLimit('read')
   @ApiOkResponse({
     schema: objectSchema({ data: arraySchema(notification), nextCursor: nullable(stringSchema) }),
@@ -92,26 +126,30 @@ export class NotificationInboxController {
     @CurrentUser('id') userId: string,
     @Query({ schema: notificationInboxQuerySchema }) query: NotificationInboxQuery,
     @Headers('x-inbox-owner') expectedOwner?: string,
+    @Headers('x-inbox-audience') audience?: string,
   ) {
     assertExpectedOwner(userId, expectedOwner);
-    return this.service.list(userId, query);
+    return this.withAudience(userId, audience, () => this.service.list(userId, query));
   }
 
   @Get('unread-count')
   @ApiInboxOwner()
+  @ApiInboxAudience()
   @RateLimit('read')
   @ApiOkResponse({ schema: objectSchema({ count: integerSchema }) })
   unreadCount(
     @CurrentUser('id') userId: string,
     @Query({ schema: emptyQuery }) _query: Record<string, never>,
     @Headers('x-inbox-owner') expectedOwner?: string,
+    @Headers('x-inbox-audience') audience?: string,
   ) {
     assertExpectedOwner(userId, expectedOwner);
-    return this.service.unreadCount(userId);
+    return this.withAudience(userId, audience, () => this.service.unreadCount(userId));
   }
 
   @Get(':id')
   @ApiInboxOwner()
+  @ApiInboxAudience()
   @RateLimit('read')
   @ApiOkResponse({ schema: notification })
   detail(
@@ -119,34 +157,39 @@ export class NotificationInboxController {
     @Param('id', { schema: z.uuid() }) id: string,
     @Query({ schema: emptyQuery }) _query: Record<string, never>,
     @Headers('x-inbox-owner') expectedOwner?: string,
+    @Headers('x-inbox-audience') audience?: string,
   ) {
     assertExpectedOwner(userId, expectedOwner);
-    return this.service.detail(userId, id);
+    return this.withAudience(userId, audience, () => this.service.detail(userId, id));
   }
 
   @Patch(':id/read')
   @ApiInboxOwner()
+  @ApiInboxAudience()
   @ApiOkResponse({ schema: notification })
   markRead(
     @CurrentUser('id') userId: string,
     @Param('id', { schema: z.uuid() }) id: string,
     @Query({ schema: emptyQuery }) _query: Record<string, never>,
     @Headers('x-inbox-owner') expectedOwner?: string,
+    @Headers('x-inbox-audience') audience?: string,
   ) {
     assertExpectedOwner(userId, expectedOwner);
-    return this.service.markRead(userId, id);
+    return this.withAudience(userId, audience, () => this.service.markRead(userId, id));
   }
 
   @Post('read-all')
   @ApiInboxOwner()
+  @ApiInboxAudience()
   @HttpCode(204)
   @ApiNoContentResponse()
   markAllRead(
     @CurrentUser('id') userId: string,
     @Query({ schema: emptyQuery }) _query: Record<string, never>,
     @Headers('x-inbox-owner') expectedOwner?: string,
+    @Headers('x-inbox-audience') audience?: string,
   ) {
     assertExpectedOwner(userId, expectedOwner);
-    return this.service.markAllRead(userId);
+    return this.withAudience(userId, audience, () => this.service.markAllRead(userId));
   }
 }

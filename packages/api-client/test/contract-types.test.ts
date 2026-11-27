@@ -103,6 +103,16 @@ const programTarget: NonNullable<InboxItem['target']> = {
 // @ts-expect-error - arbitrary links are not a valid target
 const unsafeTarget: NonNullable<InboxItem['target']> = { kind: 'URL', id: 'https://example.test' };
 const programType: InboxItem['type'] = 'program.assignment.completed';
+const relationTarget: NonNullable<InboxItem['target']> = {
+  kind: 'TRAINER_RELATIONSHIP',
+  id: 'relation-id',
+};
+void browser.GET('/notifications', {
+  params: { header: { 'x-inbox-audience': 'trainer', 'x-inbox-owner': 'owner-id' } },
+});
+// @ts-expect-error - client cannot request an ADMIN audience
+void browser.GET('/notifications', { params: { header: { 'x-inbox-audience': 'admin' } } });
+void relationTarget;
 void programTarget;
 void unsafeTarget;
 void programType;

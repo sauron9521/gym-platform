@@ -86,7 +86,7 @@ describe('Trainer relationship notification transitions (PostgreSQL)', () => {
     return event;
   }
 
-  async function assertOnly(recipientId: string, type: string) {
+  async function assertOnly(recipientId: string, type: string, relationId?: string) {
     const data = (await inbox.list(recipientId, {})).data;
     expect(data).toHaveLength(1);
     expect(data[0]).toEqual({
@@ -96,6 +96,7 @@ describe('Trainer relationship notification transitions (PostgreSQL)', () => {
       templateKey: type,
       createdAt: expect.any(Date),
       readAt: null,
+      ...(relationId ? { target: { kind: 'TRAINER_RELATIONSHIP', id: relationId } } : {}),
     });
     const other = recipientId === trainerId ? athleteId : trainerId;
     expect(await inbox.unreadCount(other)).toEqual({ count: 0 });
@@ -121,7 +122,11 @@ describe('Trainer relationship notification transitions (PostgreSQL)', () => {
         relationships.acceptPendingInvitation({ relationshipId: row.id, respondedAt: new Date() }),
       ).rejects.toThrow();
       await dispatch(row.id, 'trainer.invitation.accepted');
-      await assertOnly(initiator, 'trainer.invitation.accepted');
+      await assertOnly(
+        initiator,
+        'trainer.invitation.accepted',
+        trainerInitiated ? row.id : undefined,
+      );
       await expect(inbox.detail(invited, invitation.id)).rejects.toThrow('Notification not found');
       expect(
         await prisma.outboxEvent.count({ where: { actorUserId: { in: [trainerId, athleteId] } } }),
