@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@gym/api-client": "workspace:*",
+    "@gym/datetime": "workspace:*",
     "@gym/design-tokens": "workspace:*",
     "@gym/domain": "workspace:*",
     "@gym/i18n": "workspace:*",

@@ -9,11 +9,13 @@ import { useRouter } from 'next/navigation';
 
 import {
   calendarMonthCells,
-  localWorkoutDayKey,
+  calendarMonthStart,
+  monthOf,
+  groupByCalendarDay,
   shiftCalendarMonth,
   type CalendarMonth,
-} from '../lib/calendar-month';
-import { getWorkoutListErrorKey, type WorkoutListItem } from '../lib/workouts-list';
+} from '@gym/datetime';
+import { getWorkoutListErrorKey } from '../lib/workouts-list';
 import { workoutCalendarQueryOptions, CalendarRequestError } from '../api/workout-calendar-query';
 import { Button } from '@/shared/ui/button';
 
@@ -41,10 +43,7 @@ export function WorkoutCalendar() {
   const locale = useLocale() === 'en' ? 'en' : 'uk';
   const router = useRouter();
   const queryClient = useQueryClient();
-  const [month, setMonth] = useState<CalendarMonth>(() => {
-    const today = new Date();
-    return { year: today.getFullYear(), month: today.getMonth() };
-  });
+  const [month, setMonth] = useState<CalendarMonth>(() => monthOf(new Date()));
   const [now, setNow] = useState(() => new Date().toISOString());
   useEffect(() => {
     const refresh = () => {
@@ -67,20 +66,15 @@ export function WorkoutCalendar() {
     }
   }, [unauthenticated, queryClient, router]);
 
-  const days = useMemo(() => {
-    const grouped = new Map<string, WorkoutListItem[]>();
-    for (const workout of query.data ?? []) {
-      const key = workout.scheduledAt ? localWorkoutDayKey(workout.scheduledAt) : null;
-      if (!key) continue;
-      grouped.set(key, [...(grouped.get(key) ?? []), workout]);
-    }
-    return grouped;
-  }, [query.data]);
+  const days = useMemo(
+    () => groupByCalendarDay(query.data ?? [], (workout) => workout.scheduledAt),
+    [query.data],
+  );
   const cells = useMemo(() => calendarMonthCells(month), [month]);
   const heading = new Intl.DateTimeFormat(locale === 'en' ? 'en-US' : 'uk-UA', {
     month: 'long',
     year: 'numeric',
-  }).format(new Date(month.year, month.month, 1));
+  }).format(calendarMonthStart(month));
 
   if (unauthenticated) return null;
   return (
@@ -154,13 +148,13 @@ export function WorkoutCalendar() {
           ))}
           {cells.map((cell) => (
             <div
-              key={cell.dateKey}
+              key={cell.key}
               role="group"
-              aria-label={cell.dateKey}
+              aria-label={cell.key}
               className={`min-h-24 space-y-2 overflow-hidden rounded-lg border p-1 sm:min-h-32 sm:p-2 ${cell.inMonth ? 'bg-card' : 'bg-muted/30 text-muted-foreground'}`}
             >
-              <span className="text-xs font-medium">{cell.day}</span>
-              {(days.get(cell.dateKey) ?? []).map((workout) => {
+              <span className="text-xs font-medium">{cell.date.getDate()}</span>
+              {(days.get(cell.key) ?? []).map((workout) => {
                 const status = workoutCalendarStatus(workout, now);
                 return (
                   <Link

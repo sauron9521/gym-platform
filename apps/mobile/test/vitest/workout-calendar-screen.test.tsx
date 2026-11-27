@@ -8,12 +8,12 @@ import {
   useWorkoutCalendarQuery,
 } from '@/features/workouts/model/workout-calendar-query';
 import {
-  localWorkoutDayKey,
+  localCalendarDayKey,
   monthOf,
   shiftCalendarMonth,
   shiftCalendarDays,
   startCalendarWeek,
-} from '@/features/workouts/lib/calendar-month';
+} from '@gym/datetime';
 import { getMobileMessages } from '@/shared/i18n/mobile-messages';
 
 const push = vi.hoisted(() => vi.fn());
@@ -61,10 +61,10 @@ describe('WorkoutCalendarScreen', () => {
   it('selects a day, shows status and navigates to workout details', async () => {
     const view = await screen();
     expect(view.queryByText(workout.title)).toBeNull();
-    await fireEvent.press(view.getByTestId(`calendar-day-${localWorkoutDayKey(selected)}`));
+    await fireEvent.press(view.getByTestId(`calendar-day-${localCalendarDayKey(selected)}`));
     expect(view.getByText(workout.title)).toBeTruthy();
     expect(
-      view.getByTestId(`calendar-day-${localWorkoutDayKey(selected)}`).props.accessibilityState
+      view.getByTestId(`calendar-day-${localCalendarDayKey(selected)}`).props.accessibilityState
         .selected,
     ).toBe(true);
     await fireEvent.press(view.getByText(workout.title));
@@ -93,7 +93,7 @@ describe('WorkoutCalendarScreen', () => {
     // Navigate to the prior month when today is its first day.
     if (monthOf(yesterday).month !== monthOf(new Date()).month)
       await fireEvent.press(view.getByTestId('calendar-previous'));
-    await fireEvent.press(view.getByTestId(`calendar-day-${localWorkoutDayKey(yesterday)}`));
+    await fireEvent.press(view.getByTestId(`calendar-day-${localCalendarDayKey(yesterday)}`));
     expect(view.getByText('Missed session')).toBeTruthy();
     expect(view.getByText(/ · Missed$/)).toBeTruthy();
     expect(view.getByText(/ · Completed late$/)).toBeTruthy();
@@ -122,7 +122,7 @@ describe('WorkoutCalendarScreen', () => {
     expect(
       failed.getByText('Too many workouts this month. The full calendar is unavailable.'),
     ).toBeTruthy();
-    expect(failed.queryByTestId(`calendar-day-${localWorkoutDayKey(selected)}`)).toBeNull();
+    expect(failed.queryByTestId(`calendar-day-${localCalendarDayKey(selected)}`)).toBeNull();
     await fireEvent.press(failed.getByTestId('calendar-retry'));
     expect(refetch).toHaveBeenCalledOnce();
   });
@@ -135,7 +135,7 @@ describe('WorkoutCalendarScreen', () => {
     ];
     prepare({ data: weekWorkouts });
     const view = await screen('en');
-    await fireEvent.press(view.getByTestId(`calendar-day-${localWorkoutDayKey(selected)}`));
+    await fireEvent.press(view.getByTestId(`calendar-day-${localCalendarDayKey(selected)}`));
     await fireEvent.press(view.getByTestId('calendar-mode-week'));
     expect(useWorkoutCalendarQuery).toHaveBeenLastCalledWith({ weekStart: first });
     expect(view.getByTestId('calendar-mode-week').props.accessibilityState.selected).toBe(true);
@@ -146,11 +146,11 @@ describe('WorkoutCalendarScreen', () => {
     expect(view.getAllByTestId(/^calendar-agenda-/)).toHaveLength(7);
     await fireEvent.press(view.getByText('Sunday workout'));
     expect(push).toHaveBeenCalledWith({ pathname: '/workouts/[id]', params: { id: 'last' } });
-    await fireEvent.press(view.getByTestId(`calendar-day-${localWorkoutDayKey(last)}`));
+    await fireEvent.press(view.getByTestId(`calendar-day-${localCalendarDayKey(last)}`));
     await fireEvent.press(view.getByTestId('calendar-mode-month'));
     expect(useWorkoutCalendarQuery).toHaveBeenLastCalledWith(monthOf(last));
     expect(
-      view.getByTestId(`calendar-day-${localWorkoutDayKey(last)}`).props.accessibilityState
+      view.getByTestId(`calendar-day-${localCalendarDayKey(last)}`).props.accessibilityState
         .selected,
     ).toBe(true);
   });
@@ -168,7 +168,8 @@ describe('WorkoutCalendarScreen', () => {
     await fireEvent.press(view.getByTestId('calendar-today'));
     expect(view.getByTestId('calendar-mode-week').props.accessibilityState.selected).toBe(true);
     expect(
-      view.getByTestId(`calendar-day-${localWorkoutDayKey(now)}`).props.accessibilityState.selected,
+      view.getByTestId(`calendar-day-${localCalendarDayKey(now)}`).props.accessibilityState
+        .selected,
     ).toBe(true);
   });
 

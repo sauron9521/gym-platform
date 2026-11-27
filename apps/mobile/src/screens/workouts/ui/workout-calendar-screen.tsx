@@ -15,11 +15,12 @@ import {
   calendarWeekCells,
   startCalendarWeek,
   shiftCalendarDays,
-  groupScheduledWorkouts,
-  localWorkoutDayKey,
+  groupByCalendarDay,
+  calendarMonthStart,
+  localCalendarDayKey,
   monthOf,
   shiftCalendarMonth,
-} from '@/features/workouts/lib/calendar-month';
+} from '@gym/datetime';
 import {
   CalendarDataError,
   useWorkoutCalendarQuery,
@@ -83,17 +84,18 @@ export function WorkoutCalendarScreen() {
   );
   const days = useMemo(
     () =>
-      groupScheduledWorkouts(
+      groupByCalendarDay(
         query.isError
           ? []
           : (query.data ?? []).map((workout) => ({
               ...workout,
               calendarStatus: workoutCalendarStatus(workout, now),
             })),
+        (workout) => workout.scheduledAt,
       ),
     [query.data, query.isError, now],
   );
-  const selected = localWorkoutDayKey(date);
+  const selected = localCalendarDayKey(date);
   const locale = intl.locale === 'en' ? 'en-US' : 'uk-UA';
   const formatDay = (value: Date) =>
     new Intl.DateTimeFormat(locale, { dateStyle: 'full' }).format(value);
@@ -105,7 +107,7 @@ export function WorkoutCalendarScreen() {
   const heading = weekly
     ? `${weekFormat.format(weekStart)} – ${weekFormat.format(shiftCalendarDays(weekStart, 6))}`
     : new Intl.DateTimeFormat(locale, { month: 'long', year: 'numeric' }).format(
-        new Date(month.year, month.month, 1),
+        calendarMonthStart(month),
       );
   const changePeriod = (delta: number) =>
     setSelection((current) => {
@@ -114,7 +116,7 @@ export function WorkoutCalendarScreen() {
         return { date: nextDate, month: monthOf(nextDate) };
       }
       const next = shiftCalendarMonth(current.month, delta);
-      return { month: next, date: new Date(next.year, next.month, 1) };
+      return { month: next, date: calendarMonthStart(next) };
     });
   const errorKey = () => {
     if (query.error instanceof CalendarDataError) {

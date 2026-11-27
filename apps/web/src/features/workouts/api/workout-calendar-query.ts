@@ -3,7 +3,7 @@ import { queryOptions } from '@tanstack/react-query';
 import { webApi } from '@/shared/api/client';
 import { type WorkoutListItem } from '../lib/workouts-list';
 import { workoutQueryKeys } from '../lib/workout-query-keys';
-import { calendarMonthBounds, type CalendarMonth } from '../lib/calendar-month';
+import { calendarMonthBounds, type CalendarMonth } from '@gym/datetime';
 
 export type CalendarFailure = 'request' | 'tooMany' | 'incomplete';
 

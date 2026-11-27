@@ -8,10 +8,10 @@ import {
   startCalendarWeek,
   shiftCalendarDays,
   type CalendarPeriod,
-  groupScheduledWorkouts,
-  localWorkoutDayKey,
+  groupByCalendarDay,
+  localCalendarDayKey,
   shiftCalendarMonth,
-} from '@/features/workouts/lib/calendar-month';
+} from '@gym/datetime';
 import {
   calendarQueryKey,
   readWorkoutCalendar,
@@ -66,8 +66,10 @@ describe('calendar local date semantics', () => {
     expect(shiftCalendarMonth({ year: 2026, month: 0 }, -1)).toEqual({ year: 2025, month: 11 });
     const first = { scheduledAt: new Date(2024, 1, 1, 0, 5).toISOString(), title: 'Early' };
     const later = { scheduledAt: new Date(2024, 1, 1, 23, 55).toISOString(), title: 'Late' };
-    expect(localWorkoutDayKey(new Date(first.scheduledAt))).toBe('2024-02-01');
-    expect(groupScheduledWorkouts([later, first]).get('2024-02-01')).toEqual([first, later]);
+    expect(localCalendarDayKey(new Date(first.scheduledAt))).toBe('2024-02-01');
+    expect(
+      groupByCalendarDay([later, first], (item) => item.scheduledAt).get('2024-02-01'),
+    ).toEqual([first, later]);
   });
 });
 describe('calendar bounded authenticated read', () => {

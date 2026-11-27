@@ -14,7 +14,7 @@ This is a candidate inventory, not a count of code to replace.
 | Area                                                            | Decision                                                                               |
 | --------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
 | Domain workout calendar status (#341)                           | Adopt strict parse and civil day via shared datetime; keep business rule               |
-| Web and Mobile calendar-month helpers                           | Next slice: shared month/week arithmetic and DST boundaries                            |
+| Web and Mobile calendar-month helpers                           | DT02: shared month/week arithmetic and DST boundaries                                  |
 | API notification settings and delivery policy                   | Separate slice: named-zone and quiet-hour classification, preserve fail-closed consent |
 | Mobile reminders (#342)                                         | Absolute elapsed-time lead; permission and device evidence before scheduling           |
 | Progress, body measurement statistics, Trainer dashboard        | Review interval semantics and query boundaries before migration                        |
@@ -34,6 +34,26 @@ zone support and Hermes/FormatJS requirements. Local calendar operations
 do not require an explicit named zone. Native named-zone support and
 any required polyfills must be tested on supported Android/iOS builds;
 do not infer physical-device success from JS tests or export alone.
+
+## DT02 — shared device-local calendar
+
+Web and Mobile consume the public `@gym/datetime` calendar helpers
+directly, without duplicate app-local modules. Both use Monday-start
+weeks, zero-based months, local calendar keys, stable chronological
+grouping and inclusive UTC query bounds ending one millisecond before
+the next local period. Device-local calendar display is unchanged;
+account timezone and quiet-hour classification remain separate.
+Malformed or ambiguous scheduled instants are omitted from grouping;
+API ownership and pagination rules are unchanged. The grouping helper
+does not mutate source data. Week/month navigation uses civil arithmetic,
+not a fixed 24-hour duration.
+
+Tests use actual process-local zones UTC, Europe/Kyiv,
+America/Los_Angeles, Asia/Kathmandu and America/Sao_Paulo for leap days,
+DST, midnight gaps, year transitions and non-hour offsets.
+Historical skipped whole civil dates and physical device timezone
+changes are not part of the supported acceptance matrix; native QA
+remains #348/#349. No new external dependencies or OS permission work.
 
 ## Other library candidates — not approved
 

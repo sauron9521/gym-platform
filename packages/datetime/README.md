@@ -10,6 +10,12 @@ timezone mutation. Uses date-fns 4.4.0 and @date-fns/tz 1.5.0.
 - `calendarDayKey`: civil date in a caller-supplied named zone,
   or local device time when omitted; fails closed on invalid evidence.
 
+- Calendar helpers: zero-based months, Monday-start weeks, local civil
+  month/week grids, navigation and inclusive UTC API bounds. Local civil
+  days may be 23/24/25 hours; do not derive them with elapsed-day math.
+- `groupByCalendarDay`: stable chronological grouping of offset-bearing
+  timestamps, skipping missing or malformed dates without mutating rows.
+
 Business rules belong in @gym/domain; timezone preferences and consent
 remain API-owned. This package does not schedule work, resolve ambiguous
 wall-clock input, authorize actions or implement retry/lease deadlines.

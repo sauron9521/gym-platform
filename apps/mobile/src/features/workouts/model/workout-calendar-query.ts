@@ -6,7 +6,7 @@ import { hasAthleteAccess } from '@/features/auth/model/account-capabilities';
 import { accountQueryKeys } from '@/shared/api/query-client';
 import { mobileReadError, MobileSessionExpiredError } from '@/shared/api/api-error-policy';
 import type { createMobileApi } from '@/shared/api/client';
-import { calendarPeriodBounds, type CalendarPeriod } from '../lib/calendar-month';
+import { calendarPeriodBounds, type CalendarPeriod } from '@gym/datetime';
 
 const PAGE_SIZE = 100;
 const MAX_PAGES = 10;

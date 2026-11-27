@@ -119,7 +119,8 @@ The initial migration preserves existing device-local calendar semantics.
 Named-zone use on physical Hermes devices is not yet accepted; do not
 enable native reminders or install global Intl polyfills speculatively.
 
-Next slices: calendar month/week arithmetic; API timezone/quiet-hour
+DT02 moves month/week arithmetic and calendar grouping to direct Web/Mobile
+consumers of the same public package. Next slices: API timezone/quiet-hour
 policy; elapsed-time reminder lead and native capability verification.
 Keep session TTL, monotonic deadlines and SQL retention time sources
 unchanged. See [datetime adoption inventory](datetime-adoption.md).
