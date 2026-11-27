@@ -1,11 +1,11 @@
 import { z } from 'zod';
 import {
-  minuteOfDayInTimezone,
-  isMinuteInDailyWindow,
-  subtractElapsedMinutes,
-} from '@gym/datetime';
+  notificationQuietHoursAt,
+  workoutReminderDueAt,
+  workoutReminderLeadMinutes,
+} from '@gym/domain';
 
-export const reminderLeadMinutes = [15, 60, 1440] as const;
+export const reminderLeadMinutes = workoutReminderLeadMinutes;
 const minute = z.number().int().min(0).max(1439);
 const lead = z.literal(reminderLeadMinutes);
 
@@ -110,14 +110,7 @@ export function quietHoursAt(
 ): QuietHoursDecision {
   const parsed = notificationSettingsSchema.safeParse(settings);
   if (!parsed.success) return 'invalid';
-  const localMinute = minuteOfDayInTimezone(instant, timezone);
-  // Validate the zone even when quiet hours are disabled; corrupt evidence
-  // must never authorize delivery.
-  if (localMinute === null) return 'invalid';
-  const { quietHoursEnabled, quietStartMinute, quietEndMinute } = parsed.data;
-  if (!quietHoursEnabled) return 'allowed';
-  const quiet = isMinuteInDailyWindow(localMinute, quietStartMinute, quietEndMinute);
-  return quiet === null ? 'invalid' : quiet ? 'quiet' : 'allowed';
+  return notificationQuietHoursAt(instant, timezone, parsed.data);
 }
 
 /** Eligibility of a future local reminder instant only, not native scheduling.
@@ -143,9 +136,5 @@ export function localReminderCandidate(input: {
     !notificationSettingsSchema.safeParse(settings).success
   )
     return null;
-  const due = subtractElapsedMinutes(scheduledAt, settings.reminderLeadMinutes);
-  if (!due) return null;
-  return due.getTime() > now.getTime() && quietHoursAt(due, timezone, settings) === 'allowed'
-    ? due
-    : null;
+  return workoutReminderDueAt({ status, scheduledAt, now, timezone, settings, consent: true });
 }

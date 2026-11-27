@@ -41,3 +41,26 @@ export declare function workoutCalendarStatus(
   now: string,
   timeZone?: string,
 ): WorkoutCalendarStatus;
+
+export declare const workoutReminderLeadMinutes: readonly [15, 60, 1440];
+export type ReminderTimingSettings = Readonly<{
+  quietHoursEnabled: boolean;
+  quietStartMinute: number;
+  quietEndMinute: number;
+  reminderLeadMinutes: (typeof workoutReminderLeadMinutes)[number];
+}>;
+export declare function notificationQuietHoursAt(
+  instant: Date,
+  timezone: unknown,
+  settings: ReminderTimingSettings,
+): 'allowed' | 'quiet' | 'invalid';
+export declare function workoutReminderDueAt(
+  input: Readonly<{
+    status: string;
+    scheduledAt: Date;
+    now: Date;
+    timezone: unknown;
+    settings: ReminderTimingSettings;
+    consent: boolean;
+  }>,
+): Date | null;
