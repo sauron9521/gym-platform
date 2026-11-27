@@ -7,7 +7,7 @@
 
 ## Decision
 
-Keep **six independent apps** and the **five existing shared packages**. Each app owns its features, routes, runtime authentication, UX flows and deployment. `apps/api` remains the only backend authority for database writes, ownership, permissions, locking and server-side business transitions. Packages must not import app implementations. No duplicate `contracts`, `utils`, `validation` or native UI package without an independently justified consumer and ownership decision.
+At the original baseline, keep **six independent apps** and the **five existing shared packages**. See the dated datetime extension below. Each app owns its features, routes, runtime authentication, UX flows and deployment. `apps/api` remains the only backend authority for database writes, ownership, permissions, locking and server-side business transitions. Packages must not import app implementations. No duplicate `contracts`, `utils`, `validation` or native UI package without an independently justified consumer and ownership decision.
 
 Promote code only when two real consumers share the same stable behavior **or** a narrowly defined, tested cross-runtime abstraction has been approved. Prefer app-local code until that condition is met. In particular, do not move Prisma models, Nest providers, Next server actions, session storage or native UI into platform-neutral packages.
 
@@ -102,3 +102,24 @@ Unit fixtures exercise valid imports, app-to-app manifest imports, app-to-app so
 - [#373](https://github.com/sauron9521/gym-platform/issues/373): Trainer Mobile remains a design-only decision; no second native UI package yet.
 
 Do not close #370 until the owner reviews this ADR, the tests and the PR's CI evidence. Merge is manual.
+
+## Datetime foundation extension — 2026-11-27
+
+Owner approved the introduction of a focused sixth shared package
+`@gym/datetime` for date-fns and @date-fns/tz adoption before #342.
+It owns strict absolute timestamp parsing, named timezone validation
+and civil calendar date operations. `@gym/domain` depends on its public
+entrypoint and retains business status rules. No app imports, circular
+dependencies, framework dependencies or new generic utils package.
+
+API, Web and Mobile already consume domain. The API image context
+explicitly permits only the new package's runtime and declarations;
+production deploy smoke and full workspace CI cover this dependency.
+The initial migration preserves existing device-local calendar semantics.
+Named-zone use on physical Hermes devices is not yet accepted; do not
+enable native reminders or install global Intl polyfills speculatively.
+
+Next slices: calendar month/week arithmetic; API timezone/quiet-hour
+policy; elapsed-time reminder lead and native capability verification.
+Keep session TTL, monotonic deadlines and SQL retention time sources
+unchanged. See [datetime adoption inventory](datetime-adoption.md).

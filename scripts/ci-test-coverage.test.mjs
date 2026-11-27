@@ -87,3 +87,15 @@ test('Domain edits force the full CI that explicitly runs Domain tests', () => {
     assert.equal(classifyChangedPaths([path]).full, true, path + ' must run the full regression');
   }
 });
+
+test('Datetime edits force full CI and explicit datetime test coverage', () => {
+  const { full } = fullRegression();
+  assert.match(full, /--filter=@gym\/datetime(?:\s|$)/);
+  for (const path of [
+    'packages/datetime/package.json',
+    'packages/datetime/src/index.js',
+    'packages/datetime/test/datetime.test.mjs',
+  ]) {
+    assert.equal(classifyChangedPaths([path]).full, true, path);
+  }
+});

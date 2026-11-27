@@ -32,6 +32,7 @@ CA01–CA04 are described in the decision and pilot record. Evidence pages are d
 - [Event taxonomy and ownership](notification-events.md)
 - [Delivery, scheduling and failure policy](notification-delivery.md)
 - [Workout schedule presentation semantics](workout-schedule-semantics.md): proposed civil-day calendar status and timezone rules (#341), pending owner acceptance.
+- [Datetime adoption inventory](datetime-adoption.md): approved library direction and staged migration evidence.
 
 These refine ADR-008 and retain its implementation and security gates.
 

@@ -16,5 +16,8 @@
   },
   "scripts": {
     "test": "node --test test/*.test.mjs"
+  },
+  "dependencies": {
+    "@gym/datetime": "workspace:*"
   }
 }
