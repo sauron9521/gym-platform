@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { isIanaTimezone } from '@gym/datetime';
 
 /** PATCH /users/me: personal profile fields only. Account roles, email
  * and credentials must use separate, explicitly authorized flows. */
@@ -28,20 +29,7 @@ export const updateMyProfileSchema = z
       .trim()
       .min(1)
       .max(64)
-      .refine((value) => {
-        if (
-          value !== 'UTC' &&
-          !/^[A-Za-z_]+\/[A-Za-z0-9_+.-]+(?:\/[A-Za-z0-9_+.-]+)?$/.test(value)
-        ) {
-          return false;
-        }
-        try {
-          new Intl.DateTimeFormat('en-US', { timeZone: value });
-          return true;
-        } catch {
-          return false;
-        }
-      }, 'Use an IANA time zone (e.g. Europe/Kyiv) or UTC')
+      .refine(isIanaTimezone, 'Use an IANA time zone (e.g. Europe/Kyiv) or UTC')
       .optional(),
     birthday: z.iso
       .date()

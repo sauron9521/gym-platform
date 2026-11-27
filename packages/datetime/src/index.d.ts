@@ -20,3 +20,11 @@ export declare function groupByCalendarDay<T>(
   items: readonly T[],
   getInstant: (item: T) => unknown,
 ): Map<string, T[]>;
+
+export declare function minuteOfDayInTimezone(instant: Date, timeZone: unknown): number | null;
+export declare function isMinuteInDailyWindow(
+  minute: number,
+  start: number,
+  end: number,
+): boolean | null;
+export declare function subtractElapsedMinutes(instant: Date, minutes: number): Date | null;

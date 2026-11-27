@@ -1,4 +1,9 @@
 import { z } from 'zod';
+import {
+  minuteOfDayInTimezone,
+  isMinuteInDailyWindow,
+  subtractElapsedMinutes,
+} from '@gym/datetime';
 
 export const reminderLeadMinutes = [15, 60, 1440] as const;
 const minute = z.number().int().min(0).max(1439);
@@ -94,21 +99,6 @@ export function notificationConsentEnabled(value: unknown): boolean {
   return parsed.success && parsed.data.enabled;
 }
 
-export function isNotificationTimezone(value: unknown): value is string {
-  if (
-    typeof value !== 'string' ||
-    value.length > 64 ||
-    (value !== 'UTC' && !/^[A-Za-z_]+\/[A-Za-z0-9_+.-]+(?:\/[A-Za-z0-9_+.-]+)?$/.test(value))
-  )
-    return false;
-  try {
-    new Intl.DateTimeFormat('en-US', { timeZone: value });
-    return true;
-  } catch {
-    return false;
-  }
-}
-
 export type QuietHoursDecision = 'allowed' | 'quiet' | 'invalid';
 
 /** Classify a real UTC instant, never construct an ambiguous local timestamp.
@@ -119,25 +109,15 @@ export function quietHoursAt(
   settings: NotificationSettings,
 ): QuietHoursDecision {
   const parsed = notificationSettingsSchema.safeParse(settings);
-  if (!parsed.success || !Number.isFinite(instant.getTime()) || !isNotificationTimezone(timezone))
-    return 'invalid';
+  if (!parsed.success) return 'invalid';
+  const localMinute = minuteOfDayInTimezone(instant, timezone);
+  // Validate the zone even when quiet hours are disabled; corrupt evidence
+  // must never authorize delivery.
+  if (localMinute === null) return 'invalid';
   const { quietHoursEnabled, quietStartMinute, quietEndMinute } = parsed.data;
   if (!quietHoursEnabled) return 'allowed';
-  const parts = new Intl.DateTimeFormat('en-GB', {
-    timeZone: timezone,
-    hour: '2-digit',
-    minute: '2-digit',
-    hourCycle: 'h23',
-  }).formatToParts(instant);
-  const localMinute =
-    Number(parts.find((part) => part.type === 'hour')?.value) * 60 +
-    Number(parts.find((part) => part.type === 'minute')?.value);
-  if (!Number.isFinite(localMinute)) return 'invalid';
-  const quiet =
-    quietStartMinute < quietEndMinute
-      ? localMinute >= quietStartMinute && localMinute < quietEndMinute
-      : localMinute >= quietStartMinute || localMinute < quietEndMinute;
-  return quiet ? 'quiet' : 'allowed';
+  const quiet = isMinuteInDailyWindow(localMinute, quietStartMinute, quietEndMinute);
+  return quiet === null ? 'invalid' : quiet ? 'quiet' : 'allowed';
 }
 
 /** Eligibility of a future local reminder instant only, not native scheduling.
@@ -163,7 +143,8 @@ export function localReminderCandidate(input: {
     !notificationSettingsSchema.safeParse(settings).success
   )
     return null;
-  const due = new Date(scheduledAt.getTime() - settings.reminderLeadMinutes * 60_000);
+  const due = subtractElapsedMinutes(scheduledAt, settings.reminderLeadMinutes);
+  if (!due) return null;
   return due.getTime() > now.getTime() && quietHoursAt(due, timezone, settings) === 'allowed'
     ? due
     : null;

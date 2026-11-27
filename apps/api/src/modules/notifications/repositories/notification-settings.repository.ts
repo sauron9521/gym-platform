@@ -1,10 +1,10 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { Prisma } from '#prisma/client';
+import { isIanaTimezone } from '@gym/datetime';
 import { PrismaService } from '#src/infra/database/index';
 import {
   defaultNotificationSettings,
   defaultNotificationPreferences,
-  isNotificationTimezone,
   notificationSettingsSchema,
   mergeNotificationSettings,
   notificationSettingsPatchSchema,
@@ -37,7 +37,7 @@ function project(row: Stored) {
   return {
     ...notificationSettingsSchema.parse(row.notificationSettings ?? defaultNotificationSettings),
     // Do not silently convert corrupt legacy timezone data into another zone.
-    timezone: isNotificationTimezone(timezone) ? timezone : null,
+    timezone: isIanaTimezone(timezone) ? timezone : null,
     preferences: defaultNotificationPreferences.map((pair) => {
       const stored = row.notificationPreferences.find(
         (p) => p.category === pair.category && p.channel === pair.channel,
