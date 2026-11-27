@@ -689,7 +689,9 @@
       "unavailableHint": "Системний дозвіл недоступний у цій збірці або ще перевіряється. Доставку не активовано.",
       "requestPermission": "Дозволити нагадування про тренування",
       "requestingPermission": "Перевіряємо дозвіл пристрою…",
-      "reminderChannel": "Нагадування про тренування"
+      "reminderChannel": "Нагадування про тренування",
+      "reminderNotificationTitle": "OVRANTO",
+      "reminderNotificationBody": "Наближається час тренування."
     },
     "notifications": {
       "title": "Сповіщення",

@@ -286,3 +286,15 @@ OS state after the dialog. No push token, scheduling, exact-alarm request
 or native background job is enabled. See the [Mobile permission
 boundary](../../apps/mobile/docs/push-notification-design.md#n14b--native-permission-adapter-342)
 for the release-age decision, adapter limitations and device gates.
+
+## N14c — native local reminder reconciliation (#342)
+
+The unwired Mobile native port reconciles managed pending requests against
+a validated desired plan, using deterministic pseudonymous identifiers,
+generic localized content, one-shot best-effort DATE triggers and scoped
+cancellation. No new dependency, exact-alarm authorization, push, native
+background task or automatic scheduling. The coordinator must supply
+fresh scoped evidence and lifecycle cleanup before activation. Pending
+inventory is not proof of actual delivery, especially the iOS interval
+serialization. See the [Mobile reconciliation design](../../apps/mobile/docs/push-notification-design.md#n14c--native-reconciliation-primitive-342)
+for proposed bounds, error semantics and outstanding native gates.
