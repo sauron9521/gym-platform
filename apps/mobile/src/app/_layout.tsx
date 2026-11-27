@@ -69,6 +69,13 @@ function Navigation() {
         </Stack.Protected>
         <Stack.Protected guard={hasAthleteAccess(capabilities)}>
           <Stack.Screen
+            name="notifications/index"
+            options={{
+              headerShown: true,
+              title: intl.formatMessage({ id: 'mobile.notifications.title' }),
+            }}
+          />
+          <Stack.Screen
             name="programs/index"
             options={{
               headerShown: true,

@@ -62,7 +62,7 @@ function validScope(scope: VerifiedNotificationScope | null): scope is VerifiedN
  * A single explicit intent, not a queue or a push handler. Superseding intents
  * cancel the previous attempt; logout/background must call cancel as well as
  * invalidating the verified scope. No automatic replay on sign-in/reconnect.
- * No network or router is configured in the current app.
+ * The Inbox adapter performs authorized detail and resource reads; the OS push listener is a separate rollout.
  */
 export function createNotificationOpenCoordinator(dependencies: Dependencies) {
   let active: AbortController | null = null;
@@ -76,6 +76,7 @@ export function createNotificationOpenCoordinator(dependencies: Dependencies) {
   async function open(value: unknown): Promise<NotificationOpenResult> {
     cancel();
     let controller: AbortController | undefined;
+    let isCurrent: (() => boolean) | undefined;
     try {
       const envelope = parseSafePushEnvelope(value);
       if (!envelope) return 'invalid';
@@ -89,7 +90,7 @@ export function createNotificationOpenCoordinator(dependencies: Dependencies) {
       const attempt = new AbortController();
       controller = attempt;
       active = attempt;
-      const isCurrent = () => {
+      isCurrent = () => {
         const current = dependencies.getVerifiedScope();
         return (
           active === attempt &&
@@ -118,7 +119,8 @@ export function createNotificationOpenCoordinator(dependencies: Dependencies) {
       dependencies.navigate(route);
       return 'opened';
     } catch {
-      return controller && (controller.signal.aborted || active !== controller)
+      return controller &&
+        (controller.signal.aborted || active !== controller || (isCurrent && !isCurrent()))
         ? 'stale'
         : 'unavailable';
     } finally {
