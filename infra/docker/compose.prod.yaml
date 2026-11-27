@@ -12,6 +12,7 @@ x-api-env: &api-env
   APP_URL: ${APP_URL:?APP_URL must be set}
   CORS_ORIGINS: ${CORS_ORIGINS:?CORS_ORIGINS must be set}
   SMTP_URL: ${SMTP_URL:?SMTP_URL must be set}
+  SMTP_RECIPIENT_ALLOWLIST: ${SMTP_RECIPIENT_ALLOWLIST:-}
   MAIL_FROM: ${MAIL_FROM:?MAIL_FROM must be set}
   PORT: '3000'
   ENABLE_OPENAPI: 'false'

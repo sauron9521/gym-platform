@@ -1,10 +1,71 @@
-import { describe, expect, it } from 'vitest';
-import { LogMailTransport, SmtpTransport } from '@nestjs/mail';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import {
+  LogMailTransport,
+  Mailer,
+  MailMessageError,
+  MailModule,
+  SmtpTransport,
+} from '@nestjs/mail';
+import { Test } from '@nestjs/testing';
 import { createMailOptions } from '../mail.config.js';
 
 const sender = 'Gym API <no-reply@example.test>';
 
 describe('createMailOptions', () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  it('uses the existing SMTP transport for Cloudflare', () => {
+    const options = createMailOptions(
+      {
+        NODE_ENV: 'production',
+        SMTP_URL: 'smtps://api_token:fixture-only@smtp.mx.cloudflare.net:465',
+        MAIL_FROM: 'OVRANTO <noreply@notify.ovranto.com>',
+      },
+      '/tmp/mail/templates',
+    );
+    expect(options.transport).toBeInstanceOf(SmtpTransport);
+    expect(options.from).toBe('OVRANTO <noreply@notify.ovranto.com>');
+  });
+
+  it('rejects any non-allowlisted envelope recipient before SMTP and does not redirect', async () => {
+    const send = vi.spyOn(SmtpTransport.prototype, 'send').mockResolvedValue({});
+    const mailOptions = createMailOptions(
+      {
+        NODE_ENV: 'production',
+        SMTP_URL: 'smtps://api_token:fixture-only@smtp.mx.cloudflare.net:465',
+        MAIL_FROM: sender,
+        SMTP_RECIPIENT_ALLOWLIST: 'tester@example.test, other@example.test',
+      },
+      '/tmp/mail/templates',
+    );
+    const module = await Test.createTestingModule({
+      imports: [MailModule.forRoot(mailOptions)],
+    }).compile();
+    try {
+      const mailer = module.get(Mailer);
+      const content = { subject: 'SMTP smoke', text: 'synthetic message' };
+      await mailer.send({ ...content, to: 'tester@example.test', cc: 'other@example.test' });
+      expect(send).toHaveBeenCalledTimes(1);
+      expect(send.mock.calls[0]?.[0].envelope.to).toEqual([
+        'tester@example.test',
+        'other@example.test',
+      ]);
+
+      for (const recipients of [
+        { to: 'outside@example.test' },
+        { to: 'tester@example.test', cc: 'outside@example.test' },
+        { to: 'tester@example.test', bcc: 'outside@example.test' },
+      ]) {
+        await expect(mailer.send({ ...content, ...recipients })).rejects.toBeInstanceOf(
+          MailMessageError,
+        );
+      }
+      expect(send).toHaveBeenCalledTimes(1);
+    } finally {
+      await module.close();
+    }
+  });
+
   it.each(['development', 'test'] as const)(
     '%s without SMTP uses the log transport',
     (NODE_ENV) => {
