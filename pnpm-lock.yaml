@@ -629,6 +629,9 @@ importers:
       '@gym/api-client':
         specifier: workspace:*
         version: link:../../packages/api-client
+      '@gym/datetime':
+        specifier: workspace:*
+        version: link:../../packages/datetime
       '@gym/design-tokens':
         specifier: workspace:*
         version: link:../../packages/design-tokens

@@ -1,3 +1,4 @@
+import { parseInstant, rollingDaysStart } from '@gym/datetime';
 import { createTrainerServerApiClient } from './trainer-server-api';
 
 export type TrainerOverviewResult =
@@ -10,14 +11,6 @@ export type TrainerOverviewResult =
       completedProgramWorkouts30d: number;
     }
   | { kind: 'unauthenticated' | 'forbidden' | 'unavailable' };
-
-function isValidDate(value: unknown): value is string {
-  return (
-    typeof value === 'string' &&
-    /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(value) &&
-    Number.isFinite(Date.parse(value))
-  );
-}
 
 function isValidCount(value: unknown): value is number {
   return typeof value === 'number' && Number.isSafeInteger(value) && value >= 0;
@@ -46,10 +39,14 @@ export async function loadTrainerOverview(
       activeProgramAssignments,
       completedProgramWorkouts30d,
     } = response.data;
+    const end = parseInstant(asOf);
+    const start = parseInstant(windowStart);
     if (
-      !isValidDate(asOf) ||
-      !isValidDate(windowStart) ||
-      Date.parse(windowStart) >= Date.parse(asOf) ||
+      typeof asOf !== 'string' ||
+      typeof windowStart !== 'string' ||
+      !end ||
+      !start ||
+      rollingDaysStart(end, 30).getTime() !== start.getTime() ||
       !isValidCount(activeClients) ||
       !isValidCount(activeProgramAssignments) ||
       !isValidCount(completedProgramWorkouts30d)

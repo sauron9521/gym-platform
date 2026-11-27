@@ -1,11 +1,12 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { rollingDaysStart } from '@gym/datetime';
 
 import { UsersService } from '#src/modules/users/public-api';
 import { TrainerDashboardRepository } from '../repositories/trainer-dashboard.repository.js';
 
 import type { TrainerAthleteActor } from '../types/trainer-athlete.types.js';
 
-const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
+const PROGRESS_WINDOW_DAYS = 30;
 
 /** Owner-only overview; role embedded in a session is never authoritative. */
 @Injectable()
@@ -21,7 +22,7 @@ export class TrainerDashboardService {
       throw new ForbiddenException('Current trainer approval is required');
     }
 
-    const from = new Date(now.getTime() - THIRTY_DAYS_MS);
+    const from = rollingDaysStart(now, PROGRESS_WINDOW_DAYS);
     const counts = await this.dashboard.countOverview(actor.id, from, now);
 
     return {
@@ -38,7 +39,7 @@ export class TrainerDashboardService {
       throw new ForbiddenException('Current trainer approval is required');
     }
 
-    const from = new Date(now.getTime() - THIRTY_DAYS_MS);
+    const from = rollingDaysStart(now, PROGRESS_WINDOW_DAYS);
     const counts = await this.dashboard.countClientProgress(actor.id, relationId, from, now);
     // Identical not-found for missing, foreign, ended or otherwise ineligible clients.
     if (!counts) throw new NotFoundException('Active trainer client not found');

@@ -5,6 +5,7 @@ import { Prisma } from '#prisma/client';
 import type { BodyMeasurementMetric } from '../dto/body-measurement-statistics.schemas.js';
 import { measurementStatisticsSelect } from '../selects/body-measurement.select.js';
 import type { DailyMetricRecord } from '../types/body-measurement.types.js';
+import { rollingDaysStart } from '@gym/datetime';
 import { utcSeriesStart } from '../utils/statistics-utc-period.js';
 
 const metricColumns: Record<BodyMeasurementMetric, string> = {
@@ -27,7 +28,7 @@ export class BodyMeasurementStatisticsRepository {
     asOf: Date,
     seriesDays: number,
   ) {
-    const cutoffs = [7, 30, 90].map((days) => new Date(asOf.getTime() - days * 86_400_000));
+    const cutoffs = [7, 30, 90].map((days) => rollingDaysStart(asOf, days));
     // Chart ranges are UTC calendar days including the current UTC day,
     // unlike rolling hour windows used by 7/30/90-day comparisons.
     const from = utcSeriesStart(asOf, seriesDays);

@@ -17,7 +17,7 @@ This is a candidate inventory, not a count of code to replace.
 | Web and Mobile calendar-month helpers                           | DT02: shared month/week arithmetic and DST boundaries                          |
 | API notification settings and delivery policy                   | DT03: shared named-zone and daily-window helpers; preserve fail-closed consent |
 | Mobile reminders (#342)                                         | Absolute elapsed-time lead; permission and device evidence before scheduling   |
-| Progress, body measurement statistics, Trainer dashboard        | Review interval semantics and query boundaries before migration                |
+| Progress, body measurement statistics, Trainer dashboard        | DT04: preserve UTC buckets and rolling elapsed comparison windows              |
 | Admin and dashboard formatting                                  | Review existing locale formatting; keep Intl/next-intl when sufficient         |
 | Auth session TTL, database lease/retention, monotonic deadlines | Keep existing clocks and absolute/SQL arithmetic; no cosmetic replacement      |
 
@@ -70,6 +70,28 @@ Profile trimming, consent, settings validation, source eligibility,
 database clock, lease and transport decisions remain API-owned.
 1440 minutes means exactly 24 elapsed hours across DST. No scheduling
 or provider activation is introduced.
+
+## DT04 — analytics periods
+
+Body measurement and workout chart ranges include the UTC date of
+the server anchor and the preceding N-1 dates, with the same inclusive
+upper bound at asOf. Use `utcCalendarDaysStart`. Keep SQL UTC bucketing,
+latest-per-day selection, metric filters and transaction isolation.
+The two historical API utility paths remain thin re-export adapters
+for the immutable migration source inventory; no duplicated arithmetic.
+Body measurement comparison baselines and Trainer Dashboard use
+`rollingDaysStart`: exactly N elapsed 24-hour periods, never local
+calendar days. Both measurement repository and service share that
+cutoff calculation. No analytics query, ownership or metric change.
+
+Trainer client progress and overview parse explicit offset-bearing
+timestamps through the same strict helper. Both now require the exact
+30-day rolling interval returned by the API; overview previously only
+checked ordering. Malformed date/window responses fail closed rather
+than displaying unverified KPI values. This is validation hardening,
+not a change to legitimate API responses. No dependency version change.
+UTC dates for birthday, SQL clock/retention, session and lease arithmetic
+remain separate contracts and are intentionally not migrated here.
 
 ## Other library candidates — not approved
 
