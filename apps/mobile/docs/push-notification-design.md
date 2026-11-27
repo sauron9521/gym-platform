@@ -203,3 +203,47 @@ by a server while the device is offline or the app is not running.
 No freshness guarantee beyond the local evidence fence is implied.
 LN05 will handle lifecycle wiring and cancellation, with activation
 still gated on real Android/iOS QA (#348/#349).
+
+## N14e — lifecycle composition (#342)
+
+One reminder lifecycle is created at the application composition root
+and combined with the existing offline draft private-data participant.
+Auth stays unaware of the native notification implementation.
+The release gate LOCAL_REMINDER_SCHEDULING_ENABLED is hard-coded false:
+the runtime attempts managed cleanup at startup, verification, active
+locks and logout but never prepares a plan, schedules an OS reminder,
+or subscribes to the scheduling refresh events while disabled.
+
+The coordinator's enabled path is tested with injected ports only.
+Every lifecycle change revokes the old generation synchronously and
+aborts preparation. A single native operation queue serializes cleanup
+with reconciliation; cleanup must be verified before any new native
+write. Network preparation remains outside that queue because a 401
+may itself await logout cleanup. Failed or unavailable cancellation
+leaves cleanup required and blocks scheduling until a later event
+retries it. A normal transition to background locks preparation but
+does not cancel already settled OS reminders. A write in flight is
+fenced and must clean up if it settles after the generation changes.
+On cold launch, active lock, verified account change, resume/reverify
+and explicit logout, managed cleanup is attempted irrespective of
+network availability.
+
+The future enabled runtime observes existing account/workout/settings
+cache changes, mutation admission and settlement, focus, connection
+and locale. Active refresh first fences and requests cleanup, then
+reacquires fresh evidence. Concurrent refresh requests coalesce while
+a read settles; no automatic write replay or background polling.
+This intentionally conservative approach may cancel/reschedule more
+often than a diff-only refresh. Measure native latency and churn during
+QA before activation. Native cleanup is best effort: process death,
+OS failure, offline remote changes and a never-settling native call
+cannot guarantee immediate removal. Auth locks credentials regardless
+of cleanup success; the coordinator does not claim that failed cleanup
+has removed notifications. No push registration or foreground
+presentation handler is introduced.
+
+Next LN06: build and test on Android/iOS, prove exact timing and
+cancellation, foreground presentation behavior, permission changes,
+timezone and clock changes, remote/offline limitations and recovery
+from failed cleanup. A separate reviewed activation decision is
+required; do not flip the gate merely because JS tests pass.
