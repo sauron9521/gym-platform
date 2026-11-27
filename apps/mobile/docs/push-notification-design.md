@@ -84,3 +84,18 @@ contract intentionally returns unavailable in current builds without
 a native adapter. Injected permission-reader tests cover granted, denied,
 undetermined and unavailable. Actual native status reading and delivery
 remain #342/#343; device acceptance remains #348/#349.
+
+## N14a — local reminder plan (preparation only)
+
+The strict account settings response parser is reused by the pure
+`local-reminder-plan.ts` planner. Shared domain timing rules are identical
+to the API candidate policy. The planner requires explicit granted
+permission, a current owner, confirmed consent and a complete fresh
+snapshot from its future caller. It returns internal IDs and due times
+only; these are not a native payload or proof of scheduling.
+No OS API or permission prompt is wired. The supported Expo SDK manifest
+lists expo-notifications ~58.1.9; evaluate actual installation and native
+development builds in a separate PR. The proposed cap of 32 candidates
+must be reconciled against actual OS capacity and a bounded query horizon.
+See [notification delivery](../../../docs/architecture/notification-delivery.md)
+for the cancellation, identity and device readiness gates.

@@ -246,3 +246,31 @@ No security, financial or other business/audit evidence is pruned. The
 [operations runbook](../operations/notifications.md) specifies the
 conservative exclusions, rollout/rollback gates and remaining legal
 review. Do not enable apply until all workers honor the markers.
+
+## N14a — local reminder planning foundation (#342)
+
+The shared domain owns the pure quiet-hour and future reminder candidate
+policy. API still validates persisted settings and category-specific consent;
+Mobile uses the existing strict settings response contract and a pure,
+owner-scoped planner. Only a complete, fresh scheduled-workout snapshot
+with explicit OS grant and confirmed WORKOUT/LOCAL_REMINDER consent can
+produce a plan. Foreign owners, duplicates, invalid timestamps, oversized
+or incomplete snapshots block the entire plan. A ready plan with no
+candidates is distinct from blocked evidence. The plan contains only
+internal workout IDs and UTC due timestamps, not OS notification content.
+Quiet or expired candidates are skipped, not deferred; 1440 minutes is
+elapsed time, independent of DST.
+
+The proposed preparation limit is 32 earliest candidates per installation
+from at most 1000 scheduled records. The native lifecycle must establish
+a bounded fresh query horizon, account/session generation fencing, total
+pending OS capacity and cancellation/reconciliation before enabling this
+limit or scheduling anything. Blocked results cannot be interpreted as
+permission to retain stale pending reminders. The planner is not wired
+to a background task or UI. Expo SDK 58.0.26's bundled module manifest
+specifies expo-notifications ~58.1.9; dependency installation, actual native
+permission reader, contextual prompt and OS scheduler are separate slices.
+No permission, token, native identifier or persistent schedule is created.
+Keep #342 open until Android/iOS device acceptance (#348/#349), including
+offline revocation limitations, logout/switch, edit, resume and timezone
+changes. Push remains gated on local scheduling evidence.
