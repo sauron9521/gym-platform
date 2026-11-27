@@ -1,0 +1,62 @@
+# Only scripts/full-stack-rehearsal.mjs may supply the disposable project/env.
+# No host ports, external network, existing data, live SMTP or real credentials.
+services:
+  postgres:
+    image: postgres:17-alpine@sha256:526f86d93c6ea08fd3f1fe5605650cacc781b2c6013169a0ad8f42c7d3d84f32
+    environment:
+      POSTGRES_USER: rehearsal
+      POSTGRES_PASSWORD: ${REHEARSAL_DB_PASSWORD:?Disposable password required}
+      POSTGRES_DB: gym_rehearsal
+    volumes:
+      - rehearsal-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD', 'pg_isready', '-U', 'rehearsal', '-d', 'gym_rehearsal']
+      interval: 3s
+      timeout: 3s
+      retries: 30
+  redis:
+    image: redis:8-alpine@sha256:7958cfbb9d152f87dadfbc89f1b0b15938f0b81ff8982feb327476f4911935c3
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 3s
+      timeout: 3s
+      retries: 30
+  api:
+    image: ${REHEARSAL_PROJECT:?Disposable project required}-api:local
+    ports: !reset []
+    restart: 'no'
+    environment:
+      NOTIFICATION_DISPATCH_ENABLED: 'false'
+      NOTIFICATION_EMAIL_ENABLED: 'false'
+      NOTIFICATION_RETENTION_MODE: 'off'
+      HTTP_METRICS_ENABLED: 'false'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+  migrate:
+    image: ${REHEARSAL_PROJECT:?Disposable project required}-migrate:local
+  landing:
+    image: ${REHEARSAL_PROJECT:?Disposable project required}-landing:local
+    ports: !reset []
+    restart: 'no'
+  web:
+    image: ${REHEARSAL_PROJECT:?Disposable project required}-web:local
+    ports: !reset []
+    restart: 'no'
+  trainer:
+    image: ${REHEARSAL_PROJECT:?Disposable project required}-trainer:local
+    ports: !reset []
+    restart: 'no'
+  admin:
+    image: ${REHEARSAL_PROJECT:?Disposable project required}-admin:local
+    ports: !reset []
+    restart: 'no'
+
+networks:
+  default:
+    internal: true
+
+volumes:
+  rehearsal-db:

@@ -1025,6 +1025,10 @@ jobs:
       - name: Build one-shot migration image (no migration execution)
         run: docker build -f apps/api/Dockerfile --target migrate -t gym-platform-api:migrate-ci .
 
+      - name: Rehearse full stack with disposable database (no deployment)
+        if: needs.changes.outputs.full == 'true'
+        run: node scripts/full-stack-rehearsal.mjs
+
       - name: Verify deployed domain package on Node 24
         run: |
           docker run --rm --entrypoint node gym-platform-api:runtime-ci --input-type=module -e 'import assert from "node:assert/strict"; import { canTransitionWorkout, canCompleteWorkout, workoutCalendarDayKey } from "@gym/domain"; assert.equal(workoutCalendarDayKey("2026-11-27T23:30:00Z", "Europe/Kyiv"), "2026-11-28"); assert.equal(canTransitionWorkout("PLANNED", "IN_PROGRESS"), true); assert.equal(canTransitionWorkout("COMPLETED", "IN_PROGRESS"), false); assert.equal(canCompleteWorkout([{status:"COMPLETED"}]), true);'
