@@ -3,6 +3,8 @@ import { NotificationsModule } from '../notifications.module.js';
 import * as publicApi from '../public-api.js';
 import { OutboxDispatchRepository } from '../repositories/outbox-dispatch.repository.js';
 import { OutboxDispatchService } from '../services/outbox-dispatch.service.js';
+import { NotificationEmailSender } from '../delivery/notification-email.sender.js';
+import { NotificationEmailDispatchService } from '../services/notification-email-dispatch.service.js';
 import { NotificationDeliveryRepository } from '../repositories/notification-delivery.repository.js';
 import { AdminNotificationInboxRepository } from '../repositories/admin-notification-inbox.repository.js';
 import { NotificationInboxRepository } from '../repositories/notification-inbox.repository.js';
@@ -22,6 +24,8 @@ describe('NotificationsModule public boundary', () => {
       OutboxDispatchRepository,
       OutboxDispatchService,
       NotificationDeliveryRepository,
+      NotificationEmailSender,
+      NotificationEmailDispatchService,
       AdminNotificationInboxRepository,
       publicApi.AdminNotificationInboxService,
     ]);

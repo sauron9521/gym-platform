@@ -282,3 +282,15 @@ prompt, token registration, scheduler, native dependency or delivery
 is added. #342/#343 must supply the actual native status reader and
 opt-in/revocation lifecycle, with physical device verification #348/#349.
 The existing server consent UI never grants OS permission.
+
+### N15: optional transactional email (#578)
+
+The existing PostgreSQL delivery state machine and SMTP transport now
+support the optional account-update email for committed trainer reviews.
+Both dispatch and email feature flags must be enabled; default is off.
+Consent, source ownership, current verified address and quiet hours are
+rechecked before each bounded attempt. The UK/EN templates link only to
+the protected Athlete Inbox without revealing the review result or
+application data. Verification and recovery mail remain canonical Auth
+flows. See [delivery policy](notification-delivery.md) for deadlines,
+retry classification, privacy and rollout limits.

@@ -14,6 +14,7 @@ import {
   outboxRetryDelayMs,
 } from '../domain/outbox-dispatch.policy.js';
 
+import { planNotificationEmail } from './notification-delivery.repository.js';
 import { dispatchAdminReviewNotification } from './dispatch-admin-review-notification.js';
 import { resolveReviewNotification } from './resolve-review-notification.js';
 import { resolveProgramNotification } from './resolve-program-notification.js';
@@ -194,6 +195,18 @@ export class OutboxDispatchRepository {
           ) {
             return this.finish(tx, claim.id, 'INBOX_CONFLICT', 'dead_letter');
           }
+        }
+        if (
+          event.type === 'trainer.application.reviewed' &&
+          this.config?.get('NOTIFICATION_EMAIL_ENABLED') === true &&
+          this.config.get('NOTIFICATION_DISPATCH_ENABLED') === true &&
+          this.config.get('SMTP_URL')
+        ) {
+          const notification = await tx.notification.findUniqueOrThrow({
+            where: { eventId_recipientId_scope: { eventId: claim.id, recipientId, scope: 'USER' } },
+            select: { id: true },
+          });
+          await planNotificationEmail(tx, notification.id);
         }
         return this.finish(tx, claim.id, null, 'processed');
       },

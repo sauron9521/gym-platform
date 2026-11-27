@@ -16,6 +16,8 @@ import {
 } from '../../../src/modules/notifications/public-api.js';
 import { OutboxDispatchRepository } from '../../../src/modules/notifications/repositories/outbox-dispatch.repository.js';
 import { OutboxDispatchService } from '../../../src/modules/notifications/services/outbox-dispatch.service.js';
+import { NotificationEmailSender } from '../../../src/modules/notifications/delivery/notification-email.sender.js';
+import { NotificationEmailDispatchService } from '../../../src/modules/notifications/services/notification-email-dispatch.service.js';
 import { NotificationDeliveryRepository } from '../../../src/modules/notifications/repositories/notification-delivery.repository.js';
 import { NotificationInboxRepository } from '../../../src/modules/notifications/repositories/notification-inbox.repository.js';
 import { NotificationInboxController } from '../../../src/api/shared/notifications/controllers/notification-inbox.controller.js';
@@ -320,6 +322,8 @@ describe('App (e2e)', () => {
       OutboxDispatchRepository,
       OutboxDispatchService,
       NotificationDeliveryRepository,
+      NotificationEmailSender,
+      NotificationEmailDispatchService,
       AdminNotificationInboxService,
       AdminNotificationInboxRepository,
     ]) {

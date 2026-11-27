@@ -1,0 +1,3 @@
+You have an update in your OVRANTO account.
+Open your notification inbox: {{ url }}
+Sign in to view your current notifications. You can change optional email consent in your account settings.
