@@ -30,6 +30,8 @@ RUN echo 'Docker context: API Prisma config' \
     && echo 'Docker context: domain runtime and types' \
     && test -f packages/domain/src/index.js \
     && test -f packages/domain/src/index.d.ts \
+    && test -f packages/datetime/src/index.js \
+    && test -f packages/datetime/src/index.d.ts \
     && echo 'Docker context: Web src excluded' \
     && test ! -e apps/web/src \
     && echo 'Docker context: Mobile src excluded' \

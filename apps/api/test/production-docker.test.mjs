@@ -82,6 +82,9 @@ test('API Dockerfile-specific ignore only includes required API sources and mani
     '!packages/domain/src/',
     '!packages/domain/src/index.js',
     '!packages/domain/src/index.d.ts',
+    '!packages/datetime/src/',
+    '!packages/datetime/src/index.js',
+    '!packages/datetime/src/index.d.ts',
     '!tooling',
     '!tooling/*',
     '!tooling/*/package.json',
@@ -121,6 +124,8 @@ test('API Dockerfile-specific ignore only includes required API sources and mani
   assert.ok(docker.includes('test -f packages/i18n/package.json'));
   assert.ok(docker.includes('test -f packages/domain/src/index.js'));
   assert.ok(docker.includes('test -f packages/domain/src/index.d.ts'));
+  assert.ok(docker.includes('test -f packages/datetime/src/index.js'));
+  assert.ok(docker.includes('test -f packages/datetime/src/index.d.ts'));
   assert.ok(docker.includes('test ! -e apps/web/src'));
   assert.ok(docker.includes('test ! -e apps/mobile/src'));
   assert.ok(docker.includes('test ! -e packages/i18n/src'));

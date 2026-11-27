@@ -15,10 +15,13 @@ apps/*/**
 !packages/*
 packages/*/**
 !packages/*/package.json
-# Only the pure domain package is an API runtime dependency.
+# Only the pure domain package and its datetime dependency enter the API context.
 !packages/domain/src/
 !packages/domain/src/index.js
 !packages/domain/src/index.d.ts
+!packages/datetime/src/
+!packages/datetime/src/index.js
+!packages/datetime/src/index.d.ts
 !tooling
 !tooling/*
 tooling/*/**

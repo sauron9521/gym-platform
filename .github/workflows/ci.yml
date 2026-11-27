@@ -414,7 +414,7 @@ jobs:
           pnpm lint
           pnpm typecheck
           # API unit tests with coverage are enforced by the protected E2E gate.
-          pnpm exec turbo run test --filter=@gym/web --filter=@gym/mobile --filter=@gym/api-client --filter=@gym/landing --filter=@gym/admin --filter=@gym/trainer --filter=@gym/domain
+          pnpm exec turbo run test --filter=@gym/web --filter=@gym/mobile --filter=@gym/api-client --filter=@gym/landing --filter=@gym/admin --filter=@gym/trainer --filter=@gym/domain --filter=@gym/datetime
           pnpm build
 
       - name: Lint, typecheck, test and build affected workspaces
@@ -929,7 +929,7 @@ jobs:
 
       - name: Verify deployed domain package on Node 24
         run: |
-          docker run --rm --entrypoint node gym-platform-api:runtime-ci --input-type=module -e 'import assert from "node:assert/strict"; import { canTransitionWorkout, canCompleteWorkout } from "@gym/domain"; assert.equal(canTransitionWorkout("PLANNED", "IN_PROGRESS"), true); assert.equal(canTransitionWorkout("COMPLETED", "IN_PROGRESS"), false); assert.equal(canCompleteWorkout([{status:"COMPLETED"}]), true);'
+          docker run --rm --entrypoint node gym-platform-api:runtime-ci --input-type=module -e 'import assert from "node:assert/strict"; import { canTransitionWorkout, canCompleteWorkout, workoutCalendarDayKey } from "@gym/domain"; assert.equal(workoutCalendarDayKey("2026-11-27T23:30:00Z", "Europe/Kyiv"), "2026-11-28"); assert.equal(canTransitionWorkout("PLANNED", "IN_PROGRESS"), true); assert.equal(canTransitionWorkout("COMPLETED", "IN_PROGRESS"), false); assert.equal(canCompleteWorkout([{status:"COMPLETED"}]), true);'
       - name: Check image contents and non-root runtime
         run: |
           docker run --rm --entrypoint sh gym-platform-api:runtime-ci -ec '
