@@ -1,0 +1,21 @@
+# Standalone candidate, not an installed drop-in. INF04 does not activate SSH.
+Port 22
+AddressFamily inet
+PermitRootLogin no
+PasswordAuthentication no
+KbdInteractiveAuthentication no
+PubkeyAuthentication yes
+AuthenticationMethods publickey
+PermitEmptyPasswords no
+StrictModes yes
+AllowUsers ovranto-operator
+UsePAM yes
+DisableForwarding yes
+PermitTunnel no
+X11Forwarding no
+PermitUserEnvironment no
+MaxAuthTries 3
+MaxSessions 4
+LoginGraceTime 30
+LogLevel VERBOSE
+Subsystem sftp internal-sftp

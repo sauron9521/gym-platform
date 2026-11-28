@@ -31,8 +31,7 @@ No provider pricing or availability is verified by mocks.
 The module attaches an ingress-deny-by-default firewall, enables IPv4
 only, provider delete/rebuild protection and OpenTofu prevent_destroy.
 An activated server requires existing environment-specific numeric SSH
-key IDs and matching environment/SKU. The firewall has no ingress rules,
-so activation before INF04 access review could prevent remote access.
+key IDs and matching environment/SKU. The firewall has no ingress rules by default. The [INF04 access candidate](../security/README.md) adds an optional exact operator IPv4 /32 SSH allowlist; live addresses and access recovery require separate approval.
 No cloud-init, live SSH keys, provider token, public application access,
 network or state backend is configured. Provider VPS backups are disabled
 in this candidate pending pricing and recovery decisions; never substitute
