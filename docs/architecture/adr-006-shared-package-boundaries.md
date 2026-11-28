@@ -1,13 +1,14 @@
 # ADR-006 — Shared package ownership and cross-runtime boundaries
 
-- **Status:** Proposed for owner review (Issue [#370](https://github.com/sauron9521/gym-platform/issues/370)); no product/security GO
+- **Status:** Accepted direction, 2026-11-28 (SP01–SP10); implementation acceptance pending [#370](https://github.com/sauron9521/gym-platform/issues/370); no product/security GO
 - **Date:** 2026-11-23
 - **Scope:** M03 / E16; [architecture roadmap #380](https://github.com/sauron9521/gym-platform/issues/380), [shared adoption #319](https://github.com/sauron9521/gym-platform/issues/319)
-- **Baseline:** checked `main` application and shared-package manifests plus current public entrypoints; **declared consumers** below are manifest dependencies, not proof of usage in every screen
+- **Baseline:** manifest and export inventory at `48e92a9f3c0a920caa349a5c5f22c55543bf72ca` (2026-11-28); **declared consumers** below are manifest dependencies, not source-level usage or runtime acceptance.
+- **Policy:** [Shared Packages Strategy v1.0](../product-strategy/shared-packages-strategy-v1.md); [SP10 approval](https://github.com/sauron9521/gym-platform/issues/380#issuecomment-7235521401).
 
 ## Decision
 
-At the original baseline, keep **six independent apps** and the **five existing shared packages**. See the dated datetime extension below. Each app owns its features, routes, runtime authentication, UX flows and deployment. `apps/api` remains the only backend authority for database writes, ownership, permissions, locking and server-side business transitions. Packages must not import app implementations. No duplicate `contracts`, `utils`, `validation` or native UI package without an independently justified consumer and ownership decision.
+Keep **six independent apps** and the **six existing shared packages**. The original five-package baseline was extended by datetime on 2026-11-27; the matrix below supersedes the original manifest snapshot. Each app owns its features, routes, runtime authentication, UX flows and deployment. `apps/api` remains the only backend authority for database writes, ownership, permissions, locking and server-side business transitions. Packages must not import app implementations. No duplicate `contracts`, `utils`, `validation` or native UI package without an independently justified consumer and ownership decision.
 
 Promote code only when two real consumers share the same stable behavior **or** a narrowly defined, tested cross-runtime abstraction has been approved. Prefer app-local code until that condition is met. In particular, do not move Prisma models, Nest providers, Next server actions, session storage or native UI into platform-neutral packages.
 
@@ -22,8 +23,14 @@ Promote code only when two real consumers share the same stable behavior **or** 
 **`@gym/domain`**
 
 - **Owns:** Pure workout status and transition preconditions, plus set-progress calculations.
-- **Declared consumers:** `mobile`, `api` (API adoption via #329).
+- **Declared consumers:** `api`, `web`, `mobile` (API adoption via #329).
 - **Runtime boundary:** No framework dependencies; API owns authorization and writes. Keep this limited cross-runtime contract small; native ESM and TypeScript declarations support the Node runtime and Mobile.
+
+**`@gym/datetime`**
+
+- **Owns:** technical timestamp parsing, IANA timezone validation, civil calendar arithmetic and time projections.
+- **Declared consumers:** `api`, `web`, `trainer`, `mobile`, `@gym/domain`.
+- **Runtime boundary:** platform-neutral ESM JS/declarations; technical leaf with date-fns and @date-fns/tz only as date library family. Native named-zone acceptance remains pending.
 
 **`@gym/i18n`**
 
@@ -43,29 +50,20 @@ Promote code only when two real consumers share the same stable behavior **or** 
 - **Declared consumers:** `web`, `trainer`, `admin`, `landing`.
 - **Runtime boundary:** Browser/Next only; **forbidden in Expo**. No business forms, routing or network hooks.
 
-The API declares only the pure `@gym/domain` package as a direct shared runtime dependency. `scripts/ci-select.mjs` conservatively includes API checks for i18n catalog edits because of transactional email concerns; **CI selection is not equivalent to a package import**.
+The API declares `@gym/domain` and `@gym/datetime` as direct shared runtime dependencies. `scripts/ci-select.mjs` conservatively includes API checks for i18n catalog edits because of transactional email concerns; **CI selection is not equivalent to a package import**.
 
-### Declared workspace dependency graph
+### Public export registry and declared workspace graph
 
-```text
-apps/web ──────────┬──> @gym/api-client
-apps/trainer ───────┤
-apps/admin ─────────┤
-apps/mobile ────────┘
+| Package       | Public exports                                                | Declared consumers                   |
+| ------------- | ------------------------------------------------------------- | ------------------------------------ |
+| api-client    | `.`                                                           | Web, Trainer, Admin, Mobile          |
+| domain        | `.`                                                           | API, Web, Mobile                     |
+| datetime      | `.`                                                           | API, Web, Trainer, Mobile, domain    |
+| i18n          | `.`, `./async`, `./locales`, `./request-locale`               | Web, Trainer, Admin, Landing, Mobile |
+| design-tokens | `./dark.css`, `./native`, `./ovranto.css`, `./ovranto-native` | Web, Trainer, Admin, Landing, Mobile |
+| ui-web        | `.`, `./utils`                                                | Web, Trainer, Admin, Landing         |
 
-apps/web ──────────┬──> @gym/i18n, @gym/design-tokens, @gym/ui-web
-apps/trainer ───────┤
-apps/admin ─────────┤
-apps/landing ───────┘
-
-apps/mobile ───────────> @gym/i18n, @gym/design-tokens, @gym/domain
-
-apps/api ──────────────> @gym/domain
-
-@ gym shared packages ─> (no declared intra-workspace package edges at baseline)
-```
-
-No app-to-app manifest edge or shared-package cycle appears in the reviewed manifests. Native and browser consumers share contracts/tokens, **not** the same UI implementation.
+The only declared intra-package runtime edge is domain -> datetime. No app-to-app edge or package cycle appears in these manifests. This is not a complete source import graph. CSS exports target Web and native token exports target Mobile; no shared Web UI in Expo. See package manifests for exact conditions and package scripts for current test/build commands.
 
 ## Import and ownership rules
 
@@ -76,6 +74,14 @@ No app-to-app manifest edge or shared-package cycle appears in the reviewed mani
 5. **Security belongs to API.** Shared workout rules are UX preconditions; they never authorize writes, override transaction locks or bypass tenancy.
 6. **Avoid new global state systems or automatic HTTP write retries.** TanStack Query can be used in consuming apps, with idempotency/reconciliation decisions scoped to each operation.
 7. **Coordinate shared changes.** A contract, token or catalog change requires testing every declared consumer and the affected CI matrix. Update generated OpenAPI types in the same API contract PR.
+
+## Governance and lifecycle (SP01–SP10)
+
+- App-local first; two real consumers or a justified tested abstraction. Proposal with ownership, alternatives, exports, runtime, dependency edge, migration and tests requires separate owner approval.
+- Private atomic workspace, explicit exports, correct runtime/dev/peer dependencies and workspace:*; independent deployed app/API compatibility remains separate. Hybrid source-first, generated and JS/declarations models retained pending scoped build evaluations.
+- No generic utils/common/types/contracts package or new validation/units/native UI package without evidence and approval. Backend Core remains undecided until ABI08 and explicit owner review; no implied CoreModule or final modules/ decision.
+- dependency-cruiser is the primary graph tool; Knip findings require review. Preserve existing checks until equivalent negative fixtures and resolver coverage are proven. Extend to aliases, relative, type-only, static dynamic imports and all relevant roots; computed imports require review. Report-only before verified blocking rules; ratchet noncritical legacy debt with scoped owner/reason/issue/review-deadline exceptions, never security bypass.
+- Stable public contracts, documented deprecations/replacements and affected consumer migration before removal; package DoD and CI per Shared Packages Strategy. Actual hooks and manual merge required.
 
 ## Verification and limits
 
@@ -89,7 +95,7 @@ pnpm --filter @gym/design-tokens test
 pnpm --filter @gym/i18n test
 ```
 
-The new guard covers direct dependencies in all workspace manifests, cycles among shared packages, and _literal_ source imports under `apps/*/src` and `packages/*/src` that reach another app or import an app package. It does **not** resolve arbitrary computed imports, every alias or imports from `scripts/`; code review and existing API AST guards remain necessary. Keep any future extension deliberate rather than claiming a complete import graph.
+The existing workspace guard covers direct dependencies in all workspace manifests, cycles among shared packages, and _literal_ source imports under `apps/*/src` and `packages/*/src` that reach another app or import an app package. It does **not** resolve arbitrary computed imports, every alias or imports from `scripts/`; code review and existing API AST guards remain necessary. Keep any future extension deliberate rather than claiming a complete import graph.
 
 Unit fixtures exercise valid imports, app-to-app manifest imports, app-to-app source imports, package-to-app source imports and package cycles. GitHub CI provides the repository-wide verification; this ADR is not evidence of device-level tests or production readiness.
 
@@ -101,7 +107,7 @@ Unit fixtures exercise valid imports, app-to-app manifest imports, app-to-app so
 - [#360](https://github.com/sauron9521/gym-platform/issues/360): tighten Nest feature-to-feature imports using explicit facades, separately from workspace rules.
 - [#373](https://github.com/sauron9521/gym-platform/issues/373): Trainer Mobile remains a design-only decision; no second native UI package yet.
 
-Do not close #370 until the owner reviews this ADR, the tests and the PR's CI evidence. Merge is manual.
+The owner has accepted the strategic direction. Do not close #370 until actual consumer/deep-import reconciliation, runtime tests, CI evidence and separate owner implementation acceptance. Merge is manual.
 
 ## Datetime foundation extension — 2026-11-27
 
