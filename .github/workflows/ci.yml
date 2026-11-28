@@ -103,6 +103,10 @@ jobs:
         if: needs.changes.outputs.full == 'true'
         run: bash infra/recovery/pgbackrest/verify.sh
 
+      - name: Rehearse isolated Redis persistence and recovery
+        if: needs.changes.outputs.full == 'true'
+        run: bash infra/recovery/redis/verify.sh
+
       - name: Enforce named and relative workspace imports via dependency-cruiser
         run: pnpm architecture:cruise:boundaries
 
