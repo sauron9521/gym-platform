@@ -14,9 +14,10 @@ local-CA Caddyfile and staging environment example without maintaining duplicate
 templates. Files are private (0600); the containing directory is 0700. The
 bootstrap plan records the intended Ubuntu 24.04 AMD64 host, named operator,
 proposed packages and required private inputs by name, never their values.
-The Docker and Caddy packages are candidates: signed repository setup, exact
-versions, upgrade policy, systemd activation and real ownership are still
-separate work. Docker group membership is not granted.
+The Docker and Caddy packages are candidates. The [package bootstrap rehearsal](../bootstrap/README.md)
+validates signed repository setup and selected vendor versions; the upgrade
+policy, systemd activation and real ownership remain separate work. Docker
+group membership is not granted.
 
 Run the existing validation entry point:
 

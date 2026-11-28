@@ -1,0 +1,6 @@
+Types: deb
+URIs: https://dl.cloudsmith.io/public/caddy/stable/deb/debian
+Suites: any-version
+Components: main
+Architectures: amd64
+Signed-By: /etc/apt/keyrings/caddy.asc

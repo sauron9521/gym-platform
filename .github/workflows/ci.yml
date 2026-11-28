@@ -95,6 +95,10 @@ jobs:
         if: needs.changes.outputs.full == 'true'
         run: bash infra/security/verify.sh
 
+      - name: Rehearse signed Ubuntu package bootstrap without service activation
+        if: needs.changes.outputs.full == 'true'
+        run: bash infra/bootstrap/verify.sh
+
       - name: Rehearse isolated PostgreSQL physical backup and WAL recovery
         if: needs.changes.outputs.full == 'true'
         run: bash infra/recovery/verify-pitr.sh

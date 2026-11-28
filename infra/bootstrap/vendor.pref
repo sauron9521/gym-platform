@@ -1,0 +1,15 @@
+Package: docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+Pin: origin download.docker.com
+Pin-Priority: 500
+
+Package: *
+Pin: origin download.docker.com
+Pin-Priority: -1
+
+Package: caddy
+Pin: origin dl.cloudsmith.io
+Pin-Priority: 500
+
+Package: *
+Pin: origin dl.cloudsmith.io
+Pin-Priority: -1
