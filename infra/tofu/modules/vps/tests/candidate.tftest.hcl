@@ -61,3 +61,42 @@ run "reject_wrong_size" {
   }
   expect_failures = [hcloud_server.host]
 }
+
+run "allow_only_explicit_operator_ssh" {
+  command = plan
+  variables {
+    operator_ipv4_cidrs = ["192.0.2.10/32", "198.51.100.20/32"]
+  }
+  assert {
+    condition     = length(hcloud_firewall.host.rule) == 1 && one(hcloud_firewall.host.rule).direction == "in" && one(hcloud_firewall.host.rule).protocol == "tcp" && one(hcloud_firewall.host.rule).port == "22" && toset(one(hcloud_firewall.host.rule).source_ips) == toset(["192.0.2.10/32", "198.51.100.20/32"])
+    error_message = "Only the exact synthetic operator SSH addresses may be allowed."
+  }
+}
+run "reject_world_ssh" {
+  command = plan
+  variables {
+    operator_ipv4_cidrs = ["0.0.0.0/0"]
+  }
+  expect_failures = [var.operator_ipv4_cidrs]
+}
+run "reject_subnet_ssh" {
+  command = plan
+  variables {
+    operator_ipv4_cidrs = ["192.0.2.0/24"]
+  }
+  expect_failures = [var.operator_ipv4_cidrs]
+}
+run "reject_ipv6_ssh" {
+  command = plan
+  variables {
+    operator_ipv4_cidrs = ["2001:db8::1/128"]
+  }
+  expect_failures = [var.operator_ipv4_cidrs]
+}
+run "reject_invalid_ipv4_ssh" {
+  command = plan
+  variables {
+    operator_ipv4_cidrs = ["999.0.0.1/32"]
+  }
+  expect_failures = [var.operator_ipv4_cidrs]
+}

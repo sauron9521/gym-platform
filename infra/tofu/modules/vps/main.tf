@@ -6,10 +6,20 @@ locals {
     managed_by  = "opentofu"
   }
 }
-# Intentionally no inbound rules. INF04 must review SSH and ingress before activation.
+# Deny inbound by default. Only explicitly reviewed operator IPv4 /32s can allow SSH.
 resource "hcloud_firewall" "host" {
   name   = "${local.name}-firewall"
   labels = local.labels
+  dynamic "rule" {
+    for_each = length(var.operator_ipv4_cidrs) > 0 ? [1] : []
+    content {
+      direction   = "in"
+      protocol    = "tcp"
+      port        = "22"
+      source_ips  = sort(tolist(var.operator_ipv4_cidrs))
+      description = "Explicit operator SSH allowlist"
+    }
+  }
 }
 resource "hcloud_server" "host" {
   name               = local.name

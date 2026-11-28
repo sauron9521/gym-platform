@@ -9,6 +9,7 @@ Canonical navigation for operator-controlled release evidence, staging, recovery
 - [INF01 hosting decision](infrastructure-hosting-decision.md) — owner-approved Hetzner Germany, self-hosted PostgreSQL and EUR 50 monthly ceiling; no provisioning authorization.
 - [INF02 OpenTofu foundation](../../infra/tofu/README.md) — inactive environment roots and isolated mock validation; no provisioning.
 - [INF03 Ansible foundation](../../infra/ansible/README.md) — inactive inventories and local-only idempotence proof; no remote configuration.
+- [INF04 host access candidate](../../infra/security/README.md) — SSH policy, mock cloud firewall allowlist and isolated Ubuntu parser validation.
 
 ## Signed releases and staging
 

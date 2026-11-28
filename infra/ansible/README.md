@@ -61,9 +61,7 @@ systemd and package installation need INF04–05 review.
 
 ## Activation boundary
 
-INF04 must design reviewed SSH recovery, host-key verification,
-least-privilege operator accounts, access allowlists, firewall and
-Ubuntu compatibility. Future live inventory/roles need an explicit
+The [INF04 access candidate](../security/README.md) documents SSH recovery, host-key verification, least-privilege operator accounts, access allowlists and Ubuntu syntax checks. Live account and service configuration remain separate. Future live inventory/roles need an explicit
 owner-approved activation change and verified target identities.
 Never copy production inventory, secrets or host keys into staging.
 Store live inventory and secret references privately. Gitignore rules
