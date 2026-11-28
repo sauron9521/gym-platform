@@ -167,3 +167,7 @@ separate disaster-recovery host, application cutover, or cross-version
 rollback. Those remain separate DEP10 evidence requirements under #351.
 Existing operational backup/restore commands and release contracts are
 unchanged. No deployment or timers are enabled.
+
+## INF06a — native physical backup and WAL recovery
+
+The [isolated PostgreSQL PITR rehearsal](../../infra/recovery/README.md) supplements the logical dump drill with physical backup verification and named restore-point replay. It does not replace the current operator backup toolkit or establish encrypted off-host recovery.
