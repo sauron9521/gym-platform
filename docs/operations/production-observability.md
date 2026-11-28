@@ -607,3 +607,41 @@ Staging verification, access-controlled HTTP metrics, multi-instance
 telemetry, signed SLO governance and operational runbooks remain future
 review items. The standalone `gym-api-nestjs` repository stays operational
 source of truth until cutover approval.
+
+## DEP10c — full-stack HTTPS synthetic observer (opt-in)
+
+The separate `ops/monitoring/synthetic/` configuration adds nine fixed
+HTTPS probes: Landing, Athlete, Trainer, Admin, API liveness/readiness
+and the three authenticated-web origins' API readiness rewrites (these
+probes themselves are anonymous). Blackbox Exporter requires HTTP 200,
+TLS verification and no redirects; these are route/transport checks,
+not browser login or authenticated business journeys. Prometheus retains
+only bounded probe metrics and stable journey labels, not target URLs or
+response bodies. Do not expose the Blackbox Exporter probe endpoint to
+untrusted clients; it can initiate outbound requests.
+
+Use the reviewed Blackbox Exporter image
+`prom/blackbox-exporter@sha256:a50c4c0eda297baa1678cd4dc4712a67fdea713b832d43ce7fcc5f9bea05094d`
+and the existing pinned Prometheus image. Provision an independent
+observer with restricted networking, read-only config, verified public
+CA trust and reviewed DNS. The sample targets the approved production
+hostnames but is not active; explicitly change targets for staging
+before use. Review the fixed journey inventory together with alert rules
+when changing routes. Do not install these rules without their matching
+scrape job.
+
+Alerts distinguish sustained failed routes, scrape failures, missing
+observations and approaching certificate expiry. Import
+`ops/monitoring/grafana/ovranto-synthetic-overview.json` into the existing
+Grafana with the matching Prometheus data source. Missing series are
+unknown rather than healthy. No SLO compliance, Alertmanager delivery,
+independent external observer or public certificate evidence is claimed.
+
+The disposable full-stack rehearsal uses the same inventory and rules,
+with synthetic hostnames and the local CA, verified TLS and isolated
+Prometheus/Blackbox containers. It requires nine successful probes,
+four readiness failures (HTTP 503) while Redis is unavailable, continued
+success of liveness and the four public pages, and recovery of all nine.
+Promtool fixtures separately exercise firing and resolution, scrape loss,
+missing observations and certificate warning. Actual human alert delivery
+and independent external monitoring remain under #351 before Beta GO.

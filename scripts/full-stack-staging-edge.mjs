@@ -4,6 +4,7 @@ import { execFileSync } from 'node:child_process';
 import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { setTimeout as sleep } from 'node:timers/promises';
+import { startSyntheticMonitor } from './full-stack-synthetic-monitor.mjs';
 import { baseImage } from './full-stack-release.mjs';
 
 const caddy =
@@ -81,6 +82,7 @@ export async function probeStagingEdge({ project, directory, compose, options })
       project + '_default',
       '--network-alias',
       'edge',
+      ...Object.keys(routes).flatMap((host) => ['--network-alias', host]),
       '-v',
       path + ':/etc/caddy/Caddyfile:ro',
       caddy,
@@ -113,6 +115,8 @@ export async function probeStagingEdge({ project, directory, compose, options })
       }
     }
     assert.ok(ready, 'Local CA HTTPS or anonymous boundary probes failed');
+    const monitor = startSyntheticMonitor({ project, directory, docker, ids, client });
+    await monitor('initial');
     compose('stop', 'redis');
     let failedClosed = false;
     for (let i = 0; i < 12; i++) {
@@ -125,6 +129,7 @@ export async function probeStagingEdge({ project, directory, compose, options })
       }
     }
     assert.ok(failedClosed, 'Readiness did not fail closed on Redis loss');
+    await monitor('redis-down');
     compose('up', '-d', '--no-build', '--wait', '--wait-timeout', '120', 'redis');
     let recovered = false;
     for (let i = 0; i < 20; i++) {
@@ -137,6 +142,10 @@ export async function probeStagingEdge({ project, directory, compose, options })
       }
     }
     assert.ok(recovered, 'API readiness did not recover after Redis restart');
+    await monitor('recovered');
+    console.log(
+      'Synthetic monitoring PASS: nine real HTTPS probes; Redis loss isolates four readiness failures; all recover.',
+    );
     console.log(
       'Local TLS routes, anonymous session denial, internal metrics denial, Redis readiness failure and recovery PASS',
     );
