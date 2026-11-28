@@ -54,6 +54,7 @@ jobs:
 
   tooling-contracts:
     name: Tooling contracts / Vitest Node 24
+    needs: changes
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -81,6 +82,10 @@ jobs:
 
       - name: Check Markdown structure
         run: pnpm docs:lint
+
+      - name: Validate inactive OpenTofu infrastructure with mocked providers
+        if: needs.changes.outputs.full == 'true'
+        run: bash infra/tofu/verify.sh
 
       - name: Enforce named and relative workspace imports via dependency-cruiser
         run: pnpm architecture:cruise:boundaries
