@@ -6,6 +6,7 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createMailOverlay, mailSettings, probeStagingMail } from './full-stack-staging-mail.mjs';
+import { probeFullStackRecovery } from './full-stack-recovery.mjs';
 import { probeStagingEdge } from './full-stack-staging-edge.mjs';
 
 export async function runFullStackRehearsal({ signedImages } = {}) {
@@ -178,6 +179,7 @@ export async function runFullStackRehearsal({ signedImages } = {}) {
     }
     probeStagingMail(compose);
     await probeStagingEdge({ project, directory, compose, output, options });
+    await probeFullStackRecovery({ project, directory, compose, output, options });
     console.log(
       'Full-stack rehearsal PASS: five apps, disposable migrations, PostgreSQL/Redis readiness, three real API rewrites.',
     );
