@@ -127,3 +127,48 @@ an alerting SLO or derive indexes from them alone. Measure overhead,
 pool saturation, query templates and EXPLAIN before/after on the same
 synthetic staging fixture. No indexes, additional telemetry libraries,
 new metric cardinality or production activation decision in this slice.
+
+### DEP10b — explicit connection budget and local evidence
+
+Use the dependency-free planner with a reviewed JSON file containing only
+numeric capacity and reservation inputs (never connection URLs):
+
+```sh
+node scripts/database-connection-budget.mjs ops/database/connection-budget.example.json
+```
+
+The example is illustrative, not approved production capacity. Obtain actual
+server limits from PostgreSQL/provider documentation, including
+`max_connections`, `superuser_reserved_connections`, PostgreSQL 17
+`reserved_connections`, role `rolconnlimit` and database `datconnlimit`
+(-1 means unlimited). Provider-reserved slots are additional non-overlapping
+reservations. Account for other concurrent clients as an explicit
+conservative allowance, without counting the same connections twice.
+Use the most restrictive server, role and database limits; the planner
+conservatively charges all planned clients against that minimum even if
+some use other roles. Do not interpret privileged-role exemptions as spare
+capacity. For rolling upgrades include overlapping old/new replicas in
+the peak API replica count. Worker allowance is a total planned maximum,
+not activation of workers. A zero worker allowance is explicit and means
+no separate worker connections are permitted by that plan.
+
+The calculation charges one extra dedicated auth cleanup connection per API
+process and explicit migration, maintenance and spare allowances. The
+example has 97 usable slots, 31 budgeted for one API and 42 for two.
+A positive remaining budget is not approval to scale; the computed
+maximum is an arithmetic upper bound, not a load-test recommendation.
+Exit 0 means the plan fits, 1 means over budget, and 2 means invalid input.
+Unknown provider or concurrency limits must be resolved before an operator
+uses the planner for staging/production. No automatic configuration change,
+database connection, or infrastructure provisioning is performed by the CLI.
+
+The disposable full-stack rehearsal reads the actual PostgreSQL 17 limits
+and the resolved API pool maximum, counts other client sessions in its
+fresh database (excluding the observation connection), validates a one-API
+plan and rejects a hypothetical over-budget plan. It emits only numeric
+capacity evidence, never query text, addresses or credentials. The observed
+count is a point-in-time sample, not a saturation measurement. Existing
+Prisma integration tests cover acquisition timeout/recovery and UTC.
+Realistic concurrent load, peak connection use, p95/p99 acquisition and
+request latency, migration/worker overlap, provider restrictions and
+two-container acceptance remain separate evidence under #922/#923.

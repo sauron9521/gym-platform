@@ -6,6 +6,7 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createMailOverlay, mailSettings, probeStagingMail } from './full-stack-staging-mail.mjs';
+import { probeConnectionBudget } from './full-stack-connection-budget.mjs';
 import { probeFullStackRecovery } from './full-stack-recovery.mjs';
 import { probeStagingEdge } from './full-stack-staging-edge.mjs';
 
@@ -177,6 +178,7 @@ export async function runFullStackRehearsal({ signedImages } = {}) {
           "const assert=require('node:assert/strict');(async()=>{const r=await fetch('http://127.0.0.1:3000/backend/health/ready');assert.equal(r.status,200);assert.equal((await r.json()).status,'ok')})().catch(e=>{console.error(e);process.exit(1)})",
         );
     }
+    probeConnectionBudget({ project, output, config });
     probeStagingMail(compose);
     await probeStagingEdge({ project, directory, compose, output, options });
     await probeFullStackRecovery({ project, directory, compose, output, options });

@@ -1,0 +1,15 @@
+{
+  "maxConnections": 100,
+  "superuserReserved": 3,
+  "reservedConnections": 0,
+  "providerReserved": 0,
+  "roleConnectionLimit": -1,
+  "databaseConnectionLimit": -1,
+  "otherConnections": 0,
+  "apiReplicas": 1,
+  "apiPoolMax": 10,
+  "migrationConnections": 3,
+  "workerConnections": 5,
+  "maintenanceConnections": 2,
+  "headroom": 10
+}
