@@ -1,0 +1,115 @@
+rule_files:
+  - synthetic.rules.yml
+evaluation_interval: 15s
+tests:
+  - name: sustained failure resolves and exporter loss stays distinct
+    interval: 15s
+    input_series:
+      - series: 'probe_success{job="ovranto-synthetic",journey="api_ready",instance="api_ready"}'
+        values: '1 0 0 0 0 0 1 1 1 1 1 1'
+      - series: 'up{job="ovranto-synthetic",journey="api_ready",instance="api_ready"}'
+        values: '1 1 1 1 1 1 1 0 0 0 0 0'
+    alert_rule_test:
+      - eval_time: 45s
+        alertname: OvrantoSyntheticJourneyFailed
+        exp_alerts: []
+      - eval_time: 1m15s
+        alertname: OvrantoSyntheticJourneyFailed
+        exp_alerts:
+          - exp_labels:
+              {
+                job: ovranto-synthetic,
+                journey: api_ready,
+                instance: api_ready,
+                severity: critical,
+              }
+            exp_annotations: { summary: 'OVRANTO HTTPS synthetic journey failed' }
+      - eval_time: 2m45s
+        alertname: OvrantoSyntheticJourneyFailed
+        exp_alerts: []
+      - eval_time: 2m45s
+        alertname: OvrantoSyntheticScrapeFailed
+        exp_alerts:
+          - exp_labels:
+              {
+                job: ovranto-synthetic,
+                journey: api_ready,
+                instance: api_ready,
+                severity: critical,
+              }
+            exp_annotations: { summary: 'OVRANTO synthetic observer scrape failed' }
+  - name: missing target is distinct from failed probe
+    interval: 15s
+    input_series:
+      - series: 'probe_success{job="ovranto-synthetic",journey="landing",instance="landing"}'
+        values: '1+0x20'
+    alert_rule_test:
+      - eval_time: 1m
+        alertname: OvrantoSyntheticJourneyMissing
+        exp_alerts: []
+      - eval_time: 3m
+        alertname: OvrantoSyntheticJourneyMissing
+        exp_alerts:
+          - exp_labels:
+              { job: ovranto-synthetic, journey: athlete, instance: athlete, severity: critical }
+            exp_annotations: { summary: 'OVRANTO synthetic journey has no observations' }
+          - exp_labels:
+              { job: ovranto-synthetic, journey: trainer, instance: trainer, severity: critical }
+            exp_annotations: { summary: 'OVRANTO synthetic journey has no observations' }
+          - exp_labels:
+              { job: ovranto-synthetic, journey: admin, instance: admin, severity: critical }
+            exp_annotations: { summary: 'OVRANTO synthetic journey has no observations' }
+          - exp_labels:
+              { job: ovranto-synthetic, journey: api_live, instance: api_live, severity: critical }
+            exp_annotations: { summary: 'OVRANTO synthetic journey has no observations' }
+          - exp_labels:
+              {
+                job: ovranto-synthetic,
+                journey: api_ready,
+                instance: api_ready,
+                severity: critical,
+              }
+            exp_annotations: { summary: 'OVRANTO synthetic journey has no observations' }
+          - exp_labels:
+              {
+                job: ovranto-synthetic,
+                journey: athlete_api,
+                instance: athlete_api,
+                severity: critical,
+              }
+            exp_annotations: { summary: 'OVRANTO synthetic journey has no observations' }
+          - exp_labels:
+              {
+                job: ovranto-synthetic,
+                journey: trainer_api,
+                instance: trainer_api,
+                severity: critical,
+              }
+            exp_annotations: { summary: 'OVRANTO synthetic journey has no observations' }
+          - exp_labels:
+              {
+                job: ovranto-synthetic,
+                journey: admin_api,
+                instance: admin_api,
+                severity: critical,
+              }
+            exp_annotations: { summary: 'OVRANTO synthetic journey has no observations' }
+  - name: certificate expiry warning requires valid HTTPS
+    interval: 15s
+    input_series:
+      - series: 'probe_success{job="ovranto-synthetic",journey="landing",instance="landing"}'
+        values: '1+0x24'
+      - series: 'up{job="ovranto-synthetic",journey="landing",instance="landing"}'
+        values: '1+0x24'
+      - series: 'probe_ssl_earliest_cert_expiry{job="ovranto-synthetic",journey="landing",instance="landing"}'
+        values: '600000+0x24'
+    alert_rule_test:
+      - eval_time: 4m
+        alertname: OvrantoSyntheticCertificateExpiring
+        exp_alerts: []
+      - eval_time: 6m
+        alertname: OvrantoSyntheticCertificateExpiring
+        exp_alerts:
+          - exp_labels:
+              { job: ovranto-synthetic, journey: landing, instance: landing, severity: warning }
+            exp_annotations: { summary: 'OVRANTO HTTPS certificate expires within 14 days' }

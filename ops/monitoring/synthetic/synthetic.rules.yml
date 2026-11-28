@@ -1,0 +1,42 @@
+groups:
+  - name: ovranto-synthetic
+    interval: 15s
+    rules:
+      - alert: OvrantoSyntheticJourneyFailed
+        expr: |
+          probe_success{job="ovranto-synthetic"} == 0
+          and on(job, instance) up{job="ovranto-synthetic"} == 1
+        for: 1m
+        labels: { severity: critical }
+        annotations:
+          summary: 'OVRANTO HTTPS synthetic journey failed'
+      - alert: OvrantoSyntheticScrapeFailed
+        expr: up{job="ovranto-synthetic"} == 0
+        for: 1m
+        labels: { severity: critical }
+        annotations:
+          summary: 'OVRANTO synthetic observer scrape failed'
+      - alert: OvrantoSyntheticJourneyMissing
+        expr: |
+          absent(probe_success{job="ovranto-synthetic",journey="landing",instance="landing"})
+          or absent(probe_success{job="ovranto-synthetic",journey="athlete",instance="athlete"})
+          or absent(probe_success{job="ovranto-synthetic",journey="trainer",instance="trainer"})
+          or absent(probe_success{job="ovranto-synthetic",journey="admin",instance="admin"})
+          or absent(probe_success{job="ovranto-synthetic",journey="api_live",instance="api_live"})
+          or absent(probe_success{job="ovranto-synthetic",journey="api_ready",instance="api_ready"})
+          or absent(probe_success{job="ovranto-synthetic",journey="athlete_api",instance="athlete_api"})
+          or absent(probe_success{job="ovranto-synthetic",journey="trainer_api",instance="trainer_api"})
+          or absent(probe_success{job="ovranto-synthetic",journey="admin_api",instance="admin_api"})
+        for: 2m
+        labels: { severity: critical }
+        annotations:
+          summary: 'OVRANTO synthetic journey has no observations'
+      - alert: OvrantoSyntheticCertificateExpiring
+        expr: |
+          (probe_ssl_earliest_cert_expiry{job="ovranto-synthetic"} - time() < 1209600)
+          and on(job, instance) probe_success{job="ovranto-synthetic"} == 1
+          and on(job, instance) up{job="ovranto-synthetic"} == 1
+        for: 5m
+        labels: { severity: warning }
+        annotations:
+          summary: 'OVRANTO HTTPS certificate expires within 14 days'

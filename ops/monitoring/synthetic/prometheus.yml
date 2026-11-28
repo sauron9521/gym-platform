@@ -1,0 +1,42 @@
+# Optional external observer. Review DNS, CA and receiver before installation.
+global:
+  scrape_interval: 30s
+  evaluation_interval: 30s
+rule_files:
+  - synthetic.rules.yml
+scrape_configs:
+  - job_name: ovranto-synthetic
+    metrics_path: /probe
+    scrape_timeout: 10s
+    params:
+      module: [https_200]
+    static_configs:
+      - targets: ['https://ovranto.com/uk']
+        labels: { journey: landing }
+      - targets: ['https://app.ovranto.com/login']
+        labels: { journey: athlete }
+      - targets: ['https://coach.ovranto.com/login']
+        labels: { journey: trainer }
+      - targets: ['https://admin.ovranto.com/sign-in']
+        labels: { journey: admin }
+      - targets: ['https://api.ovranto.com/health/live']
+        labels: { journey: api_live }
+      - targets: ['https://api.ovranto.com/health/ready']
+        labels: { journey: api_ready }
+      - targets: ['https://app.ovranto.com/backend/health/ready']
+        labels: { journey: athlete_api }
+      - targets: ['https://coach.ovranto.com/backend/health/ready']
+        labels: { journey: trainer_api }
+      - targets: ['https://admin.ovranto.com/backend/health/ready']
+        labels: { journey: admin_api }
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [journey]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox:9115
+    metric_relabel_configs:
+      - source_labels: [__name__]
+        regex: 'probe_success|probe_duration_seconds|probe_http_status_code|probe_ssl_earliest_cert_expiry'
+        action: keep
