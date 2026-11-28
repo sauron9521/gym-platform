@@ -172,3 +172,49 @@ Prisma integration tests cover acquisition timeout/recovery and UTC.
 Realistic concurrent load, peak connection use, p95/p99 acquisition and
 request latency, migration/worker overlap, provider restrictions and
 two-container acceptance remain separate evidence under #922/#923.
+
+### DEP10d — bounded opt-in k6 load profile
+
+Run from an independent checkout with Docker and Node 24:
+
+```sh
+node scripts/full-stack-rehearsal.mjs --load
+```
+
+The default required CI rehearsal and signed staging workflow remain
+unchanged. This opt-in source-built rehearsal runs a separate pinned
+upstream k6 executable in a disposable internal network, after HTTPS,
+Redis failure/recovery and synthetic monitoring checks, before recovery.
+There is no user-supplied origin, account, token, external load generator
+or rate-limit bypass. k6 is a test-only upstream image, not linked into
+the application or redistributed in the production image. Review its
+AGPL-3.0 license and upstream image security before broader adoption.
+Autocannon and the existing sequential/API A/B baseline are unchanged.
+
+The nine anonymous GET routes are the same fixed readiness/liveness,
+public page and rewrite probes used by the synthetic observer. The
+profile runs 15 seconds at 5 requests/s (one VU), followed by a five-second
+gap and 15 seconds at 20 requests/s (four VUs). One iteration makes one
+request; at least 75 and 300 requests must complete with HTTP 200 and zero
+dropped iterations. The arrival scheduler may include one extra iteration
+per phase at the time boundary (76 and 301 maximum). TLS is validated against the disposable Caddy CA;
+redirects are rejected. The latency percentiles (p50/p95/p99/max) are
+k6 request-duration values, not the existing sequential fetch wall-clock
+contract. They are exploratory observations, not production SLO gates.
+There is no warmup exclusion within the two phases, no per-route
+percentile or statistically representative tail estimate.
+
+During the run the operator process samples aggregate Docker CPU and
+memory percentages for API, PostgreSQL and Redis, and counts other
+database client sessions excluding the observer. Reported maxima are
+sampled observations, not continuous peak measurements or acquisition
+latency. No response body, credential, raw SQL or identity enters the
+report. The container is resource-limited, nonroot and has no published
+ports or external network; resources are cleaned up after rehearsal.
+
+This is a light, anonymous route/transport baseline, not a business
+transaction capacity or saturation test. Readiness uses shared
+single-flight checks, so it cannot establish database pool saturation.
+Representative authenticated read/write workloads, populated fixtures,
+pool-wait latency, independent load generator and production-like hardware
+remain necessary under #313/#922/#923 before scaling or Beta GO.

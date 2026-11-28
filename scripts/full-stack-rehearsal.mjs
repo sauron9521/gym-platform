@@ -10,7 +10,7 @@ import { probeConnectionBudget } from './full-stack-connection-budget.mjs';
 import { probeFullStackRecovery } from './full-stack-recovery.mjs';
 import { probeStagingEdge } from './full-stack-staging-edge.mjs';
 
-export async function runFullStackRehearsal({ signedImages } = {}) {
+export async function runFullStackRehearsal({ signedImages, loadProfile = false } = {}) {
   const root = fileURLToPath(new URL('../', import.meta.url));
   const project = 'ovranto-rehearsal-' + randomBytes(8).toString('hex');
   const directory = mkdtempSync(join(tmpdir(), 'ovranto-rehearsal-'));
@@ -180,7 +180,7 @@ export async function runFullStackRehearsal({ signedImages } = {}) {
     }
     probeConnectionBudget({ project, output, config });
     probeStagingMail(compose);
-    await probeStagingEdge({ project, directory, compose, output, options });
+    await probeStagingEdge({ project, directory, compose, output, options, loadProfile });
     await probeFullStackRecovery({ project, directory, compose, output, options });
     console.log(
       'Full-stack rehearsal PASS: five apps, disposable migrations, PostgreSQL/Redis readiness, three real API rewrites.',
@@ -203,6 +203,7 @@ export async function runFullStackRehearsal({ signedImages } = {}) {
   }
 }
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  if (process.argv.length !== 2) throw new Error('No direct digest overrides allowed');
-  await runFullStackRehearsal();
+  if (process.argv.length !== 2 && !(process.argv.length === 3 && process.argv[2] === '--load'))
+    throw new Error('No direct digest overrides allowed');
+  await runFullStackRehearsal({ loadProfile: process.argv[2] === '--load' });
 }

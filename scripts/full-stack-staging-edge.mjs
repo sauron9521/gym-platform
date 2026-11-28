@@ -4,6 +4,7 @@ import { execFileSync } from 'node:child_process';
 import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { setTimeout as sleep } from 'node:timers/promises';
+import { probeFullStackLoad } from './full-stack-load.mjs';
 import { startSyntheticMonitor } from './full-stack-synthetic-monitor.mjs';
 import { baseImage } from './full-stack-release.mjs';
 
@@ -64,7 +65,14 @@ const get=(host,path)=>new Promise((resolve,reject)=>{
   if(mode!=='redis-down')assert.equal(JSON.parse(ready.body).status,'ok');
 })().catch(e=>{console.error(e.message);process.exit(1)});
 `;
-export async function probeStagingEdge({ project, directory, compose, options }) {
+export async function probeStagingEdge({
+  project,
+  directory,
+  compose,
+  output,
+  options,
+  loadProfile = false,
+}) {
   const docker = (...args) =>
     execFileSync('docker', args, {
       ...options,
@@ -143,6 +151,7 @@ export async function probeStagingEdge({ project, directory, compose, options })
     }
     assert.ok(recovered, 'API readiness did not recover after Redis restart');
     await monitor('recovered');
+    if (loadProfile) await probeFullStackLoad({ project, directory, output, options });
     console.log(
       'Synthetic monitoring PASS: nine real HTTPS probes; Redis loss isolates four readiness failures; all recover.',
     );
