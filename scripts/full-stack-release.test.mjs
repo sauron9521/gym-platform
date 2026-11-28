@@ -180,6 +180,12 @@ test('manual workflows enforce exact source, all scans before push, signatures a
     assert.match(s, /persist-credentials: false/);
     assert.doesNotMatch(s, /docker compose|gh release create/);
   }
+  assert.match(build, /source_sha:\n\s+description:[^\n]+\n\s+required: true\n\s+type: string/);
+  assert.ok(build.includes('EXPECTED_SOURCE_SHA: ${{ inputs.source_sha }}'));
+  assert.ok(build.includes('test "$EXPECTED_SOURCE_SHA" = "$GITHUB_SHA"'));
+  assert.ok(
+    build.indexOf('test "$EXPECTED_SOURCE_SHA" = "$GITHUB_SHA"') < build.indexOf('docker build'),
+  );
   assert.ok(build.includes(baseImage));
   assert.doesNotMatch(build, /docker push|packages: write/);
   assert.match(build, /docker load/);

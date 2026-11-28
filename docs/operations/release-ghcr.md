@@ -76,7 +76,9 @@ and GHCR dry run with real GitHub attestations/package permissions.
 
 The API-only workflows and v1 receipts above remain supported and unchanged.
 The new **Full-stack pilot release candidate** workflow is manually dispatched
-on protected main, requires green CI for the exact commit, and builds six
+on protected main with the required reviewed `source_sha` input. It refuses
+a different checked-out SHA (including if main advances before dispatch),
+requires green CI for the exact commit, and builds six
 linux/amd64 images using a pinned Node base: runtime, migrate, Landing,
 Athlete Web, Trainer Web and Admin. All have source, component and profile
 labels. The archive and strict six-component manifest are attested, then
@@ -161,3 +163,11 @@ password reset, browser authentication or real external provider delivery.
 Notification dispatch remains disabled. All mail and certificate resources
 are removed with the disposable rehearsal. External staging remains blocked
 on infrastructure and actual signed GHCR evidence.
+
+## INF08 — immutable pilot preflight
+
+The [six-image archive contract rehearsal](../../infra/release/README.md)
+validates real Docker save/load, exact image identities and tamper rejection
+with synthetic images. It does not create a signed application release.
+Follow the manual dispatch procedure there after the reviewed main SHA has
+passed CI.

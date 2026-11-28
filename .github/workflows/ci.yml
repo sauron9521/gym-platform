@@ -115,6 +115,10 @@ jobs:
         if: needs.changes.outputs.full == 'true'
         run: bash ops/monitoring/alert-delivery/verify.sh
 
+      - name: Rehearse six-image archive identity and tamper rejection
+        if: needs.changes.outputs.full == 'true'
+        run: bash infra/release/verify-archive.sh
+
       - name: Enforce named and relative workspace imports via dependency-cruiser
         run: pnpm architecture:cruise:boundaries
 
