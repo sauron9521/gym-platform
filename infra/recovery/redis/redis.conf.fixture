@@ -1,0 +1,16 @@
+# Local fixture only. No TCP listener or live data.
+port 0
+protected-mode yes
+unixsocket /tmp/ovranto-redis-fixture/redis.sock
+unixsocketperm 700
+dir /tmp/ovranto-redis-fixture/data
+dbfilename dump.rdb
+appendonly yes
+appendfsync everysec
+aof-use-rdb-preamble yes
+aof-load-truncated no
+save ""
+maxmemory 32mb
+maxmemory-policy noeviction
+daemonize no
+loglevel notice

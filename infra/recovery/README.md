@@ -53,6 +53,10 @@ same isolated rehearsal; no actual infrastructure is modified.
 
 The [pgBackRest rehearsal](pgbackrest/README.md) tests encrypted backup, wrong-key rejection and named-point replay against a separate local temporary repository. Off-host durability and live recovery are still pending.
 
+## INF06c — Redis security-state recovery
+
+The [Redis rehearsal](redis/README.md) verifies multipart AOF recovery, TTL continuity and noeviction on synthetic security counters. PostgreSQL remains the authority for business state and the outbox; actual host-loss and application reconciliation evidence remains pending.
+
 ## Remaining INF06 work
 
 | Slice  | Candidate scope                            | Acceptance                                                                                                                         |

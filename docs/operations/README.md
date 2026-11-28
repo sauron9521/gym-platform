@@ -13,6 +13,7 @@ Canonical navigation for operator-controlled release evidence, staging, recovery
 - [INF05 staging edge candidate](../../infra/proxy/staging-edge.md) — distinct staging hosts, loopback-only access, TLS rehearsal and Cloudflare activation boundaries.
 - [INF06a PostgreSQL PITR rehearsal](../../infra/recovery/README.md) — physical backup, checksum rejection and archived WAL replay; no off-host recovery acceptance.
 - [INF06b pgBackRest encrypted repository rehearsal](../../infra/recovery/pgbackrest/README.md) — encrypted local repository and separate target recovery; off-host acceptance pending.
+- [INF06c Redis recovery rehearsal](../../infra/recovery/redis/README.md) — security-state persistence, TTL continuity and PostgreSQL ownership boundary.
 
 ## Signed releases and staging
 
