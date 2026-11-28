@@ -107,7 +107,7 @@ the rehearsal containers, volumes, network and image tags. No host port,
 real SMTP, seed, DNS, production database, user records or feature activation.
 Existing development containers are untouched. Build needs registry access;
 runtime has no external network. The local HTTPS origin strings are synthetic,
-not actual TLS evidence; SMTP is deliberately unreachable. Do not run the
+not public TLS evidence; SMTP is restricted to a disposable internal TLS sink. Do not run the
 rehearsal overlay directly. If interrupted, inspect only the random project
 before cleanup. No production authorization. See the
 [full-stack plan](../../docs/operations/full-stack-deployment-plan.md).

@@ -30,7 +30,8 @@ test('rehearsal isolates database, credentials, networking and one-shot migratio
   assert.match(rehearsal, /NOTIFICATION_DISPATCH_ENABLED: 'false'/);
   assert.match(rehearsal, /NOTIFICATION_EMAIL_ENABLED: 'false'/);
   assert.match(runner, /@postgres:5432\/gym_rehearsal/);
-  assert.match(runner, /smtps:\/\/mail-disabled\.invalid:465/);
+  assert.match(runner, /createMailOverlay/);
+  assert.match(read('scripts/full-stack-staging-mail.mjs'), /smtps:\/\/mailpit:465/);
   assert.match(runner, /randomBytes\(8\)/);
   assert.match(runner, /--project-name/);
   assert.match(runner, /--env-file/);
