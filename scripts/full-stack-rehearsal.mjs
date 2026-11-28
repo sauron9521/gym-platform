@@ -7,6 +7,7 @@ import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createMailOverlay, mailSettings, probeStagingMail } from './full-stack-staging-mail.mjs';
 import { probeConnectionBudget } from './full-stack-connection-budget.mjs';
+import { probeFullStackReplicas } from './full-stack-replicas.mjs';
 import { probeFullStackRecovery } from './full-stack-recovery.mjs';
 import { probeStagingEdge } from './full-stack-staging-edge.mjs';
 
@@ -181,6 +182,7 @@ export async function runFullStackRehearsal({ signedImages, loadProfile = false 
     probeConnectionBudget({ project, output, config });
     probeStagingMail(compose);
     await probeStagingEdge({ project, directory, compose, output, options, loadProfile });
+    await probeFullStackReplicas({ project, directory, compose, output, options });
     await probeFullStackRecovery({ project, directory, compose, output, options });
     console.log(
       'Full-stack rehearsal PASS: five apps, disposable migrations, PostgreSQL/Redis readiness, three real API rewrites.',
