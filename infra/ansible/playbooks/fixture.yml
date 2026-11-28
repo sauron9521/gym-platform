@@ -1,0 +1,14 @@
+---
+- name: Verify isolated host layout only
+  hosts: ovranto_fixture
+  gather_facts: false
+  become: false
+  roles:
+    - role: host_layout
+  tasks:
+    - name: Check expected idempotence
+      ansible.builtin.assert:
+        that:
+          - (layout_directories.changed | bool) == (fixture_expected_change | bool)
+          - (layout_manifest.changed | bool) == (fixture_expected_change | bool)
+        fail_msg: Fixture layout change result was not expected.

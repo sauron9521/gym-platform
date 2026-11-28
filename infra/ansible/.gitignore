@@ -1,0 +1,7 @@
+*.retry
+.vault*
+*.pem
+*.key
+inventories/*/local.*
+inventories/*/host_vars/
+inventories/*/group_vars/
