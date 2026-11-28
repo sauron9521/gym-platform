@@ -21,3 +21,8 @@ packages/api-client/generated
 # Generated from packages/design-tokens/src/palette-source.json; checked for byte parity in Vitest
 packages/design-tokens/src/ovranto.css
 packages/design-tokens/src/ovranto-native.ts
+
+# OpenTofu generated provider/module caches and local state
+**/.terraform/
+**/*.tfstate
+**/*.tfstate.*
