@@ -23,6 +23,8 @@ This directory is the **canonical home for owner-approved product strategy decis
 
 ## Cross-cutting strategy supplements
 
+- [Background Workers Strategy v1.0](background-workers-strategy-v1.md) — owner approved BW01–BW10 on 2026-11-28; PostgreSQL-first outbox, worker runtime, scheduling, reliability, observability and measured scaling. Publication requires manual owner merge; implementation and release gates remain separate.
+
 - [Shared Packages Strategy v1.0](shared-packages-strategy-v1.md) — owner approved SP01–SP10 on 2026-11-27–28; package ownership, contracts, validation, datetime, localization, UI, tooling, lifecycle and governance. ADR-006 direction accepted; publication evidence in #588 after manual merge; implementation gates remain separate.
 
 - [Frontend Standardization v1.0](frontend-standardization-v1.md) — owner approved F01–F10 on 2026-11-27; client architecture, rendering, state, data, forms, UI, tables, feedback, performance, testing and enforcement. Publication evidence in #588; implementation and release gates remain separate.

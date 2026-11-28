@@ -36,6 +36,8 @@ CA01–CA04 are described in the decision and pilot record. Evidence pages are d
 
 These refine ADR-008 and retain its implementation and security gates.
 
+- [Background Workers Strategy v1.0](../product-strategy/background-workers-strategy-v1.md): accepted BW01–BW10 direction; extends ADR-008, preserves existing gates and defers worker separation until ABI08 and explicit Backend Core decision. No new ADR, runtime or release approval.
+
 ## Account preferences supporting contract
 
 - [Account workout preferences — incremental rollout](account-workout-preferences.md): proposed delivery contract for account/device ownership, shared defaults and safe synchronization.
