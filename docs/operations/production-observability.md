@@ -645,3 +645,7 @@ success of liveness and the four public pages, and recovery of all nine.
 Promtool fixtures separately exercise firing and resolution, scrape loss,
 missing observations and certificate warning. Actual human alert delivery
 and independent external monitoring remain under #351 before Beta GO.
+
+## INF07 — isolated alert delivery
+
+The [Alertmanager delivery rehearsal](../../ops/monitoring/alert-delivery/README.md) exercises existing Prometheus rules through actual Alertmanager to two synthetic local receivers, including a receiver failure, retry and resolution. It does not establish independent human alert delivery or activate any production services.
