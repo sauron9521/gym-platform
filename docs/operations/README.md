@@ -5,6 +5,7 @@ Canonical navigation for operator-controlled release evidence, staging, recovery
 ## Full-stack deployment planning
 
 - [Full-stack deployment plan](full-stack-deployment-plan.md) — proposed web containers, host routing, artifact promotion and staging sequence; no deployment authorization.
+- [DEP11 readiness review (2026-11-28)](full-stack-deployment-readiness-2026-11-28.md) — merged implementation evidence, outstanding Beta gates and ordered operator decisions; NO_GO.
 
 ## Signed releases and staging
 
