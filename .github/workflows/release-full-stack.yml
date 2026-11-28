@@ -45,7 +45,8 @@ jobs:
       - name: Build six pilot images with immutable source labels
         run: |
           set -euo pipefail
-          base='node:24-trixie-slim@sha256:116b800c3754b440ee0aa3ed2f20f5bf3d99a554bfd9adeea09ea8017f6e85f5'
+          base='node:24-trixie-slim@sha256:4d00acb4bcc42c454c4eb801526f7ad7f772ea3bd4fd168c5cc2e384abcbb9d4'
+          bash infra/release/verify-node-base.sh "$base"
           images=()
           for component in runtime migrate landing web trainer admin; do
             target=()
@@ -61,6 +62,7 @@ jobs:
             --label "org.opencontainers.image.source=https://github.com/$GITHUB_REPOSITORY" \
             --label "org.ovranto.release.component=$component" \
             --label "org.ovranto.release.profile=full-stack-pilot-noindex" -t "$tag" .
+            bash infra/release/verify-node-base.sh "$tag"
             images+=("$tag")
           done
           install -d -m 0700 release
@@ -113,3 +115,6 @@ jobs:
           done
           docker load -i release/images.tar.gz
           node scripts/full-stack-release.mjs verify-images "$GITHUB_REPOSITORY" "$GITHUB_SHA" "$GITHUB_RUN_ID" release
+          for component in runtime migrate landing web trainer admin; do
+            bash infra/release/verify-node-base.sh "gym-full-stack-$component:$GITHUB_SHA"
+          done

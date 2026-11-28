@@ -87,6 +87,9 @@ test('exact six-component manifest rejects substitutions, duplicates, unknown fi
     (x) => (x.profile = 'production'),
     (x) => (x.source = { ...source, commit: 'f'.repeat(40) }),
     (x) => (x.baseImage = 'node:latest'),
+    (x) =>
+      (x.baseImage =
+        'node:24-trixie-slim@sha256:116b800c3754b440ee0aa3ed2f20f5bf3d99a554bfd9adeea09ea8017f6e85f5'),
     (x) => (x.archive.bytes = 0),
   ]) {
     const invalid = structuredClone(m);
@@ -187,6 +190,11 @@ test('manual workflows enforce exact source, all scans before push, signatures a
     build.indexOf('test "$EXPECTED_SOURCE_SHA" = "$GITHUB_SHA"') < build.indexOf('docker build'),
   );
   assert.ok(build.includes(baseImage));
+  assert.ok(build.indexOf('verify-node-base.sh "$base"') < build.indexOf('docker build'));
+  assert.ok(build.includes('verify-node-base.sh "$tag"'));
+  assert.ok(
+    publish.indexOf('verify-node-base.sh') < publish.indexOf('Generate runtime SPDX inventory'),
+  );
   assert.doesNotMatch(build, /docker push|packages: write/);
   assert.match(build, /docker load/);
   assert.match(build, /--source-digest/);
@@ -208,4 +216,14 @@ test('manual workflows enforce exact source, all scans before push, signatures a
   assert.ok(
     publish.indexOf('Verify signed receipt') < publish.indexOf('Preserve complete signed receipt'),
   );
+});
+
+test('all application Dockerfiles use the same reviewed Debian base by default', async () => {
+  for (const app of ['api', 'landing', 'web', 'trainer', 'admin']) {
+    const dockerfile = await readFile(
+      new URL('../apps/' + app + '/Dockerfile', import.meta.url),
+      'utf8',
+    );
+    assert.ok(dockerfile.includes('ARG NODE_BASE_IMAGE=' + baseImage + '\n'), app);
+  }
 });

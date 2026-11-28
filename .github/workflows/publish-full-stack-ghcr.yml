@@ -70,6 +70,9 @@ jobs:
           done
           docker load -i release/images.tar.gz
           node scripts/full-stack-release.mjs verify-images "$GITHUB_REPOSITORY" "$SOURCE_SHA" "$RELEASE_RUN_ID" release
+          for component in runtime migrate landing web trainer admin; do
+            bash infra/release/verify-node-base.sh "gym-full-stack-$component:$SOURCE_SHA"
+          done
       - name: Generate runtime SPDX inventory
         uses: anchore/sbom-action@v0
         with:

@@ -15,7 +15,7 @@ export const profile = 'full-stack-pilot-noindex';
 export const builder = '.github/workflows/release-full-stack.yml';
 export const publisher = '.github/workflows/publish-full-stack-ghcr.yml';
 export const baseImage =
-  'node:24-trixie-slim@sha256:116b800c3754b440ee0aa3ed2f20f5bf3d99a554bfd9adeea09ea8017f6e85f5';
+  'node:24-trixie-slim@sha256:4d00acb4bcc42c454c4eb801526f7ad7f772ea3bd4fd168c5cc2e384abcbb9d4';
 const sha = /^[a-f0-9]{40}$/;
 const digest = /^sha256:[a-f0-9]{64}$/;
 const runId = /^[1-9][0-9]{0,15}$/;
