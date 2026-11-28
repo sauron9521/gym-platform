@@ -4,6 +4,8 @@ Status: proposed implementation sequence; no deployment authorization.
 Baseline: [fac9b7a](https://github.com/sauron9521/gym-platform/commit/fac9b7a9c2b360b70b321d4bf99073f7410e81bb).
 Authority: [S06](../product-strategy/s06-production-reliability-v1.md), [platform audit](../audits/ovranto-platform-audit-2026-11-27.md), #393, #323, #351, #352. Beta remains NO_GO.
 
+The original inventory below is historical. See the [DEP11 readiness review](full-stack-deployment-readiness-2026-11-28.md) for the 2026-11-28 implementation reconciliation and outstanding acceptance evidence.
+
 ## Existing foundation
 
 API runtime and migration Docker images, opt-in API-only Compose, digest override,
