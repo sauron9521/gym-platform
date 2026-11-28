@@ -49,3 +49,5 @@ discarded. DEP09 must verify the real HTTPS edge and renewal/expiry alerts.
 Use the existing full-stack Compose configuration unchanged; release
 promotion and signed images remain DEP08. See the
 [full-stack plan](../../docs/operations/full-stack-deployment-plan.md).
+
+For the separate inactive staging candidate, see [INF05 staging edge](staging-edge.md). Production routing is unchanged.

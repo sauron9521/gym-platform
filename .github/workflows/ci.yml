@@ -1046,6 +1046,10 @@ jobs:
         if: needs.changes.outputs.full == 'true'
         run: node scripts/reverse-proxy-smoke.mjs
 
+      - name: Validate isolated staging host routing and direct-peer access
+        if: needs.changes.outputs.full == 'true'
+        run: node scripts/reverse-proxy-smoke.mjs --staging
+
       - name: Verify deployed domain package on Node 24
         run: |
           docker run --rm --entrypoint node gym-platform-api:runtime-ci --input-type=module -e 'import assert from "node:assert/strict"; import { canTransitionWorkout, canCompleteWorkout, workoutCalendarDayKey } from "@gym/domain"; assert.equal(workoutCalendarDayKey("2026-11-27T23:30:00Z", "Europe/Kyiv"), "2026-11-28"); assert.equal(canTransitionWorkout("PLANNED", "IN_PROGRESS"), true); assert.equal(canTransitionWorkout("COMPLETED", "IN_PROGRESS"), false); assert.equal(canCompleteWorkout([{status:"COMPLETED"}]), true);'

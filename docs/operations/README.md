@@ -10,6 +10,7 @@ Canonical navigation for operator-controlled release evidence, staging, recovery
 - [INF02 OpenTofu foundation](../../infra/tofu/README.md) — inactive environment roots and isolated mock validation; no provisioning.
 - [INF03 Ansible foundation](../../infra/ansible/README.md) — inactive inventories and local-only idempotence proof; no remote configuration.
 - [INF04 host access candidate](../../infra/security/README.md) — SSH policy, mock cloud firewall allowlist and isolated Ubuntu parser validation.
+- [INF05 staging edge candidate](../../infra/proxy/staging-edge.md) — distinct staging hosts, loopback-only access, TLS rehearsal and Cloudflare activation boundaries.
 
 ## Signed releases and staging
 
