@@ -8,6 +8,7 @@ Canonical navigation for operator-controlled release evidence, staging, recovery
 - [DEP11 readiness review (2026-11-28)](full-stack-deployment-readiness-2026-11-28.md) — merged implementation evidence, outstanding Beta gates and ordered operator decisions; NO_GO.
 - [INF01 hosting decision](infrastructure-hosting-decision.md) — owner-approved Hetzner Germany, self-hosted PostgreSQL and EUR 50 monthly ceiling; no provisioning authorization.
 - [INF02 OpenTofu foundation](../../infra/tofu/README.md) — inactive environment roots and isolated mock validation; no provisioning.
+- [INF03 Ansible foundation](../../infra/ansible/README.md) — inactive inventories and local-only idempotence proof; no remote configuration.
 
 ## Signed releases and staging
 

@@ -1,0 +1,33 @@
+---
+# INF03 role intentionally operates only inside a synthetic local fixture.
+# A later reviewed role must establish live paths, users and ownership.
+- name: Reject non-fixture targets
+  ansible.builtin.assert:
+    that:
+      - ovranto_environment is defined
+      - ovranto_environment in ['staging', 'production']
+      - inventory_hostname == ovranto_environment ~ '-fixture'
+      - ansible_connection == 'local'
+      - inventory_file == '/fixture/tests/hosts.yml'
+      - not (ansible_become | default(false) | bool)
+    fail_msg: INF03 fixture-only target required.
+
+- name: Create isolated fixture directories
+  ansible.builtin.file:
+    path: '/tmp/ovranto-ansible-fixture/{{ ovranto_environment }}{{ item.suffix }}'
+    state: directory
+    mode: '{{ item.mode }}'
+  loop:
+    - { suffix: '', mode: '0700' }
+    - { suffix: '/opt/ovranto', mode: '0750' }
+    - { suffix: '/etc/ovranto', mode: '0700' }
+    - { suffix: '/var/lib/ovranto', mode: '0700' }
+    - { suffix: '/var/lib/ovranto/media', mode: '0700' }
+  register: layout_directories
+
+- name: Record synthetic environment identity
+  ansible.builtin.copy:
+    dest: '/tmp/ovranto-ansible-fixture/{{ ovranto_environment }}/etc/ovranto/environment.json'
+    content: "{{ {'environment': ovranto_environment, 'schemaVersion': 1, 'fixtureOnly': true} | to_nice_json }}\n"
+    mode: '0600'
+  register: layout_manifest

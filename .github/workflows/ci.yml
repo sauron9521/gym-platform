@@ -87,6 +87,10 @@ jobs:
         if: needs.changes.outputs.full == 'true'
         run: bash infra/tofu/verify.sh
 
+      - name: Validate inactive Ansible inventory and fixture idempotence
+        if: needs.changes.outputs.full == 'true'
+        run: bash infra/ansible/verify.sh
+
       - name: Enforce named and relative workspace imports via dependency-cruiser
         run: pnpm architecture:cruise:boundaries
 
