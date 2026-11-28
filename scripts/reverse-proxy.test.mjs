@@ -60,3 +60,58 @@ test('edge smoke is required by full-scope API Docker CI and runs without public
   assert.match(smoke, /local_certs/);
   assert.match(smoke, /assert\.rejects\(request\('unapproved\.invalid'\)\)/);
 });
+
+test('inactive staging edge and environment use disjoint hosts and loopback-only access', () => {
+  const stagingConfig = read('infra/proxy/Caddyfile.staging');
+  const stagingEnv = Object.fromEntries(
+    read('infra/proxy/staging.env.example')
+      .split('\n')
+      .filter((line) => /^[A-Z_]+=/.test(line))
+      .map((line) => line.split('=')),
+  );
+  const hosts = {
+    'staging.ovranto.com': 'LANDING_PORT',
+    'app-staging.ovranto.com': 'WEB_PORT',
+    'coach-staging.ovranto.com': 'TRAINER_PORT',
+    'admin-staging.ovranto.com': 'ADMIN_PORT',
+    'api-staging.ovranto.com': 'API_PORT',
+  };
+  const routes = [
+    ...stagingConfig.matchAll(/^([a-z.-]+) \{\n\s+route \{\n\s+import upstream (\d+)\n\s+\}\n\}/gm),
+  ];
+  assert.equal(routes.length, 5);
+  for (const [host, port] of Object.entries(hosts)) {
+    assert.equal(routes.find((r) => r[1] === host)?.[2], stagingEnv[port]);
+    assert.equal(stagingEnv[port], env[port]);
+    assert.ok(stagingConfig.includes('http://' + host));
+  }
+  assert.equal(stagingEnv.APP_URL, 'https://app-staging.ovranto.com');
+  assert.equal(stagingEnv.ADMIN_APP_URL, 'https://admin-staging.ovranto.com');
+  assert.equal(stagingEnv.TRAINER_APP_URL, 'https://coach-staging.ovranto.com');
+  assert.equal(stagingEnv.JWT_ISSUER, 'https://api-staging.ovranto.com');
+  assert.deepEqual(
+    stagingEnv.CORS_ORIGINS.split(',').sort(),
+    [stagingEnv.APP_URL, stagingEnv.ADMIN_APP_URL, stagingEnv.TRAINER_APP_URL].sort(),
+  );
+  assert.ok(
+    stagingEnv.CORS_ORIGINS.split(',').every(
+      (origin) => !env.CORS_ORIGINS.split(',').includes(origin),
+    ),
+  );
+  assert.equal(stagingEnv.SMTP_RECIPIENT_ALLOWLIST, 'fixture@example.test');
+  assert.equal(stagingEnv.TRUSTED_PROXY_CIDRS, '');
+  assert.equal(stagingEnv.NOTIFICATION_DISPATCH_ENABLED, 'false');
+  assert.equal(stagingEnv.HTTP_METRICS_ENABLED, 'false');
+  assert.match(stagingConfig, /local_certs/);
+  assert.match(stagingConfig, /strict_sni_host on/);
+  assert.equal(
+    [...stagingConfig.matchAll(/@denied not remote_ip 127\.0\.0\.1\/32\n\s+respond @denied 403/g)]
+      .length,
+    2,
+  );
+  assert.doesNotMatch(stagingConfig, /trusted_proxies|on_demand|client_ip|\*\.ovranto\.com/);
+  assert.match(
+    read('.github/workflows/ci.yml'),
+    /run: node scripts\/reverse-proxy-smoke\.mjs --staging/,
+  );
+});
