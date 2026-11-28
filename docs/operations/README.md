@@ -12,6 +12,7 @@ Canonical navigation for operator-controlled release evidence, staging, recovery
 - [INF04 host access candidate](../../infra/security/README.md) — SSH policy, mock cloud firewall allowlist and isolated Ubuntu parser validation.
 - [INF05 staging edge candidate](../../infra/proxy/staging-edge.md) — distinct staging hosts, loopback-only access, TLS rehearsal and Cloudflare activation boundaries.
 - [INF06a PostgreSQL PITR rehearsal](../../infra/recovery/README.md) — physical backup, checksum rejection and archived WAL replay; no off-host recovery acceptance.
+- [INF06b pgBackRest encrypted repository rehearsal](../../infra/recovery/pgbackrest/README.md) — encrypted local repository and separate target recovery; off-host acceptance pending.
 
 ## Signed releases and staging
 

@@ -99,6 +99,10 @@ jobs:
         if: needs.changes.outputs.full == 'true'
         run: bash infra/recovery/verify-pitr.sh
 
+      - name: Rehearse encrypted pgBackRest backup and WAL recovery
+        if: needs.changes.outputs.full == 'true'
+        run: bash infra/recovery/pgbackrest/verify.sh
+
       - name: Enforce named and relative workspace imports via dependency-cruiser
         run: pnpm architecture:cruise:boundaries
 

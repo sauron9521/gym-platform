@@ -49,6 +49,10 @@ ports. It performs the following operations:
 The container exits and its tmpfs data disappear. Full-scope CI runs this
 same isolated rehearsal; no actual infrastructure is modified.
 
+## INF06b — encrypted repository candidate
+
+The [pgBackRest rehearsal](pgbackrest/README.md) tests encrypted backup, wrong-key rejection and named-point replay against a separate local temporary repository. Off-host durability and live recovery are still pending.
+
 ## Remaining INF06 work
 
 | Slice  | Candidate scope                            | Acceptance                                                                                                                         |
