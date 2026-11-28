@@ -23,6 +23,8 @@ This directory is the **canonical home for owner-approved product strategy decis
 
 ## Cross-cutting strategy supplements
 
+- [Observability & Monitoring Strategy v1.0](observability-monitoring-strategy-v1.md) — owner approved OM01–OM10 on 2026-11-28; unified metrics, logging, tracing, error monitoring, independent alerts and evidence-gated collector replacement. Publication requires manual owner merge; implementation and release gates remain separate.
+
 - [Background Workers Strategy v1.0](background-workers-strategy-v1.md) — owner approved BW01–BW10 on 2026-11-28; PostgreSQL-first outbox, worker runtime, scheduling, reliability, observability and measured scaling. Publication requires manual owner merge; implementation and release gates remain separate.
 
 - [Shared Packages Strategy v1.0](shared-packages-strategy-v1.md) — owner approved SP01–SP10 on 2026-11-27–28; package ownership, contracts, validation, datetime, localization, UI, tooling, lifecycle and governance. ADR-006 direction accepted; publication evidence in #588 after manual merge; implementation gates remain separate.

@@ -38,6 +38,10 @@ These refine ADR-008 and retain its implementation and security gates.
 
 - [Background Workers Strategy v1.0](../product-strategy/background-workers-strategy-v1.md): accepted BW01–BW10 direction; extends ADR-008, preserves existing gates and defers worker separation until ABI08 and explicit Backend Core decision. No new ADR, runtime or release approval.
 
+## Cross-cutting observability strategy
+
+- [Observability & Monitoring Strategy v1.0](../product-strategy/observability-monitoring-strategy-v1.md): OM01–OM10 accepted direction; complements S06 and BW08, retains existing implementation owners and acceptance gates. No new ADR, dependency or release approval.
+
 ## Account preferences supporting contract
 
 - [Account workout preferences — incremental rollout](account-workout-preferences.md): proposed delivery contract for account/device ownership, shared defaults and safe synchronization.
