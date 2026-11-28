@@ -15,11 +15,12 @@ issue public certificates or change the production Caddyfile.
 | admin-staging.ovranto.com | 3003 Admin      |
 | api-staging.ovranto.com   | 3001 API        |
 
-The staging Caddyfile deliberately uses its local CA and accepts HTTP
-requests only from the exact directly connected IPv4 address 127.0.0.1.
+The staging Caddyfile deliberately uses its local CA, binds listeners to
+127.0.0.1:80 and 127.0.0.1:443, and accepts HTTP requests only from the
+exact directly connected IPv4 address 127.0.0.1.
 The guard precedes redirects and upstream routing. It does not trust
-client-supplied forwarding or Cloudflare headers. All other direct
-clients receive 403 on known host routes; unknown HTTP hosts receive
+client-supplied forwarding or Cloudflare headers. Other loopback peers reaching those listeners
+receive 403 on known host routes; unknown HTTP hosts receive
 421; unexpected TLS names fail certificate/handshake validation.
 The local CA is not a publicly trusted certificate and must not be
 installed on user devices as a substitute for the live TLS acceptance.

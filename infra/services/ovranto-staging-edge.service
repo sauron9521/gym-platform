@@ -1,0 +1,40 @@
+# Candidate only. No install target; explicit activation after verified staging readiness.
+[Unit]
+Description=OVRANTO isolated staging Caddy edge
+Requisite=docker.service
+After=docker.service
+AssertPathExists=/etc/ovranto/staging/edge-approved
+AssertPathExists=/etc/ovranto/staging/Caddyfile
+StartLimitIntervalSec=60
+StartLimitBurst=3
+
+[Service]
+Type=notify
+User=caddy
+Group=caddy
+StateDirectory=ovranto-staging-edge
+StateDirectoryMode=0700
+Environment=XDG_DATA_HOME=/var/lib/ovranto-staging-edge
+Environment=XDG_CONFIG_HOME=/var/lib/ovranto-staging-edge
+ExecStartPre=/usr/bin/caddy validate --config /etc/ovranto/staging/Caddyfile --adapter caddyfile
+ExecStart=/usr/bin/caddy run --config /etc/ovranto/staging/Caddyfile --adapter caddyfile
+Restart=on-failure
+RestartSec=5s
+TimeoutStartSec=30s
+TimeoutStopSec=15s
+UMask=0077
+NoNewPrivileges=true
+CapabilityBoundingSet=CAP_NET_BIND_SERVICE
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+PrivateTmp=true
+PrivateDevices=true
+ProtectHome=true
+ProtectSystem=strict
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LockPersonality=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+IPAddressDeny=any
+IPAddressAllow=localhost

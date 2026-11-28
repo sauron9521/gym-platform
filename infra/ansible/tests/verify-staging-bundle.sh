@@ -4,7 +4,7 @@ cd /fixture
 play=(ansible-playbook -i /fixture/tests/hosts.yml playbooks/staging-bundle.yml)
 "${play[@]}" --syntax-check
 staging=("${play[@]}" --limit staging-fixture)
-first='{"bundle_expected_directory_change":true,"bundle_expected_file_changes":3,"bundle_expected_plan_change":true}'
+first='{"bundle_expected_directory_change":true,"bundle_expected_file_changes":5,"bundle_expected_plan_change":true}'
 unchanged='{"bundle_expected_directory_change":false,"bundle_expected_file_changes":0,"bundle_expected_plan_change":false}'
 repair='{"bundle_expected_directory_change":false,"bundle_expected_file_changes":2,"bundle_expected_plan_change":false}'
 base=/tmp/ovranto-ansible-fixture/staging/etc/ovranto
@@ -40,7 +40,7 @@ root = Path('/tmp/ovranto-ansible-fixture')
 candidate = root / 'staging/etc/ovranto/candidates'
 assert not (root / 'production/etc/ovranto/candidates').exists()
 assert stat.S_IMODE(candidate.stat().st_mode) == 0o700
-mapping = {'sshd_config.candidate': 'sshd_config.candidate', 'Caddyfile.candidate': 'Caddyfile.staging', 'staging.env.example': 'staging.env.example'}
+mapping = {'sshd_config.candidate': 'sshd_config.candidate', 'Caddyfile.candidate': 'Caddyfile.staging', 'staging.env.example': 'staging.env.example', 'docker-daemon.candidate.json': 'docker-daemon.candidate.json', 'ovranto-staging-edge.service': 'ovranto-staging-edge.service'}
 assert {p.name for p in candidate.iterdir()} == set(mapping) | {'host-plan.json'}
 for dest, source in mapping.items():
     assert (candidate / dest).read_bytes() == (Path('/fixture/sources') / source).read_bytes()
