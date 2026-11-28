@@ -218,3 +218,38 @@ single-flight checks, so it cannot establish database pool saturation.
 Representative authenticated read/write workloads, populated fixtures,
 pool-wait latency, independent load generator and production-like hardware
 remain necessary under #313/#922/#923 before scaling or Beta GO.
+
+### DEP10e — two-container replica and scale-down rehearsal
+
+The disposable full-stack rehearsal temporarily scales its API service to
+two independent containers of the same exact image, with the same test
+PostgreSQL, Redis and authentication configuration. It validates Compose
+project ownership and the internal network, and checks both containers
+are healthy, nonroot and have no published ports. No production Compose
+configuration is changed.
+
+A separate internal HTTP Caddy listener uses two explicit container IPs,
+round-robin balancing and active readiness checks. Its allowlist contains
+only GET readiness and equipment catalogue routes. The test-only upstream
+response header proves that both containers receive requests. Public
+HTTPS is checked separately by the existing edge rehearsal; the
+internal test proxy is neither a production TLS configuration nor exposed
+to users. It returns 404 for other paths.
+
+The real anonymous equipment catalogue endpoint must return identical
+responses across replicas, and 60 requests must succeed before the
+61st is rejected with HTTP 429 by the shared Redis limit. No production
+rate-limit setting is modified. PostgreSQL client counts must fit the
+two-process pool and advisory-lock allowance. The test stops the second
+container, verifies readiness via the surviving upstream, restarts it
+and verifies distribution again. Finally it scales down to the original
+container before running the existing recovery drill.
+
+This is same-version replica recovery and scale-down, not a cross-version
+application rollback or a zero-downtime guarantee during failure onset.
+The volume is shared only inside this single-host disposable project;
+distributed avatar storage/maintenance, authenticated session and write
+acceptance, realistic peak connection usage, separate-host failover,
+and signed two-release rollback evidence remain open under #921/#922/#923
+and #351. The existing two-release rollback procedure remains unchanged.
+Production stays single-instance until those gates and owner approval.
