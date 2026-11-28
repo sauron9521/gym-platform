@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 # DEP04: fixed private upstream, isolated pilot; no release promotion.
-ARG NODE_BASE_IMAGE=node:24-trixie-slim@sha256:116b800c3754b440ee0aa3ed2f20f5bf3d99a554bfd9adeea09ea8017f6e85f5
+ARG NODE_BASE_IMAGE=node:24-trixie-slim@sha256:4d00acb4bcc42c454c4eb801526f7ad7f772ea3bd4fd168c5cc2e384abcbb9d4
 FROM ${NODE_BASE_IMAGE} AS build
 WORKDIR /workspace
 ENV HUSKY=0 NEXT_TELEMETRY_DISABLED=1

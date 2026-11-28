@@ -15,8 +15,9 @@ Six synthetic images derive from the existing pinned Node base. A random
 fixture SHA and a synthetic repository identity distinguish them from
 real releases. The temporary build context contains only the base image
 and USER declaration; no application files, secrets or credentials.
-No application build, running containers, registry push or signing
-occurs. Docker may pull the pinned base if absent.
+No application build, registry push or signing occurs. The base OS check
+uses short-lived isolated containers. Docker may pull the pinned bases if
+absent.
 
 The rehearsal creates the actual manifest using the existing release CLI,
 saves and hashes all six images, and checks their exact config IDs,
@@ -61,3 +62,21 @@ do not bypass the gate or reuse a partial publication. No automatic
 publish, cloud provisioning, DNS or deployment is authorized here.
 
 Production and Beta remain NO_GO.
+
+## Debian base identity correction
+
+The first pilot publication (run 46135389732) stopped at the runtime Grype
+critical threshold. Its preserved report identified Alpine zlib 1.3.2-r1
+(CVE-2026-4738). The old digest labelled as trixie-slim actually selected
+Alpine 3.24.4. A readable tag does not override a digest. The new pinned
+reference resolves to Debian 13 (trixie), glibc and Node 24.22.3. The
+base, built images and independently loaded images must pass the actual
+OS/ABI check. The archive fixture also positively identifies the previous
+Alpine image and rejects it as an application base. The intentional Alpine
+monitoring-shadow fixture remains unchanged.
+
+The earlier candidate is ineligible under the new base-image contract.
+After merge and successful exact-main CI, build a new candidate and obtain
+a new run ID; do not retry the old publisher with the old candidate.
+All six security scans and attestations still must pass before publication.
+Changing the base is not proof that the new images are vulnerability-free.

@@ -13,7 +13,13 @@ trap 'exit 1' INT TERM
 repo=fixture/inf08-archive
 sha="$(od -An -N20 -tx1 /dev/urandom | tr -d ' \n')"
 run=1
-base='node:24-trixie-slim@sha256:116b800c3754b440ee0aa3ed2f20f5bf3d99a554bfd9adeea09ea8017f6e85f5'
+base='node:24-trixie-slim@sha256:4d00acb4bcc42c454c4eb801526f7ad7f772ea3bd4fd168c5cc2e384abcbb9d4'
+bash "$root/infra/release/verify-node-base.sh" "$base"
+alpine="node:24-alpine@sha256:116b800c3754b440ee0aa3ed2f20f5bf3d99a554bfd9adeea09ea8017f6e85f5"
+docker run --rm --network none --read-only --user node --cap-drop ALL --security-opt no-new-privileges --entrypoint sh "$alpine" -ec '. /etc/os-release; test "$ID" = alpine'
+if bash "$root/infra/release/verify-node-base.sh" "$alpine"; then
+  echo "Alpine base unexpectedly accepted" >&2; exit 1
+fi
 mkdir -m 700 "$work/release" "$work/context"
 printf 'FROM %s\nUSER node\n' "$base" > "$work/context/Dockerfile"
 for component in runtime migrate landing web trainer admin; do

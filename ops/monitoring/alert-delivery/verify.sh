@@ -13,7 +13,7 @@ trap cleanup EXIT
 trap 'exit 1' INT TERM
 am='prom/alertmanager:v0.28.1@sha256:27c475db5fb156cab31d5c18a4251ac7ed567746a2483ff264516437a39b15ba'
 prom='prom/prometheus:v3.16.0@sha256:e04987641b57704f408e31f6373ba4138ecf27cb4a165d24aabb6c38fddd0f06'
-node='node:24-trixie-slim@sha256:116b800c3754b440ee0aa3ed2f20f5bf3d99a554bfd9adeea09ea8017f6e85f5'
+node='node:24-trixie-slim@sha256:4d00acb4bcc42c454c4eb801526f7ad7f772ea3bd4fd168c5cc2e384abcbb9d4'
 # Accelerate group evaluation only; keep the actual existing rules and expressions.
 sed 's/interval: 30s/interval: 2s/g' "$root/../alerts.rules.yml" > "$work/alerts.rules.yml"
 cp "$root/"{alertmanager.fixture.yml,prometheus.fixture.yml,sinks.fixture.cjs,assert.fixture.cjs} "$work/"

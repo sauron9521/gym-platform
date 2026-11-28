@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 # Node 24/Debian 13 matches the workspace and shares native binary ABI.
-# Release workflow must eventually pin a reviewed base by immutable digest.
-ARG NODE_BASE_IMAGE=node:24-trixie-slim
+# Default to the reviewed Debian base; release workflows supply an immutable reference.
+ARG NODE_BASE_IMAGE=node:24-trixie-slim@sha256:4d00acb4bcc42c454c4eb801526f7ad7f772ea3bd4fd168c5cc2e384abcbb9d4
 FROM ${NODE_BASE_IMAGE} AS base
 WORKDIR /workspace
 ENV HUSKY=0

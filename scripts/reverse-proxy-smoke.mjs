@@ -9,7 +9,7 @@ import { setTimeout as sleep } from 'node:timers/promises';
 const caddy =
   'caddy:2-alpine@sha256:003a97808e781aa9f7e75cc2f43d34d461099031faf5e20faefb9f61126836f0';
 const node =
-  'node:24-trixie-slim@sha256:116b800c3754b440ee0aa3ed2f20f5bf3d99a554bfd9adeea09ea8017f6e85f5';
+  'node:24-trixie-slim@sha256:4d00acb4bcc42c454c4eb801526f7ad7f772ea3bd4fd168c5cc2e384abcbb9d4';
 const args = process.argv.slice(2);
 assert.ok(
   args.length === 0 || (args.length === 1 && args[0] === '--staging'),
