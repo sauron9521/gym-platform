@@ -140,3 +140,30 @@ Further operational work: general HTTP/Redis monitoring, SLO rules, secure
 forwarding, alert delivery receipts, off-host replication and production
 rollback rehearsal. The standalone repository remains operational source
 of truth until the migration is signed off.
+
+## DEP10a — full-stack disposable recovery rehearsal
+
+The existing full-stack rehearsal also runs a synthetic recovery drill after
+the HTTPS, mail and Redis checks. It verifies Compose project ownership of
+the PostgreSQL and API containers and avatar volume, inserts one synthetic
+user/profile and avatar file into the newly created test stack, stops API
+writers, then produces a PostgreSQL custom dump and read-only avatar tar.
+No production connection or operator backup directory is used.
+
+The existing `restore-drill.sh` restores into a separately provisioned empty
+`gym_rehearsal_restore_test` database on the disposable PostgreSQL instance.
+The drill first rejects a tampered avatar archive without populating the
+target, verifies the restored migration ledger and synthetic profile decimal
+and avatar reference, and rejects a repeat restore into the nonempty target.
+The original synthetic source remains intact. An independent disposable
+avatar volume receives the archive; the fixture's SHA-256 must match.
+The restored volume and full Compose project are removed afterwards.
+
+Run from the repository root with `node scripts/full-stack-rehearsal.mjs`.
+Full-scope CI and the signed pilot rehearsal use the same check. The drill
+records elapsed backup/restore time for a tiny synthetic dataset only.
+It is not a measured production RPO/RTO, off-host encrypted backup, a
+separate disaster-recovery host, application cutover, or cross-version
+rollback. Those remain separate DEP10 evidence requirements under #351.
+Existing operational backup/restore commands and release contracts are
+unchanged. No deployment or timers are enabled.
