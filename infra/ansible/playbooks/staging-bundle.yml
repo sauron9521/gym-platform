@@ -1,0 +1,14 @@
+---
+- name: Assemble inactive staging host candidates
+  hosts: ovranto_fixture
+  gather_facts: false
+  become: false
+  roles:
+    - role: staging_bundle
+  tasks:
+    - name: Check expected candidate directory change
+      ansible.builtin.assert:
+        that:
+          - (candidate_directory.changed | bool) == (bundle_expected_directory_change | bool)
+          - (candidate_files.results | selectattr('changed') | list | length) == (bundle_expected_file_changes | int)
+          - (candidate_plan.changed | bool) == (bundle_expected_plan_change | bool)

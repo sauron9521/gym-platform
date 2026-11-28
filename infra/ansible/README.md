@@ -71,3 +71,8 @@ No actual Ubuntu host, systemd, SSH connectivity or cloud firewall has
 been tested here; the fixture is Debian-based Python in Docker.
 Production and Beta remain NO_GO. Do not remove the OpenTofu activation
 guard or add a remote apply workflow as part of this slice.
+
+## INF09a staging assembly
+
+See the [staging bundle contract](staging-bundle.md). The existing verifier
+also exercises the new staging-only role and drift detection/repair.

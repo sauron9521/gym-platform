@@ -157,3 +157,27 @@ existing [Beta evidence gates](../beta-readiness-gates.md).
 **Current disposition:** INF01 approved, infrastructure provisioning
 not authorized, deployment NO_GO, Beta NO_GO. The next implementation
 slice is INF02, after this record is merged.
+
+### Subsequent execution record — 2026-11-28
+
+INF02–07 have local implementation/rehearsal evidence, not live operational
+acceptance. INF08 passed for source and publisher SHA
+`7831bc6d264c8d951d2d7be50a2c3d9b78ffc7eb`:
+[exact main CI](https://github.com/sauron9521/gym-platform/actions/runs/46136906476),
+[candidate](https://github.com/sauron9521/gym-platform/actions/runs/46140649573),
+[publisher](https://github.com/sauron9521/gym-platform/actions/runs/46141639696)
+and [signed rehearsal](https://github.com/sauron9521/gym-platform/actions/runs/46142650026).
+Six SPDX inventories, six critical scans, twelve OCI attestations and the
+signed receipt passed. The disposable rehearsal verified the six exact
+image identities and five applications, local HTTPS, Redis recovery, SMTPS,
+replica failover and synthetic backup/restore. See
+[#351 evidence](https://github.com/sauron9521/gym-platform/issues/351#issuecomment-7239057307).
+The signed receipt artifact expires on 2026-12-28; retain and reverify the
+evidence before a real deployment. These results do not close any mandatory
+Beta gate or establish live RPO/RTO.
+
+The owner agreed to defer the VPS until local preparation is complete.
+INF09 is now split into the [staging preparation sequence](../../infra/ansible/staging-bundle.md).
+INF09a–c are offline preparation/rehearsal; INF09d–e require separate
+permission for a real staging environment and its acceptance. The original
+INF01 decision and spending/activation boundaries remain unchanged.
