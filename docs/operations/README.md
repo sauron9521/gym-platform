@@ -6,6 +6,7 @@ Canonical navigation for operator-controlled release evidence, staging, recovery
 
 - [Full-stack deployment plan](full-stack-deployment-plan.md) — proposed web containers, host routing, artifact promotion and staging sequence; no deployment authorization.
 - [DEP11 readiness review (2026-11-28)](full-stack-deployment-readiness-2026-11-28.md) — merged implementation evidence, outstanding Beta gates and ordered operator decisions; NO_GO.
+- [INF01 hosting decision](infrastructure-hosting-decision.md) — owner-approved Hetzner Germany, self-hosted PostgreSQL and EUR 50 monthly ceiling; no provisioning authorization.
 
 ## Signed releases and staging
 
