@@ -17,6 +17,7 @@ Canonical navigation for operator-controlled release evidence, staging, recovery
 - [INF06d Restic media recovery rehearsal](../../infra/recovery/restic/README.md) — encrypted paired snapshot and synthetic deletion reconciliation; independent storage acceptance pending.
 - [INF07 alert delivery rehearsal](../../ops/monitoring/alert-delivery/README.md) — Prometheus, Alertmanager, local fanout, retry and resolution; independent live delivery pending.
 - [INF08 immutable pilot preflight](../../infra/release/README.md) — exact reviewed source SHA, synthetic archive rehearsal and manual signed release sequence.
+- [INF09a staging configuration assembly](../../infra/ansible/staging-bundle.md) — inactive host candidates and drift repair; no real host activation.
 
 ## Signed releases and staging
 

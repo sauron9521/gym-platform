@@ -1,0 +1,49 @@
+---
+# INF09a assembles candidates only; never writes to actual system paths.
+- name: Require isolated staging fixture identity
+  ansible.builtin.assert:
+    that:
+      - ovranto_environment == 'staging'
+      - inventory_hostname == 'staging-fixture'
+      - ansible_connection == 'local'
+      - inventory_file == '/fixture/tests/hosts.yml'
+      - not (ansible_become | default(false) | bool)
+    fail_msg: INF09a staging fixture only.
+
+- name: Verify existing staging layout identity
+  ansible.builtin.slurp:
+    src: /tmp/ovranto-ansible-fixture/staging/etc/ovranto/environment.json
+  register: staging_identity
+
+- name: Require exact staging marker
+  ansible.builtin.assert:
+    that:
+      - >-
+        (staging_identity.content | b64decode | from_json) ==
+        {'environment': 'staging', 'schemaVersion': 1, 'fixtureOnly': true}
+    fail_msg: INF09a staging identity mismatch.
+
+- name: Create inactive candidate configuration directory
+  ansible.builtin.file:
+    path: /tmp/ovranto-ansible-fixture/staging/etc/ovranto/candidates
+    state: directory
+    mode: '0700'
+  register: candidate_directory
+
+- name: Assemble canonical staging configuration candidates
+  ansible.builtin.copy:
+    src: '/fixture/sources/{{ item.source }}'
+    dest: '/tmp/ovranto-ansible-fixture/staging/etc/ovranto/candidates/{{ item.dest }}'
+    mode: '0600'
+  loop:
+    - { source: sshd_config.candidate, dest: sshd_config.candidate }
+    - { source: Caddyfile.staging, dest: Caddyfile.candidate }
+    - { source: staging.env.example, dest: staging.env.example }
+  register: candidate_files
+
+- name: Record inactive host bootstrap contract
+  ansible.builtin.copy:
+    dest: /tmp/ovranto-ansible-fixture/staging/etc/ovranto/candidates/host-plan.json
+    content: "{{ {'schemaVersion': 1, 'environment': 'staging', 'fixtureOnly': true, 'activationAuthorized': false, 'target': {'distribution': 'Ubuntu', 'version': '24.04', 'architecture': 'amd64'}, 'operatorAccount': 'ovranto-operator', 'packages': ['ca-certificates', 'openssh-server', 'docker-ce', 'docker-ce-cli', 'containerd.io', 'docker-buildx-plugin', 'docker-compose-plugin', 'caddy'], 'privateInputs': ['DATABASE_URL', 'REDIS_URL', 'JWT_SECRET', 'SMTP_URL', 'MAIL_FROM'], 'publicIngressAuthorized': false} | to_nice_json }}\n"
+    mode: '0600'
+  register: candidate_plan
