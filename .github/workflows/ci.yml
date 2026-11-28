@@ -107,6 +107,10 @@ jobs:
         if: needs.changes.outputs.full == 'true'
         run: bash infra/recovery/redis/verify.sh
 
+      - name: Rehearse encrypted Restic media and coordinated recovery
+        if: needs.changes.outputs.full == 'true'
+        run: bash infra/recovery/restic/verify.sh
+
       - name: Enforce named and relative workspace imports via dependency-cruiser
         run: pnpm architecture:cruise:boundaries
 
