@@ -1,6 +1,11 @@
 name: Full-stack pilot release candidate
 on:
   workflow_dispatch:
+    inputs:
+      source_sha:
+        description: Exact reviewed main commit SHA (40 lowercase hex characters)
+        required: true
+        type: string
 permissions:
   contents: read
 concurrency:
@@ -28,9 +33,12 @@ jobs:
       - name: Require exact-commit successful main CI
         env:
           GH_TOKEN: ${{ github.token }}
+          EXPECTED_SOURCE_SHA: ${{ inputs.source_sha }}
         run: |
           set -euo pipefail
           test "$GITHUB_REF" = refs/heads/main
+          [[ "$EXPECTED_SOURCE_SHA" =~ ^[a-f0-9]{40}$ ]]
+          test "$EXPECTED_SOURCE_SHA" = "$GITHUB_SHA"
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
           gh api "repos/$GITHUB_REPOSITORY/actions/workflows/ci.yml/runs?head_sha=$GITHUB_SHA&branch=main&event=push&per_page=100" > "$RUNNER_TEMP/main-ci.json"
           node scripts/release-ci-gate.mjs "$RUNNER_TEMP/main-ci.json" "$GITHUB_REPOSITORY" "$GITHUB_SHA"

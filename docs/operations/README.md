@@ -16,6 +16,7 @@ Canonical navigation for operator-controlled release evidence, staging, recovery
 - [INF06c Redis recovery rehearsal](../../infra/recovery/redis/README.md) — security-state persistence, TTL continuity and PostgreSQL ownership boundary.
 - [INF06d Restic media recovery rehearsal](../../infra/recovery/restic/README.md) — encrypted paired snapshot and synthetic deletion reconciliation; independent storage acceptance pending.
 - [INF07 alert delivery rehearsal](../../ops/monitoring/alert-delivery/README.md) — Prometheus, Alertmanager, local fanout, retry and resolution; independent live delivery pending.
+- [INF08 immutable pilot preflight](../../infra/release/README.md) — exact reviewed source SHA, synthetic archive rehearsal and manual signed release sequence.
 
 ## Signed releases and staging
 
