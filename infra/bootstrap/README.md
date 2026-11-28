@@ -51,7 +51,9 @@ package installation reported four packages not upgraded; a complete
 security patch and upgrade policy is still required for INF09c.
 No live package manager is invoked.
 
-The next slice prepares service configuration and systemd activation
-contracts; an actual clean Ubuntu VM is required before approving a VPS.
+The [service contract rehearsal](../services/README.md) uses a separate
+build target with systemd and jq for offline validation. The default
+package-only target remains unchanged in scope. An actual clean Ubuntu VM
+is required before approving a VPS.
 No cloud provisioning, DNS, SSH changes, secret creation or production
 deployment is authorized. Production and Beta remain NO_GO.

@@ -18,6 +18,7 @@ cp "$root/roles/staging_bundle/tasks/main.yml" "$work/fixture/roles/staging_bund
 cp "$root/playbooks/staging-bundle.yml" "$work/fixture/playbooks/"
 cp "$root/tests/verify-staging-bundle.sh" "$work/fixture/tests/"
 cp "$root/../security/sshd_config.candidate" "$root/../proxy/Caddyfile.staging" "$root/../proxy/staging.env.example" "$work/fixture/sources/"
+cp "$root/../services/docker-daemon.candidate.json" "$root/../services/ovranto-staging-edge.service" "$work/fixture/sources/"
 chmod 755 "$work/fixture"
 docker build --platform linux/amd64 --iidfile "$work/image-id" "$work/build"
 docker run --rm --platform linux/amd64 --network none --read-only \

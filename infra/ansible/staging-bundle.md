@@ -10,7 +10,8 @@ rules, connect over SSH or provision infrastructure.
 
 The `staging_bundle` role requires the local staging fixture and its exact
 environment marker from `host_layout`. It copies the existing SSH candidate,
-local-CA Caddyfile and staging environment example without maintaining duplicate
+local-CA Caddyfile, staging environment example, Docker daemon candidate and
+[systemd edge unit](../services/README.md) without maintaining duplicate
 templates. Files are private (0600); the containing directory is 0700. The
 bootstrap plan records the intended Ubuntu 24.04 AMD64 host, named operator,
 proposed packages and required private inputs by name, never their values.

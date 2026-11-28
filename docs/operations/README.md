@@ -19,6 +19,7 @@ Canonical navigation for operator-controlled release evidence, staging, recovery
 - [INF08 immutable pilot preflight](../../infra/release/README.md) — exact reviewed source SHA, synthetic archive rehearsal and manual signed release sequence.
 - [INF09a staging configuration assembly](../../infra/ansible/staging-bundle.md) — inactive host candidates and drift repair; no real host activation.
 - [INF09a.2 Ubuntu package bootstrap](../../infra/bootstrap/README.md) — signed repositories, pinned vendor package installation and offline executable checks.
+- [INF09a.3 service contracts](../../infra/services/README.md) — inactive systemd edge and Docker daemon configuration, loopback binding and parser tests.
 
 ## Signed releases and staging
 

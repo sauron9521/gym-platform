@@ -39,6 +39,8 @@
     - { source: sshd_config.candidate, dest: sshd_config.candidate }
     - { source: Caddyfile.staging, dest: Caddyfile.candidate }
     - { source: staging.env.example, dest: staging.env.example }
+    - { source: docker-daemon.candidate.json, dest: docker-daemon.candidate.json }
+    - { source: ovranto-staging-edge.service, dest: ovranto-staging-edge.service }
   register: candidate_files
 
 - name: Record inactive host bootstrap contract

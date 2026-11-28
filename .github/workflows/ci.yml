@@ -99,6 +99,10 @@ jobs:
         if: needs.changes.outputs.full == 'true'
         run: bash infra/bootstrap/verify.sh
 
+      - name: Verify inactive staging systemd and daemon candidates
+        if: needs.changes.outputs.full == 'true'
+        run: bash infra/services/verify.sh
+
       - name: Rehearse isolated PostgreSQL physical backup and WAL recovery
         if: needs.changes.outputs.full == 'true'
         run: bash infra/recovery/verify-pitr.sh

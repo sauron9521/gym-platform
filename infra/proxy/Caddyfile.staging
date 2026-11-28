@@ -1,4 +1,5 @@
 {
+	default_bind 127.0.0.1
 	admin off
 	local_certs
 	auto_https disable_redirects
