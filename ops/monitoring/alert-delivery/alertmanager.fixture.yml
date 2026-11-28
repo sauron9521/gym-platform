@@ -1,0 +1,22 @@
+# Isolated webhook sinks only; not a live receiver configuration.
+route:
+  receiver: primary-fixture
+  group_by: [alertname, severity]
+  group_wait: 1s
+  group_interval: 2s
+  repeat_interval: 1h
+  routes:
+    - receiver: primary-fixture
+      matchers: ['severity="critical"']
+      continue: true
+    - receiver: secondary-fixture
+      matchers: ['severity="critical"']
+receivers:
+  - name: primary-fixture
+    webhook_configs:
+      - url: http://127.0.0.1:18081/alerts
+        send_resolved: true
+  - name: secondary-fixture
+    webhook_configs:
+      - url: http://127.0.0.1:18082/alerts
+        send_resolved: true
