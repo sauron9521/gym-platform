@@ -14,6 +14,7 @@ Canonical navigation for operator-controlled release evidence, staging, recovery
 - [INF06a PostgreSQL PITR rehearsal](../../infra/recovery/README.md) — physical backup, checksum rejection and archived WAL replay; no off-host recovery acceptance.
 - [INF06b pgBackRest encrypted repository rehearsal](../../infra/recovery/pgbackrest/README.md) — encrypted local repository and separate target recovery; off-host acceptance pending.
 - [INF06c Redis recovery rehearsal](../../infra/recovery/redis/README.md) — security-state persistence, TTL continuity and PostgreSQL ownership boundary.
+- [INF06d Restic media recovery rehearsal](../../infra/recovery/restic/README.md) — encrypted paired snapshot and synthetic deletion reconciliation; independent storage acceptance pending.
 
 ## Signed releases and staging
 

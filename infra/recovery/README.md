@@ -57,7 +57,11 @@ The [pgBackRest rehearsal](pgbackrest/README.md) tests encrypted backup, wrong-k
 
 The [Redis rehearsal](redis/README.md) verifies multipart AOF recovery, TTL continuity and noeviction on synthetic security counters. PostgreSQL remains the authority for business state and the outbox; actual host-loss and application reconciliation evidence remains pending.
 
-## Remaining INF06 work
+## INF06d — encrypted media recovery
+
+The [Restic rehearsal](restic/README.md) checks encrypted paired logical backup and media restore, missing/changed file rejection and synthetic tombstone reconciliation. All four local INF06 candidates now exist; actual independent storage, production configuration and staging acceptance remain pending.
+
+## INF06 evidence and remaining acceptance
 
 | Slice  | Candidate scope                            | Acceptance                                                                                                                         |
 | ------ | ------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------- |
